@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 600 // for realpath
+#define _XOPEN_SOURCE 700 // for realpath
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -30,7 +30,6 @@
 #include "sway/tree/workspace.h"
 #include "cairo.h"
 #include "pango.h"
-#include "readline.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
@@ -570,28 +569,23 @@ bool load_include_configs(const char *path, struct sway_config *config,
 	return true;
 }
 
-static int detect_brace_on_following_line(FILE *file, char *line,
-		int line_number) {
+static int detect_brace(FILE *file) {
 	int lines = 0;
-	if (line[strlen(line) - 1] != '{' && line[strlen(line) - 1] != '}') {
-		char *peeked = NULL;
-		long position = 0;
-		do {
-			free(peeked);
-			peeked = peek_line(file, lines, &position);
-			if (peeked) {
-				strip_whitespace(peeked);
+	long pos = ftell(file);
+	char *line = NULL;
+	size_t line_size = 0;
+	while ((getline(&line, &line_size, file)) != -1) {
+		lines++;
+		strip_whitespace(line);
+		if (*line) {
+			if (strcmp(line, "{") != 0) {
+				fseek(file, pos, SEEK_SET);
+				lines = 0;
 			}
-			lines++;
-		} while (peeked && strlen(peeked) == 0);
-
-		if (peeked && strlen(peeked) == 1 && peeked[0] == '{') {
-			fseek(file, position, SEEK_SET);
-		} else {
-			lines = 0;
+			break;
 		}
-		free(peeked);
 	}
+	free(line);
 	return lines;
 }
 
@@ -634,55 +628,47 @@ bool read_config(FILE *file, struct sway_config *config,
 
 	bool success = true;
 	int line_number = 0;
-	char *line;
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t nread;
 	list_t *stack = create_list();
 	size_t read = 0;
-	while (!feof(file)) {
-		char *block = stack->length ? stack->items[0] : NULL;
-		line = read_line(file);
-		if (!line) {
-			continue;
+	while ((nread = getline(&line, &line_size, file)) != -1) {
+		if (reading_main_config) {
+			if (read + nread > config_size) {
+				wlr_log(WLR_ERROR, "Config file changed during reading");
+				success = false;
+				break;
+			}
+
+			strcpy(&this_config[read], line);
+			read += nread;
 		}
+
+		if (line[nread - 1] == '\n') {
+			line[nread - 1] = '\0';
+		}
+
 		line_number++;
 		wlr_log(WLR_DEBUG, "Read line %d: %s", line_number, line);
 
-		if (reading_main_config) {
-			size_t length = strlen(line);
-
-			if (read + length > config_size) {
-				wlr_log(WLR_ERROR, "Config file changed during reading");
-				list_free_items_and_destroy(stack);
-				free(line);
-				return false;
-			}
-
-			strcpy(this_config + read, line);
-			if (line_number != 1) {
-				this_config[read - 1] = '\n';
-			}
-			read += length + 1;
-		}
-
 		strip_whitespace(line);
-		if (line[0] == '#') {
-			free(line);
+		if (!*line || line[0] == '#') {
 			continue;
 		}
-		if (strlen(line) == 0) {
-			free(line);
-			continue;
+		int brace_detected = 0;
+		if (line[strlen(line) - 1] != '{' && line[strlen(line) - 1] != '}') {
+			brace_detected = detect_brace(file);
+			if (brace_detected > 0) {
+				line_number += brace_detected;
+				wlr_log(WLR_DEBUG, "Detected open brace on line %d", line_number);
+			}
 		}
-		int brace_detected = detect_brace_on_following_line(file, line,
-				line_number);
-		if (brace_detected > 0) {
-			line_number += brace_detected;
-			wlr_log(WLR_DEBUG, "Detected open brace on line %d", line_number);
-		}
+		char *block = stack->length ? stack->items[0] : NULL;
 		char *expanded = expand_line(block, line, brace_detected > 0);
 		if (!expanded) {
-			list_free_items_and_destroy(stack);
-			free(line);
-			return false;
+			success = false;
+			break;
 		}
 		config->current_config_line_number = line_number;
 		config->current_config_line = line;
@@ -742,9 +728,9 @@ bool read_config(FILE *file, struct sway_config *config,
 		default:;
 		}
 		free(expanded);
-		free(line);
 		free_cmd_results(res);
 	}
+	free(line);
 	list_free_items_and_destroy(stack);
 	config->current_config_line_number = 0;
 	config->current_config_line = NULL;

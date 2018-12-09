@@ -12,7 +12,6 @@
 #include <json-c/json.h>
 #include "stringop.h"
 #include "ipc-client.h"
-#include "readline.h"
 #include "log.h"
 
 void sway_terminate(int exit_code) {

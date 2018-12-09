@@ -7,7 +7,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include "ipc-client.h"
-#include "readline.h"
 #include "log.h"
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
@@ -18,28 +17,30 @@ char *get_socketpath(void) {
 	if (swaysock) {
 		return strdup(swaysock);
 	}
+	char *line = NULL;
+	size_t line_size = 0;
 	FILE *fp = popen("sway --get-socketpath 2>/dev/null", "r");
 	if (fp) {
-		char *line = read_line(fp);
+		getline(&line, &line_size, fp);
 		pclose(fp);
 		if (line && *line) {
 			return line;
 		}
-		free(line);
 	}
 	const char *i3sock = getenv("I3SOCK");
 	if (i3sock) {
+		free(line);
 		return strdup(i3sock);
 	}
 	fp = popen("i3 --get-socketpath 2>/dev/null", "r");
 	if (fp) {
-		char *line = read_line(fp);
+		getline(&line, &line_size, fp);
 		pclose(fp);
 		if (line && *line) {
 			return line;
 		}
-		free(line);
 	}
+	free(line);
 	return NULL;
 }
 

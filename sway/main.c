@@ -3,6 +3,7 @@
 #include <pango/pangocairo.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -22,7 +23,6 @@
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
 #include "log.h"
-#include "readline.h"
 #include "stringop.h"
 #include "util.h"
 
@@ -47,31 +47,28 @@ void detect_raspi(void) {
 	if (!f) {
 		return;
 	}
-	char *line;
-	while(!feof(f)) {
-		if (!(line = read_line(f))) {
-			break;
-		}
+	char *line = NULL;
+	size_t line_size = 0;
+	while (getline(&line, &line_size, f) != -1) {
 		if (strstr(line, "Raspberry Pi")) {
 			raspi = true;
+			break;
 		}
-		free(line);
 	}
 	fclose(f);
 	FILE *g = fopen("/proc/modules", "r");
 	if (!g) {
+		free(line);
 		return;
 	}
 	bool vc4 = false;
-	while (!feof(g)) {
-		if (!(line = read_line(g))) {
-			break;
-		}
+	while (getline(&line, &line_size, g) != -1) {
 		if (strstr(line, "vc4")) {
 			vc4 = true;
+			break;
 		}
-		free(line);
 	}
+	free(line);
 	fclose(g);
 	if (!vc4 && raspi) {
 		fprintf(stderr, "\x1B[1;31mWarning: You have a "
@@ -86,13 +83,10 @@ void detect_proprietary(int allow_unsupported_gpu) {
 	if (!f) {
 		return;
 	}
-	while (!feof(f)) {
-		char *line;
-		if (!(line = read_line(f))) {
-			break;
-		}
+	char *line = NULL;
+	size_t line_size = 0;
+	while (getline(&line, &line_size, f) != -1) {
 		if (strstr(line, "nvidia")) {
-			free(line);
 			if (allow_unsupported_gpu) {
 				wlr_log(WLR_ERROR,
 						"!!! Proprietary Nvidia drivers are in use !!!");
@@ -106,7 +100,6 @@ void detect_proprietary(int allow_unsupported_gpu) {
 			break;
 		}
 		if (strstr(line, "fglrx")) {
-			free(line);
 			if (allow_unsupported_gpu) {
 				wlr_log(WLR_ERROR,
 						"!!! Proprietary AMD drivers are in use !!!");
@@ -118,8 +111,8 @@ void detect_proprietary(int allow_unsupported_gpu) {
 			}
 			break;
 		}
-		free(line);
 	}
+	free(line);
 	fclose(f);
 }
 
@@ -146,6 +139,19 @@ static void log_env(void) {
 	}
 }
 
+static void log_file(FILE *f) {
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t nread;
+	while ((nread = getline(&line, &line_size, f)) != -1) {
+		if (line[nread - 1] == '\n') {
+			line[nread - 1] = '\0';
+		}
+		wlr_log(WLR_INFO, "%s", line);
+	}
+	free(line);
+}
+
 static void log_distro(void) {
 	const char *paths[] = {
 		"/etc/lsb-release",
@@ -158,16 +164,7 @@ static void log_distro(void) {
 		FILE *f = fopen(paths[i], "r");
 		if (f) {
 			wlr_log(WLR_INFO, "Contents of %s:", paths[i]);
-			while (!feof(f)) {
-				char *line;
-				if (!(line = read_line(f))) {
-					break;
-				}
-				if (*line) {
-					wlr_log(WLR_INFO, "%s", line);
-				}
-				free(line);
-			}
+			log_file(f);
 			fclose(f);
 		}
 	}
@@ -179,16 +176,7 @@ static void log_kernel(void) {
 		wlr_log(WLR_INFO, "Unable to determine kernel version");
 		return;
 	}
-	while (!feof(f)) {
-		char *line;
-		if (!(line = read_line(f))) {
-			break;
-		}
-		if (*line) {
-			wlr_log(WLR_INFO, "%s", line);
-		}
-		free(line);
-	}
+	log_file(f);
 	pclose(f);
 }
 

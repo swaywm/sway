@@ -12,7 +12,6 @@
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
 #include "swaybar/status_line.h"
-#include "readline.h"
 
 static void status_line_close_fds(struct status_line *status) {
 	if (status->read_fd != -1) {

@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #include <getopt.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <wordexp.h>
 #include "log.h"
 #include "list.h"
-#include "readline.h"
 #include "swaynag/swaynag.h"
 #include "swaynag/types.h"
 #include "util.h"
@@ -12,21 +12,19 @@
 
 static char *read_from_stdin(void) {
 	char *buffer = NULL;
-	while (!feof(stdin)) {
-		char *line = read_line(stdin);
-		if (!line) {
-			continue;
-		}
-
-		size_t curlen = buffer ? strlen(buffer) : 0;
-		buffer = realloc(buffer, curlen + strlen(line) + 2);
-		snprintf(buffer + curlen, strlen(line) + 2, "%s\n", line);
-
-		free(line);
+	size_t buffer_len = 0;
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t nread;
+	while ((nread = getline(&line, &line_size, stdin)) != -1) {
+		buffer = realloc(buffer, buffer_len + nread);
+		snprintf(&buffer[buffer_len], nread + 1, "%s", line);
+		buffer_len += nread;
 	}
+	free(line);
 
-	while (buffer && buffer[strlen(buffer) - 1] == '\n') {
-		buffer[strlen(buffer) - 1] = '\0';
+	while (buffer && buffer[buffer_len - 1] == '\n') {
+		buffer[--buffer_len] = '\0';
 	}
 
 	return buffer;
@@ -348,32 +346,24 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 	type->name = strdup("<config>");
 	list_add(types, type);
 
-	char *line;
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t nread;
 	int line_number = 0;
-	while (!feof(config)) {
-		line = read_line(config);
-		if (!line) {
-			continue;
-		}
-
+	int result = 0;
+	while ((nread = getline(&line, &line_size, config)) != -1) {
 		line_number++;
-		if (line[0] == '#') {
-			free(line);
-			continue;
-		}
-		if (strlen(line) == 0) {
-			free(line);
+		if (!*line || line[0] == '\n' || line[0] == '#') {
 			continue;
 		}
 
 		if (line[0] == '[') {
 			char *close = strchr(line, ']');
 			if (!close) {
-				free(line);
-				fclose(config);
 				fprintf(stderr, "Closing bracket not found on line %d\n",
 						line_number);
-				return 1;
+				result = 1;
+				break;
 			}
 			char *name = calloc(1, close - line);
 			strncat(name, line + 1, close - line - 1);
@@ -385,21 +375,17 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 			}
 			free(name);
 		} else {
-			char flag[strlen(line) + 3];
+			char flag[nread + 3];
 			sprintf(flag, "--%s", line);
 			char *argv[] = {"swaynag", flag};
-			int result;
 			result = swaynag_parse_options(2, argv, swaynag, types, type,
 					NULL, NULL);
 			if (result != 0) {
-				free(line);
-				fclose(config);
-				return result;
+				break;
 			}
 		}
-
-		free(line);
 	}
+	free(line);
 	fclose(config);
-	return 0;
+	return result;
 }
