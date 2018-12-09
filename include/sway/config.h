@@ -6,6 +6,7 @@
 #include <time.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
+#include "../include/config.h"
 #include "list.h"
 #include "swaynag.h"
 #include "tree/container.h"
@@ -253,6 +254,13 @@ struct bar_config {
 		char *binding_mode_bg;
 		char *binding_mode_text;
 	} colors;
+
+#if HAVE_TRAY
+	char *icon_theme;
+	const char *tray_bindings[10]; // mouse buttons 0-9
+	list_t *tray_outputs; // char *
+	int tray_padding;
+#endif
 };
 
 struct bar_binding {

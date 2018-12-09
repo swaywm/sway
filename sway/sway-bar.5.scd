@@ -100,26 +100,19 @@ The following commands configure the tray.
 The _button_ argument in all cases is a platform-specific button code. On Linux
 you can find a list of these at linux/input-event-codes.h.
 
-*activate\_button* <button>
-	Sets the button to be used for the _activate_ (primary click) tray item
-	event. The default is BTN\_LEFT (0x110).
-
-*context\_button* <button>
-	Sets the button to be used for the _context menu_ (right click) tray item
-	event. The default is BTN\_RIGHT (0x111).
-
-*secondary\_button* <button>
-	Sets the button to be used for the _secondary_ (middle click) tray item
-	event. The default is BTN\_MIDDLE (0x112).
-
-*tray\_output* none|all|<output>
-	Sets the output that the tray will appear on or none. Unlike i3bar, swaybar
-	is able to show icons on any number of bars and outputs without races.
-	The default is _all_.
+*tray\_bindsym* button<n> ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollUp|nop
+	Binds mouse button _n_ (1 to 9) to the specified action. Use the command
+	_nop_ to disable the default action (Activate for button 1, ContextMenu for
+	button 2 and SecondaryActivate for button 3).
 
 *tray\_padding* <px> [px]
 	Sets the pixel padding of the system tray. This padding will surround the
 	tray on all sides and between each item. The default value for _px_ is 2.
+
+*tray\_output* none|<output>
+	Restrict the tray to a certain output, can be specified multiple times. If
+	omitted, the tray will be displayed on all outputs. Unlike i3bar, swaybar
+	can show icons on any number of bars and outputs without races.
 
 *icon\_theme* <name>
 	Sets the icon theme that sway will look for item icons in. This option has

@@ -11,6 +11,7 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wlr/util/log.h>
+#include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
