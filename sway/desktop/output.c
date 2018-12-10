@@ -568,6 +568,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	if (!oc || oc->enabled) {
 		output_enable(output, oc);
+	} else {
+		wlr_output_enable(output->wlr_output, false);
 	}
 
 	transaction_commit_dirty();
