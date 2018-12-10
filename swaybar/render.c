@@ -163,6 +163,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 	}
 
 	int sep_width, sep_height;
+	int sep_block_width = block->separator_block_width;
 	if (!edge) {
 		if (config->sep_symbol) {
 			get_text_size(cairo, config->font, &sep_width, &sep_height, NULL,
@@ -172,11 +173,11 @@ static uint32_t render_status_block(cairo_t *cairo,
 			if (output->height < _ideal_surface_height) {
 				return _ideal_surface_height;
 			}
-			if (sep_width > block->separator_block_width) {
-				block->separator_block_width = sep_width + margin * 2;
+			if (sep_width > sep_block_width) {
+				sep_block_width = sep_width + margin * 2;
 			}
 		}
-		*x -= block->separator_block_width;
+		*x -= sep_block_width;
 	} else {
 		*x -= margin;
 	}
@@ -261,16 +262,14 @@ static uint32_t render_status_block(cairo_t *cairo,
 			cairo_set_source_u32(cairo, config->colors.separator);
 		}
 		if (config->sep_symbol) {
-			offset = pos + (block->separator_block_width - sep_width) / 2;
+			offset = pos + (sep_block_width - sep_width) / 2;
 			cairo_move_to(cairo, offset, height / 2.0 - sep_height / 2.0);
 			pango_printf(cairo, config->font, output->scale, false,
 					"%s", config->sep_symbol);
 		} else {
 			cairo_set_line_width(cairo, 1);
-			cairo_move_to(cairo,
-					pos + block->separator_block_width / 2, margin);
-			cairo_line_to(cairo,
-					pos + block->separator_block_width / 2, height - margin);
+			cairo_move_to(cairo, pos + sep_block_width / 2, margin);
+			cairo_line_to(cairo, pos + sep_block_width / 2, height - margin);
 			cairo_stroke(cairo);
 		}
 	}
