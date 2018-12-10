@@ -1,39 +1,40 @@
 #define _XOPEN_SOURCE 600 // for realpath
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <dirent.h>
 #include <libgen.h>
-#include <wordexp.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <signal.h>
 #include <libinput.h>
 #include <limits.h>
-#include <dirent.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <wordexp.h>
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
 #include <dev/evdev/input-event-codes.h>
 #endif
 #include <wlr/types/wlr_output.h>
-#include "sway/input/input-manager.h"
-#include "sway/input/seat.h"
+#include "cairo.h"
+#include "list.h"
+#include "log.h"
+#include "pango.h"
+#include "readline.h"
+#include "shexp.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
-#include "cairo.h"
-#include "pango.h"
-#include "readline.h"
-#include "stringop.h"
-#include "list.h"
-#include "log.h"
 
 struct sway_config *config = NULL;
 
@@ -321,15 +322,11 @@ static char *get_config_path(void) {
 	}
 
 	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
-		wordexp_t p;
-		if (wordexp(config_paths[i], &p, WRDE_UNDEF) == 0) {
-			char *path = strdup(p.we_wordv[0]);
-			wordfree(&p);
-			if (file_exists(path)) {
-				return path;
-			}
-			free(path);
+		char *path = strdup(config_paths[i]);
+		if (shell_expand(&path) && file_exists(path)) {
+			return path;
 		}
+		free(path);
 	}
 
 	return NULL;
@@ -545,17 +542,14 @@ bool load_include_configs(const char *path, struct sway_config *config,
 	}
 
 	wordexp_t p;
-
-	if (wordexp(path, &p, 0) < 0) {
+	if (wordexp(path, &p, WRDE_UNDEF) < 0) {
 		free(parent_path);
 		free(wd);
 		return false;
 	}
 
-	char **w = p.we_wordv;
-	size_t i;
-	for (i = 0; i < p.we_wordc; ++i) {
-		load_include_config(w[i], parent_dir, config, swaynag);
+	for (size_t i = 0; i < p.we_wordc; ++i) {
+		load_include_config(p.we_wordv[i], parent_dir, config, swaynag);
 	}
 	free(parent_path);
 	wordfree(&p);

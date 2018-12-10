@@ -1,14 +1,14 @@
 #define _POSIX_C_SOURCE 200809
+#include <errno.h>
 #include <libgen.h>
 #include <strings.h>
 #include <unistd.h>
-#include <wordexp.h>
-#include <errno.h>
+#include "log.h"
+#include "shexp.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/swaynag.h"
-#include "log.h"
-#include "stringop.h"
 
 static const char *bg_options[] = {
 	"stretch",
@@ -61,28 +61,10 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 				"Missing background scaling mode.");
 		}
 
-		wordexp_t p = {0};
 		char *src = join_args(argv, j);
-		while (strstr(src, "  ")) {
-			src = realloc(src, strlen(src) + 2);
-			char *ptr = strstr(src, "  ") + 1;
-			memmove(ptr + 1, ptr, strlen(ptr) + 1);
-			*ptr = '\\';
-		}
-		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID, "output",
+		if (!shell_expand(&src)) {
+			return cmd_results_new(CMD_INVALID, "output",
 				"Invalid syntax (%s)", src);
-			free(src);
-			wordfree(&p);
-			return cmd_res;
-		}
-		free(src);
-		src = join_args(p.we_wordv, p.we_wordc);
-		wordfree(&p);
-		if (!src) {
-			wlr_log(WLR_ERROR, "Failed to duplicate string");
-			return cmd_results_new(CMD_FAILURE, "output",
-				"Unable to allocate resource");
 		}
 
 		if (config->reading && *src != '/') {
@@ -154,4 +136,3 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 	config->handler_context.leftovers.argv = argv;
 	return NULL;
 }
-

@@ -4,14 +4,15 @@ lib_sway_common = static_library(
 		'background-image.c',
 		'cairo.c',
 		'ipc-client.c',
+		'list.c',
 		'log.c',
 		'loop.c',
-		'list.c',
 		'pango.c',
 		'readline.c',
+		'shexp.c',
 		'stringop.c',
 		'unicode.c',
-		'util.c'
+		'util.c',
 	),
 	dependencies: [
 		cairo,

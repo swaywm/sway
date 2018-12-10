@@ -14,17 +14,17 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-client.h>
-#include <wordexp.h>
 #include <wlr/util/log.h>
-#include "swaylock/seat.h"
-#include "swaylock/swaylock.h"
 #include "background-image.h"
-#include "pool-buffer.h"
 #include "cairo.h"
 #include "log.h"
 #include "loop.h"
+#include "pool-buffer.h"
 #include "readline.h"
+#include "shexp.h"
 #include "stringop.h"
+#include "swaylock/seat.h"
+#include "swaylock/swaylock.h"
 #include "util.h"
 #include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -375,12 +375,7 @@ static void load_image(char *arg, struct swaylock_state *state) {
 	}
 
 	// Bash doesn't replace the ~ with $HOME if the output name is supplied
-	wordexp_t p;
-	if (wordexp(image->path, &p, 0) == 0) {
-		free(image->path);
-		image->path = strdup(p.we_wordv[0]);
-		wordfree(&p);
-	}
+	shell_expand(&image->path);
 
 	// Load the actual image
 	image->cairo_surface = load_background_image(image->path);
@@ -771,31 +766,17 @@ static char *get_config_path(void) {
 		SYSCONFDIR "/swaylock/config",
 	};
 
-	if (!getenv("XDG_CONFIG_HOME")) {
-		char *home = getenv("HOME");
-		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
-		if (!config_home) {
-			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
-		} else {
-			strcpy(config_home, home);
-			strcat(config_home, "/.config");
-			setenv("XDG_CONFIG_HOME", config_home, 1);
-			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
-			free(config_home);
-		}
+	char *config_home = getenv("XDG_CONFIG_HOME");
+	if (config_home == NULL || config_home[0] == '\0') {
+		config_paths[1] = "$HOME/.config/swaylock/config";
 	}
 
-	wordexp_t p;
-	char *path;
 	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
-		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = strdup(p.we_wordv[0]);
-			wordfree(&p);
-			if (file_exists(path)) {
-				return path;
-			}
-			free(path);
+		char *path = strdup(config_paths[i]);
+		if (shell_expand(&path) && file_exists(path)) {
+			return path;
 		}
+		free(path);
 	}
 
 	return NULL;
