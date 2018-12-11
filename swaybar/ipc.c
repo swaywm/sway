@@ -293,6 +293,7 @@ static bool ipc_parse_config(
 			json_object *o = json_object_array_get_idx(tray_outputs, i);
 			list_add(config->tray_outputs, strdup(json_object_get_string(o)));
 		}
+		config->tray_hidden = strcmp(config->tray_outputs->items[0], "none") == 0;
 	}
 
 	if ((json_object_object_get_ex(bar_config, "tray_padding", &tray_padding))) {

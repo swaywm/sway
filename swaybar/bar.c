@@ -371,7 +371,9 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	assert(pointer->cursor_surface);
 
 #if HAVE_TRAY
-	bar->tray = create_tray(bar);
+	if (!bar->config->tray_hidden) {
+		bar->tray = create_tray(bar);
+	}
 #endif
 
 	if (bar->config->workspace_buttons) {

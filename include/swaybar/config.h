@@ -69,6 +69,7 @@ struct swaybar_config {
 #if HAVE_TRAY
 	char *icon_theme;
 	char *tray_bindings[10]; // mouse buttons 0-9
+	bool tray_hidden;
 	list_t *tray_outputs; // char *
 	int tray_padding;
 #endif

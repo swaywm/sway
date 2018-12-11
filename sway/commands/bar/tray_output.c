@@ -31,8 +31,8 @@ struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 	} else {
 		wlr_log(WLR_DEBUG, "Showing tray on output '%s' for bar: %s", argv[0],
 				config->current_bar->id);
-		list_add(outputs, strdup(argv[0]));
 	}
+	list_add(outputs, strdup(argv[0]));
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 #else
