@@ -159,6 +159,14 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	if (node->type == N_CONTAINER &&
+			!workspace_is_visible(node->sway_container->workspace)) {
+		// Do not change the focus stack on a non-visible workspace. The focus
+		// will either be set when the workspace becomes visible or the
+		// workspace is now empty and will be destroyed
+		return;
+	}
+
 	// Find new focus_inactive (ie. sibling, or workspace if no siblings left)
 	struct sway_node *next_focus = NULL;
 	while (next_focus == NULL) {
