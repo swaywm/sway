@@ -605,7 +605,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	view_update_title(view, false);
 	container_update_representation(view->container);
-	view_execute_criteria(view);
 
 	if (decoration) {
 		view_update_csd_from_client(view, decoration);
@@ -621,6 +620,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			arrange_workspace(view->container->workspace);
 		}
 	}
+
+	view_execute_criteria(view);
 
 	if (should_focus(view)) {
 		input_manager_set_focus(&view->container->node);
