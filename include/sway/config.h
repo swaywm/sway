@@ -553,8 +553,6 @@ void apply_output_config_to_outputs(struct output_config *oc);
 
 void free_output_config(struct output_config *oc);
 
-void create_default_output_configs(void);
-
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
