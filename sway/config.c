@@ -391,8 +391,6 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		memcpy(&config->swaynag_config_errors,
 				&old_config->swaynag_config_errors,
 				sizeof(struct swaynag_instance));
-
-		create_default_output_configs();
 	}
 
 	config->current_config_path = path;

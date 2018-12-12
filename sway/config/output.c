@@ -276,7 +276,24 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 }
 
-static struct output_config *get_output_config(char *name, char *identifier) {
+static void default_output_config(struct output_config *oc,
+		struct wlr_output *wlr_output) {
+	oc->enabled = 1;
+	if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
+		oc->width = mode->width;
+		oc->height = mode->height;
+		oc->refresh_rate = mode->refresh;
+	}
+	oc->x = oc->y = -1;
+	oc->scale = 1;
+	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
+}
+
+static struct output_config *get_output_config(char *identifier,
+		struct sway_output *sway_output) {
+	const char *name = sway_output->wlr_output->name;
 	struct output_config *oc_name = NULL;
 	int i = list_seq_find(config->output_configs, output_name_cmp, name);
 	if (i >= 0) {
@@ -289,7 +306,10 @@ static struct output_config *get_output_config(char *name, char *identifier) {
 		oc_id = config->output_configs->items[i];
 	}
 
-	struct output_config *result = NULL;
+	struct output_config *result = result = new_output_config("temp");
+	if (config->reloading) {
+		default_output_config(result, sway_output->wlr_output);
+	}
 	if (oc_name && oc_id) {
 		// Generate a config named `<identifier> on <name>` which contains a
 		// merged copy of the identifier on name. This will make sure that both
@@ -299,7 +319,8 @@ static struct output_config *get_output_config(char *name, char *identifier) {
 		char *temp = malloc(length);
 		snprintf(temp, length, "%s on %s", identifier, name);
 
-		result = new_output_config(temp);
+		free(result->name);
+		result->name = temp;
 		merge_output_config(result, oc_name);
 		merge_output_config(result, oc_id);
 
@@ -309,16 +330,29 @@ static struct output_config *get_output_config(char *name, char *identifier) {
 			result->height, result->refresh_rate, result->x, result->y,
 			result->scale, result->transform, result->background,
 			result->background_option, result->dpms_state);
-
-		free(temp);
 	} else if (oc_name) {
 		// No identifier config, just return a copy of the name config
-		result = new_output_config(name);
+		free(result->name);
+		result->name = strdup(name);
 		merge_output_config(result, oc_name);
 	} else if (oc_id) {
 		// No name config, just return a copy of the identifier config
-		result = new_output_config(identifier);
+		free(result->name);
+		result->name = strdup(identifier);
 		merge_output_config(result, oc_id);
+	} else if (config->reloading) {
+		// Neither config exists, but we need to reset the output so create a
+		// default config for the output and if a wildcard config exists, merge
+		// that on top
+		free(result->name);
+		result->name = strdup("*");
+		i = list_seq_find(config->output_configs, output_name_cmp, "*");
+		if (i >= 0) {
+			merge_output_config(result, config->output_configs->items[i]);
+		}
+	} else {
+		free_output_config(result);
+		result = NULL;
 	}
 
 	return result;
@@ -338,7 +372,7 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 			struct output_config *current = new_output_config(oc->name);
 			merge_output_config(current, oc);
 			if (wildcard) {
-				struct output_config *tmp = get_output_config(name, id);
+				struct output_config *tmp = get_output_config(id, sway_output);
 				if (tmp) {
 					free_output_config(current);
 					current = tmp;
@@ -365,30 +399,4 @@ void free_output_config(struct output_config *oc) {
 	free(oc->background_option);
 	free(oc->background_fallback);
 	free(oc);
-}
-
-static void default_output_config(struct output_config *oc,
-		struct wlr_output *wlr_output) {
-	oc->enabled = 1;
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode =
-			wl_container_of(wlr_output->modes.prev, mode, link);
-		oc->width = mode->width;
-		oc->height = mode->height;
-		oc->refresh_rate = mode->refresh;
-	}
-	oc->x = oc->y = -1;
-	oc->scale = 1;
-	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-}
-
-void create_default_output_configs(void) {
-	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root->all_outputs, link) {
-		char id[128];
-		output_get_identifier(id, sizeof(id), sway_output);
-		struct output_config *oc = new_output_config(id);
-		default_output_config(oc, sway_output->wlr_output);
-		list_add(config->output_configs, oc);
-	}
 }
