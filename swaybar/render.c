@@ -153,11 +153,11 @@ static uint32_t render_status_block(cairo_t *cairo,
 	}
 
 	*x -= width;
-	if (block->border && block->border_left > 0) {
+	if ((block->border || block->urgent) && block->border_left > 0) {
 		*x -= (block->border_left + margin);
 		block_width += block->border_left + margin;
 	}
-	if (block->border && block->border_right > 0) {
+	if ((block->border || block->urgent) && block->border_right > 0) {
 		*x -= (block->border_right + margin);
 		block_width += block->border_right + margin;
 	}
@@ -196,29 +196,38 @@ static uint32_t render_status_block(cairo_t *cairo,
 	}
 
 	double pos = *x;
-	if (block->background) {
-		cairo_set_source_u32(cairo, block->background);
+
+	uint32_t bg_color = block->urgent
+		? config->colors.urgent_workspace.background : block->background;
+	if (bg_color) {
+		cairo_set_source_u32(cairo, bg_color);
 		cairo_rectangle(cairo, pos - 0.5 * output->scale,
 				output->scale, width, height);
 		cairo_fill(cairo);
 	}
 
-	if (block->border && block->border_top > 0) {
-		render_sharp_line(cairo, block->border,
+	uint32_t border_color = block->urgent
+		? config->colors.urgent_workspace.border : block->border;
+	if (border_color && block->border_top > 0) {
+		render_sharp_line(cairo, border_color,
 				pos - 0.5 * output->scale, output->scale,
-				block_width, block->border_top);
+				text_width, block->border_top);
 	}
-	if (block->border && block->border_bottom > 0) {
-		render_sharp_line(cairo, block->border,
+	if (border_color && block->border_bottom > 0) {
+		render_sharp_line(cairo, border_color,
 				pos - 0.5 * output->scale,
 				height - output->scale - block->border_bottom,
-				block_width, block->border_bottom);
+				text_width, block->border_bottom);
 	}
-	if (block->border != 0 && block->border_left > 0) {
-		render_sharp_line(cairo, block->border,
+	if (border_color != 0 && block->border_left > 0) {
+		render_sharp_line(cairo, border_color,
 				pos - 0.5 * output->scale, output->scale,
 				block->border_left, height);
-		pos += block->border_left + margin;
+	}
+	if (border_color != 0 && block->border_right > 0) {
+		render_sharp_line(cairo, border_color,
+				pos - 0.5 * output->scale + text_width, output->scale,
+				block->border_right, height);
 	}
 
 	double offset = 0;
@@ -231,6 +240,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 	}
 	cairo_move_to(cairo, offset, height / 2.0 - text_height / 2.0);
 	uint32_t color = block->color ?  *block->color : config->colors.statusline;
+	color = block->urgent ? config->colors.urgent_workspace.text : color;
 	cairo_set_source_u32(cairo, color);
 	pango_printf(cairo, config->font, output->scale,
 			block->markup, "%s", block->full_text);
