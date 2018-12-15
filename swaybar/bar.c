@@ -196,6 +196,10 @@ static void output_scale(void *data, struct wl_output *wl_output,
 		int32_t factor) {
 	struct swaybar_output *output = data;
 	output->scale = factor;
+	if (output == output->bar->pointer.current) {
+		update_cursor(output->bar);
+		render_frame(output);
+	}
 }
 
 struct wl_output_listener output_listener = {
@@ -273,7 +277,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 	struct swaybar *bar = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		bar->compositor = wl_registry_bind(registry, name,
-				&wl_compositor_interface, 3);
+				&wl_compositor_interface, 4);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		bar->seat = wl_registry_bind(registry, name,
 				&wl_seat_interface, 3);
@@ -355,22 +359,6 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	wl_display_roundtrip(bar->display);
 
 	struct swaybar_pointer *pointer = &bar->pointer;
-
-	int max_scale = 1;
-	struct swaybar_output *output;
-	wl_list_for_each(output, &bar->outputs, link) {
-		if (output->scale > max_scale) {
-			max_scale = output->scale;
-		}
-	}
-
-	pointer->cursor_theme =
-		wl_cursor_theme_load(NULL, 24 * max_scale, bar->shm);
-	assert(pointer->cursor_theme);
-	struct wl_cursor *cursor;
-	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
-	assert(cursor);
-	pointer->cursor_image = cursor->images[0];
 	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
 	assert(pointer->cursor_surface);
 
