@@ -129,6 +129,8 @@ static void update_cursor(struct swaynag *swaynag) {
 			pointer->cursor_surface,
 			pointer->cursor_image->hotspot_x / swaynag->scale,
 			pointer->cursor_image->hotspot_y / swaynag->scale);
+	wl_surface_damage_buffer(pointer->cursor_surface, 0, 0,
+			INT32_MAX, INT32_MAX);
 	wl_surface_commit(pointer->cursor_surface);
 }
 
@@ -293,7 +295,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 	struct swaynag *swaynag = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		swaynag->compositor = wl_registry_bind(registry, name,
-				&wl_compositor_interface, 3);
+				&wl_compositor_interface, 4);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		swaynag->seat = wl_registry_bind(registry, name, &wl_seat_interface, 1);
 		wl_seat_add_listener(swaynag->seat, &seat_listener, swaynag);
