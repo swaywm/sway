@@ -4,6 +4,7 @@
 #include <wayland-client.h>
 #include "list.h"
 
+struct swaybar;
 struct swaybar_output;
 
 struct swaybar_pointer {
@@ -13,6 +14,7 @@ struct swaybar_pointer {
 	struct wl_surface *cursor_surface;
 	struct swaybar_output *current;
 	int x, y;
+	uint32_t serial;
 };
 
 enum x11_button {
@@ -44,6 +46,8 @@ struct swaybar_hotspot {
 };
 
 extern const struct wl_seat_listener seat_listener;
+
+void update_cursor(struct swaybar *bar);
 
 void free_hotspots(struct wl_list *list);
 
