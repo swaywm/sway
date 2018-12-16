@@ -93,6 +93,8 @@ static const char *ipc_json_device_type_description(struct sway_input_device *de
 		return "tablet_tool";
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return "tablet_pad";
+	case WLR_INPUT_DEVICE_SWITCH:
+		return "switch";
 	}
 	return "unknown";
 }

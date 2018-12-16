@@ -392,6 +392,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 			caps |= WL_SEAT_CAPABILITY_POINTER;
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
+		case WLR_INPUT_DEVICE_SWITCH:
 			break;
 		}
 	}
@@ -512,6 +513,9 @@ void seat_configure_device(struct sway_seat *seat,
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 			wlr_log(WLR_DEBUG, "TODO: configure tablet pad");
+			break;
+		case WLR_INPUT_DEVICE_SWITCH:
+			wlr_log(WLR_DEBUG, "TODO: configure switch device");
 			break;
 	}
 }
