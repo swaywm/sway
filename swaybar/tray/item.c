@@ -384,16 +384,32 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		}
 	}
 
-	if (!sni->icon) {
-		// TODO fallback
-		return 0;
-	}
-
+	int icon_size;
 	cairo_surface_t *icon;
-	int actual_size = cairo_image_surface_get_height(sni->icon);
-	int icon_size = actual_size < ideal_size ?
-		actual_size * (ideal_size / actual_size) : ideal_size;
-	icon = cairo_image_surface_scale(sni->icon, icon_size, icon_size);
+	if (sni->icon) {
+		int actual_size = cairo_image_surface_get_height(sni->icon);
+		icon_size = actual_size < ideal_size ?
+			actual_size*(ideal_size/actual_size) : ideal_size;
+		icon = cairo_image_surface_scale(sni->icon, icon_size, icon_size);
+	} else { // draw a sad face
+		icon_size = ideal_size*0.8;
+		icon = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, icon_size, icon_size);
+		cairo_t *cairo_icon = cairo_create(icon);
+		cairo_set_source_u32(cairo_icon, 0xFF0000FF);
+		cairo_translate(cairo_icon, icon_size/2, icon_size/2);
+		cairo_scale(cairo_icon, icon_size/2, icon_size/2);
+		cairo_arc(cairo_icon, 0, 0, 1, 0, 7);
+		cairo_fill(cairo_icon);
+		cairo_set_operator(cairo_icon, CAIRO_OPERATOR_CLEAR);
+		cairo_arc(cairo_icon, 0.35, -0.3, 0.1, 0, 7);
+		cairo_fill(cairo_icon);
+		cairo_arc(cairo_icon, -0.35, -0.3, 0.1, 0, 7);
+		cairo_fill(cairo_icon);
+		cairo_arc(cairo_icon, 0, 0.75, 0.5, 3.71238898038469, 5.71238898038469);
+		cairo_set_line_width(cairo_icon, 0.1);
+		cairo_stroke(cairo_icon);
+		cairo_destroy(cairo_icon);
+	}
 
 	int padded_size = icon_size + 2*padding;
 	*x -= padded_size;
