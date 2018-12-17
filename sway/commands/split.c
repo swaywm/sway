@@ -18,7 +18,7 @@ static struct cmd_results *do_split(int layout) {
 		workspace_split(ws, layout);
 	}
 
-	if (con->parent->parent) {
+	if (con && con->parent && con->parent->parent) {
 		container_flatten(con->parent->parent);
 	}
 
