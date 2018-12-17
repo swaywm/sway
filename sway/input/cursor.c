@@ -942,8 +942,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 
 	// Handle moving a tiling container
-	if (config->tiling_drag && mod_pressed && state == WLR_BUTTON_PRESSED &&
-			!is_floating_or_child && cont && !cont->is_fullscreen) {
+	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
+			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
+			cont && !cont->is_fullscreen) {
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		seat_begin_move_tiling(seat, cont, button);
 		return;
