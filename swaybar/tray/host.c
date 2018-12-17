@@ -115,6 +115,25 @@ static bool register_to_watcher(struct swaybar_host *host) {
 	return ret >= 0;
 }
 
+static int handle_new_watcher(sd_bus_message *msg,
+		void *data, sd_bus_error *error) {
+	char *service, *old_owner, *new_owner;
+	int ret = sd_bus_message_read(msg, "sss", &service, &old_owner, &new_owner);
+	if (ret < 0) {
+		wlr_log(WLR_ERROR, "Failed to parse owner change message: %s", strerror(-ret));
+		return ret;
+	}
+
+	if (!*old_owner) {
+		struct swaybar_host *host = data;
+		if (strcmp(service, host->watcher_interface) == 0) {
+			register_to_watcher(host);
+		}
+	}
+
+	return 0;
+}
+
 bool init_host(struct swaybar_host *host, char *protocol,
 		struct swaybar_tray *tray) {
 	size_t len = snprintf(NULL, 0, "org.%s.StatusNotifierWatcher", protocol) + 1;
@@ -124,7 +143,7 @@ bool init_host(struct swaybar_host *host, char *protocol,
 	}
 	snprintf(host->watcher_interface, len, "org.%s.StatusNotifierWatcher", protocol);
 
-	sd_bus_slot *reg_slot = NULL, *unreg_slot = NULL;
+	sd_bus_slot *reg_slot = NULL, *unreg_slot = NULL, *watcher_slot = NULL;
 	int ret = sd_bus_match_signal(tray->bus, &reg_slot, host->watcher_interface,
 			watcher_path, host->watcher_interface,
 			"StatusNotifierItemRegistered", handle_sni_registered, tray);
@@ -136,6 +155,15 @@ bool init_host(struct swaybar_host *host, char *protocol,
 	ret = sd_bus_match_signal(tray->bus, &unreg_slot, host->watcher_interface,
 			watcher_path, host->watcher_interface,
 			"StatusNotifierItemUnregistered", handle_sni_unregistered, tray);
+	if (ret < 0) {
+		wlr_log(WLR_ERROR, "Failed to subscribe to unregistering events: %s",
+				strerror(-ret));
+		goto error;
+	}
+
+	ret = sd_bus_match_signal(tray->bus, &watcher_slot, "org.freedesktop.DBus",
+			"/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged",
+			handle_new_watcher, host);
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to subscribe to unregistering events: %s",
 				strerror(-ret));
@@ -163,12 +191,14 @@ bool init_host(struct swaybar_host *host, char *protocol,
 
 	sd_bus_slot_set_floating(reg_slot, 1);
 	sd_bus_slot_set_floating(unreg_slot, 1);
+	sd_bus_slot_set_floating(watcher_slot, 1);
 
 	wlr_log(WLR_DEBUG, "Registered %s", host->service);
 	return true;
 error:
 	sd_bus_slot_unref(reg_slot);
 	sd_bus_slot_unref(unreg_slot);
+	sd_bus_slot_unref(watcher_slot);
 	finish_host(host);
 	return false;
 }

@@ -12,6 +12,27 @@
 #include "list.h"
 #include "log.h"
 
+static int handle_lost_watcher(sd_bus_message *msg,
+		void *data, sd_bus_error *error) {
+	char *service, *old_owner, *new_owner;
+	int ret = sd_bus_message_read(msg, "sss", &service, &old_owner, &new_owner);
+	if (ret < 0) {
+		wlr_log(WLR_ERROR, "Failed to parse owner change message: %s", strerror(-ret));
+		return ret;
+	}
+
+	if (!*new_owner) {
+		struct swaybar_tray *tray = data;
+		if (strcmp(service, "org.freedesktop.StatusNotifierWatcher") == 0) {
+			tray->watcher_xdg = create_watcher("freedesktop", tray->bus);
+		} else if (strcmp(service, "org.kde.StatusNotifierWatcher") == 0) {
+			tray->watcher_kde = create_watcher("kde", tray->bus);
+		}
+	}
+
+	return 0;
+}
+
 struct swaybar_tray *create_tray(struct swaybar *bar) {
 	wlr_log(WLR_DEBUG, "Initializing tray");
 
@@ -32,6 +53,14 @@ struct swaybar_tray *create_tray(struct swaybar *bar) {
 
 	tray->watcher_xdg = create_watcher("freedesktop", tray->bus);
 	tray->watcher_kde = create_watcher("kde", tray->bus);
+
+	ret = sd_bus_match_signal(bus, NULL, "org.freedesktop.DBus",
+			"/org/freedesktop/DBus", "org.freedesktop.DBus",
+			"NameOwnerChanged", handle_lost_watcher, tray);
+	if (ret < 0) {
+		wlr_log(WLR_ERROR, "Failed to subscribe to unregistering events: %s",
+				strerror(-ret));
+	}
 
 	tray->items = create_list();
 
