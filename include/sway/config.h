@@ -436,6 +436,8 @@ struct sway_config {
 	enum edge_border_types hide_edge_borders;
 	enum edge_border_types saved_edge_borders;
 
+	int hide_cursor_timeout;
+
 	// border colors
 	struct {
 		struct border_colors focused;
