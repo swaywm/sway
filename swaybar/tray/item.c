@@ -228,6 +228,7 @@ struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray) {
 		sni->service = strndup(id, path_ptr - id);
 		sni->path = strdup(path_ptr);
 		sni->interface = "org.kde.StatusNotifierItem";
+		sni_get_property_async(sni, "IconThemePath", "s", &sni->icon_theme_path);
 	}
 
 	// Ignored: Category, Id, Title, WindowId, OverlayIconName,
@@ -353,6 +354,10 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 			char *icon_path = find_icon(sni->tray->themes, sni->tray->basedirs,
 					icon_name, ideal_size, output->bar->config->icon_theme,
 					&sni->min_size, &sni->max_size);
+			if (!icon_path && sni->icon_theme_path) {
+				icon_path = find_icon_in_dir(icon_name, sni->icon_theme_path,
+						&sni->min_size, &sni->max_size);
+			}
 			if (icon_path) {
 				cairo_surface_destroy(sni->icon);
 				sni->icon = load_background_image(icon_path);
