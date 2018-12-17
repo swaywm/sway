@@ -477,6 +477,12 @@ The default colors are:
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps ...).
 
+*hide\_cursor* <timeout>
+	Hides the cursor image after the specified _timeout_ (in milliseconds)
+	has elapsed with no activity on that cursor. A timeout of 0 (default)
+	disables hiding the cursor. The minimal timeout is 100 and any value less
+	than that (aside from 0), will be increased to 100.
+
 *hide\_edge\_borders* none|vertical|horizontal|both|smart|smart\_no\_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_.
 

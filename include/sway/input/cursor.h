@@ -1,6 +1,8 @@
 #ifndef _SWAY_INPUT_CURSOR_H
 #define _SWAY_INPUT_CURSOR_H
+#include <stdbool.h>
 #include <stdint.h>
+#include <wlr/types/wlr_surface.h>
 #include "sway/input/seat.h"
 
 #define SWAY_CURSOR_PRESSED_BUTTONS_CAP 32
@@ -21,6 +23,8 @@ struct sway_cursor {
 
 	const char *image;
 	struct wl_client *image_client;
+	struct wlr_surface *image_surface;
+	int hotspot_x, hotspot_y;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;
@@ -37,6 +41,9 @@ struct sway_cursor {
 	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;
+
+	struct wl_event_source *hide_source;
+	bool hidden;
 
 	// Mouse binding state
 	uint32_t pressed_buttons[SWAY_CURSOR_PRESSED_BUTTONS_CAP];

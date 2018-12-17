@@ -590,6 +590,23 @@ void cursor_rebase(struct sway_cursor *cursor) {
 	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
 }
 
+static int hide_notify(void *data) {
+	struct sway_cursor *cursor = data;
+	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+	cursor->hidden = true;
+	return 1;
+}
+
+static void handle_activity(struct sway_cursor *cursor) {
+	wl_event_source_timer_update(cursor->hide_source,
+			config->hide_cursor_timeout);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
+	if (cursor->hidden) {
+		cursor->hidden = false;
+		cursor_set_image(cursor, NULL, cursor->image_client);
+	}
+}
+
 void cursor_send_pointer_motion(struct sway_cursor *cursor,
 		uint32_t time_msec) {
 	if (time_msec == 0) {
@@ -680,11 +697,11 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
-	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
+	handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -692,10 +709,10 @@ static void handle_cursor_motion_absolute(
 		struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
-	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
+	handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -976,10 +993,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
-	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_button *event = data;
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
+	handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -1087,9 +1104,9 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
-	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_axis *event = data;
 	dispatch_cursor_axis(cursor, event);
+	handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -1280,10 +1297,12 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 		return;
 	}
 
-	wlr_cursor_set_surface(cursor->cursor, event->surface, event->hotspot_x,
-		event->hotspot_y);
 	cursor->image = NULL;
 	cursor->image_client = focused_client;
+	cursor->image_surface = event->surface;
+	cursor->hotspot_x = event->hotspot_x;
+	cursor->hotspot_y = event->hotspot_y;
+	cursor_set_image(cursor, NULL, cursor->image_client);
 }
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
@@ -1291,9 +1310,16 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	if (!(cursor->seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER)) {
 		return;
 	}
-	if (!image) {
+	if (cursor->hidden) {
+		return;
+	}
+	if (!image && cursor->image_surface) {
+		wlr_cursor_set_surface(cursor->cursor, cursor->image_surface,
+				cursor->hotspot_x, cursor->hotspot_y);
+	} else if (!image) {
 		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	} else if (!cursor->image || strcmp(cursor->image, image) != 0) {
+		cursor->image_surface = NULL;
 		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
 				cursor->cursor);
 	}
@@ -1305,6 +1331,8 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	if (!cursor) {
 		return;
 	}
+
+	wl_event_source_remove(cursor->hide_source);
 
 	wlr_xcursor_manager_destroy(cursor->xcursor_manager);
 	wlr_cursor_destroy(cursor->cursor);
@@ -1328,6 +1356,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	cursor->seat = seat;
 	wlr_cursor_attach_output_layout(wlr_cursor, root->output_layout);
+
+	cursor->hide_source = wl_event_loop_add_timer(server.wl_event_loop,
+			hide_notify, cursor);
 
 	// input events
 	wl_signal_add(&wlr_cursor->events.motion, &cursor->motion);
