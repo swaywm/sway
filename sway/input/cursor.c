@@ -945,6 +945,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
 			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
 			cont && !cont->is_fullscreen) {
+		if (on_titlebar) {
+			node = seat_get_focus_inactive(seat, &cont->node);
+			seat_set_focus(seat, node);
+		}
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		seat_begin_move_tiling(seat, cont, button);
 		return;
