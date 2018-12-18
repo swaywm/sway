@@ -81,8 +81,12 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	struct sway_workspace *tmp_workspace = workspace_by_name(new_name);
 	if (tmp_workspace) {
 		free(new_name);
-		return cmd_results_new(CMD_INVALID, "rename",
-				"Workspace already exists");
+		if (tmp_workspace == workspace) {
+			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		} else {
+			return cmd_results_new(CMD_INVALID, "rename",
+					"Workspace already exists");
+		}
 	}
 
 	wlr_log(WLR_DEBUG, "renaming workspace '%s' to '%s'", workspace->name, new_name);
