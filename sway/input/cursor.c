@@ -603,7 +603,15 @@ static void handle_activity(struct sway_cursor *cursor) {
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	if (cursor->hidden) {
 		cursor->hidden = false;
-		cursor_set_image(cursor, NULL, cursor->image_client);
+		if (cursor->image_surface) {
+			cursor_set_image_surface(cursor, cursor->image_surface,
+					cursor->hotspot_x, cursor->hotspot_y,
+					cursor->image_client);
+		} else {
+			const char *image = cursor->image;
+			cursor->image = NULL;
+			cursor_set_image(cursor, image, cursor->image_client);
+		}
 	}
 }
 
@@ -1297,12 +1305,8 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 		return;
 	}
 
-	cursor->image = NULL;
-	cursor->image_client = focused_client;
-	cursor->image_surface = event->surface;
-	cursor->hotspot_x = event->hotspot_x;
-	cursor->hotspot_y = event->hotspot_y;
-	cursor_set_image(cursor, NULL, cursor->image_client);
+	cursor_set_image_surface(cursor, event->surface, event->hotspot_x,
+			event->hotspot_y, focused_client);
 }
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
@@ -1310,21 +1314,43 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	if (!(cursor->seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER)) {
 		return;
 	}
+
+	const char *current_image = cursor->image;
+	cursor->image = image;
+	cursor->image_surface = NULL;
+	cursor->hotspot_x = cursor->hotspot_y = 0;
+	cursor->image_client = client;
+
 	if (cursor->hidden) {
 		return;
 	}
-	if (!image && cursor->image_surface) {
-		wlr_cursor_set_surface(cursor->cursor, cursor->image_surface,
-				cursor->hotspot_x, cursor->hotspot_y);
-	} else if (!image) {
+
+	if (!image) {
 		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
-	} else if (!cursor->image || strcmp(cursor->image, image) != 0) {
-		cursor->image_surface = NULL;
+	} else if (!current_image || strcmp(current_image, image) != 0) {
 		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
 				cursor->cursor);
 	}
-	cursor->image = image;
+}
+
+void cursor_set_image_surface(struct sway_cursor *cursor,
+		struct wlr_surface *surface, int32_t hotspot_x, int32_t hotspot_y,
+		struct wl_client *client) {
+	if (!(cursor->seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER)) {
+		return;
+	}
+
+	cursor->image = NULL;
+	cursor->image_surface = surface;
+	cursor->hotspot_x = hotspot_x;
+	cursor->hotspot_y = hotspot_y;
 	cursor->image_client = client;
+
+	if (cursor->hidden) {
+		return;
+	}
+
+	wlr_cursor_set_surface(cursor->cursor, surface, hotspot_x, hotspot_y);
 }
 
 void sway_cursor_destroy(struct sway_cursor *cursor) {
