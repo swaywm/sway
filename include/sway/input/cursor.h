@@ -68,6 +68,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	struct wl_client *client);
 
+void cursor_set_image_surface(struct sway_cursor *cursor,
+		struct wlr_surface *surface, int32_t hotspot_x, int32_t hotspot_y,
+		struct wl_client *client);
+
 void cursor_warp_to_container(struct sway_cursor *cursor,
 	struct sway_container *container);
 
