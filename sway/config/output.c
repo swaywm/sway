@@ -179,10 +179,6 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	if (oc && oc->enabled == 0) {
 		if (output->enabled) {
-			if (output->bg_pid != 0) {
-				terminate_swaybg(output->bg_pid);
-				output->bg_pid = 0;
-			}
 			output_disable(output);
 			wlr_output_layout_remove(root->output_layout, wlr_output);
 		}
