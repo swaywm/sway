@@ -84,9 +84,7 @@ void output_damage_box(struct sway_output *output, struct wlr_box *box);
 void output_damage_whole_container(struct sway_output *output,
 	struct sway_container *con);
 
-struct sway_output *output_by_name(const char *name);
-
-struct sway_output *output_by_identifier(const char *identifier);
+struct sway_output *output_by_name_or_id(const char *name_or_id);
 
 void output_sort_workspaces(struct sway_output *output);
 
