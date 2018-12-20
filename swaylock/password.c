@@ -77,52 +77,56 @@ static void handle_preverify_timeout(void *data) {
 	state->verify_password_timer = NULL;
 }
 
+static void submit_password(struct swaylock_state *state) {
+	if (state->args.ignore_empty && state->password.len == 0) {
+		return;
+	}
+
+	state->auth_state = AUTH_STATE_VALIDATING;
+	damage_state(state);
+
+	// We generally want to wait until all surfaces are showing the
+	// "verifying" state before we go and verify the password, because
+	// verifying it is a blocking operation. However, if the surface is on
+	// an output with DPMS off then it won't update, so we set a timer.
+	state->verify_password_timer = loop_add_timer(
+			state->eventloop, 50, handle_preverify_timeout, state);
+
+	while (state->run_display && state->verify_password_timer) {
+		errno = 0;
+		if (wl_display_flush(state->display) == -1 && errno != EAGAIN) {
+			break;
+		}
+		loop_poll(state->eventloop);
+
+		bool ok = 1;
+		struct swaylock_surface *surface;
+		wl_list_for_each(surface, &state->surfaces, link) {
+			if (surface->dirty) {
+				ok = 0;
+			}
+		}
+		if (ok) {
+			break;
+		}
+	}
+	wl_display_flush(state->display);
+
+	if (attempt_password(&state->password)) {
+		state->run_display = false;
+		return;
+	}
+	state->auth_state = AUTH_STATE_INVALID;
+	damage_state(state);
+	schedule_indicator_clear(state);
+}
+
 void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint) {
 	switch (keysym) {
 	case XKB_KEY_KP_Enter: /* fallthrough */
 	case XKB_KEY_Return:
-		if (state->args.ignore_empty && state->password.len == 0) {
-			break;
-		}
-
-		state->auth_state = AUTH_STATE_VALIDATING;
-		damage_state(state);
-
-		// We generally want to wait until all surfaces are showing the
-		// "verifying" state before we go and verify the password, because
-		// verifying it is a blocking operation. However, if the surface is on
-		// an output with DPMS off then it won't update, so we set a timer.
-		state->verify_password_timer = loop_add_timer(
-				state->eventloop, 50, handle_preverify_timeout, state);
-
-		while (state->run_display && state->verify_password_timer) {
-			errno = 0;
-			if (wl_display_flush(state->display) == -1 && errno != EAGAIN) {
-				break;
-			}
-			loop_poll(state->eventloop);
-
-			bool ok = 1;
-			struct swaylock_surface *surface;
-			wl_list_for_each(surface, &state->surfaces, link) {
-				if (surface->dirty) {
-					ok = 0;
-				}
-			}
-			if (ok) {
-				break;
-			}
-		}
-		wl_display_flush(state->display);
-
-		if (attempt_password(&state->password)) {
-			state->run_display = false;
-			break;
-		}
-		state->auth_state = AUTH_STATE_INVALID;
-		damage_state(state);
-		schedule_indicator_clear(state);
+		submit_password(state);
 		break;
 	case XKB_KEY_Delete:
 	case XKB_KEY_BackSpace:
@@ -165,6 +169,12 @@ void swaylock_handle_key(struct swaylock_state *state,
 		schedule_indicator_clear(state);
 		schedule_password_clear(state);
 		break;
+	case XKB_KEY_d:
+		if (state->xkb.control) {
+			submit_password(state);
+			break;
+		}
+		// fallthrough
 	case XKB_KEY_c: /* fallthrough */
 	case XKB_KEY_u:
 		if (state->xkb.control) {
