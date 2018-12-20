@@ -64,7 +64,11 @@ static struct sway_output *output_in_direction(const char *direction_string,
 		}
 	}
 
-	return output_by_name(direction_string);
+	struct sway_output *output = output_by_name(direction_string);
+	if (!output) {
+		output = output_by_identifier(direction_string);
+	}
+	return output;
 }
 
 static bool is_parallel(enum sway_container_layout layout,

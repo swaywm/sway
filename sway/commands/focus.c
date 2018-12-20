@@ -194,6 +194,9 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 	}
 	char *identifier = join_args(argv, argc);
 	struct sway_output *output = output_by_name(identifier);
+	if (!output) {
+		output = output_by_identifier(identifier);
+	}
 
 	if (!output) {
 		enum wlr_direction direction;

@@ -460,6 +460,9 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 		struct criteria *criteria = criterias->items[i];
 		if (criteria->type == CT_ASSIGN_OUTPUT) {
 			struct sway_output *output = output_by_name(criteria->target);
+			if (!output) {
+				output = output_by_identifier(criteria->target);
+			}
 			if (output) {
 				ws = output_get_active_workspace(output);
 				break;
