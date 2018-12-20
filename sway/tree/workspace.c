@@ -35,10 +35,8 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 	struct workspace_config *wsc = workspace_find_config(name);
 	if (wsc) {
 		for (int i = 0; i < wsc->outputs->length; i++) {
-			struct sway_output *output = output_by_name(wsc->outputs->items[i]);
-			if (!output) {
-				output = output_by_identifier(wsc->outputs->items[i]);
-			}
+			struct sway_output *output =
+				output_by_name_or_id(wsc->outputs->items[i]);
 			if (output) {
 				return output;
 			}
@@ -185,11 +183,11 @@ static bool workspace_valid_on_output(const char *output_name,
 		const char *ws_name) {
 	struct workspace_config *wsc = workspace_find_config(ws_name);
 	char identifier[128];
-	struct sway_output *output = output_by_name(output_name);
+	struct sway_output *output = output_by_name_or_id(output_name);
 	if (!output) {
-		output = output_by_identifier(output_name);
-		output_name = output->wlr_output->name;
+		return false;
 	}
+	output_name = output->wlr_output->name;
 	output_get_identifier(identifier, sizeof(identifier), output);
 
 	if (!wsc) {
@@ -295,7 +293,11 @@ char *workspace_next_name(const char *output_name) {
 	struct sway_mode *mode = config->current_mode;
 
 	char identifier[128];
-	struct sway_output *output = output_by_name(output_name);
+	struct sway_output *output = output_by_name_or_id(output_name);
+	if (!output) {
+		return NULL;
+	}
+	output_name = output->wlr_output->name;
 	output_get_identifier(identifier, sizeof(identifier), output);
 
 	int order = INT_MAX;
@@ -551,12 +553,7 @@ struct sway_output *workspace_output_get_highest_available(
 			continue;
 		}
 
-		struct sway_output *output = output_by_name(name);
-		if (output) {
-			return output;
-		}
-
-		output = output_by_identifier(name);
+		struct sway_output *output = output_by_name_or_id(name);
 		if (output) {
 			return output;
 		}

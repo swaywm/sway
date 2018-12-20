@@ -193,7 +193,7 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 			"Expected 'focus output <direction|name>'");
 	}
 	char *identifier = join_args(argv, argc);
-	struct sway_output *output = output_by_name(identifier);
+	struct sway_output *output = output_by_name_or_id(identifier);
 
 	if (!output) {
 		enum wlr_direction direction;
