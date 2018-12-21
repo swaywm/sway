@@ -341,7 +341,7 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 	if (wlr_surface_is_xdg_surface(surface)) {
 		struct wlr_xdg_surface *xdg_surface =
 			wlr_xdg_surface_from_wlr_surface(surface);
-		while (xdg_surface) {
+		while (xdg_surface && xdg_surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
 			if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
 				return true;
 			}
@@ -353,7 +353,8 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 	if (wlr_surface_is_xdg_surface_v6(surface)) {
 		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
 			wlr_xdg_surface_v6_from_wlr_surface(surface);
-		while (xdg_surface_v6) {
+		while (xdg_surface_v6 &&
+				xdg_surface_v6->role != WLR_XDG_SURFACE_V6_ROLE_NONE) {
 			if (xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
 				return true;
 			}

@@ -216,7 +216,7 @@ static bool is_transient_for(struct sway_view *child,
 		return false;
 	}
 	struct wlr_xdg_surface *surface = child->wlr_xdg_surface;
-	while (surface) {
+	while (surface && surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
 		if (surface->toplevel->parent == ancestor->wlr_xdg_surface) {
 			return true;
 		}
