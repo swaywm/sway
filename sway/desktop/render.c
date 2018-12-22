@@ -261,7 +261,7 @@ static void render_saved_view(struct sway_view *view,
 	};
 
 	struct wlr_box intersection;
-	bool intersects = wlr_box_intersection(&output_box, &box, &intersection);
+	bool intersects = wlr_box_intersection(&intersection, &output_box, &box);
 	if (!intersects) {
 		return;
 	}
