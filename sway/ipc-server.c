@@ -664,7 +664,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		// TODO: Check if they're permitted to use these events
 		struct json_object *request = json_tokener_parse(buf);
-		if (request == NULL) {
+		if (request == NULL || !json_object_is_type(request, json_type_array)) {
 			const char msg[] = "{\"success\": false}";
 			client_valid = ipc_send_reply(client, msg, strlen(msg));
 			wlr_log(WLR_INFO, "Failed to parse subscribe request");
