@@ -100,7 +100,7 @@ static bool get_surface_box(struct surface_iterator_data *data,
 	}
 
 	struct wlr_box rotated_box;
-	wlr_box_rotated_bounds(&box, data->rotation, &rotated_box);
+	wlr_box_rotated_bounds(&rotated_box, &box, data->rotation);
 
 	struct wlr_box output_box = {
 		.width = output->width,
@@ -423,7 +423,7 @@ static void damage_surface_iterator(struct sway_output *output,
 	}
 
 	if (whole) {
-		wlr_box_rotated_bounds(&box, rotation, &box);
+		wlr_box_rotated_bounds(&box, &box, rotation);
 		wlr_output_damage_add_box(output->damage, &box);
 	}
 

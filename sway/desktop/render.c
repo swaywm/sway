@@ -73,7 +73,7 @@ static void scissor_output(struct wlr_output *wlr_output,
 
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(wlr_output->transform);
-	wlr_box_transform(&box, transform, ow, oh, &box);
+	wlr_box_transform(&box, &box, transform, ow, oh);
 
 	wlr_renderer_scissor(renderer, &box);
 }
