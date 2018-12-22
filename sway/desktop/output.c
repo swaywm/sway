@@ -108,7 +108,7 @@ static bool get_surface_box(struct surface_iterator_data *data,
 	};
 
 	struct wlr_box intersection;
-	return wlr_box_intersection(&output_box, &rotated_box, &intersection);
+	return wlr_box_intersection(&intersection, &output_box, &rotated_box);
 }
 
 static void output_for_each_surface_iterator(struct wlr_surface *surface,

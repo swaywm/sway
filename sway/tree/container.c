@@ -979,7 +979,7 @@ void container_discover_outputs(struct sway_container *con) {
 		output_get_box(output, &output_box);
 		struct wlr_box intersection;
 		bool intersects =
-			wlr_box_intersection(&con_box, &output_box, &intersection);
+			wlr_box_intersection(&intersection, &con_box, &output_box);
 		int index = list_find(con->outputs, output);
 
 		if (intersects && index == -1) {
