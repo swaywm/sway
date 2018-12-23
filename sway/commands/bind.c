@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <libevdev/libevdev.h>
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
@@ -10,6 +11,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
@@ -102,9 +104,26 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 
 		// Check for mouse binding
 		uint32_t button = 0;
-		if (strncasecmp(name, "button", strlen("button")) == 0 &&
-				strlen(name) == strlen("button0")) {
-			button = name[strlen("button")] - '1' + BTN_LEFT;
+		if (strncasecmp(name, "button", strlen("button")) == 0) {
+			// Map to x11 mouse buttons
+			button = name[strlen("button")] - '0';
+			if (button < 1 || button > 9 || strlen(name) > strlen("button0")) {
+				return cmd_results_new(CMD_INVALID, "bindsym",
+						"Only buttons 1-9 are supported. For other mouse "
+						"buttons, use the name of the event code.");
+			}
+			uint32_t buttons[] = {BTN_LEFT, BTN_MIDDLE, BTN_RIGHT,
+				SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
+				SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
+			button = buttons[button - 1];
+		} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
+			// Get event code
+			int code = libevdev_event_code_from_name(EV_KEY, name);
+			if (code == -1) {
+				return cmd_results_new(CMD_INVALID, "bindsym",
+						"Invalid event code name %s", name);
+			}
+			button = code;
 		}
 
 		if (*type == BINDING_KEYSYM) {

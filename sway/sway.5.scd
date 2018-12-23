@@ -288,6 +288,13 @@ runtime.
 	overwrite a binding, swaynag will give you a warning. To silence this, use
 	the _--no-warn_ flag.
 
+	Mouse buttons can either be specified in the form _button[1-9]_ or by using
+	the name of the event code (ex _BTN\_LEFT_ or _BTN\_RIGHT_). For the former
+	option, the buttons will be mapped to their values in X11 (1=left, 2=middle,
+	3=right, 4=scroll up, 5=scroll down, 6=scroll left, 7=scroll right, 8=back,
+	9=forward). For the latter option, you can find the event names using
+	_libinput debug-events_.
+
 	Example:
 ```
 		# Execute firefox when alt, shift, and f are pressed together

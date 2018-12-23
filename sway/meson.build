@@ -174,6 +174,7 @@ sway_deps = [
 	cairo,
 	gdk_pixbuf,
 	jsonc,
+	libevdev,
 	libinput,
 	math,
 	pango,
