@@ -5,6 +5,11 @@
 
 #define SWAY_CURSOR_PRESSED_BUTTONS_CAP 32
 
+#define SWAY_SCROLL_UP KEY_MAX + 1
+#define SWAY_SCROLL_DOWN KEY_MAX + 2
+#define SWAY_SCROLL_LEFT KEY_MAX + 3
+#define SWAY_SCROLL_RIGHT KEY_MAX + 4
+
 struct sway_cursor {
 	struct sway_seat *seat;
 	struct wlr_cursor *cursor;

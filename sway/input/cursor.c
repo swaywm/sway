@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <math.h>
+#include <libevdev/libevdev.h>
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
@@ -982,6 +983,18 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
+static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
+	switch (event->orientation) {
+	case WLR_AXIS_ORIENTATION_VERTICAL:
+		return event->delta < 0 ? SWAY_SCROLL_UP : SWAY_SCROLL_DOWN;
+	case WLR_AXIS_ORIENTATION_HORIZONTAL:
+		return event->delta < 0 ? SWAY_SCROLL_LEFT : SWAY_SCROLL_RIGHT;
+	default:
+		wlr_log(WLR_DEBUG, "Unknown axis orientation");
+		return 0;
+	}
+}
+
 static void dispatch_cursor_axis(struct sway_cursor *cursor,
 		struct wlr_event_pointer_axis *event) {
 	struct sway_seat *seat = cursor->seat;
@@ -998,11 +1011,32 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
 	bool on_border = edge != WLR_EDGE_NONE;
 	bool on_titlebar = cont && !on_border && !surface;
+	bool on_contents = cont && !on_border && surface;
 	float scroll_factor =
 		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
 
-	// Scrolling on a tabbed or stacked title bar
-	if (on_titlebar) {
+	bool handled = false;
+
+	// Gather information needed for mouse bindings
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+	struct wlr_input_device *device = input_device->wlr_device;
+	char *dev_id = device ? input_device_get_identifier(device) : strdup("*");
+	uint32_t button = wl_axis_to_button(event);
+
+	// Handle mouse bindings - x11 mouse buttons 4-7 - press event
+	struct sway_binding *binding = NULL;
+	state_add_button(cursor, button);
+	binding = get_active_mouse_binding(cursor,
+		config->current_mode->mouse_bindings, modifiers, false,
+		on_titlebar, on_border, on_contents, dev_id);
+	if (binding) {
+		seat_execute_command(seat, binding);
+		handled = true;
+	}
+
+	// Scrolling on a tabbed or stacked title bar (handled as press event)
+	if (!handled && on_titlebar) {
 		enum sway_container_layout layout = container_parent_layout(cont);
 		if (layout == L_TABBED || layout == L_STACKED) {
 			struct sway_node *tabcontainer = node_get_parent(node);
@@ -1029,13 +1063,26 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 				seat_set_raw_focus(seat, new_focus);
 				seat_set_raw_focus(seat, old_focus);
 			}
-			return;
+			handled = true;
 		}
 	}
 
-	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-		event->orientation, scroll_factor * event->delta,
-		round(scroll_factor * event->delta_discrete), event->source);
+	// Handle mouse bindings - x11 mouse buttons 4-7 - release event
+	binding = get_active_mouse_binding(cursor,
+		config->current_mode->mouse_bindings, modifiers, true,
+		on_titlebar, on_border, on_contents, dev_id);
+	state_erase_button(cursor, button);
+	if (binding) {
+		seat_execute_command(seat, binding);
+		handled = true;
+	}
+	free(dev_id);
+
+	if (!handled) {
+		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
+			event->orientation, scroll_factor * event->delta,
+			round(scroll_factor * event->delta_discrete), event->source);
+	}
 }
 
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
