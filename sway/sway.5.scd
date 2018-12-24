@@ -558,6 +558,13 @@ The default colors are:
 	Set the opacity of the window between 0 (completely transparent) and 1
 	(completely opaque).
 
+*tiling\_drag*  enable|disable|toggle
+	Sets whether or not tiling containers can be dragged with the mouse. If
+	enabled (default), the _floating\_mod_ can be used to drag tiling, as well
+	as floating, containers. Using the left mouse button on title bars without
+	the _floating\_mod_ will also allow the container to be dragged. _toggle_
+	should not be used in the config file.
+
 *title\_align* left|center|right
 	Sets the title alignment. If _right_ is selected and _show\_marks_ is set
 	to _yes_, the marks will be shown on the _left_ side instead of the
