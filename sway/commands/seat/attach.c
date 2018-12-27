@@ -1,10 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
-#include <strings.h>
-#include "sway/input/input-manager.h"
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "log.h"
 #include "stringop.h"
 
 struct cmd_results *seat_cmd_attach(int argc, char **argv) {
@@ -12,19 +9,17 @@ struct cmd_results *seat_cmd_attach(int argc, char **argv) {
 	if ((error = checkarg(argc, "attach", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	struct seat_config *current_seat_config =
-		config->handler_context.seat_config;
-	if (!current_seat_config) {
+	if (!config->handler_context.seat_config) {
 		return cmd_results_new(CMD_FAILURE, "attach", "No seat defined");
 	}
 
-	struct seat_config *new_config = new_seat_config(current_seat_config->name);
-	struct seat_attachment_config *new_attachment = seat_attachment_config_new();
-	new_attachment->identifier = strdup(argv[0]);
-	list_add(new_config->attachments, new_attachment);
-
-	if (!config->validating) {
-		apply_seat_config(new_config);
+	struct seat_attachment_config *attachment = seat_attachment_config_new();
+	if (!attachment) {
+		return cmd_results_new(CMD_FAILURE, "attach",
+				"Failed to allocate seat attachment config");
 	}
+	attachment->identifier = strdup(argv[0]);
+	list_add(config->handler_context.seat_config->attachments, attachment);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

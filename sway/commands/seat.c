@@ -26,9 +26,16 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 
 	struct cmd_results *res = config_subcommand(argv + 1, argc - 1,
 			seat_handlers, sizeof(seat_handlers));
+	if (res && res->status != CMD_SUCCESS) {
+		free_seat_config(config->handler_context.seat_config);
+		config->handler_context.seat_config = NULL;
+		return res;
+	}
 
-	free_seat_config(config->handler_context.seat_config);
+	struct seat_config *sc =
+		store_seat_config(config->handler_context.seat_config);
+	input_manager_apply_seat_config(sc);
+
 	config->handler_context.seat_config = NULL;
-
-	return res;
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
