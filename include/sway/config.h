@@ -140,6 +140,7 @@ struct seat_config {
 	char *name;
 	int fallback; // -1 means not set
 	list_t *attachments; // list of seat_attachment configs
+	int hide_cursor_timeout;
 };
 
 enum config_dpms {
@@ -435,8 +436,6 @@ struct sway_config {
 	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
 	enum edge_border_types saved_edge_borders;
-
-	int hide_cursor_timeout;
 
 	// border colors
 	struct {

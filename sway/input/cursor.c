@@ -597,9 +597,17 @@ static int hide_notify(void *data) {
 	return 1;
 }
 
-static void handle_activity(struct sway_cursor *cursor) {
-	wl_event_source_timer_update(cursor->hide_source,
-			config->hide_cursor_timeout);
+void cursor_handle_activity(struct sway_cursor *cursor) {
+	struct seat_config *sc = seat_get_config(cursor->seat);
+	if (!sc) {
+		sc = seat_get_config_by_name("*");
+	}
+	int timeout = sc ? sc->hide_cursor_timeout : 0;
+	if (timeout < 0) {
+		timeout = 0;
+	}
+	wl_event_source_timer_update(cursor->hide_source, timeout);
+
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	if (cursor->hidden) {
 		cursor->hidden = false;
@@ -709,7 +717,7 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
-	handle_activity(cursor);
+	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -720,7 +728,7 @@ static void handle_cursor_motion_absolute(
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
-	handle_activity(cursor);
+	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -1009,7 +1017,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct wlr_event_pointer_button *event = data;
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
-	handle_activity(cursor);
+	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -1119,7 +1127,7 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
 	struct wlr_event_pointer_axis *event = data;
 	dispatch_cursor_axis(cursor, event);
-	handle_activity(cursor);
+	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 

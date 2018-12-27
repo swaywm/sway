@@ -174,6 +174,8 @@ void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
 
 struct seat_config *seat_get_config(struct sway_seat *seat);
 
+struct seat_config *seat_get_config_by_name(const char *name);
+
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);

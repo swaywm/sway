@@ -995,6 +995,8 @@ void seat_apply_config(struct sway_seat *seat,
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_configure_device(seat, seat_device->input_device);
 	}
+
+	cursor_handle_activity(seat->cursor);
 }
 
 struct seat_config *seat_get_config(struct sway_seat *seat) {
@@ -1002,6 +1004,18 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	for (int i = 0; i < config->seat_configs->length; ++i ) {
 		seat_config = config->seat_configs->items[i];
 		if (strcmp(seat->wlr_seat->name, seat_config->name) == 0) {
+			return seat_config;
+		}
+	}
+
+	return NULL;
+}
+
+struct seat_config *seat_get_config_by_name(const char *name) {
+	struct seat_config *seat_config = NULL;
+	for (int i = 0; i < config->seat_configs->length; ++i ) {
+		seat_config = config->seat_configs->items[i];
+		if (strcmp(name, seat_config->name) == 0) {
 			return seat_config;
 		}
 	}
