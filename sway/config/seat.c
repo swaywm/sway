@@ -11,7 +11,6 @@ struct seat_config *new_seat_config(const char* name) {
 		return NULL;
 	}
 
-	wlr_log(WLR_DEBUG, "new_seat_config(%s)", name);
 	seat->name = strdup(name);
 	if (!sway_assert(seat->name, "could not allocate name for seat")) {
 		free(seat);
@@ -28,6 +27,52 @@ struct seat_config *new_seat_config(const char* name) {
 	}
 
 	return seat;
+}
+
+static void merge_wildcard_on_all(struct seat_config *wildcard) {
+	for (int i = 0; i < config->seat_configs->length; i++) {
+		struct seat_config *sc = config->seat_configs->items[i];
+		if (strcmp(wildcard->name, sc->name) != 0) {
+			wlr_log(WLR_DEBUG, "Merging seat * config on %s", sc->name);
+			merge_seat_config(sc, wildcard);
+		}
+	}
+}
+
+struct seat_config *store_seat_config(struct seat_config *sc) {
+	bool wildcard = strcmp(sc->name, "*") == 0;
+	if (wildcard) {
+		merge_wildcard_on_all(sc);
+	}
+
+	int i = list_seq_find(config->seat_configs, seat_name_cmp, sc->name);
+	if (i >= 0) {
+		wlr_log(WLR_DEBUG, "Merging on top of existing seat config");
+		struct seat_config *current = config->seat_configs->items[i];
+		merge_seat_config(current, sc);
+		free_seat_config(sc);
+		sc = current;
+	} else if (!wildcard) {
+		wlr_log(WLR_DEBUG, "Adding non-wildcard seat config");
+		i = list_seq_find(config->seat_configs, seat_name_cmp, "*");
+		if (i >= 0) {
+			wlr_log(WLR_DEBUG, "Merging on top of seat * config");
+			struct seat_config *current = new_seat_config(sc->name);
+			merge_seat_config(current, config->seat_configs->items[i]);
+			merge_seat_config(current, sc);
+			free_seat_config(sc);
+			sc = current;
+		}
+		list_add(config->seat_configs, sc);
+	} else {
+		// New wildcard config. Just add it
+		wlr_log(WLR_DEBUG, "Adding seat * config");
+		list_add(config->seat_configs, sc);
+	}
+
+	wlr_log(WLR_DEBUG, "Config stored for seat %s", sc->name);
+
+	return sc;
 }
 
 struct seat_attachment_config *seat_attachment_config_new(void) {
@@ -65,11 +110,6 @@ static void merge_seat_attachment_config(struct seat_attachment_config *dest,
 }
 
 void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
-	if (source->name) {
-		free(dest->name);
-		dest->name = strdup(source->name);
-	}
-
 	if (source->fallback != -1) {
 		dest->fallback = source->fallback;
 	}
