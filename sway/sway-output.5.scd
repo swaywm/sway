@@ -36,7 +36,19 @@ must be separated by one space. For example:
 
 *output* <name> position|pos <X> <Y>
 	Places the specified output at the specific position in the global
-	coordinate space.
+	coordinate space. If scaling is active, it has to be considered when
+	positioning. For example, if the scaling factor for the left output is 2,
+	the relative position for the right output has to be divided by 2.
+
+	Example:
+
+		output HDMI1 scale 2
+
+		output HDMI1 pos 0 0 res 3200x1800
+
+		output eDP1 pos 1600 0 res 1920x1080
+
+	Note that the x-pos of eDP1 is 1600 = 3200/2.
 
 *output* <name> scale <factor>
 	Scales the specified output by the specified scale _factor_. An integer is
