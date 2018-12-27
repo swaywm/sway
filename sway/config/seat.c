@@ -25,6 +25,7 @@ struct seat_config *new_seat_config(const char* name) {
 		free(seat);
 		return NULL;
 	}
+	seat->hide_cursor_timeout = -1;
 
 	return seat;
 }
@@ -136,6 +137,10 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 				list_add(dest->attachments, copy);
 			}
 		}
+	}
+
+	if (source->hide_cursor_timeout != -1) {
+		dest->hide_cursor_timeout = source->hide_cursor_timeout;
 	}
 }
 

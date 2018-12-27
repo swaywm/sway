@@ -71,7 +71,6 @@ static struct cmd_handler handlers[] = {
 	{ "force_focus_wrapping", cmd_force_focus_wrapping },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
-	{ "hide_cursor", cmd_hide_cursor },
 	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },

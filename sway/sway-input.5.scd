@@ -145,6 +145,12 @@ in their own "seat").
 	Set this seat as the fallback seat. A fallback seat will attach any device
 	not explicitly attached to another seat (similar to a "default" seat).
 
+*seat* <name> hide\_cursor <timeout>
+	Hides the cursor image after the specified _timeout_ (in milliseconds)
+	has elapsed with no activity on that cursor. A timeout of 0 (default)
+	disables hiding the cursor. The minimal timeout is 100 and any value less
+	than that (aside from 0), will be increased to 100.
+
 # SEE ALSO
 
 *sway*(5) *sway-output*(5)
