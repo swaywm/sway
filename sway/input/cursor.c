@@ -2,8 +2,10 @@
 #include <math.h>
 #include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
+#include <errno.h>
 #include <float.h>
 #include <limits.h>
+#include <strings.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_idle.h>
@@ -1526,4 +1528,67 @@ void cursor_warp_to_workspace(struct sway_cursor *cursor,
 	double y = workspace->y + workspace->height / 2.0;
 
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
+}
+
+uint32_t get_mouse_bindsym(const char *name, char **error) {
+	if (strncasecmp(name, "button", strlen("button")) == 0) {
+		// Map to x11 mouse buttons
+		int number = name[strlen("button")] - '0';
+		if (number < 1 || number > 9 || strlen(name) > strlen("button0")) {
+			*error = strdup("Only buttons 1-9 are supported. For other mouse "
+					"buttons, use the name of the event code.");
+			return 0;
+		}
+		static const uint32_t buttons[] = {BTN_LEFT, BTN_MIDDLE, BTN_RIGHT,
+			SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
+			SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
+		return buttons[number - 1];
+	} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
+		// Get event code from name
+		int code = libevdev_event_code_from_name(EV_KEY, name);
+		if (code == -1) {
+			size_t len = snprintf(NULL, 0, "Unknown event %s", name) + 1;
+			*error = malloc(len);
+			if (*error) {
+				snprintf(*error, len, "Unknown event %s", name);
+			}
+			return 0;
+		}
+		return code;
+	}
+	return 0;
+}
+
+uint32_t get_mouse_bindcode(const char *name, char **error) {
+	// Validate event code
+	errno = 0;
+	char *endptr;
+	int code = strtol(name, &endptr, 10);
+	if (endptr == name && code <= 0) {
+		*error = strdup("Button event code must be a positive integer.");
+		return 0;
+	} else if (errno == ERANGE) {
+		*error = strdup("Button event code out of range.");
+		return 0;
+	}
+	const char *event = libevdev_event_code_get_name(EV_KEY, code);
+	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
+		size_t len = snprintf(NULL, 0, "Event code %d (%s) is not a button",
+				code, event) + 1;
+		*error = malloc(len);
+		if (*error) {
+			snprintf(*error, len, "Event code %d (%s) is not a button",
+					code, event);
+		}
+		return 0;
+	}
+	return code;
+}
+
+uint32_t get_mouse_button(const char *name, char **error) {
+	uint32_t button = get_mouse_bindsym(name, error);
+	if (!button && !error) {
+		button = get_mouse_bindcode(name, error);
+	}
+	return button;
 }

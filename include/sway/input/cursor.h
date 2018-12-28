@@ -86,4 +86,12 @@ void cursor_warp_to_container(struct sway_cursor *cursor,
 
 void cursor_warp_to_workspace(struct sway_cursor *cursor,
 		struct sway_workspace *workspace);
+
+uint32_t get_mouse_bindsym(const char *name, char **error);
+
+uint32_t get_mouse_bindcode(const char *name, char **error);
+
+// Considers both bindsym and bindcode
+uint32_t get_mouse_button(const char *name, char **error);
+
 #endif
