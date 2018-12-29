@@ -118,8 +118,8 @@ struct cmd_results *bar_colors_cmd_statusline(int argc, char **argv) {
 }
 
 struct cmd_results *bar_colors_cmd_focused_statusline(int argc, char **argv) {
-	return parse_single_color(&(config->current_bar->colors.focused_separator),
-			"focused_separator", argc, argv);
+	return parse_single_color(&(config->current_bar->colors.focused_statusline),
+			"focused_statusline", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_urgent_workspace(int argc, char **argv) {
