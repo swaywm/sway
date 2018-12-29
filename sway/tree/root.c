@@ -145,7 +145,7 @@ void root_scratchpad_hide(struct sway_container *con) {
 
 	container_detach(con);
 	arrange_workspace(ws);
-	if (&con->node == focus) {
+	if (&con->node == focus || node_has_ancestor(focus, &con->node)) {
 		seat_set_focus(seat, seat_get_focus_inactive(seat, &ws->node));
 	}
 	list_move_to_end(root->scratchpad, con);
