@@ -836,6 +836,14 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
     }
 
+	case IPC_SYNC:
+	{
+		// It was decided sway will not support this, just return success:false
+		const char msg[] = "{\"success\": false}";
+		ipc_send_reply(client, msg, strlen(msg));
+		goto exit_cleanup;
+	}
+
 	default:
 		wlr_log(WLR_INFO, "Unknown IPC command type %i", client->current_command);
 		goto exit_cleanup;
