@@ -825,6 +825,11 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			seat_end_mouse_operation(seat);
 			seat_pointer_notify_button(seat, time_msec, button, state);
 		}
+		if (state == WLR_BUTTON_PRESSED) {
+			state_add_button(cursor, button);
+		} else {
+			state_erase_button(cursor, button);
+		}
 		return;
 	}
 
