@@ -95,6 +95,17 @@ static bool input_has_seat_fallback_configuration(void) {
 	return false;
 }
 
+void input_manager_verify_fallback_seat(void) {
+	struct sway_seat *seat = NULL;
+	if (!input_has_seat_fallback_configuration()) {
+		wlr_log(WLR_DEBUG, "no fallback seat config - creating default");
+		seat = input_manager_get_default_seat();
+		struct seat_config *sc = new_seat_config(seat->wlr_seat->name);
+		sc->fallback = true;
+		store_seat_config(sc);
+	}
+}
+
 static void input_manager_libinput_config_keyboard(
 		struct sway_input_device *input_device) {
 	struct wlr_input_device *wlr_device = input_device->wlr_device;
@@ -296,16 +307,10 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
 	input_device->device_destroy.notify = handle_device_destroy;
 
-	struct sway_seat *seat = NULL;
-	if (!input_has_seat_fallback_configuration()) {
-		wlr_log(WLR_DEBUG, "no seat config - creating default seat config");
-		seat = input_manager_get_default_seat();
-		struct seat_config *sc = new_seat_config(seat->wlr_seat->name);
-		sc->fallback = true;
-		store_seat_config(sc);
-	}
+	input_manager_verify_fallback_seat();
 
 	bool added = false;
+	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
 		struct seat_config *seat_config = seat_get_config(seat);
 		bool has_attachment = seat_config &&

@@ -44,6 +44,12 @@ struct sway_seat *input_manager_get_default_seat(void);
 struct sway_seat *input_manager_get_seat(const char *seat_name);
 
 /**
+ * If none of the seat configs have a fallback setting (either true or false),
+ * create the default seat (if needed) and set it as the fallback
+ */
+void input_manager_verify_fallback_seat(void);
+
+/**
  * Gets the last seat the user interacted with
  */
 struct sway_seat *input_manager_current_seat(void);
