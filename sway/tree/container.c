@@ -453,19 +453,26 @@ static void update_title_texture(struct sway_container *con,
 	int width = 0;
 	int height = con->title_height * scale;
 
-	cairo_t *c = cairo_create(NULL);
+	// We must use a non-nil cairo_t for cairo_set_font_options to work.
+	// Therefore, we cannot use cairo_create(NULL).
+	cairo_surface_t *dummy_surface = cairo_image_surface_create(
+			CAIRO_FORMAT_ARGB32, 0, 0);
+	cairo_t *c = cairo_create(dummy_surface);
+	cairo_set_antialias(c, CAIRO_ANTIALIAS_BEST);
+	cairo_font_options_t *fo = cairo_font_options_create();
+	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
+	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
+	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(output->wlr_output->subpixel));
+	cairo_set_font_options(c, fo);
 	get_text_size(c, config->font, &width, NULL, NULL, scale,
 			config->pango_markup, "%s", con->formatted_title);
+	cairo_surface_destroy(dummy_surface);
 	cairo_destroy(c);
 
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cairo = cairo_create(surface);
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
-	cairo_font_options_t *fo = cairo_font_options_create();
-	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
-	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
-	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(output->wlr_output->subpixel));
 	cairo_set_font_options(cairo, fo);
 	cairo_font_options_destroy(fo);
 	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
