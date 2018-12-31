@@ -1,0 +1,44 @@
+# swaybar(1) completion
+
+_swaybar()
+{
+  local cur prev
+  _get_comp_words_by_ref cur prev
+
+  short=(
+    -h
+    -v
+    -s
+    -b
+    -d
+  )
+
+  long=(
+    --help
+    --version
+    --socket
+    --bar_id
+    --debug
+  )
+
+  case $prev in
+    -s|--socket)
+      _filedir
+      return
+      ;;
+    -b|--bar_id)
+      bars=($(swaymsg -t get_bar_config | sed -e '/^\[/,/\]$/{//d;s/^ *"\(.*\)",\?.*$/\1/}'))
+      COMPREPLY=($(compgen -W "${bars[*]}" -- "$cur"))
+      return
+      ;;
+  esac
+
+  if [[ $cur == --* ]]; then
+    COMPREPLY=($(compgen -W "${long[*]}" -- "$cur"))
+  else
+    COMPREPLY=($(compgen -W "${short[*]}" -- "$cur"))
+    COMPREPLY+=($(compgen -W "${long[*]}" -- "$cur"))
+  fi
+
+} &&
+complete -F _swaybar swaybar
