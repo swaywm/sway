@@ -212,6 +212,7 @@ endif
 if (get_option('bash-completions'))
 	bash_files = files(
 		'completions/bash/sway',
+		'completions/bash/swaybar',
 		'completions/bash/swayidle',
 		'completions/bash/swaylock',
 		'completions/bash/swaymsg',
