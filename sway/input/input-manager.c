@@ -102,7 +102,8 @@ void input_manager_verify_fallback_seat(void) {
 		seat = input_manager_get_default_seat();
 		struct seat_config *sc = new_seat_config(seat->wlr_seat->name);
 		sc->fallback = true;
-		store_seat_config(sc);
+		sc = store_seat_config(sc);
+		input_manager_apply_seat_config(sc);
 	}
 }
 
