@@ -185,7 +185,6 @@ void status_line_free(struct status_line *status) {
 	}
 	free(status->read);
 	free(status->write);
-	free((char*) status->text);
 	free(status->buffer);
 	free(status);
 }
