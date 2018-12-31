@@ -4,6 +4,7 @@
 #include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "config.h"
 #include "stringop.h"
 #include "list.h"
 
@@ -73,6 +74,10 @@ struct swaybar_config *init_config(void) {
 	config->colors.binding_mode.background = 0x900000FF;
 	config->colors.binding_mode.text = 0xFFFFFFFF;
 
+#if HAVE_TRAY
+	config->tray_padding = 2;
+#endif
+
 	return config;
 }
 
@@ -102,5 +107,12 @@ void free_config(struct swaybar_config *config) {
 		free(coutput->name);
 		free(coutput);
 	}
+#if HAVE_TRAY
+	list_free_items_and_destroy(config->tray_outputs);
+	for (int i = 0; i < 10; ++i) {
+		free(config->tray_bindings[i]);
+	}
+	free(config->icon_theme);
+#endif
 	free(config);
 }

@@ -6,6 +6,7 @@
 #include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
+#include "config.h"
 #include "ipc-client.h"
 #include "list.h"
 
@@ -281,6 +282,40 @@ static bool ipc_parse_config(
 	if (colors) {
 		ipc_parse_colors(config, colors);
 	}
+
+#if HAVE_TRAY
+	json_object *tray_outputs, *tray_padding, *tray_bindings, *icon_theme;
+
+	if ((json_object_object_get_ex(bar_config, "tray_outputs", &tray_outputs))) {
+		config->tray_outputs = create_list();
+		int length = json_object_array_length(tray_outputs);
+		for (int i = 0; i < length; ++i) {
+			json_object *o = json_object_array_get_idx(tray_outputs, i);
+			list_add(config->tray_outputs, strdup(json_object_get_string(o)));
+		}
+		config->tray_hidden = strcmp(config->tray_outputs->items[0], "none") == 0;
+	}
+
+	if ((json_object_object_get_ex(bar_config, "tray_padding", &tray_padding))) {
+		config->tray_padding = json_object_get_int(tray_padding);
+	}
+
+	if ((json_object_object_get_ex(bar_config, "tray_bindings", &tray_bindings))) {
+		int length = json_object_array_length(tray_bindings);
+		for (int i = 0; i < length; ++i) {
+			json_object *bind = json_object_array_get_idx(tray_bindings, i);
+			json_object *button, *command;
+			json_object_object_get_ex(bind, "input_code", &button);
+			json_object_object_get_ex(bind, "command", &command);
+			config->tray_bindings[json_object_get_int(button)] =
+				strdup(json_object_get_string(command));
+		}
+	}
+
+	if ((json_object_object_get_ex(bar_config, "icon_theme", &icon_theme))) {
+		config->icon_theme = strdup(json_object_get_string(icon_theme));
+	}
+#endif
 
 	json_object_put(bar_config);
 	return true;

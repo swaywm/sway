@@ -8,11 +8,9 @@
 
 // Must be in alphabetical order for bsearch
 static struct cmd_handler bar_handlers[] = {
-	{ "activate_button", bar_cmd_activate_button },
 	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
 	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", bar_cmd_colors },
-	{ "context_button", bar_cmd_context_button },
 	{ "font", bar_cmd_font },
 	{ "gaps", bar_cmd_gaps },
 	{ "height", bar_cmd_height },
@@ -23,11 +21,11 @@ static struct cmd_handler bar_handlers[] = {
 	{ "output", bar_cmd_output },
 	{ "pango_markup", bar_cmd_pango_markup },
 	{ "position", bar_cmd_position },
-	{ "secondary_button", bar_cmd_secondary_button },
 	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },
 	{ "strip_workspace_name", bar_cmd_strip_workspace_name },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
+	{ "tray_bindsym", bar_cmd_tray_bindsym },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },

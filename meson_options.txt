@@ -6,3 +6,4 @@ option('zsh-completions', type: 'boolean', value: true, description: 'Install zs
 option('bash-completions', type: 'boolean', value: true, description: 'Install bash shell completions.')
 option('fish-completions', type: 'boolean', value: true, description: 'Install fish shell completions.')
 option('enable-xwayland', type: 'boolean', value: true, description: 'Enable support for X11 applications')
+option('enable-tray', type: 'boolean', value: false, description: 'Enable support for swaybar tray')

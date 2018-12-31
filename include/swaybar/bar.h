@@ -1,6 +1,7 @@
 #ifndef _SWAYBAR_BAR_H
 #define _SWAYBAR_BAR_H
 #include <wayland-client.h>
+#include "config.h"
 #include "input.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -8,6 +9,9 @@
 
 struct swaybar_config;
 struct swaybar_output;
+#if HAVE_TRAY
+struct swaybar_tray;
+#endif
 struct swaybar_workspace;
 struct loop;
 
@@ -38,6 +42,10 @@ struct swaybar {
 	int ipc_socketfd;
 
 	struct wl_list outputs; // swaybar_output::link
+
+#if HAVE_TRAY
+	struct swaybar_tray *tray;
+#endif
 };
 
 struct swaybar_output {
@@ -62,6 +70,8 @@ struct swaybar_output {
 	struct pool_buffer *current_buffer;
 	bool dirty;
 	bool frame_scheduled;
+
+	uint32_t output_height, output_width, output_x, output_y;
 };
 
 struct swaybar_workspace {
@@ -77,6 +87,8 @@ struct swaybar_workspace {
 bool bar_setup(struct swaybar *bar, const char *socket_path);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
+
+void set_bar_dirty(struct swaybar *bar);
 
 /*
  * Determines whether the bar should be visible and changes it to be so.

@@ -12,6 +12,7 @@
 #include <signal.h>
 #include "sway/config.h"
 #include "sway/output.h"
+#include "config.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
@@ -77,6 +78,10 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->colors.binding_mode_border);
 	free(bar->colors.binding_mode_bg);
 	free(bar->colors.binding_mode_text);
+#if HAVE_TRAY
+	list_free_items_and_destroy(bar->tray_outputs);
+	free(bar->icon_theme);
+#endif
 	free(bar);
 }
 
@@ -164,6 +169,10 @@ struct bar_config *default_bar_config(void) {
 	bar->colors.binding_mode_border = NULL;
 	bar->colors.binding_mode_bg = NULL;
 	bar->colors.binding_mode_text = NULL;
+
+#if HAVE_TRAY
+	bar->tray_padding = 2;
+#endif
 
 	list_add(config->bars, bar);
 	return bar;

@@ -11,6 +11,7 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wlr/util/log.h>
+#include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
@@ -18,6 +19,9 @@
 #include "swaybar/ipc.h"
 #include "swaybar/status_line.h"
 #include "swaybar/render.h"
+#if HAVE_TRAY
+#include "swaybar/tray/tray.h"
+#endif
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
@@ -120,7 +124,7 @@ static void destroy_layer_surface(struct swaybar_output *output) {
 	output->frame_scheduled = false;
 }
 
-static void set_bar_dirty(struct swaybar *bar) {
+void set_bar_dirty(struct swaybar *bar) {
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		set_output_dirty(output);
@@ -211,12 +215,16 @@ struct wl_output_listener output_listener = {
 
 static void xdg_output_handle_logical_position(void *data,
 		struct zxdg_output_v1 *xdg_output, int32_t x, int32_t y) {
-	// Who cares
+	struct swaybar_output *output = data;
+	output->output_x = x;
+	output->output_y = y;
 }
 
 static void xdg_output_handle_logical_size(void *data,
 		struct zxdg_output_v1 *xdg_output, int32_t width, int32_t height) {
-	// Who cares
+	struct swaybar_output *output = data;
+	output->output_height = height;
+	output->output_width = width;
 }
 
 static void xdg_output_handle_done(void *data,
@@ -362,6 +370,12 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
 	assert(pointer->cursor_surface);
 
+#if HAVE_TRAY
+	if (!bar->config->tray_hidden) {
+		bar->tray = create_tray(bar);
+	}
+#endif
+
 	if (bar->config->workspace_buttons) {
 		ipc_get_workspaces(bar);
 	}
@@ -403,6 +417,11 @@ void bar_run(struct swaybar *bar) {
 		loop_add_fd(bar->eventloop, bar->status->read_fd, POLLIN,
 				status_in, bar);
 	}
+#if HAVE_TRAY
+	if (bar->tray) {
+		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in, bar->tray->bus);
+	}
+#endif
 	while (1) {
 		errno = 0;
 		if (wl_display_flush(bar->display) == -1 && errno != EAGAIN) {
@@ -420,6 +439,9 @@ static void free_outputs(struct wl_list *list) {
 }
 
 void bar_teardown(struct swaybar *bar) {
+#if HAVE_TRAY
+	destroy_tray(bar->tray);
+#endif
 	free_outputs(&bar->outputs);
 	if (bar->config) {
 		free_config(bar->config);
