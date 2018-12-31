@@ -71,18 +71,14 @@ with *i3-msg*(1) or even with *i3*(1).
 
 The following environment variables have an effect on sway:
 
-_SWAY\_CURSOR\_THEME_
-	Specifies the name of the cursor theme to use.
-
-_SWAY\_CURSOR\_SIZE_
-	Specifies the size of the cursor to use.
-
 _SWAYSOCK_
 	Specifies the path to the sway IPC socket.
 
 _XKB\_DEFAULT\_RULES_, _XKB\_DEFAULT\_MODEL_, _XKB\_DEFAULT\_LAYOUT_,
 _XKB\_DEFAULT\_VARIANT_, _XKB\_DEFAULT\_OPTIONS_
-	Configures the xkb keyboard settings. See *xkeyboard-config*(7).
+	Configures the xkb keyboard settings. See *xkeyboard-config*(7). The
+	preferred way to configure the keyboard is via the configuration file, see
+	*sway-input*(5).
 
 # AUTHORS
 
