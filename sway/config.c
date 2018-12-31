@@ -569,6 +569,36 @@ bool load_include_configs(const char *path, struct sway_config *config,
 	return true;
 }
 
+// get line, with backslash continuation
+static ssize_t getline_with_cont(char **lineptr, size_t *line_size, FILE *file) {
+	char *next_line = NULL;
+	size_t next_line_size = 0;
+	ssize_t nread = getline(lineptr, line_size, file);
+	while (nread >= 2) {
+		if (strcmp(&(*lineptr)[nread - 2], "\\\n") != 0) {
+			break;
+		}
+
+		ssize_t next_nread = getline(&next_line, &next_line_size, file);
+		if (next_nread == -1) {
+			break;
+		}
+
+		nread += next_nread - 2;
+		if ((ssize_t) *line_size < nread + 1) {
+			*line_size = nread + 1;
+			*lineptr = realloc(*lineptr, *line_size);
+			if (!lineptr) {
+				nread = -1;
+				break;
+			}
+		}
+		strcpy(&(*lineptr)[nread - next_nread], next_line);
+	}
+	free(next_line);
+	return nread;
+}
+
 static int detect_brace(FILE *file) {
 	int lines = 0;
 	long pos = ftell(file);
@@ -633,7 +663,7 @@ bool read_config(FILE *file, struct sway_config *config,
 	ssize_t nread;
 	list_t *stack = create_list();
 	size_t read = 0;
-	while ((nread = getline(&line, &line_size, file)) != -1) {
+	while ((nread = getline_with_cont(&line, &line_size, file)) != -1) {
 		if (reading_main_config) {
 			if (read + nread > config_size) {
 				wlr_log(WLR_ERROR, "Config file changed during reading");
