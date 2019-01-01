@@ -1017,7 +1017,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 		if (fullscreen_con->view) {
 			if (fullscreen_con->view->saved_buffer) {
 				render_saved_view(fullscreen_con->view, output, damage, 1.0f);
-			} else {
+			} else if (fullscreen_con->view->surface) {
 				render_view_toplevels(fullscreen_con->view,
 						output, damage, 1.0f);
 			}
