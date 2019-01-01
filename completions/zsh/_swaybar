@@ -1,0 +1,13 @@
+#compdef swaybar
+#
+# Completion script for swaybar
+#
+
+local bars=($(swaymsg -t get_bar_config | sed -e '/^\[/,/\]$/{//d;s/^ *"\(.*\)",\?.*$/\1/}'))
+
+_arguments -s \
+	'(-h --help)'{-h,--help}'[Show help message and quit]' \
+	'(-v --version)'{-v,--version}'[Show version and quit]' \
+	'(-s --socket)'{-s,--socket}'[Connect to sway via socket]:filename:_files' \
+	'(-b --bar_id)'{-b,--bar-id}'[Bar ID for which to get the configuration]:filename:($bars)'\
+	'(-d --debug)'{-d,--debug}'[Enable debugging]'
