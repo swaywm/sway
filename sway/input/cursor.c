@@ -384,6 +384,30 @@ static void handle_move_tiling_motion(struct sway_seat *seat,
 	desktop_damage_box(&seat->op_drop_box);
 }
 
+static void handle_move_tiling_threshold_motion(struct sway_seat *seat,
+		struct sway_cursor *cursor) {
+	double cx = seat->cursor->cursor->x;
+	double cy = seat->cursor->cursor->y;
+	double sx = seat->op_ref_lx;
+	double sy = seat->op_ref_ly;
+
+	// Get the scaled threshold for the output. Even if the operation goes
+	// across multiple outputs of varying scales, just use the scale for the
+	// output that the cursor is currently on for simplicity.
+	struct wlr_output *wlr_output = wlr_output_layout_output_at(
+			root->output_layout, cx, cy);
+	double output_scale = wlr_output ? wlr_output->scale : 1;
+	double threshold = config->tiling_drag_threshold * output_scale;
+	threshold *= threshold;
+
+	// If the threshold has been exceeded, start the actual drag
+	if ((cx - sx) * (cx - sx) + (cy - sy) * (cy - sy) > threshold) {
+		seat->operation = OP_MOVE_TILING;
+		cursor_set_image(cursor, "grab", NULL);
+		handle_move_tiling_motion(seat, cursor);
+	}
+}
+
 static void calculate_floating_constraints(struct sway_container *con,
 		int *min_width, int *max_width, int *min_height, int *max_height) {
 	if (config->floating_minimum_width == -1) { // no minimum
@@ -639,6 +663,9 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 			break;
 		case OP_MOVE_FLOATING:
 			handle_move_floating_motion(seat, cursor);
+			break;
+		case OP_MOVE_TILING_THRESHOLD:
+			handle_move_tiling_threshold_motion(seat, cursor);
 			break;
 		case OP_MOVE_TILING:
 			handle_move_tiling_motion(seat, cursor);
@@ -984,12 +1011,22 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
 			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
 			cont && !cont->is_fullscreen) {
-		if (on_titlebar) {
+		struct sway_container *focus = seat_get_focused_container(seat);
+		bool focused = focus == cont || container_has_ancestor(focus, cont);
+		if (on_titlebar && !focused) {
 			node = seat_get_focus_inactive(seat, &cont->node);
 			seat_set_focus(seat, node);
 		}
+
 		seat_pointer_notify_button(seat, time_msec, button, state);
-		seat_begin_move_tiling(seat, cont, button);
+
+		// If moving a previously unfocused container by it's title bar, use a
+		// threshold for the drag.
+		if (!mod_pressed && !focused && config->tiling_drag_threshold > 0) {
+			seat_begin_move_tiling_threshold(seat, cont, button);
+		} else {
+			seat_begin_move_tiling(seat, cont, button);
+		}
 		return;
 	}
 

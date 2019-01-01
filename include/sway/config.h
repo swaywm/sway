@@ -426,7 +426,9 @@ struct sway_config {
 	bool auto_back_and_forth;
 	bool show_marks;
 	enum alignment title_align;
+
 	bool tiling_drag;
+	int tiling_drag_threshold;
 
 	bool smart_gaps;
 	int gaps_inner;

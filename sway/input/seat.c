@@ -1052,6 +1052,17 @@ void seat_begin_move_floating(struct sway_seat *seat,
 	cursor_set_image(seat->cursor, "grab", NULL);
 }
 
+void seat_begin_move_tiling_threshold(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button) {
+	seat->operation = OP_MOVE_TILING_THRESHOLD;
+	seat->op_container = con;
+	seat->op_button = button;
+	seat->op_target_node = NULL;
+	seat->op_target_edge = 0;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+}
+
 void seat_begin_move_tiling(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button) {
 	seat->operation = OP_MOVE_TILING;
