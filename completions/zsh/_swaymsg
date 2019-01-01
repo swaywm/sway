@@ -28,8 +28,10 @@ types=(
 )
 
 _arguments -s \
-	'(-v --version)'{-v,--version}'[Print the version (of swaymsg) and quit]' \
-	'(-h --help)'{-h,--help}'[Shows help message]' \
-	'(-q --quiet)'{-q,--quiet}'[Sends the IPC message but does not print the response from sway]' \
-	'(-s --socket)'{-s,--socket}'[Use the specified socket path.]:files:_files' \
-	'(-t --type)'{-t,--type}'[Specify the type of IPC message.]:type:{_describe "type" types}'
+	'(-v --version)'{-v,--version}'[Show the version number and quit]' \
+	'(-m --monitor)'{-m,--monitor}'[Monitor until killed (-t SUBSCRIBE only)]' \
+	'(-h --help)'{-h,--help}'[Show help message and quit]' \
+	'(-q --quiet)'{-q,--quiet}'[Be quiet]' \
+	'(-r --raw)'{-r,--raw}'[Use raw output even if using a tty]' \
+	'(-s --socket)'{-s,--socket}'[Use the specified socket path]:files:_files' \
+	'(-t --type)'{-t,--type}'[Specify the message type]:type:{_describe "type" types}'
