@@ -39,6 +39,7 @@ enum sway_seat_operation {
 	OP_NONE,
 	OP_DOWN,
 	OP_MOVE_FLOATING,
+	OP_MOVE_TILING_THRESHOLD,
 	OP_MOVE_TILING,
 	OP_RESIZE_FLOATING,
 	OP_RESIZE_TILING,
@@ -184,6 +185,9 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button, double sx, double sy);
 
 void seat_begin_move_floating(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button);
+
+void seat_begin_move_tiling_threshold(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button);
 
 void seat_begin_move_tiling(struct sway_seat *seat,
