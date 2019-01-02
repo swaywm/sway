@@ -16,10 +16,10 @@ void strip_whitespace(char *str) {
 	size_t start = strspn(str, whitespace);
 	memmove(str, &str[start], len + 1 - start);
 
-	if (!*str) return;
-
-	for (len -= start + 1; isspace(str[len]); --len) {}
-	str[len + 1] = '\0';
+	if (*str) {
+		for (len -= start + 1; isspace(str[len]); --len) {}
+		str[len + 1] = '\0';
+	}
 }
 
 void strip_quotes(char *str) {
