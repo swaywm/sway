@@ -3,7 +3,7 @@
 # Completion script for swaybar
 #
 
-local bars=($(swaymsg -t get_bar_config | sed -e '/^\[/,/\]$/{//d;s/^ *"\(.*\)",\?.*$/\1/}'))
+local bars=($(swaymsg -t get_bar_config | jq -r '.[]'))
 
 _arguments -s \
 	'(-h --help)'{-h,--help}'[Show help message and quit]' \
