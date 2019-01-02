@@ -38,17 +38,20 @@ must be separated by one space. For example:
 	Places the specified output at the specific position in the global
 	coordinate space. If scaling is active, it has to be considered when
 	positioning. For example, if the scaling factor for the left output is 2,
-	the relative position for the right output has to be divided by 2.
+	the relative position for the right output has to be divided by 2. The 
+	reference point is the top left corner so if you want the bottoms aligned
+	this has to be considered as well.
 
 	Example:
 
 		output HDMI1 scale 2
 
-		output HDMI1 pos 0 0 res 3200x1800
+		output HDMI1 pos 0 1020 res 3200x1800
 
 		output eDP1 pos 1600 0 res 1920x1080
 
-	Note that the x-pos of eDP1 is 1600 = 3200/2.
+	Note that the x-pos of eDP1 is 1600 = 3200/2 and the _bottom_ y-pos is 
+	1020 + (1800 / 2) = 1920 = 0 + 1920
 
 *output* <name> scale <factor>
 	Scales the specified output by the specified scale _factor_. An integer is
@@ -57,7 +60,8 @@ must be separated by one space. For example:
 	represent the contents of your windows - they will be rendered at the next
 	highest integral scale factor and downscaled. You may be better served by
 	setting an integral scale factor and adjusting the font size of your
-	applications to taste.
+	applications to taste. For scales other than 1, xwayland windows will look 
+	blurry for that screen.
 
 *output* <name> background|bg <file> <mode> [<fallback\_color>]
 	Sets the wallpaper for the given output to the specified file, using the
