@@ -27,7 +27,7 @@ _swaybar()
       return
       ;;
     -b|--bar_id)
-      bars=($(swaymsg -t get_bar_config | sed -e '/^\[/,/\]$/{//d;s/^ *"\(.*\)",\?.*$/\1/}'))
+      bars=($(swaymsg -t get_bar_config | jq -r '.[]'))
       COMPREPLY=($(compgen -W "${bars[*]}" -- "$cur"))
       return
       ;;
