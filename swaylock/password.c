@@ -146,14 +146,6 @@ void swaylock_handle_key(struct swaylock_state *state,
 		schedule_indicator_clear(state);
 		break;
 	case XKB_KEY_Caps_Lock:
-		/* The state is getting active after this
-		 * so we need to manually toggle it */
-		state->xkb.caps_lock = !state->xkb.caps_lock;
-		state->auth_state = AUTH_STATE_INPUT_NOP;
-		damage_state(state);
-		schedule_indicator_clear(state);
-		schedule_password_clear(state);
-		break;
 	case XKB_KEY_Shift_L:
 	case XKB_KEY_Shift_R:
 	case XKB_KEY_Control_L:
