@@ -19,7 +19,7 @@
 // TODO menu
 
 static bool sni_ready(struct swaybar_sni *sni) {
-	return sni->status && (sni->status[0] == 'N' ?
+	return sni->status && (sni->status[0] == 'N' ? // NeedsAttention
 			sni->attention_icon_name || sni->attention_icon_pixmap :
 			sni->icon_name || sni->icon_pixmap);
 }
@@ -396,7 +396,7 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		icon_size = actual_size < ideal_size ?
 			actual_size*(ideal_size/actual_size) : ideal_size;
 		icon = cairo_image_surface_scale(sni->icon, icon_size, icon_size);
-	} else { // draw a sad face
+	} else { // draw a :(
 		icon_size = ideal_size*0.8;
 		icon = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, icon_size, icon_size);
 		cairo_t *cairo_icon = cairo_create(icon);
