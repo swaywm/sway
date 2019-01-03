@@ -573,13 +573,12 @@ The default colors are:
 	should not be used in the config file.
 
 *tiling\_drag\_threshold* <threshold>
-	Sets the threshold that must be exceeded for an unfocused tiling container
-	to be dragged by its titlebar. This has no effect if _floating\_mod_ is
-	used, if the container is focused, or if _tiling\_drag_ is set to
-	_disable_. Once the threshold has been exceeded once, the drag starts and
-	the cursor can come back inside the threshold without stopping the drag.
-	_threshold_ is multiplied by the scale of the output that the cursor on.
-	The default is 9.
+	Sets the threshold that must be exceeded for a container to be dragged by
+	its titlebar. This has no effect if _floating\_mod_ is used or if
+	_tiling\_drag_ is set to _disable_.  Once the threshold has been exceeded
+	once, the drag starts and the cursor can come back inside the threshold
+	without stopping the drag.  _threshold_ is multiplied by the scale of the
+	output that the cursor on.  The default is 9.
 
 *title\_align* left|center|right
 	Sets the title alignment. If _right_ is selected and _show\_marks_ is set
