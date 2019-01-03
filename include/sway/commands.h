@@ -173,6 +173,7 @@ sway_cmd cmd_swaynag_command;
 sway_cmd cmd_swap;
 sway_cmd cmd_tiling_drag;
 sway_cmd cmd_tiling_drag_threshold;
+sway_cmd cmd_tiling_drag_threshold_on_focused;
 sway_cmd cmd_title_align;
 sway_cmd cmd_title_format;
 sway_cmd cmd_titlebar_border_thickness;

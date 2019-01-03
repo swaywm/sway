@@ -1022,7 +1022,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 		// If moving a previously unfocused container by it's title bar, use a
 		// threshold for the drag.
-		if (!mod_pressed && !focused && config->tiling_drag_threshold > 0) {
+		if (!mod_pressed &&
+				(!focused || config->tiling_drag_threshold_on_focused) &&
+				config->tiling_drag_threshold > 0) {
 			seat_begin_move_tiling_threshold(seat, cont, button);
 		} else {
 			seat_begin_move_tiling(seat, cont, button);

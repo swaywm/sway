@@ -581,6 +581,10 @@ The default colors are:
 	_threshold_ is multiplied by the scale of the output that the cursor on.
 	The default is 9.
 
+*tiling\_drag\_threshold\_on\_focused* yes|no
+	If set to yes, the _tiling\_drag\_threshold_ is also applied to focused
+	containers. The default is _no_.
+
 *title\_align* left|center|right
 	Sets the title alignment. If _right_ is selected and _show\_marks_ is set
 	to _yes_, the marks will be shown on the _left_ side instead of the

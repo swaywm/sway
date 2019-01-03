@@ -429,6 +429,7 @@ struct sway_config {
 
 	bool tiling_drag;
 	int tiling_drag_threshold;
+	bool tiling_drag_threshold_on_focused;
 
 	bool smart_gaps;
 	int gaps_inner;
