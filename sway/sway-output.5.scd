@@ -50,7 +50,7 @@ must be separated by one space. For example:
 
 		output eDP1 pos 1600 0 res 1920x1080
 
-	Note that the x-pos of eDP1 is 1600 = 3200/2 and the _bottom_ y-pos is 
+	Note that the left x-pos of eDP1 is 1600 = 3200/2 and the bottom y-pos is 
 	1020 + (1800 / 2) = 1920 = 0 + 1920
 
 *output* <name> scale <factor>
@@ -60,8 +60,8 @@ must be separated by one space. For example:
 	represent the contents of your windows - they will be rendered at the next
 	highest integral scale factor and downscaled. You may be better served by
 	setting an integral scale factor and adjusting the font size of your
-	applications to taste. For scales other than 1, xwayland windows will look 
-	blurry for that screen.
+	applications to taste. HiDPI isn't supported with Xwayland clients (windows
+	will blur).
 
 *output* <name> background|bg <file> <mode> [<fallback\_color>]
 	Sets the wallpaper for the given output to the specified file, using the
