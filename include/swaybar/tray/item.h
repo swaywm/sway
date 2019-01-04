@@ -35,6 +35,10 @@ struct swaybar_sni {
 	bool item_is_menu;
 	char *menu;
 	char *icon_theme_path; // non-standard KDE property
+
+	sd_bus_slot *new_icon_slot;
+	sd_bus_slot *new_attention_icon_slot;
+	sd_bus_slot *new_status_slot;
 };
 
 struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray);

@@ -78,6 +78,7 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 
 		sd_bus_message_exit_container(msg);
 	}
+	list_free_items_and_destroy(*dest);
 	*dest = pixmaps;
 
 	return ret;
@@ -121,6 +122,10 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 			goto cleanup;
 		}
 	} else {
+		if (*type == 's' || *type == 'o') {
+			free(*(char **)dest);
+		}
+
 		ret = sd_bus_message_read(msg, type, dest);
 		if (ret < 0) {
 			wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop,
@@ -156,55 +161,73 @@ static void sni_get_property_async(struct swaybar_sni *sni, const char *prop,
 	}
 }
 
+/*
+ * There is a quirk in sd-bus that in some systems, it is unable to get the
+ * well-known names on the bus, so it cannot identify if an incoming signal,
+ * which uses the sender's unique name, actually matches the callback's matching
+ * sender if the callback uses a well-known name, in which case it just calls
+ * the callback and hopes for the best, resulting in false positives. In the
+ * case of NewIcon & NewAttentionIcon, this doesn't affect anything, but it
+ * means that for NewStatus, if the SNI does not definitely match the sender,
+ * then the safe thing to do is to query the status independently.
+ * This function returns 1 if the SNI definitely matches the signal sender,
+ * which is returned by the calling function to indicate that signal matching
+ * can stop since it has already found the required callback, otherwise, it
+ * returns 0, which allows matching to continue.
+ */
+static int sni_check_msg_sender(struct swaybar_sni *sni, sd_bus_message *msg,
+		const char *signal) {
+	bool has_well_known_names =
+		sd_bus_creds_get_mask(sd_bus_message_get_creds(msg)) & SD_BUS_CREDS_WELL_KNOWN_NAMES;
+	if (sni->service[0] == ':' || has_well_known_names) {
+		wlr_log(WLR_DEBUG, "%s has new %s", sni->watcher_id, signal);
+		return 1;
+	} else {
+		wlr_log(WLR_DEBUG, "%s may have new %s", sni->watcher_id, signal);
+		return 0;
+	}
+}
+
 static int handle_new_icon(sd_bus_message *msg, void *data, sd_bus_error *error) {
 	struct swaybar_sni *sni = data;
-	wlr_log(WLR_DEBUG, "%s has new IconName", sni->watcher_id);
-
-	free(sni->icon_name);
-	sni->icon_name = NULL;
 	sni_get_property_async(sni, "IconName", "s", &sni->icon_name);
-
-	list_free_items_and_destroy(sni->icon_pixmap);
-	sni->icon_pixmap = NULL;
 	sni_get_property_async(sni, "IconPixmap", NULL, &sni->icon_pixmap);
-
-	return 0;
+	return sni_check_msg_sender(sni, msg, "icon");
 }
 
 static int handle_new_attention_icon(sd_bus_message *msg, void *data,
 		sd_bus_error *error) {
 	struct swaybar_sni *sni = data;
-	wlr_log(WLR_DEBUG, "%s has new AttentionIconName", sni->watcher_id);
-
-	free(sni->attention_icon_name);
-	sni->attention_icon_name = NULL;
 	sni_get_property_async(sni, "AttentionIconName", "s", &sni->attention_icon_name);
-
-	list_free_items_and_destroy(sni->attention_icon_pixmap);
-	sni->attention_icon_pixmap = NULL;
 	sni_get_property_async(sni, "AttentionIconPixmap", NULL, &sni->attention_icon_pixmap);
-
-	return 0;
+	return sni_check_msg_sender(sni, msg, "attention icon");
 }
 
 static int handle_new_status(sd_bus_message *msg, void *data, sd_bus_error *error) {
-	char *status;
-	int ret = sd_bus_message_read(msg, "s", &status);
-	if (ret < 0) {
-		wlr_log(WLR_DEBUG, "Failed to read new status message: %s", strerror(-ret));
+	struct swaybar_sni *sni = data;
+	int ret = sni_check_msg_sender(sni, msg, "status");
+	if (ret == 1) {
+		char *status;
+		int r = sd_bus_message_read(msg, "s", &status);
+		if (r < 0) {
+			wlr_log(WLR_ERROR, "Failed to read new status message: %s", strerror(-ret));
+			ret = r;
+		} else {
+			free(sni->status);
+			sni->status = strdup(status);
+			wlr_log(WLR_DEBUG, "%s has new status: %s", sni->watcher_id, status);
+			set_sni_dirty(sni);
+		}
 	} else {
-		struct swaybar_sni *sni = data;
-		free(sni->status);
-		sni->status = strdup(status);
-		wlr_log(WLR_DEBUG, "%s has new Status '%s'", sni->watcher_id, status);
-		set_sni_dirty(sni);
+		sni_get_property_async(sni, "Status", "s", &sni->status);
 	}
+
 	return ret;
 }
 
-static void sni_match_signal(struct swaybar_sni *sni, char *signal,
-		sd_bus_message_handler_t callback) {
-	int ret = sd_bus_match_signal(sni->tray->bus, NULL, sni->service, sni->path,
+static void sni_match_signal(struct swaybar_sni *sni, sd_bus_slot **slot,
+		char *signal, sd_bus_message_handler_t callback) {
+	int ret = sd_bus_match_signal(sni->tray->bus, slot, sni->service, sni->path,
 			sni->interface, signal, callback, sni);
 	if (ret < 0) {
 		wlr_log(WLR_DEBUG, "Failed to subscribe to signal %s: %s", signal,
@@ -241,9 +264,10 @@ struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray) {
 	sni_get_property_async(sni, "ItemIsMenu", "b", &sni->item_is_menu);
 	sni_get_property_async(sni, "Menu", "o", &sni->menu);
 
-	sni_match_signal(sni, "NewIcon", handle_new_icon);
-	sni_match_signal(sni, "NewAttentionIcon", handle_new_attention_icon);
-	sni_match_signal(sni, "NewStatus", handle_new_status);
+	sni_match_signal(sni, &sni->new_icon_slot, "NewIcon", handle_new_icon);
+	sni_match_signal(sni, &sni->new_attention_icon_slot, "NewAttentionIcon",
+			handle_new_attention_icon);
+	sni_match_signal(sni, &sni->new_status_slot, "NewStatus", handle_new_status);
 
 	return sni;
 }
@@ -252,6 +276,10 @@ void destroy_sni(struct swaybar_sni *sni) {
 	if (!sni) {
 		return;
 	}
+
+	sd_bus_slot_unref(sni->new_icon_slot);
+	sd_bus_slot_unref(sni->new_attention_icon_slot);
+	sd_bus_slot_unref(sni->new_status_slot);
 
 	free(sni->watcher_id);
 	free(sni->service);
