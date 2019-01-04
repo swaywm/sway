@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 	if (debug) {
 		wlr_log_init(WLR_DEBUG, NULL);
 	} else {
-		wlr_log_init(WLR_ERROR, NULL);
+		wlr_log_init(WLR_INFO, NULL);
 	}
 
 	if (!swaybar.id) {

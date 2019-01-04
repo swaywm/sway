@@ -35,11 +35,12 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		const char *prop, list_t **dest) {
 	int ret = sd_bus_message_enter_container(msg, 'a', "(iiay)");
 	if (ret < 0) {
-		wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop, strerror(-ret));
+		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 		return ret;
 	}
 
 	if (sd_bus_message_at_end(msg, 0)) {
+		wlr_log(WLR_DEBUG, "%s %s no. of icons = 0", sni->watcher_id, prop);
 		return ret;
 	}
 
@@ -51,14 +52,14 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 	while (!sd_bus_message_at_end(msg, 0)) {
 		ret = sd_bus_message_enter_container(msg, 'r', "iiay");
 		if (ret < 0) {
-			wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop, strerror(-ret));
+			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
 		int size;
 		ret = sd_bus_message_read(msg, "ii", NULL, &size);
 		if (ret < 0) {
-			wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop, strerror(-ret));
+			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
@@ -66,7 +67,7 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		size_t npixels;
 		ret = sd_bus_message_read_array(msg, 'y', &pixels, &npixels);
 		if (ret < 0) {
-			wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop, strerror(-ret));
+			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
@@ -80,6 +81,8 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 	}
 	list_free_items_and_destroy(*dest);
 	*dest = pixmaps;
+	wlr_log(WLR_DEBUG, "%s %s no. of icons = %d", sni->watcher_id, prop,
+			pixmaps->length);
 
 	return ret;
 error:
@@ -104,15 +107,15 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 
 	int ret;
 	if (sd_bus_message_is_method_error(msg, NULL)) {
-		sd_bus_error err = *sd_bus_message_get_error(msg);
-		wlr_log(WLR_DEBUG, "Failed to get property %s: %s", prop, err.message);
-		ret = -sd_bus_error_get_errno(&err);
+		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop,
+				sd_bus_message_get_error(msg)->message);
+		ret = sd_bus_message_get_errno(msg);
 		goto cleanup;
 	}
 
 	ret = sd_bus_message_enter_container(msg, 'v', type);
 	if (ret < 0) {
-		wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop, strerror(-ret));
+		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 		goto cleanup;
 	}
 
@@ -128,12 +131,17 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 
 		ret = sd_bus_message_read(msg, type, dest);
 		if (ret < 0) {
-			wlr_log(WLR_DEBUG, "Failed to read property %s: %s", prop,
-					strerror(-ret));
+			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto cleanup;
-		} else if (*type == 's' || *type == 'o') {
+		}
+
+		if (*type == 's' || *type == 'o') {
 			char **str = dest;
 			*str = strdup(*str);
+			wlr_log(WLR_DEBUG, "%s %s = '%s'", sni->watcher_id, prop, *str);
+		} else if (*type == 'b') {
+			wlr_log(WLR_DEBUG, "%s %s = %s", sni->watcher_id, prop,
+					*(bool *)dest ? "true" : "false");
 		}
 	}
 
@@ -157,7 +165,7 @@ static void sni_get_property_async(struct swaybar_sni *sni, const char *prop,
 			sni->path, "org.freedesktop.DBus.Properties", "Get",
 			get_property_callback, data, "ss", sni->interface, prop);
 	if (ret < 0) {
-		wlr_log(WLR_DEBUG, "Failed to get property %s: %s", prop, strerror(-ret));
+		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 	}
 }
 
@@ -210,12 +218,12 @@ static int handle_new_status(sd_bus_message *msg, void *data, sd_bus_error *erro
 		char *status;
 		int r = sd_bus_message_read(msg, "s", &status);
 		if (r < 0) {
-			wlr_log(WLR_ERROR, "Failed to read new status message: %s", strerror(-ret));
+			wlr_log(WLR_ERROR, "%s new status error: %s", sni->watcher_id, strerror(-ret));
 			ret = r;
 		} else {
 			free(sni->status);
 			sni->status = strdup(status);
-			wlr_log(WLR_DEBUG, "%s has new status: %s", sni->watcher_id, status);
+			wlr_log(WLR_DEBUG, "%s has new status = '%s'", sni->watcher_id, status);
 			set_sni_dirty(sni);
 		}
 	} else {
@@ -230,7 +238,7 @@ static void sni_match_signal(struct swaybar_sni *sni, sd_bus_slot **slot,
 	int ret = sd_bus_match_signal(sni->tray->bus, slot, sni->service, sni->path,
 			sni->interface, signal, callback, sni);
 	if (ret < 0) {
-		wlr_log(WLR_DEBUG, "Failed to subscribe to signal %s: %s", signal,
+		wlr_log(WLR_ERROR, "Failed to subscribe to signal %s: %s", signal,
 				strerror(-ret));
 	}
 }
@@ -322,18 +330,11 @@ static void handle_click(struct swaybar_sni *sni, int x, int y,
 		char *orientation = (dir = 'U' || dir == 'D') ? "vertical" : "horizontal";
 		int sign = (dir == 'U' || dir == 'L') ? -1 : 1;
 
-		int ret = sd_bus_call_method_async(sni->tray->bus, NULL, sni->service,
-				sni->path, sni->interface, "Scroll", NULL, NULL, "is",
-				delta*sign, orientation);
-		if (ret < 0) {
-			wlr_log(WLR_DEBUG, "Failed to scroll on SNI: %s", strerror(-ret));
-		}
+		sd_bus_call_method_async(sni->tray->bus, NULL, sni->service, sni->path,
+				sni->interface, "Scroll", NULL, NULL, "is", delta*sign, orientation);
 	} else {
-		int ret = sd_bus_call_method_async(sni->tray->bus, NULL, sni->service,
-				sni->path, sni->interface, method, NULL, NULL, "ii", x, y);
-		if (ret < 0) {
-			wlr_log(WLR_DEBUG, "Failed to click on SNI: %s", strerror(-ret));
-		}
+		sd_bus_call_method_async(sni->tray->bus, NULL, sni->service, sni->path,
+				sni->interface, method, NULL, NULL, "ii", x, y);
 	}
 }
 
@@ -345,7 +346,7 @@ static int cmp_sni_id(const void *item, const void *cmp_to) {
 static enum hotspot_event_handling icon_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
 		int x, int y, enum x11_button button, void *data) {
-	wlr_log(WLR_DEBUG, "Clicked on Status Notifier Item '%s'", (char *)data);
+	wlr_log(WLR_DEBUG, "Clicked on %s", (char *)data);
 
 	struct swaybar_tray *tray = output->bar->tray;
 	int idx = list_seq_find(tray->items, cmp_sni_id, data);
@@ -359,7 +360,7 @@ static enum hotspot_event_handling icon_hotspot_callback(
 		int global_y = output->output_y + (top_bar ? config->gaps.top + y:
 				(int) output->output_height - config->gaps.bottom - y);
 
-		wlr_log(WLR_DEBUG, "Guessing click at (%d, %d)", global_x, global_y);
+		wlr_log(WLR_DEBUG, "Guessing click position at (%d, %d)", global_x, global_y);
 		handle_click(sni, global_x, global_y, button, 1); // TODO get delta from event
 		return HOTSPOT_IGNORE;
 	} else {
