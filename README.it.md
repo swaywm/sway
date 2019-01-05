@@ -1,10 +1,9 @@
 # sway
 
-"**S**irCmpwn's **Way**land compositor" è un compositor 
-[Wayland](http://wayland.freedesktop.org/) **in via di sviluppo** 
-compatibile con i3.
-Leggi le [FAQ (in Inglese)](https://github.com/swaywm/sway/wiki). Unisciti al
-[canale IRC (in Inglese)](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
+Sway è un compositor [Wayland](http://wayland.freedesktop.org/) **in via di
+sviluppo** compatibile con i3.  Leggi le [FAQ (in
+Inglese)](https://github.com/swaywm/sway/wiki). Unisciti al [canale IRC (in
+Inglese)](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)

@@ -1,7 +1,6 @@
 # sway
 
-"**S**irCmpwn's **Way**land compositor"は**開発中**の
-i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
+Swayは**開発中**のi3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
 [IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)もあります。
 

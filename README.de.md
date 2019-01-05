@@ -3,10 +3,11 @@
 Der Fortschritt dieser Übersetzung kann [hier](https://github.com/swaywm/sway/issues/1318) 
 eingesehen werden.
 
-"**S**irCmpwn's **Way**land compositor" ist ein i3-kompatibler 
-[Wayland](http://wayland.freedesktop.org/)-Kompositor. Lies die 
-[FAQ](https://github.com/swaywm/sway/wiki#faq). Tritt dem 
-[IRC-Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway in irc.freenode.net).
+Sway ist ein i3-kompatibler
+[Wayland](http://wayland.freedesktop.org/)-Kompositor. Lies die
+[FAQ](https://github.com/swaywm/sway/wiki#faq). Tritt dem
+[IRC-Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway in
+irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 

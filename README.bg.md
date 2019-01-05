@@ -1,8 +1,9 @@
 # sway
 
-"**S**irCmpwn's **Way**land compositor" е в процес на разработка, съвместим с i3, [Wayland](http://wayland.freedesktop.org/) композитор.
-Прочетете [FAQ](https://github.com/swaywm/sway/wiki). Присъединете се в 
-[IRC канала](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
+Sway е в процес на разработка, съвместим с i3,
+[Wayland](http://wayland.freedesktop.org/) композитор.  Прочетете
+[FAQ](https://github.com/swaywm/sway/wiki). Присъединете се в [IRC
+канала](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
