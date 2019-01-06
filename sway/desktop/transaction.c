@@ -363,7 +363,7 @@ static void transaction_progress_queue(void) {
 
 static int handle_timeout(void *data) {
 	struct sway_transaction *transaction = data;
-	wlr_log(WLR_DEBUG, "Transaction %p timed out (%li waiting)",
+	wlr_log(WLR_DEBUG, "Transaction %p timed out (%zi waiting)",
 			transaction, transaction->num_waiting);
 	transaction->num_waiting = 0;
 	transaction_progress_queue();
@@ -472,7 +472,7 @@ static void set_instruction_ready(
 		struct timespec *start = &transaction->commit_time;
 		float ms = (now.tv_sec - start->tv_sec) * 1000 +
 			(now.tv_nsec - start->tv_nsec) / 1000000.0;
-		wlr_log(WLR_DEBUG, "Transaction %p: %li/%li ready in %.1fms (%s)",
+		wlr_log(WLR_DEBUG, "Transaction %p: %zi/%zi ready in %.1fms (%s)",
 				transaction,
 				transaction->num_configures - transaction->num_waiting + 1,
 				transaction->num_configures, ms,
