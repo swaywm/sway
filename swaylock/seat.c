@@ -63,8 +63,12 @@ static void keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
 	struct swaylock_state *state = data;
 	xkb_state_update_mask(state->xkb.state,
 		mods_depressed, mods_latched, mods_locked, 0, 0, group);
-	state->xkb.caps_lock = xkb_state_mod_name_is_active(state->xkb.state,
+	int caps_lock = xkb_state_mod_name_is_active(state->xkb.state,
 		XKB_MOD_NAME_CAPS, XKB_STATE_MODS_LOCKED);
+	if (caps_lock != state->xkb.caps_lock) {
+		state->xkb.caps_lock = caps_lock;
+		damage_state(state);
+	}
 	state->xkb.control = xkb_state_mod_name_is_active(state->xkb.state,
 		XKB_MOD_NAME_CTRL,
 		XKB_STATE_MODS_DEPRESSED | XKB_STATE_MODS_LATCHED);
