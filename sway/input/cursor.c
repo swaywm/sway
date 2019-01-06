@@ -155,6 +155,13 @@ struct sway_node *node_at_coords(
 	return &ws->node;
 }
 
+struct sway_node *node_at_cursor(struct sway_seat *seat,
+		struct sway_cursor *cursor,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	return node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, surface,
+		sx, sy);
+}
+
 /**
  * Determine if the edge of the given container is on the edge of the
  * workspace/output.
@@ -278,8 +285,8 @@ void cursor_rebase(struct sway_cursor *cursor) {
 	uint32_t time_msec = get_current_time_msec();
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	cursor->previous.node = node_at_coords(cursor->seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	cursor->previous.node = node_at_cursor(cursor->seat, cursor,
+		&surface, &sx, &sy);
 	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
 }
 
@@ -595,8 +602,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_node *node = node_at_cursor(seat, cursor, &surface, &sx, &sy);
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 	bool is_floating = cont && container_is_floating(cont);
@@ -804,8 +810,7 @@ void dispatch_cursor_axis(struct sway_cursor *cursor,
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_node *node = node_at_cursor(seat, cursor, &surface, &sx, &sy);
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;

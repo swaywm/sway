@@ -66,6 +66,10 @@ struct sway_node *node_at_coords(
 void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
 
+
+struct sway_node *node_at_cursor(struct sway_seat *seat,
+	struct sway_cursor *cursor, double *sx, double *sy);
+
 /**
  * "Rebase" a cursor on top of whatever view is underneath it.
  *
