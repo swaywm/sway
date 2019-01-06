@@ -327,7 +327,8 @@ runtime.
 		A view that does not have focus.
 
 	*client.urgent*
-		A view with an urgency hint. *Note*: This is not currently implemented.
+		A view with an urgency hint. *Note*: Native Wayland windows do not
+		support urgency. Urgency only works for Xwayland windows.
 
 	The meaning of each color is:
 
@@ -431,7 +432,7 @@ The default colors are:
 
 *focus\_follows\_mouse* yes|no|always
 	If set to _yes_, moving your mouse over a window will focus that window. If
-	set to _always_, the window under the cursor will always be focused, even 
+	set to _always_, the window under the cursor will always be focused, even
 	after switching between workspaces.
 
 *focus\_wrapping* yes|no|force
@@ -450,11 +451,11 @@ The default colors are:
 	Thickness of the titlebar border in pixels
 
 *titlebar\_padding* <horizontal> [<vertical>]
-	Padding of the text in the titlebar. _horizontal_ value affects horizontal 
-	padding of the text while _vertical_ value affects vertical padding (space 
-	above and below text). Padding includes titlebar borders so their value 
+	Padding of the text in the titlebar. _horizontal_ value affects horizontal
+	padding of the text while _vertical_ value affects vertical padding (space
+	above and below text). Padding includes titlebar borders so their value
 	should be greater than titlebar\_border\_thickness. If _vertical_ value is
-	not specified it is set to the _horizontal_ value. 
+	not specified it is set to the _horizontal_ value.
 
 *for\_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
