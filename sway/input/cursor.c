@@ -58,8 +58,9 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
  * location, it is stored in **surface (it may not be a view).
  */
 struct sway_node *node_at_coords(
-		struct sway_seat *seat, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy) {
+		struct sway_seat *seat, struct sway_workspace *workspace,
+		double lx, double ly, struct wlr_surface **surface,
+		double *sx, double *sy) {
 	// check for unmanaged views first
 #if HAVE_XWAYLAND
 	struct wl_list *unmanaged = &root->xwayland_unmanaged;
@@ -104,6 +105,9 @@ struct sway_node *node_at_coords(
 
 	// find the focused workspace on the output for this seat
 	struct sway_workspace *ws = output_get_active_workspace(output);
+	if (workspace != NULL) {
+		ws = workspace;
+	}
 
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
@@ -156,9 +160,9 @@ struct sway_node *node_at_coords(
 }
 
 struct sway_node *node_at_cursor(struct sway_seat *seat,
-		struct sway_cursor *cursor,
+		struct sway_workspace *workspace, struct sway_cursor *cursor,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	return node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, surface,
+	return node_at_coords(seat, workspace, cursor->cursor->x, cursor->cursor->y, surface,
 		sx, sy);
 }
 
@@ -285,7 +289,7 @@ void cursor_rebase(struct sway_cursor *cursor) {
 	uint32_t time_msec = get_current_time_msec();
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	cursor->previous.node = node_at_cursor(cursor->seat, cursor,
+	cursor->previous.node = node_at_cursor(cursor->seat, NULL, cursor,
 		&surface, &sx, &sy);
 	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
 }
@@ -602,7 +606,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_cursor(seat, cursor, &surface, &sx, &sy);
+	struct sway_node *node = node_at_cursor(seat, NULL, cursor, &surface, &sx, &sy);
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 	bool is_floating = cont && container_is_floating(cont);
@@ -810,7 +814,7 @@ void dispatch_cursor_axis(struct sway_cursor *cursor,
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_cursor(seat, cursor, &surface, &sx, &sy);
+	struct sway_node *node = node_at_cursor(seat, NULL, cursor, &surface, &sx, &sy);
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
@@ -920,7 +924,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
-	node_at_coords(seat, lx, ly, &surface, &sx, &sy);
+	node_at_coords(seat, NULL, lx, ly, &surface, &sx, &sy);
 
 	seat->touch_id = event->touch_id;
 	seat->touch_x = lx;
@@ -961,7 +965,7 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
-	node_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+	node_at_coords(cursor->seat, NULL, lx, ly, &surface, &sx, &sy);
 
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;
