@@ -27,7 +27,8 @@ struct sway_variable {
 enum binding_input_type {
 	BINDING_KEYCODE,
 	BINDING_KEYSYM,
-	BINDING_MOUSE,
+	BINDING_MOUSECODE,
+	BINDING_MOUSESYM,
 };
 
 enum binding_flags {

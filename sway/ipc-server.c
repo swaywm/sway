@@ -445,8 +445,12 @@ void ipc_event_binding(struct sway_binding *binding) {
 	json_object_object_add(json_binding, "input_code", json_object_new_int(input_code));
 	json_object_object_add(json_binding, "symbols", symbols);
 	json_object_object_add(json_binding, "symbol", symbol);
-	json_object_object_add(json_binding, "input_type", binding->type == BINDING_MOUSE ?
-			json_object_new_string("mouse") : json_object_new_string("keyboard"));
+
+	bool mouse = binding->type == BINDING_MOUSECODE ||
+		binding->type == BINDING_MOUSESYM;
+	json_object_object_add(json_binding, "input_type", mouse
+			? json_object_new_string("mouse")
+			: json_object_new_string("keyboard"));
 
 	json_object *json = json_object_new_object();
 	json_object_object_add(json, "change", json_object_new_string("run"));
