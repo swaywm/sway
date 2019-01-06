@@ -21,6 +21,7 @@
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/node.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -776,6 +777,14 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 
 	if (last_workspace != new_workspace && new_output) {
 		node_set_dirty(&new_output->node);
+	}
+
+	// replace node to focus with node under cursor
+	if (config->focus_follows_mouse == FOLLOWS_ALWAYS) {
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
+		node = node_at_cursor(seat, new_workspace, seat->cursor, &surface, &sx, &sy);
+		container = node->type == N_CONTAINER ? node->sway_container : NULL;
 	}
 
 	// find new output's old workspace, which might have to be removed if empty
