@@ -87,29 +87,25 @@ static void acquire_sleep_lock(void) {
 			"Setup Up Lock Screen", "delay");
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to send Inhibit signal: %s", error.message);
-		sd_bus_error_free(&error);
-		return;
+		goto cleanup;
 	}
 
 	ret = sd_bus_message_read(msg, "h", &lock_fd);
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
 			strerror(-ret));
-		sd_bus_error_free(&error);
-		sd_bus_message_unref(msg);
-		return;
-	} else {
-		wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
+		goto cleanup;
 	}
 
 	// sd_bus_message_unref closes the file descriptor so we need
 	// to copy it beforehand
 	lock_fd = fcntl(lock_fd, F_DUPFD_CLOEXEC, 3);
 	if (lock_fd < 0) {
-		wlr_log(WLR_ERROR, "Failed to copy sleep lock fd: %s",
-			strerror(errno));
+		wlr_log(WLR_ERROR, "Failed to copy sleep lock fd: %s", strerror(errno));
 	}
+	wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
 
+cleanup:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(msg);
 }
