@@ -7,6 +7,7 @@
 #include <wlr/backend/session.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_gamma_control.h>
@@ -140,6 +141,7 @@ bool server_init(struct sway_server *server) {
 
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
+	wlr_data_control_manager_v1_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
