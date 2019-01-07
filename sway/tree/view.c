@@ -654,6 +654,7 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
+		seat->cursor->image_surface = NULL;
 		seat_consider_warp_to_focus(seat);
 	}
 
