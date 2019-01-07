@@ -621,7 +621,7 @@ static int hide_notify(void *data) {
 	return 1;
 }
 
-void cursor_handle_activity(struct sway_cursor *cursor) {
+int cursor_get_timeout(struct sway_cursor *cursor){
 	struct seat_config *sc = seat_get_config(cursor->seat);
 	if (!sc) {
 		sc = seat_get_config_by_name("*");
@@ -630,20 +630,31 @@ void cursor_handle_activity(struct sway_cursor *cursor) {
 	if (timeout < 0) {
 		timeout = 0;
 	}
-	wl_event_source_timer_update(cursor->hide_source, timeout);
+	return timeout;
+}
+
+void cursor_handle_activity(struct sway_cursor *cursor) {
+	wl_event_source_timer_update(
+			cursor->hide_source, cursor_get_timeout(cursor));
 
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	if (cursor->hidden) {
-		cursor->hidden = false;
-		if (cursor->image_surface) {
-			cursor_set_image_surface(cursor, cursor->image_surface,
-					cursor->hotspot_x, cursor->hotspot_y,
-					cursor->image_client);
-		} else {
-			const char *image = cursor->image;
-			cursor->image = NULL;
-			cursor_set_image(cursor, image, cursor->image_client);
-		}
+		cursor_unhide(cursor);
+	}
+}
+
+void cursor_unhide(struct sway_cursor *cursor) {
+	cursor->hidden = false;
+	if (cursor->image_surface) {
+		cursor_set_image_surface(cursor,
+				cursor->image_surface,
+				cursor->hotspot_x,
+				cursor->hotspot_y,
+				cursor->image_client);
+	} else {
+		const char *image = cursor->image;
+		cursor->image = NULL;
+		cursor_set_image(cursor, image, cursor->image_client);
 	}
 }
 

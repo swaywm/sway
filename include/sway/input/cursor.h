@@ -61,6 +61,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
 void cursor_rebase(struct sway_cursor *cursor);
 
 void cursor_handle_activity(struct sway_cursor *cursor);
+void cursor_unhide(struct sway_cursor *cursor);
+int cursor_get_timeout(struct sway_cursor *cursor);
 
 /**
  * Like cursor_rebase, but also allows focus to change when the cursor enters a
