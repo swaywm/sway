@@ -654,14 +654,7 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		if (config->mouse_warping == WARP_CONTAINER) {
-			struct sway_node *node = seat_get_focus(seat);
-			if (node && node->type == N_CONTAINER) {
-				cursor_warp_to_container(seat->cursor, node->sway_container);
-			} else if (node && node->type == N_WORKSPACE) {
-				cursor_warp_to_workspace(seat->cursor, node->sway_workspace);
-			}
-		}
+		seat_consider_warp_to_focus(seat);
 	}
 
 	transaction_commit_dirty();
