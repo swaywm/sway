@@ -1231,4 +1231,8 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	} else {
 		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
 	}
+	if (seat->cursor->hidden){
+		cursor_unhide(seat->cursor);
+		wl_event_source_timer_update(seat->cursor->hide_source, cursor_get_timeout(seat->cursor));
+	}
 }
