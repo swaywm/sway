@@ -16,6 +16,10 @@ swayidle - Idle manager for Wayland
 *-d*
 	Enable debug output.
 
+*-w*
+	Wait for command to finish executing before continuing, helpful for ensuring
+	that a *before-sleep* command has finished before the system goes to sleep.
+
 # DESCRIPTION
 
 swayidle listens for idle activity on your Wayland compositor and executes tasks
@@ -35,6 +39,10 @@ Sending SIGUSR1 to swayidle will immediately enter idle state.
 *before-sleep* <command>
 	If built with systemd support, executes _command_ before systemd puts the
 	computer to sleep.
+
+	Note: this only delays sleeping up to the limit set in *logind.conf(5)* by
+	the option InhibitDelayMaxSec. A command that hasn't finished by then will
+	continue running after resuming from sleep.
 
 All commands are executed in a shell.
 
