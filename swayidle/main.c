@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <signal.h>
@@ -104,9 +105,21 @@ static void acquire_sleep_lock(void) {
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
 			strerror(-ret));
+		sd_bus_error_free(&error);
+		sd_bus_message_unref(msg);
+		return;
 	} else {
 		wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
 	}
+
+	// sd_bus_message_unref closes the file descriptor so we need
+	// to copy it beforehand
+	lock_fd = fcntl(lock_fd, F_DUPFD_CLOEXEC, 3);
+	if (lock_fd < 0) {
+		wlr_log(WLR_ERROR, "Failed to copy sleep lock fd: %s",
+			strerror(errno));
+	}
+
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(msg);
 }
