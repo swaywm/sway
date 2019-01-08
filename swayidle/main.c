@@ -75,17 +75,7 @@ static void cmd_exec(char *param) {
 
 #if HAVE_SYSTEMD || HAVE_ELOGIND
 static int lock_fd = -1;
-static int ongoing_fd = -1;
 static struct sd_bus *bus = NULL;
-
-static int release_lock(void *data) {
-	wlr_log(WLR_INFO, "Releasing sleep lock %d", ongoing_fd);
-	if (ongoing_fd >= 0) {
-		close(ongoing_fd);
-	}
-	ongoing_fd = -1;
-	return 0;
-}
 
 static void acquire_sleep_lock(void) {
 	sd_bus_message *msg = NULL;
@@ -139,19 +129,17 @@ static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
 		return 0;
 	}
 
-	ongoing_fd = lock_fd;
-
 	if (state.lock_cmd) {
 		cmd_exec(state.lock_cmd);
 	}
-
-	if (ongoing_fd >= 0) {
-		struct wl_event_source *source =
-			wl_event_loop_add_timer(state.event_loop, release_lock, NULL);
-		wl_event_source_timer_update(source, 1000);
-	}
-
 	wlr_log(WLR_DEBUG, "Prepare for sleep done");
+
+	wlr_log(WLR_INFO, "Releasing sleep lock %d", lock_fd);
+	if (lock_fd >= 0) {
+		close(lock_fd);
+	}
+	lock_fd = -1;
+
 	return 0;
 }
 
