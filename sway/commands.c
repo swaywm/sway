@@ -237,15 +237,15 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			criteria_destroy(criteria);
 			config->handler_context.using_criteria = true;
 			// Skip leading whitespace
-			head += strspn(head, whitespace);
+			for (; isspace(*head); ++head) {}
 		}
 		// Split command list
 		cmdlist = argsep(&head, ";");
-		cmdlist += strspn(cmdlist, whitespace);
+		for (; isspace(*cmdlist); ++cmdlist) {}
 		do {
 			// Split commands
 			cmd = argsep(&cmdlist, ",");
-			cmd += strspn(cmd, whitespace);
+			for (; isspace(*cmd); ++cmd) {}
 			if (strcmp(cmd, "") == 0) {
 				wlr_log(WLR_INFO, "Ignoring empty command.");
 				continue;

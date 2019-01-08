@@ -9,24 +9,17 @@
 #include "string.h"
 #include "list.h"
 
-const char whitespace[] = " \f\n\r\t\v";
+static const char whitespace[] = " \f\n\r\t\v";
 
-char *strip_whitespace(char *_str) {
-	if (*_str == '\0')
-		return _str;
-	char *strold = _str;
-	while (*_str == ' ' || *_str == '\t') {
-		_str++;
+void strip_whitespace(char *str) {
+	size_t len = strlen(str);
+	size_t start = strspn(str, whitespace);
+	memmove(str, &str[start], len + 1 - start);
+
+	if (*str) {
+		for (len -= start + 1; isspace(str[len]); --len) {}
+		str[len + 1] = '\0';
 	}
-	char *str = strdup(_str);
-	free(strold);
-	int i;
-	for (i = 0; str[i] != '\0'; ++i);
-	do {
-		i--;
-	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
-	str[i + 1] = '\0';
-	return str;
 }
 
 void strip_quotes(char *str) {

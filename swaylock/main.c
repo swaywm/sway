@@ -23,7 +23,6 @@
 #include "cairo.h"
 #include "log.h"
 #include "loop.h"
-#include "readline.h"
 #include "stringop.h"
 #include "util.h"
 #include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
@@ -808,36 +807,32 @@ static int load_config(char *path, struct swaylock_state *state,
 		wlr_log(WLR_ERROR, "Failed to read config. Running without it.");
 		return 0;
 	}
-	char *line;
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t nread;
 	int line_number = 0;
-	while (!feof(config)) {
-		line = read_line(config);
-		if (!line) {
-			continue;
+	int result = 0;
+	while ((nread = getline(&line, &line_size, config)) != -1) {
+		line_number++;
+
+		if (line[nread - 1] == '\n') {
+			line[--nread] = '\0';
 		}
 
-		line_number++;
-		if (line[0] == '#') {
-			free(line);
-			continue;
-		}
-		if (strlen(line) == 0) {
-			free(line);
+		if (!*line || line[0] == '#') {
 			continue;
 		}
 
 		wlr_log(WLR_DEBUG, "Config Line #%d: %s", line_number, line);
-		char flag[strlen(line) + 3];
+		char flag[nread + 3];
 		sprintf(flag, "--%s", line);
 		char *argv[] = {"swaylock", flag};
-		int result = parse_options(2, argv, state, line_mode, NULL);
+		result = parse_options(2, argv, state, line_mode, NULL);
 		if (result != 0) {
-			free(line);
-			fclose(config);
-			return result;
+			break;
 		}
-		free(line);
 	}
+	free(line);
 	fclose(config);
 	return 0;
 }

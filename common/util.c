@@ -13,7 +13,6 @@
 #include <xkbcommon/xkbcommon-names.h>
 #include <wlr/types/wlr_keyboard.h>
 #include "log.h"
-#include "readline.h"
 #include "util.h"
 
 int wrap(int i, int max) {
@@ -87,11 +86,12 @@ pid_t get_parent_pid(pid_t child) {
 	char *token = NULL;
 	const char *sep = " ";
 	FILE *stat = NULL;
+	size_t buf_size = 0;
 
 	sprintf(file_name, "/proc/%d/stat", child);
 
 	if ((stat = fopen(file_name, "r"))) {
-		if ((buffer = read_line(stat))) {
+		if (getline(&buffer, &buf_size, stat) != -1) {
 			token = strtok(buffer, sep); // pid
 			token = strtok(NULL, sep);   // executable name
 			token = strtok(NULL, sep);   // state
