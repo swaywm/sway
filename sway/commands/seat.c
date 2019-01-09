@@ -35,7 +35,9 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 
 	struct seat_config *sc =
 		store_seat_config(config->handler_context.seat_config);
-	input_manager_apply_seat_config(sc);
+	if (!config->reading) {
+		input_manager_apply_seat_config(sc);
+	}
 
 	config->handler_context.seat_config = NULL;
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
