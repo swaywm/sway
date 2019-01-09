@@ -1092,6 +1092,8 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
 	bool on_border = edge != WLR_EDGE_NONE;
 	bool on_titlebar = cont && !on_border && !surface;
+	bool on_titlebar_border = cont && on_border &&
+		cursor->cursor->y < cont->content_y;
 	bool on_contents = cont && !on_border && surface;
 	float scroll_factor =
 		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
@@ -1117,7 +1119,7 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	}
 
 	// Scrolling on a tabbed or stacked title bar (handled as press event)
-	if (!handled && on_titlebar) {
+	if (!handled && (on_titlebar || on_titlebar_border)) {
 		enum sway_container_layout layout = container_parent_layout(cont);
 		if (layout == L_TABBED || layout == L_STACKED) {
 			struct sway_node *tabcontainer = node_get_parent(node);
