@@ -1,10 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <libevdev/libevdev.h>
-#ifdef __linux__
 #include <linux/input-event-codes.h>
-#elif __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#endif
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <string.h>

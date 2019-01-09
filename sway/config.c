@@ -13,11 +13,7 @@
 #include <limits.h>
 #include <dirent.h>
 #include <strings.h>
-#ifdef __linux__
 #include <linux/input-event-codes.h>
-#elif __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#endif
 #include <wlr/types/wlr_output.h>
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
