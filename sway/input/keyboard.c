@@ -295,14 +295,10 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		get_active_binding(&keyboard->state_keysyms_raw,
 				config->current_mode->keysym_bindings, &binding,
 				raw_modifiers, false, input_inhibited, device_identifier);
-
-		if (binding) {
-			seat_execute_command(seat, binding);
-			handled = true;
-		}
 	}
 
-	// Set up (or clear) keyboard repeat for a pressed binding
+	// Set up (or clear) keyboard repeat for a pressed binding. Since the
+	// binding may remove the keyboard, the timer needs to be updated first
 	if (binding && wlr_device->keyboard->repeat_info.delay > 0) {
 		keyboard->repeat_binding = binding;
 		if (wl_event_source_timer_update(keyboard->key_repeat_source,
@@ -314,6 +310,11 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		if (wl_event_source_timer_update(keyboard->key_repeat_source, 0) < 0) {
 			wlr_log(WLR_DEBUG, "failed to disarm key repeat timer");
 		}
+	}
+
+	if (binding) {
+		seat_execute_command(seat, binding);
+		handled = true;
 	}
 
 	// Compositor bindings
