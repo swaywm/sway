@@ -463,7 +463,11 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		if (config->swaynag_config_errors.pid > 0) {
 			swaynag_show(&config->swaynag_config_errors);
 		}
+
 		input_manager_verify_fallback_seat();
+		for (int i = 0; i < config->seat_configs->length; i++) {
+			input_manager_apply_seat_config(config->seat_configs->items[i]);
+		}
 	}
 
 	if (old_config) {
