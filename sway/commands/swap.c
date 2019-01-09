@@ -108,7 +108,7 @@ static void container_swap(struct sway_container *con1,
 		container_set_fullscreen(con2, false);
 	}
 
-	struct sway_seat *seat = input_manager_get_default_seat();
+	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_container *focus = seat_get_focused_container(seat);
 	struct sway_workspace *vis1 =
 		output_get_active_workspace(con1->workspace->output);
