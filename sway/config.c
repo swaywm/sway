@@ -387,6 +387,8 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		memcpy(&config->swaynag_config_errors,
 				&old_config->swaynag_config_errors,
 				sizeof(struct swaynag_instance));
+
+		input_manager_reset_all_inputs();
 	}
 
 	config->current_config_path = path;
