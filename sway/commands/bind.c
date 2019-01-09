@@ -312,8 +312,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) {
 	wlr_log(WLR_DEBUG, "running command for binding: %s", binding->command);
 
-	config->handler_context.seat = seat;
-	list_t *res_list = execute_command(binding->command, NULL, NULL);
+	list_t *res_list = execute_command(binding->command, seat, NULL);
 	bool success = true;
 	for (int i = 0; i < res_list->length; ++i) {
 		struct cmd_results *results = res_list->items[i];
