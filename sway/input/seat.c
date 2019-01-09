@@ -428,6 +428,12 @@ static void seat_apply_input_config(struct sway_seat *seat,
 	if (mapped_to_output != NULL) {
 		wlr_log(WLR_DEBUG, "Mapping input device %s to output %s",
 			sway_device->input_device->identifier, mapped_to_output);
+		if (strcmp("*", mapped_to_output) == 0) {
+			wlr_cursor_map_input_to_output(seat->cursor->cursor,
+				sway_device->input_device->wlr_device, NULL);
+			wlr_log(WLR_DEBUG, "Reset output mapping");
+			return;
+		}
 		struct sway_output *output = output_by_name_or_id(mapped_to_output);
 		if (output) {
 			wlr_cursor_map_input_to_output(seat->cursor->cursor,
