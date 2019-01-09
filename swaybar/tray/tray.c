@@ -79,7 +79,7 @@ void destroy_tray(struct swaybar_tray *tray) {
 	finish_host(&tray->host_xdg);
 	finish_host(&tray->host_kde);
 	for (int i = 0; i < tray->items->length; ++i) {
-		destroy_sni(tray->items->items[0]);
+		destroy_sni(tray->items->items[i]);
 	}
 	list_free(tray->items);
 	destroy_watcher(tray->watcher_xdg);
