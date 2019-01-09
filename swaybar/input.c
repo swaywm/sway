@@ -1,9 +1,5 @@
 #include <assert.h>
-#ifdef __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#else
 #include <linux/input-event-codes.h>
-#endif
 #include <stdlib.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>

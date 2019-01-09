@@ -1,11 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <math.h>
 #include <libevdev/libevdev.h>
-#ifdef __linux__
 #include <linux/input-event-codes.h>
-#elif __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#endif
 #include <float.h>
 #include <limits.h>
 #include <wlr/types/wlr_cursor.h>

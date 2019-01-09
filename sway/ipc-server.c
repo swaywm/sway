@@ -1,10 +1,6 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
 #define _POSIX_C_SOURCE 200112L
-#ifdef __linux__
 #include <linux/input-event-codes.h>
-#elif __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#endif
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
