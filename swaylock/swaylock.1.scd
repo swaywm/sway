@@ -44,6 +44,12 @@ Locks your Wayland session.
 	Display the given image, optionally only on the given output. Use -c to set
 	a background color.
 
+*-L, --disable-caps-lock-text*
+	Disable the Caps Lock Text.
+
+*-l, --indicator-caps-lock*
+	Show the current Caps Lock state also on the indicator.
+
 *-s, --scaling*
 	Scaling mode for images: _stretch_, _fill_, _fit_, _center_, or _tile_.
 
@@ -57,6 +63,12 @@ Locks your Wayland session.
 
 *--bs-hl-color* <rrggbb[aa]>
 	Sets the color of backspace highlight segments.
+
+*--caps-lock-bs-hl-color* <rrggbb[aa]>
+	Sets the color of backspace highlight segments when Caps Lock is active.
+
+*--caps-lock-bs-hl-color* <rrggbb[aa]>
+	Sets the color of the key press highlight segments when Caps Lock is active.
 
 *--font* <font>
 	Sets the font of the text inside the indicator.
@@ -75,6 +87,9 @@ Locks your Wayland session.
 *--inside-clear-color* <rrggbb[aa]>
 	Sets the color of the inside of the indicator when cleared.
 
+*--inside-caps-lock-color* <rrggbb[aa]>
+	Sets the color of the inside of the indicator when Caps Lock is active.
+
 *--inside-ver-color* <rrggbb[aa]>
 	Sets the color of the inside of the indicator when verifying.
 
@@ -91,6 +106,10 @@ Locks your Wayland session.
 *--line-clear-color* <rrggbb[aa]>
 	Sets the color of the lines that separate the inside and outside of the
 	indicator when cleared.
+
+*--line-caps-lock-color* <rrggbb[aa]>
+	Sets the color of the line between the inside and ring when Caps Lock
+	is active.
 
 *--line-ver-color* <rrggbb[aa]>
 	Sets the color of the lines that separate the inside and outside of the
@@ -114,6 +133,9 @@ Locks your Wayland session.
 *--ring-clear-color* <rrggbb[aa]>
 	Sets the color of the outside of the indicator when cleared.
 
+*--ring-caps-lock-color* <rrggbb[aa]>
+	Sets the color of the ring of the indicator when Caps Lock is active.
+
 *--ring-ver-color* <rrggbb[aa]>
 	Sets the color of the outside of the indicator when verifying.
 
@@ -128,6 +150,9 @@ Locks your Wayland session.
 
 *--text-clear-color* <rrggbb[aa]>
 	Sets the color of the text inside the indicator when cleared.
+
+*--text-caps-lock-color* <rrggbb[aa]>
+	Sets the color of the text when Caps Lock is active.
 
 *--text-ver-color* <rrggbb[aa]>
 	Sets the color of the text inside the indicator when verifying.
