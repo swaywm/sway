@@ -100,8 +100,8 @@ sway_sources = files(
 	'commands/workspace_layout.c',
 	'commands/ws_auto_back_and_forth.c',
 
+	'commands/bar/bind.c',
 	'commands/bar/binding_mode_indicator.c',
-	'commands/bar/bindsym.c',
 	'commands/bar/colors.c',
 	'commands/bar/font.c',
 	'commands/bar/gaps.c',

@@ -8,6 +8,7 @@
 
 // Must be in alphabetical order for bsearch
 static struct cmd_handler bar_handlers[] = {
+	{ "bindcode", bar_cmd_bindcode },
 	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
 	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", bar_cmd_colors },
