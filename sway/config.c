@@ -601,6 +601,7 @@ static ssize_t getline_with_cont(char **lineptr, size_t *line_size, FILE *file) 
 }
 
 static int detect_brace(FILE *file) {
+	int ret = 0;
 	int lines = 0;
 	long pos = ftell(file);
 	char *line = NULL;
@@ -609,15 +610,15 @@ static int detect_brace(FILE *file) {
 		lines++;
 		strip_whitespace(line);
 		if (*line) {
-			if (strcmp(line, "{") != 0) {
-				fseek(file, pos, SEEK_SET);
-				lines = 0;
+			if (strcmp(line, "{") == 0) {
+				ret = lines;
 			}
 			break;
 		}
 	}
 	free(line);
-	return lines;
+	fseek(file, pos, SEEK_SET);
+	return ret;
 }
 
 static char *expand_line(const char *block, const char *line, bool add_brace) {
