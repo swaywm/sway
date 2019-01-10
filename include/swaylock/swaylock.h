@@ -22,6 +22,7 @@ enum auth_state {
 struct swaylock_colorset {
 	uint32_t input;
 	uint32_t cleared;
+	uint32_t caps_lock;
 	uint32_t verifying;
 	uint32_t wrong;
 };
@@ -30,6 +31,8 @@ struct swaylock_colors {
 	uint32_t background;
 	uint32_t bs_highlight;
 	uint32_t key_highlight;
+	uint32_t caps_lock_bs_highlight;
+	uint32_t caps_lock_key_highlight;
 	uint32_t separator;
 	struct swaylock_colorset inside;
 	struct swaylock_colorset line;
@@ -45,6 +48,8 @@ struct swaylock_args {
 	uint32_t thickness;
 	bool ignore_empty;
 	bool show_indicator;
+	bool show_caps_lock_text;
+	bool show_caps_lock_indicator;
 	bool daemonize;
 };
 

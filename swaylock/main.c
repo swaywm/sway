@@ -396,28 +396,34 @@ static void set_default_colors(struct swaylock_colors *colors) {
 	colors->background = 0xFFFFFFFF;
 	colors->bs_highlight = 0xDB3300FF;
 	colors->key_highlight = 0x33DB00FF;
+	colors->caps_lock_bs_highlight = 0xDB3300FF;
+	colors->caps_lock_key_highlight = 0x33DB00FF;
 	colors->separator = 0x000000FF;
 	colors->inside = (struct swaylock_colorset){
 		.input = 0x000000C0,
 		.cleared = 0xE5A445C0,
+		.caps_lock = 0x000000C0,
 		.verifying = 0x0072FFC0,
 		.wrong = 0xFA0000C0,
 	};
 	colors->line = (struct swaylock_colorset){
 		.input = 0x000000FF,
 		.cleared = 0x000000FF,
+		.caps_lock = 0x000000FF,
 		.verifying = 0x000000FF,
 		.wrong = 0x000000FF,
 	};
 	colors->ring = (struct swaylock_colorset){
 		.input = 0x337D00FF,
 		.cleared = 0xE5A445FF,
+		.caps_lock = 0xE5A445FF,
 		.verifying = 0x3300FFFF,
 		.wrong = 0x7D3300FF,
 	};
 	colors->text = (struct swaylock_colorset){
 		.input = 0xE5A445FF,
 		.cleared = 0x000000FF,
+		.caps_lock = 0xE5A445FF,
 		.verifying = 0x000000FF,
 		.wrong = 0x000000FF,
 	};
@@ -433,25 +439,31 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		enum line_mode *line_mode, char **config_path) {
 	enum long_option_codes {
 		LO_BS_HL_COLOR = 256,
+		LO_CAPS_LOCK_BS_HL_COLOR,
+		LO_CAPS_LOCK_KEY_HL_COLOR,
 		LO_FONT,
 		LO_IND_RADIUS,
 		LO_IND_THICKNESS,
 		LO_INSIDE_COLOR,
 		LO_INSIDE_CLEAR_COLOR,
+		LO_INSIDE_CAPS_LOCK_COLOR,
 		LO_INSIDE_VER_COLOR,
 		LO_INSIDE_WRONG_COLOR,
 		LO_KEY_HL_COLOR,
 		LO_LINE_COLOR,
 		LO_LINE_CLEAR_COLOR,
+		LO_LINE_CAPS_LOCK_COLOR,
 		LO_LINE_VER_COLOR,
 		LO_LINE_WRONG_COLOR,
 		LO_RING_COLOR,
 		LO_RING_CLEAR_COLOR,
+		LO_RING_CAPS_LOCK_COLOR,
 		LO_RING_VER_COLOR,
 		LO_RING_WRONG_COLOR,
 		LO_SEP_COLOR,
 		LO_TEXT_COLOR,
 		LO_TEXT_CLEAR_COLOR,
+		LO_TEXT_CAPS_LOCK_COLOR,
 		LO_TEXT_VER_COLOR,
 		LO_TEXT_WRONG_COLOR,
 	};
@@ -463,6 +475,8 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		{"daemonize", no_argument, NULL, 'f'},
 		{"help", no_argument, NULL, 'h'},
 		{"image", required_argument, NULL, 'i'},
+		{"disable-caps-lock-text", no_argument, NULL, 'L'},
+		{"indicator-caps-lock", no_argument, NULL, 'l'},
 		{"line-uses-inside", no_argument, NULL, 'n'},
 		{"socket", required_argument, NULL, 'p'},
 		{"line-uses-ring", no_argument, NULL, 'r'},
@@ -471,25 +485,31 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		{"no-unlock-indicator", no_argument, NULL, 'u'},
 		{"version", no_argument, NULL, 'v'},
 		{"bs-hl-color", required_argument, NULL, LO_BS_HL_COLOR},
+		{"caps-lock-bs-hl-color", required_argument, NULL, LO_CAPS_LOCK_BS_HL_COLOR},
+		{"caps-lock-key-hl-color", required_argument, NULL, LO_CAPS_LOCK_KEY_HL_COLOR},
 		{"font", required_argument, NULL, LO_FONT},
 		{"indicator-radius", required_argument, NULL, LO_IND_RADIUS},
 		{"indicator-thickness", required_argument, NULL, LO_IND_THICKNESS},
 		{"inside-color", required_argument, NULL, LO_INSIDE_COLOR},
 		{"inside-clear-color", required_argument, NULL, LO_INSIDE_CLEAR_COLOR},
+		{"inside-caps-lock-color", required_argument, NULL, LO_INSIDE_CAPS_LOCK_COLOR},
 		{"inside-ver-color", required_argument, NULL, LO_INSIDE_VER_COLOR},
 		{"inside-wrong-color", required_argument, NULL, LO_INSIDE_WRONG_COLOR},
 		{"key-hl-color", required_argument, NULL, LO_KEY_HL_COLOR},
 		{"line-color", required_argument, NULL, LO_LINE_COLOR},
 		{"line-clear-color", required_argument, NULL, LO_LINE_CLEAR_COLOR},
+		{"line-caps-lock-color", required_argument, NULL, LO_LINE_CAPS_LOCK_COLOR},
 		{"line-ver-color", required_argument, NULL, LO_LINE_VER_COLOR},
 		{"line-wrong-color", required_argument, NULL, LO_LINE_WRONG_COLOR},
 		{"ring-color", required_argument, NULL, LO_RING_COLOR},
 		{"ring-clear-color", required_argument, NULL, LO_RING_CLEAR_COLOR},
+		{"ring-caps-lock-color", required_argument, NULL, LO_RING_CAPS_LOCK_COLOR},
 		{"ring-ver-color", required_argument, NULL, LO_RING_VER_COLOR},
 		{"ring-wrong-color", required_argument, NULL, LO_RING_WRONG_COLOR},
 		{"separator-color", required_argument, NULL, LO_SEP_COLOR},
 		{"text-color", required_argument, NULL, LO_TEXT_COLOR},
 		{"text-clear-color", required_argument, NULL, LO_TEXT_CLEAR_COLOR},
+		{"text-caps-lock-color", required_argument, NULL, LO_TEXT_CAPS_LOCK_COLOR},
 		{"text-ver-color", required_argument, NULL, LO_TEXT_VER_COLOR},
 		{"text-wrong-color", required_argument, NULL, LO_TEXT_WRONG_COLOR},
 		{0, 0, 0, 0}
@@ -498,76 +518,97 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 	const char usage[] =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -C, --config <config_file>     "
+		"  -C, --config <config_file>       "
 			"Path to the config file.\n"
-		"  -c, --color <color>            "
+		"  -c, --color <color>              "
 			"Turn the screen into the given color instead of white.\n"
-		"  -e, --ignore-empty-password    "
+		"  -e, --ignore-empty-password      "
 			"When an empty password is provided, do not validate it.\n"
-		"  -f, --daemonize                "
+		"  -f, --daemonize                  "
 			"Detach from the controlling terminal after locking.\n"
-		"  -h, --help                     "
+		"  -h, --help                       "
 			"Show help message and quit.\n"
-		"  -i, --image [<output>:]<path>  "
+		"  -i, --image [<output>:]<path>    "
 			"Display the given image.\n"
-		"  -s, --scaling <mode>           "
+		"  -L, --disable-caps-lock-text     "
+			"Disable the Caps Lock text.\n"
+		"  -l, --indicator-caps-lock        "
+			"Show the current Caps Lock state also on the indicator.\n"
+		"  -s, --scaling <mode>             "
 			"Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling                   "
+		"  -t, --tiling                     "
 			"Same as --scaling=tile.\n"
-		"  -u, --no-unlock-indicator      "
+		"  -u, --no-unlock-indicator        "
 			"Disable the unlock indicator.\n"
-		"  -v, --version                  "
+		"  -v, --version                    "
 			"Show the version number and quit.\n"
-		"  --bs-hl-color <color>          "
+		"  --bs-hl-color <color>            "
 			"Sets the color of backspace highlight segments.\n"
-		"  --font <font>                  "
+		"  --caps-lock-bs-hl-color <color>  "
+			"Sets the color of backspace highlight segments when Caps Lock "
+			"is active.\n"
+		"  --caps-lock-key-hl-color <color> "
+			"Sets the color of the key press highlight segments when "
+			"Caps Lock is active.\n"
+		"  --font <font>                    "
 			"Sets the font of the text.\n"
-		"  --indicator-radius <radius>    "
+		"  --indicator-radius <radius>      "
 			"Sets the indicator radius.\n"
-		"  --indicator-thickness <thick>  "
+		"  --indicator-thickness <thick>    "
 			"Sets the indicator thickness.\n"
-		"  --inside-color <color>         "
+		"  --inside-color <color>           "
 			"Sets the color of the inside of the indicator.\n"
-		"  --inside-clear-color <color>   "
+		"  --inside-clear-color <color>     "
 			"Sets the color of the inside of the indicator when cleared.\n"
-		"  --inside-ver-color <color>     "
+		"  --inside-caps-lock-color <color> "
+			"Sets the color of the inside of the indicator when Caps Lock "
+			"is active.\n"
+		"  --inside-ver-color <color>       "
 			"Sets the color of the inside of the indicator when verifying.\n"
-		"  --inside-wrong-color <color>   "
+		"  --inside-wrong-color <color>     "
 			"Sets the color of the inside of the indicator when invalid.\n"
-		"  --key-hl-color <color>         "
+		"  --key-hl-color <color>           "
 			"Sets the color of the key press highlight segments.\n"
-		"  --line-color <color>           "
+		"  --line-color <color>             "
 			"Sets the color of the line between the inside and ring.\n"
-		"  --line-clear-color <color>     "
+		"  --line-clear-color <color>       "
 			"Sets the color of the line between the inside and ring when "
 			"cleared.\n"
-		"  --line-ver-color <color>       "
+		"  --line-caps-lock-color <color>   "
+			"Sets the color of the line between the inside and ring when "
+			"Caps Lock is active.\n"
+		"  --line-ver-color <color>         "
 			"Sets the color of the line between the inside and ring when "
 			"verifying.\n"
-		"  --line-wrong-color <color>     "
+		"  --line-wrong-color <color>       "
 			"Sets the color of the line between the inside and ring when "
 			"invalid.\n"
-		"  -n, --line-uses-inside         "
+		"  -n, --line-uses-inside           "
 			"Use the inside color for the line between the inside and ring.\n"
-		"  -r, --line-uses-ring           "
+		"  -r, --line-uses-ring             "
 			"Use the ring color for the line between the inside and ring.\n"
-		"  --ring-color <color>           "
+		"  --ring-color <color>             "
 			"Sets the color of the ring of the indicator.\n"
-		"  --ring-clear-color <color>     "
+		"  --ring-clear-color <color>       "
 			"Sets the color of the ring of the indicator when cleared.\n"
-		"  --ring-ver-color <color>       "
+		"  --ring-caps-lock-color <color>   "
+			"Sets the color of the ring of the indicator when Caps Lock "
+			"is active.\n"
+		"  --ring-ver-color <color>         "
 			"Sets the color of the ring of the indicator when verifying.\n"
-		"  --ring-wrong-color <color>     "
+		"  --ring-wrong-color <color>       "
 			"Sets the color of the ring of the indicator when invalid.\n"
-		"  --separator-color <color>      "
+		"  --separator-color <color>        "
 			"Sets the color of the lines that separate highlight segments.\n"
-		"  --text-color <color>           "
+		"  --text-color <color>             "
 			"Sets the color of the text.\n"
-		"  --text-clear-color <color>     "
+		"  --text-clear-color <color>       "
 			"Sets the color of the text when cleared.\n"
-		"  --text-ver-color <color>       "
+		"  --text-caps-lock-color <color>   "
+			"Sets the color of the text when Caps Lock is active.\n"
+		"  --text-ver-color <color>         "
 			"Sets the color of the text when verifying.\n"
-		"  --text-wrong-color <color>     "
+		"  --text-wrong-color <color>       "
 			"Sets the color of the text when invalid.\n"
 		"\n"
 		"All <color> options are of the form <rrggbb[aa]>.\n";
@@ -576,7 +617,7 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 	optind = 1;
 	while (1) {
 		int opt_idx = 0;
-		c = getopt_long(argc, argv, "c:efhi:nrs:tuvC:", long_options, &opt_idx);
+		c = getopt_long(argc, argv, "c:efhi:Llnrs:tuvC:", long_options, &opt_idx);
 		if (c == -1) {
 			break;
 		}
@@ -605,6 +646,16 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		case 'i':
 			if (state) {
 				load_image(optarg, state);
+			}
+			break;
+		case 'L':
+			if (state) {
+				state->args.show_caps_lock_text = false;
+			}
+			break;
+		case 'l':
+			if (state) {
+				state->args.show_caps_lock_indicator = true;
 			}
 			break;
 		case 'n':
@@ -644,6 +695,16 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 				state->args.colors.bs_highlight = parse_color(optarg);
 			}
 			break;
+		case LO_CAPS_LOCK_BS_HL_COLOR:
+			if (state) {
+				state->args.colors.caps_lock_bs_highlight = parse_color(optarg);
+			}
+			break;
+		case LO_CAPS_LOCK_KEY_HL_COLOR:
+			if (state) {
+				state->args.colors.caps_lock_key_highlight = parse_color(optarg);
+			}
+			break;
 		case LO_FONT:
 			if (state) {
 				free(state->args.font);
@@ -668,6 +729,11 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		case LO_INSIDE_CLEAR_COLOR:
 			if (state) {
 				state->args.colors.inside.cleared = parse_color(optarg);
+			}
+			break;
+		case LO_INSIDE_CAPS_LOCK_COLOR:
+			if (state) {
+				state->args.colors.inside.caps_lock = parse_color(optarg);
 			}
 			break;
 		case LO_INSIDE_VER_COLOR:
@@ -695,6 +761,11 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 				state->args.colors.line.cleared = parse_color(optarg);
 			}
 			break;
+		case LO_LINE_CAPS_LOCK_COLOR:
+			if (state) {
+				state->args.colors.line.caps_lock = parse_color(optarg);
+			}
+			break;
 		case LO_LINE_VER_COLOR:
 			if (state) {
 				state->args.colors.line.verifying = parse_color(optarg);
@@ -713,6 +784,11 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		case LO_RING_CLEAR_COLOR:
 			if (state) {
 				state->args.colors.ring.cleared = parse_color(optarg);
+			}
+			break;
+		case LO_RING_CAPS_LOCK_COLOR:
+			if (state) {
+				state->args.colors.ring.caps_lock = parse_color(optarg);
 			}
 			break;
 		case LO_RING_VER_COLOR:
@@ -738,6 +814,11 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		case LO_TEXT_CLEAR_COLOR:
 			if (state) {
 				state->args.colors.text.cleared = parse_color(optarg);
+			}
+			break;
+		case LO_TEXT_CAPS_LOCK_COLOR:
+			if (state) {
+				state->args.colors.text.caps_lock = parse_color(optarg);
 			}
 			break;
 		case LO_TEXT_VER_COLOR:
@@ -857,6 +938,8 @@ int main(int argc, char **argv) {
 		.thickness = 10,
 		.ignore_empty = false,
 		.show_indicator = true,
+		.show_caps_lock_indicator = false,
+		.show_caps_lock_text = true
 	};
 	wl_list_init(&state.images);
 	set_default_colors(&state.args.colors);

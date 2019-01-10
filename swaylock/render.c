@@ -18,7 +18,17 @@ static void set_color_for_state(cairo_t *cairo, struct swaylock_state *state,
 	} else if (state->auth_state == AUTH_STATE_CLEAR) {
 		cairo_set_source_u32(cairo, colorset->cleared);
 	} else {
-		cairo_set_source_u32(cairo, colorset->input);
+		if (state->xkb.caps_lock && state->args.show_caps_lock_indicator) {
+			cairo_set_source_u32(cairo, colorset->caps_lock);
+		} else if (state->xkb.caps_lock && !state->args.show_caps_lock_indicator &&
+				state->args.show_caps_lock_text) {
+			uint32_t inputtextcolor = state->args.colors.text.input;
+			state->args.colors.text.input = state->args.colors.text.caps_lock;
+			cairo_set_source_u32(cairo, colorset->input);
+			state->args.colors.text.input = inputtextcolor;
+		} else {
+			cairo_set_source_u32(cairo, colorset->input);
+		}
 	}
 }
 
@@ -92,7 +102,8 @@ void render_frame(struct swaylock_surface *surface) {
 			break;
 		case AUTH_STATE_INPUT:
 		case AUTH_STATE_INPUT_NOP:
-			if (state->xkb.caps_lock) {
+		case AUTH_STATE_BACKSPACE:
+			if (state->xkb.caps_lock && state->args.show_caps_lock_text) {
 				text = "Caps Lock";
 			}
 			break;
@@ -125,9 +136,17 @@ void render_frame(struct swaylock_surface *surface) {
 					arc_radius, highlight_start,
 					highlight_start + TYPE_INDICATOR_RANGE);
 			if (state->auth_state == AUTH_STATE_INPUT) {
-				cairo_set_source_u32(cairo, state->args.colors.key_highlight);
+				if (state->xkb.caps_lock && state->args.show_caps_lock_indicator) {
+					cairo_set_source_u32(cairo, state->args.colors.caps_lock_key_highlight);
+				} else {
+					cairo_set_source_u32(cairo, state->args.colors.key_highlight);
+				}
 			} else {
-				cairo_set_source_u32(cairo, state->args.colors.bs_highlight);
+				if (state->xkb.caps_lock && state->args.show_caps_lock_indicator) {
+					cairo_set_source_u32(cairo, state->args.colors.caps_lock_bs_highlight);
+				} else {
+					cairo_set_source_u32(cairo, state->args.colors.bs_highlight);
+				}
 			}
 			cairo_stroke(cairo);
 
