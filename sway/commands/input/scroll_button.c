@@ -10,30 +10,28 @@ struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "scroll_button",
-			"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (strcmp(*argv, "disable") == 0) {
 		ic->scroll_button = 0;
-		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
 
 	char *message = NULL;
 	uint32_t button = get_mouse_button(*argv, &message);
 	if (message) {
-		error = cmd_results_new(CMD_INVALID, "scroll_button", message);
+		error = cmd_results_new(CMD_INVALID, message);
 		free(message);
 		return error;
 	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN
 			|| button == SWAY_SCROLL_LEFT || button == SWAY_SCROLL_RIGHT) {
-		return cmd_results_new(CMD_INVALID, "scroll_button",
+		return cmd_results_new(CMD_INVALID,
 				"X11 axis buttons are not supported for scroll_button");
 	} else if (!button) {
-		return cmd_results_new(CMD_INVALID, "scroll_button",
-				"Unknown button %s", *argv);
+		return cmd_results_new(CMD_INVALID, "Unknown button %s", *argv);
 	}
 	ic->scroll_button = button;
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

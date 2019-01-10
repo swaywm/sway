@@ -23,5 +23,5 @@ struct cmd_results *cmd_font(int argc, char **argv) {
 
 	free(font);
 	config_update_font_height(true);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

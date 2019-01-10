@@ -20,8 +20,7 @@ static struct cmd_results *bar_set_hidden_state(struct bar_config *bar,
 	} else if (strcasecmp("show", hidden_state) == 0) {
 		bar->hidden_state = strdup("show");
 	} else {
-		return cmd_results_new(CMD_INVALID, "hidden_state",
-				"Invalid value %s", hidden_state);
+		return cmd_results_new(CMD_INVALID, "Invalid value %s",	hidden_state);
 	}
 	if (strcmp(old_state, bar->hidden_state) != 0) {
 		if (!config->reading) {
@@ -44,7 +43,7 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 		return error;
 	}
 	if (config->reading && argc > 1) {
-		return cmd_results_new(CMD_INVALID, "hidden_state",
+		return cmd_results_new(CMD_INVALID,
 				"Unexpected value %s in config mode", argv[1]);
 	}
 
@@ -65,5 +64,5 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 			}
 		}
 	}
-	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return error ? error : cmd_results_new(CMD_SUCCESS, NULL);
 }

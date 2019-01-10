@@ -17,5 +17,5 @@ struct cmd_results *cmd_focus_wrapping(int argc, char **argv) {
 		config->focus_wrapping = WRAP_NO;
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

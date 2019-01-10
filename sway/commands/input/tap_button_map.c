@@ -11,8 +11,7 @@ struct cmd_results *input_cmd_tap_button_map(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "tap_button_map",
-				"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (strcasecmp(argv[0], "lrm") == 0) {
@@ -20,9 +19,9 @@ struct cmd_results *input_cmd_tap_button_map(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "lmr") == 0) {
 		ic->tap_button_map = LIBINPUT_CONFIG_TAP_MAP_LMR;
 	} else {
-		return cmd_results_new(CMD_INVALID, "tap_button_map",
+		return cmd_results_new(CMD_INVALID,
 			"Expected 'tap_button_map <lrm|lmr>'");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

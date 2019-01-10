@@ -16,10 +16,10 @@ struct cmd_results *cmd_focus_on_window_activation(int argc, char **argv) {
 	} else if (strcmp(argv[0], "none") == 0) {
 		config->focus_on_window_activation = FOWA_NONE;
 	} else {
-		return cmd_results_new(CMD_INVALID, "focus_on_window_activation",
+		return cmd_results_new(CMD_INVALID,
 				"Expected "
 				"'focus_on_window_activation smart|urgent|focus|none'");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

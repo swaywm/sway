@@ -71,8 +71,7 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "events",
-			"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (strcasecmp(argv[0], "enabled") == 0) {
@@ -83,7 +82,7 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 		ic->send_events =
 			LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
 	} else if (config->reading) {
-		return cmd_results_new(CMD_INVALID, "events",
+		return cmd_results_new(CMD_INVALID,
 			"Expected 'events <enabled|disabled|disabled_on_external_mouse>'");
 	} else if (strcasecmp(argv[0], "toggle") == 0) {
 		if (strcmp(ic->identifier, "*") == 0) {
@@ -97,10 +96,10 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 			toggle_send_events(ic);
 		}
 	} else {
-		return cmd_results_new(CMD_INVALID, "events",
+		return cmd_results_new(CMD_INVALID,
 			"Expected 'events <enabled|disabled|disabled_on_external_mouse|"
 			"toggle>'");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

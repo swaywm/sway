@@ -49,5 +49,5 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 	}
 	free(mark);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

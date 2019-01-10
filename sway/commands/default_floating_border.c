@@ -17,7 +17,7 @@ struct cmd_results *cmd_default_floating_border(int argc, char **argv) {
 	} else if (strcmp(argv[0], "pixel") == 0) {
 		config->floating_border = B_PIXEL;
 	} else {
-		return cmd_results_new(CMD_INVALID, "default_floating_border",
+		return cmd_results_new(CMD_INVALID,
 				"Expected 'default_floating_border <none|normal|pixel>' "
 				"or 'default_floating_border <normal|pixel> <px>'");
 	}
@@ -25,5 +25,5 @@ struct cmd_results *cmd_default_floating_border(int argc, char **argv) {
 		config->floating_border_thickness = atoi(argv[1]);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -10,7 +10,7 @@ struct cmd_results *bar_cmd_wrap_scroll(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "wrap_scroll", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 	config->current_bar->wrap_scroll = 
 			parse_boolean(argv[0], config->current_bar->wrap_scroll);
@@ -21,5 +21,5 @@ struct cmd_results *bar_cmd_wrap_scroll(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Disabling wrap scroll on bar: %s",
 				config->current_bar->id);
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

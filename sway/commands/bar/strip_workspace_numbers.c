@@ -11,8 +11,7 @@ struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE,
-				"strip_workspace_numbers", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 	
 	config->current_bar->strip_workspace_numbers =
@@ -28,5 +27,5 @@ struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
 				config->current_bar->id);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

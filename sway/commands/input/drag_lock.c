@@ -12,8 +12,7 @@ struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE,
-			"drag_lock", "No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (parse_boolean(argv[0], true)) {
@@ -22,5 +21,5 @@ struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
 		ic->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

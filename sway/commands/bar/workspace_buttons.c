@@ -10,8 +10,7 @@ struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE,
-				"workspace_buttons", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 	config->current_bar->workspace_buttons = 
 		parse_boolean(argv[0], config->current_bar->workspace_buttons);
@@ -22,5 +21,5 @@ struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Disabling workspace buttons on bar: %s",
 				config->current_bar->id);
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -75,7 +75,7 @@ struct cmd_results *config_commands_command(char *exec);
 /**
  * Allocates a cmd_results object.
  */
-struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *error, ...);
+struct cmd_results *cmd_results_new(enum cmd_status status, const char *error, ...);
 /**
  * Frees a cmd_results object.
  */
@@ -87,8 +87,7 @@ void free_cmd_results(struct cmd_results *results);
  */
 char *cmd_results_to_json(list_t *res_list);
 
-struct cmd_results *add_color(const char *name,
-		char *buffer, const char *color);
+struct cmd_results *add_color(char *buffer, const char *color);
 
 /**
  * TODO: Move this function and its dependent functions to container.c.

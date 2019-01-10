@@ -12,7 +12,7 @@ struct cmd_results *input_cmd_dwt(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "dwt", "No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (parse_boolean(argv[0], true)) {
@@ -21,5 +21,5 @@ struct cmd_results *input_cmd_dwt(int argc, char **argv) {
 		ic->dwt = LIBINPUT_CONFIG_DWT_DISABLED;
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

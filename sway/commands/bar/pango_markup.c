@@ -10,7 +10,7 @@ struct cmd_results *bar_cmd_pango_markup(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "pango_markup", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 	config->current_bar->pango_markup 
 		= parse_boolean(argv[0], config->current_bar->pango_markup);
@@ -21,5 +21,5 @@ struct cmd_results *bar_cmd_pango_markup(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Disabling pango markup for bar: %s",
 				config->current_bar->id);
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

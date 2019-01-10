@@ -12,8 +12,7 @@ struct cmd_results *input_cmd_click_method(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "click_method",
-			"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (strcasecmp(argv[0], "none") == 0) {
@@ -23,9 +22,9 @@ struct cmd_results *input_cmd_click_method(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "clickfinger") == 0) {
 		ic->click_method = LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
 	} else {
-		return cmd_results_new(CMD_INVALID, "click_method",
+		return cmd_results_new(CMD_INVALID,
 			"Expected 'click_method <none|button_areas|clickfinger'>");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

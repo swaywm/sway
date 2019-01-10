@@ -21,5 +21,5 @@ struct cmd_results *cmd_swaybg_command(int argc, char **argv) {
 		free(new_command);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

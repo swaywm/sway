@@ -10,5 +10,5 @@ struct cmd_results *cmd_exit(int argc, char **argv) {
 		return error;
 	}
 	sway_terminate(0);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

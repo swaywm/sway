@@ -14,19 +14,18 @@ struct cmd_results *input_cmd_scroll_factor(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE,
-			"scroll_factor", "No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	float scroll_factor = parse_float(argv[0]);
 	if (isnan(scroll_factor)) {
-		return cmd_results_new(CMD_INVALID, "scroll_factor",
+		return cmd_results_new(CMD_INVALID,
 			"Invalid scroll factor; expected float.");
 	} else if (scroll_factor < 0) {
-		return cmd_results_new(CMD_INVALID, "scroll_factor",
+		return cmd_results_new(CMD_INVALID,
 			"Scroll factor cannot be negative.");
 	}
 	ic->scroll_factor = scroll_factor;
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

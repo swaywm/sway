@@ -11,7 +11,7 @@
 #include "sway/tree/workspace.h"
 #include "stringop.h"
 
-static const char* EXPECTED_SYNTAX =
+static const char expected_syntax[] =
 	"Expected 'swap container with id|con_id|mark <arg>'";
 
 static void swap_places(struct sway_container *con1,
@@ -171,12 +171,12 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 		return error;
 	}
 	if (!root->outputs->length) {
-		return cmd_results_new(CMD_INVALID, "swap",
+		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");
 	}
 
 	if (strcasecmp(argv[0], "container") || strcasecmp(argv[1], "with")) {
-		return cmd_results_new(CMD_INVALID, "swap", EXPECTED_SYNTAX);
+		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 
 	struct sway_container *current = config->handler_context.container;
@@ -195,21 +195,21 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 		other = root_find_container(test_mark, value);
 	} else {
 		free(value);
-		return cmd_results_new(CMD_INVALID, "swap", EXPECTED_SYNTAX);
+		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 
 	if (!other) {
-		error = cmd_results_new(CMD_FAILURE, "swap",
+		error = cmd_results_new(CMD_FAILURE,
 				"Failed to find %s '%s'", argv[2], value);
 	} else if (!current) {
-		error = cmd_results_new(CMD_FAILURE, "swap",
+		error = cmd_results_new(CMD_FAILURE,
 				"Can only swap with containers and views");
 	} else if (container_has_ancestor(current, other)
 			|| container_has_ancestor(other, current)) {
-		error = cmd_results_new(CMD_FAILURE, "swap",
+		error = cmd_results_new(CMD_FAILURE,
 				"Cannot swap ancestor and descendant");
 	} else if (container_is_floating(current) || container_is_floating(other)) {
-		error = cmd_results_new(CMD_FAILURE, "swap",
+		error = cmd_results_new(CMD_FAILURE,
 				"Swapping with floating containers is not supported");
 	}
 
@@ -226,5 +226,5 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 		arrange_node(node_get_parent(&other->node));
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -31,5 +31,5 @@ struct cmd_results *cmd_show_marks(int argc, char **argv) {
 		output_damage_whole(output);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -11,8 +11,7 @@ struct cmd_results *input_cmd_accel_profile(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "accel_profile",
-				"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	if (strcasecmp(argv[0], "adaptive") == 0) {
@@ -20,9 +19,9 @@ struct cmd_results *input_cmd_accel_profile(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "flat") == 0) {
 		ic->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
 	} else {
-		return cmd_results_new(CMD_INVALID, "accel_profile",
+		return cmd_results_new(CMD_INVALID,
 				"Expected 'accel_profile <adaptive|flat>'");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

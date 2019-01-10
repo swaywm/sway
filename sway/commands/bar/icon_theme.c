@@ -13,16 +13,16 @@ struct cmd_results *bar_cmd_icon_theme(int argc, char **argv) {
 	}
 
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "tray_padding", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 
 	wlr_log(WLR_DEBUG, "[Bar %s] Setting icon theme to %s",
 			config->current_bar->id, argv[0]);
 	free(config->current_bar->icon_theme);
 	config->current_bar->icon_theme = strdup(argv[0]);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 #else
-	return cmd_results_new(CMD_INVALID, "icon_theme",
+	return cmd_results_new(CMD_INVALID,
 			"Sway has been compiled without tray support");
 #endif
 }

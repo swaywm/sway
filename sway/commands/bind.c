@@ -92,11 +92,11 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		if (!button) {
 			if (message) {
 				struct cmd_results *error =
-					cmd_results_new(CMD_INVALID, "bindcode", message);
+					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
 			} else {
-				return cmd_results_new(CMD_INVALID, "bindcode",
+				return cmd_results_new(CMD_INVALID,
 						"Unknown button code %s", name);
 			}
 		}
@@ -108,12 +108,11 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		if (!button) {
 			if (message) {
 				struct cmd_results *error =
-					cmd_results_new(CMD_INVALID, "bindsym", message);
+					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
 			} else if (!button) {
-				return cmd_results_new(CMD_INVALID, "bindsym",
-						"Unknown button %s", name);
+				return cmd_results_new(CMD_INVALID, "Unknown button %s", name);
 			}
 		}
 		*key_val = button;
@@ -133,10 +132,10 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		xkb_keycode_t keycode = strtol(name, NULL, 10);
 		if (!xkb_keycode_is_legal_ext(keycode)) {
 			if (first_key) {
-				return cmd_results_new(CMD_INVALID, "bindcode",
+				return cmd_results_new(CMD_INVALID,
 						"Invalid keycode or button code '%s'", name);
 			} else {
-				return cmd_results_new(CMD_INVALID, "bindcode",
+				return cmd_results_new(CMD_INVALID,
 						"Invalid keycode '%s'", name);
 			}
 		}
@@ -148,7 +147,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 			uint32_t button = get_mouse_bindsym(name, &message);
 			if (message) {
 				struct cmd_results *error =
-					cmd_results_new(CMD_INVALID, "bindsym", message);
+					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
 			} else if (button) {
@@ -162,11 +161,10 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 				XKB_KEYSYM_CASE_INSENSITIVE);
 		if (!keysym) {
 			if (first_key) {
-				return cmd_results_new(CMD_INVALID, "bindsym",
+				return cmd_results_new(CMD_INVALID,
 						"Unknown key or button '%s'", name);
 			} else {
-				return cmd_results_new(CMD_INVALID, "bindsym",
-					"Unknown key '%s'", name);
+				return cmd_results_new(CMD_INVALID, "Unknown key '%s'", name);
 			}
 		}
 		*key_val = keysym;
@@ -185,8 +183,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 
 	struct sway_binding *binding = calloc(1, sizeof(struct sway_binding));
 	if (!binding) {
-		return cmd_results_new(CMD_FAILURE, bindtype,
-				"Unable to allocate binding");
+		return cmd_results_new(CMD_FAILURE, "Unable to allocate binding");
 	}
 	binding->input = strdup("*");
 	binding->keys = create_list();
@@ -229,7 +226,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 
 	if (argc < 2) {
 		free_sway_binding(binding);
-		return cmd_results_new(CMD_FAILURE, bindtype,
+		return cmd_results_new(CMD_FAILURE,
 			"Invalid %s command "
 			"(expected at least 2 non-option arguments, got %d)", bindtype, argc);
 	}
@@ -259,7 +256,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		if (!key) {
 			free_sway_binding(binding);
 			list_free_items_and_destroy(split);
-			return cmd_results_new(CMD_FAILURE, bindtype,
+			return cmd_results_new(CMD_FAILURE,
 					"Unable to allocate binding key");
 		}
 		*key = key_val;
@@ -315,7 +312,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 
 	wlr_log(WLR_DEBUG, "%s - Bound %s to command `%s` for device '%s'",
 		bindtype, argv[0], binding->command, binding->input);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 struct cmd_results *cmd_bindsym(int argc, char **argv) {

@@ -13,7 +13,7 @@ struct cmd_results *cmd_no_focus(int argc, char **argv) {
 	char *err_str = NULL;
 	struct criteria *criteria = criteria_parse(argv[0], &err_str);
 	if (!criteria) {
-		error = cmd_results_new(CMD_INVALID, "no_focus", err_str);
+		error = cmd_results_new(CMD_INVALID, err_str);
 		free(err_str);
 		return error;
 	}
@@ -21,5 +21,5 @@ struct cmd_results *cmd_no_focus(int argc, char **argv) {
 	criteria->type = CT_NO_FOCUS;
 	list_add(config->criteria, criteria);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

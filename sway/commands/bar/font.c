@@ -10,12 +10,12 @@ struct cmd_results *bar_cmd_font(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "font", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 	char *font = join_args(argv, argc);
 	free(config->current_bar->font);
 	config->current_bar->font = font;
 	wlr_log(WLR_DEBUG, "Settings font '%s' for bar: %s",
 			config->current_bar->font, config->current_bar->id);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

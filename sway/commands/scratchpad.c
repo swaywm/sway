@@ -84,16 +84,14 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		return error;
 	}
 	if (strcmp(argv[0], "show") != 0) {
-		return cmd_results_new(CMD_INVALID, "scratchpad",
-				"Expected 'scratchpad show'");
+		return cmd_results_new(CMD_INVALID, "Expected 'scratchpad show'");
 	}
 	if (!root->outputs->length) {
-		return cmd_results_new(CMD_INVALID, "scratchpad",
+		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");
 	}
 	if (!root->scratchpad->length) {
-		return cmd_results_new(CMD_INVALID, "scratchpad",
-				"Scratchpad is empty");
+		return cmd_results_new(CMD_INVALID, "Scratchpad is empty");
 	}
 
 	if (config->handler_context.using_criteria) {
@@ -111,12 +109,12 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		// matches the criteria. If this container isn't in the scratchpad,
 		// we'll just silently return a success.
 		if (!con->scratchpad) {
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+			return cmd_results_new(CMD_SUCCESS, NULL);
 		}
 		scratchpad_toggle_container(con);
 	} else {
 		scratchpad_toggle_auto();
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

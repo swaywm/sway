@@ -340,8 +340,7 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 		grow_x = -grow_width;
 	}
 	if (grow_x == 0 && grow_y == 0) {
-		return cmd_results_new(CMD_INVALID, "resize",
-				"Cannot resize any further");
+		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
 	con->x += grow_x;
 	con->y += grow_y;
@@ -355,7 +354,7 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 
 	arrange_container(con);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 /**
@@ -382,10 +381,9 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 	double old_height = current->height;
 	resize_tiled(current, amount->amount, axis);
 	if (current->width == old_width && current->height == old_height) {
-		return cmd_results_new(CMD_INVALID, "resize",
-				"Cannot resize any further");
+		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 /**
@@ -433,7 +431,7 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 		}
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 /**
@@ -491,7 +489,7 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 
 	arrange_container(con);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 /**
@@ -506,7 +504,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	const char *usage = "Expected 'resize set [width] <width> [px|ppt]' or "
+	const char usage[] = "Expected 'resize set [width] <width> [px|ppt]' or "
 		"'resize set height <height> [px|ppt]' or "
 		"'resize set [width] <width> [px|ppt] [height] <height> [px|ppt]'";
 
@@ -520,7 +518,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (width.unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize set", usage);
+			return cmd_results_new(CMD_INVALID, usage);
 		}
 	}
 
@@ -534,7 +532,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (width.unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize set", usage);
+			return cmd_results_new(CMD_INVALID, usage);
 		}
 	}
 
@@ -562,11 +560,11 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
  */
 static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		int multiplier) {
-	const char *usage = "Expected 'resize grow|shrink <direction> "
+	const char usage[] = "Expected 'resize grow|shrink <direction> "
 		"[<amount> px|ppt [or <amount> px|ppt]]'";
 	uint32_t axis = parse_resize_axis(*argv);
 	if (axis == WLR_EDGE_NONE) {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
+		return cmd_results_new(CMD_INVALID, usage);
 	}
 	--argc; ++argv;
 
@@ -577,7 +575,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (first_amount.unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize", usage);
+			return cmd_results_new(CMD_INVALID, usage);
 		}
 	} else {
 		first_amount.amount = 10;
@@ -587,7 +585,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	// "or"
 	if (argc) {
 		if (strcmp(*argv, "or") != 0) {
-			return cmd_results_new(CMD_INVALID, "resize", usage);
+			return cmd_results_new(CMD_INVALID, usage);
 		}
 		--argc; ++argv;
 	}
@@ -599,7 +597,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (second_amount.unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize", usage);
+			return cmd_results_new(CMD_INVALID, usage);
 		}
 	} else {
 		second_amount.unit = RESIZE_UNIT_INVALID;
@@ -621,7 +619,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		} else if (second_amount.unit == RESIZE_UNIT_DEFAULT) {
 			return resize_adjust_floating(axis, &second_amount);
 		} else {
-			return cmd_results_new(CMD_INVALID, "resize",
+			return cmd_results_new(CMD_INVALID,
 					"Floating containers cannot use ppt measurements");
 		}
 	}
@@ -642,12 +640,12 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 
 struct cmd_results *cmd_resize(int argc, char **argv) {
 	if (!root->outputs->length) {
-		return cmd_results_new(CMD_INVALID, "resize",
+		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");
 	}
 	struct sway_container *current = config->handler_context.container;
 	if (!current) {
-		return cmd_results_new(CMD_INVALID, "resize", "Cannot resize nothing");
+		return cmd_results_new(CMD_INVALID, "Cannot resize nothing");
 	}
 
 	struct cmd_results *error;
@@ -665,8 +663,8 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 		return cmd_resize_adjust(argc - 1, &argv[1], -1);
 	}
 
-	const char *usage = "Expected 'resize <shrink|grow> "
+	const char usage[] = "Expected 'resize <shrink|grow> "
 		"<width|height|up|down|left|right> [<amount>] [px|ppt]'";
 
-	return cmd_results_new(CMD_INVALID, "resize", usage);
+	return cmd_results_new(CMD_INVALID, usage);
 }

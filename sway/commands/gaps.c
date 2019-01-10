@@ -43,7 +43,7 @@ static void prevent_invalid_outer_gaps(void) {
 }
 
 // gaps inner|outer|horizontal|vertical|top|right|bottom|left <px>
-static const char *expected_defaults =
+static const char expected_defaults[] =
 	"'gaps inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
 static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 2);
@@ -54,8 +54,7 @@ static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
 	char *end;
 	int amount = strtol(argv[1], &end, 10);
 	if (strlen(end) && strcasecmp(end, "px") != 0) {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_defaults);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_defaults);
 	}
 
 	bool valid = false;
@@ -85,12 +84,11 @@ static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
 		}
 	}
 	if (!valid) {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_defaults);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_defaults);
 	}
 
 	prevent_invalid_outer_gaps();
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 static void apply_gaps_op(int *prop, enum gaps_op op, int amount) {
@@ -136,7 +134,7 @@ static void configure_gaps(struct sway_workspace *ws, void *_data) {
 
 // gaps inner|outer|horizontal|vertical|top|right|bottom|left current|all
 // set|plus|minus <px>
-static const char *expected_runtime = "'gaps inner|outer|horizontal|vertical|"
+static const char expected_runtime[] = "'gaps inner|outer|horizontal|vertical|"
 	"top|right|bottom|left current|all set|plus|minus <px>'";
 static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 4);
@@ -144,7 +142,7 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 		return error;
 	}
 	if (!root->outputs->length) {
-		return cmd_results_new(CMD_INVALID, "gaps",
+		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");
 	}
 
@@ -164,8 +162,7 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	}
 	if (!data.inner && !data.outer.top && !data.outer.right &&
 			!data.outer.bottom && !data.outer.left) {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_runtime);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_runtime);
 	}
 
 	bool all;
@@ -174,8 +171,7 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	} else if (strcasecmp(argv[1], "all") == 0) {
 		all = true;
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_runtime);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_runtime);
 	}
 
 	if (strcasecmp(argv[2], "set") == 0) {
@@ -185,15 +181,13 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	} else if (strcasecmp(argv[2], "minus") == 0) {
 		data.operation = GAPS_OP_SUBTRACT;
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_runtime);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_runtime);
 	}
 
 	char *end;
 	data.amount = strtol(argv[3], &end, 10);
 	if (strlen(end) && strcasecmp(end, "px") != 0) {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_runtime);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_runtime);
 	}
 
 	if (all) {
@@ -202,7 +196,7 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 		configure_gaps(config->handler_context.workspace, &data);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 // gaps inner|outer|<dir>|<side> <px> - sets defaults for workspaces
@@ -224,9 +218,8 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		return gaps_set_runtime(argc, argv);
 	}
 	if (config_loading) {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"Expected %s", expected_defaults);
+		return cmd_results_new(CMD_INVALID, "Expected %s", expected_defaults);
 	}
-	return cmd_results_new(CMD_INVALID, "gaps",
-			"Expected %s or %s", expected_runtime, expected_defaults);
+	return cmd_results_new(CMD_INVALID, "Expected %s or %s",
+			expected_runtime, expected_defaults);
 }

@@ -10,7 +10,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
 
-static const char* expected_syntax =
+static const char expected_syntax[] =
 	"Expected 'rename workspace <old_name> to <new_name>' or "
 	"'rename workspace to <new_name>'";
 
@@ -20,11 +20,11 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 		return error;
 	}
 	if (!root->outputs->length) {
-		return cmd_results_new(CMD_INVALID, "rename",
+		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");
 	}
 	if (strcasecmp(argv[0], "workspace") != 0) {
-		return cmd_results_new(CMD_INVALID, "rename", expected_syntax);
+		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 
 	int argn = 1;
@@ -36,7 +36,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	} else if (strcasecmp(argv[1], "number") == 0) {
 		// 'rename workspace number x to new_name'
 		if (!isdigit(argv[2][0])) {
-			return cmd_results_new(CMD_INVALID, "rename",
+			return cmd_results_new(CMD_INVALID,
 					"Invalid workspace number '%s'", argv[2]);
 		}
 		workspace = workspace_by_number(argv[2]);
@@ -56,14 +56,14 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	}
 
 	if (!workspace) {
-		return cmd_results_new(CMD_INVALID, "rename",
+		return cmd_results_new(CMD_INVALID,
 				"There is no workspace with that name");
 	}
 
 	++argn; // move past "to"
 
 	if (argn >= argc) {
-		return cmd_results_new(CMD_INVALID, "rename", expected_syntax);
+		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 
 	char *new_name = join_args(argv + argn, argc - argn);
@@ -75,17 +75,16 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 			strcasecmp(new_name, "current") == 0 ||
 			strcasecmp(new_name, "number") == 0) {
 		free(new_name);
-		return cmd_results_new(CMD_INVALID, "rename",
+		return cmd_results_new(CMD_INVALID,
 				"Cannot use special workspace name '%s'", argv[argn]);
 	}
 	struct sway_workspace *tmp_workspace = workspace_by_name(new_name);
 	if (tmp_workspace) {
 		free(new_name);
 		if (tmp_workspace == workspace) {
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+			return cmd_results_new(CMD_SUCCESS, NULL);
 		} else {
-			return cmd_results_new(CMD_INVALID, "rename",
-					"Workspace already exists");
+			return cmd_results_new(CMD_INVALID, "Workspace already exists");
 		}
 	}
 
@@ -96,5 +95,5 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	output_sort_workspaces(workspace->output);
 	ipc_event_workspace(NULL, workspace, "rename");
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
