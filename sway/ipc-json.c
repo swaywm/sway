@@ -11,6 +11,7 @@
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
 #include <xkbcommon/xkbcommon.h>
@@ -596,6 +597,26 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 				break;
 			}
 		}
+	}
+
+	if (wlr_input_device_is_libinput(device->wlr_device)) {
+		struct libinput_device *libinput_dev;
+		libinput_dev = wlr_libinput_get_device_handle(device->wlr_device);
+
+		const char *events = "unknown";
+		switch (libinput_device_config_send_events_get_mode(libinput_dev)) {
+		case LIBINPUT_CONFIG_SEND_EVENTS_ENABLED:
+			events = "enabled";
+			break;
+		case LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE:
+			events = "disabled_on_external_mouse";
+			break;
+		case LIBINPUT_CONFIG_SEND_EVENTS_DISABLED:
+			events = "disabled";
+			break;
+		}
+		json_object_object_add(object, "libinput_send_events",
+				json_object_new_string(events));
 	}
 
 	return object;
