@@ -146,4 +146,12 @@ enum sway_container_layout output_get_default_layout(
 
 void output_add_listeners(struct sway_output *output);
 
+void render_rect(struct wlr_output *wlr_output,
+		pixman_region32_t *output_damage, const struct wlr_box *_box,
+		float color[static 4]);
+
+void premultiply_alpha(float color[4], float opacity);
+
+void scale_box(struct wlr_box *box, float scale);
+
 #endif
