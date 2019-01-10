@@ -90,13 +90,24 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 	return output->height;
 }
 
+static void render_sharp_rectangle(cairo_t *cairo, uint32_t color,
+		double x, double y, double width, double height) {
+	cairo_save(cairo);
+	cairo_set_source_u32(cairo, color);
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_NONE);
+	cairo_rectangle(cairo, x, y, width, height);
+	cairo_fill(cairo);
+	cairo_restore(cairo);
+}
+
 static void render_sharp_line(cairo_t *cairo, uint32_t color,
 		double x, double y, double width, double height) {
-	cairo_set_source_u32(cairo, color);
 	if (width > 1 && height > 1) {
-		cairo_rectangle(cairo, x, y, width, height);
-		cairo_fill(cairo);
+		render_sharp_rectangle(cairo, color, x, y, width, height);
 	} else {
+		cairo_save(cairo);
+		cairo_set_source_u32(cairo, color);
+		cairo_set_antialias(cairo, CAIRO_ANTIALIAS_NONE);
 		if (width == 1) {
 			x += 0.5;
 			height += y;
@@ -111,6 +122,7 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color,
 		cairo_set_line_width(cairo, 1.0);
 		cairo_line_to(cairo, width, height);
 		cairo_stroke(cairo);
+		cairo_restore(cairo);
 	}
 }
 
@@ -141,7 +153,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 			output->scale, block->markup, "%s", block->full_text);
 
 	int margin = 3 * output->scale;
-	int ws_vertical_padding = WS_VERTICAL_PADDING * 2;
+	double ws_vertical_padding = WS_VERTICAL_PADDING * 2 * output->scale;
 
 	int width = text_width;
 	if (width < block->min_width) {
@@ -157,12 +169,12 @@ static uint32_t render_status_block(cairo_t *cairo,
 
 	*x -= width;
 	if ((block->border || block->urgent) && block->border_left > 0) {
-		*x -= (block->border_left + margin);
-		block_width += block->border_left + margin;
+		*x -= (block->border_left * output->scale + margin);
+		block_width += block->border_left * output->scale + margin;
 	}
 	if ((block->border || block->urgent) && block->border_right > 0) {
-		*x -= (block->border_right + margin);
-		block_width += block->border_right + margin;
+		*x -= (block->border_right * output->scale + margin);
+		block_width += block->border_right * output->scale + margin;
 	}
 
 	int sep_width, sep_height;
@@ -199,48 +211,41 @@ static uint32_t render_status_block(cairo_t *cairo,
 		wl_list_insert(&output->hotspots, &hotspot->link);
 	}
 
-	double pos = *x;
+	double x_pos = *x;
+	double y_pos = WS_VERTICAL_PADDING * output->scale;
+	double render_height = height - ws_vertical_padding + output->scale;
 
 	uint32_t bg_color = block->urgent
 		? config->colors.urgent_workspace.background : block->background;
 	if (bg_color) {
-		cairo_set_source_u32(cairo, bg_color);
-		cairo_rectangle(cairo, pos - 0.5 * output->scale,
-				output->scale, width, height);
-		cairo_fill(cairo);
+		render_sharp_rectangle(cairo, bg_color, x_pos, y_pos,
+				block_width, render_height);
 	}
 
 	uint32_t border_color = block->urgent
 		? config->colors.urgent_workspace.border : block->border;
 	if (border_color && block->border_top > 0) {
-		render_sharp_line(cairo, border_color,
-				pos - 0.5 * output->scale, output->scale,
-				text_width, block->border_top);
+		render_sharp_line(cairo, border_color, x_pos, y_pos,
+				block_width, block->border_top * output->scale);
 	}
 	if (border_color && block->border_bottom > 0) {
-		render_sharp_line(cairo, border_color,
-				pos - 0.5 * output->scale,
-				height - output->scale - block->border_bottom,
-				text_width, block->border_bottom);
+		render_sharp_line(cairo, border_color, x_pos,
+				y_pos + render_height - block->border_bottom * output->scale,
+				block_width, block->border_bottom * output->scale);
 	}
-	if (border_color != 0 && block->border_left > 0) {
-		render_sharp_line(cairo, border_color,
-				pos - 0.5 * output->scale, output->scale,
-				block->border_left, height);
-	}
-	if (border_color != 0 && block->border_right > 0) {
-		render_sharp_line(cairo, border_color,
-				pos - 0.5 * output->scale + text_width, output->scale,
-				block->border_right, height);
+	if (border_color && block->border_left > 0) {
+		render_sharp_line(cairo, border_color, x_pos, y_pos,
+				block->border_left * output->scale, render_height);
+		x_pos += block->border_left * output->scale + margin;
 	}
 
 	double offset = 0;
 	if (strncmp(block->align, "left", 5) == 0) {
-		offset = pos;
+		offset = x_pos;
 	} else if (strncmp(block->align, "right", 5) == 0) {
-		offset = pos + width - text_width;
+		offset = x_pos + width - text_width;
 	} else if (strncmp(block->align, "center", 6) == 0) {
-		offset = pos + (width - text_width) / 2;
+		offset = x_pos + (width - text_width) / 2;
 	}
 	cairo_move_to(cairo, offset, height / 2.0 - text_height / 2.0);
 	uint32_t color = block->color ?  *block->color : config->colors.statusline;
@@ -248,14 +253,13 @@ static uint32_t render_status_block(cairo_t *cairo,
 	cairo_set_source_u32(cairo, color);
 	pango_printf(cairo, config->font, output->scale,
 			block->markup, "%s", block->full_text);
-	pos += width;
+	x_pos += width;
 
 	if (block->border && block->border_right > 0) {
-		pos += margin;
-		render_sharp_line(cairo, block->border,
-				pos - 0.5 * output->scale, output->scale,
-				block->border_right, height);
-		pos += block->border_right;
+		x_pos += margin;
+		render_sharp_line(cairo, border_color, x_pos, y_pos,
+				block->border_right * output->scale, render_height);
+		x_pos += block->border_right * output->scale;
 	}
 
 	if (!edge && block->separator) {
@@ -265,14 +269,14 @@ static uint32_t render_status_block(cairo_t *cairo,
 			cairo_set_source_u32(cairo, config->colors.separator);
 		}
 		if (config->sep_symbol) {
-			offset = pos + (sep_block_width - sep_width) / 2;
+			offset = x_pos + (sep_block_width - sep_width) / 2;
 			cairo_move_to(cairo, offset, height / 2.0 - sep_height / 2.0);
 			pango_printf(cairo, config->font, output->scale, false,
 					"%s", config->sep_symbol);
 		} else {
 			cairo_set_line_width(cairo, 1);
-			cairo_move_to(cairo, pos + sep_block_width / 2, margin);
-			cairo_line_to(cairo, pos + sep_block_width / 2, height - margin);
+			cairo_move_to(cairo, x_pos + sep_block_width / 2, margin);
+			cairo_line_to(cairo, x_pos + sep_block_width / 2, height - margin);
 			cairo_stroke(cairo);
 		}
 	}
