@@ -141,6 +141,19 @@ in their own "seat").
 	Attach an input device to this seat by its input identifier. A special
 	value of "\*" will attach all devices to the seat.
 
+*seat* <seat> cursor move|set <x> <y>
+	Move specified seat's cursor relative to current position or wrap to
+	absolute coordinates (with respect to the global coordinate space).
+	Specifying either value as 0 will not update that coordinate.
+
+*seat* <seat> cursor press|release button[1-9]|<event-name-or-code>
+	Simulate pressing (or releasing) the specified mouse button on the
+	specified seat. The button can either be provided as a button event name or
+	event code, which can be obtained from `libinput debug-events`, or as an x11
+	mouse button (button[1-9]). If using button[4-7], which map to axes, an axis
+	event will be simulated, however _press_ and _release_ will be ignored and
+	both will occur.
+
 *seat* <name> fallback true|false
 	Set this seat as the fallback seat. A fallback seat will attach any device
 	not explicitly attached to another seat (similar to a "default" seat).
