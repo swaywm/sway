@@ -44,7 +44,8 @@ static uint32_t render_status_line_error(cairo_t *cairo,
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
-	if (output->height < ideal_surface_height) {
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
 		return ideal_surface_height;
 	}
 	*x -= text_width + margin;
@@ -76,7 +77,8 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
-	if (output->height < ideal_surface_height) {
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
 		return ideal_surface_height;
 	}
 
@@ -151,7 +153,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 	double block_width = width;
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
-	if (output->height < ideal_surface_height) {
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
 		return ideal_surface_height;
 	}
 
@@ -173,7 +176,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 					output->scale, false, "%s", config->sep_symbol);
 			uint32_t _ideal_height = sep_height + ws_vertical_padding * 2;
 			uint32_t _ideal_surface_height = _ideal_height / output->scale;
-			if (output->height < _ideal_surface_height) {
+			if (!output->bar->config->height &&
+					output->height < _ideal_surface_height) {
 				return _ideal_surface_height;
 			}
 			if (sep_width > sep_block_width) {
@@ -328,7 +332,8 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2
 		+ border_width * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
-	if (output->height < ideal_surface_height) {
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
 		return ideal_surface_height;
 	}
 	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
@@ -394,7 +399,8 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	uint32_t ideal_height = ws_vertical_padding * 2 + text_height
 		+ border_width * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
-	if (output->height < ideal_surface_height) {
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
 		return ideal_surface_height;
 	}
 
@@ -521,7 +527,7 @@ void render_frame(struct swaybar_output *output) {
 	cairo_restore(cairo);
 	uint32_t height = render_to_cairo(cairo, output);
 	int config_height = output->bar->config->height;
-	if (config_height >= 0 && height < (uint32_t)config_height) {
+	if (config_height > 0) {
 		height = config_height;
 	}
 	if (height != output->height || output->width == 0) {

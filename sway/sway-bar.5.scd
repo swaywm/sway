@@ -69,7 +69,7 @@ Sway allows configuring swaybar in the sway configuration file.
 	use.
 
 *height* <height>
-	Sets the height of the bar. Default height will match the font size.
+	Sets the height of the bar. Default height (0) will match the font size.
 
 *bindsym* [--release] button<n> <command>
 	Executes _command_ when mouse button _n_ has been pressed (or if _released_
