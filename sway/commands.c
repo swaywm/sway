@@ -316,7 +316,7 @@ cleanup:
 //	  be chained together)
 // 4) execute_command handles all state internally while config_command has
 // some state handled outside (notably the block mode, in read_config)
-struct cmd_results *config_command(char *exec) {
+struct cmd_results *config_command(char *exec, char **new_block) {
 	struct cmd_results *results = NULL;
 	int argc;
 	char **argv = split_args(exec, &argc);
@@ -329,9 +329,8 @@ struct cmd_results *config_command(char *exec) {
 
 	// Check for the start of a block
 	if (argc > 1 && strcmp(argv[argc - 1], "{") == 0) {
-		char *block = join_args(argv, argc - 1);
-		results = cmd_results_new(CMD_BLOCK, block, NULL);
-		free(block);
+		*new_block = join_args(argv, argc - 1);
+		results = cmd_results_new(CMD_BLOCK, NULL, NULL);
 		goto cleanup;
 	}
 
@@ -509,11 +508,7 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		return NULL;
 	}
 	results->status = status;
-	if (input) {
-		results->input = strdup(input); // input is the command name
-	} else {
-		results->input = NULL;
-	}
+	// NOTE: `input` argument is unused, remove
 	if (format) {
 		char *error = malloc(256);
 		va_list args;
@@ -530,9 +525,6 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 }
 
 void free_cmd_results(struct cmd_results *results) {
-	if (results->input) {
-		free(results->input);
-	}
 	if (results->error) {
 		free(results->error);
 	}
@@ -551,10 +543,6 @@ char *cmd_results_to_json(list_t *res_list) {
 					json_object_new_boolean(results->status == CMD_INVALID));
 			json_object_object_add(
 					root, "error", json_object_new_string(results->error));
-		}
-		if (results->input) {
-			json_object_object_add(
-					root, "input", json_object_new_string(results->input));
 		}
 		json_object_array_add(result_array, root);
 	}

@@ -31,7 +31,6 @@ enum cmd_status {
  */
 struct cmd_results {
 	enum cmd_status status;
-	char *input;
 	/**
 	 * Human friendly error message, or NULL on success
 	 */
@@ -63,7 +62,7 @@ list_t *execute_command(char *command,  struct sway_seat *seat,
  *
  * Do not use this under normal conditions.
  */
-struct cmd_results *config_command(char *command);
+struct cmd_results *config_command(char *command, char **new_block);
 /**
  * Parse and handle a sub command
  */
