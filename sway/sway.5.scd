@@ -302,7 +302,7 @@ runtime.
 ```
 
 	*bindcode* [--release|--locked] [--input-device=<device>] [--no-warn] <code> <command>
-	is also available for binding with key codes instead of key names.
+	is also available for binding with key/button codes instead of key/button names.
 
 *client.<class>* <border> <background> <text> <indicator> <child\_border>
 	Configures the color of window borders and title bars. All 5 colors are

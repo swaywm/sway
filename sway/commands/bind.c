@@ -85,69 +85,91 @@ static int key_qsort_cmp(const void *keyp_a, const void *keyp_b) {
  */
 static struct cmd_results *identify_key(const char* name, bool first_key,
 		uint32_t* key_val, enum binding_input_type* type) {
-	if (*type == BINDING_KEYCODE) {
-		// check for keycode
+	if (*type == BINDING_MOUSECODE) {
+		// check for mouse bindcodes
+		char *message = NULL;
+		uint32_t button = get_mouse_bindcode(name, &message);
+		if (!button) {
+			if (message) {
+				struct cmd_results *error =
+					cmd_results_new(CMD_INVALID, "bindcode", message);
+				free(message);
+				return error;
+			} else {
+				return cmd_results_new(CMD_INVALID, "bindcode",
+						"Unknown button code %s", name);
+			}
+		}
+		*key_val = button;
+	} else if (*type == BINDING_MOUSESYM) {
+		// check for mouse bindsyms (x11 buttons or event names)
+		char *message = NULL;
+		uint32_t button = get_mouse_bindsym(name, &message);
+		if (!button) {
+			if (message) {
+				struct cmd_results *error =
+					cmd_results_new(CMD_INVALID, "bindsym", message);
+				free(message);
+				return error;
+			} else if (!button) {
+				return cmd_results_new(CMD_INVALID, "bindsym",
+						"Unknown button %s", name);
+			}
+		}
+		*key_val = button;
+	} else if (*type == BINDING_KEYCODE) {
+		// check for keycode. If it is the first key, allow mouse bindcodes
+		if (first_key) {
+			char *message = NULL;
+			uint32_t button = get_mouse_bindcode(name, &message);
+			free(message);
+			if (button) {
+				*type = BINDING_MOUSECODE;
+				*key_val = button;
+				return NULL;
+			}
+		}
+
 		xkb_keycode_t keycode = strtol(name, NULL, 10);
 		if (!xkb_keycode_is_legal_ext(keycode)) {
-			return cmd_results_new(CMD_INVALID, "bindcode",
-					"Invalid keycode '%s'", name);
+			if (first_key) {
+				return cmd_results_new(CMD_INVALID, "bindcode",
+						"Invalid keycode or button code '%s'", name);
+			} else {
+				return cmd_results_new(CMD_INVALID, "bindcode",
+						"Invalid keycode '%s'", name);
+			}
 		}
 		*key_val = keycode;
 	} else {
-		// check for keysym
+		// check for keysym. If it is the first key, allow mouse bindsyms
+		if (first_key) {
+			char *message = NULL;
+			uint32_t button = get_mouse_bindsym(name, &message);
+			if (message) {
+				struct cmd_results *error =
+					cmd_results_new(CMD_INVALID, "bindsym", message);
+				free(message);
+				return error;
+			} else if (button) {
+				*type = BINDING_MOUSESYM;
+				*key_val = button;
+				return NULL;
+			}
+		}
+
 		xkb_keysym_t keysym = xkb_keysym_from_name(name,
 				XKB_KEYSYM_CASE_INSENSITIVE);
-
-		// Check for mouse binding
-		uint32_t button = 0;
-		if (strncasecmp(name, "button", strlen("button")) == 0) {
-			// Map to x11 mouse buttons
-			button = name[strlen("button")] - '0';
-			if (button < 1 || button > 9 || strlen(name) > strlen("button0")) {
+		if (!keysym) {
+			if (first_key) {
 				return cmd_results_new(CMD_INVALID, "bindsym",
-						"Only buttons 1-9 are supported. For other mouse "
-						"buttons, use the name of the event code.");
-			}
-			uint32_t buttons[] = {BTN_LEFT, BTN_MIDDLE, BTN_RIGHT,
-				SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
-				SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
-			button = buttons[button - 1];
-		} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
-			// Get event code
-			int code = libevdev_event_code_from_name(EV_KEY, name);
-			if (code == -1) {
-				return cmd_results_new(CMD_INVALID, "bindsym",
-						"Invalid event code name %s", name);
-			}
-			button = code;
-		}
-
-		if (*type == BINDING_KEYSYM) {
-			if (button) {
-				if (first_key) {
-					*type = BINDING_MOUSE;
-					*key_val = button;
-				} else {
-					return cmd_results_new(CMD_INVALID, "bindsym",
-							"Mixed button '%s' into key sequence", name);
-				}
-			} else if (keysym) {
-				*key_val = keysym;
+						"Unknown key or button '%s'", name);
 			} else {
 				return cmd_results_new(CMD_INVALID, "bindsym",
-						"Unknown key '%s'", name);
-			}
-		} else {
-			if (button) {
-				*key_val = button;
-			} else if (keysym) {
-				return cmd_results_new(CMD_INVALID, "bindsym",
-						"Mixed keysym '%s' into button sequence", name);
-			} else {
-				return cmd_results_new(CMD_INVALID, "bindsym",
-						"Unknown button '%s'", name);
+					"Unknown key '%s'", name);
 			}
 		}
+		*key_val = keysym;
 	}
 	return NULL;
 }
@@ -201,7 +223,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	}
 	if (binding->flags & (BINDING_BORDER | BINDING_CONTENTS | BINDING_TITLEBAR)
 			|| exclude_titlebar) {
-		binding->type = BINDING_MOUSE;
+		binding->type = binding->type == BINDING_KEYCODE ?
+			BINDING_MOUSECODE : BINDING_MOUSESYM;
 	}
 
 	if (argc < 2) {
@@ -249,7 +272,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	// that this is one
 	if (exclude_titlebar) {
 		binding->flags &= ~BINDING_TITLEBAR;
-	} else if (binding->type == BINDING_MOUSE) {
+	} else if (binding->type == BINDING_MOUSECODE
+			|| binding->type == BINDING_MOUSESYM) {
 		binding->flags |= BINDING_TITLEBAR;
 	}
 
