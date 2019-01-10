@@ -85,6 +85,10 @@ static struct sway_node *node_at_coords(
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
+	if (!output) {
+		// output is being destroyed
+		return NULL;
+	}
 	double ox = lx, oy = ly;
 	wlr_output_layout_output_coords(root->output_layout, wlr_output, &ox, &oy);
 
