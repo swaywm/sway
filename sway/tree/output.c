@@ -58,6 +58,7 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	wlr_output->data = output;
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	wl_signal_init(&output->events.destroy);
 
 	wl_list_insert(&root->all_outputs, &output->link);
 
@@ -76,7 +77,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	for (size_t i = 0; i < len; ++i) {
 		wl_list_init(&output->layers[i]);
 	}
-	wl_signal_init(&output->events.destroy);
 
 	output->enabled = true;
 	list_add(root->outputs, output);
