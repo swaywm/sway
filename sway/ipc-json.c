@@ -662,6 +662,8 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 			json_object_new_int(bar->height));
 	json_object_object_add(json, "status_padding",
 			json_object_new_int(bar->status_padding));
+	json_object_object_add(json, "status_edge_padding",
+			json_object_new_int(bar->status_edge_padding));
 	json_object_object_add(json, "wrap_scroll",
 			json_object_new_boolean(bar->wrap_scroll));
 	json_object_object_add(json, "workspace_buttons",

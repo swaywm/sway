@@ -97,6 +97,11 @@ Sway allows configuring swaybar in the sway configuration file.
 	_1_. If _padding_ is _0_, blocks will be able to take up the full height of
 	the bar. This value will be multiplied by the output scale.
 
+*status\_edge\_padding* <padding>
+	Sets the padding that is used when the status line is at the right edge of
+	the bar. This value will be multiplied by the output scale. The default is
+	_3_.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.

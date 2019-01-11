@@ -194,8 +194,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 			}
 		}
 		*x -= sep_block_width;
-	} else {
-		*x -= margin;
+	} else if (config->status_edge_padding) {
+		*x -= config->status_edge_padding * output->scale;
 	}
 
 	uint32_t height = output->height * output->scale;
@@ -287,7 +287,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 static uint32_t render_status_line_i3bar(cairo_t *cairo,
 		struct swaybar_output *output, double *x) {
 	uint32_t max_height = 0;
-	bool edge = true;
+	bool edge = *x == output->width * output->scale;
 	struct i3bar_block *block;
 	wl_list_for_each(block, &output->bar->status->blocks, link) {
 		uint32_t h = render_status_block(cairo, output, block, x, edge);

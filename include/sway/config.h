@@ -233,6 +233,7 @@ struct bar_config {
 	struct side_gaps gaps;
 	pid_t pid;
 	int status_padding;
+	int status_edge_padding;
 	struct {
 		char *background;
 		char *statusline;
