@@ -106,6 +106,7 @@ struct bar_config *default_bar_config(void) {
 	bar->verbose = false;
 	bar->pid = 0;
 	bar->modifier = get_modifier_mask_by_name("Mod4");
+	bar->status_padding = 1;
 	if (!(bar->mode = strdup("dock"))) {
 	       goto cleanup;
 	}

@@ -37,6 +37,7 @@ struct swaybar_config *init_config(void) {
 	config->workspace_buttons = true;
 	config->bindings = create_list();
 	wl_list_init(&config->outputs);
+	config->status_padding = 1;
 
 	/* height */
 	config->height = 0;

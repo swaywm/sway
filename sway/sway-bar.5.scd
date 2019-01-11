@@ -92,6 +92,11 @@ Sway allows configuring swaybar in the sway configuration file.
 *modifier* <Modifier>|none
 	Specifies the modifier key that shows a hidden bar. Default is _Mod4_.
 
+*status\_padding* <padding>
+	Sets the vertical padding that is used for the status line. The default is
+	_1_. If _padding_ is _0_, blocks will be able to take up the full height of
+	the bar. This value will be multiplied by the output scale.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.
