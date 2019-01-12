@@ -613,7 +613,9 @@ static int detect_brace(FILE *file) {
 		}
 	}
 	free(line);
-	fseek(file, pos, SEEK_SET);
+	if (ret == 0) {
+		fseek(file, pos, SEEK_SET);
+	}
 	return ret;
 }
 
