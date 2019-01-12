@@ -86,7 +86,6 @@ if scdoc.found()
 		'sway/sway-output.5.scd',
 		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
-		'swayidle/swayidle.1.scd',
 		'swaynag/swaynag.1.scd',
 		'swaynag/swaynag.5.scd',
 	]
@@ -146,7 +145,6 @@ subdir('swaymsg')
 subdir('client')
 subdir('swaybg')
 subdir('swaybar')
-subdir('swayidle')
 subdir('swaynag')
 subdir('swaylock')
 
@@ -214,7 +212,6 @@ if (get_option('bash-completions'))
 	bash_files = files(
 		'completions/bash/sway',
 		'completions/bash/swaybar',
-		'completions/bash/swayidle',
 		'completions/bash/swaylock',
 		'completions/bash/swaymsg',
 	)
@@ -226,7 +223,6 @@ endif
 if (get_option('fish-completions'))
 	fish_files = files(
 		'completions/fish/sway.fish',
-		'completions/fish/swayidle.fish',
 		'completions/fish/swaylock.fish',
 		'completions/fish/swaymsg.fish',
 		'completions/fish/swaynag.fish',
