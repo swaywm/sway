@@ -101,13 +101,17 @@ void tray_in(int fd, short mask, void *data) {
 }
 
 static int cmp_output(const void *item, const void *cmp_to) {
-	return strcmp(item, cmp_to);
+	const struct swaybar_output *output = cmp_to;
+	if (output->identifier && strcmp(item, output->identifier) == 0) {
+		return 0;
+	}
+	return strcmp(item, output->name);
 }
 
 uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output, double *x) {
 	struct swaybar_config *config = output->bar->config;
 	if (config->tray_outputs) {
-		if (list_seq_find(config->tray_outputs, cmp_output, output->name) == -1) {
+		if (list_seq_find(config->tray_outputs, cmp_output, output) == -1) {
 			return 0;
 		}
 	} // else display on all
