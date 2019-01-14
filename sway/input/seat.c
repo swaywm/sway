@@ -542,6 +542,7 @@ void seat_reset_device(struct sway_seat *seat,
 			seat_reset_input_config(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_KEYBOARD:
+			sway_keyboard_disarm_key_repeat(seat_device->keyboard);
 			sway_keyboard_configure(seat_device->keyboard);
 			break;
 		case WLR_INPUT_DEVICE_TOUCH:

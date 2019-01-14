@@ -51,4 +51,5 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard);
 
 void sway_keyboard_destroy(struct sway_keyboard *keyboard);
 
+void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard);
 #endif
