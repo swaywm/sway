@@ -173,8 +173,17 @@ void container_resize_tiled(struct sway_container *con,
 	int index = container_sibling_index(con);
 
 	if (axis == AXIS_HORIZONTAL || axis == AXIS_VERTICAL) {
-		prev = siblings->items[index - 1];
-		next = siblings->items[index + 1];
+		if (index == 0) {
+			next = siblings->items[1];
+		} else if (index == siblings->length - 1) {
+			// Convert edge to top/left
+			next = con;
+			con = siblings->items[index - 1];
+			amount = -amount;
+		} else {
+			prev = siblings->items[index - 1];
+			next = siblings->items[index + 1];
+		}
 	} else if (axis == WLR_EDGE_TOP || axis == WLR_EDGE_LEFT) {
 		if (!sway_assert(index > 0, "Didn't expect first child")) {
 			return;
