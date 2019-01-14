@@ -35,7 +35,8 @@ static uint32_t render_status_line_error(cairo_t *cairo,
 	cairo_set_source_u32(cairo, 0xFF0000FF);
 
 	int margin = 3 * output->scale;
-	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
+	double ws_vertical_padding =
+		output->bar->config->status_padding * output->scale;
 
 	char *font = output->bar->config->font;
 	int text_width, text_height;
@@ -71,7 +72,7 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
 			output->scale, config->pango_markup, "%s", text);
 
-	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
+	double ws_vertical_padding = config->status_padding * output->scale;
 	int margin = 3 * output->scale;
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
@@ -153,7 +154,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 			output->scale, block->markup, "%s", block->full_text);
 
 	int margin = 3 * output->scale;
-	double ws_vertical_padding = WS_VERTICAL_PADDING * 2 * output->scale;
+	double ws_vertical_padding = config->status_padding * output->scale;
 
 	int width = text_width;
 	if (width < block->min_width) {
@@ -193,8 +194,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 			}
 		}
 		*x -= sep_block_width;
-	} else {
-		*x -= margin;
+	} else if (config->status_edge_padding) {
+		*x -= config->status_edge_padding * output->scale;
 	}
 
 	uint32_t height = output->height * output->scale;
@@ -212,8 +213,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 	}
 
 	double x_pos = *x;
-	double y_pos = WS_VERTICAL_PADDING * output->scale;
-	double render_height = height - ws_vertical_padding + output->scale;
+	double y_pos = ws_vertical_padding;
+	double render_height = height - ws_vertical_padding * 2;
 
 	uint32_t bg_color = block->urgent
 		? config->colors.urgent_workspace.background : block->background;
@@ -286,7 +287,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 static uint32_t render_status_line_i3bar(cairo_t *cairo,
 		struct swaybar_output *output, double *x) {
 	uint32_t max_height = 0;
-	bool edge = true;
+	bool edge = *x == output->width * output->scale;
 	struct i3bar_block *block;
 	wl_list_for_each(block, &output->bar->status->blocks, link) {
 		uint32_t h = render_status_block(cairo, output, block, x, edge);

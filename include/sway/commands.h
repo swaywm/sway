@@ -198,6 +198,8 @@ sway_cmd bar_cmd_id;
 sway_cmd bar_cmd_position;
 sway_cmd bar_cmd_separator_symbol;
 sway_cmd bar_cmd_status_command;
+sway_cmd bar_cmd_status_edge_padding;
+sway_cmd bar_cmd_status_padding;
 sway_cmd bar_cmd_pango_markup;
 sway_cmd bar_cmd_strip_workspace_numbers;
 sway_cmd bar_cmd_strip_workspace_name;

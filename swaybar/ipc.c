@@ -157,7 +157,7 @@ static bool ipc_parse_config(
 	json_object *font, *gaps, *bar_height, *wrap_scroll, *workspace_buttons;
 	json_object *strip_workspace_numbers, *strip_workspace_name;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol;
-	json_object *outputs, *bindings;
+	json_object *outputs, *bindings, *status_padding, *status_edge_padding;
 	json_object_object_get_ex(bar_config, "mode", &mode);
 	json_object_object_get_ex(bar_config, "hidden_state", &hidden_state);
 	json_object_object_get_ex(bar_config, "position", &position);
@@ -176,6 +176,9 @@ static bool ipc_parse_config(
 	json_object_object_get_ex(bar_config, "outputs", &outputs);
 	json_object_object_get_ex(bar_config, "pango_markup", &markup);
 	json_object_object_get_ex(bar_config, "bindings", &bindings);
+	json_object_object_get_ex(bar_config, "status_padding", &status_padding);
+	json_object_object_get_ex(bar_config, "status_edge_padding",
+			&status_edge_padding);
 	if (status_command) {
 		free(config->status_command);
 		config->status_command = strdup(json_object_get_string(status_command));
@@ -208,6 +211,12 @@ static bool ipc_parse_config(
 	}
 	if (bar_height) {
 		config->height = json_object_get_int(bar_height);
+	}
+	if (status_padding) {
+		config->status_padding = json_object_get_int(status_padding);
+	}
+	if (status_edge_padding) {
+		config->status_edge_padding = json_object_get_int(status_edge_padding);
 	}
 	if (gaps) {
 		json_object *top = json_object_object_get(gaps, "top");
