@@ -1,6 +1,6 @@
 # sway
 
-Swayは**開発中**のi3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
+Swayはi3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
 [IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)もあります。
 
