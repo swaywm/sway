@@ -333,4 +333,6 @@ void container_add_mark(struct sway_container *container, char *mark);
 
 void container_update_marks_textures(struct sway_container *container);
 
+void container_raise_floating(struct sway_container *con);
+
 #endif

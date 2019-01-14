@@ -308,7 +308,7 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 	wl_list_insert(&root->drag_icons, &icon->link);
 
 	drag_icon_update_position(icon);
-	seat_end_mouse_operation(seat);
+	seatop_abort(seat);
 }
 
 static void collect_focus_iter(struct sway_node *node, void *data) {
@@ -660,18 +660,6 @@ static int handle_urgent_timeout(void *data) {
 	struct sway_view *view = data;
 	view_set_urgent(view, false);
 	return 0;
-}
-
-static void container_raise_floating(struct sway_container *con) {
-	// Bring container to front by putting it at the end of the floating list.
-	struct sway_container *floater = con;
-	while (floater->parent) {
-		floater = floater->parent;
-	}
-	if (container_is_floating(floater)) {
-		list_move_to_end(floater->workspace->floating, floater);
-		node_set_dirty(&floater->workspace->node);
-	}
 }
 
 static void set_workspace(struct sway_seat *seat,
@@ -1062,187 +1050,6 @@ struct seat_config *seat_get_config_by_name(const char *name) {
 	return NULL;
 }
 
-void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
-		uint32_t button, double sx, double sy) {
-	seat->operation = OP_DOWN;
-	seat->op_container = con;
-	seat->op_button = button;
-	seat->op_ref_lx = seat->cursor->cursor->x;
-	seat->op_ref_ly = seat->cursor->cursor->y;
-	seat->op_ref_con_lx = sx;
-	seat->op_ref_con_ly = sy;
-	seat->op_moved = false;
-
-	container_raise_floating(con);
-}
-
-void seat_begin_move_floating(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button) {
-	if (!seat->cursor) {
-		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
-		return;
-	}
-	seat->operation = OP_MOVE_FLOATING;
-	seat->op_container = con;
-	seat->op_button = button;
-
-	container_raise_floating(con);
-
-	cursor_set_image(seat->cursor, "grab", NULL);
-}
-
-void seat_begin_move_tiling_threshold(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button) {
-	seat->operation = OP_MOVE_TILING_THRESHOLD;
-	seat->op_container = con;
-	seat->op_button = button;
-	seat->op_target_node = NULL;
-	seat->op_target_edge = 0;
-	seat->op_ref_lx = seat->cursor->cursor->x;
-	seat->op_ref_ly = seat->cursor->cursor->y;
-}
-
-void seat_begin_move_tiling(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button) {
-	seat->operation = OP_MOVE_TILING;
-	seat->op_container = con;
-	seat->op_button = button;
-	seat->op_target_node = NULL;
-	seat->op_target_edge = 0;
-	cursor_set_image(seat->cursor, "grab", NULL);
-}
-
-void seat_begin_resize_floating(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button, enum wlr_edges edge) {
-	if (!seat->cursor) {
-		wlr_log(WLR_DEBUG, "Ignoring resize request due to no cursor device");
-		return;
-	}
-	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
-	seat->operation = OP_RESIZE_FLOATING;
-	seat->op_container = con;
-	seat->op_resize_preserve_ratio = keyboard &&
-		(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
-	seat->op_resize_edge = edge == WLR_EDGE_NONE ?
-		WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT : edge;
-	seat->op_button = button;
-	seat->op_ref_lx = seat->cursor->cursor->x;
-	seat->op_ref_ly = seat->cursor->cursor->y;
-	seat->op_ref_con_lx = con->x;
-	seat->op_ref_con_ly = con->y;
-	seat->op_ref_width = con->width;
-	seat->op_ref_height = con->height;
-
-	container_raise_floating(con);
-
-	const char *image = edge == WLR_EDGE_NONE ?
-		"se-resize" : wlr_xcursor_get_resize_name(edge);
-	cursor_set_image(seat->cursor, image, NULL);
-}
-
-void seat_begin_resize_tiling(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button, enum wlr_edges edge) {
-	seat->operation = OP_RESIZE_TILING;
-	seat->op_container = con;
-	seat->op_resize_edge = edge;
-	seat->op_button = button;
-	seat->op_ref_lx = seat->cursor->cursor->x;
-	seat->op_ref_ly = seat->cursor->cursor->y;
-	seat->op_ref_con_lx = con->x;
-	seat->op_ref_con_ly = con->y;
-	seat->op_ref_width = con->width;
-	seat->op_ref_height = con->height;
-}
-
-static bool is_parallel(enum sway_container_layout layout,
-		enum wlr_edges edge) {
-	bool layout_is_horiz = layout == L_HORIZ || layout == L_TABBED;
-	bool edge_is_horiz = edge == WLR_EDGE_LEFT || edge == WLR_EDGE_RIGHT;
-	return layout_is_horiz == edge_is_horiz;
-}
-
-static void seat_end_move_tiling(struct sway_seat *seat) {
-	struct sway_container *con = seat->op_container;
-	struct sway_container *old_parent = con->parent;
-	struct sway_workspace *old_ws = con->workspace;
-	struct sway_node *target_node = seat->op_target_node;
-	struct sway_workspace *new_ws = target_node->type == N_WORKSPACE ?
-		target_node->sway_workspace : target_node->sway_container->workspace;
-	enum wlr_edges edge = seat->op_target_edge;
-	int after = edge != WLR_EDGE_TOP && edge != WLR_EDGE_LEFT;
-
-	container_detach(con);
-
-	// Moving container into empty workspace
-	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
-		workspace_add_tiling(new_ws, con);
-	} else if (target_node->type == N_CONTAINER) {
-		// Moving container before/after another
-		struct sway_container *target = target_node->sway_container;
-		enum sway_container_layout layout = container_parent_layout(target);
-		if (edge && !is_parallel(layout, edge)) {
-			enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
-				edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
-			container_split(target, new_layout);
-		}
-		container_add_sibling(target, con, after);
-	} else {
-		// Target is a workspace which requires splitting
-		enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
-			edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
-		workspace_split(new_ws, new_layout);
-		workspace_insert_tiling(new_ws, con, after);
-	}
-
-	if (old_parent) {
-		container_reap_empty(old_parent);
-	}
-
-	// This is a bit dirty, but we'll set the dimensions to that of a sibling.
-	// I don't think there's any other way to make it consistent without
-	// changing how we auto-size containers.
-	list_t *siblings = container_get_siblings(con);
-	if (siblings->length > 1) {
-		int index = list_find(siblings, con);
-		struct sway_container *sibling = index == 0 ?
-			siblings->items[1] : siblings->items[index - 1];
-		con->width = sibling->width;
-		con->height = sibling->height;
-	}
-
-	arrange_workspace(old_ws);
-	if (new_ws != old_ws) {
-		arrange_workspace(new_ws);
-	}
-}
-
-void seat_end_mouse_operation(struct sway_seat *seat) {
-	enum sway_seat_operation operation = seat->operation;
-	if (seat->operation == OP_MOVE_FLOATING) {
-		// We "move" the container to its own location so it discovers its
-		// output again.
-		struct sway_container *con = seat->op_container;
-		container_floating_move_to(con, con->x, con->y);
-	} else if (seat->operation == OP_MOVE_TILING && seat->op_target_node) {
-		seat_end_move_tiling(seat);
-	}
-	seat->operation = OP_NONE;
-	seat->op_container = NULL;
-	if (operation == OP_DOWN) {
-		// Set the cursor's previous coords to the x/y at the start of the
-		// operation, so the container change will be detected if using
-		// focus_follows_mouse and the cursor moved off the original container
-		// during the operation.
-		seat->cursor->previous.x = seat->op_ref_lx;
-		seat->cursor->previous.y = seat->op_ref_ly;
-		if (seat->op_moved) {
-			cursor_send_pointer_motion(seat->cursor, 0);
-		}
-	} else {
-		cursor_set_image(seat->cursor, "left_ptr", NULL);
-	}
-}
-
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 		uint32_t button, enum wlr_button_state state) {
 	seat->last_button = button;
@@ -1273,5 +1080,46 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	if (seat->cursor->hidden){
 		cursor_unhide(seat->cursor);
 		wl_event_source_timer_update(seat->cursor->hide_source, cursor_get_timeout(seat->cursor));
+	}
+}
+
+bool seat_doing_seatop(struct sway_seat *seat) {
+	return seat->seatop_impl != NULL;
+}
+
+void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
+	if (seat->seatop_impl && seat->seatop_impl->unref) {
+		seat->seatop_impl->unref(seat, con);
+	}
+}
+
+void seatop_motion(struct sway_seat *seat, uint32_t time_msec) {
+	if (seat->seatop_impl && seat->seatop_impl->motion) {
+		seat->seatop_impl->motion(seat, time_msec);
+	}
+}
+
+void seatop_finish(struct sway_seat *seat) {
+	if (seat->seatop_impl && seat->seatop_impl->finish) {
+		seat->seatop_impl->finish(seat);
+	}
+	free(seat->seatop_data);
+	seat->seatop_data = NULL;
+	seat->seatop_impl = NULL;
+}
+
+void seatop_abort(struct sway_seat *seat) {
+	if (seat->seatop_impl && seat->seatop_impl->abort) {
+		seat->seatop_impl->abort(seat);
+	}
+	free(seat->seatop_data);
+	seat->seatop_data = NULL;
+	seat->seatop_impl = NULL;
+}
+
+void seatop_render(struct sway_seat *seat, struct sway_output *output,
+		pixman_region32_t *damage) {
+	if (seat->seatop_impl && seat->seatop_impl->render) {
+		seat->seatop_impl->render(seat, output, damage);
 	}
 }

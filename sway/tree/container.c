@@ -864,15 +864,7 @@ bool container_has_urgent_child(struct sway_container *container) {
 void container_end_mouse_operation(struct sway_container *container) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		if (seat->op_container == container) {
-			seat->op_target_node = NULL; // ensure tiling move doesn't apply
-			seat_end_mouse_operation(seat);
-		}
-		// If the user is doing a tiling drag over this container,
-		// keep the operation active but unset the target container.
-		if (seat->op_target_node == &container->node) {
-			seat->op_target_node = NULL;
-		}
+		seatop_unref(seat, container);
 	}
 }
 
@@ -1384,3 +1376,16 @@ void container_update_marks_textures(struct sway_container *con) {
 			&config->border_colors.urgent);
 	container_damage_whole(con);
 }
+
+void container_raise_floating(struct sway_container *con) {
+	// Bring container to front by putting it at the end of the floating list.
+	struct sway_container *floater = con;
+	while (floater->parent) {
+		floater = floater->parent;
+	}
+	if (container_is_floating(floater)) {
+		list_move_to_end(floater->workspace->floating, floater);
+		node_set_dirty(&floater->workspace->node);
+	}
+}
+

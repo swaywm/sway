@@ -49,13 +49,6 @@ static int scale_length(int length, int offset, float scale) {
 	return round((offset + length) * scale) - round(offset * scale);
 }
 
-static void scale_box(struct wlr_box *box, float scale) {
-	box->width = scale_length(box->width, box->x, scale);
-	box->height = scale_length(box->height, box->y, scale);
-	box->x = round(box->x * scale);
-	box->y = round(box->y * scale);
-}
-
 static void scissor_output(struct wlr_output *wlr_output,
 		pixman_box32_t *rect) {
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
@@ -164,7 +157,7 @@ static void render_drag_icons(struct sway_output *output,
 
 // _box.x and .y are expected to be layout-local
 // _box.width and .height are expected to be output-buffer-local
-static void render_rect(struct wlr_output *wlr_output,
+void render_rect(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]) {
 	struct wlr_renderer *renderer =
@@ -197,7 +190,7 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static void premultiply_alpha(float color[4], float opacity) {
+void premultiply_alpha(float color[4], float opacity) {
 	color[3] *= opacity;
 	color[0] *= color[3];
 	color[1] *= color[3];
@@ -949,21 +942,11 @@ static void render_floating(struct sway_output *soutput,
 	}
 }
 
-static void render_dropzones(struct sway_output *output,
+static void render_seatops(struct sway_output *output,
 		pixman_region32_t *damage) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		if (seat->operation == OP_MOVE_TILING && seat->op_target_node
-				&& node_get_output(seat->op_target_node) == output) {
-			float color[4];
-			memcpy(&color, config->border_colors.focused.indicator,
-					sizeof(float) * 4);
-			premultiply_alpha(color, 0.5);
-			struct wlr_box box;
-			memcpy(&box, &seat->op_drop_box, sizeof(struct wlr_box));
-			scale_box(&box, output->wlr_output->scale);
-			render_rect(output->wlr_output, damage, &box, color);
-		}
+		seatop_render(seat, output, damage);
 	}
 }
 
@@ -1060,7 +1043,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
 
-	render_dropzones(output, damage);
+	render_seatops(output, damage);
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);

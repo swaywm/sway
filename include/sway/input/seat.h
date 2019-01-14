@@ -6,6 +6,17 @@
 #include <wlr/util/edges.h>
 #include "sway/input/input-manager.h"
 
+struct sway_seat;
+
+struct sway_seatop_impl {
+	void (*motion)(struct sway_seat *seat, uint32_t time_msec);
+	void (*finish)(struct sway_seat *seat);
+	void (*abort)(struct sway_seat *seat);
+	void (*unref)(struct sway_seat *seat, struct sway_container *con);
+	void (*render)(struct sway_seat *seat, struct sway_output *output,
+			pixman_region32_t *damage);
+};
+
 struct sway_seat_device {
 	struct sway_seat *sway_seat;
 	struct sway_input_device *input_device;
@@ -35,16 +46,6 @@ struct sway_drag_icon {
 	struct wl_listener destroy;
 };
 
-enum sway_seat_operation {
-	OP_NONE,
-	OP_DOWN,
-	OP_MOVE_FLOATING,
-	OP_MOVE_TILING_THRESHOLD,
-	OP_MOVE_TILING,
-	OP_RESIZE_FLOATING,
-	OP_RESIZE_TILING,
-};
-
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
@@ -64,19 +65,10 @@ struct sway_seat {
 	int32_t touch_id;
 	double touch_x, touch_y;
 
-	// Operations (drag and resize)
-	enum sway_seat_operation operation;
-	struct sway_container *op_container;
-	struct sway_node *op_target_node; // target for tiling move
-	enum wlr_edges op_target_edge;
-	struct wlr_box op_drop_box;
-	enum wlr_edges op_resize_edge;
-	uint32_t op_button;
-	bool op_resize_preserve_ratio;
-	double op_ref_lx, op_ref_ly;         // cursor's x/y at start of op
-	double op_ref_width, op_ref_height;  // container's size at start of op
-	double op_ref_con_lx, op_ref_con_ly; // container's x/y at start of op
-	bool op_moved;                       // if the mouse moved during a down op
+	// Seat operations (drag and resize)
+	const struct sway_seatop_impl *seatop_impl;
+	void *seatop_data;
+	uint32_t seatop_button;
 
 	uint32_t last_button;
 	uint32_t last_button_serial;
@@ -184,32 +176,59 @@ bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
 
-void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
-		uint32_t button, double sx, double sy);
+void seatop_begin_down(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button, int sx, int sy);
 
-void seat_begin_move_floating(struct sway_seat *seat,
+void seatop_begin_move_floating(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button);
 
-void seat_begin_move_tiling_threshold(struct sway_seat *seat,
+void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button);
 
-void seat_begin_move_tiling(struct sway_seat *seat,
+void seatop_begin_move_tiling(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button);
 
-void seat_begin_resize_floating(struct sway_seat *seat,
+void seatop_begin_resize_floating(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button, enum wlr_edges edge);
 
-void seat_begin_resize_tiling(struct sway_seat *seat,
+void seatop_begin_resize_tiling(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button, enum wlr_edges edge);
 
 struct sway_container *seat_get_focus_inactive_floating(struct sway_seat *seat,
 		struct sway_workspace *workspace);
 
-void seat_end_mouse_operation(struct sway_seat *seat);
-
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 		uint32_t button, enum wlr_button_state state);
 
 void seat_consider_warp_to_focus(struct sway_seat *seat);
+
+bool seat_doing_seatop(struct sway_seat *seat);
+
+void seatop_motion(struct sway_seat *seat, uint32_t time_msec);
+
+/**
+ * End a seatop and apply the affects.
+ */
+void seatop_finish(struct sway_seat *seat);
+
+/**
+ * End a seatop without applying the affects.
+ */
+void seatop_abort(struct sway_seat *seat);
+
+/**
+ * Instructs the seatop implementation to drop any references to the given
+ * container (eg. because the container is destroying).
+ * The seatop may choose to abort itself in response to this.
+ */
+void seatop_unref(struct sway_seat *seat, struct sway_container *con);
+
+/**
+ * Instructs a seatop to render anything that it needs to render
+ * (eg. dropzone for move-tiling)
+ */
+void seatop_render(struct sway_seat *seat, struct sway_output *output,
+		pixman_region32_t *damage);
+
 
 #endif
