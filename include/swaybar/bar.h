@@ -61,6 +61,7 @@ struct swaybar_output {
 	struct wl_list hotspots; // swaybar_hotspot::link
 
 	char *name;
+	char *identifier;
 	bool focused;
 
 	uint32_t width, height;

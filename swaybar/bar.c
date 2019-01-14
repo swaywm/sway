@@ -59,6 +59,7 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	free_workspaces(&output->workspaces);
 	wl_list_remove(&output->link);
 	free(output->name);
+	free(output->identifier);
 	free(output);
 }
 
@@ -166,13 +167,15 @@ bool determine_bar_visibility(struct swaybar *bar, bool moving_layer) {
 	return visible;
 }
 
-static bool bar_uses_output(struct swaybar *bar, const char *name) {
-	if (bar->config->all_outputs) {
+static bool bar_uses_output(struct swaybar_output *output) {
+	if (output->bar->config->all_outputs) {
 		return true;
 	}
+	char *identifier = output->identifier;
 	struct config_output *coutput;
-	wl_list_for_each(coutput, &bar->config->outputs, link) {
-		if (strcmp(coutput->name, name) == 0) {
+	wl_list_for_each(coutput, &output->bar->config->outputs, link) {
+		if (strcmp(coutput->name, output->name) == 0 ||
+				(identifier && strcmp(coutput->name, identifier) == 0)) {
 			return true;
 		}
 	}
@@ -233,7 +236,7 @@ static void xdg_output_handle_done(void *data,
 	struct swaybar *bar = output->bar;
 
 	assert(output->name != NULL);
-	if (!bar_uses_output(bar, output->name)) {
+	if (!bar_uses_output(output)) {
 		swaybar_output_free(output);
 		return;
 	}
@@ -258,7 +261,22 @@ static void xdg_output_handle_name(void *data,
 
 static void xdg_output_handle_description(void *data,
 		struct zxdg_output_v1 *xdg_output, const char *description) {
-	// Who cares
+	// wlroots currently sets the description to `make model serial (name)`
+	// If this changes in the future, this will need to be modified.
+	struct swaybar_output *output = data;
+	free(output->identifier);
+	output->identifier = NULL;
+	char *paren = strrchr(description, '(');
+	if (paren) {
+		size_t length = paren - description;
+		output->identifier = malloc(length);
+		if (!output->identifier) {
+			wlr_log(WLR_ERROR, "Failed to allocate output identifier");
+			return;
+		}
+		strncpy(output->identifier, description, length);
+		output->identifier[length - 1] = '\0';
+	}
 }
 
 struct zxdg_output_v1_listener xdg_output_listener = {
