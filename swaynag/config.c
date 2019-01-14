@@ -304,25 +304,15 @@ char *swaynag_get_config_path(void) {
 		SYSCONFDIR "/swaynag/config",
 	};
 
-	if (!getenv("XDG_CONFIG_HOME")) {
-		char *home = getenv("HOME");
-		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
-		if (!config_home) {
-			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
-		} else {
-			strcpy(config_home, home);
-			strcat(config_home, "/.config");
-			setenv("XDG_CONFIG_HOME", config_home, 1);
-			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
-			free(config_home);
-		}
+	char *config_home = getenv("XDG_CONFIG_HOME");
+	if (!config_home || *config_home) {
+		config_paths[1] = "$HOME/.config/swaynag/config";
 	}
 
 	wordexp_t p;
-	char *path;
 	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
 		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = strdup(p.we_wordv[0]);
+			char *path = strdup(p.we_wordv[0]);
 			wordfree(&p);
 			if (file_exists(path)) {
 				return path;
