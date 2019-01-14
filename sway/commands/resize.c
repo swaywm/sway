@@ -13,6 +13,9 @@
 #include "sway/tree/workspace.h"
 #include "log.h"
 
+#define AXIS_HORIZONTAL (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)
+#define AXIS_VERTICAL   (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)
+
 static const int MIN_SANE_W = 100, MIN_SANE_H = 60;
 
 enum resize_unit {
@@ -20,16 +23,6 @@ enum resize_unit {
 	RESIZE_UNIT_PPT,
 	RESIZE_UNIT_DEFAULT,
 	RESIZE_UNIT_INVALID,
-};
-
-enum resize_axis {
-	RESIZE_AXIS_HORIZONTAL,
-	RESIZE_AXIS_VERTICAL,
-	RESIZE_AXIS_UP,
-	RESIZE_AXIS_DOWN,
-	RESIZE_AXIS_LEFT,
-	RESIZE_AXIS_RIGHT,
-	RESIZE_AXIS_INVALID,
 };
 
 struct resize_amount {
@@ -111,61 +104,48 @@ static void calculate_constraints(int *min_width, int *max_width,
 	}
 }
 
-static enum resize_axis parse_resize_axis(const char *axis) {
+static uint32_t parse_resize_axis(const char *axis) {
 	if (strcasecmp(axis, "width") == 0 || strcasecmp(axis, "horizontal") == 0) {
-		return RESIZE_AXIS_HORIZONTAL;
+		return AXIS_HORIZONTAL;
 	}
 	if (strcasecmp(axis, "height") == 0 || strcasecmp(axis, "vertical") == 0) {
-		return RESIZE_AXIS_VERTICAL;
+		return AXIS_VERTICAL;
 	}
 	if (strcasecmp(axis, "up") == 0) {
-		return RESIZE_AXIS_UP;
+		return WLR_EDGE_TOP;
 	}
 	if (strcasecmp(axis, "down") == 0) {
-		return RESIZE_AXIS_DOWN;
+		return WLR_EDGE_BOTTOM;
 	}
 	if (strcasecmp(axis, "left") == 0) {
-		return RESIZE_AXIS_LEFT;
+		return WLR_EDGE_LEFT;
 	}
 	if (strcasecmp(axis, "right") == 0) {
-		return RESIZE_AXIS_RIGHT;
+		return WLR_EDGE_RIGHT;
 	}
-	return RESIZE_AXIS_INVALID;
+	return WLR_EDGE_NONE;
 }
 
-static enum resize_axis normalize_axis(enum resize_axis axis) {
-	switch (axis) {
-	case RESIZE_AXIS_HORIZONTAL:
-	case RESIZE_AXIS_LEFT:
-	case RESIZE_AXIS_RIGHT:
-		return RESIZE_AXIS_HORIZONTAL;
-	case RESIZE_AXIS_VERTICAL:
-	case RESIZE_AXIS_UP:
-	case RESIZE_AXIS_DOWN:
-		return RESIZE_AXIS_VERTICAL;
-	case RESIZE_AXIS_INVALID:
-		sway_assert(false, "Never reached");
-	}
-	sway_assert(false, "Never reached");
-	return RESIZE_AXIS_INVALID;
+static bool is_horizontal(uint32_t axis) {
+	return axis & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 }
 
-static int parallel_coord(struct sway_container *c, enum resize_axis a) {
-	return normalize_axis(a) == RESIZE_AXIS_HORIZONTAL ? c->x : c->y;
+static int parallel_coord(struct sway_container *c, uint32_t axis) {
+	return is_horizontal(axis) ? c->x : c->y;
 }
 
-static int parallel_size(struct sway_container *c, enum resize_axis a) {
-	return normalize_axis(a) == RESIZE_AXIS_HORIZONTAL ? c->width : c->height;
+static int parallel_size(struct sway_container *c, uint32_t axis) {
+	return is_horizontal(axis) ? c->width : c->height;
 }
 
 static void container_recursive_resize(struct sway_container *container,
 		double amount, enum wlr_edges edge) {
 	bool layout_match = true;
 	wlr_log(WLR_DEBUG, "Resizing %p with amount: %f", container, amount);
-	if (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_RIGHT) {
+	if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
 		container->width += amount;
 		layout_match = container->layout == L_HORIZ;
-	} else if (edge == WLR_EDGE_TOP || edge == WLR_EDGE_BOTTOM) {
+	} else if (edge & (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
 		container->height += amount;
 		layout_match = container->layout == L_VERT;
 	}
@@ -180,14 +160,14 @@ static void container_recursive_resize(struct sway_container *container,
 }
 
 static void resize_tiled(struct sway_container *parent, int amount,
-		enum resize_axis axis) {
+		uint32_t axis) {
 	struct sway_container *focused = parent;
 	if (!parent) {
 		return;
 	}
 
 	enum sway_container_layout parallel_layout =
-		normalize_axis(axis) == RESIZE_AXIS_HORIZONTAL ? L_HORIZ : L_VERT;
+		is_horizontal(axis) ? L_HORIZ : L_VERT;
 	int minor_weight = 0;
 	int major_weight = 0;
 	while (parent) {
@@ -219,16 +199,15 @@ static void resize_tiled(struct sway_container *parent, int amount,
 		return;
 	}
 
-	// Implement up/down/left/right direction by zeroing one of the weights,
-	// then setting the axis to be horizontal or vertical
-	if (axis == RESIZE_AXIS_UP || axis == RESIZE_AXIS_LEFT) {
+	// Implement up/down/left/right direction by zeroing one of the weights
+	if (axis == WLR_EDGE_TOP || axis == WLR_EDGE_LEFT) {
 		major_weight = 0;
-	} else if (axis == RESIZE_AXIS_RIGHT || axis == RESIZE_AXIS_DOWN) {
+	} else if (axis == WLR_EDGE_RIGHT || axis == WLR_EDGE_BOTTOM) {
 		minor_weight = 0;
 	}
-	axis = normalize_axis(axis);
 
-	int min_sane = axis == RESIZE_AXIS_HORIZONTAL ? MIN_SANE_W : MIN_SANE_H;
+	bool horizontal = is_horizontal(axis);
+	int min_sane = horizontal ? MIN_SANE_W : MIN_SANE_H;
 
 	//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
 	// ^ ?????
@@ -268,10 +247,8 @@ static void resize_tiled(struct sway_container *parent, int amount,
 		}
 	}
 
-	enum wlr_edges minor_edge = axis == RESIZE_AXIS_HORIZONTAL ?
-		WLR_EDGE_LEFT : WLR_EDGE_TOP;
-	enum wlr_edges major_edge = axis == RESIZE_AXIS_HORIZONTAL ?
-		WLR_EDGE_RIGHT : WLR_EDGE_BOTTOM;
+	enum wlr_edges minor_edge = horizontal ? WLR_EDGE_LEFT : WLR_EDGE_TOP;
+	enum wlr_edges major_edge = horizontal ? WLR_EDGE_RIGHT : WLR_EDGE_BOTTOM;
 
 	for (int i = 0; i < siblings->length; i++) {
 		struct sway_container *sibling = siblings->items[i];
@@ -321,47 +298,23 @@ static void resize_tiled(struct sway_container *parent, int amount,
 
 void container_resize_tiled(struct sway_container *parent,
 		enum wlr_edges edge, int amount) {
-	enum resize_axis axis = RESIZE_AXIS_INVALID;
-	switch (edge) {
-	case WLR_EDGE_TOP:
-		axis = RESIZE_AXIS_UP;
-		break;
-	case WLR_EDGE_RIGHT:
-		axis = RESIZE_AXIS_RIGHT;
-		break;
-	case WLR_EDGE_BOTTOM:
-		axis = RESIZE_AXIS_DOWN;
-		break;
-	case WLR_EDGE_LEFT:
-		axis = RESIZE_AXIS_LEFT;
-		break;
-	case WLR_EDGE_NONE:
-		break;
-	}
-	resize_tiled(parent, amount, axis);
+	resize_tiled(parent, amount, edge);
 }
 
 /**
  * Implement `resize <grow|shrink>` for a floating container.
  */
-static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
+static struct cmd_results *resize_adjust_floating(uint32_t axis,
 		struct resize_amount *amount) {
 	struct sway_container *con = config->handler_context.container;
 	int grow_width = 0, grow_height = 0;
-	switch (axis) {
-	case RESIZE_AXIS_HORIZONTAL:
-	case RESIZE_AXIS_LEFT:
-	case RESIZE_AXIS_RIGHT:
+
+	if (is_horizontal(axis)) {
 		grow_width = amount->amount;
-		break;
-	case RESIZE_AXIS_VERTICAL:
-	case RESIZE_AXIS_UP:
-	case RESIZE_AXIS_DOWN:
+	} else {
 		grow_height = amount->amount;
-		break;
-	case RESIZE_AXIS_INVALID:
-		return cmd_results_new(CMD_INVALID, "resize", "Invalid axis/direction");
 	}
+
 	// Make sure we're not adjusting beyond floating min/max size
 	int min_width, max_width, min_height, max_height;
 	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
@@ -376,24 +329,15 @@ static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
 		grow_height = max_height - con->height;
 	}
 	int grow_x = 0, grow_y = 0;
-	switch (axis) {
-	case RESIZE_AXIS_HORIZONTAL:
+
+	if (axis == AXIS_HORIZONTAL) {
 		grow_x = -grow_width / 2;
-		break;
-	case RESIZE_AXIS_VERTICAL:
+	} else if (axis == AXIS_VERTICAL) {
 		grow_y = -grow_height / 2;
-		break;
-	case RESIZE_AXIS_UP:
+	} else if (axis == WLR_EDGE_TOP) {
 		grow_y = -grow_height;
-		break;
-	case RESIZE_AXIS_LEFT:
+	} else if (axis == WLR_EDGE_LEFT) {
 		grow_x = -grow_width;
-		break;
-	case RESIZE_AXIS_DOWN:
-	case RESIZE_AXIS_RIGHT:
-		break;
-	case RESIZE_AXIS_INVALID:
-		return cmd_results_new(CMD_INVALID, "resize", "Invalid axis/direction");
 	}
 	if (grow_x == 0 && grow_y == 0) {
 		return cmd_results_new(CMD_INVALID, "resize",
@@ -417,7 +361,7 @@ static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
 /**
  * Implement `resize <grow|shrink>` for a tiled container.
  */
-static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
+static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 		struct resize_amount *amount) {
 	struct sway_container *current = config->handler_context.container;
 
@@ -426,20 +370,11 @@ static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
 	}
 	if (amount->unit == RESIZE_UNIT_PPT) {
 		float pct = amount->amount / 100.0f;
-		switch (axis) {
-		case RESIZE_AXIS_LEFT:
-		case RESIZE_AXIS_RIGHT:
-		case RESIZE_AXIS_HORIZONTAL:
+
+		if (is_horizontal(axis)) {
 			amount->amount = (float)current->width * pct;
-			break;
-		case RESIZE_AXIS_UP:
-		case RESIZE_AXIS_DOWN:
-		case RESIZE_AXIS_VERTICAL:
+		} else {
 			amount->amount = (float)current->height * pct;
-			break;
-		case RESIZE_AXIS_INVALID:
-			return cmd_results_new(CMD_INVALID, "resize",
-					"Invalid resize axis/direction");
 		}
 	}
 
@@ -474,8 +409,7 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 			width->unit = RESIZE_UNIT_PX;
 		}
 		if (width->unit == RESIZE_UNIT_PX) {
-			resize_tiled(con, width->amount - con->width,
-					RESIZE_AXIS_HORIZONTAL);
+			resize_tiled(con, width->amount - con->width, AXIS_HORIZONTAL);
 		}
 	}
 
@@ -495,8 +429,7 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 			height->unit = RESIZE_UNIT_PX;
 		}
 		if (height->unit == RESIZE_UNIT_PX) {
-			resize_tiled(con, height->amount - con->height,
-					RESIZE_AXIS_VERTICAL);
+			resize_tiled(con, height->amount - con->height, AXIS_VERTICAL);
 		}
 	}
 
@@ -631,8 +564,8 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		int multiplier) {
 	const char *usage = "Expected 'resize grow|shrink <direction> "
 		"[<amount> px|ppt [or <amount> px|ppt]]'";
-	enum resize_axis axis = parse_resize_axis(*argv);
-	if (axis == RESIZE_AXIS_INVALID) {
+	uint32_t axis = parse_resize_axis(*argv);
+	if (axis == WLR_EDGE_NONE) {
 		return cmd_results_new(CMD_INVALID, "resize", usage);
 	}
 	--argc; ++argv;
