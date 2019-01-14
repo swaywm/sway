@@ -1,4 +1,5 @@
 #include <json-c/json.h>
+#include <libevdev/libevdev.h>
 #include <stdio.h>
 #include <ctype.h>
 #include "config.h"
@@ -10,6 +11,7 @@
 #include "sway/tree/workspace.h"
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_box.h>
@@ -647,6 +649,31 @@ json_object *ipc_json_describe_seat(struct sway_seat *seat) {
 	return object;
 }
 
+static uint32_t event_to_x11_button(uint32_t event) {
+	switch (event) {
+	case BTN_LEFT:
+		return 1;
+	case BTN_MIDDLE:
+		return 2;
+	case BTN_RIGHT:
+		return 3;
+	case SWAY_SCROLL_UP:
+		return 4;
+	case SWAY_SCROLL_DOWN:
+		return 5;
+	case SWAY_SCROLL_LEFT:
+		return 6;
+	case SWAY_SCROLL_RIGHT:
+		return 7;
+	case BTN_SIDE:
+		return 8;
+	case BTN_EXTRA:
+		return 9;
+	default:
+		return 0;
+	}
+}
+
 json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	if (!sway_assert(bar, "Bar must not be NULL")) {
 		return NULL;
@@ -792,6 +819,8 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 			struct bar_binding *binding = bar->bindings->items[i];
 			json_object *bind = json_object_new_object();
 			json_object_object_add(bind, "input_code",
+					json_object_new_int(event_to_x11_button(binding->button)));
+			json_object_object_add(bind, "event_code",
 					json_object_new_int(binding->button));
 			json_object_object_add(bind, "command",
 					json_object_new_string(binding->command));

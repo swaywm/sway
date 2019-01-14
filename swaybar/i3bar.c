@@ -259,9 +259,34 @@ bool i3bar_handle_readable(struct status_line *status) {
 	}
 }
 
+static uint32_t event_to_x11_button(uint32_t event) {
+	switch (event) {
+	case BTN_LEFT:
+		return 1;
+	case BTN_MIDDLE:
+		return 2;
+	case BTN_RIGHT:
+		return 3;
+	case SWAY_SCROLL_UP:
+		return 4;
+	case SWAY_SCROLL_DOWN:
+		return 5;
+	case SWAY_SCROLL_LEFT:
+		return 6;
+	case SWAY_SCROLL_RIGHT:
+		return 7;
+	case BTN_SIDE:
+		return 8;
+	case BTN_EXTRA:
+		return 9;
+	default:
+		return 0;
+	}
+}
+
 enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, int rx, int ry, int w, int h,
-		enum x11_button button) {
+		uint32_t button) {
 	wlr_log(WLR_DEBUG, "block %s clicked", block->name);
 	if (!block->name || !status->click_events) {
 		return HOTSPOT_PROCESS;
@@ -275,7 +300,9 @@ enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 				json_object_new_string(block->instance));
 	}
 
-	json_object_object_add(event_json, "button", json_object_new_int(button));
+	json_object_object_add(event_json, "button",
+			json_object_new_int(event_to_x11_button(button)));
+	json_object_object_add(event_json, "event", json_object_new_int(button));
 	json_object_object_add(event_json, "x", json_object_new_int(x));
 	json_object_object_add(event_json, "y", json_object_new_int(y));
 	json_object_object_add(event_json, "relative_x", json_object_new_int(rx));

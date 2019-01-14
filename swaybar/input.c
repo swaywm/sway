@@ -22,32 +22,16 @@ void free_hotspots(struct wl_list *list) {
 	}
 }
 
-static enum x11_button wl_button_to_x11_button(uint32_t button) {
-	switch (button) {
-	case BTN_LEFT:
-		return LEFT;
-	case BTN_MIDDLE:
-		return MIDDLE;
-	case BTN_RIGHT:
-		return RIGHT;
-	case BTN_SIDE:
-		return BACK;
-	case BTN_EXTRA:
-		return FORWARD;
-	default:
-		return NONE;
-	}
-}
-
-static enum x11_button wl_axis_to_x11_button(uint32_t axis, wl_fixed_t value) {
+static uint32_t wl_axis_to_button(uint32_t axis, wl_fixed_t value) {
+	bool negative = wl_fixed_to_double(value) < 0;
 	switch (axis) {
 	case WL_POINTER_AXIS_VERTICAL_SCROLL:
-		return wl_fixed_to_double(value) < 0 ? SCROLL_UP : SCROLL_DOWN;
+		return negative ? SWAY_SCROLL_UP : SWAY_SCROLL_DOWN;
 	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
-		return wl_fixed_to_double(value) < 0 ? SCROLL_LEFT : SCROLL_RIGHT;
+		return negative ? SWAY_SCROLL_LEFT : SWAY_SCROLL_RIGHT;
 	default:
 		wlr_log(WLR_DEBUG, "Unexpected axis value on mouse scroll");
-		return NONE;
+		return 0;
 	}
 }
 
@@ -102,12 +86,12 @@ static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 	bar->pointer.y = wl_fixed_to_int(surface_y);
 }
 
-static bool check_bindings(struct swaybar *bar, uint32_t x11_button,
+static bool check_bindings(struct swaybar *bar, uint32_t button,
 		uint32_t state) {
 	bool released = state == WL_POINTER_BUTTON_STATE_RELEASED;
 	for (int i = 0; i < bar->config->bindings->length; i++) {
 		struct swaybar_binding *binding = bar->config->bindings->items[i];
-		if (binding->button == x11_button && binding->release == released) {
+		if (binding->button == button && binding->release == released) {
 			ipc_execute_binding(bar, binding);
 			return true;
 		}
@@ -124,7 +108,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	if (check_bindings(bar, wl_button_to_x11_button(button), state)) {
+	if (check_bindings(bar, button, state)) {
 		return;
 	}
 
@@ -140,7 +124,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
 			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
-					pointer->x, pointer->y, wl_button_to_x11_button(button), hotspot->data)) {
+					pointer->x, pointer->y, button, hotspot->data)) {
 				return;
 			}
 		}
@@ -158,7 +142,7 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 
 	// If there is a button press binding, execute it, skip default behavior,
 	// and check button release bindings
-	enum x11_button button = wl_axis_to_x11_button(axis, value);
+	uint32_t button = wl_axis_to_button(axis, value);
 	if (check_bindings(bar, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
 		check_bindings(bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 		return;

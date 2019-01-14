@@ -246,7 +246,7 @@ static bool ipc_parse_config(
 			struct swaybar_binding *binding =
 				calloc(1, sizeof(struct swaybar_binding));
 			binding->button = json_object_get_int(
-					json_object_object_get(bindobj, "input_code"));
+					json_object_object_get(bindobj, "event_code"));
 			binding->command = strdup(json_object_get_string(
 					json_object_object_get(bindobj, "command")));
 			binding->release = json_object_get_boolean(

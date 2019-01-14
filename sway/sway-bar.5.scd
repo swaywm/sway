@@ -71,10 +71,18 @@ Sway allows configuring swaybar in the sway configuration file.
 *height* <height>
 	Sets the height of the bar. Default height (0) will match the font size.
 
-*bindsym* [--release] button<n> <command>
-	Executes _command_ when mouse button _n_ has been pressed (or if _released_
-	is given, when mouse button _n_ has been released). To disable the default
-	behavior for a button, use the command _nop_.
+*bindcode* [--release] <event-code> <command>
+	Executes _command_ when the mouse button has been pressed (or if _released_
+	is given, when the button has been released). The buttons can be given as
+	an event code, which can be obtaining from `libinput debug-events`. To
+	disable the default behavior for a button, use the command _nop_.
+
+*bindsym* [--release] button[1-9]|<event-name> <command>
+	Executes _command_ when the mouse button has been pressed (or if _released_
+	is given, when the button has been released). The buttons can be given as a
+	x11 button number or an event name, which can be obtained from `libinput
+	debug-events`. To disable the default behavior for a button, use the
+	command _nop_.
 
 *mode* dock|hide|invisible
 	Specifies the visibility of the bar. In _dock_ mode, it is permanently
