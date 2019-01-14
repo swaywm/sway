@@ -491,15 +491,6 @@ The default colors are:
 *seat* <seat> <seat-subcommands...>
 	For details on seat subcommands, see *sway-input*(5).
 
-*seat* <seat> cursor move|set <x> <y>
-	Move specified seat's cursor relative to current position or wrap to
-	absolute coordinates (with respect to the global coordinate space).
-	Specifying either value as 0 will not update that coordinate.
-
-*seat* <seat> cursor press|release left|right|1|2|3...
-	Simulate pressing (or releasing) the specified mouse button on the
-	specified seat.
-
 *kill*
 	Kills (closes) the currently focused container and all of its children.
 

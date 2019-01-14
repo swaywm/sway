@@ -3,6 +3,7 @@
 
 #include <strings.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_pointer.h>
 #include "sway/commands.h"
 #include "sway/input/cursor.h"
 
@@ -11,7 +12,7 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 
 static const char *expected_syntax = "Expected 'cursor <move> <x> <y>' or "
 					"'cursor <set> <x> <y>' or "
-					"'curor <press|release> <left|right|1|2|3...>'";
+					"'curor <press|release> <button[1-9]|event-name-or-code>'";
 
 static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		int argc, char **argv) {
@@ -91,15 +92,35 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 		return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
 	}
 
-	if (strcasecmp(button_str, "left") == 0) {
-		button = BTN_LEFT;
-	} else if (strcasecmp(button_str, "right") == 0) {
-		button = BTN_RIGHT;
-	} else {
-		button = strtol(button_str, NULL, 10);
-		if (button == 0) {
-			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
-		}
+	char *message = NULL;
+	button = get_mouse_button(button_str, &message);
+	if (message) {
+		struct cmd_results *error =
+			cmd_results_new(CMD_INVALID, "cursor", message);
+		free(message);
+		return error;
+	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN
+			|| button == SWAY_SCROLL_LEFT || button == SWAY_SCROLL_RIGHT) {
+		// Dispatch axis event
+		enum wlr_axis_orientation orientation =
+			(button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN)
+			? WLR_AXIS_ORIENTATION_VERTICAL
+			: WLR_AXIS_ORIENTATION_HORIZONTAL;
+		double delta = (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_LEFT)
+			? -1 : 1;
+		struct wlr_event_pointer_axis event = {
+			.device = NULL,
+			.time_msec = 0,
+			.source = WLR_AXIS_SOURCE_WHEEL,
+			.orientation = orientation,
+			.delta = delta * 15,
+			.delta_discrete = delta
+		};
+		dispatch_cursor_axis(cursor, &event);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	} else if (!button) {
+		return cmd_results_new(CMD_INVALID, "curor",
+				"Unknown button %s", button_str);
 	}
 	dispatch_cursor_button(cursor, NULL, 0, button, state);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

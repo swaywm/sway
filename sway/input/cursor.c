@@ -716,11 +716,13 @@ static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
 	}
 }
 
-static void dispatch_cursor_axis(struct sway_cursor *cursor,
+void dispatch_cursor_axis(struct sway_cursor *cursor,
 		struct wlr_event_pointer_axis *event) {
 	struct sway_seat *seat = cursor->seat;
-	struct sway_input_device *input_device = event->device->data;
-	struct input_config *ic = input_device_get_config(input_device);
+	struct sway_input_device *input_device =
+		event->device ? event->device->data : NULL;
+	struct input_config *ic =
+		input_device ? input_device_get_config(input_device) : NULL;
 
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
@@ -743,7 +745,8 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	// Gather information needed for mouse bindings
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
-	struct wlr_input_device *device = input_device->wlr_device;
+	struct wlr_input_device *device =
+		input_device ? input_device->wlr_device : NULL;
 	char *dev_id = device ? input_device_get_identifier(device) : strdup("*");
 	uint32_t button = wl_axis_to_button(event);
 
