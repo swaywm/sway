@@ -21,8 +21,7 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 
 	config->handler_context.seat_config = new_seat_config(argv[0]);
 	if (!config->handler_context.seat_config) {
-		return cmd_results_new(CMD_FAILURE, NULL,
-				"Couldn't allocate config");
+		return cmd_results_new(CMD_FAILURE, "Couldn't allocate config");
 	}
 
 	struct cmd_results *res = config_subcommand(argv + 1, argc - 1,
@@ -40,5 +39,5 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 	}
 
 	config->handler_context.seat_config = NULL;
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

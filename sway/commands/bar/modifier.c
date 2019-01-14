@@ -11,7 +11,7 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 	}
 
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "modifier", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 
 	uint32_t mod = 0;
@@ -21,8 +21,8 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 		if ((tmp_mod = get_modifier_mask_by_name(split->items[i])) > 0) {
 			mod |= tmp_mod;
 		} else {
-			error = cmd_results_new(CMD_INVALID, "modifier",
-				"Unknown modifier '%s'", split->items[i]);
+			error = cmd_results_new(CMD_INVALID,
+				"Unknown modifier '%s'", (char *)split->items[i]);
 			list_free_items_and_destroy(split);
 			return error;
 		}
@@ -31,5 +31,5 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 	config->current_bar->modifier = mod;
 	wlr_log(WLR_DEBUG,
 			"Show/Hide the bar when pressing '%s' in hide mode.", argv[0]);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

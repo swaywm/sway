@@ -11,8 +11,7 @@ struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE,
-				"binding_mode_indicator", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 	config->current_bar->binding_mode_indicator = 
 		parse_boolean(argv[0], config->current_bar->binding_mode_indicator);
@@ -23,5 +22,5 @@ struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Disabling binding mode indicator on bar: %s",
 				config->current_bar->id);
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

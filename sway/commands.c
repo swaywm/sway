@@ -36,7 +36,7 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 		}
 	}
 	return error_name ?
-		cmd_results_new(CMD_INVALID, name, "Invalid %s command "
+		cmd_results_new(CMD_INVALID, "Invalid %s command "
 				"(expected %s%d argument%s, got %d)",
 				name, error_name, val, val != 1 ? "s" : "", argc)
 		: NULL;
@@ -228,8 +228,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			char *error = NULL;
 			struct criteria *criteria = criteria_parse(head, &error);
 			if (!criteria) {
-				list_add(res_list, cmd_results_new(CMD_INVALID, head,
-					"%s", error));
+				list_add(res_list, cmd_results_new(CMD_INVALID,	"%s", error));
 				free(error);
 				goto cleanup;
 			}
@@ -265,8 +264,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			}
 			struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 			if (!handler) {
-				list_add(res_list, cmd_results_new(CMD_INVALID, cmd,
-							"Unknown/invalid command"));
+				list_add(res_list, cmd_results_new(CMD_INVALID,
+						"Unknown/invalid command '%s'", argv[0]));
 				free_argv(argc, argv);
 				goto cleanup;
 			}
@@ -316,28 +315,27 @@ cleanup:
 //	  be chained together)
 // 4) execute_command handles all state internally while config_command has
 // some state handled outside (notably the block mode, in read_config)
-struct cmd_results *config_command(char *exec) {
+struct cmd_results *config_command(char *exec, char **new_block) {
 	struct cmd_results *results = NULL;
 	int argc;
 	char **argv = split_args(exec, &argc);
 
 	// Check for empty lines
 	if (!argc) {
-		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		results = cmd_results_new(CMD_SUCCESS, NULL);
 		goto cleanup;
 	}
 
 	// Check for the start of a block
 	if (argc > 1 && strcmp(argv[argc - 1], "{") == 0) {
-		char *block = join_args(argv, argc - 1);
-		results = cmd_results_new(CMD_BLOCK, block, NULL);
-		free(block);
+		*new_block = join_args(argv, argc - 1);
+		results = cmd_results_new(CMD_BLOCK, NULL);
 		goto cleanup;
 	}
 
 	// Check for the end of a block
 	if (strcmp(argv[argc - 1], "}") == 0) {
-		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
+		results = cmd_results_new(CMD_BLOCK_END, NULL);
 		goto cleanup;
 	}
 
@@ -349,7 +347,7 @@ struct cmd_results *config_command(char *exec) {
 		argv = split_args(temp, &argc);
 		free(temp);
 		if (!argc) {
-			results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+			results = cmd_results_new(CMD_SUCCESS, NULL);
 			goto cleanup;
 		}
 	}
@@ -358,11 +356,10 @@ struct cmd_results *config_command(char *exec) {
 	wlr_log(WLR_INFO, "Config command: %s", exec);
 	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 	if (!handler || !handler->handle) {
-		char *input = argv[0] ? argv[0] : "(empty)";
-		char *error = handler
-			? "This command is shimmed, but unimplemented"
-			: "Unknown/invalid command";
-		results = cmd_results_new(CMD_INVALID, input, error);
+		const char *error = handler
+			? "Command '%s' is shimmed, but unimplemented"
+			: "Unknown/invalid command '%s'";
+		results = cmd_results_new(CMD_INVALID, error, argv[0]);
 		goto cleanup;
 	}
 
@@ -411,14 +408,14 @@ struct cmd_results *config_subcommand(char **argv, int argc,
 	struct cmd_handler *handler = find_handler(argv[0], handlers,
 			handlers_size);
 	if (!handler) {
-		char *input = argv[0] ? argv[0] : "(empty)";
-		return cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		return cmd_results_new(CMD_INVALID,
+				"Unknown/invalid command '%s'", argv[0]);
 	}
 	if (handler->handle) {
 		return handler->handle(argc - 1, argv + 1);
 	}
-	return cmd_results_new(CMD_INVALID, argv[0],
-			"This command is shimmed, but unimplemented");
+	return cmd_results_new(CMD_INVALID,
+			"The command '%s' is shimmed, but unimplemented", argv[0]);
 }
 
 struct cmd_results *config_commands_command(char *exec) {
@@ -426,7 +423,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	int argc;
 	char **argv = split_args(exec, &argc);
 	if (!argc) {
-		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		results = cmd_results_new(CMD_SUCCESS, NULL);
 		goto cleanup;
 	}
 
@@ -434,13 +431,14 @@ struct cmd_results *config_commands_command(char *exec) {
 	char *cmd = argv[0];
 
 	if (strcmp(cmd, "}") == 0) {
-		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
+		results = cmd_results_new(CMD_BLOCK_END, NULL);
 		goto cleanup;
 	}
 
 	struct cmd_handler *handler = find_handler(cmd, NULL, 0);
 	if (!handler && strcmp(cmd, "*") != 0) {
-		results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
+		results = cmd_results_new(CMD_INVALID,
+			"Unknown/invalid command '%s'", cmd);
 		goto cleanup;
 	}
 
@@ -465,7 +463,7 @@ struct cmd_results *config_commands_command(char *exec) {
 			}
 		}
 		if (j == sizeof(context_names) / sizeof(context_names[0])) {
-			results = cmd_results_new(CMD_INVALID, cmd,
+			results = cmd_results_new(CMD_INVALID,
 					"Invalid command context %s", argv[i]);
 			goto cleanup;
 		}
@@ -483,7 +481,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	if (!policy) {
 		policy = alloc_command_policy(cmd);
 		if (!sway_assert(policy, "Unable to allocate security policy")) {
-			results = cmd_results_new(CMD_INVALID, cmd,
+			results = cmd_results_new(CMD_INVALID,
 					"Unable to allocate memory");
 			goto cleanup;
 		}
@@ -494,7 +492,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	wlr_log(WLR_INFO, "Set command policy for %s to %d",
 			policy->command, policy->context);
 
-	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	results = cmd_results_new(CMD_SUCCESS, NULL);
 
 cleanup:
 	free_argv(argc, argv);
@@ -502,18 +500,13 @@ cleanup:
 }
 
 struct cmd_results *cmd_results_new(enum cmd_status status,
-		const char *input, const char *format, ...) {
+		const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	if (!results) {
 		wlr_log(WLR_ERROR, "Unable to allocate command results");
 		return NULL;
 	}
 	results->status = status;
-	if (input) {
-		results->input = strdup(input); // input is the command name
-	} else {
-		results->input = NULL;
-	}
 	if (format) {
 		char *error = malloc(256);
 		va_list args;
@@ -530,9 +523,6 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 }
 
 void free_cmd_results(struct cmd_results *results) {
-	if (results->input) {
-		free(results->input);
-	}
 	if (results->error) {
 		free(results->error);
 	}
@@ -552,10 +542,6 @@ char *cmd_results_to_json(list_t *res_list) {
 			json_object_object_add(
 					root, "error", json_object_new_string(results->error));
 		}
-		if (results->input) {
-			json_object_object_add(
-					root, "input", json_object_new_string(results->input));
-		}
 		json_object_array_add(result_array, root);
 	}
 	const char *json = json_object_to_json_string(result_array);
@@ -569,20 +555,19 @@ char *cmd_results_to_json(list_t *res_list) {
  *
  * return error object, or NULL if color is valid.
  */
-struct cmd_results *add_color(const char *name,
-		char *buffer, const char *color) {
+struct cmd_results *add_color(char *buffer, const char *color) {
 	int len = strlen(color);
 	if (len != 7 && len != 9) {
-		return cmd_results_new(CMD_INVALID, name,
+		return cmd_results_new(CMD_INVALID,
 				"Invalid color definition %s", color);
 	}
 	if (color[0] != '#') {
-		return cmd_results_new(CMD_INVALID, name,
+		return cmd_results_new(CMD_INVALID,
 				"Invalid color definition %s", color);
 	}
 	for (int i = 1; i < len; ++i) {
 		if (!isxdigit(color[i])) {
-			return cmd_results_new(CMD_INVALID, name,
+			return cmd_results_new(CMD_INVALID,
 					"Invalid color definition %s", color);
 		}
 	}

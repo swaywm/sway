@@ -49,7 +49,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 
 	config->handler_context.input_config = new_input_config(argv[0]);
 	if (!config->handler_context.input_config) {
-		return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+		return cmd_results_new(CMD_FAILURE, "Couldn't allocate config");
 	}
 
 	struct cmd_results *res;
@@ -60,7 +60,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			res = config_subcommand(argv + 1, argc - 1,
 				input_config_handlers, sizeof(input_config_handlers));
 		} else {
-			res = cmd_results_new(CMD_FAILURE, "input",
+			res = cmd_results_new(CMD_FAILURE,
 				"Can only be used in config file.");
 		}
 	} else {

@@ -14,7 +14,7 @@ struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "bar gaps", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 
 	int top = 0, right = 0, bottom = 0, left = 0;
@@ -23,7 +23,7 @@ struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 		char *end;
 		int amount = strtol(argv[i], &end, 10);
 		if (strlen(end) && strcasecmp(end, "px") != 0) {
-			return cmd_results_new(CMD_INVALID, "bar gaps",
+			return cmd_results_new(CMD_INVALID,
 					"Expected 'bar [<bar-id>] gaps <all> | <horizonal> "
 					"<vertical> | <top> <right> <bottom> <left>'");
 		}
@@ -56,5 +56,5 @@ struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 		ipc_event_barconfig_update(config->current_bar);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

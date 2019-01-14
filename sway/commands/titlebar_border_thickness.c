@@ -14,8 +14,7 @@ struct cmd_results *cmd_titlebar_border_thickness(int argc, char **argv) {
 	char *inv;
 	int value = strtol(argv[0], &inv, 10);
 	if (*inv != '\0' || value < 0 || value > config->titlebar_v_padding) {
-		return cmd_results_new(CMD_FAILURE, "titlebar_border_thickness",
-			"Invalid size specified");
+		return cmd_results_new(CMD_FAILURE, "Invalid size specified");
 	}
 
 	config->titlebar_border_thickness = value;
@@ -26,5 +25,5 @@ struct cmd_results *cmd_titlebar_border_thickness(int argc, char **argv) {
 		output_damage_whole(output);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

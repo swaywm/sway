@@ -10,16 +10,16 @@ struct cmd_results *seat_cmd_attach(int argc, char **argv) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {
-		return cmd_results_new(CMD_FAILURE, "attach", "No seat defined");
+		return cmd_results_new(CMD_FAILURE, "No seat defined");
 	}
 
 	struct seat_attachment_config *attachment = seat_attachment_config_new();
 	if (!attachment) {
-		return cmd_results_new(CMD_FAILURE, "attach",
+		return cmd_results_new(CMD_FAILURE,
 				"Failed to allocate seat attachment config");
 	}
 	attachment->identifier = strdup(argv[0]);
 	list_add(config->handler_context.seat_config->attachments, attachment);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

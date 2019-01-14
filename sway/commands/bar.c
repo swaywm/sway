@@ -69,7 +69,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 			wlr_log(WLR_DEBUG, "Creating bar: %s", argv[0]);
 			bar = default_bar_config();
 			if (!bar) {
-				return cmd_results_new(CMD_FAILURE, "bar",
+				return cmd_results_new(CMD_FAILURE,
 						"Unable to allocate bar state");
 			}
 
@@ -83,7 +83,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		// Create new bar with default values
 		struct bar_config *bar = default_bar_config();
 		if (!bar) {
-			return cmd_results_new(CMD_FAILURE, "bar",
+			return cmd_results_new(CMD_FAILURE,
 					"Unable to allocate bar state");
 		}
 
@@ -93,8 +93,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		if (bar->id) {
 			snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
 		} else {
-			return cmd_results_new(CMD_FAILURE,
-					"bar", "Unable to allocate bar ID");
+			return cmd_results_new(CMD_FAILURE, "Unable to allocate bar ID");
 		}
 
 		// Set current bar
@@ -117,7 +116,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 				}
 			}
 		}
-		return cmd_results_new(CMD_INVALID, "bar",
+		return cmd_results_new(CMD_INVALID,
 				"Can only be used in the config file.");
 	}
 

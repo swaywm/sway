@@ -11,13 +11,12 @@ struct cmd_results *input_cmd_xkb_variant(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "xkb_variant",
-				"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	ic->xkb_variant = strdup(argv[0]);
 
 	wlr_log(WLR_DEBUG, "set-xkb_variant for config: %s variant: %s",
 			ic->identifier, ic->xkb_variant);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

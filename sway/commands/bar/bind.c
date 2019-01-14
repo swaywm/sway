@@ -16,13 +16,12 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, command, "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 
 	struct bar_binding *binding = calloc(1, sizeof(struct bar_binding));
 	if (!binding) {
-		return cmd_results_new(CMD_FAILURE, command,
-				"Unable to allocate bar binding");
+		return cmd_results_new(CMD_FAILURE, "Unable to allocate bar binding");
 	}
 
 	binding->release = false;
@@ -40,13 +39,12 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code) {
 	}
 	if (message) {
 		free_bar_binding(binding);
-		error = cmd_results_new(CMD_INVALID, command, message);
+		error = cmd_results_new(CMD_INVALID, message);
 		free(message);
 		return error;
 	} else if (!binding->button) {
 		free_bar_binding(binding);
-		return cmd_results_new(CMD_INVALID, command,
-				"Unknown button %s", argv[0]);
+		return cmd_results_new(CMD_INVALID, "Unknown button %s", argv[0]);
 	}
 
 	const char *name = libevdev_event_code_get_name(EV_KEY, binding->button);
@@ -94,7 +92,7 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code) {
 				binding->release ? " - release" : "");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 struct cmd_results *bar_cmd_bindcode(int argc, char **argv) {

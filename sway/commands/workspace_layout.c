@@ -14,8 +14,8 @@ struct cmd_results *cmd_workspace_layout(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "tabbed") == 0) {
 		config->default_layout = L_TABBED;
 	} else {
-		return cmd_results_new(CMD_INVALID, "workspace_layout",
+		return cmd_results_new(CMD_INVALID,
 				"Expected 'workspace_layout <default|stacking|tabbed>'");
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

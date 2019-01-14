@@ -12,7 +12,7 @@ struct cmd_results *bar_cmd_tray_bindsym(int argc, char **argv) {
 	}
 
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "tray_bindsym", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 
 	int button = 0;
@@ -21,7 +21,7 @@ struct cmd_results *bar_cmd_tray_bindsym(int argc, char **argv) {
 		button = argv[0][strlen("button")] - '0';
 	}
 	if (button < 1 || button > 9) {
-		return cmd_results_new(CMD_FAILURE, "tray_bindsym",
+		return cmd_results_new(CMD_FAILURE,
 				"[Bar %s] Only buttons 1 to 9 are supported",
 				config->current_bar->id);
 	}
@@ -42,14 +42,14 @@ struct cmd_results *bar_cmd_tray_bindsym(int argc, char **argv) {
 			wlr_log(WLR_DEBUG, "[Bar %s] Binding button %d to %s",
 					config->current_bar->id, button, commands[i]);
 			config->current_bar->tray_bindings[button] = commands[i];
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+			return cmd_results_new(CMD_SUCCESS, NULL);
 		}
 	}
 
-	return cmd_results_new(CMD_INVALID, "tray_bindsym",
+	return cmd_results_new(CMD_INVALID,
 			"[Bar %s] Invalid command %s", config->current_bar->id, argv[1]);
 #else
-	return cmd_results_new(CMD_INVALID, "tray_bindsym",
+	return cmd_results_new(CMD_INVALID,
 			"Sway has been compiled without tray support");
 #endif
 }

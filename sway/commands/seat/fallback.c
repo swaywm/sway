@@ -8,11 +8,11 @@ struct cmd_results *seat_cmd_fallback(int argc, char **argv) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {
-		return cmd_results_new(CMD_FAILURE, "fallback", "No seat defined");
+		return cmd_results_new(CMD_FAILURE, "No seat defined");
 	}
 
 	config->handler_context.seat_config->fallback =
 		parse_boolean(argv[0], false);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

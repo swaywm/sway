@@ -9,5 +9,5 @@ struct cmd_results *cmd_tiling_drag(int argc, char **argv) {
 
 	config->tiling_drag = parse_boolean(argv[0], config->tiling_drag);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

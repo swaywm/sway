@@ -56,13 +56,12 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 	}
 
 	if (!load_main_config(config->current_config_path, true, true)) {
-		return cmd_results_new(CMD_FAILURE, "reload",
-				"Error(s) reloading config.");
+		return cmd_results_new(CMD_FAILURE, "Error(s) reloading config.");
 	}
 
 	// The reload command frees a lot of stuff, so to avoid use-after-frees
 	// we schedule the reload to happen using an idle event.
 	wl_event_loop_add_idle(server.wl_event_loop, do_reload, NULL);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

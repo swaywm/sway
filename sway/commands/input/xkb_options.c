@@ -11,13 +11,12 @@ struct cmd_results *input_cmd_xkb_options(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE, "xkb_options",
-				"No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	ic->xkb_options = strdup(argv[0]);
 
 	wlr_log(WLR_DEBUG, "set-xkb_options for config: %s options: %s",
 			ic->identifier, ic->xkb_options);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

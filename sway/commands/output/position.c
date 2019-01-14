@@ -4,11 +4,10 @@
 
 struct cmd_results *output_cmd_position(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
-		return cmd_results_new(CMD_FAILURE, "output", "Missing output config");
+		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "output",
-			"Missing position argument.");
+		return cmd_results_new(CMD_INVALID, "Missing position argument.");
 	}
 
 	char *end;
@@ -16,26 +15,22 @@ struct cmd_results *output_cmd_position(int argc, char **argv) {
 	if (*end) {
 		// Format is 1234,4321
 		if (*end != ',') {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid position x.");
+			return cmd_results_new(CMD_INVALID, "Invalid position x.");
 		}
 		++end;
 		config->handler_context.output_config->y = strtol(end, &end, 10);
 		if (*end) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid position y.");
+			return cmd_results_new(CMD_INVALID, "Invalid position y.");
 		}
 	} else {
 		// Format is 1234 4321 (legacy)
 		argc--; argv++;
 		if (!argc) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Missing position argument (y).");
+			return cmd_results_new(CMD_INVALID, "Missing position argument (y).");
 		}
 		config->handler_context.output_config->y = strtol(*argv, &end, 10);
 		if (*end) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid position y.");
+			return cmd_results_new(CMD_INVALID, "Invalid position y.");
 		}
 	}
 

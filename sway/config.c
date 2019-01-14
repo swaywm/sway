@@ -710,11 +710,12 @@ bool read_config(FILE *file, struct sway_config *config,
 		config->current_config_line_number = line_number;
 		config->current_config_line = line;
 		struct cmd_results *res;
+		char *new_block = NULL;
 		if (block && strcmp(block, "<commands>") == 0) {
 			// Special case
 			res = config_commands_command(expanded);
 		} else {
-			res = config_command(expanded);
+			res = config_command(expanded, &new_block);
 		}
 		switch(res->status) {
 		case CMD_FAILURE:
@@ -740,9 +741,9 @@ bool read_config(FILE *file, struct sway_config *config,
 			break;
 
 		case CMD_BLOCK:
-			wlr_log(WLR_DEBUG, "Entering block '%s'", res->input);
-			list_insert(stack, 0, strdup(res->input));
-			if (strcmp(res->input, "bar") == 0) {
+			wlr_log(WLR_DEBUG, "Entering block '%s'", new_block);
+			list_insert(stack, 0, strdup(new_block));
+			if (strcmp(new_block, "bar") == 0) {
 				config->current_bar = NULL;
 			}
 			break;
@@ -764,6 +765,7 @@ bool read_config(FILE *file, struct sway_config *config,
 					sizeof(config->handler_context));
 		default:;
 		}
+		free(new_block);
 		free(expanded);
 		free_cmd_results(res);
 	}

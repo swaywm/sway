@@ -43,7 +43,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			error = config_subcommand(argv, argc, output_handlers,
 					sizeof(output_handlers));
 		} else {
-			error = cmd_results_new(CMD_INVALID, "output",
+			error = cmd_results_new(CMD_INVALID,
 				"Invalid output subcommand: %s.", *argv);
 		}
 
@@ -68,7 +68,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		apply_output_config_to_outputs(output);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 
 fail:
 	config->handler_context.output_config = NULL;

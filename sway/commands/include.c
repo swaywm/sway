@@ -9,9 +9,9 @@ struct cmd_results *cmd_include(int argc, char **argv) {
 
 	if (!load_include_configs(argv[0], config,
 				&config->swaynag_config_errors)) {
-		return cmd_results_new(CMD_INVALID, "include",
+		return cmd_results_new(CMD_INVALID,
 				"Failed to include sub configuration file: %s", argv[0]);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

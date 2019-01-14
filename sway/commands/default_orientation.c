@@ -14,8 +14,8 @@ struct cmd_results *cmd_default_orientation(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "auto") == 0) {
 		// Do nothing
 	} else {
-		return cmd_results_new(CMD_INVALID, "default_orientation",
+		return cmd_results_new(CMD_INVALID,
 				"Expected 'orientation <horizontal|vertical|auto>'");
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -20,14 +20,14 @@ static const char *bg_options[] = {
 
 struct cmd_results *output_cmd_background(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
-		return cmd_results_new(CMD_FAILURE, "output", "Missing output config");
+		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "output",
+		return cmd_results_new(CMD_INVALID,
 			"Missing background file or color specification.");
 	}
 	if (argc < 2) {
-		return cmd_results_new(CMD_INVALID, "output",
+		return cmd_results_new(CMD_INVALID,
 			"Missing background scaling mode or `solid_color`.");
 	}
 
@@ -57,7 +57,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			}
 		}
 		if (!valid) {
-			return cmd_results_new(CMD_INVALID, "output",
+			return cmd_results_new(CMD_INVALID,
 				"Missing background scaling mode.");
 		}
 
@@ -70,7 +70,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			*ptr = '\\';
 		}
 		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID, "output",
+			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID,
 				"Invalid syntax (%s)", src);
 			free(src);
 			wordfree(&p);
@@ -81,8 +81,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		wordfree(&p);
 		if (!src) {
 			wlr_log(WLR_ERROR, "Failed to duplicate string");
-			return cmd_results_new(CMD_FAILURE, "output",
-				"Unable to allocate resource");
+			return cmd_results_new(CMD_FAILURE, "Unable to allocate resource");
 		}
 
 		if (config->reading && *src != '/') {
@@ -92,7 +91,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			if (!conf) {
 				wlr_log(WLR_ERROR, "Failed to duplicate string");
 				free(src);
-				return cmd_results_new(CMD_FAILURE, "output",
+				return cmd_results_new(CMD_FAILURE,
 						"Unable to allocate resources");
 			}
 
@@ -103,7 +102,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 				free(rel_path);
 				free(conf);
 				wlr_log(WLR_ERROR, "Unable to allocate memory");
-				return cmd_results_new(CMD_FAILURE, "output",
+				return cmd_results_new(CMD_FAILURE,
 						"Unable to allocate resources");
 			}
 

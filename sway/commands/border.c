@@ -64,8 +64,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 
 	struct sway_container *container = config->handler_context.container;
 	if (!container || !container->view) {
-		return cmd_results_new(CMD_INVALID, "border",
-				"Only views can have borders");
+		return cmd_results_new(CMD_INVALID, "Only views can have borders");
 	}
 	struct sway_view *view = container->view;
 
@@ -77,14 +76,14 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		set_border(container, B_PIXEL);
 	} else if (strcmp(argv[0], "csd") == 0) {
 		if (!view || !view->xdg_decoration) {
-			return cmd_results_new(CMD_INVALID, "border",
+			return cmd_results_new(CMD_INVALID,
 					"This window doesn't support client side decorations");
 		}
 		set_border(container, B_CSD);
 	} else if (strcmp(argv[0], "toggle") == 0) {
 		border_toggle(container);
 	} else {
-		return cmd_results_new(CMD_INVALID, "border",
+		return cmd_results_new(CMD_INVALID,
 				"Expected 'border <none|normal|pixel|csd|toggle>' "
 				"or 'border pixel <px>'");
 	}
@@ -98,5 +97,5 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 
 	arrange_container(container);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

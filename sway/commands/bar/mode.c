@@ -21,7 +21,7 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 	} else if (strcasecmp("invisible", mode) == 0) {
 		bar->mode = strdup("invisible");
 	} else {
-		return cmd_results_new(CMD_INVALID, "mode", "Invalid value %s", mode);
+		return cmd_results_new(CMD_INVALID, "Invalid value %s", mode);
 	}
 
 	if (strcmp(old_mode, bar->mode) != 0) {
@@ -46,7 +46,7 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 	}
 	if (config->reading && argc > 1) {
 		return cmd_results_new(CMD_INVALID,
-				"mode", "Unexpected value %s in config mode", argv[1]);
+				"Unexpected value %s in config mode", argv[1]);
 	}
 
 	const char *mode = argv[0];
@@ -66,5 +66,5 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 			}
 		}
 	}
-	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return error ? error : cmd_results_new(CMD_SUCCESS, NULL);
 }

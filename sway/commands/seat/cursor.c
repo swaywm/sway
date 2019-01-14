@@ -10,7 +10,7 @@
 static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 		char *action, char *button_str);
 
-static const char *expected_syntax = "Expected 'cursor <move> <x> <y>' or "
+static const char expected_syntax[] = "Expected 'cursor <move> <x> <y>' or "
 					"'cursor <set> <x> <y>' or "
 					"'curor <press|release> <button[1-9]|event-name-or-code>'";
 
@@ -18,7 +18,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		int argc, char **argv) {
 	if (strcasecmp(argv[0], "move") == 0) {
 		if (argc < 3) {
-			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
+			return cmd_results_new(CMD_INVALID, expected_syntax);
 		}
 		int delta_x = strtol(argv[1], NULL, 10);
 		int delta_y = strtol(argv[2], NULL, 10);
@@ -26,7 +26,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		cursor_rebase(cursor);
 	} else if (strcasecmp(argv[0], "set") == 0) {
 		if (argc < 3) {
-			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
+			return cmd_results_new(CMD_INVALID, expected_syntax);
 		}
 		// map absolute coords (0..1,0..1) to root container coords
 		float x = strtof(argv[1], NULL) / root->width;
@@ -35,7 +35,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		cursor_rebase(cursor);
 	} else {
 		if (argc < 2) {
-			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
+			return cmd_results_new(CMD_INVALID, expected_syntax);
 		}
 		struct cmd_results *error = NULL;
 		if ((error = press_or_release(cursor, argv[0], argv[1]))) {
@@ -43,7 +43,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		}
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
@@ -53,18 +53,17 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 	}
 	struct seat_config *sc = config->handler_context.seat_config;
 	if (!sc) {
-		return cmd_results_new(CMD_FAILURE, "cursor", "No seat defined");
+		return cmd_results_new(CMD_FAILURE, "No seat defined");
 	}
 
 	if (config->reading || !config->active) {
-		return cmd_results_new(CMD_DEFER, NULL, NULL);
+		return cmd_results_new(CMD_DEFER, NULL);
 	}
 
 	if (strcmp(sc->name, "*") != 0) {
 		struct sway_seat *seat = input_manager_get_seat(sc->name);
 		if (!seat) {
-			return cmd_results_new(CMD_FAILURE, "cursor",
-					"Failed to get seat");
+			return cmd_results_new(CMD_FAILURE, "Failed to get seat");
 		}
 		error = handle_command(seat->cursor, argc, argv);
 	} else {
@@ -77,7 +76,7 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 		}
 	}
 
-	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return error ? error : cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 static struct cmd_results *press_or_release(struct sway_cursor *cursor,
@@ -89,14 +88,14 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 	} else if (strcasecmp(action, "release") == 0) {
 		state = WLR_BUTTON_RELEASED;
 	} else {
-		return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
+		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 
 	char *message = NULL;
 	button = get_mouse_button(button_str, &message);
 	if (message) {
 		struct cmd_results *error =
-			cmd_results_new(CMD_INVALID, "cursor", message);
+			cmd_results_new(CMD_INVALID, message);
 		free(message);
 		return error;
 	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN
@@ -117,11 +116,10 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 			.delta_discrete = delta
 		};
 		dispatch_cursor_axis(cursor, &event);
-		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		return cmd_results_new(CMD_SUCCESS, NULL);
 	} else if (!button) {
-		return cmd_results_new(CMD_INVALID, "curor",
-				"Unknown button %s", button_str);
+		return cmd_results_new(CMD_INVALID, "Unknown button %s", button_str);
 	}
 	dispatch_cursor_button(cursor, NULL, 0, button, state);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

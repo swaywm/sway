@@ -58,7 +58,7 @@ static void prevent_invalid_outer_gaps(struct workspace_config *wsc) {
 
 static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 		int gaps_location) {
-	const char *expected = "Expected 'workspace <name> gaps "
+	const char expected[] = "Expected 'workspace <name> gaps "
 		"inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO,
@@ -69,7 +69,7 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 	struct workspace_config *wsc = workspace_config_find_or_create(ws_name);
 	free(ws_name);
 	if (!wsc) {
-		return cmd_results_new(CMD_FAILURE, "workspace gaps",
+		return cmd_results_new(CMD_FAILURE,
 				"Unable to allocate workspace output");
 	}
 
@@ -77,7 +77,7 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 	int amount = strtol(argv[gaps_location + 2], &end, 10);
 	if (strlen(end)) {
 		free(end);
-		return cmd_results_new(CMD_FAILURE, "workspace gaps", expected);
+		return cmd_results_new(CMD_FAILURE, expected);
 	}
 
 	bool valid = false;
@@ -108,7 +108,7 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 		}
 	}
 	if (!valid) {
-		return cmd_results_new(CMD_INVALID, "workspace gaps", expected);
+		return cmd_results_new(CMD_INVALID, expected);
 	}
 
 	// Prevent invalid gaps configurations.
@@ -150,7 +150,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		struct workspace_config *wsc = workspace_config_find_or_create(ws_name);
 		free(ws_name);
 		if (!wsc) {
-			return cmd_results_new(CMD_FAILURE, "workspace output",
+			return cmd_results_new(CMD_FAILURE,
 					"Unable to allocate workspace output");
 		}
 		for (int i = output_location + 1; i < argc; ++i) {
@@ -162,9 +162,9 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 	} else {
 		if (config->reading || !config->active) {
-			return cmd_results_new(CMD_DEFER, "workspace", NULL);
+			return cmd_results_new(CMD_DEFER, NULL);
 		} else if (!root->outputs->length) {
-			return cmd_results_new(CMD_INVALID, "workspace",
+			return cmd_results_new(CMD_INVALID,
 					"Can't run this command while there's no outputs connected.");
 		}
 
@@ -181,11 +181,11 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		struct sway_workspace *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (argc < 2) {
-				return cmd_results_new(CMD_INVALID, "workspace",
+				return cmd_results_new(CMD_INVALID,
 						"Expected workspace number");
 			}
 			if (!isdigit(argv[1][0])) {
-				return cmd_results_new(CMD_INVALID, "workspace",
+				return cmd_results_new(CMD_INVALID,
 						"Invalid workspace number '%s'", argv[1]);
 			}
 			if (!(ws = workspace_by_number(argv[1]))) {
@@ -202,7 +202,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
 			struct sway_seat *seat = config->handler_context.seat;
 			if (!seat->prev_workspace_name) {
-				return cmd_results_new(CMD_INVALID, "workspace",
+				return cmd_results_new(CMD_INVALID,
 						"There is no previous workspace");
 			}
 			if (!(ws = workspace_by_name(argv[0]))) {
@@ -218,5 +218,5 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		workspace_switch(ws, no_auto_back_and_forth);
 		seat_consider_warp_to_focus(config->handler_context.seat);
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

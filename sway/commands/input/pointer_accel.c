@@ -13,19 +13,17 @@ struct cmd_results *input_cmd_pointer_accel(int argc, char **argv) {
 	}
 	struct input_config *ic = config->handler_context.input_config;
 	if (!ic) {
-		return cmd_results_new(CMD_FAILURE,
-			"pointer_accel", "No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
 	float pointer_accel = parse_float(argv[0]);
 	if (isnan(pointer_accel)) {
-		return cmd_results_new(CMD_INVALID, "pointer_accel",
+		return cmd_results_new(CMD_INVALID,
 			"Invalid pointer accel; expected float.");
 	} if (pointer_accel < -1 || pointer_accel > 1) {
-		return cmd_results_new(CMD_INVALID, "pointer_accel",
-			"Input out of range [-1, 1]");
+		return cmd_results_new(CMD_INVALID, "Input out of range [-1, 1]");
 	}
 	ic->pointer_accel = pointer_accel;
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

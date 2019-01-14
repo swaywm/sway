@@ -37,9 +37,9 @@ struct cmd_results *cmd_create_output(int argc, char **argv) {
 	wlr_multi_for_each_backend(server.backend, create_output, &done);
 
 	if (!done) {
-		return cmd_results_new(CMD_INVALID, "create_output",
+		return cmd_results_new(CMD_INVALID,
 				"Can only create outputs for Wayland or X11 backends");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

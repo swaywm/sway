@@ -17,7 +17,7 @@ struct cmd_results *cmd_title_align(int argc, char **argv) {
 	} else if (strcmp(argv[0], "right") == 0) {
 		config->title_align = ALIGN_RIGHT;
 	} else {
-		return cmd_results_new(CMD_INVALID, "title_align",
+		return cmd_results_new(CMD_INVALID,
 				"Expected 'title_align left|center|right'");
 	}
 
@@ -26,5 +26,5 @@ struct cmd_results *cmd_title_align(int argc, char **argv) {
 		output_damage_whole(output);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

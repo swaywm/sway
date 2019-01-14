@@ -17,5 +17,5 @@ struct cmd_results *cmd_xwayland(int argc, char **argv) {
 		"sway hasn't been built with Xwayland support");
 #endif
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

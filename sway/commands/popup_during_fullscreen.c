@@ -16,10 +16,9 @@ struct cmd_results *cmd_popup_during_fullscreen(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "leave_fullscreen") == 0) {
 		config->popup_during_fullscreen = POPUP_LEAVE;
 	} else {
-		return cmd_results_new(CMD_INVALID, "popup_during_fullscreen",
-				"Expected "
+		return cmd_results_new(CMD_INVALID, "Expected "
 				"'popup_during_fullscreen smart|ignore|leave_fullscreen'");
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

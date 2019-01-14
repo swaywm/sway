@@ -4,17 +4,16 @@
 
 struct cmd_results *output_cmd_scale(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
-		return cmd_results_new(CMD_FAILURE, "output", "Missing output config");
+		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "output",
-			"Missing scale argument.");
+		return cmd_results_new(CMD_INVALID, "Missing scale argument.");
 	}
 
 	char *end;
 	config->handler_context.output_config->scale = strtof(*argv, &end);
 	if (*end) {
-		return cmd_results_new(CMD_INVALID, "output", "Invalid scale.");
+		return cmd_results_new(CMD_INVALID, "Invalid scale.");
 	}
 
 	config->handler_context.leftovers.argc = argc - 1;

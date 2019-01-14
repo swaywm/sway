@@ -13,14 +13,14 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 		return error;
 	}
 	if (!root->outputs->length) {
-		return cmd_results_new(CMD_FAILURE, "fullscreen",
+		return cmd_results_new(CMD_FAILURE,
 				"Can't run this command while there's no outputs connected.");
 	}
 	struct sway_node *node = config->handler_context.node;
 	struct sway_container *container = config->handler_context.container;
 	struct sway_workspace *workspace = config->handler_context.workspace;
 	if (node->type == N_WORKSPACE && workspace->tiling->length == 0) {
-		return cmd_results_new(CMD_FAILURE, "fullscreen",
+		return cmd_results_new(CMD_FAILURE,
 				"Can't fullscreen an empty workspace");
 	}
 	if (node->type == N_WORKSPACE) {
@@ -38,5 +38,5 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	container_set_fullscreen(container, enable);
 	arrange_workspace(workspace);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

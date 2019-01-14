@@ -11,7 +11,7 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 		return error;
 	}
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "output", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "No bar defined.");
 	}
 
 	const char *output = argv[0];
@@ -45,5 +45,5 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Adding bar: '%s' to output '%s'",
 				config->current_bar->id, output);
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

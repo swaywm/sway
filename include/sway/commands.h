@@ -31,7 +31,6 @@ enum cmd_status {
  */
 struct cmd_results {
 	enum cmd_status status;
-	char *input;
 	/**
 	 * Human friendly error message, or NULL on success
 	 */
@@ -63,7 +62,7 @@ list_t *execute_command(char *command,  struct sway_seat *seat,
  *
  * Do not use this under normal conditions.
  */
-struct cmd_results *config_command(char *command);
+struct cmd_results *config_command(char *command, char **new_block);
 /**
  * Parse and handle a sub command
  */
@@ -76,7 +75,7 @@ struct cmd_results *config_commands_command(char *exec);
 /**
  * Allocates a cmd_results object.
  */
-struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *error, ...);
+struct cmd_results *cmd_results_new(enum cmd_status status, const char *error, ...);
 /**
  * Frees a cmd_results object.
  */
@@ -88,8 +87,7 @@ void free_cmd_results(struct cmd_results *results);
  */
 char *cmd_results_to_json(list_t *res_list);
 
-struct cmd_results *add_color(const char *name,
-		char *buffer, const char *color);
+struct cmd_results *add_color(char *buffer, const char *color);
 
 /**
  * TODO: Move this function and its dependent functions to container.c.

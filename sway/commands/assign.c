@@ -17,7 +17,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	char *err_str = NULL;
 	struct criteria *criteria = criteria_parse(argv[0], &err_str);
 	if (!criteria) {
-		error = cmd_results_new(CMD_INVALID, "assign", err_str);
+		error = cmd_results_new(CMD_INVALID, err_str);
 		free(err_str);
 		return error;
 	}
@@ -27,7 +27,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	if (strncmp(*argv, "→", strlen("→")) == 0) {
 		if (argc < 2) {
 			free(criteria);
-			return cmd_results_new(CMD_INVALID, "assign", "Missing workspace");
+			return cmd_results_new(CMD_INVALID, "Missing workspace");
 		}
 		--argc;
 		++argv;
@@ -44,7 +44,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 			--argc; ++argv;
 			if (argv[0][0] < '0' || argv[0][0] > '9') {
 				free(criteria);
-				return cmd_results_new(CMD_INVALID, "assign",
+				return cmd_results_new(CMD_INVALID,
 						"Invalid workspace number '%s'", argv[0]);
 			}
 			criteria->type = CT_ASSIGN_WORKSPACE_NUMBER;
@@ -59,5 +59,5 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	wlr_log(WLR_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,
 			criteria->target);
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

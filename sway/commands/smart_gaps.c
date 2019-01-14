@@ -19,5 +19,5 @@ struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 
 	arrange_root();
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -4,10 +4,10 @@
 
 struct cmd_results *output_cmd_mode(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
-		return cmd_results_new(CMD_FAILURE, "output", "Missing output config");
+		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "output", "Missing mode argument.");
+		return cmd_results_new(CMD_INVALID, "Missing mode argument.");
 	}
 
 	struct output_config *output = config->handler_context.output_config;
@@ -17,20 +17,18 @@ struct cmd_results *output_cmd_mode(int argc, char **argv) {
 	if (*end) {
 		// Format is 1234x4321
 		if (*end != 'x') {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid mode width.");
+			return cmd_results_new(CMD_INVALID, "Invalid mode width.");
 		}
 		++end;
 		output->height = strtol(end, &end, 10);
 		if (*end) {
 			if (*end != '@') {
-				return cmd_results_new(CMD_INVALID, "output",
-					"Invalid mode height.");
+				return cmd_results_new(CMD_INVALID, "Invalid mode height.");
 			}
 			++end;
 			output->refresh_rate = strtof(end, &end);
 			if (strcasecmp("Hz", end) != 0) {
-				return cmd_results_new(CMD_INVALID, "output",
+				return cmd_results_new(CMD_INVALID,
 					"Invalid mode refresh rate.");
 			}
 		}
@@ -38,13 +36,12 @@ struct cmd_results *output_cmd_mode(int argc, char **argv) {
 		// Format is 1234 4321
 		argc--; argv++;
 		if (!argc) {
-			return cmd_results_new(CMD_INVALID, "output",
+			return cmd_results_new(CMD_INVALID,
 				"Missing mode argument (height).");
 		}
 		output->height = strtol(*argv, &end, 10);
 		if (*end) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid mode height.");
+			return cmd_results_new(CMD_INVALID, "Invalid mode height.");
 		}
 	}
 

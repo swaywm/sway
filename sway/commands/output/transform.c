@@ -6,11 +6,10 @@
 
 struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
-		return cmd_results_new(CMD_FAILURE, "output", "Missing output config");
+		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "output",
-			"Missing transform argument.");
+		return cmd_results_new(CMD_INVALID, "Missing transform argument.");
 	}
 	enum wl_output_transform transform;
 	if (strcmp(*argv, "normal") == 0) {
@@ -30,8 +29,7 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	} else if (strcmp(*argv, "flipped-270") == 0) {
 		transform = WL_OUTPUT_TRANSFORM_FLIPPED_270;
 	} else {
-		return cmd_results_new(CMD_INVALID, "output",
-			"Invalid output transform.");
+		return cmd_results_new(CMD_INVALID, "Invalid output transform.");
 	}
 	struct output_config *output = config->handler_context.output_config;
 	config->handler_context.leftovers.argc = argc - 1;
@@ -42,12 +40,12 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 			return NULL;
 		}
 		if (strcmp(output->name, "*") == 0) {
-			return cmd_results_new(CMD_INVALID, "output",
+			return cmd_results_new(CMD_INVALID,
 				"Cannot apply relative transform to all outputs.");
 		}
 		struct sway_output *s_output = output_by_name_or_id(output->name);
 		if (s_output == NULL) {
-			return cmd_results_new(CMD_INVALID, "output",
+			return cmd_results_new(CMD_INVALID,
 				"Cannot apply relative transform to unknown output %s", output->name);
 		}
 		if (strcmp(argv[1], "anticlockwise") == 0) {

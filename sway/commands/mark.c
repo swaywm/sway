@@ -20,8 +20,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	}
 	struct sway_container *container = config->handler_context.container;
 	if (!container) {
-		return cmd_results_new(CMD_INVALID, "mark",
-				"Only containers can have marks");
+		return cmd_results_new(CMD_INVALID, "Only containers can have marks");
 	}
 
 	bool add = false, toggle = false;
@@ -33,7 +32,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 		} else if (strcmp(*argv, "--toggle") == 0) {
 			toggle = true;
 		} else {
-			return cmd_results_new(CMD_INVALID, "mark",
+			return cmd_results_new(CMD_INVALID,
 					"Unrecognized argument '%s'", *argv);
 		}
 		++argv;
@@ -41,7 +40,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	}
 
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "mark",
+		return cmd_results_new(CMD_INVALID,
 				"Expected '[--add|--replace] [--toggle] <identifier>'");
 	}
 
@@ -65,5 +64,5 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 		view_execute_criteria(container->view);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
