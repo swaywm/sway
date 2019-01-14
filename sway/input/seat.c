@@ -405,6 +405,14 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 	}
 }
 
+static void seat_reset_input_config(struct sway_seat *seat,
+		struct sway_seat_device *sway_device) {
+	wlr_log(WLR_DEBUG, "Resetting output mapping for input device %s",
+		sway_device->input_device->identifier);
+	wlr_cursor_map_input_to_output(seat->cursor->cursor,
+		sway_device->input_device->wlr_device, NULL);
+}
+
 static void seat_apply_input_config(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	const char *mapped_to_output = NULL;
@@ -518,6 +526,35 @@ void seat_configure_device(struct sway_seat *seat,
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
 			wlr_log(WLR_DEBUG, "TODO: configure switch device");
+			break;
+	}
+}
+
+void seat_reset_device(struct sway_seat *seat,
+		struct sway_input_device *input_device) {
+	struct sway_seat_device *seat_device = seat_get_device(seat, input_device);
+	if (!seat_device) {
+		return;
+	}
+
+	switch (input_device->wlr_device->type) {
+		case WLR_INPUT_DEVICE_POINTER:
+			seat_reset_input_config(seat, seat_device);
+			break;
+		case WLR_INPUT_DEVICE_KEYBOARD:
+			sway_keyboard_configure(seat_device->keyboard);
+			break;
+		case WLR_INPUT_DEVICE_TOUCH:
+			seat_reset_input_config(seat, seat_device);
+			break;
+		case WLR_INPUT_DEVICE_TABLET_TOOL:
+			seat_reset_input_config(seat, seat_device);
+			break;
+		case WLR_INPUT_DEVICE_TABLET_PAD:
+			wlr_log(WLR_DEBUG, "TODO: reset tablet pad");
+			break;
+		case WLR_INPUT_DEVICE_SWITCH:
+			wlr_log(WLR_DEBUG, "TODO: reset switch device");
 			break;
 	}
 }
