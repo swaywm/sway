@@ -84,7 +84,6 @@ if scdoc.found()
 		'sway/sway-bar.5.scd',
 		'sway/sway-input.5.scd',
 		'sway/sway-output.5.scd',
-		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swaynag/swaynag.1.scd',
 		'swaynag/swaynag.5.scd',
@@ -146,7 +145,6 @@ subdir('client')
 subdir('swaybg')
 subdir('swaybar')
 subdir('swaynag')
-subdir('swaylock')
 
 config = configuration_data()
 config.set('datadir', join_paths(prefix, datadir))
@@ -200,7 +198,6 @@ endif
 if (get_option('zsh-completions'))
 	zsh_files = files(
 		'completions/zsh/_sway',
-		'completions/zsh/_swaylock',
 		'completions/zsh/_swaymsg',
 	)
 	zsh_install_dir = datadir + '/zsh/site-functions'
@@ -212,7 +209,6 @@ if (get_option('bash-completions'))
 	bash_files = files(
 		'completions/bash/sway',
 		'completions/bash/swaybar',
-		'completions/bash/swaylock',
 		'completions/bash/swaymsg',
 	)
 	bash_install_dir = datadir + '/bash-completion/completions'
@@ -223,7 +219,6 @@ endif
 if (get_option('fish-completions'))
 	fish_files = files(
 		'completions/fish/sway.fish',
-		'completions/fish/swaylock.fish',
 		'completions/fish/swaymsg.fish',
 		'completions/fish/swaynag.fish',
 	)

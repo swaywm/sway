@@ -50,16 +50,13 @@ Sway доступен во многих дистрибутивах и наход
 * pango
 * cairo
 * gdk-pixbuf2 *
-* pam **
-* dbus >= 1.10 ***
+* dbus >= 1.10 **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 * git
 
-_\*Требуется только для swaybar, swaybg и swaylock_
+_\*Требуется только для swaybar, swaybg_
 
-_\*\*Требуется только для swaylock_
-
-_\*\*\*Требуется только для tray_
+_\*\*Требуется только для tray_
 
 Выполните следующие команды:
 

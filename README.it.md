@@ -50,13 +50,10 @@ Installa queste dipendenze:
 * pango
 * cairo
 * gdk-pixbuf2 *
-* pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (rrichiesto per man pages)
 * git
 
-_\*Richiesto solo per swaybar, swaybg, e swaylock_
-
-_\*\*Richiesto solo per swaylock_
+_\*Richiesto solo per swaybar, swaybg_
 
 Esegui questi comandi:
 

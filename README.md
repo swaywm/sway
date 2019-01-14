@@ -41,13 +41,12 @@ Install dependencies:
 * pango
 * cairo
 * gdk-pixbuf2 \*\*
-* pam (optional: PAM support for swaylock)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
 * git \*
 
 _\*Compile-time dep_
 
-_\*\*optional: required for swaybg and swaylock_
+_\*\*optional: required for swaybg_
 
 Run these commands:
 

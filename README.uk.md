@@ -57,13 +57,10 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * pango
 * cairo
 * gdk-pixbuf2 *
-* pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 * git
 
-_\*Лише для swaybar, swaybg та swaylock_
-
-_\*\*Лише для swaylock_
+_\*Лише для swaybar, swaybg_
 
 Виконайте ці команди:
 

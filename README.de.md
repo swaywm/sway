@@ -56,13 +56,10 @@ Abhängigkeiten:
 * pango
 * cairo
 * gdk-pixbuf2 *
-* pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (erforderlich für man pages)
 * git
 
-_\*Nur erforderlich für swaybar, swaybg, und swaylock_
-
-_\*\*Nur erforderlich für swaylock_
+_\*Nur erforderlich für swaybar, swaybg_
 
 Führe diese Befehle aus:
 
