@@ -104,7 +104,7 @@ static void calculate_constraints(int *min_width, int *max_width,
 	}
 }
 
-static enum wlr_edges parse_resize_axis(const char *axis) {
+static uint32_t parse_resize_axis(const char *axis) {
 	if (strcasecmp(axis, "width") == 0 || strcasecmp(axis, "horizontal") == 0) {
 		return AXIS_HORIZONTAL;
 	}
@@ -126,15 +126,15 @@ static enum wlr_edges parse_resize_axis(const char *axis) {
 	return WLR_EDGE_NONE;
 }
 
-static bool is_horizontal(enum wlr_edges axis) {
+static bool is_horizontal(uint32_t axis) {
 	return axis & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 }
 
-static int parallel_coord(struct sway_container *c, enum wlr_edges axis) {
+static int parallel_coord(struct sway_container *c, uint32_t axis) {
 	return is_horizontal(axis) ? c->x : c->y;
 }
 
-static int parallel_size(struct sway_container *c, enum wlr_edges axis) {
+static int parallel_size(struct sway_container *c, uint32_t axis) {
 	return is_horizontal(axis) ? c->width : c->height;
 }
 
@@ -160,7 +160,7 @@ static void container_recursive_resize(struct sway_container *container,
 }
 
 static void resize_tiled(struct sway_container *parent, int amount,
-		enum wlr_edges axis) {
+		uint32_t axis) {
 	struct sway_container *focused = parent;
 	if (!parent) {
 		return;
@@ -304,7 +304,7 @@ void container_resize_tiled(struct sway_container *parent,
 /**
  * Implement `resize <grow|shrink>` for a floating container.
  */
-static struct cmd_results *resize_adjust_floating(enum wlr_edges axis,
+static struct cmd_results *resize_adjust_floating(uint32_t axis,
 		struct resize_amount *amount) {
 	struct sway_container *con = config->handler_context.container;
 	int grow_width = 0, grow_height = 0;
@@ -361,7 +361,7 @@ static struct cmd_results *resize_adjust_floating(enum wlr_edges axis,
 /**
  * Implement `resize <grow|shrink>` for a tiled container.
  */
-static struct cmd_results *resize_adjust_tiled(enum wlr_edges axis,
+static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 		struct resize_amount *amount) {
 	struct sway_container *current = config->handler_context.container;
 
@@ -564,7 +564,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		int multiplier) {
 	const char *usage = "Expected 'resize grow|shrink <direction> "
 		"[<amount> px|ppt [or <amount> px|ppt]]'";
-	enum wlr_edges axis = parse_resize_axis(*argv);
+	uint32_t axis = parse_resize_axis(*argv);
 	if (axis == WLR_EDGE_NONE) {
 		return cmd_results_new(CMD_INVALID, "resize", usage);
 	}
