@@ -135,9 +135,9 @@ balance the lines.
 
 ### Line Length
 
-Try to keep your lines under 80 columns, but you can go up to 100 if it
-improves readability. Don't break lines indiscriminately, try to find nice
-breaking points so your code is easy to read.
+Try to keep your lines under 80 columns, assuming a tab width equal to 4 spaces,
+but you can go up to 100 if it improves readability. Don't break lines
+indiscriminately, try to find nice breaking points so your code is easy to read.
 
 ### Names
 
