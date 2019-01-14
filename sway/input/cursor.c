@@ -1227,7 +1227,7 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 
 uint32_t get_mouse_button(const char *name, char **error) {
 	uint32_t button = get_mouse_bindsym(name, error);
-	if (!button && !error) {
+	if (!button && !*error) {
 		button = get_mouse_bindcode(name, error);
 	}
 	return button;

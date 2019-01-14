@@ -1,9 +1,7 @@
-#include <string.h>
-#include <strings.h>
-#include <errno.h>
+#include <libevdev/libevdev.h>
 #include "sway/config.h"
 #include "sway/commands.h"
-#include "sway/input/input-manager.h"
+#include "sway/input/cursor.h"
 
 struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -16,22 +14,26 @@ struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 			"No input device defined.");
 	}
 
-	errno = 0;
-	char *endptr;
-	int scroll_button = strtol(*argv, &endptr, 10);
-	if (endptr == *argv && scroll_button == 0) {
-		return cmd_results_new(CMD_INVALID, "scroll_button",
-				"Scroll button identifier must be an integer.");
+	if (strcmp(*argv, "disable") == 0) {
+		ic->scroll_button = 0;
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
-	if (errno == ERANGE) {
+
+	char *message = NULL;
+	uint32_t button = get_mouse_button(*argv, &message);
+	if (message) {
+		error = cmd_results_new(CMD_INVALID, "scroll_button", message);
+		free(message);
+		return error;
+	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN
+			|| button == SWAY_SCROLL_LEFT || button == SWAY_SCROLL_RIGHT) {
 		return cmd_results_new(CMD_INVALID, "scroll_button",
-				"Scroll button identifier out of range.");
-	}
-	if (scroll_button < 0) {
+				"X11 axis buttons are not supported for scroll_button");
+	} else if (!button) {
 		return cmd_results_new(CMD_INVALID, "scroll_button",
-				"Scroll button identifier cannot be negative.");
+				"Unknown button %s", *argv);
 	}
-	ic->scroll_button = scroll_button;
+	ic->scroll_button = button;
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
