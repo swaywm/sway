@@ -180,8 +180,9 @@ sway_cmd cmd_titlebar_padding;
 sway_cmd cmd_unmark;
 sway_cmd cmd_urgent;
 sway_cmd cmd_workspace;
-sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_workspace_layout;
+sway_cmd cmd_ws_auto_back_and_forth;
+sway_cmd cmd_xwayland;
 
 sway_cmd bar_cmd_bindcode;
 sway_cmd bar_cmd_binding_mode_indicator;
