@@ -213,6 +213,16 @@ static size_t keyboard_keysyms_raw(struct sway_keyboard *keyboard,
 		keycode, layout_index, 0, keysyms);
 }
 
+void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard) {
+	if (!keyboard) {
+		return;
+	}
+	keyboard->repeat_binding = NULL;
+	if (wl_event_source_timer_update(keyboard->key_repeat_source, 0) < 0) {
+		wlr_log(WLR_DEBUG, "failed to disarm key repeat timer");
+	}
+}
+
 static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct sway_keyboard *keyboard =
 		wl_container_of(listener, keyboard, keyboard_key);
@@ -306,10 +316,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 			wlr_log(WLR_DEBUG, "failed to set key repeat timer");
 		}
 	} else if (keyboard->repeat_binding) {
-		keyboard->repeat_binding = NULL;
-		if (wl_event_source_timer_update(keyboard->key_repeat_source, 0) < 0) {
-			wlr_log(WLR_DEBUG, "failed to disarm key repeat timer");
-		}
+		sway_keyboard_disarm_key_repeat(keyboard);
 	}
 
 	if (binding) {
@@ -517,6 +524,7 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	}
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
+	sway_keyboard_disarm_key_repeat(keyboard);
 	wl_event_source_remove(keyboard->key_repeat_source);
 	free(keyboard);
 }
