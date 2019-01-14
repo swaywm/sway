@@ -231,8 +231,9 @@ static void _close(struct sway_view *view) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
-	if (surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
-		wlr_xdg_surface_send_close(surface);
+	if (surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL
+			&& surface->toplevel) {
+		wlr_xdg_toplevel_send_close(surface);
 	}
 }
 
@@ -240,7 +241,10 @@ static void close_popups_iterator(struct wlr_surface *surface,
 		int sx, int sy, void *data) {
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_from_wlr_surface(surface);
-	wlr_xdg_surface_send_close(xdg_surface);
+	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP
+			&& xdg_surface->popup) {
+		wlr_xdg_popup_destroy(xdg_surface);
+	}
 }
 
 static void close_popups(struct sway_view *view) {
