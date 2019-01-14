@@ -57,13 +57,10 @@ Antes de iniciar a compilação, instale as dependências:
 * pango
 * cairo
 * gdk-pixbuf2 *
-* pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (man pages)
 * git
 
-_\*Dependência apenas de swaybar, swaybg, e swaylock_
-
-_\*\*Dependência apenas de swaylock_
+_\*Dependência apenas de swaybar, swaybg_
 
 Para compilar, execute estes comandos:
 
