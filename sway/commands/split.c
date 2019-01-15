@@ -13,6 +13,10 @@ static struct cmd_results *do_split(int layout) {
 	struct sway_container *con = config->handler_context.container;
 	struct sway_workspace *ws = config->handler_context.workspace;
 	if (con) {
+		if (con->scratchpad && !con->workspace) {
+			return cmd_results_new(CMD_FAILURE,
+					"Cannot split a hidden scratchpad container");
+		}
 		container_split(con, layout);
 	} else {
 		workspace_split(ws, layout);

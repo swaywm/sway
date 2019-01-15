@@ -589,6 +589,11 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	if (!current) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize nothing");
 	}
+	if (current->scratchpad && !current->workspace) {
+		return cmd_results_new(CMD_FAILURE,
+				"Cannot resize a hidden scratchpad container");
+	}
+
 
 	struct cmd_results *error;
 	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {

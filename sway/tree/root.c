@@ -87,6 +87,9 @@ void root_scratchpad_remove_container(struct sway_container *con) {
 	if (!sway_assert(con->scratchpad, "Container is not in scratchpad")) {
 		return;
 	}
+	if (!con->workspace) {
+		root_scratchpad_show(con);
+	}
 	con->scratchpad = false;
 	int index = list_find(root->scratchpad, con);
 	if (index != -1) {

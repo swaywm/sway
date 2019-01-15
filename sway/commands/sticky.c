@@ -29,7 +29,8 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 
 	container->is_sticky = parse_boolean(argv[0], container->is_sticky);
 
-	if (container->is_sticky) {
+	if (container->is_sticky &&
+			(!container->scratchpad || container->workspace)) {
 		// move container to active workspace
 		struct sway_workspace *active_workspace =
 			output_get_active_workspace(container->workspace->output);
