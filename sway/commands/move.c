@@ -653,6 +653,10 @@ static struct cmd_results *cmd_move_in_direction(
 		return cmd_results_new(CMD_FAILURE,
 				"Cannot move workspaces in a direction");
 	}
+	if (container->scratchpad && !container->workspace) {
+		return cmd_results_new(CMD_FAILURE,
+				"Cannot move a hidden scratchpad container");
+	}
 	if (container_is_floating(container)) {
 		if (container->is_fullscreen) {
 			return cmd_results_new(CMD_FAILURE,
@@ -720,6 +724,11 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Only floating containers "
 				"can be moved to an absolute position");
 	}
+	if (container->scratchpad && !container->workspace) {
+		return cmd_results_new(CMD_FAILURE,
+				"Cannot move a hidden scratchpad container");
+	}
+
 	if (!argc) {
 		return cmd_results_new(CMD_FAILURE, expected_position_syntax);
 	}
