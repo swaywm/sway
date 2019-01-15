@@ -130,175 +130,115 @@ static bool is_horizontal(uint32_t axis) {
 	return axis & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 }
 
-static int parallel_coord(struct sway_container *c, uint32_t axis) {
-	return is_horizontal(axis) ? c->x : c->y;
-}
-
-static int parallel_size(struct sway_container *c, uint32_t axis) {
-	return is_horizontal(axis) ? c->width : c->height;
-}
-
-static void container_recursive_resize(struct sway_container *container,
-		double amount, enum wlr_edges edge) {
-	bool layout_match = true;
-	wlr_log(WLR_DEBUG, "Resizing %p with amount: %f", container, amount);
-	if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-		container->width += amount;
-		layout_match = container->layout == L_HORIZ;
-	} else if (edge & (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
-		container->height += amount;
-		layout_match = container->layout == L_VERT;
-	}
-	if (container->children) {
-		for (int i = 0; i < container->children->length; i++) {
-			struct sway_container *child = container->children->items[i];
-			double amt = layout_match ?
-				amount / container->children->length : amount;
-			container_recursive_resize(child, amt, edge);
-		}
-	}
-}
-
-static void resize_tiled(struct sway_container *parent, int amount,
+struct sway_container *container_find_resize_parent(struct sway_container *con,
 		uint32_t axis) {
-	struct sway_container *focused = parent;
-	if (!parent) {
+	enum sway_container_layout parallel_layout =
+		is_horizontal(axis) ? L_HORIZ : L_VERT;
+	bool allow_first = axis != WLR_EDGE_TOP && axis != WLR_EDGE_LEFT;
+	bool allow_last = axis != WLR_EDGE_RIGHT && axis != WLR_EDGE_BOTTOM;
+
+	while (con) {
+		list_t *siblings = container_get_siblings(con);
+		int index = container_sibling_index(con);
+		if (container_parent_layout(con) == parallel_layout &&
+				siblings->length > 1 && (allow_first || index > 0) &&
+				(allow_last || index < siblings->length - 1)) {
+			return con;
+		}
+		con = con->parent;
+	}
+
+	return NULL;
+}
+
+void container_resize_tiled(struct sway_container *con,
+		uint32_t axis, int amount) {
+	if (!con) {
 		return;
 	}
 
-	enum sway_container_layout parallel_layout =
-		is_horizontal(axis) ? L_HORIZ : L_VERT;
-	int minor_weight = 0;
-	int major_weight = 0;
-	while (parent) {
-		list_t *siblings = container_get_siblings(parent);
-		if (container_parent_layout(parent) == parallel_layout) {
-			for (int i = 0; i < siblings->length; i++) {
-				struct sway_container *sibling = siblings->items[i];
-
-				int sibling_pos = parallel_coord(sibling, axis);
-				int focused_pos = parallel_coord(focused, axis);
-				int parent_pos = parallel_coord(parent, axis);
-
-				if (sibling_pos != focused_pos) {
-					if (sibling_pos < parent_pos) {
-						minor_weight++;
-					} else if (sibling_pos > parent_pos) {
-						major_weight++;
-					}
-				}
-			}
-			if (major_weight || minor_weight) {
-				break;
-			}
-		}
-		parent = parent->parent;
-	}
-	if (!parent) {
+	con = container_find_resize_parent(con, axis);
+	if (!con) {
 		// Can't resize in this direction
 		return;
 	}
 
-	// Implement up/down/left/right direction by zeroing one of the weights
-	if (axis == WLR_EDGE_TOP || axis == WLR_EDGE_LEFT) {
-		major_weight = 0;
-	} else if (axis == WLR_EDGE_RIGHT || axis == WLR_EDGE_BOTTOM) {
-		minor_weight = 0;
-	}
+	// For HORIZONTAL or VERTICAL, we are growing in two directions so select
+	// both adjacent siblings. For RIGHT or DOWN, just select the next sibling.
+	// For LEFT or UP, convert it to a RIGHT or DOWN resize and reassign con to
+	// the previous sibling.
+	struct sway_container *prev = NULL;
+	struct sway_container *next = NULL;
+	list_t *siblings = container_get_siblings(con);
+	int index = container_sibling_index(con);
 
-	bool horizontal = is_horizontal(axis);
-	int min_sane = horizontal ? MIN_SANE_W : MIN_SANE_H;
-
-	//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
-	// ^ ?????
-	list_t *siblings = container_get_siblings(parent);
-
-	for (int i = 0; i < siblings->length; i++) {
-		struct sway_container *sibling = siblings->items[i];
-
-		int sibling_pos = parallel_coord(sibling, axis);
-		int focused_pos = parallel_coord(focused, axis);
-		int parent_pos = parallel_coord(parent, axis);
-
-		int sibling_size = parallel_size(sibling, axis);
-		int parent_size = parallel_size(parent, axis);
-
-		if (sibling_pos != focused_pos) {
-			if (sibling_pos < parent_pos && minor_weight) {
-				double pixels = -amount / minor_weight;
-				if (major_weight && (sibling_size + pixels / 2) < min_sane) {
-					return; // Too small
-				} else if (!major_weight && sibling_size + pixels < min_sane) {
-					return; // Too small
-				}
-			} else if (sibling_pos > parent_pos && major_weight) {
-				double pixels = -amount / major_weight;
-				if (minor_weight && (sibling_size + pixels / 2) < min_sane) {
-					return; // Too small
-				} else if (!minor_weight && sibling_size + pixels < min_sane) {
-					return; // Too small
-				}
-			}
+	if (axis == AXIS_HORIZONTAL || axis == AXIS_VERTICAL) {
+		if (index == 0) {
+			next = siblings->items[1];
+		} else if (index == siblings->length - 1) {
+			// Convert edge to top/left
+			next = con;
+			con = siblings->items[index - 1];
+			amount = -amount;
 		} else {
-			double pixels = amount;
-			if (parent_size + pixels < min_sane) {
-				return; // Too small
-			}
+			prev = siblings->items[index - 1];
+			next = siblings->items[index + 1];
 		}
-	}
-
-	enum wlr_edges minor_edge = horizontal ? WLR_EDGE_LEFT : WLR_EDGE_TOP;
-	enum wlr_edges major_edge = horizontal ? WLR_EDGE_RIGHT : WLR_EDGE_BOTTOM;
-
-	for (int i = 0; i < siblings->length; i++) {
-		struct sway_container *sibling = siblings->items[i];
-
-		int sibling_pos = parallel_coord(sibling, axis);
-		int focused_pos = parallel_coord(focused, axis);
-		int parent_pos = parallel_coord(parent, axis);
-
-		if (sibling_pos != focused_pos) {
-			if (sibling_pos < parent_pos && minor_weight) {
-				double pixels = -1 * amount;
-				pixels /= minor_weight;
-				if (major_weight) {
-					container_recursive_resize(sibling, pixels / 2, major_edge);
-				} else {
-					container_recursive_resize(sibling, pixels, major_edge);
-				}
-			} else if (sibling_pos > parent_pos && major_weight) {
-				double pixels = -1 * amount;
-				pixels /= major_weight;
-				if (minor_weight) {
-					container_recursive_resize(sibling, pixels / 2, minor_edge);
-				} else {
-					container_recursive_resize(sibling, pixels, minor_edge);
-				}
-			}
-		} else {
-			if (major_weight != 0 && minor_weight != 0) {
-				double pixels = amount;
-				pixels /= 2;
-				container_recursive_resize(parent, pixels, minor_edge);
-				container_recursive_resize(parent, pixels, major_edge);
-			} else if (major_weight) {
-				container_recursive_resize(parent, amount, major_edge);
-			} else if (minor_weight) {
-				container_recursive_resize(parent, amount, minor_edge);
-			}
+	} else if (axis == WLR_EDGE_TOP || axis == WLR_EDGE_LEFT) {
+		if (!sway_assert(index > 0, "Didn't expect first child")) {
+			return;
 		}
-	}
-
-	if (parent->parent) {
-		arrange_container(parent->parent);
+		next = con;
+		con = siblings->items[index - 1];
+		amount = -amount;
 	} else {
-		arrange_workspace(parent->workspace);
+		if (!sway_assert(index < siblings->length - 1,
+					"Didn't expect last child")) {
+			return;
+		}
+		next = siblings->items[index + 1];
 	}
-}
 
-void container_resize_tiled(struct sway_container *parent,
-		enum wlr_edges edge, int amount) {
-	resize_tiled(parent, amount, edge);
+	// Apply new dimensions
+	int sibling_amount = prev ? amount / 2 : amount;
+
+	if (is_horizontal(axis)) {
+		if (con->width + amount < MIN_SANE_W) {
+			return;
+		}
+		if (next->width - sibling_amount < MIN_SANE_W) {
+			return;
+		}
+		if (prev && prev->width - sibling_amount < MIN_SANE_W) {
+			return;
+		}
+		con->width += amount;
+		next->width -= sibling_amount;
+		if (prev) {
+			prev->width -= sibling_amount;
+		}
+	} else {
+		if (con->height + amount < MIN_SANE_H) {
+			return;
+		}
+		if (next->height - sibling_amount < MIN_SANE_H) {
+			return;
+		}
+		if (prev && prev->height - sibling_amount < MIN_SANE_H) {
+			return;
+		}
+		con->height += amount;
+		next->height -= sibling_amount;
+		if (prev) {
+			prev->height -= sibling_amount;
+		}
+	}
+
+	if (con->parent) {
+		arrange_container(con->parent);
+	} else {
+		arrange_workspace(con->workspace);
+	}
 }
 
 /**
@@ -379,7 +319,7 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 
 	double old_width = current->width;
 	double old_height = current->height;
-	resize_tiled(current, amount->amount, axis);
+	container_resize_tiled(current, axis, amount->amount);
 	if (current->width == old_width && current->height == old_height) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
@@ -407,7 +347,8 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 			width->unit = RESIZE_UNIT_PX;
 		}
 		if (width->unit == RESIZE_UNIT_PX) {
-			resize_tiled(con, width->amount - con->width, AXIS_HORIZONTAL);
+			container_resize_tiled(con, AXIS_HORIZONTAL,
+					width->amount - con->width);
 		}
 	}
 
@@ -427,7 +368,8 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 			height->unit = RESIZE_UNIT_PX;
 		}
 		if (height->unit == RESIZE_UNIT_PX) {
-			resize_tiled(con, height->amount - con->height, AXIS_VERTICAL);
+			container_resize_tiled(con, AXIS_VERTICAL,
+					height->amount - con->height);
 		}
 	}
 
