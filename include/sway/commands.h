@@ -134,6 +134,7 @@ sway_cmd cmd_force_display_urgency_hint;
 sway_cmd cmd_force_focus_wrapping;
 sway_cmd cmd_fullscreen;
 sway_cmd cmd_gaps;
+sway_cmd cmd_gesture;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_inhibit_idle;

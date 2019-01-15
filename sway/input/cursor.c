@@ -28,7 +28,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
-#include "libtouch.h"
+#include "<libtouch.h>"
 
 static uint32_t get_current_time_msec(void) {
 	struct timespec now;
