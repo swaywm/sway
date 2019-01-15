@@ -275,6 +275,7 @@ static int hide_notify(void *data) {
 	struct sway_cursor *cursor = data;
 	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	cursor->hidden = true;
+	wlr_seat_pointer_clear_focus(cursor->seat->wlr_seat);
 	return 1;
 }
 
@@ -313,6 +314,7 @@ void cursor_unhide(struct sway_cursor *cursor) {
 		cursor->image = NULL;
 		cursor_set_image(cursor, image, cursor->image_client);
 	}
+	cursor_rebase(cursor);
 }
 
 void cursor_send_pointer_motion(struct sway_cursor *cursor,
@@ -388,10 +390,10 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
 	struct wlr_event_pointer_motion *event = data;
+	cursor_handle_activity(cursor);
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
-	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -400,9 +402,9 @@ static void handle_cursor_motion_absolute(
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_event_pointer_motion_absolute *event = data;
+	cursor_handle_activity(cursor);
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
-	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -698,9 +700,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
 	struct wlr_event_pointer_button *event = data;
+	cursor_handle_activity(cursor);
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
-	cursor_handle_activity(cursor);
 	transaction_commit_dirty();
 }
 
@@ -814,8 +816,8 @@ void dispatch_cursor_axis(struct sway_cursor *cursor,
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
 	struct wlr_event_pointer_axis *event = data;
-	dispatch_cursor_axis(cursor, event);
 	cursor_handle_activity(cursor);
+	dispatch_cursor_axis(cursor, event);
 	transaction_commit_dirty();
 }
 
