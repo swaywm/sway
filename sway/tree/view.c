@@ -735,6 +735,9 @@ static void view_subsurface_create(struct sway_view *view,
 }
 
 static void view_child_damage(struct sway_view_child *child, bool whole) {
+	if (!child || !child->mapped || !child->view || !child->view->container) {
+		return;
+	}
 	int sx, sy;
 	child->impl->get_root_coords(child, &sx, &sy);
 	desktop_damage_surface(child->surface,
