@@ -31,10 +31,16 @@ static int exit_value = 0;
 struct sway_server server = {0};
 
 void sway_terminate(int exit_code) {
-	terminate_request = true;
-	exit_value = exit_code;
-	ipc_event_shutdown("exit");
-	wl_display_terminate(server.wl_display);
+	if (!server.wl_display) {
+		// Running as IPC client
+		exit(exit_code);
+	} else {
+		// Running as server
+		terminate_request = true;
+		exit_value = exit_code;
+		ipc_event_shutdown("exit");
+		wl_display_terminate(server.wl_display);
+	}
 }
 
 void sig_handler(int signal) {
