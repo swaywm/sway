@@ -58,7 +58,7 @@ xcb            = dependency('xcb', required: get_option('xwayland'))
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git            = find_program('git', native: true, required: false)
-
+libtouch       = dependency('libtouch')
 # Try first to find wlroots as a subproject, then as a system dependency
 wlroots_version = '>=0.4.1'
 wlroots_proj = subproject(
