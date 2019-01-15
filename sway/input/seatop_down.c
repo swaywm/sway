@@ -74,4 +74,6 @@ void seatop_begin_down(struct sway_seat *seat,
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
 	seat->seatop_button = button;
+
+	container_raise_floating(con);
 }
