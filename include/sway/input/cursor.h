@@ -36,6 +36,8 @@ struct sway_cursor {
 	struct wl_listener axis;
 	struct wl_listener frame;
 
+
+	struct libtouch_engine *gesture_engine;
 	struct wl_listener touch_down;
 	struct wl_listener touch_up;
 	struct wl_listener touch_motion;

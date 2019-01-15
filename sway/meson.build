@@ -185,6 +185,7 @@ sway_sources = files(
 )
 
 sway_deps = [
+	libtouch,
 	cairo,
 	gdk_pixbuf,
 	jsonc,
