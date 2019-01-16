@@ -31,8 +31,9 @@ static bool terminal_execute(char *terminal, char *command) {
 	char *cmd = malloc(sizeof(char) * (strlen(terminal) + strlen(" -e ") + strlen(fname) + 1));
 	sprintf(cmd, "%s -e %s", terminal, fname);
 	execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+	wlr_log_errno(WLR_ERROR, "Failed to run command, execl() returned.");
 	free(cmd);
-	return true;
+	return false;
 }
 
 static void swaynag_button_execute(struct swaynag *swaynag,
