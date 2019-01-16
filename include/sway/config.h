@@ -54,6 +54,11 @@ struct sway_binding {
 	char *command;
 };
 
+struct sway_gesture_binding {
+	struct libtouch_gesture *gesture;
+	char *command;
+};
+
 /**
  * A mouse binding and an associated command.
  */
@@ -91,6 +96,7 @@ struct sway_mode {
 	list_t *keycode_bindings;
 	list_t *mouse_bindings;
 	list_t *switch_bindings;
+	list_t *gesture_bindings;
 	bool pango;
 };
 

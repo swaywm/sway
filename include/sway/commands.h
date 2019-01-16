@@ -185,6 +185,7 @@ sway_cmd cmd_titlebar_padding;
 sway_cmd cmd_unbindcode;
 sway_cmd cmd_unbindswitch;
 sway_cmd cmd_unbindsym;
+sway_cmd cmd_touch;
 sway_cmd cmd_unmark;
 sway_cmd cmd_urgent;
 sway_cmd cmd_workspace;
