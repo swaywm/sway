@@ -13,7 +13,7 @@
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	const char *fmt = "workspace \"%s\"";
 	uint32_t size = snprintf(NULL, 0, fmt, ws);
-	char *command = malloc(sizeof(char) * size);
+	char *command = malloc(sizeof(char) * (size + 1));
 	snprintf(command, size, fmt, ws);
 	ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size);
 	free(command);
