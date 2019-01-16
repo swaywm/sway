@@ -379,8 +379,10 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 			}
 		}
 		if (!output) {
-			if (!sway_assert(root->outputs->length,
-						"cannot auto-assign output for layer")) {
+			if (!root->outputs->length) {
+				wlr_log(WLR_ERROR,
+						"no output to auto-assign layer surface '%s' to",
+						layer_surface->namespace);
 				wlr_layer_surface_v1_close(layer_surface);
 				return;
 			}
