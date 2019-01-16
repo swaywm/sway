@@ -22,19 +22,6 @@ struct swaybar_pointer {
 	uint32_t serial;
 };
 
-enum x11_button {
-	NONE,
-	LEFT,
-	MIDDLE,
-	RIGHT,
-	SCROLL_UP,
-	SCROLL_DOWN,
-	SCROLL_LEFT,
-	SCROLL_RIGHT,
-	BACK,
-	FORWARD,
-};
-
 enum hotspot_event_handling {
 	HOTSPOT_IGNORE,
 	HOTSPOT_PROCESS,
@@ -53,6 +40,8 @@ struct swaybar_hotspot {
 extern const struct wl_seat_listener seat_listener;
 
 void update_cursor(struct swaybar *bar);
+
+uint32_t event_to_x11_button(uint32_t event);
 
 void free_hotspots(struct wl_list *list);
 

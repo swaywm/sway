@@ -115,13 +115,19 @@ Sway allows configuring swaybar in the sway configuration file.
 Swaybar provides a system tray where third-party applications may place icons.
 The following commands configure the tray.
 
-The _button_ argument in all cases is a platform-specific button code. On Linux
-you can find a list of these at linux/input-event-codes.h.
+*tray\_bindcode* <event-code>
+ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollUp|nop
+	Executes the action when the mouse button has been pressed. The buttons can
+	be given as an event code, which can be obtained from `libinput debug-events`.
+	To disable the default behavior for a button, use the command _nop_.
 
-*tray\_bindsym* button<n> ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollUp|nop
-	Binds mouse button _n_ (1 to 9) to the specified action. Use the command
-	_nop_ to disable the default action (Activate for button 1, ContextMenu for
-	button 2 and SecondaryActivate for button 3).
+*tray\_bindsym* button[1-9]|<event-name>
+ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollUp|nop
+	Executes the action when the mouse button has been pressed. The buttons can
+	be given as a x11 button number or an event name, which can be obtained
+	from `libinput debug-events`. Use the command _nop_ to disable the default
+	action (Activate for button1, ContextMenu for button2 and SecondaryActivate
+	for button3).
 
 *tray\_padding* <px> [px]
 	Sets the pixel padding of the system tray. This padding will surround the

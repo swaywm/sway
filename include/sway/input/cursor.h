@@ -103,4 +103,6 @@ uint32_t get_mouse_bindcode(const char *name, char **error);
 // Considers both bindsym and bindcode
 uint32_t get_mouse_button(const char *name, char **error);
 
+const char *get_mouse_button_name(uint32_t button);
+
 #endif

@@ -81,6 +81,12 @@ void free_bar_config(struct bar_config *bar) {
 #if HAVE_TRAY
 	list_free_items_and_destroy(bar->tray_outputs);
 	free(bar->icon_theme);
+
+	struct tray_binding *tray_bind = NULL, *tmp_tray_bind = NULL;
+	wl_list_for_each_safe(tray_bind, tmp_tray_bind, &bar->tray_bindings, link) {
+		wl_list_remove(&tray_bind->link);
+		free(tray_bind);
+	}
 #endif
 	free(bar);
 }
@@ -174,6 +180,7 @@ struct bar_config *default_bar_config(void) {
 
 #if HAVE_TRAY
 	bar->tray_padding = 2;
+	wl_list_init(&bar->tray_bindings);
 #endif
 
 	list_add(config->bars, bar);
