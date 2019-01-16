@@ -1235,3 +1235,19 @@ uint32_t get_mouse_button(const char *name, char **error) {
 	}
 	return button;
 }
+
+const char *get_mouse_button_name(uint32_t button) {
+	const char *name = libevdev_event_code_get_name(EV_KEY, button);
+	if (!name) {
+		if (button == SWAY_SCROLL_UP) {
+			name = "SWAY_SCROLL_UP";
+		} else if (button == SWAY_SCROLL_DOWN) {
+			name = "SWAY_SCROLL_DOWN";
+		} else if (button == SWAY_SCROLL_LEFT) {
+			name = "SWAY_SCROLL_LEFT";
+		} else if (button == SWAY_SCROLL_RIGHT) {
+			name = "SWAY_SCROLL_RIGHT";
+		}
+	}
+	return name;
+}

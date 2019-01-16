@@ -852,15 +852,16 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	}
 
 	json_object *tray_bindings = json_object_new_array();
-	for (int i = 0; i < 10; ++i) {
-		if (bar->tray_bindings[i]) {
-			json_object *bind = json_object_new_object();
-			json_object_object_add(bind, "input_code",
-					json_object_new_int(i));
-			json_object_object_add(bind, "command",
-					json_object_new_string(bar->tray_bindings[i]));
-			json_object_array_add(tray_bindings, bind);
-		}
+	struct tray_binding *tray_bind = NULL;
+	wl_list_for_each(tray_bind, &bar->tray_bindings, link) {
+		json_object *bind = json_object_new_object();
+		json_object_object_add(bind, "input_code",
+				json_object_new_int(event_to_x11_button(tray_bind->button)));
+		json_object_object_add(bind, "event_code",
+				json_object_new_int(tray_bind->button));
+		json_object_object_add(bind, "command",
+				json_object_new_string(tray_bind->command));
+		json_object_array_add(tray_bindings, bind);
 	}
 	if (json_object_array_length(tray_bindings) > 0) {
 		json_object_object_add(json, "tray_bindings", tray_bindings);

@@ -46,27 +46,7 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code) {
 		free_bar_binding(binding);
 		return cmd_results_new(CMD_INVALID, "Unknown button %s", argv[0]);
 	}
-
-	const char *name = libevdev_event_code_get_name(EV_KEY, binding->button);
-	if (!name) {
-		switch (binding->button) {
-		case SWAY_SCROLL_UP:
-			name = "SWAY_SCROLL_UP";
-			break;
-		case SWAY_SCROLL_DOWN:
-			name = "SWAY_SCROLL_DOWN";
-			break;
-		case SWAY_SCROLL_LEFT:
-			name = "SWAY_SCROLL_LEFT";
-			break;
-		case SWAY_SCROLL_RIGHT:
-			name = "SWAY_SCROLL_RIGHT";
-			break;
-		default:
-			// Unreachable
-			break;
-		}
-	}
+	const char *name = get_mouse_button_name(binding->button);
 
 	binding->command = join_args(argv + 1, argc - 1);
 

@@ -78,6 +78,7 @@ struct swaybar_config *init_config(void) {
 
 #if HAVE_TRAY
 	config->tray_padding = 2;
+	wl_list_init(&config->tray_bindings);
 #endif
 
 	return config;
@@ -90,6 +91,16 @@ static void free_binding(struct swaybar_binding *binding) {
 	free(binding->command);
 	free(binding);
 }
+
+#if HAVE_TRAY
+static void free_tray_binding(struct tray_binding *binding) {
+	if (!binding) {
+		return;
+	}
+	free(binding->command);
+	free(binding);
+}
+#endif
 
 void free_config(struct swaybar_config *config) {
 	free(config->status_command);
@@ -111,9 +122,14 @@ void free_config(struct swaybar_config *config) {
 	}
 #if HAVE_TRAY
 	list_free_items_and_destroy(config->tray_outputs);
-	for (int i = 0; i < 10; ++i) {
-		free(config->tray_bindings[i]);
+
+	struct tray_binding *tray_bind = NULL, *tmp_tray_bind = NULL;
+	wl_list_for_each_safe(tray_bind, tmp_tray_bind, &config->tray_bindings,
+			link) {
+		wl_list_remove(&tray_bind->link);
+		free_tray_binding(tray_bind);
 	}
+
 	free(config->icon_theme);
 #endif
 	free(config);

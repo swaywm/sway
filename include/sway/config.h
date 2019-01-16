@@ -260,7 +260,7 @@ struct bar_config {
 
 #if HAVE_TRAY
 	char *icon_theme;
-	const char *tray_bindings[10]; // mouse buttons 0-9
+	struct wl_list tray_bindings; // struct tray_binding::link
 	list_t *tray_outputs; // char *
 	int tray_padding;
 #endif
@@ -271,6 +271,14 @@ struct bar_binding {
 	bool release;
 	char *command;
 };
+
+#if HAVE_TRAY
+struct tray_binding {
+	uint32_t button;
+	const char *command;
+	struct wl_list link; // struct tray_binding::link
+};
+#endif
 
 struct border_colors {
 	float border[4];

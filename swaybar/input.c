@@ -22,6 +22,31 @@ void free_hotspots(struct wl_list *list) {
 	}
 }
 
+uint32_t event_to_x11_button(uint32_t event) {
+	switch (event) {
+	case BTN_LEFT:
+		return 1;
+	case BTN_MIDDLE:
+		return 2;
+	case BTN_RIGHT:
+		return 3;
+	case SWAY_SCROLL_UP:
+		return 4;
+	case SWAY_SCROLL_DOWN:
+		return 5;
+	case SWAY_SCROLL_LEFT:
+		return 6;
+	case SWAY_SCROLL_RIGHT:
+		return 7;
+	case BTN_SIDE:
+		return 8;
+	case BTN_EXTRA:
+		return 9;
+	default:
+		return 0;
+	}
+}
+
 static uint32_t wl_axis_to_button(uint32_t axis, wl_fixed_t value) {
 	bool negative = wl_fixed_to_double(value) < 0;
 	switch (axis) {

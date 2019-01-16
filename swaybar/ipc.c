@@ -313,11 +313,13 @@ static bool ipc_parse_config(
 		int length = json_object_array_length(tray_bindings);
 		for (int i = 0; i < length; ++i) {
 			json_object *bind = json_object_array_get_idx(tray_bindings, i);
-			json_object *button, *command;
-			json_object_object_get_ex(bind, "input_code", &button);
-			json_object_object_get_ex(bind, "command", &command);
-			config->tray_bindings[json_object_get_int(button)] =
-				strdup(json_object_get_string(command));
+			struct tray_binding *binding =
+				calloc(1, sizeof(struct tray_binding));
+			binding->button = json_object_get_int(
+					json_object_object_get(bind, "event_code"));
+			binding->command = strdup(json_object_get_string(
+					json_object_object_get(bind, "command")));
+			wl_list_insert(&config->tray_bindings, &binding->link);
 		}
 	}
 

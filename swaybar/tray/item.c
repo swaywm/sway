@@ -301,8 +301,15 @@ void destroy_sni(struct swaybar_sni *sni) {
 }
 
 static void handle_click(struct swaybar_sni *sni, int x, int y,
-		enum x11_button button, int delta) {
-	const char *method = sni->tray->bar->config->tray_bindings[button];
+		uint32_t button, int delta) {
+	const char *method = NULL;
+	struct tray_binding *binding = NULL;
+	wl_list_for_each(binding, &sni->tray->bar->config->tray_bindings, link) {
+		if (binding->button == button) {
+			method = binding->command;
+			break;
+		}
+	}
 	if (!method) {
 		static const char *default_bindings[10] = {
 			"nop",
@@ -316,7 +323,7 @@ static void handle_click(struct swaybar_sni *sni, int x, int y,
 			"nop",
 			"nop"
 		};
-		method = default_bindings[button];
+		method = default_bindings[event_to_x11_button(button)];
 	}
 	if (strcmp(method, "nop") == 0) {
 		return;
@@ -345,7 +352,7 @@ static int cmp_sni_id(const void *item, const void *cmp_to) {
 
 static enum hotspot_event_handling icon_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
-		int x, int y, enum x11_button button, void *data) {
+		int x, int y, uint32_t button, void *data) {
 	wlr_log(WLR_DEBUG, "Clicked on %s", (char *)data);
 
 	struct swaybar_tray *tray = output->bar->tray;
