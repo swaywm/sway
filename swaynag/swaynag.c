@@ -28,9 +28,10 @@ static bool terminal_execute(char *terminal, char *command) {
 	fprintf(tmp, "#!/bin/sh\nrm %s\n%s", fname, command);
 	fclose(tmp);
 	chmod(fname, S_IRUSR | S_IWUSR | S_IXUSR);
-	char cmd[strlen(terminal) + strlen(" -e ") + strlen(fname) + 1];
+	char *cmd = malloc(sizeof(char) * (strlen(terminal) + strlen(" -e ") + strlen(fname) + 1));
 	sprintf(cmd, "%s -e %s", terminal, fname);
 	execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+	free(cmd);
 	return true;
 }
 

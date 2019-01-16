@@ -61,7 +61,7 @@ int ipc_open_socket(const char *socket_path) {
 }
 
 struct ipc_response *ipc_recv_response(int socketfd) {
-	char data[ipc_header_size];
+	char *data = malloc(sizeof(char) * ipc_header_size);
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 
 	size_t total = 0;
@@ -81,6 +81,8 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	total = 0;
 	memcpy(&response->size, &data32[0], sizeof(data32[0]));
 	memcpy(&response->type, &data32[1], sizeof(data32[1]));
+	free(data);
+
 	char *payload = malloc(response->size + 1);
 	if (!payload) {
 		goto error_2;
@@ -99,6 +101,7 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	return response;
 error_2:
 	free(response);
+	free(payload);
 error_1:
 	wlr_log(WLR_ERROR, "Unable to allocate memory for IPC response");
 	return NULL;
@@ -110,7 +113,7 @@ void free_ipc_response(struct ipc_response *response) {
 }
 
 char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
-	char data[ipc_header_size];
+	char *data = malloc(sizeof(char) * ipc_header_size);
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
 	memcpy(&data32[0], len, sizeof(*len));
@@ -119,6 +122,8 @@ char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint3
 	if (write(socketfd, data, ipc_header_size) == -1) {
 		sway_abort("Unable to send IPC header");
 	}
+
+	free(data);
 
 	if (write(socketfd, payload, *len) == -1) {
 		sway_abort("Unable to send IPC payload");

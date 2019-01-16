@@ -87,11 +87,11 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 		int *baseline, double scale, bool markup, const char *fmt, ...) {
-	char buf[max_chars];
+	char *buf = malloc(sizeof(char) * max_chars);
 
 	va_list args;
 	va_start(args, fmt);
-	if (vsnprintf(buf, sizeof(buf), fmt, args) >= max_chars) {
+	if (vsnprintf(buf, sizeof(char) * max_chars, fmt, args) >= max_chars) {
 		strcpy(&buf[sizeof(buf) - sizeof(overflow)], overflow);
 	}
 	va_end(args);
@@ -103,15 +103,17 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 		*baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
 	}
 	g_object_unref(layout);
+
+	free(buf);
 }
 
 void pango_printf(cairo_t *cairo, const char *font,
 		double scale, bool markup, const char *fmt, ...) {
-	char buf[max_chars];
+	char *buf = malloc(sizeof(char) * max_chars);
 
 	va_list args;
 	va_start(args, fmt);
-	if (vsnprintf(buf, sizeof(buf), fmt, args) >= max_chars) {
+	if (vsnprintf(buf, sizeof(char) * max_chars, fmt, args) >= max_chars) {
 		strcpy(&buf[sizeof(buf) - sizeof(overflow)], overflow);
 	}
 	va_end(args);
@@ -124,4 +126,6 @@ void pango_printf(cairo_t *cairo, const char *font,
 	pango_cairo_update_layout(cairo, layout);
 	pango_cairo_show_layout(cairo, layout);
 	g_object_unref(layout);
+
+	free(buf);
 }

@@ -234,24 +234,28 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	uint8_t buf[ipc_header_size];
+	uint8_t *buf = malloc(sizeof(uint8_t) * ipc_header_size);
 	uint32_t *buf32 = (uint32_t*)(buf + sizeof(ipc_magic));
 	// Should be fully available, because read_available >= ipc_header_size
 	ssize_t received = recv(client_fd, buf, ipc_header_size, 0);
 	if (received == -1) {
 		wlr_log_errno(WLR_INFO, "Unable to receive header from IPC client");
 		ipc_client_disconnect(client);
+		free(buf);
 		return 0;
 	}
 
 	if (memcmp(buf, ipc_magic, sizeof(ipc_magic)) != 0) {
 		wlr_log(WLR_DEBUG, "IPC header check failed");
 		ipc_client_disconnect(client);
+		free(buf);
 		return 0;
 	}
 
 	memcpy(&client->payload_length, &buf32[0], sizeof(buf32[0]));
 	memcpy(&client->current_command, &buf32[1], sizeof(buf32[1]));
+
+	free(buf);
 
 	if (read_available - received >= (long)client->payload_length) {
 		ipc_client_handle_command(client);
@@ -860,7 +864,7 @@ exit_cleanup:
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length) {
 	assert(payload);
 
-	char data[ipc_header_size];
+	char *data = malloc(sizeof(char) * ipc_header_size);
 	uint32_t *data32 = (uint32_t*)(data + sizeof(ipc_magic));
 
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
@@ -875,6 +879,7 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	if (client->write_buffer_size > 4e6) { // 4 MB
 		wlr_log(WLR_ERROR, "Client write buffer too big, disconnecting client");
 		ipc_client_disconnect(client);
+		free(data);
 		return false;
 	}
 
@@ -882,6 +887,7 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	if (!new_buffer) {
 		wlr_log(WLR_ERROR, "Unable to reallocate ipc client write buffer");
 		ipc_client_disconnect(client);
+		free(data);
 		return false;
 	}
 	client->write_buffer = new_buffer;
@@ -890,6 +896,8 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	client->write_buffer_len += ipc_header_size;
 	memcpy(client->write_buffer + client->write_buffer_len, payload, payload_length);
 	client->write_buffer_len += payload_length;
+
+	free(data);
 
 	if (!client->writable_event_source) {
 		client->writable_event_source = wl_event_loop_add_fd(

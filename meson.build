@@ -17,6 +17,7 @@ add_project_arguments(
 		'-Wno-unused-parameter',
 		'-Wno-unused-result',
 		'-Wundef',
+		'-Wvla',
 	],
 	language: 'c',
 )
