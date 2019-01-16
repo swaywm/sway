@@ -10,7 +10,8 @@
 #include "log.h"
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
-static const size_t ipc_header_size = sizeof(ipc_magic)+8;
+
+#define IPC_HEADER_SIZE (sizeof(ipc_magic) + 8)
 
 char *get_socketpath(void) {
 	const char *swaysock = getenv("SWAYSOCK");
@@ -61,12 +62,12 @@ int ipc_open_socket(const char *socket_path) {
 }
 
 struct ipc_response *ipc_recv_response(int socketfd) {
-	char *data = malloc(sizeof(char) * ipc_header_size);
+	char data[IPC_HEADER_SIZE];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 
 	size_t total = 0;
-	while (total < ipc_header_size) {
-		ssize_t received = recv(socketfd, data + total, ipc_header_size - total, 0);
+	while (total < IPC_HEADER_SIZE) {
+		ssize_t received = recv(socketfd, data + total, IPC_HEADER_SIZE - total, 0);
 		if (received <= 0) {
 			sway_abort("Unable to receive IPC response");
 		}
@@ -81,7 +82,6 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	total = 0;
 	memcpy(&response->size, &data32[0], sizeof(data32[0]));
 	memcpy(&response->type, &data32[1], sizeof(data32[1]));
-	free(data);
 
 	char *payload = malloc(response->size + 1);
 	if (!payload) {
@@ -113,17 +113,15 @@ void free_ipc_response(struct ipc_response *response) {
 }
 
 char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
-	char *data = malloc(sizeof(char) * ipc_header_size);
+	char data[IPC_HEADER_SIZE];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
 	memcpy(&data32[0], len, sizeof(*len));
 	memcpy(&data32[1], &type, sizeof(type));
 
-	if (write(socketfd, data, ipc_header_size) == -1) {
+	if (write(socketfd, data, IPC_HEADER_SIZE) == -1) {
 		sway_abort("Unable to send IPC header");
 	}
-
-	free(data);
 
 	if (write(socketfd, payload, *len) == -1) {
 		sway_abort("Unable to send IPC payload");
