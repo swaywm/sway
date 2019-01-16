@@ -387,6 +387,10 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 	if (width->amount) {
 		switch (width->unit) {
 		case RESIZE_UNIT_PPT:
+			if (con->scratchpad && !con->workspace) {
+				return cmd_results_new(CMD_FAILURE,
+						"Cannot resize a hidden scratchpad container by ppt");
+			}
 			// Convert to px
 			width->amount = con->workspace->width * width->amount / 100;
 			width->unit = RESIZE_UNIT_PX;
@@ -407,6 +411,10 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 	if (height->amount) {
 		switch (height->unit) {
 		case RESIZE_UNIT_PPT:
+			if (con->scratchpad && !con->workspace) {
+				return cmd_results_new(CMD_FAILURE,
+						"Cannot resize a hidden scratchpad container by ppt");
+			}
 			// Convert to px
 			height->amount = con->workspace->height * height->amount / 100;
 			height->unit = RESIZE_UNIT_PX;
@@ -589,11 +597,6 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	if (!current) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize nothing");
 	}
-	if (current->scratchpad && !current->workspace) {
-		return cmd_results_new(CMD_FAILURE,
-				"Cannot resize a hidden scratchpad container");
-	}
-
 
 	struct cmd_results *error;
 	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
