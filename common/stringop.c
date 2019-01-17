@@ -78,12 +78,10 @@ int lenient_strcmp(char *a, char *b) {
 list_t *split_string(const char *str, const char *delims) {
 	list_t *res = create_list();
 	char *copy = strdup(str);
-	char *token;
 
-	token = strtok(copy, delims);
-	while(token) {
-		token = strdup(token);
-		list_add(res, token);
+	char *token = strtok(copy, delims);
+	while (token) {
+		list_add(res, strdup(token));
 		token = strtok(NULL, delims);
 	}
 	free(copy);
@@ -268,13 +266,13 @@ char *argsep(char **stringp, const char *delim) {
 			escaped = !escaped;
 		} else if (*end == '\0') {
 			*stringp = NULL;
-			goto found;
+			break;
 		} else if (!in_string && !in_char && !escaped && strchr(delim, *end)) {
 			if (end - start) {
 				*(end++) = 0;
 				*stringp = end + strspn(end, delim);;
 				if (!**stringp) *stringp = NULL;
-				goto found;
+				break;
 			} else {
 				++start;
 				end = start;
@@ -285,6 +283,5 @@ char *argsep(char **stringp, const char *delim) {
 		}
 		++end;
 	}
-	found:
 	return start;
 }
