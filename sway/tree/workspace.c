@@ -158,13 +158,7 @@ void workspace_begin_destroy(struct sway_workspace *workspace) {
 
 	if (workspace->output) {
 		workspace_detach(workspace);
-	} else {
-		int index = list_find(root->saved_workspaces, workspace);
-		if (index != -1) {
-			list_del(root->saved_workspaces, index);
-		}
 	}
-
 	workspace->node.destroying = true;
 	node_set_dirty(&workspace->node);
 }

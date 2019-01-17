@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/backend.h>
+#include <wlr/backend/noop.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
@@ -25,6 +26,7 @@
 #include "sway/config.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/root.h"
 #if HAVE_XWAYLAND
@@ -36,6 +38,7 @@ bool server_privileged_prepare(struct sway_server *server) {
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
+	server->noop_backend = wlr_noop_backend_create(server->wl_display);
 
 	if (!server->backend) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
@@ -115,6 +118,9 @@ bool server_init(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
+
+	struct wlr_output *wlr_output = wlr_noop_add_output(server->noop_backend);
+	root->noop_output = output_create(wlr_output);
 
 	// This may have been set already via -Dtxn-timeout
 	if (!server->txn_timeout_ms) {
