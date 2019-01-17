@@ -57,7 +57,6 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 
-	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	wl_signal_init(&output->events.destroy);
 
 	wl_list_insert(&root->all_outputs, &output->link);
@@ -115,15 +114,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	}
 
 	input_manager_configure_xcursor();
-
-	wl_signal_add(&wlr_output->events.mode, &output->mode);
-	wl_signal_add(&wlr_output->events.transform, &output->transform);
-	wl_signal_add(&wlr_output->events.scale, &output->scale);
-	wl_signal_add(&wlr_output->events.present, &output->present);
-	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
-	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
-
-	output_add_listeners(output);
 
 	wl_signal_emit(&root->events.new_node, &output->node);
 
@@ -233,13 +223,6 @@ void output_disable(struct sway_output *output) {
 	int index = list_find(root->outputs, output);
 	list_del(root->outputs, index);
 
-	wl_list_remove(&output->mode.link);
-	wl_list_remove(&output->transform.link);
-	wl_list_remove(&output->scale.link);
-	wl_list_remove(&output->present.link);
-	wl_list_remove(&output->damage_destroy.link);
-	wl_list_remove(&output->damage_frame.link);
-
 	output->enabled = false;
 
 	arrange_root();
@@ -255,7 +238,6 @@ void output_begin_destroy(struct sway_output *output) {
 	node_set_dirty(&output->node);
 
 	wl_list_remove(&output->link);
-	wl_list_remove(&output->destroy.link);
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
 }
