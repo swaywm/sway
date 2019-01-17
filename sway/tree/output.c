@@ -78,6 +78,12 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	}
 
 	output->enabled = true;
+	if (!apply_output_config(oc, output)) {
+		output->enabled = false;
+		return;
+	}
+
+	output->configured = true;
 	list_add(root->outputs, output);
 
 	output->lx = wlr_output->lx;
@@ -103,8 +109,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		free(ws_name);
 		ipc_event_workspace(NULL, ws, "init");
 	}
-
-	apply_output_config(oc, output);
 
 	if (ws && config->default_orientation == L_NONE) {
 		// Since the output transformation and resolution could have changed

@@ -503,7 +503,18 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
+	if (!output->configured) {
+		return;
+	}
 	if (!output->enabled) {
+		struct output_config *oc = output_find_config(output);
+		if (output->wlr_output->current_mode != NULL &&
+				(!oc || oc->enabled)) {
+			// We want to enable this output, but it didn't work last time,
+			// possibly because we hadn't enough CRTCs. Try again now that the
+			// output has a mode.
+			output_enable(output, oc);
+		}
 		return;
 	}
 	arrange_layers(output);
@@ -592,7 +603,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->damage_destroy.notify = damage_handle_destroy;
 
 	struct output_config *oc = output_find_config(output);
-
 	if (!oc || oc->enabled) {
 		output_enable(output, oc);
 	} else {

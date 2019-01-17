@@ -137,13 +137,12 @@ struct output_config *store_output_config(struct output_config *oc) {
 	return oc;
 }
 
-static void set_mode(struct wlr_output *output, int width, int height,
+static bool set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate) {
 	int mhz = (int)(refresh_rate * 1000);
 	if (wl_list_empty(&output->modes)) {
 		wlr_log(WLR_DEBUG, "Assigning custom mode to %s", output->name);
-		wlr_output_set_custom_mode(output, width, height, mhz);
-		return;
+		return wlr_output_set_custom_mode(output, width, height, mhz);
 	}
 
 	struct wlr_output_mode *mode, *best = NULL;
@@ -158,10 +157,12 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	}
 	if (!best) {
 		wlr_log(WLR_ERROR, "Configured mode for %s not available", output->name);
+		wlr_log(WLR_INFO, "Picking default mode instead");
+		best = wl_container_of(output->modes.prev, mode, link);
 	} else {
 		wlr_log(WLR_DEBUG, "Assigning configured mode to %s", output->name);
-		wlr_output_set_mode(output, best);
 	}
+	return wlr_output_set_mode(output, best);
 }
 
 void terminate_swaybg(pid_t pid) {
@@ -174,33 +175,48 @@ void terminate_swaybg(pid_t pid) {
 	}
 }
 
-void apply_output_config(struct output_config *oc, struct sway_output *output) {
+bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (oc && oc->enabled == 0) {
+	if (oc && !oc->enabled) {
+		// Output is configured to be disabled
 		if (output->enabled) {
 			output_disable(output);
 			wlr_output_layout_remove(root->output_layout, wlr_output);
 		}
 		wlr_output_enable(wlr_output, false);
-		return;
+		return true;
 	} else if (!output->enabled) {
+		// Output is not enabled. Enable it, output_enable will call us again.
 		if (!oc || oc->dpms_state != DPMS_OFF) {
 			wlr_output_enable(wlr_output, true);
 		}
 		output_enable(output, oc);
-		return;
+		return true;
 	}
 
+	bool modeset_success;
 	if (oc && oc->width > 0 && oc->height > 0) {
 		wlr_log(WLR_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
-		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
+		modeset_success =
+			set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
 			wl_container_of(wlr_output->modes.prev, mode, link);
-		wlr_output_set_mode(wlr_output, mode);
+		modeset_success = wlr_output_set_mode(wlr_output, mode);
+	} else {
+		// Output doesn't support modes
+		modeset_success = true;
 	}
+	if (!modeset_success) {
+		// Failed to modeset, maybe the output is missing a CRTC. Leave the
+		// output disabled for now and try again when the output gets the mode
+		// we asked for.
+		wlr_log(WLR_ERROR, "Failed to modeset output %s", wlr_output->name);
+		return false;
+	}
+
 	if (oc && oc->scale > 0) {
 		wlr_log(WLR_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
@@ -264,6 +280,8 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 			break;
 		}
 	}
+
+	return true;
 }
 
 static void default_output_config(struct output_config *oc,
