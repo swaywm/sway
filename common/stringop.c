@@ -1,13 +1,13 @@
 #define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
+#include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <ctype.h>
-#include "stringop.h"
-#include "log.h"
-#include "string.h"
 #include "list.h"
+#include "log.h"
+#include "stringop.h"
 
 static const char whitespace[] = " \f\n\r\t\v";
 
