@@ -104,7 +104,7 @@ static void render_frame(struct swaybg_state *state) {
 
 	wl_surface_set_buffer_scale(state->surface, state->output->scale);
 	wl_surface_attach(state->surface, state->current_buffer->buffer, 0, 0);
-	wl_surface_damage(state->surface, 0, 0, state->width, state->height);
+	wl_surface_damage_buffer(state->surface, 0, 0, INT32_MAX, INT32_MAX);
 	wl_surface_commit(state->surface);
 }
 
@@ -223,7 +223,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 	struct swaybg_state *state = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		state->compositor =
-			wl_registry_bind(registry, name, &wl_compositor_interface, 3);
+			wl_registry_bind(registry, name, &wl_compositor_interface, 4);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		state->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
