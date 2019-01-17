@@ -386,7 +386,7 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 void output_damage_whole(struct sway_output *output) {
 	// The output can exist with no wlr_output if it's just been disconnected
 	// and the transaction to evacuate it has't completed yet.
-	if (output && output->wlr_output) {
+	if (output && output->wlr_output && output->damage) {
 		wlr_output_damage_add_whole(output->damage);
 	}
 }

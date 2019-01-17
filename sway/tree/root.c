@@ -39,7 +39,6 @@ struct sway_root *root_create(void) {
 	wl_signal_init(&root->events.new_node);
 	root->outputs = create_list();
 	root->scratchpad = create_list();
-	root->saved_workspaces = create_list();
 
 	root->output_layout_change.notify = output_layout_handle_change;
 	wl_signal_add(&root->output_layout->events.change,
@@ -50,7 +49,6 @@ struct sway_root *root_create(void) {
 void root_destroy(struct sway_root *root) {
 	wl_list_remove(&root->output_layout_change.link);
 	list_free(root->scratchpad);
-	list_free(root->saved_workspaces);
 	list_free(root->outputs);
 	wlr_output_layout_destroy(root->output_layout);
 	free(root);
@@ -292,8 +290,8 @@ void root_for_each_container(void (*f)(struct sway_container *con, void *data),
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->saved_workspaces->length; ++i) {
-		struct sway_workspace *ws = root->saved_workspaces->items[i];
+	for (int i = 0; i < root->noop_output->workspaces->length; ++i) {
+		struct sway_workspace *ws = root->noop_output->workspaces->items[i];
 		workspace_for_each_container(ws, f, data);
 	}
 }
@@ -345,8 +343,8 @@ struct sway_container *root_find_container(
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->saved_workspaces->length; ++i) {
-		struct sway_workspace *ws = root->saved_workspaces->items[i];
+	for (int i = 0; i < root->noop_output->workspaces->length; ++i) {
+		struct sway_workspace *ws = root->noop_output->workspaces->items[i];
 		if ((result = workspace_find_container(ws, test, data))) {
 			return result;
 		}

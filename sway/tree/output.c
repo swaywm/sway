@@ -41,12 +41,12 @@ static void restore_workspaces(struct sway_output *output) {
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->saved_workspaces->length; ++i) {
-		struct sway_workspace *ws = root->saved_workspaces->items[i];
+	while (root->noop_output->workspaces->length) {
+		struct sway_workspace *ws = root->noop_output->workspaces->items[0];
+		workspace_detach(ws);
 		output_add_workspace(output, ws);
 		ipc_event_workspace(NULL, ws, "move");
 	}
-	root->saved_workspaces->length = 0;
 
 	output_sort_workspaces(output);
 }
@@ -161,6 +161,9 @@ static void output_evacuate(struct sway_output *output) {
 		if (!new_output) {
 			new_output = fallback_output;
 		}
+		if (!new_output) {
+			new_output = root->noop_output;
+		}
 
 		if (workspace_is_empty(workspace)) {
 			// If floating is not empty, there are sticky containers to move
@@ -171,14 +174,10 @@ static void output_evacuate(struct sway_output *output) {
 			continue;
 		}
 
-		if (new_output) {
-			workspace_output_add_priority(workspace, new_output);
-			output_add_workspace(new_output, workspace);
-			output_sort_workspaces(new_output);
-			ipc_event_workspace(NULL, workspace, "move");
-		} else {
-			list_add(root->saved_workspaces, workspace);
-		}
+		workspace_output_add_priority(workspace, new_output);
+		output_add_workspace(new_output, workspace);
+		output_sort_workspaces(new_output);
+		ipc_event_workspace(NULL, workspace, "move");
 	}
 }
 

@@ -31,7 +31,9 @@ struct sway_root {
 
 	list_t *outputs; // struct sway_output
 	list_t *scratchpad; // struct sway_container
-	list_t *saved_workspaces; // For when there's no connected outputs
+
+	// For when there's no connected outputs
+	struct sway_output *noop_output;
 
 	struct {
 		struct wl_signal new_node;

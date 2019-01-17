@@ -518,9 +518,10 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 		return node->sway_container->workspace;
 	}
 
-	// If there's no focus_inactive workspace then we must be running without
-	// any outputs connected
-	return root->saved_workspaces->items[0];
+	// When there's no outputs connected, the above should match a workspace on
+	// the noop output.
+	sway_assert(false, "Expected to find a workspace");
+	return NULL;
 }
 
 static bool should_focus(struct sway_view *view) {
