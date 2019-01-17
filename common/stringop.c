@@ -150,29 +150,6 @@ void free_argv(int argc, char **argv) {
 	free(argv);
 }
 
-char *code_strstr(const char *haystack, const char *needle) {
-	/* TODO */
-	return strstr(haystack, needle);
-}
-
-char *code_strchr(const char *str, char delimiter) {
-	int in_string = 0, in_character = 0;
-	int i = 0;
-	while (str[i] != '\0') {
-		if (str[i] == '"' && !in_character) {
-			in_string = !in_string;
-		} else if (str[i] == '\'' && !in_string) {
-			in_character = !in_character;
-		} else if (!in_character && !in_string) {
-			if (str[i] == delimiter) {
-				return (char *)str + i;
-			}
-		}
-		++i;
-	}
-	return NULL;
-}
-
 int unescape_string(char *string) {
 	/* TODO: More C string escapes */
 	int len = strlen(string);
@@ -276,84 +253,6 @@ char *join_args(char **argv, int argc) {
 	return res;
 }
 
-static bool has_whitespace(const char *str) {
-	while (*str) {
-		if (isspace(*str)) {
-			return true;
-		}
-		++str;
-	}
-	return false;
-}
-
-/**
- * Add quotes around any argv with whitespaces.
- */
-void add_quotes(char **argv, int argc) {
-	int i;
-	for (i = 0; i < argc; ++i) {
-		if (has_whitespace(argv[i])) {
-			int len = strlen(argv[i]) + 3;
-			char *tmp = argv[i];
-			argv[i] = malloc(len * sizeof(char));
-			snprintf(argv[i], len, "\"%s\"", tmp);
-			free(tmp);
-		}
-	}
-}
-
-/*
- * Join a list of strings, adding separator in between. Separator can be NULL.
- */
-char *join_list(list_t *list, char *separator) {
-	if (!sway_assert(list != NULL, "list != NULL") || list->length == 0) {
-		return NULL;
-	}
-
-	size_t len = 1; // NULL terminator
-	size_t sep_len = 0;
-	if (separator != NULL) {
-		sep_len = strlen(separator);
-		len += (list->length - 1) * sep_len;
-	}
-
-	for (int i = 0; i < list->length; i++) {
-		len += strlen(list->items[i]);
-	}
-
-	char *res = malloc(len);
-
-	char *p = res + strlen(list->items[0]);
-	strcpy(res, list->items[0]);
-
-	for (int i = 1; i < list->length; i++) {
-		if (sep_len) {
-			memcpy(p, separator, sep_len);
-			p += sep_len;
-		}
-		strcpy(p, list->items[i]);
-		p += strlen(list->items[i]);
-	}
-
-	*p = '\0';
-
-	return res;
-}
-
-char *cmdsep(char **stringp, const char *delim) {
-	// skip over leading delims
-	char *head = *stringp + strspn(*stringp, delim);
-	// Find end token
-	char *tail = *stringp += strcspn(*stringp, delim);
-	// Set stringp to beginning of next token
-	*stringp += strspn(*stringp, delim);
-	// Set stringp to null if last token
-	if (!**stringp) *stringp = NULL;
-	// Nullify end of first token
-	*tail = 0;
-	return head;
-}
-
 char *argsep(char **stringp, const char *delim) {
 	char *start = *stringp;
 	char *end = start;
@@ -388,18 +287,4 @@ char *argsep(char **stringp, const char *delim) {
 	}
 	found:
 	return start;
-}
-
-const char *strcasestr(const char *haystack, const char *needle) {
-	size_t needle_len = strlen(needle);
-	const char *pos = haystack;
-	const char *end = pos + strlen(haystack) - needle_len;
-
-	while (pos <= end) {
-		if (strncasecmp(pos, needle, needle_len) == 0) {
-			return pos;
-		}
-		++pos;
-	}
-	return NULL;
 }
