@@ -4,7 +4,6 @@
 #include "list.h"
 
 void strip_whitespace(char *str);
-char *strip_comments(char *str);
 void strip_quotes(char *str);
 
 // strcat that does nothing if dest or src is NULL
@@ -21,22 +20,10 @@ list_t *split_string(const char *str, const char *delims);
 char **split_args(const char *str, int *argc);
 void free_argv(int argc, char **argv);
 
-char *code_strchr(const char *string, char delimiter);
-char *code_strstr(const char *haystack, const char *needle);
 int unescape_string(char *string);
 char *join_args(char **argv, int argc);
-char *join_list(list_t *list, char *separator);
 
-/**
- * Add quotes around any argv with whitespaces.
- */
-void add_quotes(char **argv, int argc);
-
-// split string into 2 by delim.
-char *cmdsep(char **stringp, const char *delim);
 // Split string into 2 by delim, handle quotes
 char *argsep(char **stringp, const char *delim);
-
-const char *strcasestr(const char *haystack, const char *needle);
 
 #endif

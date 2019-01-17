@@ -301,6 +301,43 @@ static list_t *load_themes_in_dir(char *basedir) {
 	return themes;
 }
 
+static void log_loaded_themes(list_t *themes) {
+	if (themes->length == 0) {
+		sway_log(SWAY_INFO, "Warning: no icon themes loaded");
+		return;
+	}
+
+	const char *sep = ", ";
+	size_t sep_len = strlen(sep);
+
+	size_t len = 1 - sep_len;
+	for (int i = 0; i < themes->length; ++i) {
+		struct icon_theme *theme = themes->items[i];
+		len += strlen(theme->name) + sep_len;
+	}
+
+	char *str = malloc(len);
+	if (!str) {
+		return;
+	}
+	char *p = str;
+	for (int i = 0; i < themes->length; ++i) {
+		if (i > 0) {
+			memcpy(p, sep, sep_len);
+			p += sep_len;
+		}
+
+		struct icon_theme *theme = themes->items[i];
+		size_t name_len = strlen(theme->name);
+		memcpy(p, theme->name, name_len);
+		p += name_len;
+	}
+	*p = '\0';
+
+	sway_log(SWAY_DEBUG, "Loaded icon themes: %s", str);
+	free(str);
+}
+
 void init_themes(list_t **themes, list_t **basedirs) {
 	*basedirs = get_basedirs();
 
@@ -311,15 +348,7 @@ void init_themes(list_t **themes, list_t **basedirs) {
 		list_free(dir_themes);
 	}
 
-	list_t *theme_names = create_list();
-	for (int i = 0; i < (*themes)->length; ++i) {
-		struct icon_theme *theme = (*themes)->items[i];
-		list_add(theme_names, theme->name);
-	}
-	char *theme_list = join_list(theme_names, ", ");
-	sway_log(SWAY_DEBUG, "Loaded themes: %s", theme_list);
-	free(theme_list);
-	list_free(theme_names);
+	log_loaded_themes(*themes);
 }
 
 void finish_themes(list_t *themes, list_t *basedirs) {
