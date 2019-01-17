@@ -9,7 +9,6 @@ lib_sway_common = static_library(
 		'list.c',
 		'pango.c',
 		'stringop.c',
-		'unicode.c',
 		'util.c'
 	),
 	dependencies: [
