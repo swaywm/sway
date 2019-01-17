@@ -2,6 +2,7 @@ project(
 	'sway',
 	'c',
 	license: 'MIT',
+	meson_version: '>=0.48.0',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -53,21 +54,26 @@ libpam         = cc.find_library('pam', required: false)
 crypt          = cc.find_library('crypt', required: false)
 systemd        = dependency('libsystemd', required: false)
 elogind        = dependency('libelogind', required: false)
+xcb            = dependency('xcb', required: get_option('xwayland'))
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git            = find_program('git', required: false)
 
+have_xwayland = xcb.found()
+
+tray_deps_found = systemd.found() or elogind.found()
+if get_option('tray').enabled() and not tray_deps_found
+	error('Building with -Dtray=enabled, but libsystemd and libelogind have not been not found')
+endif
+have_tray = (not get_option('tray').disabled()) and tray_deps_found
+
 conf_data = configuration_data()
 
-conf_data.set10('HAVE_XWAYLAND', get_option('enable-xwayland'))
-if get_option('enable-xwayland')
-	xcb = dependency('xcb')
-endif
-
+conf_data.set10('HAVE_XWAYLAND', have_xwayland)
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
-conf_data.set10('HAVE_TRAY', get_option('enable-tray') and (systemd.found() or elogind.found()))
+conf_data.set10('HAVE_TRAY', have_tray)
 
 if not systemd.found() and not elogind.found()
 	warning('The sway binary must be setuid when compiled without (e)logind')

@@ -194,7 +194,7 @@ sway_deps = [
 	xkbcommon,
 ]
 
-if get_option('enable-xwayland')
+if have_xwayland
 	sway_sources += 'desktop/xwayland.c'
 	sway_deps += xcb
 endif
