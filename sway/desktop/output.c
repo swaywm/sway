@@ -359,8 +359,7 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_frame);
-
-	if (!output->wlr_output->enabled) {
+	if (!output->enabled || !output->wlr_output->enabled) {
 		return;
 	}
 
@@ -475,6 +474,9 @@ void output_damage_whole_container(struct sway_output *output,
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_destroy);
+	if (!output->enabled) {
+		return;
+	}
 	output_disable(output);
 	transaction_commit_dirty();
 }
@@ -488,11 +490,22 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	}
 	output_begin_destroy(output);
 
+	wl_list_remove(&output->destroy.link);
+	wl_list_remove(&output->mode.link);
+	wl_list_remove(&output->transform.link);
+	wl_list_remove(&output->scale.link);
+	wl_list_remove(&output->present.link);
+	wl_list_remove(&output->damage_destroy.link);
+	wl_list_remove(&output->damage_frame.link);
+
 	transaction_commit_dirty();
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
+	if (!output->enabled) {
+		return;
+	}
 	arrange_layers(output);
 	arrange_output(output);
 	transaction_commit_dirty();
@@ -500,6 +513,9 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
+	if (!output->enabled) {
+		return;
+	}
 	arrange_layers(output);
 	arrange_output(output);
 	transaction_commit_dirty();
@@ -512,6 +528,9 @@ static void update_textures(struct sway_container *con, void *data) {
 
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
+	if (!output->enabled) {
+		return;
+	}
 	arrange_layers(output);
 	output_for_each_container(output, update_textures, NULL);
 	arrange_output(output);
@@ -529,6 +548,10 @@ static void send_presented_iterator(struct sway_output *output,
 static void handle_present(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, present);
 	struct wlr_output_event_present *output_event = data;
+
+	if (!output->enabled) {
+		return;
+	}
 
 	struct wlr_presentation_event event = {
 		.output = output->wlr_output,
@@ -552,7 +575,21 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	}
 	output->server = server;
 	output->damage = wlr_output_damage_create(wlr_output);
+
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
+	wl_signal_add(&wlr_output->events.mode, &output->mode);
+	output->mode.notify = handle_mode;
+	wl_signal_add(&wlr_output->events.transform, &output->transform);
+	output->transform.notify = handle_transform;
+	wl_signal_add(&wlr_output->events.scale, &output->scale);
+	output->scale.notify = handle_scale;
+	wl_signal_add(&wlr_output->events.present, &output->present);
+	output->present.notify = handle_present;
+	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
+	output->damage_frame.notify = damage_handle_frame;
+	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
+	output->damage_destroy.notify = damage_handle_destroy;
 
 	struct output_config *oc = output_find_config(output);
 
@@ -563,13 +600,4 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	}
 
 	transaction_commit_dirty();
-}
-
-void output_add_listeners(struct sway_output *output) {
-	output->mode.notify = handle_mode;
-	output->transform.notify = handle_transform;
-	output->scale.notify = handle_scale;
-	output->present.notify = handle_present;
-	output->damage_frame.notify = damage_handle_frame;
-	output->damage_destroy.notify = damage_handle_destroy;
 }
