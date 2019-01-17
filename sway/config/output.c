@@ -232,28 +232,21 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_log(WLR_DEBUG, "Setting background for output %s to %s",
 			wlr_output->name, oc->background);
 
-		size_t len = snprintf(NULL, 0, "%s \"%s\" \"%s\" %s %s",
-			config->swaybg_command, wlr_output->name, oc->background,
+		char *const cmd[] = {
+			config->swaybg_command,
+			wlr_output->name,
+			oc->background,
 			oc->background_option,
-			oc->background_fallback ? oc->background_fallback : "");
-		char *command = malloc(len + 1);
-		if (!command) {
-			wlr_log(WLR_DEBUG, "Unable to allocate swaybg command");
-			return;
-		}
-		snprintf(command, len + 1, "%s \"%s\" \"%s\" %s %s",
-			config->swaybg_command, wlr_output->name, oc->background,
-			oc->background_option,
-			oc->background_fallback ? oc->background_fallback : "");
-		wlr_log(WLR_DEBUG, "-> %s", command);
+			oc->background_fallback ? oc->background_fallback : NULL,
+			NULL,
+		};
 
-		char *const cmd[] = { "sh", "-c", command, NULL };
 		output->bg_pid = fork();
-		if (output->bg_pid == 0) {
+		if (output->bg_pid < 0) {
+			wlr_log_errno(WLR_ERROR, "fork failed");
+		} else if (output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
 			wlr_log_errno(WLR_ERROR, "Failed to execute swaybg");
-		} else {
-			free(command);
 		}
 	}
 
