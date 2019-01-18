@@ -2,6 +2,7 @@ project(
 	'sway',
 	'c',
 	license: 'MIT',
+	meson_version: '>=0.48.0',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -45,37 +46,39 @@ xkbcommon      = dependency('xkbcommon')
 cairo          = dependency('cairo')
 pango          = dependency('pango')
 pangocairo     = dependency('pangocairo')
-gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: false)
+gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman         = dependency('pixman-1')
 libevdev       = dependency('libevdev')
 libinput       = dependency('libinput', version: '>=1.6.0')
-libpam         = cc.find_library('pam', required: false)
-crypt          = cc.find_library('crypt', required: false)
 systemd        = dependency('libsystemd', required: false)
 elogind        = dependency('libelogind', required: false)
+xcb            = dependency('xcb', required: get_option('xwayland'))
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git            = find_program('git', required: false)
 
+have_xwayland = xcb.found()
+
+tray_deps_found = systemd.found() or elogind.found()
+if get_option('tray').enabled() and not tray_deps_found
+	error('Building with -Dtray=enabled, but libsystemd and libelogind have not been not found')
+endif
+have_tray = (not get_option('tray').disabled()) and tray_deps_found
+
 conf_data = configuration_data()
 
-conf_data.set10('HAVE_XWAYLAND', get_option('enable-xwayland'))
-if get_option('enable-xwayland')
-	xcb = dependency('xcb')
-endif
-
+conf_data.set10('HAVE_XWAYLAND', have_xwayland)
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
-conf_data.set10('HAVE_TRAY', get_option('enable-tray') and (systemd.found() or elogind.found()))
+conf_data.set10('HAVE_TRAY', have_tray)
 
 if not systemd.found() and not elogind.found()
 	warning('The sway binary must be setuid when compiled without (e)logind')
 	warning('You must do this manually post-install: chmod a+s /path/to/sway')
 endif
 
-scdoc = find_program('scdoc', required: false)
-
+scdoc = find_program('scdoc', required: get_option('man-pages'))
 if scdoc.found()
 	sh = find_program('sh')
 	mandir = get_option('mandir')
@@ -123,17 +126,6 @@ else
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
-if get_option('use_rpath')
-	if get_option('custom_rpath') == ''
-		# default to platform specific libdir, one level up from the binary
-		rpathdir = join_paths('$ORIGIN', '..', '$LIB')
-	else
-		rpathdir = get_option('custom_rpath')
-	endif
-else
-	rpathdir = ''
-endif
-
 sway_inc = include_directories('include')
 
 subdir('include')
@@ -180,7 +172,7 @@ install_data(
 	install_dir: datadir + '/wayland-sessions'
 )
 
-if (get_option('default-wallpaper'))
+if get_option('default-wallpaper')
 	wallpaper_files = files(
 		'assets/Sway_Wallpaper_Blue_768x1024.png',
 		'assets/Sway_Wallpaper_Blue_768x1024_Portrait.png',
@@ -196,7 +188,7 @@ if (get_option('default-wallpaper'))
 	install_data(wallpaper_files, install_dir: wallpaper_install_dir)
 endif
 
-if (get_option('zsh-completions'))
+if get_option('zsh-completions')
 	zsh_files = files(
 		'completions/zsh/_sway',
 		'completions/zsh/_swaymsg',
@@ -206,7 +198,7 @@ if (get_option('zsh-completions'))
 	install_data(zsh_files, install_dir: zsh_install_dir)
 endif
 
-if (get_option('bash-completions'))
+if get_option('bash-completions')
 	bash_files = files(
 		'completions/bash/sway',
 		'completions/bash/swaybar',
@@ -217,7 +209,7 @@ if (get_option('bash-completions'))
 	install_data(bash_files, install_dir: bash_install_dir)
 endif
 
-if (get_option('fish-completions'))
+if get_option('fish-completions')
 	fish_files = files(
 		'completions/fish/sway.fish',
 		'completions/fish/swaymsg.fish',

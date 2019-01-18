@@ -1,4 +1,4 @@
-tray_files = get_option('enable-tray') ? [
+tray_files = have_tray ? [
 	'tray/host.c',
 	'tray/icon.c',
 	'tray/item.c',
@@ -19,7 +19,7 @@ swaybar_deps = [
 	wayland_cursor,
 	wlroots,
 ]
-if get_option('enable-tray')
+if have_tray
 	if systemd.found()
 		swaybar_deps += systemd
 	elif elogind.found()
@@ -42,6 +42,5 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: swaybar_deps,
 	link_with: [lib_sway_common, lib_sway_client],
-	install_rpath : rpathdir,
 	install: true
 )

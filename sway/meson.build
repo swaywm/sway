@@ -194,7 +194,7 @@ sway_deps = [
 	xkbcommon,
 ]
 
-if get_option('enable-xwayland')
+if have_xwayland
 	sway_sources += 'desktop/xwayland.c'
 	sway_deps += xcb
 endif
@@ -205,6 +205,5 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: sway_deps,
 	link_with: [lib_sway_common],
-	install_rpath : rpathdir,
 	install: true
 )
