@@ -42,6 +42,5 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: swaybar_deps,
 	link_with: [lib_sway_common, lib_sway_client],
-	install_rpath : rpathdir,
 	install: true
 )
