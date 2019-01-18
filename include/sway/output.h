@@ -31,7 +31,7 @@ struct sway_output {
 	int lx, ly;
 	int width, height;
 
-	bool enabled;
+	bool enabled, configured;
 	list_t *workspaces;
 
 	struct sway_output_state current;
