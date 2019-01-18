@@ -524,7 +524,7 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
-	if (!output->enabled) {
+	if (!output->enabled || !output->configured) {
 		return;
 	}
 	arrange_layers(output);
@@ -539,7 +539,7 @@ static void update_textures(struct sway_container *con, void *data) {
 
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
-	if (!output->enabled) {
+	if (!output->enabled || !output->configured) {
 		return;
 	}
 	arrange_layers(output);
