@@ -228,6 +228,7 @@ void output_disable(struct sway_output *output) {
 	list_del(root->outputs, index);
 
 	output->enabled = false;
+	output->configured = false;
 
 	arrange_root();
 }
