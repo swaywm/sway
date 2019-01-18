@@ -34,8 +34,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 	struct output_config *output = config->handler_context.output_config;
 
 	if (strcasecmp(argv[1], "solid_color") == 0) {
-		output->background = calloc(1, strlen(argv[0]) + 3);
-		snprintf(output->background, strlen(argv[0]) + 3, "\"%s\"", argv[0]);
+		output->background = strdup(argv[0]);
 		output->background_option = strdup("solid_color");
 		output->background_fallback = NULL;
 		argc -= 2; argv += 2;
@@ -119,16 +118,6 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 					src);
 			free(src);
 		} else {
-			// Escape double quotes in the final path for swaybg
-			for (size_t i = 0; i < strlen(src); i++) {
-				if (src[i] == '"') {
-					src = realloc(src, strlen(src) + 2);
-					memmove(src + i + 1, src + i, strlen(src + i) + 1);
-					*(src + i) = '\\';
-					i++;
-				}
-			}
-
 			output->background = src;
 			output->background_option = strdup(mode);
 		}
@@ -136,9 +125,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 		output->background_fallback = NULL;
 		if (argc && *argv[0] == '#') {
-			output->background_fallback = calloc(1, strlen(argv[0]) + 3);
-			snprintf(output->background_fallback, strlen(argv[0]) + 3,
-					"\"%s\"", argv[0]);
+			output->background_fallback = strdup(argv[0]);
 			argc--; argv++;
 
 			if (!can_access) {
@@ -153,4 +140,3 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 	config->handler_context.leftovers.argv = argv;
 	return NULL;
 }
-
