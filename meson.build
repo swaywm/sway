@@ -46,7 +46,7 @@ xkbcommon      = dependency('xkbcommon')
 cairo          = dependency('cairo')
 pango          = dependency('pango')
 pangocairo     = dependency('pangocairo')
-gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: false)
+gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman         = dependency('pixman-1')
 libevdev       = dependency('libevdev')
 libinput       = dependency('libinput', version: '>=1.6.0')
@@ -80,8 +80,7 @@ if not systemd.found() and not elogind.found()
 	warning('You must do this manually post-install: chmod a+s /path/to/sway')
 endif
 
-scdoc = find_program('scdoc', required: false)
-
+scdoc = find_program('scdoc', required: get_option('man-pages'))
 if scdoc.found()
 	sh = find_program('sh')
 	mandir = get_option('mandir')
