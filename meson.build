@@ -172,7 +172,7 @@ install_data(
 	install_dir: datadir + '/wayland-sessions'
 )
 
-if (get_option('default-wallpaper'))
+if get_option('default-wallpaper')
 	wallpaper_files = files(
 		'assets/Sway_Wallpaper_Blue_768x1024.png',
 		'assets/Sway_Wallpaper_Blue_768x1024_Portrait.png',
@@ -188,7 +188,7 @@ if (get_option('default-wallpaper'))
 	install_data(wallpaper_files, install_dir: wallpaper_install_dir)
 endif
 
-if (get_option('zsh-completions'))
+if get_option('zsh-completions')
 	zsh_files = files(
 		'completions/zsh/_sway',
 		'completions/zsh/_swaymsg',
@@ -198,7 +198,7 @@ if (get_option('zsh-completions'))
 	install_data(zsh_files, install_dir: zsh_install_dir)
 endif
 
-if (get_option('bash-completions'))
+if get_option('bash-completions')
 	bash_files = files(
 		'completions/bash/sway',
 		'completions/bash/swaybar',
@@ -209,7 +209,7 @@ if (get_option('bash-completions'))
 	install_data(bash_files, install_dir: bash_install_dir)
 endif
 
-if (get_option('fish-completions'))
+if get_option('fish-completions')
 	fish_files = files(
 		'completions/fish/sway.fish',
 		'completions/fish/swaymsg.fish',
