@@ -36,7 +36,6 @@ endif
 
 jsonc          = dependency('json-c', version: '>=0.13')
 pcre           = dependency('libpcre')
-wlroots        = dependency('wlroots', fallback: ['wlroots', 'wlroots'])
 wayland_server = dependency('wayland-server')
 wayland_client = dependency('wayland-client')
 wayland_cursor = dependency('wayland-cursor')
@@ -57,7 +56,21 @@ math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git            = find_program('git', required: false)
 
-have_xwayland = xcb.found()
+# Try first to find wlroots as a subproject, then as a system dependency
+wlroots_proj = subproject('wlroots', required: false)
+if wlroots_proj.found()
+	wlroots = wlroots_proj.get_variable('wlroots')
+	wlroots_conf = wlroots_proj.get_variable('conf_data')
+	wlroots_has_xwayland = wlroots_conf.get('WLR_HAS_XWAYLAND') == 1
+else
+	wlroots = dependency('wlroots')
+	wlroots_has_xwayland = cc.get_define('WLR_HAS_XWAYLAND', prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
+endif
+
+if get_option('xwayland').enabled() and not wlroots_has_xwayland
+	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
+endif
+have_xwayland = xcb.found() and wlroots_has_xwayland
 
 tray_deps_found = systemd.found() or elogind.found()
 if get_option('tray').enabled() and not tray_deps_found
