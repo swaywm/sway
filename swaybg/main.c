@@ -194,8 +194,7 @@ static void xdg_output_handle_name(void *data,
 		struct zxdg_output_v1 *xdg_output, const char *name) {
 	struct swaybg_output *output = data;
 	struct swaybg_state *state = output->state;
-	if (strcmp(name, state->args->output) == 0) {
-		assert(state->output == NULL);
+	if (strcmp(name, state->args->output) == 0 && state->output == NULL) {
 		state->output = output;
 	}
 }
