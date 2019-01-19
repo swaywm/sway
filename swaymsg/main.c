@@ -12,10 +12,25 @@
 #include <json-c/json.h>
 #include "ipc-client.h"
 #include "log.h"
-#include "stringop.h"
 
 void sway_terminate(int exit_code) {
 	exit(exit_code);
+}
+
+static char *join_args(char **argv, int argc) {
+	int len = 0, i;
+	for (i = 0; i < argc; ++i) {
+		len += strlen(argv[i]) + 1;
+	}
+	char *res = malloc(len);
+	len = 0;
+	for (i = 0; i < argc; ++i) {
+		strcpy(res + len, argv[i]);
+		len += strlen(argv[i]);
+		res[len++] = ' ';
+	}
+	res[len - 1] = '\0';
+	return res;
 }
 
 static bool success_object(json_object *result) {
