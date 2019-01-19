@@ -305,7 +305,7 @@ char *swaynag_get_config_path(void) {
 	};
 
 	char *config_home = getenv("XDG_CONFIG_HOME");
-	if (!config_home || *config_home) {
+	if (!config_home || config_home[0] == '\0') {
 		config_paths[1] = "$HOME/.config/swaynag/config";
 	}
 
