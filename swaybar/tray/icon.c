@@ -191,8 +191,12 @@ static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 	size_t path_len = snprintf(NULL, 0, "%s/%s/index.theme", basedir,
 			theme_name) + 1;
 	char *path = malloc(path_len);
+	if (!path) {
+		return NULL;
+	}
 	snprintf(path, path_len, "%s/%s/index.theme", basedir, theme_name);
 	FILE *theme_file = fopen(path, "r");
+	free(path);
 	if (!theme_file) {
 		return NULL;
 	}
@@ -293,6 +297,7 @@ static list_t *load_themes_in_dir(char *basedir) {
 			list_add(themes, theme);
 		}
 	}
+	closedir(dir);
 	return themes;
 }
 
@@ -311,7 +316,9 @@ void init_themes(list_t **themes, list_t **basedirs) {
 		struct icon_theme *theme = (*themes)->items[i];
 		list_add(theme_names, theme->name);
 	}
-	wlr_log(WLR_DEBUG, "Loaded themes: %s", join_list(theme_names, ", "));
+	char *theme_list = join_list(theme_names, ", ");
+	wlr_log(WLR_DEBUG, "Loaded themes: %s", theme_list);
+	free(theme_list);
 	list_free(theme_names);
 }
 
