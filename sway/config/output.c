@@ -234,13 +234,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_output_layout_add_auto(root->output_layout, wlr_output);
 	}
 
-	int output_i;
-	for (output_i = 0; output_i < root->outputs->length; ++output_i) {
-		if (root->outputs->items[output_i] == output) {
-			break;
-		}
-	}
-
 	if (output->bg_pid != 0) {
 		terminate_swaybg(output->bg_pid);
 	}
