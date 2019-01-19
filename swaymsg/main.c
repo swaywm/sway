@@ -10,9 +10,9 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <json-c/json.h>
-#include "stringop.h"
 #include "ipc-client.h"
 #include "log.h"
+#include "stringop.h"
 
 void sway_terminate(int exit_code) {
 	exit(exit_code);
@@ -434,9 +434,16 @@ int main(int argc, char **argv) {
 	}
 
 	int ret = 0;
-	int socketfd = ipc_open_socket(socket_path);
+	const char *error = NULL;
+	int socketfd = ipc_open_socket(socket_path, &error);
+	if (socketfd == -1) {
+		sway_abort("Error opening socket '%s': %s", socket_path, error);
+	}
 	uint32_t len = strlen(command);
-	char *resp = ipc_single_command(socketfd, type, command, &len);
+	char *resp = ipc_single_command(socketfd, type, command, &len, &error);
+	if (!resp) {
+		sway_abort("Error invoking command '%s': %s", command, error);
+	}
 	if (!quiet) {
 		// pretty print the json
 		json_object *obj = json_tokener_parse(resp);
@@ -466,7 +473,10 @@ int main(int argc, char **argv) {
 
 	if (type == IPC_SUBSCRIBE && ret == 0) {
 		do {
-			struct ipc_response *reply = ipc_recv_response(socketfd);
+			struct ipc_response *reply = ipc_recv_response(socketfd, &error);
+			if (!resp) {
+				sway_abort("Error receiving response: %s", error);
+			}
 			if (!reply) {
 				break;
 			}

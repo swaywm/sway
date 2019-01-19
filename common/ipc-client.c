@@ -7,7 +7,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include "ipc-client.h"
-#include "log.h"
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
@@ -53,23 +52,26 @@ char *get_socketpath(void) {
 	return NULL;
 }
 
-int ipc_open_socket(const char *socket_path) {
+int ipc_open_socket(const char *socket_path, const char **error) {
 	struct sockaddr_un addr;
 	int socketfd;
 	if ((socketfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-		sway_abort("Unable to open Unix socket");
+		*error = "Unable to open Unix socket";
+		return -1;
 	}
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 	addr.sun_path[sizeof(addr.sun_path) - 1] = 0;
 	int l = sizeof(struct sockaddr_un);
 	if (connect(socketfd, (struct sockaddr *)&addr, l) == -1) {
-		sway_abort("Unable to connect to %s", socket_path);
+		*error = "Unable to connect to socket path";
+		close(socketfd);
+		return -1;
 	}
 	return socketfd;
 }
 
-struct ipc_response *ipc_recv_response(int socketfd) {
+struct ipc_response *ipc_recv_response(int socketfd, const char **error) {
 	char data[IPC_HEADER_SIZE];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 
@@ -77,7 +79,8 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	while (total < IPC_HEADER_SIZE) {
 		ssize_t received = recv(socketfd, data + total, IPC_HEADER_SIZE - total, 0);
 		if (received <= 0) {
-			sway_abort("Unable to receive IPC response");
+			*error = "Unable to receive IPC response";
+			return NULL;
 		}
 		total += received;
 	}
@@ -99,7 +102,10 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	while (total < response->size) {
 		ssize_t received = recv(socketfd, payload + total, response->size - total, 0);
 		if (received < 0) {
-			sway_abort("Unable to receive IPC response");
+			*error = "Unable to receive IPC response";
+			free(response);
+			free(payload);
+			return NULL;
 		}
 		total += received;
 	}
@@ -111,7 +117,7 @@ error_2:
 	free(response);
 	free(payload);
 error_1:
-	wlr_log(WLR_ERROR, "Unable to allocate memory for IPC response");
+	*error = "Unable to allocate memory for IPC response";
 	return NULL;
 }
 
@@ -120,7 +126,8 @@ void free_ipc_response(struct ipc_response *response) {
 	free(response);
 }
 
-char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
+char *ipc_single_command(int socketfd, uint32_t type, const char *payload,
+		uint32_t *len, const char **error) {
 	char data[IPC_HEADER_SIZE];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
@@ -128,14 +135,20 @@ char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint3
 	memcpy(&data32[1], &type, sizeof(type));
 
 	if (write(socketfd, data, IPC_HEADER_SIZE) == -1) {
-		sway_abort("Unable to send IPC header");
+		*error = "Unable to send IPC header";
+		return NULL;
 	}
 
 	if (write(socketfd, payload, *len) == -1) {
-		sway_abort("Unable to send IPC payload");
+		*error = "Unable to send IPC payload";
+		return NULL;
 	}
 
-	struct ipc_response *resp = ipc_recv_response(socketfd);
+	struct ipc_response *resp = ipc_recv_response(socketfd, error);
+	if (!resp) {
+		// error already set by `ipc_recv_response`
+		return NULL;
+	}
 	char *response = resp->payload;
 	*len = resp->size;
 	free(resp);

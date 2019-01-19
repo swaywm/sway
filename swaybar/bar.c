@@ -358,8 +358,15 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	wl_list_init(&bar->outputs);
 	bar->eventloop = loop_create();
 
-	bar->ipc_socketfd = ipc_open_socket(socket_path);
-	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
+	const char *error = NULL;
+	bar->ipc_socketfd = ipc_open_socket(socket_path, &error);
+	if (bar->ipc_socketfd == -1) {
+		sway_abort("Error opening socket '%s': %s", socket_path, error);
+	}
+	bar->ipc_event_socketfd = ipc_open_socket(socket_path, &error);
+	if (bar->ipc_event_socketfd == -1) {
+		sway_abort("Error opening socket '%s' again: %s", socket_path, error);
+	}
 	if (!ipc_initialize(bar)) {
 		return false;
 	}

@@ -15,7 +15,12 @@ void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	uint32_t size = snprintf(NULL, 0, fmt, ws);
 	char *command = malloc(sizeof(char) * (size + 1));
 	snprintf(command, size, fmt, ws);
-	ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size);
+	const char *error = NULL;
+	char *resp = ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size, &error);
+	if (!resp) {
+		wlr_log(WLR_ERROR, "failed to send command: %s", error);
+	}
+	free(resp);
 	free(command);
 }
 
@@ -340,8 +345,13 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 		output->focused = false;
 	}
 	uint32_t len = 0;
+	const char *error = NULL;
 	char *res = ipc_single_command(bar->ipc_socketfd,
-			IPC_GET_WORKSPACES, NULL, &len);
+			IPC_GET_WORKSPACES, NULL, &len, &error);
+	if (!res) {
+		wlr_log(WLR_ERROR, "failed to send command: %s", error);
+		return false;
+	}
 	json_object *results = json_tokener_parse(res);
 	if (!results) {
 		free(res);
@@ -407,8 +417,13 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 
 static void ipc_get_outputs(struct swaybar *bar) {
 	uint32_t len = 0;
+	const char *error = NULL;
 	char *res = ipc_single_command(bar->ipc_socketfd,
-			IPC_GET_OUTPUTS, NULL, &len);
+			IPC_GET_OUTPUTS, NULL, &len, &error);
+	if (!res) {
+		wlr_log(WLR_ERROR, "failed to send command: %s", error);
+		return;
+	}
 	json_object *outputs = json_tokener_parse(res);
 	for (size_t i = 0; i < json_object_array_length(outputs); ++i) {
 		json_object *output = json_object_array_get_idx(outputs, i);
@@ -444,14 +459,20 @@ void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
 	wlr_log(WLR_DEBUG, "Executing binding for button %u (release=%d): `%s`",
 			bind->button, bind->release, bind->command);
 	uint32_t len = strlen(bind->command);
+	const char *error = NULL;
 	free(ipc_single_command(bar->ipc_socketfd,
-			IPC_COMMAND, bind->command, &len));
+			IPC_COMMAND, bind->command, &len, &error));
 }
 
 bool ipc_initialize(struct swaybar *bar) {
 	uint32_t len = strlen(bar->id);
+	const char *error = NULL;
 	char *res = ipc_single_command(bar->ipc_socketfd,
-			IPC_GET_BAR_CONFIG, bar->id, &len);
+			IPC_GET_BAR_CONFIG, bar->id, &len, &error);
+	if (!res) {
+		wlr_log(WLR_ERROR, "failed to send command: %s", error);
+		return false;
+	}
 	if (!ipc_parse_config(bar->config, res)) {
 		free(res);
 		return false;
@@ -466,7 +487,7 @@ bool ipc_initialize(struct swaybar *bar) {
 			config->binding_mode_indicator ? ", \"mode\"" : "",
 			config->workspace_buttons ? ", \"workspace\"" : "");
 	free(ipc_single_command(bar->ipc_event_socketfd,
-			IPC_SUBSCRIBE, subscribe, &len));
+			IPC_SUBSCRIBE, subscribe, &len, &error));
 	return true;
 }
 
@@ -537,8 +558,10 @@ static bool handle_barconfig_update(struct swaybar *bar,
 }
 
 bool handle_ipc_readable(struct swaybar *bar) {
-	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
+	const char *error = NULL;
+	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd, &error);
 	if (!resp) {
+		wlr_log(WLR_ERROR, "failed to receive response: %s", error);
 		return false;
 	}
 

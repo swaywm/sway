@@ -123,9 +123,16 @@ void detect_proprietary(int allow_unsupported_gpu) {
 }
 
 void run_as_ipc_client(char *command, char *socket_path) {
-	int socketfd = ipc_open_socket(socket_path);
+	const char *error = NULL;
+	int socketfd = ipc_open_socket(socket_path, &error);
+	if (socketfd == -1) {
+		sway_abort("Error opening socket '%s': %s", socket_path, error);
+	}
 	uint32_t len = strlen(command);
-	char *resp = ipc_single_command(socketfd, IPC_COMMAND, command, &len);
+	char *resp = ipc_single_command(socketfd, IPC_COMMAND, command, &len, &error);
+	if (!resp) {
+		sway_abort("Error invoking command over IPC: %s", error);
+	}
 	printf("%s\n", resp);
 	close(socketfd);
 }
