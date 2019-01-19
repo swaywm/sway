@@ -1,4 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,10 +13,28 @@
 #include <unistd.h>
 #include <json-c/json.h>
 #include "ipc-client.h"
-#include "log.h"
 
 void sway_terminate(int exit_code) {
 	exit(exit_code);
+}
+
+enum log_importance {
+	LOG_DEBUG = 1,
+	LOG_INFO = 2,
+	LOG_ERROR = 3,
+};
+
+static enum log_importance verbosity = LOG_INFO;
+
+static void swaymsg_log(enum log_importance importance, const char *fmt, ...) {
+	if (importance < verbosity) {
+		return;
+	}
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+	fprintf(stderr, "\n");
 }
 
 static char *join_args(char **argv, int argc) {
@@ -332,8 +352,6 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
-	wlr_log_init(WLR_INFO, NULL);
-
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"monitor", no_argument, NULL, 'm'},
@@ -397,7 +415,8 @@ int main(int argc, char **argv) {
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
-			sway_abort("Unable to retrieve socket path");
+			swaymsg_log(LOG_ERROR, "Unable to retrieve socket path");
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -430,15 +449,16 @@ int main(int argc, char **argv) {
 	} else if (strcasecmp(cmdtype, "subscribe") == 0) {
 		type = IPC_SUBSCRIBE;
 	} else {
-		sway_abort("Unknown message type %s", cmdtype);
+		swaymsg_log(LOG_ERROR, "Unknown message type %s", cmdtype);
+		return EXIT_FAILURE;
 	}
 
 	free(cmdtype);
 
 	if (monitor && type != IPC_SUBSCRIBE) {
-		wlr_log(WLR_ERROR, "Monitor can only be used with -t SUBSCRIBE");
+		swaymsg_log(LOG_ERROR, "Monitor can only be used with -t SUBSCRIBE");
 		free(socket_path);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	char *command = NULL;
@@ -452,25 +472,28 @@ int main(int argc, char **argv) {
 	const char *error = NULL;
 	int socketfd = ipc_open_socket(socket_path, &error);
 	if (socketfd == -1) {
-		sway_abort("Error opening socket '%s': %s", socket_path, error);
+		swaymsg_log(LOG_ERROR, "Error opening socket '%s': %s", socket_path, error);
+		close(socketfd);
+		return EXIT_FAILURE;
 	}
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len, &error);
 	if (!resp) {
-		sway_abort("Error invoking command '%s': %s", command, error);
+		swaymsg_log(LOG_ERROR, "Error invoking command '%s': %s", command, error);
+		return EXIT_FAILURE;
 	}
 	if (!quiet) {
 		// pretty print the json
 		json_object *obj = json_tokener_parse(resp);
 
 		if (obj == NULL) {
-			fprintf(stderr, "ERROR: Could not parse json response from ipc. "
+			swaymsg_log(LOG_ERROR, "ERROR: Could not parse json response from ipc. "
 					"This is a bug in sway.");
 			printf("%s\n", resp);
-			ret = 1;
+			ret = EXIT_FAILURE;
 		} else {
 			if (!success(obj, true)) {
-				ret = 1;
+				ret = EXIT_FAILURE;
 			}
 			if (type != IPC_SUBSCRIBE  || ret != 0) {
 				if (raw) {
@@ -490,7 +513,9 @@ int main(int argc, char **argv) {
 		do {
 			struct ipc_response *reply = ipc_recv_response(socketfd, &error);
 			if (!resp) {
-				sway_abort("Error receiving response: %s", error);
+				swaymsg_log(LOG_ERROR, "Error receiving response: %s", error);
+				ret = EXIT_FAILURE;
+				break;
 			}
 			if (!reply) {
 				break;
@@ -498,9 +523,9 @@ int main(int argc, char **argv) {
 
 			json_object *obj = json_tokener_parse(reply->payload);
 			if (obj == NULL) {
-				fprintf(stderr, "ERROR: Could not parse json response from ipc"
+				swaymsg_log(LOG_ERROR, "ERROR: Could not parse json response from ipc"
 						". This is a bug in sway.");
-				ret = 1;
+				ret = EXIT_FAILURE;
 				break;
 			} else {
 				if (raw) {
