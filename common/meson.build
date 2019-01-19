@@ -20,3 +20,12 @@ lib_sway_common = static_library(
 	],
 	include_directories: sway_inc
 )
+
+lib_sway_ipc_client = static_library(
+	'sway-ipc-client',
+	files(
+		'ipc-client.c',
+	),
+	dependencies: [],
+	include_directories: sway_inc
+)
