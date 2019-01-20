@@ -5,6 +5,7 @@ install_manifest.txt
 bin/
 test/
 build/
+build-*/
 .lvimrc
 config-debug
 wayland-*-protocol.*
