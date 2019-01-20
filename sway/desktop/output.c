@@ -503,18 +503,20 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
-	if (!output->configured) {
-		return;
-	}
-	if (!output->enabled) {
+	if (!output->configured && !output->enabled) {
 		struct output_config *oc = output_find_config(output);
 		if (output->wlr_output->current_mode != NULL &&
 				(!oc || oc->enabled)) {
 			// We want to enable this output, but it didn't work last time,
 			// possibly because we hadn't enough CRTCs. Try again now that the
 			// output has a mode.
-			output_enable(output, oc);
+			wlr_log(WLR_DEBUG, "Output %s has gained a CRTC, "
+				"trying to enable it", output->wlr_output->name);
+			apply_output_config(oc, output);
 		}
+		return;
+	}
+	if (!output->enabled || !output->configured) {
 		return;
 	}
 	arrange_layers(output);
