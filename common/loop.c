@@ -34,7 +34,7 @@ struct loop {
 struct loop *loop_create(void) {
 	struct loop *loop = calloc(1, sizeof(struct loop));
 	if (!loop) {
-		wlr_log(WLR_ERROR, "Unable to allocate memory for loop");
+		sway_log(SWAY_ERROR, "Unable to allocate memory for loop");
 		return NULL;
 	}
 	loop->fd_capacity = 10;
@@ -107,7 +107,7 @@ void loop_add_fd(struct loop *loop, int fd, short mask,
 		void (*callback)(int fd, short mask, void *data), void *data) {
 	struct loop_fd_event *event = calloc(1, sizeof(struct loop_fd_event));
 	if (!event) {
-		wlr_log(WLR_ERROR, "Unable to allocate memory for event");
+		sway_log(SWAY_ERROR, "Unable to allocate memory for event");
 		return;
 	}
 	event->callback = callback;
@@ -129,7 +129,7 @@ struct loop_timer *loop_add_timer(struct loop *loop, int ms,
 		void (*callback)(void *data), void *data) {
 	struct loop_timer *timer = calloc(1, sizeof(struct loop_timer));
 	if (!timer) {
-		wlr_log(WLR_ERROR, "Unable to allocate memory for timer");
+		sway_log(SWAY_ERROR, "Unable to allocate memory for timer");
 		return NULL;
 	}
 	timer->callback = callback;

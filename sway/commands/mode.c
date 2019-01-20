@@ -62,7 +62,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		return error;
 	}
 	if ((config->reading && argc > 1) || (!config->reading && argc == 1)) {
-		wlr_log(WLR_DEBUG, "Switching to mode `%s' (pango=%d)",
+		sway_log(SWAY_DEBUG, "Switching to mode `%s' (pango=%d)",
 				mode->name, mode->pango);
 	}
 	// Set current mode

@@ -126,7 +126,7 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 
 		if (*current_binding && *current_binding != binding &&
 				strcmp((*current_binding)->input, binding->input) == 0) {
-			wlr_log(WLR_DEBUG, "encountered duplicate bindings %d and %d",
+			sway_log(SWAY_DEBUG, "encountered duplicate bindings %d and %d",
 					(*current_binding)->order, binding->order);
 		} else if (!*current_binding ||
 				strcmp((*current_binding)->input, "*") == 0) {
@@ -219,7 +219,7 @@ void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard) {
 	}
 	keyboard->repeat_binding = NULL;
 	if (wl_event_source_timer_update(keyboard->key_repeat_source, 0) < 0) {
-		wlr_log(WLR_DEBUG, "failed to disarm key repeat timer");
+		sway_log(SWAY_DEBUG, "failed to disarm key repeat timer");
 	}
 }
 
@@ -313,7 +313,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		keyboard->repeat_binding = binding;
 		if (wl_event_source_timer_update(keyboard->key_repeat_source,
 				wlr_device->keyboard->repeat_info.delay) < 0) {
-			wlr_log(WLR_DEBUG, "failed to set key repeat timer");
+			sway_log(SWAY_DEBUG, "failed to set key repeat timer");
 		}
 	} else if (keyboard->repeat_binding) {
 		sway_keyboard_disarm_key_repeat(keyboard);
@@ -356,7 +356,7 @@ static int handle_keyboard_repeat(void *data) {
 			// We queue the next event first, as the command might cancel it
 			if (wl_event_source_timer_update(keyboard->key_repeat_source,
 					1000 / wlr_device->repeat_info.rate) < 0) {
-				wlr_log(WLR_DEBUG, "failed to update key repeat timer");
+				sway_log(SWAY_DEBUG, "failed to update key repeat timer");
 			}
 		}
 
@@ -460,7 +460,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 	if (!keymap) {
-		wlr_log(WLR_DEBUG, "cannot configure keyboard: keymap does not exist");
+		sway_log(SWAY_DEBUG, "cannot configure keyboard: keymap does not exist");
 		xkb_context_unref(context);
 		return;
 	}

@@ -142,7 +142,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 		int handlers_size) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	wlr_log(WLR_DEBUG, "find_handler(%s)", line);
+	sway_log(SWAY_DEBUG, "find_handler(%s)", line);
 
 	bool config_loading = config->reading || !config->active;
 
@@ -247,10 +247,10 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			cmd = argsep(&cmdlist, ",");
 			for (; isspace(*cmd); ++cmd) {}
 			if (strcmp(cmd, "") == 0) {
-				wlr_log(WLR_INFO, "Ignoring empty command.");
+				sway_log(SWAY_INFO, "Ignoring empty command.");
 				continue;
 			}
-			wlr_log(WLR_INFO, "Handling command '%s'", cmd);
+			sway_log(SWAY_INFO, "Handling command '%s'", cmd);
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
@@ -353,7 +353,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 	}
 
 	// Determine the command handler
-	wlr_log(WLR_INFO, "Config command: %s", exec);
+	sway_log(SWAY_INFO, "Config command: %s", exec);
 	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 	if (!handler || !handler->handle) {
 		const char *error = handler
@@ -373,7 +373,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 		argv[1] = temp;
 	}
 	char *command = do_var_replacement(join_args(argv, argc));
-	wlr_log(WLR_INFO, "After replacement: %s", command);
+	sway_log(SWAY_INFO, "After replacement: %s", command);
 	free_argv(argc, argv);
 	argv = split_args(command, &argc);
 	free(command);
@@ -402,7 +402,7 @@ cleanup:
 struct cmd_results *config_subcommand(char **argv, int argc,
 		struct cmd_handler *handlers, size_t handlers_size) {
 	char *command = join_args(argv, argc);
-	wlr_log(WLR_DEBUG, "Subcommand: %s", command);
+	sway_log(SWAY_DEBUG, "Subcommand: %s", command);
 	free(command);
 
 	struct cmd_handler *handler = find_handler(argv[0], handlers,
@@ -489,7 +489,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	policy->context = context;
 
-	wlr_log(WLR_INFO, "Set command policy for %s to %d",
+	sway_log(SWAY_INFO, "Set command policy for %s to %d",
 			policy->command, policy->context);
 
 	results = cmd_results_new(CMD_SUCCESS, NULL);
@@ -503,7 +503,7 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	if (!results) {
-		wlr_log(WLR_ERROR, "Unable to allocate command results");
+		sway_log(SWAY_ERROR, "Unable to allocate command results");
 		return NULL;
 	}
 	results->status = status;

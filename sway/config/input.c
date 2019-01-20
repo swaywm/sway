@@ -8,13 +8,13 @@
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
 	if (!input) {
-		wlr_log(WLR_DEBUG, "Unable to allocate input config");
+		sway_log(SWAY_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
-	wlr_log(WLR_DEBUG, "new_input_config(%s)", identifier);
+	sway_log(SWAY_DEBUG, "new_input_config(%s)", identifier);
 	if (!(input->identifier = strdup(identifier))) {
 		free(input);
-		wlr_log(WLR_DEBUG, "Unable to allocate input config");
+		sway_log(SWAY_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
 
@@ -136,7 +136,7 @@ static void merge_wildcard_on_all(struct input_config *wildcard) {
 	for (int i = 0; i < config->input_configs->length; i++) {
 		struct input_config *ic = config->input_configs->items[i];
 		if (strcmp(wildcard->identifier, ic->identifier) != 0) {
-			wlr_log(WLR_DEBUG, "Merging input * config on %s", ic->identifier);
+			sway_log(SWAY_DEBUG, "Merging input * config on %s", ic->identifier);
 			merge_input_config(ic, wildcard);
 		}
 	}
@@ -151,16 +151,16 @@ struct input_config *store_input_config(struct input_config *ic) {
 	int i = list_seq_find(config->input_configs, input_identifier_cmp,
 			ic->identifier);
 	if (i >= 0) {
-		wlr_log(WLR_DEBUG, "Merging on top of existing input config");
+		sway_log(SWAY_DEBUG, "Merging on top of existing input config");
 		struct input_config *current = config->input_configs->items[i];
 		merge_input_config(current, ic);
 		free_input_config(ic);
 		ic = current;
 	} else if (!wildcard) {
-		wlr_log(WLR_DEBUG, "Adding non-wildcard input config");
+		sway_log(SWAY_DEBUG, "Adding non-wildcard input config");
 		i = list_seq_find(config->input_configs, input_identifier_cmp, "*");
 		if (i >= 0) {
-			wlr_log(WLR_DEBUG, "Merging on top of input * config");
+			sway_log(SWAY_DEBUG, "Merging on top of input * config");
 			struct input_config *current = new_input_config(ic->identifier);
 			merge_input_config(current, config->input_configs->items[i]);
 			merge_input_config(current, ic);
@@ -170,11 +170,11 @@ struct input_config *store_input_config(struct input_config *ic) {
 		list_add(config->input_configs, ic);
 	} else {
 		// New wildcard config. Just add it
-		wlr_log(WLR_DEBUG, "Adding input * config");
+		sway_log(SWAY_DEBUG, "Adding input * config");
 		list_add(config->input_configs, ic);
 	}
 
-	wlr_log(WLR_DEBUG, "Config stored for input %s", ic->identifier);
+	sway_log(SWAY_DEBUG, "Config stored for input %s", ic->identifier);
 
 	return ic;
 }

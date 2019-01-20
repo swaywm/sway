@@ -713,7 +713,7 @@ static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
 	case WLR_AXIS_ORIENTATION_HORIZONTAL:
 		return event->delta < 0 ? SWAY_SCROLL_LEFT : SWAY_SCROLL_RIGHT;
 	default:
-		wlr_log(WLR_DEBUG, "Unknown axis orientation");
+		sway_log(SWAY_DEBUG, "Unknown axis orientation");
 		return 0;
 	}
 }
@@ -1004,7 +1004,7 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	// TODO: check cursor mode
 	if (focused_client == NULL ||
 			event->seat_client->client != focused_client) {
-		wlr_log(WLR_DEBUG, "denying request to set cursor from unfocused client");
+		sway_log(SWAY_DEBUG, "denying request to set cursor from unfocused client");
 		return;
 	}
 

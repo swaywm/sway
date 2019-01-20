@@ -88,7 +88,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 		}
 	}
 
-	wlr_log(WLR_DEBUG, "renaming workspace '%s' to '%s'", workspace->name, new_name);
+	sway_log(SWAY_DEBUG, "renaming workspace '%s' to '%s'", workspace->name, new_name);
 	free(workspace->name);
 	workspace->name = new_name;
 

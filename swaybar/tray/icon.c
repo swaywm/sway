@@ -317,7 +317,7 @@ void init_themes(list_t **themes, list_t **basedirs) {
 		list_add(theme_names, theme->name);
 	}
 	char *theme_list = join_list(theme_names, ", ");
-	wlr_log(WLR_DEBUG, "Loaded themes: %s", theme_list);
+	sway_log(SWAY_DEBUG, "Loaded themes: %s", theme_list);
 	free(theme_list);
 	list_free(theme_names);
 }

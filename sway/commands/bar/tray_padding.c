@@ -32,7 +32,7 @@ struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 				"Expected 'tray_padding <px> [px]'");
 	}
 
-	wlr_log(WLR_DEBUG, "[Bar %s] Setting tray padding to %d", bar->id, padding);
+	sway_log(SWAY_DEBUG, "[Bar %s] Setting tray padding to %d", bar->id, padding);
 	config->current_bar->tray_padding = padding;
 	return cmd_results_new(CMD_SUCCESS, NULL);
 #else

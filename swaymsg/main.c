@@ -317,7 +317,7 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
-	wlr_log_init(WLR_INFO, NULL);
+	sway_log_init(SWAY_INFO, NULL);
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -421,7 +421,7 @@ int main(int argc, char **argv) {
 	free(cmdtype);
 
 	if (monitor && type != IPC_SUBSCRIBE) {
-		wlr_log(WLR_ERROR, "Monitor can only be used with -t SUBSCRIBE");
+		sway_log(SWAY_ERROR, "Monitor can only be used with -t SUBSCRIBE");
 		free(socket_path);
 		return 1;
 	}

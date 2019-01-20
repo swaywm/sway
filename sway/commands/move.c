@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -106,13 +105,13 @@ static void container_move_to_container_from_direction(
 	if (destination->view) {
 		if (destination->parent == container->parent &&
 				destination->workspace == container->workspace) {
-			wlr_log(WLR_DEBUG, "Swapping siblings");
+			sway_log(SWAY_DEBUG, "Swapping siblings");
 			list_t *siblings = container_get_siblings(container);
 			int container_index = list_find(siblings, container);
 			int destination_index = list_find(siblings, destination);
 			list_swap(siblings, container_index, destination_index);
 		} else {
-			wlr_log(WLR_DEBUG, "Promoting to sibling of cousin");
+			sway_log(SWAY_DEBUG, "Promoting to sibling of cousin");
 			int offset =
 				move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_UP;
 			int index = container_sibling_index(destination) + offset;
@@ -128,7 +127,7 @@ static void container_move_to_container_from_direction(
 	}
 
 	if (is_parallel(destination->layout, move_dir)) {
-		wlr_log(WLR_DEBUG, "Reparenting container (parallel)");
+		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
 		int index =
 			move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
 			0 : destination->children->length;
@@ -137,7 +136,7 @@ static void container_move_to_container_from_direction(
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "Reparenting container (perpendicular)");
+	sway_log(SWAY_DEBUG, "Reparenting container (perpendicular)");
 	struct sway_node *focus_inactive = seat_get_active_tiling_child(
 			config->handler_context.seat, &destination->node);
 	if (!focus_inactive || focus_inactive == &destination->node) {
@@ -157,7 +156,7 @@ static void container_move_to_workspace_from_direction(
 	container->width = container->height = 0;
 
 	if (is_parallel(workspace->layout, move_dir)) {
-		wlr_log(WLR_DEBUG, "Reparenting container (parallel)");
+		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
 		int index =
 			move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
 			0 : workspace->tiling->length;
@@ -165,7 +164,7 @@ static void container_move_to_workspace_from_direction(
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "Reparenting container (perpendicular)");
+	sway_log(SWAY_DEBUG, "Reparenting container (perpendicular)");
 	struct sway_container *focus_inactive = seat_get_focus_inactive_tiling(
 			config->handler_context.seat, workspace);
 	if (!focus_inactive) {
@@ -362,7 +361,7 @@ static bool container_move_in_direction(struct sway_container *container,
 		container_move_to_workspace_from_direction(container, ws, move_dir);
 		return true;
 	}
-	wlr_log(WLR_DEBUG, "Hit edge of output, nowhere else to go");
+	sway_log(SWAY_DEBUG, "Hit edge of output, nowhere else to go");
 	return false;
 }
 

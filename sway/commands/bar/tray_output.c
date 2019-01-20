@@ -23,13 +23,13 @@ struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 	}
 
 	if (strcmp(argv[0], "none") == 0) {
-		wlr_log(WLR_DEBUG, "Hiding tray on bar: %s", config->current_bar->id);
+		sway_log(SWAY_DEBUG, "Hiding tray on bar: %s", config->current_bar->id);
 		for (int i = 0; i < outputs->length; ++i) {
 			free(outputs->items[i]);
 		}
 		outputs->length = 0;
 	} else {
-		wlr_log(WLR_DEBUG, "Showing tray on output '%s' for bar: %s", argv[0],
+		sway_log(SWAY_DEBUG, "Showing tray on output '%s' for bar: %s", argv[0],
 				config->current_bar->id);
 	}
 	list_add(outputs, strdup(argv[0]));

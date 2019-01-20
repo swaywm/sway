@@ -59,7 +59,7 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code) {
 			overwritten = true;
 			bindings->items[i] = binding;
 			free_bar_binding(other);
-			wlr_log(WLR_DEBUG, "[bar %s] Updated binding for %u (%s)%s",
+			sway_log(SWAY_DEBUG, "[bar %s] Updated binding for %u (%s)%s",
 					config->current_bar->id, binding->button, name,
 					binding->release ? " - release" : "");
 			break;
@@ -67,7 +67,7 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code) {
 	}
 	if (!overwritten) {
 		list_add(bindings, binding);
-		wlr_log(WLR_DEBUG, "[bar %s] Added binding for %u (%s)%s",
+		sway_log(SWAY_DEBUG, "[bar %s] Added binding for %u (%s)%s",
 				config->current_bar->id, binding->button, name,
 				binding->release ? " - release" : "");
 	}

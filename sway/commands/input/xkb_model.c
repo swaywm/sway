@@ -16,7 +16,7 @@ struct cmd_results *input_cmd_xkb_model(int argc, char **argv) {
 
 	ic->xkb_model = strdup(argv[0]);
 
-	wlr_log(WLR_DEBUG, "set-xkb_model for config: %s model: %s",
+	sway_log(SWAY_DEBUG, "set-xkb_model for config: %s model: %s",
 			ic->identifier, ic->xkb_model);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

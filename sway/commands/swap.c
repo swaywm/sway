@@ -1,6 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 #include <strings.h>
-#include <wlr/util/log.h>
 #include "config.h"
 #include "log.h"
 #include "sway/commands.h"
@@ -96,7 +95,7 @@ static void container_swap(struct sway_container *con1,
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "Swapping containers %zu and %zu",
+	sway_log(SWAY_DEBUG, "Swapping containers %zu and %zu",
 			con1->node.id, con2->node.id);
 
 	bool fs1 = con1->is_fullscreen;

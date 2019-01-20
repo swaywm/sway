@@ -23,7 +23,7 @@ static void do_reload(void *data) {
 	}
 
 	if (!load_main_config(config->current_config_path, true, false)) {
-		wlr_log(WLR_ERROR, "Error(s) reloading config");
+		sway_log(SWAY_ERROR, "Error(s) reloading config");
 		list_free_items_and_destroy(bar_ids);
 		return;
 	}

@@ -69,12 +69,12 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 		output = workspace_get_initial_output(name);
 	}
 
-	wlr_log(WLR_DEBUG, "Adding workspace %s for output %s", name,
+	sway_log(SWAY_DEBUG, "Adding workspace %s for output %s", name,
 			output->wlr_output->name);
 
 	struct sway_workspace *ws = calloc(1, sizeof(struct sway_workspace));
 	if (!ws) {
-		wlr_log(WLR_ERROR, "Unable to allocate sway_workspace");
+		sway_log(SWAY_ERROR, "Unable to allocate sway_workspace");
 		return NULL;
 	}
 	node_init(&ws->node, N_WORKSPACE, ws);
@@ -152,7 +152,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 }
 
 void workspace_begin_destroy(struct sway_workspace *workspace) {
-	wlr_log(WLR_DEBUG, "Destroying workspace '%s'", workspace->name);
+	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
 	ipc_event_workspace(NULL, workspace, "empty"); // intentional
 	wl_signal_emit(&workspace->node.events.destroy, &workspace->node);
 
@@ -223,7 +223,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 		char *_target = strdup(name);
 		_target = do_var_replacement(_target);
 		strip_quotes(_target);
-		wlr_log(WLR_DEBUG, "Got valid workspace command for target: '%s'",
+		sway_log(SWAY_DEBUG, "Got valid workspace command for target: '%s'",
 				_target);
 
 		// Make sure that the command references an actual workspace
@@ -248,7 +248,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 			temp[length - 1] = '\0';
 			free(_target);
 			_target = temp;
-			wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
+			sway_log(SWAY_DEBUG, "Isolated name from workspace number: '%s'", _target);
 
 			// Make sure the workspace number doesn't already exist
 			if (isdigit(_target[0]) && workspace_by_number(_target)) {
@@ -277,7 +277,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 			*min_order = binding->order;
 			free(*earliest_name);
 			*earliest_name = _target;
-			wlr_log(WLR_DEBUG, "Workspace: Found free name %s", _target);
+			sway_log(SWAY_DEBUG, "Workspace: Found free name %s", _target);
 		} else {
 			free(_target);
 		}
@@ -286,7 +286,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 }
 
 char *workspace_next_name(const char *output_name) {
-	wlr_log(WLR_DEBUG, "Workspace: Generating new workspace name for output %s",
+	sway_log(SWAY_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
 	// Scan for available workspace names by looking through output-workspace
 	// assignments primarily, falling back to bindings and numbers.
@@ -468,13 +468,13 @@ bool workspace_switch(struct sway_workspace *workspace,
 		free(seat->prev_workspace_name);
 		seat->prev_workspace_name = malloc(strlen(active_ws->name) + 1);
 		if (!seat->prev_workspace_name) {
-			wlr_log(WLR_ERROR, "Unable to allocate previous workspace name");
+			sway_log(SWAY_ERROR, "Unable to allocate previous workspace name");
 			return false;
 		}
 		strcpy(seat->prev_workspace_name, active_ws->name);
 	}
 
-	wlr_log(WLR_DEBUG, "Switching to workspace %p:%s",
+	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
 	struct sway_node *next = seat_get_focus_inactive(seat, &workspace->node);
 	if (next == NULL) {

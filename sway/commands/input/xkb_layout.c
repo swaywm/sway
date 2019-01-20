@@ -16,7 +16,7 @@ struct cmd_results *input_cmd_xkb_layout(int argc, char **argv) {
 
 	ic->xkb_layout = strdup(argv[0]);
 
-	wlr_log(WLR_DEBUG, "set-xkb_layout for config: %s layout: %s",
+	sway_log(SWAY_DEBUG, "set-xkb_layout for config: %s layout: %s",
 			ic->identifier, ic->xkb_layout);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

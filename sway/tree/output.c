@@ -97,7 +97,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	if (!output->workspaces->length) {
 		// Create workspace
 		char *ws_name = workspace_next_name(wlr_output->name);
-		wlr_log(WLR_DEBUG, "Creating default workspace %s", ws_name);
+		sway_log(SWAY_DEBUG, "Creating default workspace %s", ws_name);
 		ws = workspace_create(output, ws_name);
 		// Set each seat's focus if not already set
 		struct sway_seat *seat = NULL;
@@ -212,7 +212,7 @@ void output_disable(struct sway_output *output) {
 	if (!sway_assert(output->enabled, "Expected an enabled output")) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Disabling output '%s'", output->wlr_output->name);
+	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
 	wl_signal_emit(&output->events.destroy, output);
 
 	output_evacuate(output);
@@ -237,7 +237,7 @@ void output_begin_destroy(struct sway_output *output) {
 	if (!sway_assert(!output->enabled, "Expected a disabled output")) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Destroying output '%s'", output->wlr_output->name);
+	sway_log(SWAY_DEBUG, "Destroying output '%s'", output->wlr_output->name);
 
 	output->node.destroying = true;
 	node_set_dirty(&output->node);
@@ -258,11 +258,11 @@ struct output_config *output_find_config(struct sway_output *output) {
 
 		if (strcasecmp(name, cur->name) == 0 ||
 				strcasecmp(identifier, cur->name) == 0) {
-			wlr_log(WLR_DEBUG, "Matched output config for %s", name);
+			sway_log(SWAY_DEBUG, "Matched output config for %s", name);
 			oc = cur;
 		}
 		if (strcasecmp("*", cur->name) == 0) {
-			wlr_log(WLR_DEBUG, "Matched wildcard output config for %s", name);
+			sway_log(SWAY_DEBUG, "Matched wildcard output config for %s", name);
 			all = cur;
 		}
 

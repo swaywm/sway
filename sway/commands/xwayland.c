@@ -13,7 +13,7 @@ struct cmd_results *cmd_xwayland(int argc, char **argv) {
 #ifdef HAVE_XWAYLAND
 	config->xwayland = parse_boolean(argv[0], config->xwayland);
 #else
-	wlr_log(WLR_INFO, "Ignoring `xwayland` command, "
+	sway_log(SWAY_INFO, "Ignoring `xwayland` command, "
 		"sway hasn't been built with Xwayland support");
 #endif
 

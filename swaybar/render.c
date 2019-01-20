@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <wlr/util/log.h>
 #include "cairo.h"
 #include "pango.h"
 #include "pool-buffer.h"

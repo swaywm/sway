@@ -16,7 +16,7 @@ struct cmd_results *input_cmd_xkb_options(int argc, char **argv) {
 
 	ic->xkb_options = strdup(argv[0]);
 
-	wlr_log(WLR_DEBUG, "set-xkb_options for config: %s options: %s",
+	sway_log(SWAY_DEBUG, "set-xkb_options for config: %s options: %s",
 			ic->identifier, ic->xkb_options);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -281,7 +281,7 @@ void render_frame(struct swaynag *swaynag) {
 				swaynag->width * swaynag->scale,
 				swaynag->height * swaynag->scale);
 		if (!swaynag->current_buffer) {
-			wlr_log(WLR_DEBUG, "Failed to get buffer. Skipping frame.");
+			sway_log(SWAY_DEBUG, "Failed to get buffer. Skipping frame.");
 			goto cleanup;
 		}
 

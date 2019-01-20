@@ -23,7 +23,7 @@ static void scratchpad_toggle_auto(void) {
 	// Check if the currently focused window is a scratchpad window and should
 	// be hidden again.
 	if (focus && focus->scratchpad) {
-		wlr_log(WLR_DEBUG, "Focus is a scratchpad window - hiding %s",
+		sway_log(SWAY_DEBUG, "Focus is a scratchpad window - hiding %s",
 				focus->title);
 		root_scratchpad_hide(focus);
 		return;
@@ -34,7 +34,7 @@ static void scratchpad_toggle_auto(void) {
 	for (int i = 0; i < ws->floating->length; ++i) {
 		struct sway_container *floater = ws->floating->items[i];
 		if (floater->scratchpad && focus != floater) {
-			wlr_log(WLR_DEBUG,
+			sway_log(SWAY_DEBUG,
 					"Focusing other scratchpad window (%s) in this workspace",
 					floater->title);
 			root_scratchpad_show(floater);
@@ -47,7 +47,7 @@ static void scratchpad_toggle_auto(void) {
 	for (int i = 0; i < root->scratchpad->length; ++i) {
 		struct sway_container *con = root->scratchpad->items[i];
 		if (con->parent) {
-			wlr_log(WLR_DEBUG,
+			sway_log(SWAY_DEBUG,
 					"Moving a visible scratchpad window (%s) to this workspace",
 					con->title);
 			root_scratchpad_show(con);
@@ -60,7 +60,7 @@ static void scratchpad_toggle_auto(void) {
 		return;
 	}
 	struct sway_container *con = root->scratchpad->items[0];
-	wlr_log(WLR_DEBUG, "Showing %s from list", con->title);
+	sway_log(SWAY_DEBUG, "Showing %s from list", con->title);
 	root_scratchpad_show(con);
 }
 

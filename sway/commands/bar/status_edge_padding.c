@@ -15,7 +15,7 @@ struct cmd_results *bar_cmd_status_edge_padding(int argc, char **argv) {
 				"Padding must be a positive integer");
 	}
 	config->current_bar->status_edge_padding = padding;
-	wlr_log(WLR_DEBUG, "Status edge padding on bar %s: %d",
+	sway_log(SWAY_DEBUG, "Status edge padding on bar %s: %d",
 			config->current_bar->id, config->current_bar->status_edge_padding);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

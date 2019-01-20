@@ -1,7 +1,6 @@
 #include <pango/pangocairo.h>
 #include <wlr/backend.h>
 #include <wlr/render/wlr_texture.h>
-#include <wlr/util/log.h>
 #include "config.h"
 #include "sway/debug.h"
 #include "sway/input/input-manager.h"

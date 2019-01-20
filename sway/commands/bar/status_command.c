@@ -17,7 +17,7 @@ struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
 	char *new_command = join_args(argv, argc);
 	if (strcmp(new_command, "-") != 0) {
 		config->current_bar->status_command = new_command;
-		wlr_log(WLR_DEBUG, "Feeding bar with status command: %s",
+		sway_log(SWAY_DEBUG, "Feeding bar with status command: %s",
 				config->current_bar->status_command);
 	} else {
 		free(new_command);
