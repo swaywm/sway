@@ -1,3 +1,4 @@
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/output.h"
@@ -24,6 +25,13 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1);
 	if (error != NULL) {
 		return error;
+	}
+
+	// The NOOP-1 output is a dummy output used when there's no outputs
+	// connected. It should never be configured.
+	if (strcasecmp(argv[0], "NOOP-1") == 0) {
+		return cmd_results_new(CMD_FAILURE,
+				"Refusing to configure the no op output");
 	}
 
 	struct output_config *output = new_output_config(argv[0]);

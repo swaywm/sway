@@ -176,6 +176,10 @@ void terminate_swaybg(pid_t pid) {
 }
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
+	if (output == root->noop_output) {
+		return false;
+	}
+
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	if (oc && !oc->enabled) {
