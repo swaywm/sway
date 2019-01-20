@@ -91,6 +91,10 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	va_end(args);
 
 	char *buf = malloc(length);
+	if (buf == NULL) {
+		wlr_log(WLR_ERROR, "Failed to allocate memory");
+		return;
+	}
 	va_start(args, fmt);
 	vsnprintf(buf, length, fmt, args);
 	va_end(args);
@@ -114,6 +118,10 @@ void pango_printf(cairo_t *cairo, const char *font,
 	va_end(args);
 
 	char *buf = malloc(length);
+	if (buf == NULL) {
+		wlr_log(WLR_ERROR, "Failed to allocate memory");
+		return;
+	}
 	va_start(args, fmt);
 	vsnprintf(buf, length, fmt, args);
 	va_end(args);
