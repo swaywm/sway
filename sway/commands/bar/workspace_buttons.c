@@ -15,10 +15,10 @@ struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 	config->current_bar->workspace_buttons = 
 		parse_boolean(argv[0], config->current_bar->workspace_buttons);
 	if (config->current_bar->workspace_buttons) {
-		wlr_log(WLR_DEBUG, "Enabling workspace buttons on bar: %s",
+		sway_log(SWAY_DEBUG, "Enabling workspace buttons on bar: %s",
 				config->current_bar->id);
 	} else {
-		wlr_log(WLR_DEBUG, "Disabling workspace buttons on bar: %s",
+		sway_log(SWAY_DEBUG, "Disabling workspace buttons on bar: %s",
 				config->current_bar->id);
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL);

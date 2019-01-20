@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <wlr/util/log.h>
+#include "log.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
@@ -120,7 +120,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 				memmove(status->buffer, &status->buffer[c], status->buffer_index);
 				break;
 			} else if (!isspace(status->buffer[c])) {
-				wlr_log(WLR_DEBUG, "Invalid i3bar json: expected '[' but encountered '%c'",
+				sway_log(SWAY_DEBUG, "Invalid i3bar json: expected '[' but encountered '%c'",
 						status->buffer[c]);
 				status_error(status, "[invalid i3bar json]");
 				return true;
@@ -160,7 +160,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 					++buffer_pos;
 					break;
 				} else if (!isspace(status->buffer[buffer_pos])) {
-					wlr_log(WLR_DEBUG, "Invalid i3bar json: expected ',' but encountered '%c'",
+					sway_log(SWAY_DEBUG, "Invalid i3bar json: expected ',' but encountered '%c'",
 							status->buffer[buffer_pos]);
 					status_error(status, "[invalid i3bar json]");
 					return true;
@@ -195,7 +195,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 				}
 				*last_char_pos = '\0';
 				size_t offset = strspn(&status->buffer[buffer_pos], " \f\n\r\t\v");
-				wlr_log(WLR_DEBUG, "Received i3bar json: '%s%c'",
+				sway_log(SWAY_DEBUG, "Received i3bar json: '%s%c'",
 						&status->buffer[buffer_pos + offset], last_char);
 				*last_char_pos = last_char;
 
@@ -229,7 +229,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 			} else {
 				char last_char = status->buffer[status->buffer_index - 1];
 				status->buffer[status->buffer_index - 1] = '\0';
-				wlr_log(WLR_DEBUG, "Failed to parse i3bar json - %s: '%s%c'",
+				sway_log(SWAY_DEBUG, "Failed to parse i3bar json - %s: '%s%c'",
 						json_tokener_error_desc(err), &status->buffer[buffer_pos], last_char);
 				status_error(status, "[failed to parse i3bar json]");
 				return true;
@@ -250,7 +250,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 	}
 
 	if (last_object) {
-		wlr_log(WLR_DEBUG, "Rendering last received json");
+		sway_log(SWAY_DEBUG, "Rendering last received json");
 		i3bar_parse_json(status, last_object);
 		json_object_put(last_object);
 		return true;
@@ -262,7 +262,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, int rx, int ry, int w, int h,
 		uint32_t button) {
-	wlr_log(WLR_DEBUG, "block %s clicked", block->name);
+	sway_log(SWAY_DEBUG, "block %s clicked", block->name);
 	if (!block->name || !status->click_events) {
 		return HOTSPOT_PROCESS;
 	}

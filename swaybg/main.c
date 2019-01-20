@@ -6,9 +6,9 @@
 #include <string.h>
 #include <time.h>
 #include <wayland-client.h>
-#include <wlr/util/log.h>
 #include "background-image.h"
 #include "cairo.h"
+#include "log.h"
 #include "pool-buffer.h"
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -62,7 +62,7 @@ struct swaybg_state {
 bool is_valid_color(const char *color) {
 	int len = strlen(color);
 	if (len != 7 || color[0] != '#') {
-		wlr_log(WLR_ERROR, "%s is not a valid color for swaybg. "
+		sway_log(SWAY_ERROR, "%s is not a valid color for swaybg. "
 				"Color should be specified as #rrggbb (no alpha).", color);
 		return false;
 	}
@@ -253,14 +253,14 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 int main(int argc, const char **argv) {
-	wlr_log_init(WLR_DEBUG, NULL);
+	sway_log_init(SWAY_DEBUG, NULL);
 
 	struct swaybg_args args = {0};
 	struct swaybg_state state = { .args = &args };
 	wl_list_init(&state.outputs);
 
 	if (argc < 4 || argc > 5) {
-		wlr_log(WLR_ERROR, "Do not run this program manually. "
+		sway_log(SWAY_ERROR, "Do not run this program manually. "
 				"See `man 5 sway-output` and look for background options.");
 		return 1;
 	}
@@ -281,7 +281,7 @@ int main(int argc, const char **argv) {
 
 	state.display = wl_display_connect(NULL);
 	if (!state.display) {
-		wlr_log(WLR_ERROR, "Unable to connect to the compositor. "
+		sway_log(SWAY_ERROR, "Unable to connect to the compositor. "
 				"If your compositor is running, check or set the "
 				"WAYLAND_DISPLAY environment variable.");
 		return 1;
@@ -292,7 +292,7 @@ int main(int argc, const char **argv) {
 	wl_display_roundtrip(state.display);
 	if (state.compositor == NULL || state.shm == NULL ||
 			state.layer_shell == NULL || state.xdg_output_manager == NULL) {
-		wlr_log(WLR_ERROR, "Missing a required Wayland interface");
+		sway_log(SWAY_ERROR, "Missing a required Wayland interface");
 		return 1;
 	}
 
@@ -306,7 +306,7 @@ int main(int argc, const char **argv) {
 	// Second roundtrip to get xdg_output properties
 	wl_display_roundtrip(state.display);
 	if (state.output == NULL) {
-		wlr_log(WLR_ERROR, "Cannot find output '%s'", args.output);
+		sway_log(SWAY_ERROR, "Cannot find output '%s'", args.output);
 		return 1;
 	}
 

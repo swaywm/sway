@@ -510,7 +510,7 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 			// We want to enable this output, but it didn't work last time,
 			// possibly because we hadn't enough CRTCs. Try again now that the
 			// output has a mode.
-			wlr_log(WLR_DEBUG, "Output %s has gained a CRTC, "
+			sway_log(SWAY_DEBUG, "Output %s has gained a CRTC, "
 				"trying to enable it", output->wlr_output->name);
 			apply_output_config(oc, output);
 		}
@@ -580,7 +580,7 @@ static void handle_present(struct wl_listener *listener, void *data) {
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
-	wlr_log(WLR_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
+	sway_log(SWAY_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
 	struct sway_output *output = output_create(wlr_output);
 	if (!output) {

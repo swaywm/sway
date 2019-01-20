@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
-#include <wlr/util/log.h>
 #include "list.h"
 #include "log.h"
 #include "swaybar/bar.h"
@@ -55,7 +54,7 @@ static uint32_t wl_axis_to_button(uint32_t axis, wl_fixed_t value) {
 	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
 		return negative ? SWAY_SCROLL_LEFT : SWAY_SCROLL_RIGHT;
 	default:
-		wlr_log(WLR_DEBUG, "Unexpected axis value on mouse scroll");
+		sway_log(SWAY_DEBUG, "Unexpected axis value on mouse scroll");
 		return 0;
 	}
 }

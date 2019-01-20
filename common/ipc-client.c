@@ -111,7 +111,7 @@ error_2:
 	free(response);
 	free(payload);
 error_1:
-	wlr_log(WLR_ERROR, "Unable to allocate memory for IPC response");
+	sway_log(SWAY_ERROR, "Unable to allocate memory for IPC response");
 	return NULL;
 }
 

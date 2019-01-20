@@ -3,12 +3,12 @@
 #include <string.h>
 #include <strings.h>
 #include <json-c/json.h>
-#include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
 #include "config.h"
 #include "ipc-client.h"
 #include "list.h"
+#include "log.h"
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	const char *fmt = "workspace \"%s\"";
@@ -150,7 +150,7 @@ static bool ipc_parse_config(
 	json_object *success;
 	if (json_object_object_get_ex(bar_config, "success", &success)
 			&& !json_object_get_boolean(success)) {
-		wlr_log(WLR_ERROR, "No bar with that ID. Use 'swaymsg -t get_bar_config to get the available bar configs.");
+		sway_log(SWAY_ERROR, "No bar with that ID. Use 'swaymsg -t get_bar_config to get the available bar configs.");
 		json_object_put(bar_config);
 		return false;
 	}
@@ -441,7 +441,7 @@ static void ipc_get_outputs(struct swaybar *bar) {
 }
 
 void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
-	wlr_log(WLR_DEBUG, "Executing binding for button %u (release=%d): `%s`",
+	sway_log(SWAY_DEBUG, "Executing binding for button %u (release=%d): `%s`",
 			bind->button, bind->release, bind->command);
 	uint32_t len = strlen(bind->command);
 	free(ipc_single_command(bar->ipc_socketfd,
@@ -500,7 +500,7 @@ static bool handle_barconfig_update(struct swaybar *bar,
 	const char *new_state = json_object_get_string(json_state);
 	char *old_state = config->hidden_state;
 	if (strcmp(new_state, old_state) != 0) {
-		wlr_log(WLR_DEBUG, "Changing bar hidden state to %s", new_state);
+		sway_log(SWAY_DEBUG, "Changing bar hidden state to %s", new_state);
 		free(old_state);
 		config->hidden_state = strdup(new_state);
 		return determine_bar_visibility(bar, false);
@@ -510,7 +510,7 @@ static bool handle_barconfig_update(struct swaybar *bar,
 	json_object *json_mode;
 	json_object_object_get_ex(json_config, "mode", &json_mode);
 	config->mode = strdup(json_object_get_string(json_mode));
-	wlr_log(WLR_DEBUG, "Changing bar mode to %s", config->mode);
+	sway_log(SWAY_DEBUG, "Changing bar mode to %s", config->mode);
 
 	json_object *gaps;
 	json_object_object_get_ex(json_config, "gaps", &gaps);
@@ -544,7 +544,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 
 	json_object *result = json_tokener_parse(resp->payload);
 	if (!result) {
-		wlr_log(WLR_ERROR, "failed to parse payload as json");
+		sway_log(SWAY_ERROR, "failed to parse payload as json");
 		free_ipc_response(resp);
 		return false;
 	}
@@ -561,7 +561,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 			free(bar->mode);
 			bar->mode = strcmp(change, "default") != 0 ? strdup(change) : NULL;
 		} else {
-			wlr_log(WLR_ERROR, "failed to parse response");
+			sway_log(SWAY_ERROR, "failed to parse response");
 			bar_is_dirty = false;
 			break;
 		}

@@ -26,7 +26,7 @@ static void output_layout_handle_change(struct wl_listener *listener,
 struct sway_root *root_create(void) {
 	struct sway_root *root = calloc(1, sizeof(struct sway_root));
 	if (!root) {
-		wlr_log(WLR_ERROR, "Unable to allocate sway_root");
+		sway_log(SWAY_ERROR, "Unable to allocate sway_root");
 		return NULL;
 	}
 	node_init(&root->node, N_ROOT, root);
@@ -178,14 +178,14 @@ struct sway_workspace *root_workspace_for_pid(pid_t pid) {
 	struct sway_workspace *ws = NULL;
 	struct pid_workspace *pw = NULL;
 
-	wlr_log(WLR_DEBUG, "Looking up workspace for pid %d", pid);
+	sway_log(SWAY_DEBUG, "Looking up workspace for pid %d", pid);
 
 	do {
 		struct pid_workspace *_pw = NULL;
 		wl_list_for_each(_pw, &pid_workspaces, link) {
 			if (pid == _pw->pid) {
 				pw = _pw;
-				wlr_log(WLR_DEBUG,
+				sway_log(SWAY_DEBUG,
 						"found pid_workspace for pid %d, workspace %s",
 						pid, pw->workspace);
 				goto found;
@@ -199,7 +199,7 @@ found:
 		ws = workspace_by_name(pw->workspace);
 
 		if (!ws) {
-			wlr_log(WLR_DEBUG,
+			sway_log(SWAY_DEBUG,
 					"Creating workspace %s for pid %d because it disappeared",
 					pw->workspace, pid);
 			ws = workspace_create(pw->output, pw->workspace);
@@ -222,7 +222,7 @@ static void pw_handle_output_destroy(struct wl_listener *listener, void *data) {
 }
 
 void root_record_workspace_pid(pid_t pid) {
-	wlr_log(WLR_DEBUG, "Recording workspace for process %d", pid);
+	sway_log(SWAY_DEBUG, "Recording workspace for process %d", pid);
 	if (!pid_workspaces.prev && !pid_workspaces.next) {
 		wl_list_init(&pid_workspaces);
 	}
@@ -230,12 +230,12 @@ void root_record_workspace_pid(pid_t pid) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	if (!ws) {
-		wlr_log(WLR_DEBUG, "Bailing out, no workspace");
+		sway_log(SWAY_DEBUG, "Bailing out, no workspace");
 		return;
 	}
 	struct sway_output *output = ws->output;
 	if (!output) {
-		wlr_log(WLR_DEBUG, "Bailing out, no output");
+		sway_log(SWAY_DEBUG, "Bailing out, no output");
 		return;
 	}
 

@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
-#include <wlr/util/log.h>
 #include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
@@ -44,7 +43,7 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	if (!output) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Removing output %s", output->name);
+	sway_log(SWAY_DEBUG, "Removing output %s", output->name);
 	if (output->layer_surface != NULL) {
 		zwlr_layer_surface_v1_destroy(output->layer_surface);
 	}
@@ -157,7 +156,7 @@ bool determine_bar_visibility(struct swaybar *bar, bool moving_layer) {
 		bar->visible = visible;
 
 		if (bar->status) {
-			wlr_log(WLR_DEBUG, "Sending %s signal to status command",
+			sway_log(SWAY_DEBUG, "Sending %s signal to status command",
 					visible ? "cont" : "stop");
 			kill(bar->status->pid, visible ?
 					bar->status->cont_signal : bar->status->stop_signal);
@@ -271,7 +270,7 @@ static void xdg_output_handle_description(void *data,
 		size_t length = paren - description;
 		output->identifier = malloc(length);
 		if (!output->identifier) {
-			wlr_log(WLR_ERROR, "Failed to allocate output identifier");
+			sway_log(SWAY_ERROR, "Failed to allocate output identifier");
 			return;
 		}
 		strncpy(output->identifier, description, length);

@@ -28,7 +28,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	struct output_config *output = new_output_config(argv[0]);
 	if (!output) {
-		wlr_log(WLR_ERROR, "Failed to allocate output config");
+		sway_log(SWAY_ERROR, "Failed to allocate output config");
 		return NULL;
 	}
 	argc--; argv++;

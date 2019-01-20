@@ -35,7 +35,7 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 	double scale = parent->width / total_width;
 
 	// Resize windows
-	wlr_log(WLR_DEBUG, "Arranging %p horizontally", parent);
+	sway_log(SWAY_DEBUG, "Arranging %p horizontally", parent);
 	double child_x = parent->x;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
@@ -75,7 +75,7 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 	double scale = parent->height / total_height;
 
 	// Resize
-	wlr_log(WLR_DEBUG, "Arranging %p vertically", parent);
+	sway_log(SWAY_DEBUG, "Arranging %p vertically", parent);
 	double child_y = parent->y;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
@@ -186,7 +186,7 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	}
 	struct sway_output *output = workspace->output;
 	struct wlr_box *area = &output->usable_area;
-	wlr_log(WLR_DEBUG, "Usable area for ws: %dx%d@%d,%d",
+	sway_log(SWAY_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
 	workspace_remove_gaps(workspace);
 
@@ -217,7 +217,7 @@ void arrange_workspace(struct sway_workspace *workspace) {
 
 	workspace_add_gaps(workspace);
 	node_set_dirty(&workspace->node);
-	wlr_log(WLR_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
+	sway_log(SWAY_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
 			workspace->x, workspace->y);
 	if (workspace->fullscreen) {
 		struct sway_container *fs = workspace->fullscreen;

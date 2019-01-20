@@ -6,7 +6,6 @@
 #include <string.h>
 #include <strings.h>
 #include <wlr/util/edges.h>
-#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"

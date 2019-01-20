@@ -62,7 +62,7 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 static void seat_send_activate(struct sway_node *node, struct sway_seat *seat) {
 	if (node_is_view(node)) {
 		if (!seat_is_input_allowed(seat, node->sway_container->view->surface)) {
-			wlr_log(WLR_DEBUG, "Refusing to set focus, input is inhibited");
+			sway_log(SWAY_DEBUG, "Refusing to set focus, input is inhibited");
 			return;
 		}
 		view_set_activated(node->sway_container->view, true);
@@ -208,7 +208,7 @@ static struct sway_seat_node *seat_node_from_node(
 
 	seat_node = calloc(1, sizeof(struct sway_seat_node));
 	if (seat_node == NULL) {
-		wlr_log(WLR_ERROR, "could not allocate seat node");
+		sway_log(SWAY_ERROR, "could not allocate seat node");
 		return NULL;
 	}
 
@@ -289,7 +289,7 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 
 	struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
 	if (icon == NULL) {
-		wlr_log(WLR_ERROR, "Allocation failed");
+		sway_log(SWAY_ERROR, "Allocation failed");
 		return;
 	}
 	icon->seat = seat;
@@ -407,7 +407,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 
 static void seat_reset_input_config(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
-	wlr_log(WLR_DEBUG, "Resetting output mapping for input device %s",
+	sway_log(SWAY_DEBUG, "Resetting output mapping for input device %s",
 		sway_device->input_device->identifier);
 	wlr_cursor_map_input_to_output(seat->cursor->cursor,
 		sway_device->input_device->wlr_device, NULL);
@@ -420,7 +420,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 	struct input_config *ic = input_device_get_config(
 			sway_device->input_device);
 	if (ic != NULL) {
-		wlr_log(WLR_DEBUG, "Applying input config to %s",
+		sway_log(SWAY_DEBUG, "Applying input config to %s",
 			sway_device->input_device->identifier);
 
 		mapped_to_output = ic->mapped_to_output;
@@ -430,19 +430,19 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
 	}
 	if (mapped_to_output != NULL) {
-		wlr_log(WLR_DEBUG, "Mapping input device %s to output %s",
+		sway_log(SWAY_DEBUG, "Mapping input device %s to output %s",
 			sway_device->input_device->identifier, mapped_to_output);
 		if (strcmp("*", mapped_to_output) == 0) {
 			wlr_cursor_map_input_to_output(seat->cursor->cursor,
 				sway_device->input_device->wlr_device, NULL);
-			wlr_log(WLR_DEBUG, "Reset output mapping");
+			sway_log(SWAY_DEBUG, "Reset output mapping");
 			return;
 		}
 		struct sway_output *output = output_by_name_or_id(mapped_to_output);
 		if (output) {
 			wlr_cursor_map_input_to_output(seat->cursor->cursor,
 				sway_device->input_device->wlr_device, output->wlr_output);
-			wlr_log(WLR_DEBUG, "Mapped to output %s", output->wlr_output->name);
+			sway_log(SWAY_DEBUG, "Mapped to output %s", output->wlr_output->name);
 		}
 	}
 }
@@ -522,10 +522,10 @@ void seat_configure_device(struct sway_seat *seat,
 			seat_configure_tablet_tool(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
-			wlr_log(WLR_DEBUG, "TODO: configure tablet pad");
+			sway_log(SWAY_DEBUG, "TODO: configure tablet pad");
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
-			wlr_log(WLR_DEBUG, "TODO: configure switch device");
+			sway_log(SWAY_DEBUG, "TODO: configure switch device");
 			break;
 	}
 }
@@ -552,10 +552,10 @@ void seat_reset_device(struct sway_seat *seat,
 			seat_reset_input_config(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
-			wlr_log(WLR_DEBUG, "TODO: reset tablet pad");
+			sway_log(SWAY_DEBUG, "TODO: reset tablet pad");
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
-			wlr_log(WLR_DEBUG, "TODO: reset switch device");
+			sway_log(SWAY_DEBUG, "TODO: reset switch device");
 			break;
 	}
 }
@@ -570,11 +570,11 @@ void seat_add_device(struct sway_seat *seat,
 	struct sway_seat_device *seat_device =
 		calloc(1, sizeof(struct sway_seat_device));
 	if (!seat_device) {
-		wlr_log(WLR_DEBUG, "could not allocate seat device");
+		sway_log(SWAY_DEBUG, "could not allocate seat device");
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "adding device %s to seat %s",
+	sway_log(SWAY_DEBUG, "adding device %s to seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device->sway_seat = seat;
@@ -594,7 +594,7 @@ void seat_remove_device(struct sway_seat *seat,
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "removing device %s from seat %s",
+	sway_log(SWAY_DEBUG, "removing device %s from seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device_destroy(seat_device);
@@ -790,7 +790,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 				wl_event_source_timer_update(view->urgent_timer,
 						config->urgent_timeout);
 			} else {
-				wlr_log(WLR_ERROR, "Unable to create urgency timer (%s)",
+				sway_log(SWAY_ERROR, "Unable to create urgency timer (%s)",
 						strerror(errno));
 				handle_urgent_timeout(view);
 			}

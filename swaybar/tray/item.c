@@ -35,12 +35,12 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		const char *prop, list_t **dest) {
 	int ret = sd_bus_message_enter_container(msg, 'a', "(iiay)");
 	if (ret < 0) {
-		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 		return ret;
 	}
 
 	if (sd_bus_message_at_end(msg, 0)) {
-		wlr_log(WLR_DEBUG, "%s %s no. of icons = 0", sni->watcher_id, prop);
+		sway_log(SWAY_DEBUG, "%s %s no. of icons = 0", sni->watcher_id, prop);
 		return ret;
 	}
 
@@ -52,14 +52,14 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 	while (!sd_bus_message_at_end(msg, 0)) {
 		ret = sd_bus_message_enter_container(msg, 'r', "iiay");
 		if (ret < 0) {
-			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
 		int size;
 		ret = sd_bus_message_read(msg, "ii", NULL, &size);
 		if (ret < 0) {
-			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
@@ -67,7 +67,7 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		size_t npixels;
 		ret = sd_bus_message_read_array(msg, 'y', &pixels, &npixels);
 		if (ret < 0) {
-			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
@@ -81,7 +81,7 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 	}
 	list_free_items_and_destroy(*dest);
 	*dest = pixmaps;
-	wlr_log(WLR_DEBUG, "%s %s no. of icons = %d", sni->watcher_id, prop,
+	sway_log(SWAY_DEBUG, "%s %s no. of icons = %d", sni->watcher_id, prop,
 			pixmaps->length);
 
 	return ret;
@@ -107,7 +107,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 
 	int ret;
 	if (sd_bus_message_is_method_error(msg, NULL)) {
-		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop,
+		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop,
 				sd_bus_message_get_error(msg)->message);
 		ret = sd_bus_message_get_errno(msg);
 		goto cleanup;
@@ -115,7 +115,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 
 	ret = sd_bus_message_enter_container(msg, 'v', type);
 	if (ret < 0) {
-		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 		goto cleanup;
 	}
 
@@ -131,16 +131,16 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 
 		ret = sd_bus_message_read(msg, type, dest);
 		if (ret < 0) {
-			wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto cleanup;
 		}
 
 		if (*type == 's' || *type == 'o') {
 			char **str = dest;
 			*str = strdup(*str);
-			wlr_log(WLR_DEBUG, "%s %s = '%s'", sni->watcher_id, prop, *str);
+			sway_log(SWAY_DEBUG, "%s %s = '%s'", sni->watcher_id, prop, *str);
 		} else if (*type == 'b') {
-			wlr_log(WLR_DEBUG, "%s %s = %s", sni->watcher_id, prop,
+			sway_log(SWAY_DEBUG, "%s %s = %s", sni->watcher_id, prop,
 					*(bool *)dest ? "true" : "false");
 		}
 	}
@@ -165,7 +165,7 @@ static void sni_get_property_async(struct swaybar_sni *sni, const char *prop,
 			sni->path, "org.freedesktop.DBus.Properties", "Get",
 			get_property_callback, data, "ss", sni->interface, prop);
 	if (ret < 0) {
-		wlr_log(WLR_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 	}
 }
 
@@ -188,10 +188,10 @@ static int sni_check_msg_sender(struct swaybar_sni *sni, sd_bus_message *msg,
 	bool has_well_known_names =
 		sd_bus_creds_get_mask(sd_bus_message_get_creds(msg)) & SD_BUS_CREDS_WELL_KNOWN_NAMES;
 	if (sni->service[0] == ':' || has_well_known_names) {
-		wlr_log(WLR_DEBUG, "%s has new %s", sni->watcher_id, signal);
+		sway_log(SWAY_DEBUG, "%s has new %s", sni->watcher_id, signal);
 		return 1;
 	} else {
-		wlr_log(WLR_DEBUG, "%s may have new %s", sni->watcher_id, signal);
+		sway_log(SWAY_DEBUG, "%s may have new %s", sni->watcher_id, signal);
 		return 0;
 	}
 }
@@ -218,12 +218,12 @@ static int handle_new_status(sd_bus_message *msg, void *data, sd_bus_error *erro
 		char *status;
 		int r = sd_bus_message_read(msg, "s", &status);
 		if (r < 0) {
-			wlr_log(WLR_ERROR, "%s new status error: %s", sni->watcher_id, strerror(-ret));
+			sway_log(SWAY_ERROR, "%s new status error: %s", sni->watcher_id, strerror(-ret));
 			ret = r;
 		} else {
 			free(sni->status);
 			sni->status = strdup(status);
-			wlr_log(WLR_DEBUG, "%s has new status = '%s'", sni->watcher_id, status);
+			sway_log(SWAY_DEBUG, "%s has new status = '%s'", sni->watcher_id, status);
 			set_sni_dirty(sni);
 		}
 	} else {
@@ -238,7 +238,7 @@ static void sni_match_signal(struct swaybar_sni *sni, sd_bus_slot **slot,
 	int ret = sd_bus_match_signal(sni->tray->bus, slot, sni->service, sni->path,
 			sni->interface, signal, callback, sni);
 	if (ret < 0) {
-		wlr_log(WLR_ERROR, "Failed to subscribe to signal %s: %s", signal,
+		sway_log(SWAY_ERROR, "Failed to subscribe to signal %s: %s", signal,
 				strerror(-ret));
 	}
 }
@@ -353,7 +353,7 @@ static int cmp_sni_id(const void *item, const void *cmp_to) {
 static enum hotspot_event_handling icon_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
 		int x, int y, uint32_t button, void *data) {
-	wlr_log(WLR_DEBUG, "Clicked on %s", (char *)data);
+	sway_log(SWAY_DEBUG, "Clicked on %s", (char *)data);
 
 	struct swaybar_tray *tray = output->bar->tray;
 	int idx = list_seq_find(tray->items, cmp_sni_id, data);
@@ -367,11 +367,11 @@ static enum hotspot_event_handling icon_hotspot_callback(
 		int global_y = output->output_y + (top_bar ? config->gaps.top + y:
 				(int) output->output_height - config->gaps.bottom - y);
 
-		wlr_log(WLR_DEBUG, "Guessing click position at (%d, %d)", global_x, global_y);
+		sway_log(SWAY_DEBUG, "Guessing click position at (%d, %d)", global_x, global_y);
 		handle_click(sni, global_x, global_y, button, 1); // TODO get delta from event
 		return HOTSPOT_IGNORE;
 	} else {
-		wlr_log(WLR_DEBUG, "but it doesn't exist");
+		sway_log(SWAY_DEBUG, "but it doesn't exist");
 	}
 
 	return HOTSPOT_PROCESS;

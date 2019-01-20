@@ -67,7 +67,7 @@ static struct cmd_results *tray_bind(int argc, char **argv, bool code) {
 			other->command = binding->command;
 			free(binding);
 			binding = other;
-			wlr_log(WLR_DEBUG,
+			sway_log(SWAY_DEBUG,
 					"[bar %s] Updated tray binding for %u (%s) to %s",
 					config->current_bar->id, binding->button, name,
 					binding->command);
@@ -76,7 +76,7 @@ static struct cmd_results *tray_bind(int argc, char **argv, bool code) {
 	}
 	if (!overwritten) {
 		wl_list_insert(&config->current_bar->tray_bindings, &binding->link);
-		wlr_log(WLR_DEBUG, "[bar %s] Added tray binding for %u (%s) to %s",
+		sway_log(SWAY_DEBUG, "[bar %s] Added tray binding for %u (%s) to %s",
 				config->current_bar->id, binding->button, name,
 				binding->command);
 	}

@@ -47,13 +47,13 @@ int main(int argc, char **argv) {
 		exit_code = launch_status;
 		goto cleanup;
 	}
-	wlr_log_init(debug ? WLR_DEBUG : WLR_ERROR, NULL);
+	sway_log_init(debug ? SWAY_DEBUG : SWAY_ERROR, NULL);
 
 	if (!config_path) {
 		config_path = swaynag_get_config_path();
 	}
 	if (config_path) {
-		wlr_log(WLR_DEBUG, "Loading config file: %s", config_path);
+		sway_log(SWAY_DEBUG, "Loading config file: %s", config_path);
 		int config_status = swaynag_load_config(config_path, &swaynag, types);
 		free(config_path);
 		if (config_status != 0) {
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (!swaynag.message) {
-		wlr_log(WLR_ERROR, "No message passed. Please provide --message/-m");
+		sway_log(SWAY_ERROR, "No message passed. Please provide --message/-m");
 		exit_code = EXIT_FAILURE;
 		goto cleanup;
 	}
@@ -106,15 +106,15 @@ int main(int argc, char **argv) {
 		free(swaynag.details.button_details);
 	}
 
-	wlr_log(WLR_DEBUG, "Output: %s", swaynag.type->output);
-	wlr_log(WLR_DEBUG, "Anchors: %d", swaynag.type->anchors);
-	wlr_log(WLR_DEBUG, "Type: %s", swaynag.type->name);
-	wlr_log(WLR_DEBUG, "Message: %s", swaynag.message);
-	wlr_log(WLR_DEBUG, "Font: %s", swaynag.type->font);
-	wlr_log(WLR_DEBUG, "Buttons");
+	sway_log(SWAY_DEBUG, "Output: %s", swaynag.type->output);
+	sway_log(SWAY_DEBUG, "Anchors: %d", swaynag.type->anchors);
+	sway_log(SWAY_DEBUG, "Type: %s", swaynag.type->name);
+	sway_log(SWAY_DEBUG, "Message: %s", swaynag.message);
+	sway_log(SWAY_DEBUG, "Font: %s", swaynag.type->font);
+	sway_log(SWAY_DEBUG, "Buttons");
 	for (int i = 0; i < swaynag.buttons->length; i++) {
 		struct swaynag_button *button = swaynag.buttons->items[i];
-		wlr_log(WLR_DEBUG, "\t[%s] `%s`", button->text, button->action);
+		sway_log(SWAY_DEBUG, "\t[%s] `%s`", button->text, button->action);
 	}
 
 	signal(SIGTERM, sig_handler);

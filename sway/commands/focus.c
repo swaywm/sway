@@ -1,6 +1,5 @@
 #include <strings.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/util/log.h>
 #include "log.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"

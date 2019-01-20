@@ -12,6 +12,8 @@ project(
 
 add_project_arguments(
 	[
+		'-DSWAY_SRC_DIR="@0@"'.format(meson.current_source_dir()),
+
 		'-DWL_HIDE_DEPRECATED',
 		'-DWLR_USE_UNSTABLE',
 

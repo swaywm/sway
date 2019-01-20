@@ -47,7 +47,7 @@ struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 	config->current_bar->gaps.bottom = bottom;
 	config->current_bar->gaps.left = left;
 
-	wlr_log(WLR_DEBUG, "Setting bar gaps to %d %d %d %d on bar: %s",
+	sway_log(SWAY_DEBUG, "Setting bar gaps to %d %d %d %d on bar: %s",
 			config->current_bar->gaps.top, config->current_bar->gaps.right,
 			config->current_bar->gaps.bottom, config->current_bar->gaps.left,
 			config->current_bar->id);

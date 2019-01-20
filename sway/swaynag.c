@@ -17,7 +17,7 @@ bool swaynag_spawn(const char *swaynag_command,
 
 	if (swaynag->detailed) {
 		if (pipe(swaynag->fd) != 0) {
-			wlr_log(WLR_ERROR, "Failed to create pipe for swaynag");
+			sway_log(SWAY_ERROR, "Failed to create pipe for swaynag");
 			return false;
 		}
 		fcntl(swaynag->fd[1], F_SETFD, FD_CLOEXEC);
@@ -37,7 +37,7 @@ bool swaynag_spawn(const char *swaynag_command,
 		execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
 		_exit(0);
 	} else if (pid < 0) {
-		wlr_log(WLR_ERROR, "Failed to create fork for swaynag");
+		sway_log(SWAY_ERROR, "Failed to create fork for swaynag");
 		if (swaynag->detailed) {
 			close(swaynag->fd[0]);
 			close(swaynag->fd[1]);
@@ -67,7 +67,7 @@ void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,
 	}
 
 	if (!swaynag->detailed) {
-		wlr_log(WLR_ERROR, "Attempting to write to non-detailed swaynag inst");
+		sway_log(SWAY_ERROR, "Attempting to write to non-detailed swaynag inst");
 		return;
 	}
 
@@ -82,7 +82,7 @@ void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,
 
 	char *temp = malloc(length + 1);
 	if (!temp) {
-		wlr_log(WLR_ERROR, "Failed to allocate buffer for swaynag log entry.");
+		sway_log(SWAY_ERROR, "Failed to allocate buffer for swaynag log entry.");
 		return;
 	}
 

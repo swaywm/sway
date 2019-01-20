@@ -1,12 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <string.h>
-#include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "config.h"
 #include "stringop.h"
 #include "list.h"
+#include "log.h"
 
 uint32_t parse_position(const char *position) {
 	uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
@@ -16,7 +16,7 @@ uint32_t parse_position(const char *position) {
 	} else if (strcmp("bottom", position) == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | horiz;
 	} else {
-		wlr_log(WLR_ERROR, "Invalid position: %s, defaulting to bottom", position);
+		sway_log(SWAY_ERROR, "Invalid position: %s, defaulting to bottom", position);
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | horiz;
 	}
 }

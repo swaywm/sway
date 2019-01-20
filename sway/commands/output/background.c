@@ -79,7 +79,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		src = join_args(p.we_wordv, p.we_wordc);
 		wordfree(&p);
 		if (!src) {
-			wlr_log(WLR_ERROR, "Failed to duplicate string");
+			sway_log(SWAY_ERROR, "Failed to duplicate string");
 			return cmd_results_new(CMD_FAILURE, "Unable to allocate resource");
 		}
 
@@ -88,7 +88,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 			char *conf = strdup(config->current_config_path);
 			if (!conf) {
-				wlr_log(WLR_ERROR, "Failed to duplicate string");
+				sway_log(SWAY_ERROR, "Failed to duplicate string");
 				free(src);
 				return cmd_results_new(CMD_FAILURE,
 						"Unable to allocate resources");
@@ -100,7 +100,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			if (!src) {
 				free(rel_path);
 				free(conf);
-				wlr_log(WLR_ERROR, "Unable to allocate memory");
+				sway_log(SWAY_ERROR, "Unable to allocate memory");
 				return cmd_results_new(CMD_FAILURE,
 						"Unable to allocate resources");
 			}
@@ -112,7 +112,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 		bool can_access = access(src, F_OK) != -1;
 		if (!can_access) {
-			wlr_log(WLR_ERROR, "Unable to access background file '%s': %s",
+			sway_log(SWAY_ERROR, "Unable to access background file '%s': %s",
 					src, strerror(errno));
 			config_add_swaynag_warning("Unable to access background file '%s'",
 					src);

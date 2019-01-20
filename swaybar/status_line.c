@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <wlr/util/log.h>
+#include "log.h"
 #include "loop.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
@@ -38,7 +38,7 @@ bool status_handle_readable(struct status_line *status) {
 		errno = 0;
 		int available_bytes;
 		if (ioctl(status->read_fd, FIONREAD, &available_bytes) == -1) {
-			wlr_log(WLR_ERROR, "Unable to read status command output size");
+			sway_log(SWAY_ERROR, "Unable to read status command output size");
 			status_error(status, "[error reading from status command]");
 			return true;
 		}
@@ -49,7 +49,7 @@ bool status_handle_readable(struct status_line *status) {
 			status->buffer = realloc(status->buffer, status->buffer_size);
 		}
 		if (status->buffer == NULL) {
-			wlr_log_errno(WLR_ERROR, "Unable to read status line");
+			sway_log_errno(SWAY_ERROR, "Unable to read status line");
 			status_error(status, "[error reading from status command]");
 			return true;
 		}
@@ -68,13 +68,13 @@ bool status_handle_readable(struct status_line *status) {
 				&& (header = json_tokener_parse(status->buffer))
 				&& json_object_object_get_ex(header, "version", &version)
 				&& json_object_get_int(version) == 1) {
-			wlr_log(WLR_DEBUG, "Using i3bar protocol.");
+			sway_log(SWAY_DEBUG, "Using i3bar protocol.");
 			status->protocol = PROTOCOL_I3BAR;
 
 			json_object *click_events;
 			if (json_object_object_get_ex(header, "click_events", &click_events)
 					&& json_object_get_boolean(click_events)) {
-				wlr_log(WLR_DEBUG, "Enabling click events.");
+				sway_log(SWAY_DEBUG, "Enabling click events.");
 				status->click_events = true;
 				if (write(status->write_fd, "[\n", 2) != 2) {
 					status_error(status, "[failed to write to status command]");
@@ -86,11 +86,11 @@ bool status_handle_readable(struct status_line *status) {
 			json_object *signal;
 			if (json_object_object_get_ex(header, "stop_signal", &signal)) {
 				status->stop_signal = json_object_get_int(signal);
-				wlr_log(WLR_DEBUG, "Setting stop signal to %d", status->stop_signal);
+				sway_log(SWAY_DEBUG, "Setting stop signal to %d", status->stop_signal);
 			}
 			if (json_object_object_get_ex(header, "cont_signal", &signal)) {
 				status->cont_signal = json_object_get_int(signal);
-				wlr_log(WLR_DEBUG, "Setting cont signal to %d", status->cont_signal);
+				sway_log(SWAY_DEBUG, "Setting cont signal to %d", status->cont_signal);
 			}
 
 			json_object_put(header);
@@ -102,7 +102,7 @@ bool status_handle_readable(struct status_line *status) {
 			return i3bar_handle_readable(status);
 		}
 
-		wlr_log(WLR_DEBUG, "Using text protocol.");
+		sway_log(SWAY_DEBUG, "Using text protocol.");
 		status->protocol = PROTOCOL_TEXT;
 		status->text = status->buffer;
 		// intentional fall-through
@@ -140,7 +140,7 @@ struct status_line *status_line_init(char *cmd) {
 	int pipe_read_fd[2];
 	int pipe_write_fd[2];
 	if (pipe(pipe_read_fd) != 0 || pipe(pipe_write_fd) != 0) {
-		wlr_log(WLR_ERROR, "Unable to create pipes for status_command fork");
+		sway_log(SWAY_ERROR, "Unable to create pipes for status_command fork");
 		exit(1);
 	}
 

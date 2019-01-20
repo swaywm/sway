@@ -94,10 +94,10 @@ void detect_proprietary(int allow_unsupported_gpu) {
 	while (getline(&line, &line_size, f) != -1) {
 		if (strstr(line, "nvidia")) {
 			if (allow_unsupported_gpu) {
-				wlr_log(WLR_ERROR,
+				sway_log(SWAY_ERROR,
 						"!!! Proprietary Nvidia drivers are in use !!!");
 			} else {
-				wlr_log(WLR_ERROR,
+				sway_log(SWAY_ERROR,
 					"Proprietary Nvidia drivers are NOT supported. "
 					"Use Nouveau. To launch sway anyway, launch with "
 					"--my-next-gpu-wont-be-nvidia and DO NOT report issues.");
@@ -107,10 +107,10 @@ void detect_proprietary(int allow_unsupported_gpu) {
 		}
 		if (strstr(line, "fglrx")) {
 			if (allow_unsupported_gpu) {
-				wlr_log(WLR_ERROR,
+				sway_log(SWAY_ERROR,
 						"!!! Proprietary AMD drivers are in use !!!");
 			} else {
-				wlr_log(WLR_ERROR, "Proprietary AMD drivers do NOT support "
+				sway_log(SWAY_ERROR, "Proprietary AMD drivers do NOT support "
 					"Wayland. Use radeon. To try anyway, launch sway with "
 					"--unsupported-gpu and DO NOT report issues.");
 				exit(EXIT_FAILURE);
@@ -141,7 +141,7 @@ static void log_env(void) {
 		"SWAYSOCK"
 	};
 	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
-		wlr_log(WLR_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
+		sway_log(SWAY_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
 	}
 }
 
@@ -153,7 +153,7 @@ static void log_file(FILE *f) {
 		if (line[nread - 1] == '\n') {
 			line[nread - 1] = '\0';
 		}
-		wlr_log(WLR_INFO, "%s", line);
+		sway_log(SWAY_INFO, "%s", line);
 	}
 	free(line);
 }
@@ -169,7 +169,7 @@ static void log_distro(void) {
 	for (size_t i = 0; i < sizeof(paths) / sizeof(char *); ++i) {
 		FILE *f = fopen(paths[i], "r");
 		if (f) {
-			wlr_log(WLR_INFO, "Contents of %s:", paths[i]);
+			sway_log(SWAY_INFO, "Contents of %s:", paths[i]);
 			log_file(f);
 			fclose(f);
 		}
@@ -179,7 +179,7 @@ static void log_distro(void) {
 static void log_kernel(void) {
 	FILE *f = popen("uname -a", "r");
 	if (!f) {
-		wlr_log(WLR_INFO, "Unable to determine kernel version");
+		sway_log(SWAY_INFO, "Unable to determine kernel version");
 		return;
 	}
 	log_file(f);
@@ -190,16 +190,16 @@ static void log_kernel(void) {
 static bool drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		if (setgid(getgid()) != 0) {
-			wlr_log(WLR_ERROR, "Unable to drop root, refusing to start");
+			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
 			return false;
 		}
 		if (setuid(getuid()) != 0) {
-			wlr_log(WLR_ERROR, "Unable to drop root, refusing to start");
+			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
 			return false;
 		}
 	}
 	if (setuid(0) != -1) {
-		wlr_log(WLR_ERROR, "Unable to drop root (we shouldn't be able to "
+		sway_log(SWAY_ERROR, "Unable to drop root (we shouldn't be able to "
 			"restore it after setuid), refusing to start");
 		return false;
 	}
@@ -303,17 +303,22 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// As the 'callback' function for wlr_log is equivalent to that for
+	// sway, we do not need to override it.
 	if (debug) {
+		sway_log_init(SWAY_DEBUG, sway_terminate);
 		wlr_log_init(WLR_DEBUG, NULL);
 	} else if (verbose || validate) {
+		sway_log_init(SWAY_INFO, sway_terminate);
 		wlr_log_init(WLR_INFO, NULL);
 	} else {
+		sway_log_init(SWAY_ERROR, sway_terminate);
 		wlr_log_init(WLR_ERROR, NULL);
 	}
 
 	if (optind < argc) { // Behave as IPC client
 		if (optind != 1) {
-			wlr_log(WLR_ERROR, "Don't use options with the IPC client");
+			sway_log(SWAY_ERROR, "Don't use options with the IPC client");
 			exit(EXIT_FAILURE);
 		}
 		if (!drop_permissions()) {
@@ -321,7 +326,7 @@ int main(int argc, char **argv) {
 		}
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
-			wlr_log(WLR_ERROR, "Unable to retrieve socket path");
+			sway_log(SWAY_ERROR, "Unable to retrieve socket path");
 			exit(EXIT_FAILURE);
 		}
 		char *command = join_args(argv + optind, argc - optind);
@@ -349,7 +354,7 @@ int main(int argc, char **argv) {
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
 
-	wlr_log(WLR_INFO, "Starting sway version " SWAY_VERSION);
+	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
 	root = root_create();
 
@@ -383,14 +388,14 @@ int main(int argc, char **argv) {
 	config->active = true;
 	load_swaybars();
 	// Execute commands until there are none left
-	wlr_log(WLR_DEBUG, "Running deferred commands");
+	sway_log(SWAY_DEBUG, "Running deferred commands");
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
 		list_t *res_list = execute_command(line, NULL, NULL);
 		for (int i = 0; i < res_list->length; ++i) {
 			struct cmd_results *res = res_list->items[i];
 			if (res->status != CMD_SUCCESS) {
-				wlr_log(WLR_ERROR, "Error on line '%s': %s", line, res->error);
+				sway_log(SWAY_ERROR, "Error on line '%s': %s", line, res->error);
 			}
 			free_cmd_results(res);
 		}
@@ -408,7 +413,7 @@ int main(int argc, char **argv) {
 		server_run(&server);
 	}
 
-	wlr_log(WLR_INFO, "Shutting down sway");
+	sway_log(SWAY_INFO, "Shutting down sway");
 
 	server_fini(&server);
 	root_destroy(root);

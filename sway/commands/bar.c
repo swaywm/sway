@@ -1,9 +1,9 @@
 #define _POSIX_C_SOURCE 200809
 #include <string.h>
 #include <strings.h>
-#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "log.h"
 #include "util.h"
 
 // Must be in alphabetical order for bsearch
@@ -60,14 +60,14 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		for (int i = 0; i < config->bars->length; ++i) {
 			struct bar_config *item = config->bars->items[i];
 			if (strcmp(item->id, argv[0]) == 0) {
-				wlr_log(WLR_DEBUG, "Selecting bar: %s", argv[0]);
+				sway_log(SWAY_DEBUG, "Selecting bar: %s", argv[0]);
 				bar = item;
 				break;
 			}
 		}
 		if (!bar) {
 			spawn = !config->reading;
-			wlr_log(WLR_DEBUG, "Creating bar: %s", argv[0]);
+			sway_log(SWAY_DEBUG, "Creating bar: %s", argv[0]);
 			bar = default_bar_config();
 			if (!bar) {
 				return cmd_results_new(CMD_FAILURE,
@@ -99,7 +99,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 		// Set current bar
 		config->current_bar = bar;
-		wlr_log(WLR_DEBUG, "Creating bar %s", bar->id);
+		sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
 	}
 
 	if (find_handler(argv[0], bar_config_handlers,

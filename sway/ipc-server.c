@@ -147,32 +147,32 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	(void) fd;
 	struct sway_server *server = data;
-	wlr_log(WLR_DEBUG, "Event on IPC listening socket");
+	sway_log(SWAY_DEBUG, "Event on IPC listening socket");
 	assert(mask == WL_EVENT_READABLE);
 
 	int client_fd = accept(ipc_socket, NULL, NULL);
 	if (client_fd == -1) {
-		wlr_log_errno(WLR_ERROR, "Unable to accept IPC client connection");
+		sway_log_errno(SWAY_ERROR, "Unable to accept IPC client connection");
 		return 0;
 	}
 
 	int flags;
 	if ((flags = fcntl(client_fd, F_GETFD)) == -1
 			|| fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
-		wlr_log_errno(WLR_ERROR, "Unable to set CLOEXEC on IPC client socket");
+		sway_log_errno(SWAY_ERROR, "Unable to set CLOEXEC on IPC client socket");
 		close(client_fd);
 		return 0;
 	}
 	if ((flags = fcntl(client_fd, F_GETFL)) == -1
 			|| fcntl(client_fd, F_SETFL, flags|O_NONBLOCK) == -1) {
-		wlr_log_errno(WLR_ERROR, "Unable to set NONBLOCK on IPC client socket");
+		sway_log_errno(SWAY_ERROR, "Unable to set NONBLOCK on IPC client socket");
 		close(client_fd);
 		return 0;
 	}
 
 	struct ipc_client *client = malloc(sizeof(struct ipc_client));
 	if (!client) {
-		wlr_log(WLR_ERROR, "Unable to allocate ipc client");
+		sway_log(SWAY_ERROR, "Unable to allocate ipc client");
 		close(client_fd);
 		return 0;
 	}
@@ -188,12 +188,12 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	client->write_buffer_len = 0;
 	client->write_buffer = malloc(client->write_buffer_size);
 	if (!client->write_buffer) {
-		wlr_log(WLR_ERROR, "Unable to allocate ipc client write buffer");
+		sway_log(SWAY_ERROR, "Unable to allocate ipc client write buffer");
 		close(client_fd);
 		return 0;
 	}
 
-	wlr_log(WLR_DEBUG, "New client: fd %d", client_fd);
+	sway_log(SWAY_DEBUG, "New client: fd %d", client_fd);
 	list_add(ipc_client_list, client);
 	return 0;
 }
@@ -202,22 +202,22 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
 	if (mask & WL_EVENT_ERROR) {
-		wlr_log(WLR_ERROR, "IPC Client socket error, removing client");
+		sway_log(SWAY_ERROR, "IPC Client socket error, removing client");
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
 	if (mask & WL_EVENT_HANGUP) {
-		wlr_log(WLR_DEBUG, "Client %d hung up", client->fd);
+		sway_log(SWAY_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
-	wlr_log(WLR_DEBUG, "Client %d readable", client->fd);
+	sway_log(SWAY_DEBUG, "Client %d readable", client->fd);
 
 	int read_available;
 	if (ioctl(client_fd, FIONREAD, &read_available) == -1) {
-		wlr_log_errno(WLR_INFO, "Unable to read IPC socket buffer size");
+		sway_log_errno(SWAY_INFO, "Unable to read IPC socket buffer size");
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -239,13 +239,13 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	// Should be fully available, because read_available >= IPC_HEADER_SIZE
 	ssize_t received = recv(client_fd, buf, IPC_HEADER_SIZE, 0);
 	if (received == -1) {
-		wlr_log_errno(WLR_INFO, "Unable to receive header from IPC client");
+		sway_log_errno(SWAY_INFO, "Unable to receive header from IPC client");
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
 	if (memcmp(buf, ipc_magic, sizeof(ipc_magic)) != 0) {
-		wlr_log(WLR_DEBUG, "IPC header check failed");
+		sway_log(SWAY_DEBUG, "IPC header check failed");
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -279,7 +279,7 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 		}
 		client->current_command = event;
 		if (!ipc_send_reply(client, json_string, (uint32_t) strlen(json_string))) {
-			wlr_log_errno(WLR_INFO, "Unable to send reply to IPC client");
+			sway_log_errno(SWAY_INFO, "Unable to send reply to IPC client");
 			/* ipc_send_reply destroys client on error, which also
 			 * removes it from the list, so we need to process
 			 * current index again */
@@ -293,7 +293,7 @@ void ipc_event_workspace(struct sway_workspace *old,
 	if (!ipc_has_event_listeners(IPC_EVENT_WORKSPACE)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending workspace::%s event", change);
+	sway_log(SWAY_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (old) {
@@ -319,7 +319,7 @@ void ipc_event_window(struct sway_container *window, const char *change) {
 	if (!ipc_has_event_listeners(IPC_EVENT_WINDOW)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending window::%s event", change);
+	sway_log(SWAY_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	json_object_object_add(obj, "container",
@@ -334,7 +334,7 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 	if (!ipc_has_event_listeners(IPC_EVENT_BARCONFIG_UPDATE)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending barconfig_update event");
+	sway_log(SWAY_DEBUG, "Sending barconfig_update event");
 	json_object *json = ipc_json_describe_bar_config(bar);
 
 	const char *json_string = json_object_to_json_string(json);
@@ -346,7 +346,7 @@ void ipc_event_bar_state_update(struct bar_config *bar) {
 	if (!ipc_has_event_listeners(IPC_EVENT_BAR_STATE_UPDATE)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending bar_state_update event");
+	sway_log(SWAY_DEBUG, "Sending bar_state_update event");
 
 	json_object *json = json_object_new_object();
 	json_object_object_add(json, "id", json_object_new_string(bar->id));
@@ -362,7 +362,7 @@ void ipc_event_mode(const char *mode, bool pango) {
 	if (!ipc_has_event_listeners(IPC_EVENT_MODE)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending mode::%s event", mode);
+	sway_log(SWAY_DEBUG, "Sending mode::%s event", mode);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(mode));
 	json_object_object_add(obj, "pango_markup",
@@ -377,7 +377,7 @@ void ipc_event_shutdown(const char *reason) {
 	if (!ipc_has_event_listeners(IPC_EVENT_SHUTDOWN)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending shutdown::%s event", reason);
+	sway_log(SWAY_DEBUG, "Sending shutdown::%s event", reason);
 
 	json_object *json = json_object_new_object();
 	json_object_object_add(json, "change", json_object_new_string(reason));
@@ -391,7 +391,7 @@ void ipc_event_binding(struct sway_binding *binding) {
 	if (!ipc_has_event_listeners(IPC_EVENT_BINDING)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending binding event");
+	sway_log(SWAY_DEBUG, "Sending binding event");
 
 	json_object *json_binding = json_object_new_object();
 	json_object_object_add(json_binding, "command", json_object_new_string(binding->command));
@@ -464,7 +464,7 @@ static void ipc_event_tick(const char *payload) {
 	if (!ipc_has_event_listeners(IPC_EVENT_TICK)) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Sending tick event");
+	sway_log(SWAY_DEBUG, "Sending tick event");
 
 	json_object *json = json_object_new_object();
 	json_object_object_add(json, "first", json_object_new_boolean(false));
@@ -479,13 +479,13 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
 	if (mask & WL_EVENT_ERROR) {
-		wlr_log(WLR_ERROR, "IPC Client socket error, removing client");
+		sway_log(SWAY_ERROR, "IPC Client socket error, removing client");
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
 	if (mask & WL_EVENT_HANGUP) {
-		wlr_log(WLR_DEBUG, "Client %d hung up", client->fd);
+		sway_log(SWAY_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -494,14 +494,14 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	wlr_log(WLR_DEBUG, "Client %d writable", client->fd);
+	sway_log(SWAY_DEBUG, "Client %d writable", client->fd);
 
 	ssize_t written = write(client->fd, client->write_buffer, client->write_buffer_len);
 
 	if (written == -1 && errno == EAGAIN) {
 		return 0;
 	} else if (written == -1) {
-		wlr_log_errno(WLR_INFO, "Unable to send data from queue to IPC client");
+		sway_log_errno(SWAY_INFO, "Unable to send data from queue to IPC client");
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -524,7 +524,7 @@ void ipc_client_disconnect(struct ipc_client *client) {
 
 	shutdown(client->fd, SHUT_RDWR);
 
-	wlr_log(WLR_INFO, "IPC Client %d disconnected", client->fd);
+	sway_log(SWAY_INFO, "IPC Client %d disconnected", client->fd);
 	wl_event_source_remove(client->event_source);
 	if (client->writable_event_source) {
 		wl_event_source_remove(client->writable_event_source);
@@ -573,7 +573,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	char *buf = malloc(client->payload_length + 1);
 	if (!buf) {
-		wlr_log_errno(WLR_INFO, "Unable to allocate IPC payload");
+		sway_log_errno(SWAY_INFO, "Unable to allocate IPC payload");
 		ipc_client_disconnect(client);
 		return;
 	}
@@ -582,7 +582,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
 		if (received == -1)
 		{
-			wlr_log_errno(WLR_INFO, "Unable to receive payload from IPC client");
+			sway_log_errno(SWAY_INFO, "Unable to receive payload from IPC client");
 			ipc_client_disconnect(client);
 			free(buf);
 			return;
@@ -667,7 +667,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		if (request == NULL || !json_object_is_type(request, json_type_array)) {
 			const char msg[] = "{\"success\": false}";
 			client_valid = ipc_send_reply(client, msg, strlen(msg));
-			wlr_log(WLR_INFO, "Failed to parse subscribe request");
+			sway_log(SWAY_INFO, "Failed to parse subscribe request");
 			goto exit_cleanup;
 		}
 
@@ -696,7 +696,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				const char msg[] = "{\"success\": false}";
 				client_valid = ipc_send_reply(client, msg, strlen(msg));
 				json_object_put(request);
-				wlr_log(WLR_INFO, "Unsupported event type in subscribe request");
+				sway_log(SWAY_INFO, "Unsupported event type in subscribe request");
 				goto exit_cleanup;
 			}
 		}
@@ -845,7 +845,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 
 	default:
-		wlr_log(WLR_INFO, "Unknown IPC command type %i", client->current_command);
+		sway_log(SWAY_INFO, "Unknown IPC command type %i", client->current_command);
 		goto exit_cleanup;
 	}
 
@@ -873,14 +873,14 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	}
 
 	if (client->write_buffer_size > 4e6) { // 4 MB
-		wlr_log(WLR_ERROR, "Client write buffer too big, disconnecting client");
+		sway_log(SWAY_ERROR, "Client write buffer too big, disconnecting client");
 		ipc_client_disconnect(client);
 		return false;
 	}
 
 	char *new_buffer = realloc(client->write_buffer, client->write_buffer_size);
 	if (!new_buffer) {
-		wlr_log(WLR_ERROR, "Unable to reallocate ipc client write buffer");
+		sway_log(SWAY_ERROR, "Unable to reallocate ipc client write buffer");
 		ipc_client_disconnect(client);
 		return false;
 	}
@@ -897,6 +897,6 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 				ipc_client_handle_writable, client);
 	}
 
-	wlr_log(WLR_DEBUG, "Added IPC reply to client %d queue: %s", client->fd, payload);
+	sway_log(SWAY_DEBUG, "Added IPC reply to client %d queue: %s", client->fd, payload);
 	return true;
 }

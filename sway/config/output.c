@@ -91,7 +91,7 @@ static void merge_wildcard_on_all(struct output_config *wildcard) {
 	for (int i = 0; i < config->output_configs->length; i++) {
 		struct output_config *oc = config->output_configs->items[i];
 		if (strcmp(wildcard->name, oc->name) != 0) {
-			wlr_log(WLR_DEBUG, "Merging output * config on %s", oc->name);
+			sway_log(SWAY_DEBUG, "Merging output * config on %s", oc->name);
 			merge_output_config(oc, wildcard);
 		}
 	}
@@ -105,16 +105,16 @@ struct output_config *store_output_config(struct output_config *oc) {
 
 	int i = list_seq_find(config->output_configs, output_name_cmp, oc->name);
 	if (i >= 0) {
-		wlr_log(WLR_DEBUG, "Merging on top of existing output config");
+		sway_log(SWAY_DEBUG, "Merging on top of existing output config");
 		struct output_config *current = config->output_configs->items[i];
 		merge_output_config(current, oc);
 		free_output_config(oc);
 		oc = current;
 	} else if (!wildcard) {
-		wlr_log(WLR_DEBUG, "Adding non-wildcard output config");
+		sway_log(SWAY_DEBUG, "Adding non-wildcard output config");
 		i = list_seq_find(config->output_configs, output_name_cmp, "*");
 		if (i >= 0) {
-			wlr_log(WLR_DEBUG, "Merging on top of output * config");
+			sway_log(SWAY_DEBUG, "Merging on top of output * config");
 			struct output_config *current = new_output_config(oc->name);
 			merge_output_config(current, config->output_configs->items[i]);
 			merge_output_config(current, oc);
@@ -124,11 +124,11 @@ struct output_config *store_output_config(struct output_config *oc) {
 		list_add(config->output_configs, oc);
 	} else {
 		// New wildcard config. Just add it
-		wlr_log(WLR_DEBUG, "Adding output * config");
+		sway_log(SWAY_DEBUG, "Adding output * config");
 		list_add(config->output_configs, oc);
 	}
 
-	wlr_log(WLR_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
+	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, oc->transform, oc->background,
@@ -141,7 +141,7 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate) {
 	int mhz = (int)(refresh_rate * 1000);
 	if (wl_list_empty(&output->modes)) {
-		wlr_log(WLR_DEBUG, "Assigning custom mode to %s", output->name);
+		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
 		return wlr_output_set_custom_mode(output, width, height, mhz);
 	}
 
@@ -156,11 +156,11 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 		}
 	}
 	if (!best) {
-		wlr_log(WLR_ERROR, "Configured mode for %s not available", output->name);
-		wlr_log(WLR_INFO, "Picking default mode instead");
+		sway_log(SWAY_ERROR, "Configured mode for %s not available", output->name);
+		sway_log(SWAY_INFO, "Picking default mode instead");
 		best = wl_container_of(output->modes.prev, mode, link);
 	} else {
-		wlr_log(WLR_DEBUG, "Assigning configured mode to %s", output->name);
+		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
 	}
 	return wlr_output_set_mode(output, best);
 }
@@ -168,7 +168,7 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 void terminate_swaybg(pid_t pid) {
 	int ret = kill(pid, SIGTERM);
 	if (ret != 0) {
-		wlr_log(WLR_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
+		sway_log(SWAY_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
@@ -197,7 +197,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	bool modeset_success;
 	if (oc && oc->width > 0 && oc->height > 0) {
-		wlr_log(WLR_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
+		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
 		modeset_success =
 			set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
@@ -213,22 +213,22 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		// Failed to modeset, maybe the output is missing a CRTC. Leave the
 		// output disabled for now and try again when the output gets the mode
 		// we asked for.
-		wlr_log(WLR_ERROR, "Failed to modeset output %s", wlr_output->name);
+		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
 		return false;
 	}
 
 	if (oc && oc->scale > 0) {
-		wlr_log(WLR_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
+		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
 	}
 	if (oc && oc->transform >= 0) {
-		wlr_log(WLR_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
+		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
 	}
 
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
-		wlr_log(WLR_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
+		sway_log(SWAY_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
 		wlr_output_layout_add(root->output_layout, wlr_output, oc->x, oc->y);
 	} else {
 		wlr_output_layout_add_auto(root->output_layout, wlr_output);
@@ -238,7 +238,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		terminate_swaybg(output->bg_pid);
 	}
 	if (oc && oc->background && config->swaybg_command) {
-		wlr_log(WLR_DEBUG, "Setting background for output %s to %s",
+		sway_log(SWAY_DEBUG, "Setting background for output %s to %s",
 			wlr_output->name, oc->background);
 
 		char *const cmd[] = {
@@ -252,21 +252,21 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 		output->bg_pid = fork();
 		if (output->bg_pid < 0) {
-			wlr_log_errno(WLR_ERROR, "fork failed");
+			sway_log_errno(SWAY_ERROR, "fork failed");
 		} else if (output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
-			wlr_log_errno(WLR_ERROR, "Failed to execute swaybg");
+			sway_log_errno(SWAY_ERROR, "Failed to execute swaybg");
 		}
 	}
 
 	if (oc) {
 		switch (oc->dpms_state) {
 		case DPMS_ON:
-			wlr_log(WLR_DEBUG, "Turning on screen");
+			sway_log(SWAY_DEBUG, "Turning on screen");
 			wlr_output_enable(wlr_output, true);
 			break;
 		case DPMS_OFF:
-			wlr_log(WLR_DEBUG, "Turning off screen");
+			sway_log(SWAY_DEBUG, "Turning off screen");
 			wlr_output_enable(wlr_output, false);
 			break;
 		case DPMS_IGNORE:
@@ -325,7 +325,7 @@ static struct output_config *get_output_config(char *identifier,
 		merge_output_config(result, oc_name);
 		merge_output_config(result, oc_id);
 
-		wlr_log(WLR_DEBUG, "Generated output config \"%s\" (enabled: %d)"
+		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
 			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
 			" (dpms %d)", result->name, result->enabled, result->width,
 			result->height, result->refresh_rate, result->x, result->y,

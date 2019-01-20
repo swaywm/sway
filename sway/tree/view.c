@@ -328,7 +328,7 @@ void view_request_activate(struct sway_view *view) {
 }
 
 void view_set_csd_from_server(struct sway_view *view, bool enabled) {
-	wlr_log(WLR_DEBUG, "Telling view %p to set CSD to %i", view, enabled);
+	sway_log(SWAY_DEBUG, "Telling view %p to set CSD to %i", view, enabled);
 	if (view->xdg_decoration) {
 		uint32_t mode = enabled ?
 			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE :
@@ -340,7 +340,7 @@ void view_set_csd_from_server(struct sway_view *view, bool enabled) {
 }
 
 void view_update_csd_from_client(struct sway_view *view, bool enabled) {
-	wlr_log(WLR_DEBUG, "View %p updated CSD to %i", view, enabled);
+	sway_log(SWAY_DEBUG, "View %p updated CSD to %i", view, enabled);
 	struct sway_container *con = view->container;
 	if (enabled && con && con->border != B_CSD) {
 		con->saved_border = con->border;
@@ -429,12 +429,12 @@ void view_execute_criteria(struct sway_view *view) {
 	list_t *criterias = criteria_for_view(view, CT_COMMAND);
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
-		wlr_log(WLR_DEBUG, "Checking criteria %s", criteria->raw);
+		sway_log(SWAY_DEBUG, "Checking criteria %s", criteria->raw);
 		if (view_has_executed_criteria(view, criteria)) {
-			wlr_log(WLR_DEBUG, "Criteria already executed");
+			sway_log(SWAY_DEBUG, "Criteria already executed");
 			continue;
 		}
-		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
+		sway_log(SWAY_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
 		list_t *res_list = execute_command(
@@ -721,7 +721,7 @@ static void view_subsurface_create(struct sway_view *view,
 	struct sway_subsurface *subsurface =
 		calloc(1, sizeof(struct sway_subsurface));
 	if (subsurface == NULL) {
-		wlr_log(WLR_ERROR, "Allocation failed");
+		sway_log(SWAY_ERROR, "Allocation failed");
 		return;
 	}
 	view_child_init(&subsurface->child, &subsurface_impl, view,
@@ -860,7 +860,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	}
 
 	const char *role = wlr_surface->role ? wlr_surface->role->name : NULL;
-	wlr_log(WLR_DEBUG, "Surface of unknown type (role %s): %p",
+	sway_log(SWAY_DEBUG, "Surface of unknown type (role %s): %p",
 		role, wlr_surface);
 	return NULL;
 }

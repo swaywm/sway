@@ -28,7 +28,7 @@
 struct sway_container *container_create(struct sway_view *view) {
 	struct sway_container *c = calloc(1, sizeof(struct sway_container));
 	if (!c) {
-		wlr_log(WLR_ERROR, "Unable to allocate sway_container");
+		sway_log(SWAY_ERROR, "Unable to allocate sway_container");
 		return NULL;
 	}
 	node_init(&c->node, N_CONTAINER, c);
@@ -983,7 +983,7 @@ void container_discover_outputs(struct sway_container *con) {
 
 		if (intersects && index == -1) {
 			// Send enter
-			wlr_log(WLR_DEBUG, "Container %p entered output %p", con, output);
+			sway_log(SWAY_DEBUG, "Container %p entered output %p", con, output);
 			if (con->view) {
 				view_for_each_surface(con->view,
 						surface_send_enter_iterator, output->wlr_output);
@@ -991,7 +991,7 @@ void container_discover_outputs(struct sway_container *con) {
 			list_add(con->outputs, output);
 		} else if (!intersects && index != -1) {
 			// Send leave
-			wlr_log(WLR_DEBUG, "Container %p left output %p", con, output);
+			sway_log(SWAY_DEBUG, "Container %p left output %p", con, output);
 			if (con->view) {
 				view_for_each_surface(con->view,
 					surface_send_leave_iterator, output->wlr_output);

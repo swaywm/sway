@@ -4,9 +4,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
-#include <wlr/util/log.h>
 #include "swaybar/bar.h"
 #include "ipc-client.h"
+#include "log.h"
 
 static struct swaybar swaybar;
 
@@ -74,13 +74,13 @@ int main(int argc, char **argv) {
 	}
 
 	if (debug) {
-		wlr_log_init(WLR_DEBUG, NULL);
+		sway_log_init(SWAY_DEBUG, NULL);
 	} else {
-		wlr_log_init(WLR_INFO, NULL);
+		sway_log_init(SWAY_INFO, NULL);
 	}
 
 	if (!swaybar.id) {
-		wlr_log(WLR_ERROR, "No bar_id passed. "
+		sway_log(SWAY_ERROR, "No bar_id passed. "
 				"Provide --bar_id or let sway start swaybar");
 		return 1;
 	}
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
-			wlr_log(WLR_ERROR, "Unable to retrieve socket path");
+			sway_log(SWAY_ERROR, "Unable to retrieve socket path");
 			return 1;
 		}
 	}
