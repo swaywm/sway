@@ -12,11 +12,12 @@ int wrap(int i, int max) {
 }
 
 int numlen(int n) {
-	if (n == 0) {
-		return 1;
+	int j = n <= 0 ? 1 : 0;
+	while (n) {
+		j++;
+		n /= 10;
 	}
-	// Account for the '-' in negative numbers.
-	return log10(abs(n)) + (n > 0 ? 1 : 2);
+	return j;
 }
 
 uint32_t parse_color(const char *color) {
