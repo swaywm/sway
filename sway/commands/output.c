@@ -29,7 +29,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	// The NOOP-1 output is a dummy output used when there's no outputs
 	// connected. It should never be configured.
-	if (strcasecmp(argv[0], "NOOP-1") == 0) {
+	if (strcasecmp(argv[0], root->noop_output->wlr_output->name) == 0) {
 		return cmd_results_new(CMD_FAILURE,
 				"Refusing to configure the no op output");
 	}
