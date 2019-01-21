@@ -82,12 +82,16 @@ The following commands may only be used in the configuration file.
 *input* <identifier> dwt enabled|disabled
 	Enables or disables disable-while-typing for the specified input device.
 
-*input* <identifier> events enabled|disabled|disabled\_on\_external\_mouse|toggle
+*input* <identifier> events enabled|disabled|disabled\_on\_external\_mouse|toggle [<toggle-modes>]
 	Enables or disables send\_events for specified input device. Disabling
-	send\_events disables the input device. The _toggle_ option cannot be used
-	in the config. The order is enabled, disabled\_on\_external\_mouse,
-	disabled, (loop back to enabled). Any mode which is not supported by the
-	device will be skipped during the toggle.
+	send\_events disables the input device.
+
+	The _toggle_ option cannot be used in the config. If no toggle modes are
+	listed, all supported modes for the device will be toggled through in the
+	order: enabled,	disabled\_on\_external\_mouse, disabled, (loop back). If
+	toggle modes are listed, they will be cycled through, defaulting to the
+	first mode listed if the current mode is not in the list. They will also
+	not be checked to see if they are supported for the device and may fail.
 
 *input* <identifier> left\_handed enabled|disabled
 	Enables or disables left handed mode for specified input device.
