@@ -11,12 +11,12 @@
 #include <strings.h>
 #include <signal.h>
 #include "sway/config.h"
+#include "sway/input/keyboard.h"
 #include "sway/output.h"
 #include "config.h"
-#include "stringop.h"
 #include "list.h"
 #include "log.h"
-#include "util.h"
+#include "stringop.h"
 
 static void terminate_swaybar(pid_t pid) {
 	sway_log(SWAY_DEBUG, "Terminating swaybar %d", pid);

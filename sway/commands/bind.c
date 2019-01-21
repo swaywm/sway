@@ -8,6 +8,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/cursor.h"
+#include "sway/input/keyboard.h"
 #include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
