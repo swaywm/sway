@@ -109,7 +109,8 @@ void input_manager_verify_fallback_seat(void) {
 
 static void log_libinput_config_status(enum libinput_config_status status) {
 	if (status != LIBINPUT_CONFIG_STATUS_SUCCESS) {
-		wlr_log(WLR_DEBUG, "Error: %s", libinput_config_status_to_str(status));
+		sway_log(SWAY_ERROR, "Failed to apply libinput config: %s",
+			libinput_config_status_to_str(status));
 	}
 }
 
