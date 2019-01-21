@@ -153,6 +153,9 @@ subdir('client')
 subdir('swaybg')
 subdir('swaybar')
 subdir('swaynag')
+if systemd.found()
+  subdir('systemd')
+endif
 
 config = configuration_data()
 config.set('datadir', join_paths(prefix, datadir))
