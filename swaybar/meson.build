@@ -16,8 +16,7 @@ swaybar_deps = [
 	pangocairo,
 	rt,
 	wayland_client,
-	wayland_cursor,
-	wlroots,
+	wayland_cursor
 ]
 if have_tray
 	if systemd.found()

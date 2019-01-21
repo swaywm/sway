@@ -15,8 +15,7 @@ lib_sway_common = static_library(
 		cairo,
 		gdk_pixbuf,
 		pango,
-		pangocairo,
-		wlroots
+		pangocairo
 	],
 	include_directories: sway_inc
 )
