@@ -185,8 +185,8 @@ struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus) {
 		goto error;
 	}
 
-	sd_bus_slot_set_floating(signal_slot, 0);
-	sd_bus_slot_set_floating(vtable_slot, 0);
+	sd_bus_slot_set_floating(signal_slot, 1);
+	sd_bus_slot_set_floating(vtable_slot, 1);
 
 	watcher->bus = bus;
 	watcher->hosts = create_list();
