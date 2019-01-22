@@ -20,7 +20,7 @@ void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 		}
 	}
 
-	char *command = malloc(size) + 1;
+	char *command = malloc(size + 1);
 	if (!command) {
 		return;
 	}
