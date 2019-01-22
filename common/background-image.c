@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <stdbool.h>
 #include "background-image.h"
 #include "cairo.h"
 #include "log.h"
@@ -30,7 +29,7 @@ cairo_surface_t *load_background_image(const char *path) {
 	if (!pixbuf) {
 		sway_log(SWAY_ERROR, "Failed to load background image (%s).",
 				err->message);
-		return false;
+		return NULL;
 	}
 	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
 	g_object_unref(pixbuf);
