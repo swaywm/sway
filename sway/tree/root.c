@@ -169,7 +169,6 @@ static pid_t get_parent_pid(pid_t child) {
 	pid_t parent = -1;
 	char file_name[100];
 	char *buffer = NULL;
-	char *token = NULL;
 	const char *sep = " ";
 	FILE *stat = NULL;
 	size_t buf_size = 0;
@@ -178,10 +177,10 @@ static pid_t get_parent_pid(pid_t child) {
 
 	if ((stat = fopen(file_name, "r"))) {
 		if (getline(&buffer, &buf_size, stat) != -1) {
-			token = strtok(buffer, sep); // pid
-			token = strtok(NULL, sep);   // executable name
-			token = strtok(NULL, sep);   // state
-			token = strtok(NULL, sep);   // parent pid
+			strtok(buffer, sep); // pid
+			strtok(NULL, sep);   // executable name
+			strtok(NULL, sep);   // state
+			char *token = strtok(NULL, sep);   // parent pid
 			parent = strtol(token, NULL, 10);
 		}
 		free(buffer);

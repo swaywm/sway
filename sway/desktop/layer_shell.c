@@ -354,8 +354,6 @@ struct sway_layer_surface *layer_from_wlr_layer_surface_v1(
 
 void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface_v1 *layer_surface = data;
-	struct sway_server *server =
-		wl_container_of(listener, server, layer_shell_surface);
 	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
 			"size %dx%d margin %d,%d,%d,%d",
 		layer_surface->namespace, layer_surface->layer, layer_surface->layer,

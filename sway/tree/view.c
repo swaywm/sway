@@ -236,8 +236,6 @@ void view_autoconfigure(struct sway_view *view) {
 		con->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
-	double x, y, width, height;
-	x = y = width = height = 0;
 	double y_offset = 0;
 
 	// In a tabbed or stacked container, the container's y is the top of the
@@ -253,7 +251,9 @@ void view_autoconfigure(struct sway_view *view) {
 		con->border_top = false;
 	}
 
+	double x, y, width, height;
 	switch (con->border) {
+	default:
 	case B_CSD:
 	case B_NONE:
 		x = con->x;

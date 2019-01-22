@@ -123,7 +123,6 @@ static struct sway_node *node_get_in_direction(struct sway_container *container,
 
 		if (can_move) {
 			if (desired < 0 || desired >= siblings->length) {
-				can_move = false;
 				int len = siblings->length;
 				if (config->focus_wrapping != WRAP_NO && !wrap_candidate
 						&& len > 1) {

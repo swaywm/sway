@@ -85,7 +85,6 @@ static struct pool_buffer *create_buffer(struct wl_shm *shm,
 	close(fd);
 	unlink(name);
 	free(name);
-	fd = -1;
 
 	buf->size = size;
 	buf->width = width;
