@@ -22,14 +22,9 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "No current container");
 	};
 	
-	if (!container_is_floating(container)) {
-		return cmd_results_new(CMD_FAILURE,
-			"Can't set sticky on a tiled container");
-	}
-
 	container->is_sticky = parse_boolean(argv[0], container->is_sticky);
 
-	if (container->is_sticky &&
+	if (container->is_sticky && container_is_floating_or_child(container) &&
 			(!container->scratchpad || container->workspace)) {
 		// move container to active workspace
 		struct sway_workspace *active_workspace =
