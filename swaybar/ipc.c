@@ -11,10 +11,27 @@
 #include "log.h"
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
-	const char *fmt = "workspace \"%s\"";
-	uint32_t size = snprintf(NULL, 0, fmt, ws);
-	char *command = malloc(sizeof(char) * (size + 1));
-	snprintf(command, size, fmt, ws);
+	uint32_t size = strlen("workspace \"\"") + strlen(ws);
+	for (size_t i = 0; i < strlen(ws); ++i) {
+		if (ws[i] == '"' || ws[i] == '\\') {
+			++size;
+		}
+	}
+
+	char *command = malloc(size) + 1;
+	if (!command) {
+		return;
+	}
+
+	strcpy(command, "workspace \"");
+	strcpy(&command[size - 1], "\"");
+	for (size_t i = 0, d = strlen("workspace \""); i < strlen(ws); ++i) {
+		if (ws[i] == '"' || ws[i] == '\\') {
+			command[d++] = '\\';
+		}
+		command[d++] = ws[i];
+	}
+
 	ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size);
 	free(command);
 }
