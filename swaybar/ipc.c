@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809
 #include <limits.h>
+#include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <json-c/json.h>
@@ -9,6 +10,7 @@
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	const char *fmt = "workspace \"%s\"";
@@ -372,15 +374,14 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 				ws->label = strdup(ws->name);
 				// ws->num will be -1 if workspace name doesn't begin with int.
 				if (ws->num != -1) {
-					size_t len_offset = numlen(ws->num);
+					size_t len_offset = snprintf(NULL, 0, "%d", ws->num);
 					if (bar->config->strip_workspace_name) {
 						free(ws->label);
-						ws->label = malloc(len_offset + 1 * sizeof(char));
-						ws->label[len_offset] = '\0';
-						strncpy(ws->label, ws->name, len_offset);
+						ws->label = malloc(len_offset + 1);
+						snprintf(ws->label, len_offset + 1, "%d", ws->num);
 					} else if (bar->config->strip_workspace_numbers) {
 						len_offset += ws->label[len_offset] == ':';
-						if (strlen(ws->name) > len_offset) {
+						if (ws->name[len_offset] != '\0') {
 							free(ws->label);
 							// Strip number prefix [1-?:] using len_offset.
 							ws->label = strdup(ws->name + len_offset);

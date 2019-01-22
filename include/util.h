@@ -10,11 +10,6 @@
 int wrap(int i, int max);
 
 /**
- * Count number of digits in int, including '-' sign if there is one
- */
-int numlen(int n);
-
-/**
  * Given a string that represents an RGB(A) color, return a uint32_t
  * version of the color.
  */

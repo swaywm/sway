@@ -11,15 +11,6 @@ int wrap(int i, int max) {
 	return ((i % max) + max) % max;
 }
 
-int numlen(int n) {
-	int j = n <= 0 ? 1 : 0;
-	while (n) {
-		j++;
-		n /= 10;
-	}
-	return j;
-}
-
 uint32_t parse_color(const char *color) {
 	if (color[0] == '#') {
 		++color;
