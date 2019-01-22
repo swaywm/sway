@@ -12,7 +12,6 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
-#include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -464,8 +463,6 @@ struct sway_view *view_from_wlr_xdg_surface_v6(
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server,
-		xdg_shell_v6_surface);
 	struct wlr_xdg_surface_v6 *xdg_surface = data;
 
 	if (xdg_surface->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {

@@ -478,8 +478,9 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 			argc--; argv++;
 		}
 		int num_consumed_args = parse_resize_amount(argc, argv, &height);
-		argc -= num_consumed_args;
-		argv += num_consumed_args;
+		if (argc > num_consumed_args) {
+			return cmd_results_new(CMD_INVALID, usage);
+		}
 		if (width.unit == RESIZE_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
@@ -543,12 +544,14 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	struct resize_amount second_amount;
 	if (argc) {
 		int num_consumed_args = parse_resize_amount(argc, argv, &second_amount);
-		argc -= num_consumed_args;
-		argv += num_consumed_args;
+		if (argc > num_consumed_args) {
+			return cmd_results_new(CMD_INVALID, usage);
+		}
 		if (second_amount.unit == RESIZE_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
 	} else {
+		second_amount.amount = 0;
 		second_amount.unit = RESIZE_UNIT_INVALID;
 	}
 

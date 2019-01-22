@@ -334,7 +334,7 @@ static void handle_click(struct swaybar_sni *sni, int x, int y,
 
 	if (strncmp(method, "Scroll", strlen("Scroll")) == 0) {
 		char dir = method[strlen("Scroll")];
-		char *orientation = (dir = 'U' || dir == 'D') ? "vertical" : "horizontal";
+		char *orientation = (dir == 'U' || dir == 'D') ? "vertical" : "horizontal";
 		int sign = (dir == 'U' || dir == 'L') ? -1 : 1;
 
 		sd_bus_call_method_async(sni->tray->bus, NULL, sni->service, sni->path,
