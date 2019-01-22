@@ -56,8 +56,8 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 			goto error;
 		}
 
-		int size;
-		ret = sd_bus_message_read(msg, "ii", NULL, &size);
+		int width, height;
+		ret = sd_bus_message_read(msg, "ii", &width, &height);
 		if (ret < 0) {
 			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
@@ -71,14 +71,25 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 			goto error;
 		}
 
-		struct swaybar_pixmap *pixmap =
-			malloc(sizeof(struct swaybar_pixmap) + npixels);
-		pixmap->size = size;
-		memcpy(pixmap->pixels, pixels, npixels);
-		list_add(pixmaps, pixmap);
+		if (height > 0 && width == height) {
+			sway_log(SWAY_DEBUG, "%s %s: found icon w:%d h:%d", sni->watcher_id, prop, width, height);
+			struct swaybar_pixmap *pixmap =
+				malloc(sizeof(struct swaybar_pixmap) + npixels);
+			pixmap->size = height;
+			memcpy(pixmap->pixels, pixels, npixels);
+			list_add(pixmaps, pixmap);
+		} else {
+			sway_log(SWAY_DEBUG, "%s %s: discard invalid icon w:%d h:%d", sni->watcher_id, prop, width, height);
+		}
 
 		sd_bus_message_exit_container(msg);
 	}
+
+	if (pixmaps->length < 1) {
+		sway_log(SWAY_DEBUG, "%s %s no. of icons = 0", sni->watcher_id, prop);
+		goto error;
+	}
+
 	list_free_items_and_destroy(*dest);
 	*dest = pixmaps;
 	sway_log(SWAY_DEBUG, "%s %s no. of icons = %d", sni->watcher_id, prop,
