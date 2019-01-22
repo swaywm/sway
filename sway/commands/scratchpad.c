@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
@@ -51,6 +52,7 @@ static void scratchpad_toggle_auto(void) {
 					"Moving a visible scratchpad window (%s) to this workspace",
 					con->title);
 			root_scratchpad_show(con);
+			ipc_event_window(con, "move");
 			return;
 		}
 	}
@@ -62,6 +64,7 @@ static void scratchpad_toggle_auto(void) {
 	struct sway_container *con = root->scratchpad->items[0];
 	sway_log(SWAY_DEBUG, "Showing %s from list", con->title);
 	root_scratchpad_show(con);
+	ipc_event_window(con, "move");
 }
 
 static void scratchpad_toggle_container(struct sway_container *con) {
@@ -76,6 +79,7 @@ static void scratchpad_toggle_container(struct sway_container *con) {
 	}
 
 	root_scratchpad_show(con);
+	ipc_event_window(con, "move");
 }
 
 struct cmd_results *cmd_scratchpad(int argc, char **argv) {

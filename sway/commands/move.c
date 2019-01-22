@@ -515,6 +515,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	// move container
 	if (container->scratchpad) {
 		root_scratchpad_remove_container(container);
+		root_scratchpad_show(container);
 	}
 	switch (destination->type) {
 	case N_WORKSPACE:

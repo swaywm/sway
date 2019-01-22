@@ -85,9 +85,6 @@ void root_scratchpad_remove_container(struct sway_container *con) {
 	if (!sway_assert(con->scratchpad, "Container is not in scratchpad")) {
 		return;
 	}
-	if (!con->workspace) {
-		root_scratchpad_show(con);
-	}
 	con->scratchpad = false;
 	int index = list_find(root->scratchpad, con);
 	if (index != -1) {
@@ -133,10 +130,6 @@ void root_scratchpad_show(struct sway_container *con) {
 
 	arrange_workspace(new_ws);
 	seat_set_focus(seat, seat_get_focus_inactive(seat, &con->node));
-
-	if (new_ws != old_ws) {
-		ipc_event_window(con, "move");
-	}
 }
 
 void root_scratchpad_hide(struct sway_container *con) {
