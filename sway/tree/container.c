@@ -708,7 +708,6 @@ void container_set_floating(struct sway_container *container, bool enable) {
 				container->border = container->saved_border;
 			}
 		}
-		container->is_sticky = false;
 	}
 
 	container_end_mouse_operation(container);

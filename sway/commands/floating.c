@@ -45,7 +45,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 				"Cannot set floating status on a hidden scratchpad container");
 	}
 
-	bool wants_floating = 
+	bool wants_floating =
 		parse_boolean(argv[0], container_is_floating(container));
 
 	container_set_floating(container, wants_floating);
