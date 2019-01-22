@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809
+#include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "log.h"
-#include "util.h"
 
 // Must be in alphabetical order for bsearch
 static struct cmd_handler bar_handlers[] = {
@@ -89,7 +89,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 
 		// set bar id
-		const int len = 5 + numlen(config->bars->length - 1); // "bar-"+i+\0
+		const int len = snprintf(NULL, 0, "bar-%d", config->bars->length - 1) + 1;
 		bar->id = malloc(len * sizeof(char));
 		if (bar->id) {
 			snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
