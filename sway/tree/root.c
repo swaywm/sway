@@ -169,6 +169,41 @@ struct pid_workspace {
 
 static struct wl_list pid_workspaces;
 
+/**
+ * Get the pid of a parent process given the pid of a child process.
+ *
+ * Returns the parent pid or NULL if the parent pid cannot be determined.
+ */
+static pid_t get_parent_pid(pid_t child) {
+	pid_t parent = -1;
+	char file_name[100];
+	char *buffer = NULL;
+	char *token = NULL;
+	const char *sep = " ";
+	FILE *stat = NULL;
+	size_t buf_size = 0;
+
+	sprintf(file_name, "/proc/%d/stat", child);
+
+	if ((stat = fopen(file_name, "r"))) {
+		if (getline(&buffer, &buf_size, stat) != -1) {
+			token = strtok(buffer, sep); // pid
+			token = strtok(NULL, sep);   // executable name
+			token = strtok(NULL, sep);   // state
+			token = strtok(NULL, sep);   // parent pid
+			parent = strtol(token, NULL, 10);
+		}
+		free(buffer);
+		fclose(stat);
+	}
+
+	if (parent) {
+		return (parent == child) ? -1 : parent;
+	}
+
+	return -1;
+}
+
 struct sway_workspace *root_workspace_for_pid(pid_t pid) {
 	if (!pid_workspaces.prev && !pid_workspaces.next) {
 		wl_list_init(&pid_workspaces);

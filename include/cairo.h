@@ -4,7 +4,7 @@
 #include "config.h"
 #include <stdint.h>
 #include <cairo/cairo.h>
-#include <wlr/types/wlr_output.h>
+#include <wayland-client-protocol.h>
 #if HAVE_GDK_PIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #endif

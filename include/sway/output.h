@@ -152,4 +152,6 @@ void premultiply_alpha(float color[4], float opacity);
 
 void scale_box(struct wlr_box *box, float scale);
 
+enum wlr_direction opposite_direction(enum wlr_direction d);
+
 #endif

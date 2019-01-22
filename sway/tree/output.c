@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
@@ -11,6 +12,21 @@
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "util.h"
+
+enum wlr_direction opposite_direction(enum wlr_direction d) {
+	switch (d) {
+	case WLR_DIRECTION_UP:
+		return WLR_DIRECTION_DOWN;
+	case WLR_DIRECTION_DOWN:
+		return WLR_DIRECTION_UP;
+	case WLR_DIRECTION_RIGHT:
+		return WLR_DIRECTION_LEFT;
+	case WLR_DIRECTION_LEFT:
+		return WLR_DIRECTION_RIGHT;
+	}
+	assert(false);
+	return 0;
+}
 
 static void restore_workspaces(struct sway_output *output) {
 	// Workspace output priority

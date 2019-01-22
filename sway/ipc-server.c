@@ -23,6 +23,7 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
