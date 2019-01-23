@@ -200,6 +200,9 @@ static int handle_new_icon(sd_bus_message *msg, void *data, sd_bus_error *error)
 	struct swaybar_sni *sni = data;
 	sni_get_property_async(sni, "IconName", "s", &sni->icon_name);
 	sni_get_property_async(sni, "IconPixmap", NULL, &sni->icon_pixmap);
+	if (!strcmp(sni->interface, "org.kde.StatusNotifierItem")) {
+		sni_get_property_async(sni, "IconThemePath", "s", &sni->icon_theme_path);
+	}
 	return sni_check_msg_sender(sni, msg, "icon");
 }
 
