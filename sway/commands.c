@@ -5,7 +5,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdio.h>
-#include <json-c/json.h>
+#include <json.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"

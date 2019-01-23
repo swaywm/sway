@@ -1,4 +1,4 @@
-#include <json-c/json.h>
+#include <json.h>
 #include <libevdev/libevdev.h>
 #include <stdio.h>
 #include <ctype.h>

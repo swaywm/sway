@@ -1,6 +1,6 @@
 #ifndef _SWAY_IPC_JSON_H
 #define _SWAY_IPC_JSON_H
-#include <json-c/json.h>
+#include <json.h>
 #include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 
