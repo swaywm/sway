@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wordexp.h>
+#include <unistd.h>
 #include "log.h"
 #include "list.h"
 #include "swaynag/swaynag.h"
