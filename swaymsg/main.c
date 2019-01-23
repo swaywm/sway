@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <json-c/json.h>
+#include <json.h>
 #include "stringop.h"
 #include "ipc-client.h"
 #include "log.h"

@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-#include <json-c/json.h>
+#include <json.h>
 #include <linux/input-event-codes.h>
 #include <ctype.h>
 #include <stdlib.h>

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <json-c/json.h>
+#include <json.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
 #include "config.h"
