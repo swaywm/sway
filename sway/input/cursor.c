@@ -361,17 +361,10 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 				event->touch_id, sx, sy);
 		cursor_set_image(cursor, NULL, NULL);
 	}
-
-<<<<<<< HEAD
-	libtouch_engine_register_touch(engine, event->time_msec, event->touch_id,
-				       LIBTOUCH_TOUCH_DOWN, event->x, event->y);
-
-		
-=======
 	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
 				       event->touch_id, LIBTOUCH_TOUCH_DOWN,
 				       event->x, event->y);
->>>>>>> Register touch events in libtouch engine
+
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
@@ -382,14 +375,8 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	// TODO: fall back to cursor simulation if client has not bound to touch
 	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
-<<<<<<< HEAD
-	libtouch_engine_register_touch(engine, event->time_msec, event->touch_id,
-				       LIBTOUCH_TOUCH_UP, 0,0);
-=======
-
 	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
 				       event->touch_id, LIBTOUCH_TOUCH_UP, 0, 0);
->>>>>>> Register touch events in libtouch engine
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
@@ -429,14 +416,9 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
 			event->touch_id, sx, sy);
 	}
-
-<<<<<<< HEAD
-	libtouch_engine_register_move(engine, event->time_msec, event->touch_id,
-			       event->x, event->y);
-=======
 	libtouch_engine_register_move(cursor->gesture_engine, event->time_msec,
 				      event->touch_id, event->x, event->y);
->>>>>>> Register touch events in libtouch engine
+
 }
 
 static double apply_mapping_from_coord(double low, double high, double value) {
