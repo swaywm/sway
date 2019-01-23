@@ -53,12 +53,6 @@ struct sway_binding {
 	uint32_t modifiers;
 	char *command;
 };
-
-struct sway_gesture_binding {
-	struct libtouch_gesture *gesture;
-	char *command;
-};
-
 /**
  * A mouse binding and an associated command.
  */
@@ -105,6 +99,13 @@ struct input_config_mapped_from_region {
 	double x2, y2;
 	bool mm;
 };
+
+struct gesture_config {
+	char *identifier;
+	struct libtouch_gesture *gesture;
+	char *command;
+};
+
 
 /**
  * options for input devices
@@ -426,6 +427,7 @@ struct sway_config {
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *input_type_configs;
+	list_t *gesture_configs;
 	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;
@@ -513,7 +515,8 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
-
+	
+	struct libtouch_engine *gesture_engine;
 	// Context for command handlers
 	struct {
 		struct input_config *input_config;
@@ -523,6 +526,10 @@ struct sway_config {
 		struct sway_node *node;
 		struct sway_container *container;
 		struct sway_workspace *workspace;
+
+		struct gesture_config *current_gesture;
+		
+		
 		bool using_criteria;
 		struct {
 			int argc;
@@ -646,6 +653,12 @@ void free_bar_config(struct bar_config *bar);
 void free_bar_binding(struct bar_binding *binding);
 
 void free_workspace_config(struct workspace_config *wsc);
+
+int gesture_identifier_cmp(const void *item, const void *data);
+
+struct gesture_config *get_gesture_config(const char *identifier);
+
+struct gesture_config *new_gesture_config(const char *identifier);
 
 /**
  * Updates the value of config->font_height based on the max title height

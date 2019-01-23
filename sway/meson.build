@@ -36,6 +36,7 @@ sway_sources = files(
 	'config/output.c',
 	'config/seat.c',
 	'config/input.c',
+	'config/gesture.c',
 
 	'commands/assign.c',
 	'commands/bar.c',
@@ -62,7 +63,7 @@ sway_sources = files(
 	'commands/force_focus_wrapping.c',
 	'commands/fullscreen.c',
 	'commands/gaps.c',
-	'commands/gesture.c',
+	'commands/touch.c',
 	'commands/hide_edge_borders.c',
 	'commands/inhibit_idle.c',
 	'commands/kill.c',
@@ -175,6 +176,10 @@ sway_sources = files(
 	'commands/output/scale.c',
 	'commands/output/subpixel.c',
 	'commands/output/transform.c',
+
+	'commands/touch/binding.c',
+	'commands/touch/gesture.c',
+	'commands/touch/gesture/touch.c',
 
 	'tree/arrange.c',
 	'tree/container.c',

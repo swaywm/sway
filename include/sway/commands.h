@@ -280,6 +280,12 @@ sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
 sway_cmd seat_cmd_pointer_constraint;
 
+sway_cmd touch_cmd_gesture;
+sway_cmd touch_cmd_binding;
+
+sway_cmd touch_gesture_cmd_touch;
+
+
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;
 sway_cmd cmd_ipc_event_cmd;
