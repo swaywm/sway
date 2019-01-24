@@ -134,9 +134,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* mode\_toggle
 	Moves focus between the floating and tiled layers.
 
-*fullscreen* [enable|disable|toggle]
+*fullscreen* [enable|disable|toggle] [global]
 	Makes focused view fullscreen, non-fullscreen, or the opposite of what it
-	is now. If no argument is given, it does the same as _toggle_.
+	is now. If no argument is given, it does the same as _toggle_. If _global_
+	is specified, the view will be fullscreen across all outputs.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
 set|plus|minus <amount>

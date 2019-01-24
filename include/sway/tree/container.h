@@ -25,6 +25,12 @@ enum sway_container_border {
 	B_CSD,
 };
 
+enum sway_fullscreen_mode {
+	FULLSCREEN_NONE,
+	FULLSCREEN_WORKSPACE,
+	FULLSCREEN_GLOBAL,
+};
+
 struct sway_root;
 struct sway_output;
 struct sway_workspace;
@@ -38,7 +44,7 @@ struct sway_container_state {
 	double x, y;
 	double width, height;
 
-	bool is_fullscreen;
+	enum sway_fullscreen_mode fullscreen_mode;
 
 	struct sway_workspace *workspace;
 	struct sway_container *parent;
@@ -85,7 +91,7 @@ struct sway_container {
 	double content_x, content_y;
 	int content_width, content_height;
 
-	bool is_fullscreen;
+	enum sway_fullscreen_mode fullscreen_mode;
 
 	enum sway_container_border border;
 
@@ -249,7 +255,13 @@ bool container_has_urgent_child(struct sway_container *container);
  */
 void container_end_mouse_operation(struct sway_container *container);
 
-void container_set_fullscreen(struct sway_container *container, bool enable);
+void container_set_fullscreen(struct sway_container *con,
+		enum sway_fullscreen_mode mode);
+
+/**
+ * Convenience function.
+ */
+void container_fullscreen_disable(struct sway_container *con);
 
 /**
  * Return true if the container is floating, or a child of a floating split

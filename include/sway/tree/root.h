@@ -35,6 +35,8 @@ struct sway_root {
 	// For when there's no connected outputs
 	struct sway_output *noop_output;
 
+	struct sway_container *fullscreen_global;
+
 	struct {
 		struct wl_signal new_node;
 	} events;

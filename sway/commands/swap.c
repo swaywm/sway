@@ -77,6 +77,11 @@ static void swap_focus(struct sway_container *con1,
 	} else {
 		seat_set_focus_container(seat, focus);
 	}
+
+	if (root->fullscreen_global) {
+		seat_set_focus(seat,
+				seat_get_focus_inactive(seat, &root->fullscreen_global->node));
+	}
 }
 
 static void container_swap(struct sway_container *con1,
@@ -98,13 +103,13 @@ static void container_swap(struct sway_container *con1,
 	sway_log(SWAY_DEBUG, "Swapping containers %zu and %zu",
 			con1->node.id, con2->node.id);
 
-	bool fs1 = con1->is_fullscreen;
-	bool fs2 = con2->is_fullscreen;
+	enum sway_fullscreen_mode fs1 = con1->fullscreen_mode;
+	enum sway_fullscreen_mode fs2 = con2->fullscreen_mode;
 	if (fs1) {
-		container_set_fullscreen(con1, false);
+		container_fullscreen_disable(con1);
 	}
 	if (fs2) {
-		container_set_fullscreen(con2, false);
+		container_fullscreen_disable(con2);
 	}
 
 	struct sway_seat *seat = config->handler_context.seat;
@@ -136,10 +141,10 @@ static void container_swap(struct sway_container *con1,
 	}
 
 	if (fs1) {
-		container_set_fullscreen(con2, true);
+		container_set_fullscreen(con2, fs1);
 	}
 	if (fs2) {
-		container_set_fullscreen(con1, true);
+		container_set_fullscreen(con1, fs2);
 	}
 }
 
@@ -220,9 +225,13 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 
 	container_swap(current, other);
 
-	arrange_node(node_get_parent(&current->node));
-	if (node_get_parent(&other->node) != node_get_parent(&current->node)) {
-		arrange_node(node_get_parent(&other->node));
+	if (root->fullscreen_global) {
+		arrange_root();
+	} else {
+		arrange_node(node_get_parent(&current->node));
+		if (node_get_parent(&other->node) != node_get_parent(&current->node)) {
+			arrange_node(node_get_parent(&other->node));
+		}
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

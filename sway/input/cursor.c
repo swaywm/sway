@@ -90,6 +90,16 @@ struct sway_node *node_at_coords(
 	double ox = lx, oy = ly;
 	wlr_output_layout_output_coords(root->output_layout, wlr_output, &ox, &oy);
 
+	if (root->fullscreen_global) {
+		// Try fullscreen container
+		struct sway_container *con = tiling_container_at(
+				&root->fullscreen_global->node, lx, ly, surface, sx, sy);
+		if (con) {
+			return &con->node;
+		}
+		return NULL;
+	}
+
 	// find the focused workspace on the output for this seat
 	struct sway_workspace *ws = output_get_active_workspace(output);
 
@@ -659,7 +669,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Handle moving a tiling container
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
 			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
-			cont && !cont->is_fullscreen) {
+			cont && cont->fullscreen_mode == FULLSCREEN_NONE) {
 		struct sway_container *focus = seat_get_focused_container(seat);
 		bool focused = focus == cont || container_has_ancestor(focus, cont);
 		if (on_titlebar && !focused) {

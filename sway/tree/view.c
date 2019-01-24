@@ -203,11 +203,17 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 	struct sway_output *output = con->workspace->output;
 
-	if (con->is_fullscreen) {
+	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		con->content_x = output->lx;
 		con->content_y = output->ly;
 		con->content_width = output->width;
 		con->content_height = output->height;
+		return;
+	} else if (con->fullscreen_mode == FULLSCREEN_GLOBAL) {
+		con->content_x = root->x;
+		con->content_y = root->y;
+		con->content_width = root->width;
+		con->content_height = root->height;
 		return;
 	}
 
@@ -648,7 +654,10 @@ void view_unmap(struct sway_view *view) {
 		workspace_consider_destroy(ws);
 	}
 
-	if (ws && !ws->node.destroying) {
+	if (root->fullscreen_global) {
+		// Container may have been a child of the root fullscreen container
+		arrange_root();
+	} else if (ws && !ws->node.destroying) {
 		arrange_workspace(ws);
 		workspace_detect_urgent(ws);
 	}
@@ -1008,14 +1017,11 @@ bool view_is_visible(struct sway_view *view) {
 		con = con->parent;
 	}
 	// Check view isn't hidden by another fullscreen view
-	if (workspace->fullscreen &&
-			!container_is_fullscreen_or_child(view->container)) {
-		// However, if we're transient for the fullscreen view and we allow
-		// "popups" during fullscreen then it might be visible
-		if (!container_is_transient_for(view->container,
-					workspace->fullscreen)) {
-			return false;
-		}
+	struct sway_container *fs = root->fullscreen_global ?
+		root->fullscreen_global : workspace->fullscreen;
+	if (fs && !container_is_fullscreen_or_child(view->container) &&
+			!container_is_transient_for(view->container, fs)) {
+		return false;
 	}
 	return true;
 }
