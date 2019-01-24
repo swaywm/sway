@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
-#include <assert.h>
-#include <errno.h>
 #include <linux/input-event-codes.h>
+#include <string.h>
 #include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
@@ -827,8 +826,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 				wl_event_source_timer_update(view->urgent_timer,
 						config->urgent_timeout);
 			} else {
-				sway_log(SWAY_ERROR, "Unable to create urgency timer (%s)",
-						strerror(errno));
+				sway_log_errno(SWAY_ERROR, "Unable to create urgency timer");
 				handle_urgent_timeout(view);
 			}
 		} else {
