@@ -528,7 +528,7 @@ struct sway_config {
 		struct sway_workspace *workspace;
 
 		struct gesture_config *current_gesture;
-		
+		struct libtouch_action *current_gesture_action;
 		
 		bool using_criteria;
 		struct {
@@ -655,6 +655,8 @@ void free_bar_binding(struct bar_binding *binding);
 void free_workspace_config(struct workspace_config *wsc);
 
 int gesture_identifier_cmp(const void *item, const void *data);
+
+int gesture_libtouch_cmp(const void *item, const void *data);
 
 struct gesture_config *get_gesture_config(const char *identifier);
 

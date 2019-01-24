@@ -332,6 +332,21 @@ static void handle_cursor_frame(struct wl_listener *listener, void *data) {
 	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 }
 
+static void handle_gestures(struct libtouch_engine *engine, struct sway_seat *seat) {
+	struct libtouch_gesture *complete;
+	struct gesture_config *cfg;
+	int idx;
+	while((complete = libtouch_handle_finished_gesture(engine))){
+		idx = list_seq_find(config->gesture_configs, gesture_libtouch_cmp, complete);
+		if(idx >= 0) {
+			cfg = config->gesture_configs->items[idx];
+			if(cfg->command) {
+				execute_command(cfg->command, seat, seat_get_focused_container(seat));
+			}
+		}
+	}
+}
+
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
@@ -363,6 +378,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
 				       event->touch_id, LIBTOUCH_TOUCH_DOWN,
 				       event->x, event->y);
+	handle_gestures(cursor->gesture_engine, seat);
 
 }
 
@@ -375,6 +391,7 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
 	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
 				       event->touch_id, LIBTOUCH_TOUCH_UP, 0, 0);
+	handle_gestures(cursor->gesture_engine, seat);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
@@ -416,7 +433,10 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	libtouch_engine_register_move(cursor->gesture_engine, event->time_msec,
 				      event->touch_id, event->x, event->y);
 
+	handle_gestures(cursor->gesture_engine, seat);
 }
+
+
 
 static double apply_mapping_from_coord(double low, double high, double value) {
 	if (isnan(value)) {

@@ -17,13 +17,13 @@ struct cmd_results *touch_cmd_binding(int argc, char **argv) {
 		return error;
 	}
 
-	struct gesture_config *config = get_gesture_config(argv[1]);
+	struct gesture_config *config = get_gesture_config(argv[0]);
 
 	if (!config) {
-		return cmd_results_new(CMD_FAILURE, "Unable to bind gesture %s", argv[1]);
+		return cmd_results_new(CMD_FAILURE, "Unable to bind gesture %s", argv[0]);
 	}
 
-	config->command = join_args(argv+2, argc);
+	config->command = join_args(argv + 1, argc - 1);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 	
 };

@@ -284,7 +284,7 @@ sway_cmd touch_cmd_gesture;
 sway_cmd touch_cmd_binding;
 
 sway_cmd touch_gesture_cmd_touch;
-
+sway_cmd touch_gesture_cmd_threshold;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

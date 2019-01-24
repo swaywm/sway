@@ -180,6 +180,7 @@ sway_sources = files(
 	'commands/touch/binding.c',
 	'commands/touch/gesture.c',
 	'commands/touch/gesture/touch.c',
+	'commands/touch/gesture/threshold.c',
 
 	'tree/arrange.c',
 	'tree/container.c',

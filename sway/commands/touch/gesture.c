@@ -11,31 +11,33 @@
 #include <libtouch.h>
 
 static struct cmd_handler gesture_handlers[] = {
+	{ "threshold", touch_gesture_cmd_threshold },
 	{ "touch", touch_gesture_cmd_touch },
 };
 
 struct cmd_results *touch_cmd_gesture(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if((error = checkarg(argc, "gesture", EXPECTED_AT_LEAST, 1))) {
+	if((error = checkarg(argc, "gesture", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
+	sway_log(SWAY_DEBUG, "Getting gesture conf");
 	
-	sway_log(SWAY_DEBUG, "entering gesture block: %s", argv[0]);
 	struct gesture_config *gesture = get_gesture_config(argv[0]);
-
+	
 	if(!gesture) {
 		return cmd_results_new(CMD_FAILURE,
 				       "Could not create/find gesture config");
 	}
 
 	config->handler_context.current_gesture = gesture;
-
+	
 	struct cmd_handler *cmd = find_handler(argv[1], gesture_handlers, sizeof(gesture_handlers));
 	if (cmd) {
-		return config_subcommand(argv,argc,gesture_handlers, sizeof(gesture_handlers));
+		return config_subcommand(argv + 1,argc - 1,gesture_handlers, sizeof(gesture_handlers));
 	}
 
 		
 	return cmd_results_new(CMD_FAILURE,
-			       "Invalid Subcommand");
+			       "Invalid Subcommand: %s",
+			       argv[1]);
 };

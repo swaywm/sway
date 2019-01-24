@@ -8,7 +8,7 @@
 
 struct gesture_config *get_gesture_config(const char* identifier) {
   int i = list_seq_find(config->gesture_configs, gesture_identifier_cmp, identifier);
-
+  
   struct gesture_config *cfg = NULL;
   if(i >= 0) {
     sway_log(SWAY_DEBUG, "Retrieving existing gesture");
@@ -35,4 +35,10 @@ int gesture_identifier_cmp(const void *item, const void *data) {
   const struct gesture_config *gc = item;
   const char *identifier = data;
   return strcmp(gc->identifier, identifier);
+}
+
+int gesture_libtouch_cmp(const void *item, const void *data) {
+  const struct gesture_config *gc = item;
+  const struct libtouch_gesture *g = data;
+  return gc->gesture == g;
 }
