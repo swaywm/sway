@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# This file is in the public domain. It is based on i3-sensible-terminal.
+#
+# Find a terminal emulator among the list of known ones. Prefer user
+# default ($TERMINAL), system default (x-terminal-emulator on Debian)
+# then Wayland-native with few dependencies.
+#
+# See also https://lists.freedesktop.org/archives/xdg/2015-October/013583.html
+
+KNOWN_TERMINALS='
+	alacritty
+	sakura
+	termite
+	termit
+	tilix
+	kitty
+	cool-retro-term
+	qterminal
+	roxterm
+	xfce4-terminal
+	pantheon-terminal
+	terminology
+	gnome-terminal
+	mate-terminal
+	konsole
+	aminal
+	evilvte
+	mlterm
+	lxterminal
+	lilyterm
+	terminator
+	hyper
+	mrxvt
+	urxvt
+	xterm
+	st
+	Eterm
+	rxvt
+	aterm
+'
+
+for command in "$TERMINAL" x-terminal-emulator $KNOWN_TERMINALS; do
+    if hash "$command" 2>/dev/null; then
+        exec "$command" "$@"
+    fi
+done
+
+swaynag -m "${0##*/} could not find a terminal emulator. Please, \
+either install one, define \$TERMINAL or adjust Sway config."

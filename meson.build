@@ -28,6 +28,7 @@ add_project_arguments(
 cc = meson.get_compiler('c')
 
 is_freebsd = host_machine.system().startswith('freebsd')
+bindir = get_option('bindir')
 datadir = get_option('datadir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
@@ -186,6 +187,8 @@ install_data(
 	'sway.desktop',
 	install_dir: datadir + '/wayland-sessions'
 )
+
+install_data('swayterm', install_dir: bindir)
 
 if get_option('default-wallpaper')
 	wallpaper_files = files(
