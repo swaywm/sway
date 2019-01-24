@@ -391,7 +391,7 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
 	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
 				       event->touch_id, LIBTOUCH_TOUCH_UP, 0, 0);
-	handle_gestures(cursor->gesture_engine, seat);
+	handle_gestures(cursor->gesture_engine, cursor->seat);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
