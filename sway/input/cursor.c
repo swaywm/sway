@@ -336,7 +336,6 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_down *event = data;
-	struct libtouch_engine *engine = cursor->gesture_engine;
 	struct sway_seat *seat = cursor->seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
@@ -369,7 +368,6 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_up);
-	struct libtouch_engine *engine = cursor->gesture_engine;
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_up *event = data;
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
@@ -384,7 +382,6 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, cursor, touch_motion);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_motion *event = data;
-	struct libtouch_engine *engine = cursor->gesture_engine;
 	struct sway_seat *seat = cursor->seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
