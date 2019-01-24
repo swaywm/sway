@@ -1,6 +1,4 @@
 #define _POSIX_C_SOURCE 200809L
-#include <errno.h>
-#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -449,9 +447,8 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			wl_event_source_timer_update(transaction->timer,
 					server.txn_timeout_ms);
 		} else {
-			sway_log(SWAY_ERROR, "Unable to create transaction timer (%s). "
-					"Some imperfect frames might be rendered.",
-					strerror(errno));
+			sway_log_errno(SWAY_ERROR, "Unable to create transaction timer "
+					"(some imperfect frames might be rendered)");
 			transaction->num_waiting = 0;
 		}
 	}
