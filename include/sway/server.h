@@ -61,6 +61,9 @@ struct sway_server {
 
 	struct wlr_presentation *presentation;
 
+	struct wlr_pointer_constraints_v1 *pointer_constraints;
+	struct wl_listener pointer_constraint;
+
 	size_t txn_timeout_ms;
 	list_t *transactions;
 	list_t *dirty_nodes;
@@ -86,5 +89,6 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif
 void handle_server_decoration(struct wl_listener *listener, void *data);
 void handle_xdg_decoration(struct wl_listener *listener, void *data);
+void handle_pointer_constraint(struct wl_listener *listener, void *data);
 
 #endif

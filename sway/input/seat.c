@@ -105,6 +105,11 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 			wlr_seat_keyboard_notify_enter(
 					seat->wlr_seat, view->surface, NULL, 0, NULL);
 		}
+
+		struct wlr_pointer_constraint_v1 *constraint =
+			wlr_pointer_constraints_v1_constraint_for_surface(
+				server.pointer_constraints, view->surface, seat->wlr_seat);
+		sway_cursor_constrain(seat->cursor, constraint);
 	}
 }
 
@@ -684,6 +689,7 @@ static void send_unfocus(struct sway_container *con, void *data) {
 
 // Unfocus the container and any children (eg. when leaving `focus parent`)
 static void seat_send_unfocus(struct sway_node *node, struct sway_seat *seat) {
+	sway_cursor_constrain(seat->cursor, NULL);
 	wlr_seat_keyboard_clear_focus(seat->wlr_seat);
 	if (node->type == N_WORKSPACE) {
 		workspace_for_each_container(node->sway_workspace, send_unfocus, seat);

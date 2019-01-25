@@ -84,6 +84,12 @@ struct sway_seat {
 	struct wl_list link; // input_manager::seats
 };
 
+struct sway_pointer_constraint {
+	struct wlr_pointer_constraint_v1 *constraint;
+
+	struct wl_listener destroy;
+};
+
 struct sway_seat *seat_create(const char *seat_name);
 
 void seat_destroy(struct sway_seat *seat);

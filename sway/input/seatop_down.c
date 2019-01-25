@@ -26,14 +26,19 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
 
 static void handle_finish(struct sway_seat *seat) {
 	struct seatop_down_event *e = seat->seatop_data;
+	struct sway_cursor *cursor = seat->cursor;
 	// Set the cursor's previous coords to the x/y at the start of the
 	// operation, so the container change will be detected if using
 	// focus_follows_mouse and the cursor moved off the original container
 	// during the operation.
-	seat->cursor->previous.x = e->ref_lx;
-	seat->cursor->previous.y = e->ref_ly;
+	cursor->previous.x = e->ref_lx;
+	cursor->previous.y = e->ref_ly;
 	if (e->moved) {
-		cursor_send_pointer_motion(seat->cursor, 0);
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
+		struct sway_node *node = node_at_coords(seat,
+				cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+		cursor_send_pointer_motion(cursor, 0, node, surface, sx, sy);
 	}
 }
 
