@@ -10,11 +10,12 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
-#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_gamma_control.h>
+#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -104,6 +105,12 @@ bool server_init(struct sway_server *server) {
 			&server->xdg_decoration);
 	server->xdg_decoration.notify = handle_xdg_decoration;
 	wl_list_init(&server->xdg_decorations);
+
+	server->pointer_constraints =
+		wlr_pointer_constraints_v1_create(server->wl_display);
+	server->pointer_constraint.notify = handle_pointer_constraint;
+	wl_signal_add(&server->pointer_constraints->events.new_constraint,
+		&server->pointer_constraint);
 
 	server->presentation =
 		wlr_presentation_create(server->wl_display, server->backend);
