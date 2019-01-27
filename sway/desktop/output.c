@@ -251,17 +251,27 @@ static void output_for_each_surface(struct sway_output *output,
 	};
 
 	struct sway_workspace *workspace = output_get_active_workspace(output);
-	if (workspace->current.fullscreen) {
-		for_each_surface_container_iterator(
-			workspace->current.fullscreen, &data);
-		container_for_each_child(workspace->current.fullscreen,
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (fullscreen_con && fullscreen_con->scratchpad &&
+			!fullscreen_con->workspace) {
+		fullscreen_con = NULL;
+	}
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+	if (fullscreen_con) {
+		for_each_surface_container_iterator(fullscreen_con, &data);
+		container_for_each_child(fullscreen_con,
 			for_each_surface_container_iterator, &data);
-		for (int i = 0; i < workspace->current.floating->length; ++i) {
-			struct sway_container *floater =
-				workspace->current.floating->items[i];
-			if (container_is_transient_for(floater,
-					workspace->current.fullscreen)) {
-				for_each_surface_container_iterator(floater, &data);
+
+		// TODO: Show transient containers for fullscreen global
+		if (fullscreen_con == workspace->current.fullscreen) {
+			for (int i = 0; i < workspace->current.floating->length; ++i) {
+				struct sway_container *floater =
+					workspace->current.floating->items[i];
+				if (container_is_transient_for(floater, fullscreen_con)) {
+					for_each_surface_container_iterator(floater, &data);
+				}
 			}
 		}
 #if HAVE_XWAYLAND

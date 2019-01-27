@@ -89,19 +89,23 @@ static struct sway_node *get_node_in_output_direction(
 
 static struct sway_node *node_get_in_direction(struct sway_container *container,
 		struct sway_seat *seat, enum wlr_direction dir) {
-	if (container->is_fullscreen) {
-		// Fullscreen container with a direction - go straight to outputs
-		struct sway_output *output = container->workspace->output;
-		struct sway_output *new_output = output_get_in_direction(output, dir);
-		if (!new_output) {
-			return NULL;
-		}
-		return get_node_in_output_direction(new_output, dir);
-	}
-
 	struct sway_container *wrap_candidate = NULL;
 	struct sway_container *current = container;
 	while (current) {
+		if (current->fullscreen_mode == FULLSCREEN_WORKSPACE) {
+			// Fullscreen container with a direction - go straight to outputs
+			struct sway_output *output = current->workspace->output;
+			struct sway_output *new_output =
+				output_get_in_direction(output, dir);
+			if (!new_output) {
+				return NULL;
+			}
+			return get_node_in_output_direction(new_output, dir);
+		}
+		if (current->fullscreen_mode == FULLSCREEN_GLOBAL) {
+			return NULL;
+		}
+
 		bool can_move = false;
 		int desired;
 		int idx = container_sibling_index(current);
@@ -227,7 +231,7 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 static struct cmd_results *focus_parent(void) {
 	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_container *con = config->handler_context.container;
-	if (!con || con->is_fullscreen) {
+	if (!con || con->fullscreen_mode) {
 		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
 	struct sway_node *parent = node_get_parent(&con->node);

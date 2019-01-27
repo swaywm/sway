@@ -191,7 +191,7 @@ static void container_move_to_workspace(struct sway_container *container,
 		workspace_add_floating(workspace, container);
 		container_handle_fullscreen_reparent(container);
 		// If changing output, center it within the workspace
-		if (old_output != workspace->output && !container->is_fullscreen) {
+		if (old_output != workspace->output && !container->fullscreen_mode) {
 			container_floating_move_to_center(container);
 		}
 	} else {
@@ -276,7 +276,7 @@ static void workspace_rejigger(struct sway_workspace *ws,
 static bool container_move_in_direction(struct sway_container *container,
 		enum wlr_direction move_dir) {
 	// If moving a fullscreen view, only consider outputs
-	if (container->is_fullscreen) {
+	if (container->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		struct sway_output *new_output =
 			output_get_in_direction(container->workspace->output, move_dir);
 		if (!new_output) {
@@ -285,6 +285,9 @@ static bool container_move_in_direction(struct sway_container *container,
 		struct sway_workspace *ws = output_get_active_workspace(new_output);
 		container_move_to_workspace(container, ws);
 		return true;
+	}
+	if (container->fullscreen_mode == FULLSCREEN_GLOBAL) {
+		return false;
 	}
 
 	// If container is in a split container by itself, move out of the split
@@ -309,13 +312,19 @@ static bool container_move_in_direction(struct sway_container *container,
 		int index = list_find(siblings, current);
 		int desired = index + offs;
 
+		// Don't allow containers to move out of their
+		// fullscreen or floating parent
+		if (current->fullscreen_mode || container_is_floating(current)) {
+			return false;
+		}
+
 		if (is_parallel(layout, move_dir)) {
 			if (desired == -1 || desired == siblings->length) {
 				if (current->parent == container->parent) {
 					current = current->parent;
 					continue;
 				} else {
-					// Special case
+					// Reparenting
 					if (current->parent) {
 						container_insert_child(current->parent, container,
 								index + (offs < 0 ? 0 : 1));
@@ -334,13 +343,6 @@ static bool container_move_in_direction(struct sway_container *container,
 		}
 
 		current = current->parent;
-
-		// Don't allow containers to move out of their
-		// fullscreen or floating parent
-		if (current &&
-				(current->is_fullscreen || container_is_floating(current))) {
-			return false;
-		}
 	}
 
 	// Maybe rejigger the workspace
@@ -563,10 +565,14 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	}
 
 	// arrange windows
-	if (old_ws && !old_ws->node.destroying) {
-		arrange_workspace(old_ws);
+	if (root->fullscreen_global) {
+		arrange_root();
+	} else {
+		if (old_ws && !old_ws->node.destroying) {
+			arrange_workspace(old_ws);
+		}
+		arrange_node(node_get_parent(destination));
 	}
-	arrange_node(node_get_parent(destination));
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
@@ -658,7 +664,7 @@ static struct cmd_results *cmd_move_in_direction(
 				"Cannot move a hidden scratchpad container");
 	}
 	if (container_is_floating(container)) {
-		if (container->is_fullscreen) {
+		if (container->fullscreen_mode) {
 			return cmd_results_new(CMD_FAILURE,
 					"Cannot move fullscreen floating container");
 		}
@@ -690,9 +696,13 @@ static struct cmd_results *cmd_move_in_direction(
 
 	struct sway_workspace *new_ws = container->workspace;
 
-	arrange_workspace(old_ws);
-	if (new_ws != old_ws) {
-		arrange_workspace(new_ws);
+	if (root->fullscreen_global) {
+		arrange_root();
+	} else {
+		arrange_workspace(old_ws);
+		if (new_ws != old_ws) {
+			arrange_workspace(new_ws);
+		}
 	}
 
 	if (container->view) {

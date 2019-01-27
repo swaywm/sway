@@ -168,6 +168,11 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 					"Can't run this command while there's no outputs connected.");
 		}
 
+		if (root->fullscreen_global) {
+			return cmd_results_new(CMD_FAILURE, "workspace",
+				"Can't switch workspaces while fullscreen global");
+		}
+
 		bool no_auto_back_and_forth = false;
 		while (strcasecmp(argv[0], "--no-auto-back-and-forth") == 0) {
 			no_auto_back_and_forth = true;

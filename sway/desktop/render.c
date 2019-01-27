@@ -985,7 +985,15 @@ void output_render(struct sway_output *output, struct timespec *when,
 		goto render_overlay;
 	}
 
-	struct sway_container *fullscreen_con = workspace->current.fullscreen;
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (fullscreen_con && fullscreen_con->scratchpad &&
+			!fullscreen_con->workspace) {
+		fullscreen_con = NULL;
+	}
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+
 	if (fullscreen_con) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
