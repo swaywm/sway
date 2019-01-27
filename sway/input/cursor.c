@@ -821,6 +821,12 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
+static void handle_cursor_frame(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, frame);
+	cursor_handle_activity(cursor);
+	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
+}
+
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
@@ -1063,6 +1069,19 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 
 	wl_event_source_remove(cursor->hide_source);
 
+	wl_list_remove(&cursor->motion.link);
+	wl_list_remove(&cursor->motion_absolute.link);
+	wl_list_remove(&cursor->button.link);
+	wl_list_remove(&cursor->axis.link);
+	wl_list_remove(&cursor->frame.link);
+	wl_list_remove(&cursor->touch_down.link);
+	wl_list_remove(&cursor->touch_up.link);
+	wl_list_remove(&cursor->touch_motion.link);
+	wl_list_remove(&cursor->tool_axis.link);
+	wl_list_remove(&cursor->tool_tip.link);
+	wl_list_remove(&cursor->tool_button.link);
+	wl_list_remove(&cursor->request_set_cursor.link);
+
 	wlr_xcursor_manager_destroy(cursor->xcursor_manager);
 	wlr_cursor_destroy(cursor->cursor);
 	free(cursor);
@@ -1103,6 +1122,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	wl_signal_add(&wlr_cursor->events.axis, &cursor->axis);
 	cursor->axis.notify = handle_cursor_axis;
 
+	wl_signal_add(&wlr_cursor->events.frame, &cursor->frame);
+	cursor->frame.notify = handle_cursor_frame;
+
 	wl_signal_add(&wlr_cursor->events.touch_down, &cursor->touch_down);
 	cursor->touch_down.notify = handle_touch_down;
 
@@ -1133,7 +1155,6 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	cursor->cursor = wlr_cursor;
 
 	return cursor;
-
 }
 
 /**
