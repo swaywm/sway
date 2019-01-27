@@ -30,6 +30,7 @@ struct sway_cursor {
 	struct wl_listener motion_absolute;
 	struct wl_listener button;
 	struct wl_listener axis;
+	struct wl_listener frame;
 
 	struct wl_listener touch_down;
 	struct wl_listener touch_up;
