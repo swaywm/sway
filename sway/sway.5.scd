@@ -58,7 +58,7 @@ The following commands may only be used in the configuration file.
 *bar* [<bar-id>] <bar-subcommands...>
 	For details on bar subcommands, see *sway-bar*(5).
 
-*default\_orientation* horizontal|vertical|auto
+*default_orientation* horizontal|vertical|auto
 	Sets the default container layout for tiled containers.
 
 *include* <path>
@@ -67,14 +67,14 @@ The following commands may only be used in the configuration file.
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
 
-*swaybg\_command* <command>
+*swaybg_command* <command>
 	Executes custom background _command_. Default is _swaybg_. Refer to
 	*sway-output*(5) for more information.
 
 	It can be disabled by setting the command to a single dash:
-	_swaybg\_command -_
+	_swaybg_command -_
 
-*swaynag\_command* <command>
+*swaynag_command* <command>
 	Executes custom command for _swaynag_. Default is _swaynag_. Additional
 	arguments may be appended to the end. This should only be used to either
 	direct sway to call swaynag from a custom path or to provide additional
@@ -82,7 +82,7 @@ The following commands may only be used in the configuration file.
 	results.
 
 	It can be disabled by setting the command to a single dash:
-	_swaynag\_command -_
+	_swaynag_command -_
 
 *xwayland* enable|disable
 	Enables or disables Xwayland support, which allows X11 applications to be
@@ -131,7 +131,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus floating*
 	Sets focus to the last focused floating container.
 
-*focus* mode\_toggle
+*focus* mode_toggle
 	Moves focus between the floating and tiled layers.
 
 *fullscreen* [enable|disable|toggle]
@@ -163,7 +163,7 @@ set|plus|minus <amount>
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos\_x> [px] <pos\_y> [px]
+*move* [absolute] position <pos_x> [px] <pos_y> [px]
 	Moves the focused container to the specified position in the workspace. If
 	_absolute_ is used, the position is relative to all outputs.
 
@@ -186,11 +186,11 @@ set|plus|minus <amount>
 	Moves the focused container to the previous, next or current workspace on
 	this output, or if no workspaces remain, the previous or next output.
 
-*move* container|window [to] workspace prev\_on\_output|next\_on\_output
+*move* container|window [to] workspace prev_on_output|next_on_output
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window [to] workspace back\_and\_forth
+*move* container|window [to] workspace back_and_forth
 	Moves the focused container to previously focused workspace.
 
 *move* container|window|workspace [to] output <name>
@@ -255,10 +255,10 @@ set|plus|minus <amount>
 	"Sticks" a floating window to the current output so that it shows up on all
 	workspaces.
 
-*swap* container with id|con\_id|mark <arg>
+*swap* container with id|con_id|mark <arg>
 	Swaps the position, geometry, and fullscreen status of two containers. The
 	first container can be selected either by criteria or focus. The second
-	container can be selected by _id_, _con\_id_, or _mark_. _id_ can only be
+	container can be selected by _id_, _con_id_, or _mark_. _id_ can only be
 	used with xwayland views. If the first container has focus, it will retain
 	focus unless it is moved to a different workspace or the second container
 	becomes fullscreen on the same workspace as the first container. In either
@@ -272,14 +272,14 @@ runtime.
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
-		for\_window <criteria> move container to workspace <workspace>
+		for_window <criteria> move container to workspace <workspace>
 
 *assign* <criteria> [→] output left|right|up|down|<name>
 	Assigns views matching _criteria_ (see *CRITERIA* for details) to the
 	specified output. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
-		for\_window <criteria> move container to output <output>
+		for_window <criteria> move container to output <output>
 
 *bindsym* [--release|--locked] [--input-device=<device>] [--no-warn] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
@@ -293,7 +293,7 @@ runtime.
 	the _--no-warn_ flag.
 
 	Mouse buttons can either be specified in the form _button[1-9]_ or by using
-	the name of the event code (ex _BTN\_LEFT_ or _BTN\_RIGHT_). For the former
+	the name of the event code (ex _BTN_LEFT_ or _BTN_RIGHT_). For the former
 	option, the buttons will be mapped to their values in X11 (1=left, 2=middle,
 	3=right, 4=scroll up, 5=scroll down, 6=scroll left, 7=scroll right, 8=back,
 	9=forward). For the latter option, you can find the event names using
@@ -308,7 +308,7 @@ runtime.
 	*bindcode* [--release|--locked] [--input-device=<device>] [--no-warn] <code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
-*client.<class>* <border> <background> <text> <indicator> <child\_border>
+*client.<class>* <border> <background> <text> <indicator> <child_border>
 	Configures the color of window borders and title bars. All 5 colors are
 	required, with the exception of *client.background*, which requires exactly
 	one. Colors may be specified in hex, either as _#RRGGBB_ or _#RRGGBBAA_.
@@ -321,7 +321,7 @@ runtime.
 	*client.focused*
 		The window that has focus.
 
-	*client.focused\_inactive*
+	*client.focused_inactive*
 		The most recently focused view within a container which is not focused.
 
 	*client.placeholder*
@@ -350,7 +350,7 @@ runtime.
 		container, this would paint the right border of the current view if a
 		new view would be opened to the right.
 
-	_child\_border_
+	_child_border_
 		The border around the view itself.
 
 The default colors are:
@@ -360,7 +360,7 @@ The default colors are:
 :[ _background_
 :[ _text_
 :[ _indicator_
-:[ _child\_border_
+:[ _child_border_
 |[ *background*
 :  n/a
 :  #ffffff
@@ -373,7 +373,7 @@ The default colors are:
 :  #ffffff
 :  #2e9ef4
 :  #285577
-|  *focused\_inactive*
+|  *focused_inactive*
 :  #333333
 :  #5f676a
 :  #ffffff
@@ -403,10 +403,10 @@ The default colors are:
 	Enables, disables or toggles debug logging. _toggle_ cannot be used in the
 	configuration file.
 
-*default\_border* normal|none|pixel [<n>]
+*default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.
 
-*default\_floating\_border* normal|none|pixel [<n>]
+*default_floating_border* normal|none|pixel [<n>]
 	Set default border style for new floating windows. This only applies to
 	windows that are spawned in floating mode, not windows that become floating
 	afterwards.
@@ -414,32 +414,32 @@ The default colors are:
 *exec* <shell command>
 	Executes _shell command_ with sh.
 
-*exec\_always* <shell command>
+*exec_always* <shell command>
 	Like *exec*, but the shell command will be executed _again_ after *reload*.
 
-*floating\_maximum\_size* <width> x <height>
+*floating_maximum_size* <width> x <height>
 	Specifies the maximum size of floating windows. -1 x -1 removes the upper
 	limit.
 
-*floating\_minimum\_size* <width> x <height>
+*floating_minimum_size* <width> x <height>
 	Specifies the minimum size of floating windows. The default is 75 x 50.
 
-*floating\_modifier* <modifier> [normal|inverse]
+*floating_modifier* <modifier> [normal|inverse]
 	When the _modifier_ key is held down, you may hold left click to move
 	windows, and right click to resize them. If _inverse_ is specified, left
 	click is used for resizing and right click for moving.
 
-*floating\_scroll* up|right|down|left [command]
+*floating_scroll* up|right|down|left [command]
 	Sets a command to be executed when the mouse wheel is scrolled in the
 	specified direction while holding the floating modifier. Resets the
 	command, when given no arguments.
 
-*focus\_follows\_mouse* yes|no|always
+*focus_follows_mouse* yes|no|always
 	If set to _yes_, moving your mouse over a window will focus that window. If
 	set to _always_, the window under the cursor will always be focused, even
 	after switching between workspaces.
 
-*focus\_wrapping* yes|no|force
+*focus_wrapping* yes|no|force
 	This option determines what to do when attempting to focus over the edge
 	of a container. If set to _no_, the focused container will retain focus,
 	if there are no other containers in the direction. If set to _yes_, focus
@@ -451,25 +451,25 @@ The default colors are:
 *font* <font>
 	Sets font for use in title bars in Pango format.
 
-*titlebar\_border\_thickness* <thickness>
+*titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels
 
-*titlebar\_padding* <horizontal> [<vertical>]
+*titlebar_padding* <horizontal> [<vertical>]
 	Padding of the text in the titlebar. _horizontal_ value affects horizontal
 	padding of the text while _vertical_ value affects vertical padding (space
 	above and below text). Padding includes titlebar borders so their value
-	should be greater than titlebar\_border\_thickness. If _vertical_ value is
+	should be greater than titlebar_border_thickness. If _vertical_ value is
 	not specified it is set to the _horizontal_ value.
 
-*for\_window* <criteria> <command>
+*for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
 
-*force\_focus\_wrapping* yes|no
+*force_focus_wrapping* yes|no
 	This option is a wrapper to support i3's legacy syntax. _no_ is equivalent
-	to _focus\_wrapping yes_ and _yes_ is equivalent to
-	_focus\_wrapping force_. This is only available for convenience. Please
-	use _focus\_wrapping_ instead when possible.
+	to _focus_wrapping yes_ and _yes_ is equivalent to
+	_focus_wrapping force_. This is only available for convenience. Please
+	use _focus_wrapping_ instead when possible.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
@@ -482,15 +482,15 @@ The default colors are:
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps ...).
 
-*hide\_edge\_borders* none|vertical|horizontal|both|smart|smart\_no\_gaps
+*hide_edge_borders* none|vertical|horizontal|both|smart|smart_no_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_.
 
-*input* <input\_device> <input-subcommands...>
+*input* <input_device> <input-subcommands...>
 	For details on input subcommands, see *sway-input*(5).
 
 	\* may be used in lieu of a specific device name to configure all input
 	devices. A list of input device names may be obtained via *swaymsg -t
-	get\_inputs*.
+	get_inputs*.
 
 *seat* <seat> <seat-subcommands...>
 	For details on seat subcommands, see *sway-input*(5).
@@ -498,14 +498,14 @@ The default colors are:
 *kill*
 	Kills (closes) the currently focused container and all of its children.
 
-*smart\_borders* on|no\_gaps|off
-	If smart\_borders are _on_, borders will only be enabled if the workspace
-	only has one visible child (identical to _hide\_edge\_borders_ smart). If
-	smart\_borders is set to _no\_gaps_, borders will only be enabled if the
+*smart_borders* on|no_gaps|off
+	If smart_borders are _on_, borders will only be enabled if the workspace
+	only has one visible child (identical to _hide_edge_borders_ smart). If
+	smart_borders is set to _no_gaps_, borders will only be enabled if the
 	workspace only has one visible child and gaps greater than zero.
 
-*smart\_gaps* on|off
-	If smart\_gaps are _on_ gaps will only be enabled if a workspace has more
+*smart_gaps* on|off
+	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
 	than one child.
 
 *mark* --add|--replace [--toggle] <identifier>
@@ -518,30 +518,30 @@ The default colors are:
 *mode* <mode>
 	Switches to the specified mode. The default mode _default_.
 
-*mode* [--pango\_markup] <mode> <mode-subcommands...>
+*mode* [--pango_markup] <mode> <mode-subcommands...>
 	The only two valid _mode-subcommands..._ are *bindsym* and *bindcode*.
-	If _--pango\_markup_ is given, then _mode_ will be interpreted as pango
+	If _--pango_markup_ is given, then _mode_ will be interpreted as pango
 	markup.
 
-*mouse\_warping* output|container|none
+*mouse_warping* output|container|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
 	move focus between them. If _container_ is specified, the mouse will be
 	moved to the middle of the container on switch. Default is _output_.
 
-*no\_focus* <criteria>
+*no_focus* <criteria>
 	Prevents windows matching <criteria> from being focused automatically when
 	they're created. This has no effect on the first window in a workspace.
 
-*output* <output\_name> <output-subcommands...>
+*output* <output_name> <output-subcommands...>
 	For details on output subcommands, see *sway-output*(5).
 
 	\* may be used in lieu of a specific output name to configure all outputs.
-	A list of output names may be obtained via *swaymsg -t get\_outputs*.
+	A list of output names may be obtained via *swaymsg -t get_outputs*.
 
-*popup\_during\_fullscreen* smart|ignore|leave\_fullscreen
+*popup_during_fullscreen* smart|ignore|leave_fullscreen
 	Determines what to do when a fullscreen view opens a dialog.
 	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
-	dialog will not be rendered. If _leave\_fullscreen_, the view will exit
+	dialog will not be rendered. If _leave_fullscreen_, the view will exit
 	fullscreen mode and the dialog will be rendered.
 
 *set* $<name> <value>
@@ -552,32 +552,32 @@ The default colors are:
 	sense for the variable to be replaced at run time since some arguments do
 	need to be known at config time.
 
-*show\_marks* yes|no
-	If *show\_marks* is yes, marks will be displayed in the window borders.
+*show_marks* yes|no
+	If *show_marks* is yes, marks will be displayed in the window borders.
 	Any mark that starts with an underscore will not be drawn even if
-	*show\_marks* is yes. The default is _yes_.
+	*show_marks* is yes. The default is _yes_.
 
 *opacity* <value>
 	Set the opacity of the window between 0 (completely transparent) and 1
 	(completely opaque).
 
-*tiling\_drag*  enable|disable|toggle
+*tiling_drag*  enable|disable|toggle
 	Sets whether or not tiling containers can be dragged with the mouse. If
-	enabled (default), the _floating\_mod_ can be used to drag tiling, as well
+	enabled (default), the _floating_mod_ can be used to drag tiling, as well
 	as floating, containers. Using the left mouse button on title bars without
-	the _floating\_mod_ will also allow the container to be dragged. _toggle_
+	the _floating_mod_ will also allow the container to be dragged. _toggle_
 	should not be used in the config file.
 
-*tiling\_drag\_threshold* <threshold>
+*tiling_drag_threshold* <threshold>
 	Sets the threshold that must be exceeded for a container to be dragged by
-	its titlebar. This has no effect if _floating\_mod_ is used or if
-	_tiling\_drag_ is set to _disable_.  Once the threshold has been exceeded
+	its titlebar. This has no effect if _floating_mod_ is used or if
+	_tiling_drag_ is set to _disable_.  Once the threshold has been exceeded
 	once, the drag starts and the cursor can come back inside the threshold
 	without stopping the drag.  _threshold_ is multiplied by the scale of the
 	output that the cursor on.  The default is 9.
 
-*title\_align* left|center|right
-	Sets the title alignment. If _right_ is selected and _show\_marks_ is set
+*title_align* left|center|right
+	Sets the title alignment. If _right_ is selected and _show_marks_ is set
 	to _yes_, the marks will be shown on the _left_ side instead of the
 	_right_ side.
 
@@ -598,10 +598,10 @@ The default colors are:
 	Switches to the next workspace on the current output or on the next output
 	if currently on the last workspace.
 
-*workspace* prev\_on\_output|next\_on\_output
+*workspace* prev_on_output|next_on_output
 	Switches to the next workspace on the current output.
 
-*workspace* back\_and\_forth
+*workspace* back_and_forth
 	Switches to the previously focused workspace.
 
 *workspace* <name> gaps inner|outer|horizontal|vertical|top|right|bottom|left
@@ -616,23 +616,23 @@ The default colors are:
 	is higher on the list becomes available, the workspace will be move to the
 	higher priority output.
 
-*workspace\_auto\_back\_and\_forth* yes|no
+*workspace_auto_back_and_forth* yes|no
 	When _yes_, repeating a workspace switch command will switch back to the
 	prior workspace. For example, if you are currently on workspace 1,
 	switch to workspace 2, then invoke the "workspace 2" command again, you
 	will be returned to workspace 1. Default is _no_.
 
-*workspace\_layout* default|stacking|tabbed
+*workspace_layout* default|stacking|tabbed
 	Specifies the initial layout for new workspaces.
 
 # BAR CONTROL
 
-*bar hidden\_state* hide|show|toggle [<bar\_id>]
+*bar hidden_state* hide|show|toggle [<bar_id>]
 	Sets the hidden state of the bar (see *sway-bar*(5)), either individually,
 	by specifying a bar id, or if none is given, for all bar instances.
 	_toggle_ switches between _hide_ and _show_.
 
-*bar mode* dock|hide|invisible|toggle [<bar\_id>]
+*bar mode* dock|hide|invisible|toggle [<bar_id>]
 	Sets the mode of the bar (see *sway-bar*(5)), either individually,
 	by specifying a bar id, or if none is given, for all bar instances.
 	_toggle_ switches between _dock_ and _hide_.
@@ -649,7 +649,7 @@ The string contains one or more (space separated) attribute/value pairs. They
 are used by some commands to choose which views to execute actions on. All
 attributes must match for the criteria to match.
 
-Criteria may be used with either the *for\_window* or *assign* commands to
+Criteria may be used with either the *for_window* or *assign* commands to
 specify operations to perform on new views. A criteria may also be used to
 perform specific commands (ones that normally act upon one window) on all views
 that match that criteria. For example:
@@ -674,7 +674,7 @@ Mark all Firefox windows with "Browser":
 
 The following attributes may be matched with:
 
-*app\_id*
+*app_id*
 	Compare value against the app id. Can be a regular expression. If value is
 	\_\_focused\_\_, then the app id must be the same as that of the currently
 	focused window.
@@ -684,12 +684,12 @@ The following attributes may be matched with:
 	value is \_\_focused\_\_, then the window class must be the same as that of
 	the currently focused window.
 
-*con\_id*
+*con_id*
 	Compare against the internal container ID, which you can find via IPC. If
 	value is \_\_focused\_\_, then the id must be the same as that of the
 	currently focused window.
 
-*con\_mark*
+*con_mark*
 	Compare against the window marks. Can be a regular expression.
 
 *floating*
@@ -704,7 +704,7 @@ The following attributes may be matched with:
 	of the currently focused window.
 
 *shell*
-	Compare value against the window shell, such as "xdg\_shell" or "xwayland".
+	Compare value against the window shell, such as "xdg_shell" or "xwayland".
 	Can be a regular expression. If value is \_\_focused\_\_, then the shell
 	must be the same as that of the currently focused window.
 
@@ -720,15 +720,15 @@ The following attributes may be matched with:
 	Compares the urgent state of the window. Can be "first", "last", "latest",
 	"newest", "oldest" or "recent".
 
-*window\_role*
-	Compare against the window role (WM\_WINDOW\_ROLE). Can be a regular
+*window_role*
+	Compare against the window role (WM_WINDOW_ROLE). Can be a regular
 	expression. If value is \_\_focused\_\_, then the window role must be the
 	same as that of the currently focused window.
 
-*window\_type*
-	Compare against the window type (\_NET\_WM\_WINDOW\_TYPE). Possible values
-	are normal, dialog, utility, toolbar, splash, menu, dropdown\_menu,
-	popup\_menu, tooltip and notification.
+*window_type*
+	Compare against the window type (\_NET_WM_WINDOW_TYPE). Possible values
+	are normal, dialog, utility, toolbar, splash, menu, dropdown_menu,
+	popup_menu, tooltip and notification.
 
 *workspace*
 	Compare against the workspace name for this view. Can be a regular

@@ -10,12 +10,12 @@ You may combine output commands into one, like so:
 
 	output HDMI-A-1 mode 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
 
-You can get a list of output names with *swaymsg -t get\_outputs*. You may also
+You can get a list of output names with *swaymsg -t get_outputs*. You may also
 match any output by using the output name "\*".
 
 Some outputs may have different names when disconnecting and reconnecting. To
 identify these, the name can be substituted for a string consisting of the make,
-model and serial which you can get from *swaymsg -t get\_outputs*. Each value
+model and serial which you can get from *swaymsg -t get_outputs*. Each value
 must be separated by one space. For example:
 
 	output "Some Company ABC123 0x00000000" pos 1920,0
@@ -26,7 +26,7 @@ must be separated by one space. For example:
 	Configures the specified output to use the given mode. Modes are a
 	combination of width and height (in pixels) and a refresh rate that your
 	display can be configured to use. For a list of available modes for each
-	output, use *swaymsg -t get\_outputs*.
+	output, use *swaymsg -t get_outputs*.
 
 	Examples:
 
@@ -63,15 +63,15 @@ must be separated by one space. For example:
 	applications to taste. HiDPI isn't supported with Xwayland clients (windows
 	will blur).
 
-*output* <name> background|bg <file> <mode> [<fallback\_color>]
+*output* <name> background|bg <file> <mode> [<fallback_color>]
 	Sets the wallpaper for the given output to the specified file, using the
 	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If
 	the specified file cannot be accessed or if the image does fill the entire
 	output, a fallback color may be provided to cover the rest of the output.
-	__fallback\_color__ should be specified as _#RRGGBB_. Alpha is not
+	__fallback_color__ should be specified as _#RRGGBB_. Alpha is not
 	supported.
 
-*output* <name> background|bg <color> solid\_color
+*output* <name> background|bg <color> solid_color
 	Sets the background of the given output to the specified color. _color_
 	should be specified as _#RRGGBB_. Alpha is not supported.
 
