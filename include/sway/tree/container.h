@@ -299,9 +299,9 @@ enum sway_container_layout container_parent_layout(struct sway_container *con);
 enum sway_container_layout container_current_parent_layout(
 		struct sway_container *con);
 
-list_t *container_get_siblings(const struct sway_container *container);
+list_t *container_get_siblings(struct sway_container *container);
 
-int container_sibling_index(const struct sway_container *child);
+int container_sibling_index(struct sway_container *child);
 
 list_t *container_get_current_siblings(struct sway_container *container);
 
@@ -353,5 +353,7 @@ void container_add_mark(struct sway_container *container, char *mark);
 void container_update_marks_textures(struct sway_container *container);
 
 void container_raise_floating(struct sway_container *con);
+
+bool container_is_scratchpad_hidden(struct sway_container *con);
 
 #endif

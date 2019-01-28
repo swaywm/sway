@@ -86,7 +86,8 @@ static void calculate_constraints(int *min_width, int *max_width,
 		*min_height = config->floating_minimum_height;
 	}
 
-	if (config->floating_maximum_width == -1 || !con->workspace) { // no max
+	if (config->floating_maximum_width == -1 ||
+			container_is_scratchpad_hidden(con)) { // no max
 		*max_width = INT_MAX;
 	} else if (config->floating_maximum_width == 0) { // automatic
 		*max_width = con->workspace->width;
@@ -94,7 +95,8 @@ static void calculate_constraints(int *min_width, int *max_width,
 		*max_width = config->floating_maximum_width;
 	}
 
-	if (config->floating_maximum_height == -1 || !con->workspace) { // no max
+	if (config->floating_maximum_height == -1 ||
+			container_is_scratchpad_hidden(con)) { // no max
 		*max_height = INT_MAX;
 	} else if (config->floating_maximum_height == 0) { // automatic
 		*max_height = con->workspace->height;
@@ -386,7 +388,7 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 	if (width->amount) {
 		switch (width->unit) {
 		case RESIZE_UNIT_PPT:
-			if (con->scratchpad && !con->workspace) {
+			if (container_is_scratchpad_hidden(con)) {
 				return cmd_results_new(CMD_FAILURE,
 						"Cannot resize a hidden scratchpad container by ppt");
 			}
@@ -410,7 +412,7 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 	if (height->amount) {
 		switch (height->unit) {
 		case RESIZE_UNIT_PPT:
-			if (con->scratchpad && !con->workspace) {
+			if (container_is_scratchpad_hidden(con)) {
 				return cmd_results_new(CMD_FAILURE,
 						"Cannot resize a hidden scratchpad container by ppt");
 			}

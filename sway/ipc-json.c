@@ -282,7 +282,7 @@ static json_object *ipc_json_describe_scratchpad_output(void) {
 	json_object *floating_array = json_object_new_array();
 	for (int i = 0; i < root->scratchpad->length; ++i) {
 		struct sway_container *container = root->scratchpad->items[i];
-		if (!container->workspace) {
+		if (container_is_scratchpad_hidden(container)) {
 			json_object_array_add(floating_array,
 				ipc_json_describe_node_recursive(&container->node));
 		}

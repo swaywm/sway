@@ -1156,11 +1156,11 @@ enum sway_container_layout container_current_parent_layout(
 	return con->current.workspace->current.layout;
 }
 
-list_t *container_get_siblings(const struct sway_container *container) {
+list_t *container_get_siblings(struct sway_container *container) {
 	if (container->parent) {
 		return container->parent->children;
 	}
-	if (!container->workspace) {
+	if (container_is_scratchpad_hidden(container)) {
 		return NULL;
 	}
 	if (list_find(container->workspace->tiling, container) != -1) {
@@ -1169,7 +1169,7 @@ list_t *container_get_siblings(const struct sway_container *container) {
 	return container->workspace->floating;
 }
 
-int container_sibling_index(const struct sway_container *child) {
+int container_sibling_index(struct sway_container *child) {
 	return list_find(container_get_siblings(child), child);
 }
 
@@ -1181,7 +1181,10 @@ list_t *container_get_current_siblings(struct sway_container *container) {
 }
 
 void container_handle_fullscreen_reparent(struct sway_container *con) {
-	if (con->fullscreen_mode != FULLSCREEN_WORKSPACE || !con->workspace ||
+	if (!sway_assert(con->workspace, "Expected con to have a workspace")) {
+		return;
+	}
+	if (con->fullscreen_mode != FULLSCREEN_WORKSPACE ||
 			con->workspace->fullscreen == con) {
 		return;
 	}
@@ -1459,4 +1462,8 @@ void container_raise_floating(struct sway_container *con) {
 		list_move_to_end(floater->workspace->floating, floater);
 		node_set_dirty(&floater->workspace->node);
 	}
+}
+
+bool container_is_scratchpad_hidden(struct sway_container *con) {
+	return con->scratchpad && !con->workspace;
 }
