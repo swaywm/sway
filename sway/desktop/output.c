@@ -252,8 +252,7 @@ static void output_for_each_surface(struct sway_output *output,
 
 	struct sway_workspace *workspace = output_get_active_workspace(output);
 	struct sway_container *fullscreen_con = root->fullscreen_global;
-	if (fullscreen_con && fullscreen_con->scratchpad &&
-			!fullscreen_con->workspace) {
+	if (fullscreen_con && container_is_scratchpad_hidden(fullscreen_con)) {
 		fullscreen_con = NULL;
 	}
 	if (!fullscreen_con) {

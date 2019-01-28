@@ -271,7 +271,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	}
 
 	if (argc == 0 && container) {
-		if (container->scratchpad && !container->workspace) {
+		if (container_is_scratchpad_hidden(container)) {
 			root_scratchpad_show(container);
 		}
 		seat_set_focus_container(seat, container);

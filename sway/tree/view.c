@@ -197,8 +197,7 @@ static bool gaps_to_edge(struct sway_view *view) {
 
 void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *con = view->container;
-	if (!con->workspace) {
-		// Hidden in the scratchpad
+	if (container_is_scratchpad_hidden(con)) {
 		return;
 	}
 	struct sway_output *output = con->workspace->output;
@@ -1054,7 +1053,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 	ipc_event_window(view->container, "urgent");
 
-	if (view->container->workspace) {
+	if (!container_is_scratchpad_hidden(view->container)) {
 		workspace_detect_urgent(view->container->workspace);
 	}
 }

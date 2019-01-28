@@ -17,15 +17,15 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;
-	
+
 	if (container == NULL) {
 		return cmd_results_new(CMD_FAILURE, "No current container");
 	};
-	
+
 	container->is_sticky = parse_boolean(argv[0], container->is_sticky);
 
 	if (container->is_sticky && container_is_floating_or_child(container) &&
-			(!container->scratchpad || container->workspace)) {
+			!container_is_scratchpad_hidden(container)) {
 		// move container to active workspace
 		struct sway_workspace *active_workspace =
 			output_get_active_workspace(container->workspace->output);
