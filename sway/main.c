@@ -132,13 +132,10 @@ void run_as_ipc_client(char *command, char *socket_path) {
 
 static void log_env(void) {
 	const char *log_vars[] = {
+		"LD_LIBRARY_PATH",
+		"LD_PRELOAD",
 		"PATH",
-		"LD_LIBRARY_PATH",
-		"LD_PRELOAD_PATH",
-		"LD_LIBRARY_PATH",
-		"SWAY_CURSOR_THEME",
-		"SWAY_CURSOR_SIZE",
-		"SWAYSOCK"
+		"SWAYSOCK",
 	};
 	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
 		sway_log(SWAY_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
