@@ -1182,10 +1182,7 @@ list_t *container_get_current_siblings(struct sway_container *container) {
 }
 
 void container_handle_fullscreen_reparent(struct sway_container *con) {
-	if (!sway_assert(con->workspace, "Expected con to have a workspace")) {
-		return;
-	}
-	if (con->fullscreen_mode != FULLSCREEN_WORKSPACE ||
+	if (con->fullscreen_mode != FULLSCREEN_WORKSPACE || !con->workspace ||
 			con->workspace->fullscreen == con) {
 		return;
 	}
