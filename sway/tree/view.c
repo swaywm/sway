@@ -673,15 +673,22 @@ void view_unmap(struct sway_view *view) {
 }
 
 void view_update_size(struct sway_view *view, int width, int height) {
-	if (!sway_assert(container_is_floating(view->container),
-				"Expected a floating container")) {
-		return;
+	struct sway_container *con = view->container;
+
+	if (container_is_floating(con)) {
+		con->content_width = width;
+		con->content_height = height;
+		con->current.content_width = width;
+		con->current.content_height = height;
+		container_set_geometry_from_content(con);
+	} else {
+		con->surface_x = con->content_x + (con->content_width - width) / 2;
+		con->surface_y = con->content_y + (con->content_height - height) / 2;
+		con->surface_x = fmax(con->surface_x, con->content_x);
+		con->surface_y = fmax(con->surface_y, con->content_y);
 	}
-	view->container->content_width = width;
-	view->container->content_height = height;
-	view->container->current.content_width = width;
-	view->container->current.content_height = height;
-	container_set_geometry_from_content(view->container);
+	con->surface_width = width;
+	con->surface_width = height;
 }
 
 static const struct sway_view_child_impl subsurface_impl;

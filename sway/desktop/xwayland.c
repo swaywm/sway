@@ -333,10 +333,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		get_geometry(view, &new_geo);
 		struct sway_container *con = view->container;
 
-		if ((new_geo.width != con->content_width ||
-					new_geo.height != con->content_height) &&
-				container_is_floating(con)) {
-			// A floating view has unexpectedly sent a new size
+		if ((new_geo.width != con->surface_width ||
+					new_geo.height != con->surface_height)) {
+			// The view has unexpectedly sent a new size
 			// eg. The Firefox "Save As" dialog when downloading a file
 			desktop_damage_view(view);
 			view_update_size(view, new_geo.width, new_geo.height);
