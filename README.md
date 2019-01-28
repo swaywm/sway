@@ -40,7 +40,7 @@ Install dependencies:
 * pango
 * cairo
 * gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) >= 1.8.0 (optional: man pages) \*
 * git \*
 
 _\*Compile-time dep_
