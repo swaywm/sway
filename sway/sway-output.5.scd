@@ -36,11 +36,12 @@ must be separated by one space. For example:
 
 *output* <name> position|pos <X> <Y>
 	Places the specified output at the specific position in the global
-	coordinate space. If scaling is active, it has to be considered when
-	positioning. For example, if the scaling factor for the left output is 2,
-	the relative position for the right output has to be divided by 2. The 
-	reference point is the top left corner so if you want the bottoms aligned
-	this has to be considered as well.
+	coordinate space. The cursor may only be moved between immediately
+	adjacent outputs. If scaling is active, it has to be considered when
+	positioning. For example, if the scaling factor for the left output is
+	2, the relative position for the right output has to be divided by 2.
+	The reference point is the top left corner so if you want the bottoms
+	aligned this has to be considered as well.
 
 	Example:
 
