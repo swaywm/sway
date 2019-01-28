@@ -204,9 +204,9 @@ static void render_view_toplevels(struct sway_view *view,
 		.alpha = alpha,
 	};
 	// Render all toplevels without descending into popups
-	double ox = view->container->current.content_x -
+	double ox = view->container->surface_x -
 		output->wlr_output->lx - view->geometry.x;
-	double oy = view->container->current.content_y -
+	double oy = view->container->surface_y -
 		output->wlr_output->ly - view->geometry.y;
 	output_surface_for_each_surface(output, view->surface, ox, oy,
 			render_surface_iterator, &data);
@@ -240,9 +240,9 @@ static void render_saved_view(struct sway_view *view,
 		return;
 	}
 	struct wlr_box box = {
-		.x = view->container->current.content_x - output->wlr_output->lx -
+		.x = view->container->surface_x - output->wlr_output->lx -
 			view->saved_geometry.x,
-		.y = view->container->current.content_y - output->wlr_output->ly -
+		.y = view->container->surface_y - output->wlr_output->ly -
 			view->saved_geometry.y,
 		.width = view->saved_buffer_width,
 		.height = view->saved_buffer_height,
@@ -1004,7 +1004,6 @@ void output_render(struct sway_output *output, struct timespec *when,
 			wlr_renderer_clear(renderer, clear_color);
 		}
 
-		// TODO: handle views smaller than the output
 		if (fullscreen_con->view) {
 			if (fullscreen_con->view->saved_buffer) {
 				render_saved_view(fullscreen_con->view, output, damage, 1.0f);

@@ -249,6 +249,26 @@ static void apply_container_state(struct sway_container *container,
 		desktop_damage_box(&box);
 	}
 
+	// If the view hasn't responded to the configure, center it within
+	// the container. This is important for fullscreen views which
+	// refuse to resize to the size of the output.
+	if (view && view->surface) {
+		if (view->surface->current.width < container->width) {
+			container->surface_x = container->content_x +
+				(container->content_width - view->surface->current.width) / 2;
+		} else {
+			container->surface_x = container->content_x;
+		}
+		if (view->surface->current.height < container->height) {
+			container->surface_y = container->content_y +
+				(container->content_height - view->surface->current.height) / 2;
+		} else {
+			container->surface_y = container->content_y;
+		}
+		container->surface_width = view->surface->current.width;
+		container->surface_height = view->surface->current.height;
+	}
+
 	if (!container->node.destroying) {
 		container_discover_outputs(container);
 	}

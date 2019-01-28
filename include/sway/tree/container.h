@@ -88,8 +88,15 @@ struct sway_container {
 	double saved_x, saved_y;
 	double saved_width, saved_height;
 
+	// These are in layout coordinates.
 	double content_x, content_y;
 	int content_width, content_height;
+
+	// In most cases this is the same as the content x and y, but if the view
+	// refuses to resize to the content dimensions then it can be smaller.
+	// These are in layout coordinates.
+	double surface_x, surface_y;
+	double surface_width, surface_height;
 
 	enum sway_fullscreen_mode fullscreen_mode;
 

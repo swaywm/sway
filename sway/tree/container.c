@@ -169,8 +169,8 @@ static struct sway_container *surface_at_view(struct sway_container *con, double
 		return NULL;
 	}
 	struct sway_view *view = con->view;
-	double view_sx = lx - con->content_x + view->geometry.x;
-	double view_sy = ly - con->content_y + view->geometry.y;
+	double view_sx = lx - con->surface_x + view->geometry.x;
+	double view_sy = ly - con->surface_y + view->geometry.y;
 
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;
