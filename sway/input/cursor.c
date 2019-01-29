@@ -403,6 +403,14 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	double dx = event->delta_x;
 	double dy = event->delta_y;
 
+	double dx_unaccel = event->unaccel_dx;
+	double dy_unaccel = event->unaccel_dy;
+
+	wlr_relative_pointer_manager_v1_send_relative_motion(
+		server.relative_pointer_manager,
+		cursor->seat->wlr_seat, event->time_msec, dx, dy,
+		dx_unaccel, dy_unaccel);
+
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 	struct sway_node *node = node_at_coords(cursor->seat,
@@ -437,6 +445,12 @@ static void cursor_motion_absolute(struct sway_cursor *cursor,
 	double lx, ly;
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, dev,
 		x, y, &lx, &ly);
+
+	double dx = lx - cursor->cursor->x;
+	double dy = ly - cursor->cursor->y;
+	wlr_relative_pointer_manager_v1_send_relative_motion(
+		server.relative_pointer_manager,
+		cursor->seat->wlr_seat, (uint64_t)time_msec * 1000, dx, dy, dx, dy);
 
 	struct wlr_surface *surface = NULL;
 	double sx, sy;

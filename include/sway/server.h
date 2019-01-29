@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/types/wlr_xdg_shell.h>
@@ -50,6 +51,8 @@ struct sway_server {
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
 #endif
+
+	struct wlr_relative_pointer_manager_v1 *relative_pointer_manager;
 
 	struct wlr_server_decoration_manager *server_decoration_manager;
 	struct wl_listener server_decoration;
