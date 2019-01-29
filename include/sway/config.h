@@ -516,6 +516,11 @@ bool read_config(FILE *file, struct sway_config *config,
 		struct swaynag_instance *swaynag);
 
 /**
+ * Run the commands that were deferred when reading the config file.
+ */
+void run_deferred_commands(void);
+
+/**
  * Adds a warning entry to the swaynag instance used for errors.
  */
 void config_add_swaynag_warning(char *fmt, ...);
