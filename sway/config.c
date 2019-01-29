@@ -20,6 +20,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
+#include "sway/desktop/transaction.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
@@ -343,6 +344,7 @@ static bool load_config(const char *path, struct sway_config *config,
 
 	struct stat sb;
 	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+		sway_log(SWAY_ERROR, "%s is a directory not a config file", path);
 		return false;
 	}
 
@@ -571,6 +573,29 @@ bool load_include_configs(const char *path, struct sway_config *config,
 
 	free(wd);
 	return true;
+}
+
+void run_deferred_commands(void) {
+	if (!config->cmd_queue->length) {
+		return;
+	}
+	sway_log(SWAY_DEBUG, "Running deferred commands");
+	while (config->cmd_queue->length) {
+		char *line = config->cmd_queue->items[0];
+		list_t *res_list = execute_command(line, NULL, NULL);
+		for (int i = 0; i < res_list->length; ++i) {
+			struct cmd_results *res = res_list->items[i];
+			if (res->status != CMD_SUCCESS) {
+				sway_log(SWAY_ERROR, "Error on line '%s': %s",
+						line, res->error);
+			}
+			free_cmd_results(res);
+		}
+		list_del(config->cmd_queue, 0);
+		list_free(res_list);
+		free(line);
+	}
+	transaction_commit_dirty();
 }
 
 // get line, with backslash continuation

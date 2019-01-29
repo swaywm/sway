@@ -16,7 +16,6 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/debug.h"
-#include "sway/desktop/transaction.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/root.h"
@@ -370,55 +369,33 @@ int main(int argc, char **argv) {
 	setenv("WAYLAND_DISPLAY", server.socket, true);
 	if (!load_main_config(config_path, false, false)) {
 		sway_terminate(EXIT_FAILURE);
+		goto shutdown;
 	}
 
-	if (config_path) {
-		free(config_path);
-	}
-
-	if (!terminate_request) {
-		if (!server_start(&server)) {
-			sway_terminate(EXIT_FAILURE);
-		}
+	if (!server_start(&server)) {
+		sway_terminate(EXIT_FAILURE);
+		goto shutdown;
 	}
 
 	config->active = true;
 	load_swaybars();
-	// Execute commands until there are none left
-	sway_log(SWAY_DEBUG, "Running deferred commands");
-	while (config->cmd_queue->length) {
-		char *line = config->cmd_queue->items[0];
-		list_t *res_list = execute_command(line, NULL, NULL);
-		for (int i = 0; i < res_list->length; ++i) {
-			struct cmd_results *res = res_list->items[i];
-			if (res->status != CMD_SUCCESS) {
-				sway_log(SWAY_ERROR, "Error on line '%s': %s", line, res->error);
-			}
-			free_cmd_results(res);
-		}
-		list_free(res_list);
-		free(line);
-		list_del(config->cmd_queue, 0);
-	}
-	transaction_commit_dirty();
+	run_deferred_commands();
 
 	if (config->swaynag_config_errors.pid > 0) {
 		swaynag_show(&config->swaynag_config_errors);
 	}
 
-	if (!terminate_request) {
-		server_run(&server);
-	}
+	server_run(&server);
 
+shutdown:
 	sway_log(SWAY_INFO, "Shutting down sway");
 
 	server_fini(&server);
 	root_destroy(root);
 	root = NULL;
 
-	if (config) {
-		free_config(config);
-	}
+	free(config_path);
+	free_config(config);
 
 	pango_cairo_font_map_set_default(NULL);
 
