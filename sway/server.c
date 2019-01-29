@@ -15,6 +15,7 @@
 #include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
@@ -105,6 +106,9 @@ bool server_init(struct sway_server *server) {
 			&server->xdg_decoration);
 	server->xdg_decoration.notify = handle_xdg_decoration;
 	wl_list_init(&server->xdg_decorations);
+
+	server->relative_pointer_manager =
+		wlr_relative_pointer_manager_v1_create(server->wl_display);
 
 	server->pointer_constraints =
 		wlr_pointer_constraints_v1_create(server->wl_display);
