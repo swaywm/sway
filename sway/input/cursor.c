@@ -1026,6 +1026,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	}
 
 	cursor_motion_absolute(cursor, event->time_msec, event->device, x, y);
+	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
@@ -1035,6 +1036,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	dispatch_cursor_button(cursor, event->device, event->time_msec,
 			BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
 				WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	transaction_commit_dirty();
 }
 
@@ -1060,6 +1062,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 		cursor->tool_buttons--;
 		break;
 	}
+	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	transaction_commit_dirty();
 }
 
