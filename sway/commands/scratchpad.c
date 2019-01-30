@@ -72,8 +72,10 @@ static void scratchpad_toggle_container(struct sway_container *con) {
 		return;
 	}
 
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	// Check if it matches a currently visible scratchpad window and hide it.
-	if (con->workspace) {
+	if (con->workspace && ws == con->workspace) {
 		root_scratchpad_hide(con);
 		return;
 	}
