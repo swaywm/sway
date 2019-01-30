@@ -282,7 +282,7 @@ runtime.
 
 		for_window <criteria> move container to output <output>
 
-*bindsym* [--release|--locked] [--input-device=<device>] [--no-warn] <key combo> <command>
+*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
@@ -294,11 +294,24 @@ runtime.
 	the _--no-warn_ flag.
 
 	Mouse buttons can either be specified in the form _button[1-9]_ or by using
-	the name of the event code (ex _BTN_LEFT_ or _BTN_RIGHT_). For the former
+	the name of the event code (ex _BTN\_LEFT_ or _BTN\_RIGHT_). For the former
 	option, the buttons will be mapped to their values in X11 (1=left, 2=middle,
 	3=right, 4=scroll up, 5=scroll down, 6=scroll left, 7=scroll right, 8=back,
 	9=forward). For the latter option, you can find the event names using
 	_libinput debug-events_.
+	
+	_--whole-window_, _--border_, and _--exclude-titlebar_ are mouse-only options
+	which affect the region in which the mouse bindings can be triggered.  By
+	default, mouse bindings are only triggered when over the title bar. With the
+	_--border_ option, the border of the window will be included in this region.
+	With the _--whole-window_ option, the cursor can be anywhere over a window
+	including the title, border, and content. _--exclude-titlebar_ can be used in
+	conjunction with any other option to specify that the titlebar should be
+	excluded from the region of consideration.
+
+	There is currently, however, no way to execute a mouse binding over a layer
+	surface (which includes the background of an empty workspace). This behaviour
+	is carried over from i3.
 
 	Example:
 ```
@@ -306,7 +319,7 @@ runtime.
 		bindsym Mod1+Shift+f exec firefox
 ```
 
-	*bindcode* [--release|--locked] [--input-device=<device>] [--no-warn] <code> <command>
+	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
 *client.<class>* <border> <background> <text> <indicator> <child_border>
