@@ -143,6 +143,7 @@ struct seat_config {
 	int fallback; // -1 means not set
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
+	bool allow_constrain;
 };
 
 enum config_dpms {

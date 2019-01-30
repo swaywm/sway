@@ -26,6 +26,7 @@ struct seat_config *new_seat_config(const char* name) {
 		return NULL;
 	}
 	seat->hide_cursor_timeout = -1;
+	seat->allow_constrain = true;
 
 	return seat;
 }

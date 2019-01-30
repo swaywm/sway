@@ -539,6 +539,11 @@ The default colors are:
 	\* may be used in lieu of a specific output name to configure all outputs.
 	A list of output names may be obtained via *swaymsg -t get_outputs*.
 
+*pointer_constraint* enable|disable|escape
+	Enables or disables the ability for clients to capture the cursor (enabled
+	by default). This is primarily useful for video games. The "escape" command
+	can be used at runtime to escape from a captured client.
+
 *popup_during_fullscreen* smart|ignore|leave_fullscreen
 	Determines what to do when a fullscreen view opens a dialog.
 	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
