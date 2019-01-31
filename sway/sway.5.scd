@@ -72,7 +72,7 @@ The following commands may only be used in the configuration file.
 	*sway-output*(5) for more information.
 
 	It can be disabled by setting the command to a single dash:
-	_swaybg_command -_
+	_swaybg\_command -_
 
 *swaynag_command* <command>
 	Executes custom command for _swaynag_. Default is _swaynag_. Additional
@@ -82,7 +82,7 @@ The following commands may only be used in the configuration file.
 	results.
 
 	It can be disabled by setting the command to a single dash:
-	_swaynag_command -_
+	_swaynag\_command -_
 
 *xwayland* enable|disable
 	Enables or disables Xwayland support, which allows X11 applications to be

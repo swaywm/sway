@@ -18,7 +18,7 @@ Sway allows configuring swaybar in the sway configuration file.
 	https://i3wm.org/docs/i3bar-protocol.html
 
 	If running this command via IPC, you can disable a running status command by
-	setting the command to a single dash: _swaybar bar bar-0 status_command -_
+	setting the command to a single dash: _swaybar bar bar-0 status\_command -_
 
 *pango_markup* enabled|disabled
 	Enables or disables pango markup for status lines. This has no effect on
