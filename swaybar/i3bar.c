@@ -21,6 +21,7 @@ void i3bar_block_unref(struct i3bar_block *block) {
 		free(block->full_text);
 		free(block->short_text);
 		free(block->align);
+		free(block->min_width_str);
 		free(block->name);
 		free(block->instance);
 		free(block->color);
@@ -78,7 +79,7 @@ static void i3bar_parse_json(struct status_line *status,
 				block->min_width = json_object_get_int(min_width);
 			} else if (type == json_type_string) {
 				/* the width will be calculated when rendering */
-				block->min_width = 0;
+				block->min_width_str = strdup(json_object_get_string(min_width));
 			}
 		}
 		block->align = strdup(align ? json_object_get_string(align) : "left");

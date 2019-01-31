@@ -7,7 +7,7 @@
 struct i3bar_block {
 	struct wl_list link; // status_link::blocks
 	int ref_count;
-	char *full_text, *short_text, *align;
+	char *full_text, *short_text, *align, *min_width_str;
 	bool urgent;
 	uint32_t *color;
 	int min_width;

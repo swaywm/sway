@@ -159,6 +159,12 @@ static uint32_t render_status_block(cairo_t *cairo,
 	double ws_vertical_padding = config->status_padding * output->scale;
 
 	int width = text_width;
+	if (block->min_width_str) {
+		int w;
+		get_text_size(cairo, config->font, &w, NULL, NULL,
+				output->scale, block->markup, "%s", block->min_width_str);
+		block->min_width = w;
+	}
 	if (width < block->min_width) {
 		width = block->min_width;
 	}
