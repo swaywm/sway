@@ -135,7 +135,7 @@ static int entry_handler(char *group, char *key, char *value,
 			theme->name = strdup(value);
 		} else if (strcmp(key, "Comment") == 0) {
 			theme->comment = strdup(value);
-		} else if (strcmp(key, "Inherists") == 0) {
+		} else if (strcmp(key, "Inherits") == 0) {
 			theme->inherits = strdup(value);
 		} else if (strcmp(key, "Directories") == 0) {
 			theme->directories = split_string(value, ",");
