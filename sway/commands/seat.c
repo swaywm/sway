@@ -11,6 +11,7 @@ static struct cmd_handler seat_handlers[] = {
 	{ "cursor", seat_cmd_cursor },
 	{ "fallback", seat_cmd_fallback },
 	{ "hide_cursor", seat_cmd_hide_cursor },
+	{ "pointer_constraint", seat_cmd_pointer_constraint },
 };
 
 struct cmd_results *cmd_seat(int argc, char **argv) {

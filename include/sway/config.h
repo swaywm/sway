@@ -135,6 +135,12 @@ struct seat_attachment_config {
 	// TODO other things are configured here for some reason
 };
 
+enum seat_config_allow_constrain {
+	CONSTRAIN_DEFAULT,  // the default is currently enabled
+	CONSTRAIN_ENABLE,
+	CONSTRAIN_DISABLE
+};
+
 /**
  * Options for multiseat and other misc device configurations
  */
@@ -143,7 +149,7 @@ struct seat_config {
 	int fallback; // -1 means not set
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
-	bool allow_constrain;
+	enum seat_config_allow_constrain allow_constrain;
 };
 
 enum config_dpms {
