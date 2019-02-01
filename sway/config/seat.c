@@ -26,7 +26,7 @@ struct seat_config *new_seat_config(const char* name) {
 		return NULL;
 	}
 	seat->hide_cursor_timeout = -1;
-	seat->allow_constrain = true;
+	seat->allow_constrain = CONSTRAIN_DEFAULT;
 
 	return seat;
 }
@@ -142,6 +142,10 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 
 	if (source->hide_cursor_timeout != -1) {
 		dest->hide_cursor_timeout = source->hide_cursor_timeout;
+	}
+
+	if (source->allow_constrain != CONSTRAIN_DEFAULT) {
+		dest->allow_constrain = source->allow_constrain;
 	}
 }
 

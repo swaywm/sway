@@ -153,7 +153,6 @@ sway_cmd cmd_new_window;
 sway_cmd cmd_no_focus;
 sway_cmd cmd_output;
 sway_cmd cmd_permit;
-sway_cmd cmd_pointer_constraint;
 sway_cmd cmd_popup_during_fullscreen;
 sway_cmd cmd_reject;
 sway_cmd cmd_reload;
@@ -268,6 +267,7 @@ sway_cmd seat_cmd_attach;
 sway_cmd seat_cmd_cursor;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
+sway_cmd seat_cmd_pointer_constraint;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

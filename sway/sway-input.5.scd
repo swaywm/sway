@@ -172,6 +172,11 @@ in their own "seat").
 	disables hiding the cursor. The minimal timeout is 100 and any value less
 	than that (aside from 0), will be increased to 100.
 
+*seat* <name> pointer_constraint enable|disable|escape
+	Enables or disables the ability for clients to capture the cursor (enabled
+	by default) for the seat. This is primarily useful for video games. The
+	"escape" command can be used at runtime to escape from a captured client.
+
 # SEE ALSO
 
 *sway*(5) *sway-output*(5)
