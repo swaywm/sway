@@ -450,7 +450,8 @@ static void cursor_motion_absolute(struct sway_cursor *cursor,
 	double dy = ly - cursor->cursor->y;
 	wlr_relative_pointer_manager_v1_send_relative_motion(
 		server.relative_pointer_manager,
-		cursor->seat->wlr_seat, time_msec, dx, dy, dx, dy);
+		cursor->seat->wlr_seat, (uint64_t)time_msec * 1000,
+		dx, dy, dx, dy);
 
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
