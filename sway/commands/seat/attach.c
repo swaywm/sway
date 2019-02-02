@@ -12,6 +12,9 @@ struct cmd_results *seat_cmd_attach(int argc, char **argv) {
 	if (!config->handler_context.seat_config) {
 		return cmd_results_new(CMD_FAILURE, "No seat defined");
 	}
+	if (config->reading) {
+		return cmd_results_new(CMD_DEFER, NULL);
+	}
 
 	struct seat_attachment_config *attachment = seat_attachment_config_new();
 	if (!attachment) {
