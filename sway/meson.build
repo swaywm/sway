@@ -37,7 +37,8 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 	'config/gesture.c',
-
+	'config/target.c',
+	
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
@@ -179,8 +180,16 @@ sway_sources = files(
 
 	'commands/touch/binding.c',
 	'commands/touch/gesture.c',
+	'commands/touch/target.c',
 	'commands/touch/gesture/touch.c',
 	'commands/touch/gesture/threshold.c',
+	'commands/touch/gesture/target.c',
+	'commands/touch/gesture/swipe.c',
+	'commands/touch/gesture/rotate.c',
+	'commands/touch/gesture/pinch.c',
+	'commands/touch/gesture/delay.c',
+	
+
 
 	'tree/arrange.c',
 	'tree/container.c',

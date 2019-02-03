@@ -332,19 +332,32 @@ static void handle_cursor_frame(struct wl_listener *listener, void *data) {
 	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 }
 
-static void handle_gestures(struct libtouch_engine *engine, struct sway_seat *seat) {
+static void handle_gestures(struct libtouch_progress_tracker *tracker, struct sway_seat *seat) {
 	struct libtouch_gesture *complete;
 	struct gesture_config *cfg;
 	int idx;
-	while((complete = libtouch_handle_finished_gesture(engine))){
+	cfg = (struct gesture_config*) config->gesture_configs->items[0];
+	sway_log(SWAY_DEBUG, "Tracking %d gestures", libtouch_progress_tracker_n_gestures(tracker));
+	for(uint32_t i = 0; i < libtouch_progress_tracker_n_gestures(tracker); i++) {
+	  sway_log(SWAY_DEBUG, "Progress %d: %f", i, libtouch_gesture_progress_get_progress(libtouch_gesture_get_progress(tracker, i)));
+	}
+	while((complete = libtouch_handle_finished_gesture(tracker)) != NULL){
+		
+		
 		idx = list_seq_find(config->gesture_configs, gesture_libtouch_cmp, complete);
 		if(idx >= 0) {
+			sway_log(SWAY_DEBUG, "Completed gesture %s", cfg->identifier);
 			cfg = config->gesture_configs->items[idx];
+			
 			if(cfg->command) {
-				execute_command(cfg->command, seat, seat_get_focused_container(seat));
+				execute_command(cfg->command, seat, NULL);
 			}
+		} else {
+			sway_log(SWAY_DEBUG, "Gesture unbound!");
 		}
 	}
+
+	
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
@@ -365,6 +378,13 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
+
+	sway_log(SWAY_DEBUG, "Touch pos: (%f, %f)", lx,ly);
+	libtouch_progress_register_touch(cursor->gesture_tracker, event->time_msec,
+					 event->touch_id, LIBTOUCH_TOUCH_DOWN,
+					 lx, ly);
+	handle_gestures(cursor->gesture_tracker, seat);
+
 	if (!surface) {
 		return;
 	}
@@ -375,10 +395,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 				event->touch_id, sx, sy);
 		cursor_set_image(cursor, NULL, NULL);
 	}
-	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
-				       event->touch_id, LIBTOUCH_TOUCH_DOWN,
-				       event->x, event->y);
-	handle_gestures(cursor->gesture_engine, seat);
+	
 
 }
 
@@ -389,9 +406,10 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	// TODO: fall back to cursor simulation if client has not bound to touch
 	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
-	libtouch_engine_register_touch(cursor->gesture_engine, event->time_msec,
+	
+	libtouch_progress_register_touch(cursor->gesture_tracker, event->time_msec,
 				       event->touch_id, LIBTOUCH_TOUCH_UP, 0, 0);
-	handle_gestures(cursor->gesture_engine, cursor->seat);
+	handle_gestures(cursor->gesture_tracker, cursor->seat);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
@@ -403,11 +421,19 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 
+	
 	double lx, ly;
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
 	node_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+
+
+        sway_log(SWAY_DEBUG, "move gesture");
+	libtouch_progress_register_move(cursor->gesture_tracker, event->time_msec,
+					event->touch_id, lx,ly);
+
+	handle_gestures(cursor->gesture_tracker, seat);
 
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;
@@ -430,10 +456,7 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
 			event->touch_id, sx, sy);
 	}
-	libtouch_engine_register_move(cursor->gesture_engine, event->time_msec,
-				      event->touch_id, event->x, event->y);
-
-	handle_gestures(cursor->gesture_engine, seat);
+	
 }
 
 

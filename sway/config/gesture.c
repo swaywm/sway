@@ -40,5 +40,8 @@ int gesture_identifier_cmp(const void *item, const void *data) {
 int gesture_libtouch_cmp(const void *item, const void *data) {
   const struct gesture_config *gc = item;
   const struct libtouch_gesture *g = data;
-  return gc->gesture == g;
+  if(gc->gesture == g)
+    return 0;
+  else
+    return -1;
 }

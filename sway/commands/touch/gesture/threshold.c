@@ -25,6 +25,7 @@ struct cmd_results *touch_gesture_cmd_threshold(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID,
 				       "Invalid threshold: %s", argv[0]);
 	}
+	sway_log(SWAY_DEBUG, "Set threshold %d", threshold);
 	libtouch_action_set_threshold(current, threshold);
 	return cmd_results_new(CMD_SUCCESS,
 			       "Set threshold");

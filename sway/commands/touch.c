@@ -14,6 +14,7 @@
 static struct cmd_handler touch_handlers[] = {
 	{ "binding", touch_cmd_binding },
 	{ "gesture", touch_cmd_gesture },
+	{ "target", touch_cmd_target },
 };
 
 

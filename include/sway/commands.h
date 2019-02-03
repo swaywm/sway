@@ -282,9 +282,15 @@ sway_cmd seat_cmd_pointer_constraint;
 
 sway_cmd touch_cmd_gesture;
 sway_cmd touch_cmd_binding;
+sway_cmd touch_cmd_target;
 
 sway_cmd touch_gesture_cmd_touch;
 sway_cmd touch_gesture_cmd_threshold;
+sway_cmd touch_gesture_cmd_target;
+sway_cmd touch_gesture_cmd_swipe;
+sway_cmd touch_gesture_cmd_pinch;
+sway_cmd touch_gesture_cmd_rotate;
+sway_cmd touch_gesture_cmd_delay;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

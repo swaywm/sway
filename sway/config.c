@@ -30,6 +30,7 @@
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
+#include <libtouch.h>
 
 struct sway_config *config = NULL;
 
@@ -188,7 +189,8 @@ static void config_defaults(struct sway_config *config) {
 			"--button-no-terminal 'Exit sway' 'swaymsg exit' "
 			"--button-no-terminal 'Reload sway' 'swaymsg reload'";
 	config->swaynag_config_errors.detailed = true;
-
+	if (!(config->gesture_configs = create_list())) goto cleanup;
+	if (!(config->gesture_target_configs = create_list())) goto cleanup;
 	if (!(config->symbols = create_list())) goto cleanup;
 	if (!(config->modes = create_list())) goto cleanup;
 	if (!(config->bars = create_list())) goto cleanup;
@@ -312,6 +314,7 @@ static void config_defaults(struct sway_config *config) {
 
 	set_color(config->border_colors.background, 0xFFFFFF);
 
+	config->gesture_engine = libtouch_engine_create();
 	// Security
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;

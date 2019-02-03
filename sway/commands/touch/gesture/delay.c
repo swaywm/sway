@@ -10,20 +10,13 @@
 #include "stringop.h"
 #include <libtouch.h>
 
-struct cmd_results *touch_gesture_cmd_touch(int argc, char **argv) {
+struct cmd_results *touch_gesture_cmd_delay(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if((error = checkarg(argc, "touch", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 
-	uint32_t mode;
-	if(strcmp(argv[0],"down") == 0) {
-		mode = LIBTOUCH_TOUCH_DOWN;
-	} else if (strcmp(argv[0],"up") == 0) {
-		mode = LIBTOUCH_TOUCH_UP;
-	} else {
-		return cmd_results_new(CMD_FAILURE, "Touch: %s is not up or down", argv[0]);
-	}
+	uint32_t mode = atoi(argv[0]);
 	
 	if(!config->handler_context.current_gesture) {
 		return cmd_results_new(CMD_FAILURE, "No current gesture");
@@ -32,9 +25,9 @@ struct cmd_results *touch_gesture_cmd_touch(int argc, char **argv) {
 	}
 	struct libtouch_gesture *gesture = config->handler_context.current_gesture->gesture;
 	
-	struct libtouch_action *action = libtouch_gesture_add_touch(gesture, mode);
+	struct libtouch_action *action = libtouch_gesture_add_delay(gesture, mode);
 	
 	config->handler_context.current_gesture_action = action;
 
-	return cmd_results_new(CMD_SUCCESS, "Created new touch");
+	return cmd_results_new(CMD_SUCCESS, "Created new delay");
 };

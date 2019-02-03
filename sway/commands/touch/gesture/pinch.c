@@ -10,19 +10,19 @@
 #include "stringop.h"
 #include <libtouch.h>
 
-struct cmd_results *touch_gesture_cmd_touch(int argc, char **argv) {
+struct cmd_results *touch_gesture_cmd_pinch(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if((error = checkarg(argc, "touch", EXPECTED_EQUAL_TO, 1))) {
+	if((error = checkarg(argc, "pinch", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 
 	uint32_t mode;
-	if(strcmp(argv[0],"down") == 0) {
-		mode = LIBTOUCH_TOUCH_DOWN;
-	} else if (strcmp(argv[0],"up") == 0) {
-		mode = LIBTOUCH_TOUCH_UP;
+	if(strcmp(argv[0],"in") == 0) {
+		mode = LIBTOUCH_PINCH_IN;
+	} else if (strcmp(argv[0],"out") == 0) {
+		mode = LIBTOUCH_PINCH_OUT;
 	} else {
-		return cmd_results_new(CMD_FAILURE, "Touch: %s is not up or down", argv[0]);
+		return cmd_results_new(CMD_FAILURE, "pinch: %s is not in or out", argv[0]);
 	}
 	
 	if(!config->handler_context.current_gesture) {
@@ -32,7 +32,7 @@ struct cmd_results *touch_gesture_cmd_touch(int argc, char **argv) {
 	}
 	struct libtouch_gesture *gesture = config->handler_context.current_gesture->gesture;
 	
-	struct libtouch_action *action = libtouch_gesture_add_touch(gesture, mode);
+	struct libtouch_action *action = libtouch_gesture_add_pinch(gesture, mode);
 	
 	config->handler_context.current_gesture_action = action;
 

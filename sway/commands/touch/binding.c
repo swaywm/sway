@@ -23,6 +23,8 @@ struct cmd_results *touch_cmd_binding(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Unable to bind gesture %s", argv[0]);
 	}
 
+	sway_log(SWAY_DEBUG, "libtouch: Bound gesture %s", argv[0]);
+	
 	config->command = join_args(argv + 1, argc - 1);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 	

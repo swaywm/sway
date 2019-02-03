@@ -11,6 +11,11 @@
 #include <libtouch.h>
 
 static struct cmd_handler gesture_handlers[] = {
+	{ "delay", touch_gesture_cmd_delay },
+	{ "pinch", touch_gesture_cmd_pinch },
+	{ "rotate", touch_gesture_cmd_rotate },
+	{ "swipe", touch_gesture_cmd_swipe },
+	{ "target", touch_gesture_cmd_target },
 	{ "threshold", touch_gesture_cmd_threshold },
 	{ "touch", touch_gesture_cmd_touch },
 };

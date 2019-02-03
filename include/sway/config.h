@@ -106,6 +106,11 @@ struct gesture_config {
 	char *command;
 };
 
+struct gesture_target_config {
+	char *identifier;
+	struct libtouch_target *target;
+};
+
 
 /**
  * options for input devices
@@ -428,6 +433,7 @@ struct sway_config {
 	list_t *input_configs;
 	list_t *input_type_configs;
 	list_t *gesture_configs;
+	list_t *gesture_target_configs;
 	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;
@@ -658,9 +664,15 @@ int gesture_identifier_cmp(const void *item, const void *data);
 
 int gesture_libtouch_cmp(const void *item, const void *data);
 
+int gesture_target_identifier_cmp(const void *item, const void *data);
+
 struct gesture_config *get_gesture_config(const char *identifier);
 
 struct gesture_config *new_gesture_config(const char *identifier);
+
+struct gesture_target_config *get_gesture_target_config(const char* identifier);
+
+struct gesture_target_config *create_gesture_target_config(const char* identifier);
 
 /**
  * Updates the value of config->font_height based on the max title height
