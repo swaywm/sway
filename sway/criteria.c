@@ -35,19 +35,18 @@ bool criteria_is_empty(struct criteria *criteria) {
 }
 
 void criteria_destroy(struct criteria *criteria) {
-	free(criteria->raw);
-	free(criteria->cmdlist);
-	free(criteria->target);
 	pcre_free(criteria->title);
 	pcre_free(criteria->shell);
 	pcre_free(criteria->app_id);
-	pcre_free(criteria->con_mark);
 #if HAVE_XWAYLAND
 	pcre_free(criteria->class);
 	pcre_free(criteria->instance);
 	pcre_free(criteria->window_role);
 #endif
+	pcre_free(criteria->con_mark);
 	free(criteria->workspace);
+	free(criteria->cmdlist);
+	free(criteria->raw);
 	free(criteria);
 }
 
