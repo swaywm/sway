@@ -61,9 +61,10 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 	}
 
 	if (strcmp(sc->name, "*") != 0) {
-		struct sway_seat *seat = input_manager_get_seat(sc->name);
+		struct sway_seat *seat = input_manager_get_seat(sc->name, false);
 		if (!seat) {
-			return cmd_results_new(CMD_FAILURE, "Failed to get seat");
+			return cmd_results_new(CMD_FAILURE,
+					"Seat %s does not exist", sc->name);
 		}
 		error = handle_command(seat->cursor, argc, argv);
 	} else {
