@@ -140,10 +140,11 @@ Configure options for multiseat mode.
 
 A *seat* is a collection of input devices that act independently of each other.
 Seats are identified by name and the default seat is _seat0_ if no seats are
-configured. Each seat has an independent keyboard focus and a separate cursor that
-is controlled by the pointer devices of the seat. This is useful for multiple
-people using the desktop at the same time with their own devices (each sitting
-in their own "seat").
+configured. While sway is running, _-_ (hyphen) can be used as an alias for the
+current seat. Each seat has an independent keyboard focus and a separate cursor
+that is controlled by the pointer devices of the seat. This is useful for
+multiple people using the desktop at the same time with their own devices (each
+sitting in their own "seat").
 
 *seat* <name> attach <input_identifier>
 	Attach an input device to this seat by its input identifier. A special

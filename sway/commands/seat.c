@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -20,7 +21,16 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 		return error;
 	}
 
-	config->handler_context.seat_config = new_seat_config(argv[0]);
+	if (!strcmp(argv[0], "-")) {
+		if (config->reading) {
+			return cmd_results_new(CMD_FAILURE,
+					"Current seat alias (-) cannot be used in the config");
+		}
+		config->handler_context.seat_config =
+			new_seat_config(config->handler_context.seat->wlr_seat->name);
+	} else {
+		config->handler_context.seat_config = new_seat_config(argv[0]);
+	}
 	if (!config->handler_context.seat_config) {
 		return cmd_results_new(CMD_FAILURE, "Couldn't allocate config");
 	}
