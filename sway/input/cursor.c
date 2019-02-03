@@ -362,7 +362,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			struct sway_output *focused_output = node_get_output(focus);
 			struct sway_output *output = node_get_output(node);
 			if (output != focused_output) {
-				seat_set_focus(seat, node);
+				seat_set_focus(seat, seat_get_focus_inactive(seat, node));
 			}
 		} else if (node->type == N_CONTAINER && node->sway_container->view) {
 			// Focus node if the following are true:
