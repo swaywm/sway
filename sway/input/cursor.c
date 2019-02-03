@@ -1459,6 +1459,10 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data) {
 void sway_cursor_constrain(struct sway_cursor *cursor,
 		struct wlr_pointer_constraint_v1 *constraint) {
 	struct seat_config *config = seat_get_config(cursor->seat);
+	if (!config) {
+		config = seat_get_config_by_name("*");
+	}
+
 	if (!config || config->allow_constrain == CONSTRAIN_DISABLE) {
 		return;
 	}
