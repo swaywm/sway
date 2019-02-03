@@ -31,10 +31,10 @@ struct sway_seat *input_manager_current_seat(void) {
 }
 
 struct sway_seat *input_manager_get_default_seat(void) {
-	return input_manager_get_seat(DEFAULT_SEAT);
+	return input_manager_get_seat(DEFAULT_SEAT, true);
 }
 
-struct sway_seat *input_manager_get_seat(const char *seat_name) {
+struct sway_seat *input_manager_get_seat(const char *seat_name, bool create) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		if (strcmp(seat->wlr_seat->name, seat_name) == 0) {
@@ -42,7 +42,7 @@ struct sway_seat *input_manager_get_seat(const char *seat_name) {
 		}
 	}
 
-	return seat_create(seat_name);
+	return create ? seat_create(seat_name) : NULL;
 }
 
 char *input_device_get_identifier(struct wlr_input_device *device) {
@@ -674,7 +674,8 @@ void input_manager_apply_seat_config(struct seat_config *seat_config) {
 			seat_apply_config(seat, sc);
 		}
 	} else {
-		struct sway_seat *seat = input_manager_get_seat(seat_config->name);
+		struct sway_seat *seat =
+			input_manager_get_seat(seat_config->name, true);
 		if (!seat) {
 			return;
 		}

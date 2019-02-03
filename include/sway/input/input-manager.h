@@ -45,7 +45,7 @@ void input_manager_apply_seat_config(struct seat_config *seat_config);
 
 struct sway_seat *input_manager_get_default_seat(void);
 
-struct sway_seat *input_manager_get_seat(const char *seat_name);
+struct sway_seat *input_manager_get_seat(const char *seat_name, bool create);
 
 /**
  * If none of the seat configs have a fallback setting (either true or false),
