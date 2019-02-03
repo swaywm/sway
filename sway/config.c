@@ -141,6 +141,11 @@ static void destroy_removed_seats(struct sway_config *old_config,
 	int i;
 	for (i = 0; i < old_config->seat_configs->length; i++) {
 		seat_config = old_config->seat_configs->items[i];
+		// Skip the wildcard seat config, it won't have a matching real seat.
+		if (strcmp(seat_config->name, "*") == 0) {
+			continue;
+		}
+
 		/* Also destroy seats that aren't present in new config */
 		if (new_config && list_seq_find(new_config->seat_configs,
 				seat_name_cmp, seat_config->name) < 0) {
