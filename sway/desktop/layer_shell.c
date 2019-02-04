@@ -9,6 +9,7 @@
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/input/cursor.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
@@ -211,6 +212,7 @@ void arrange_layers(struct sway_output *output) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
+		cursor_rebase(seat->cursor);
 		seat_set_focus_layer(seat, topmost ? topmost->layer_surface : NULL);
 	}
 }
