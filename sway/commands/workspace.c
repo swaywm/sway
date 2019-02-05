@@ -76,7 +76,6 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 	char *end;
 	int amount = strtol(argv[gaps_location + 2], &end, 10);
 	if (strlen(end)) {
-		free(end);
 		return cmd_results_new(CMD_FAILURE, expected);
 	}
 
