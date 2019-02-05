@@ -61,6 +61,9 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID,
 				"Missing background scaling mode.");
 		}
+		if (j == 0) {
+			return cmd_results_new(CMD_INVALID, "Missing background file");
+		}
 
 		wordexp_t p = {0};
 		char *src = join_args(argv, j);
