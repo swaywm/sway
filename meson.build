@@ -1,6 +1,7 @@
 project(
 	'sway',
 	'c',
+	version: '1.0',
 	license: 'MIT',
 	meson_version: '>=0.48.0',
 	default_options: [
@@ -127,17 +128,12 @@ endif
 
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
 
-version = get_option('sway-version')
-if version != ''
-	version = '"@0@"'.format(version)
-else
-	if not git.found()
-		error('git is required to make the version string')
-	endif
-
+if git.found()
 	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags']).stdout().strip()
 	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD']).stdout().strip()
 	version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash, git_branch)
+else
+	version = '"@0@"'.format(meson.project_version())
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
