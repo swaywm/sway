@@ -236,19 +236,11 @@ static void _close(struct sway_view *view) {
 	}
 }
 
-static void close_popups_iterator(struct wlr_surface *surface,
-		int sx, int sy, void *data) {
-	struct wlr_xdg_surface *xdg_surface =
-		wlr_xdg_surface_from_wlr_surface(surface);
-	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP
-			&& xdg_surface->popup) {
-		wlr_xdg_popup_destroy(xdg_surface);
-	}
-}
-
 static void close_popups(struct sway_view *view) {
-	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface,
-			close_popups_iterator, NULL);
+	struct wlr_xdg_popup *popup, *tmp;
+	wl_list_for_each_safe(popup, tmp, &view->wlr_xdg_surface->popups, link) {
+		wlr_xdg_popup_destroy(popup->base);
+	}
 }
 
 static void destroy(struct sway_view *view) {
