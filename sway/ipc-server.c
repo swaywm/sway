@@ -595,6 +595,16 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
+		char *line = strtok(buf, "\n");
+		while (line) {
+			size_t line_length = strlen(line);
+			if (line + line_length >= buf + client->payload_length) {
+				break;
+			}
+			line[line_length] = ';';
+			line = strtok(NULL, "\n");
+		}
+
 		list_t *res_list = execute_command(buf, NULL, NULL);
 		transaction_commit_dirty();
 		char *json = cmd_results_to_json(res_list);
