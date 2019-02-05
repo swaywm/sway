@@ -254,7 +254,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
-			if (strcmp(argv[0], "exec") != 0) {
+			if (!strcmp(argv[0], "exec") && !strcmp(argv[0], "exec_always")) {
 				int i;
 				for (i = 1; i < argc; ++i) {
 					if (*argv[i] == '\"' || *argv[i] == '\'') {
