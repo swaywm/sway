@@ -258,6 +258,9 @@ int unescape_string(char *string) {
 }
 
 char *join_args(char **argv, int argc) {
+	if (!sway_assert(argc > 0, "argc should be positive")) {
+		return NULL;
+	}
 	int len = 0, i;
 	for (i = 0; i < argc; ++i) {
 		len += strlen(argv[i]) + 1;
