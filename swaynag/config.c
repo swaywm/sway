@@ -348,6 +348,10 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 			continue;
 		}
 
+		if (line[nread - 1] == '\n') {
+			line[nread - 1] = '\0';
+		}
+
 		if (line[0] == '[') {
 			char *close = strchr(line, ']');
 			if (!close) {
