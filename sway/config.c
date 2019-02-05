@@ -557,7 +557,7 @@ bool load_include_configs(const char *path, struct sway_config *config,
 
 	wordexp_t p;
 
-	if (wordexp(path, &p, 0) < 0) {
+	if (wordexp(path, &p, 0) != 0) {
 		free(parent_path);
 		free(wd);
 		return false;
