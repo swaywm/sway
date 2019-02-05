@@ -318,12 +318,6 @@ int main(int argc, char **argv) {
 	detect_proprietary(allow_unsupported_gpu);
 	detect_raspi();
 
-	if (validate) {
-		bool valid = load_main_config(config_path, false, true);
-		free(config_path);
-		return valid ? 0 : 1;
-	}
-
 	if (optind < argc) { // Behave as IPC client
 		if (optind != 1) {
 			sway_log(SWAY_ERROR, "Don't use options with the IPC client");
@@ -363,6 +357,12 @@ int main(int argc, char **argv) {
 
 	if (!server_init(&server)) {
 		return 1;
+	}
+
+	if (validate) {
+		bool valid = load_main_config(config_path, false, true);
+		free(config_path);
+		return valid ? 0 : 1;
 	}
 
 	ipc_init(&server);
