@@ -264,7 +264,7 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 static bool ipc_has_event_listeners(enum ipc_command_type event) {
 	for (int i = 0; i < ipc_client_list->length; i++) {
 		struct ipc_client *client = ipc_client_list->items[i];
-		if ((client->subscribed_events & event_mask(event)) == 0) {
+		if ((client->subscribed_events & event_mask(event)) != 0) {
 			return true;
 		}
 	}
