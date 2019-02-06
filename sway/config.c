@@ -574,7 +574,13 @@ bool load_include_configs(const char *path, struct sway_config *config,
 	char **w = p.we_wordv;
 	size_t i;
 	for (i = 0; i < p.we_wordc; ++i) {
-		load_include_config(w[i], parent_dir, config, swaynag);
+		bool found = load_include_config(w[i], parent_dir, config, swaynag);
+		if (!found) {
+			wordfree(&p);
+			free(parent_path);
+			free(wd);
+			return false;
+		}
 	}
 	free(parent_path);
 	wordfree(&p);
