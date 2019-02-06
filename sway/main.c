@@ -320,7 +320,13 @@ int main(int argc, char **argv) {
 
 	if (optind < argc) { // Behave as IPC client
 		if (optind != 1) {
-			sway_log(SWAY_ERROR, "Don't use options with the IPC client");
+			sway_log(SWAY_ERROR,
+					"Detected both options and positional arguments. If you "
+					"are trying to use the IPC client, options are not "
+					"supported. Otherwise, check the provided arguments for "
+					"issues. See `man 1 sway` or `sway -h` for usage. If you "
+					"are trying to generate a debug log, use "
+					"`sway -d 2>sway.log`.");
 			exit(EXIT_FAILURE);
 		}
 		if (!drop_permissions()) {
