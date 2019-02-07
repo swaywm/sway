@@ -385,7 +385,6 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		free(path);
 		return false;
 	}
-	free(path);
 
 	struct sway_config *old_config = config;
 	config = calloc(1, sizeof(struct sway_config));
@@ -409,7 +408,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		input_manager_reset_all_inputs();
 	}
 
-	config->current_config_path = real_path;
+	config->current_config_path = path;
 	list_add(config->config_chain, real_path);
 
 	config->reading = true;
@@ -462,7 +461,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	}
 	*/
 
-	success = success && load_config(real_path, config,
+	success = success && load_config(path, config,
 			&config->swaynag_config_errors);
 
 	if (validating) {
