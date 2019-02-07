@@ -425,7 +425,8 @@ static void determine_bar_visibility(uint32_t modifiers) {
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
 		if (strcmp(bar->mode, bar->hidden_state) == 0) { // both are "hide"
-			bool should_be_visible = (~modifiers & bar->modifier) == 0;
+			bool should_be_visible = 
+				bar->modifier != 0 && (~modifiers & bar->modifier) == 0;
 			if (bar->visible_by_modifier != should_be_visible) {
 				bar->visible_by_modifier = should_be_visible;
 				ipc_event_bar_state_update(bar);
