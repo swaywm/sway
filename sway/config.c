@@ -557,22 +557,23 @@ bool load_include_configs(const char *path, struct sway_config *config,
 	const char *parent_dir = dirname(parent_path);
 
 	if (chdir(parent_dir) < 0) {
-		goto error_chdir;
+		free(parent_path);
+		free(wd);
+		return false;
 	}
 
 	wordexp_t p;
 
 	if (wordexp(path, &p, 0) != 0) {
-		goto error_wordexp;
+		free(parent_path);
+		free(wd);
+		return false;
 	}
 
 	char **w = p.we_wordv;
 	size_t i;
 	for (i = 0; i < p.we_wordc; ++i) {
-		bool found = load_include_config(w[i], parent_dir, config, swaynag);
-		if (!found) {
-			goto error_not_found;
-		}
+		load_include_config(w[i], parent_dir, config, swaynag);
 	}
 	free(parent_path);
 	wordfree(&p);
@@ -586,16 +587,6 @@ bool load_include_configs(const char *path, struct sway_config *config,
 
 	free(wd);
 	return true;
-error_not_found:
-	wordfree(&p);
-error_wordexp:
-	if (chdir(wd) < 0) {
-		sway_log(SWAY_ERROR, "failed to restore working directory");
-	}
-error_chdir:
-	free(parent_path);
-	free(wd);
-	return false;
 }
 
 void run_deferred_commands(void) {
