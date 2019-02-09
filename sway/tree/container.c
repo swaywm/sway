@@ -251,10 +251,12 @@ static struct sway_container *container_at_stacked(struct sway_node *parent,
 
 	// Title bars
 	int title_height = container_titlebar_height();
-	int child_index = (ly - box.y) / title_height;
-	if (child_index < children->length) {
-		struct sway_container *child = children->items[child_index];
-		return child;
+	if (title_height > 0) {
+		int child_index = (ly - box.y) / title_height;
+		if (child_index < children->length) {
+			struct sway_container *child = children->items[child_index];
+			return child;
+		}
 	}
 
 	// Surfaces
