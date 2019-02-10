@@ -135,8 +135,8 @@ static void pretty_print_input(json_object *i) {
 		json_object_get_int(vendor));
 
 	if (json_object_object_get_ex(i, "xkb_active_layout_name", &kbdlayout)) {
-		printf("  Active Keyboard Layout: %s\n",
-			json_object_get_string(kbdlayout));
+		const char *layout = json_object_get_string(kbdlayout);
+		printf("  Active Keyboard Layout: %s\n", layout ? layout : "(unnamed)");
 	}
 
 	if (json_object_object_get_ex(i, "libinput_send_events", &events)) {
