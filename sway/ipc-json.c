@@ -597,7 +597,7 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 				const char *layout =
 					xkb_keymap_layout_get_name(keymap, layout_idx);
 				json_object_object_add(object, "xkb_active_layout_name",
-						json_object_new_string(layout));
+						layout ? json_object_new_string(layout) : NULL);
 				break;
 			}
 		}
