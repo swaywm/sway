@@ -11,7 +11,7 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 	if (strcasecmp("toggle", mode) == 0 && !config->reading) {
 		if (strcasecmp("dock", bar->mode) == 0) {
 			bar->mode = strdup("hide");
-		} else if (strcasecmp("hide", bar->mode) == 0) {
+		} else{
 			bar->mode = strdup("dock");
 		}
 	} else if (strcasecmp("dock", mode) == 0) {
