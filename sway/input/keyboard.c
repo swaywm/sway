@@ -549,13 +549,17 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		wlr_keyboard_led_update(wlr_device->keyboard, leds);
 	}
 
-	if (input_config && input_config->repeat_delay != INT_MIN
-			&& input_config->repeat_rate != INT_MIN) {
-		wlr_keyboard_set_repeat_info(wlr_device->keyboard,
-				input_config->repeat_rate, input_config->repeat_delay);
-	} else {
-		wlr_keyboard_set_repeat_info(wlr_device->keyboard, 25, 600);
+	int repeat_rate = 25;
+	if (input_config && input_config->repeat_rate != INT_MIN) {
+		repeat_rate = input_config->repeat_rate;
 	}
+	int repeat_delay = 600;
+	if (input_config && input_config->repeat_delay != INT_MIN) {
+		repeat_delay = input_config->repeat_delay;
+	}
+	wlr_keyboard_set_repeat_info(wlr_device->keyboard, repeat_rate,
+			repeat_delay);
+
 	xkb_context_unref(context);
 	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
 	wlr_seat_set_keyboard(seat, wlr_device);
