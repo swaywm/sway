@@ -107,6 +107,7 @@ if scdoc.found()
 		'swaymsg/swaymsg.1.scd',
 		'swaynag/swaynag.1.scd',
 		'swaynag/swaynag.5.scd',
+		'swayrun/swayrun.1.scd'
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
@@ -149,6 +150,7 @@ subdir('client')
 subdir('swaybg')
 subdir('swaybar')
 subdir('swaynag')
+subdir('swayrun')
 
 config = configuration_data()
 config.set('datadir', join_paths(prefix, datadir))
