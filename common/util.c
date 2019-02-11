@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <wayland-server-protocol.h>
 #include "log.h"
 #include "util.h"
 
@@ -53,4 +54,24 @@ float parse_float(const char *value) {
 		return NAN;
 	}
 	return flt;
+}
+
+
+const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel) {
+	switch (subpixel) {
+	case WL_OUTPUT_SUBPIXEL_UNKNOWN:
+		return "unknown";
+	case WL_OUTPUT_SUBPIXEL_NONE:
+		return "none";
+	case WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB:
+		return "rgb";
+	case WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR:
+		return "bgr";
+	case WL_OUTPUT_SUBPIXEL_VERTICAL_RGB:
+		return "vrgb";
+	case WL_OUTPUT_SUBPIXEL_VERTICAL_BGR:
+		return "vbgr";
+	}
+	sway_assert(false, "Unknown value for wl_output_subpixel.");
+	return NULL;
 }

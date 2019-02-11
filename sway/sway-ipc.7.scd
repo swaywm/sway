@@ -211,6 +211,9 @@ following properties:
 |- scale
 :  float
 :  The scale currently in use on the output or _-1_ for disabled outputs
+|- subpixel_hinting
+:  string
+:  The subpixel hinting current in use on the output. This can be _rgb_, _bgr_, _vrgb_, _vbgr_, or _none_
 |- transform
 :  string
 :  The transform currently in use for the output. This can be _normal_, _90_,
@@ -242,6 +245,7 @@ following properties:
 		"active": true,
 		"primary": false,
 		"scale": 1.0,
+		"subpixel_hinting": "rgb",
 		"transform": "normal",
 		"current_workspace": "1",
 		"modes": [

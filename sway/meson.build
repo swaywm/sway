@@ -169,6 +169,7 @@ sway_sources = files(
 	'commands/output/mode.c',
 	'commands/output/position.c',
 	'commands/output/scale.c',
+	'commands/output/subpixel.c',
 	'commands/output/transform.c',
 
 	'tree/arrange.c',

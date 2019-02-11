@@ -171,6 +171,7 @@ struct output_config {
 	int x, y;
 	float scale;
 	int32_t transform;
+	enum wl_output_subpixel subpixel;
 
 	char *background;
 	char *background_option;
