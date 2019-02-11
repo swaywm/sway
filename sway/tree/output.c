@@ -92,6 +92,7 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	node_init(&output->node, N_OUTPUT, output);
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
+	output->detected_subpixel = wlr_output->subpixel;
 
 	wl_signal_init(&output->events.destroy);
 
