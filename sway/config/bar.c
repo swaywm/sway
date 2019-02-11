@@ -46,6 +46,7 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->position);
 	free(bar->hidden_state);
 	free(bar->status_command);
+	free(bar->swaybar_command);
 	free(bar->font);
 	free(bar->separator_symbol);
 	for (int i = 0; i < bar->bindings->length; i++) {

@@ -50,5 +50,5 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 	}
 
 	config->handler_context.seat_config = NULL;
-	return cmd_results_new(CMD_SUCCESS, NULL);
+	return res ? res : cmd_results_new(CMD_SUCCESS, NULL);
 }
