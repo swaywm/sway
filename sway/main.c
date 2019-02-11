@@ -299,6 +299,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// Since wayland requires XDG_RUNTIME_DIR to be set, abort with just the
+	// clear error message (when not running as an IPC client).
+	if (!getenv("XDG_RUNTIME_DIR") && optind == argc) {
+		fprintf(stderr,
+				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	// As the 'callback' function for wlr_log is equivalent to that for
 	// sway, we do not need to override it.
 	if (debug) {
