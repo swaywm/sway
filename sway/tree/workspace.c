@@ -42,10 +42,16 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 			}
 		}
 	}
-	// Otherwise put it on the focused output
+	// Otherwise try to put it on the focused output
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_workspace *focus = seat_get_focused_workspace(seat);
-	return focus->output;
+	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
+	if (focus && focus->type == N_WORKSPACE) {
+		return focus->sway_workspace->output;
+	} else if (focus && focus->type == N_CONTAINER) {
+		return focus->sway_container->workspace->output;
+	}
+	// Fallback to the first output or noop output for headless
+	return root->outputs->length ? root->outputs->items[0] : root->noop_output;
 }
 
 static void prevent_invalid_outer_gaps(struct sway_workspace *ws) {
