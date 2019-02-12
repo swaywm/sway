@@ -72,6 +72,7 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
  * This chooses a cursor icon and sends a motion event to the surface.
  */
 void cursor_rebase(struct sway_cursor *cursor);
+void cursor_rebase_all(void);
 
 void cursor_handle_activity(struct sway_cursor *cursor);
 void cursor_unhide(struct sway_cursor *cursor);
