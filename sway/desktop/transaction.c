@@ -314,14 +314,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		node->instruction = NULL;
 	}
 
-	if (root->outputs->length) {
-		struct sway_seat *seat;
-		wl_list_for_each(seat, &server.input->seats, link) {
-			if (!seat_doing_seatop(seat)) {
-				cursor_rebase(seat->cursor);
-			}
-		}
-	}
+	cursor_rebase_all();
 }
 
 static void transaction_commit(struct sway_transaction *transaction);

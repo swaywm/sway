@@ -283,6 +283,19 @@ void cursor_rebase(struct sway_cursor *cursor) {
 	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
 }
 
+void cursor_rebase_all(void) {
+	if (!root->outputs->length) {
+		return;
+	}
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (!seat_doing_seatop(seat)) {
+			cursor_rebase(seat->cursor);
+		}
+	}
+}
+
 static int hide_notify(void *data) {
 	struct sway_cursor *cursor = data;
 	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
