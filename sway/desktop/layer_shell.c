@@ -6,7 +6,9 @@
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
+#include "log.h"
 #include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -14,7 +16,6 @@
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
 
 static void apply_exclusive(struct wlr_box *usable_area,
 		uint32_t anchor, int32_t exclusive,
@@ -302,6 +303,8 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 	if (seat->focused_layer == sway_layer->layer_surface) {
 		seat_set_focus_layer(seat, NULL);
 	}
+
+	cursor_rebase_all();
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -321,7 +324,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
 		if (output != NULL) {
 			arrange_layers(output);
-			arrange_output(output);
 			transaction_commit_dirty();
 		}
 		wl_list_remove(&sway_layer->output_destroy.link);
@@ -339,6 +341,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// TODO: send enter to subsurfaces and popups
 	wlr_surface_send_enter(sway_layer->layer_surface->surface,
 		sway_layer->layer_surface->output);
+	cursor_rebase_all();
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
