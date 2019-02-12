@@ -107,7 +107,7 @@ if scdoc.found()
 		'sway/sway-output.5.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swaynag/swaynag.1.scd',
-		'swaynag/swaynag.5.scd'
+		'swaynag/swaynag.5.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]

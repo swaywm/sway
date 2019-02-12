@@ -10,17 +10,17 @@
 int main(int argc, char **argv) {
 	char *shell = getenv("SHELL");
 
-	if (shell) {
+	if (shell && strlen(shell)) {
 		// 3 exec arguments + argc + argv[argc] NULL pointer
-		int exec_argc = 4 + argc;
-		char **exec_argv = malloc(exec_argc * sizeof(char*));
+		size_t exec_argc = 4 + argc;
+		char **exec_argv = malloc(exec_argc * sizeof(char *));
 
 		// Prefix - to shell path to indicate login shell
 		char *login_shell = malloc(strlen(shell) + 2);
 		strcpy(login_shell, "-");
 		strcat(login_shell, shell);
 
-		// Build the argumrnts to exec
+		// Build the arguments to exec
 		memcpy(exec_argv + 3, argv, (argc + 1) * sizeof(argv));
 		exec_argv[0] = login_shell;
 		exec_argv[1] = "-c";
@@ -28,12 +28,12 @@ int main(int argc, char **argv) {
 		exec_argv[3] = shell;
 
 		execvp(shell, exec_argv);
-		fprintf(stderr, "Could not run %s using login shell: %s\n", SWAY_COMMAND, shell);
+		fprintf(stderr, "Could not run %s using login shell %s: %s\n", SWAY_COMMAND, shell, strerror(errno));
 	} else {
 		argv[0] = SWAY_COMMAND;
 		execvp(SWAY_COMMAND, argv);
-		fprintf(stderr, "Could not run %s\n", SWAY_COMMAND);
+		fprintf(stderr, "Could not run %s: %s\n", SWAY_COMMAND, strerror(errno));
 	}
 
-	return errno;
+	return EXIT_FAILURE;
 }
