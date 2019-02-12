@@ -1,5 +1,6 @@
 executable(
   'swayrun',
   'main.c',
-  install: true
+  install: true,
+  install_dir: libdir + '/sway'
 )

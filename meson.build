@@ -30,6 +30,7 @@ cc = meson.get_compiler('c')
 
 is_freebsd = host_machine.system().startswith('freebsd')
 datadir = get_option('datadir')
+libdir = get_option('libdir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
 
@@ -106,8 +107,7 @@ if scdoc.found()
 		'sway/sway-output.5.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swaynag/swaynag.1.scd',
-		'swaynag/swaynag.5.scd',
-		'swayrun/swayrun.1.scd'
+		'swaynag/swaynag.5.scd'
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
@@ -154,6 +154,7 @@ subdir('swayrun')
 
 config = configuration_data()
 config.set('datadir', join_paths(prefix, datadir))
+config.set('libdir', join_paths(prefix, libdir))
 config.set('prefix', prefix)
 config.set('sysconfdir', join_paths(prefix, sysconfdir))
 
@@ -180,8 +181,10 @@ else
 	)
 endif
 
-install_data(
-	'sway.desktop',
+configure_file(
+	configuration: config,
+	input: 'sway.desktop.in',
+	output: '@BASENAME@',
 	install_dir: datadir + '/wayland-sessions'
 )
 
