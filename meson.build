@@ -11,6 +11,10 @@ project(
 	],
 )
 
+gitinfo_hash='$Format:%h$'
+gitinfo_tree='$Format:%t$'
+gitinfo_refname='$Format:%D$'
+
 add_project_arguments(
 	[
 		'-DSWAY_SRC_DIR="@0@"'.format(meson.current_source_dir()),
@@ -129,6 +133,18 @@ endif
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
 
 version = '"@0@"'.format(meson.project_version())
+version_extras = []
+if not gitinfo_hash.startswith('$')
+	version_extras += ['id \'@0@\''.format(gitinfo_hash)]
+elif not gitinfo_tree.startswith('$')
+	version_extras += ['tree \'@0@\''.format(gitinfo_tree)]
+endif
+if not gitinfo_refname.startswith('$')
+	version_extras += ['refs \'@0@\''.format(gitinfo_refname)]
+endif
+if version_extras.length() > 0
+	version = '"@0@ (@1@)"'.format(meson.project_version(), ', '.join(version_extras))
+endif
 if git.found()
 	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags'])
 	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD'])
