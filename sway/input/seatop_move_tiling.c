@@ -150,6 +150,9 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		}
 		if (edge) {
 			e->target_node = node_get_parent(&con->node);
+			if (e->target_node == &e->con->node) {
+				e->target_node = node_get_parent(e->target_node);
+			}
 			e->target_edge = edge;
 			node_get_box(e->target_node, &e->drop_box);
 			resize_box(&e->drop_box, edge, DROP_LAYOUT_BORDER);
