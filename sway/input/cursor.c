@@ -421,8 +421,8 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 
 	wlr_relative_pointer_manager_v1_send_relative_motion(
 		server.relative_pointer_manager,
-		cursor->seat->wlr_seat, event->time_msec, dx, dy,
-		dx_unaccel, dy_unaccel);
+		cursor->seat->wlr_seat, (uint64_t)event->time_msec * 1000,
+		dx, dy, dx_unaccel, dy_unaccel);
 
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
