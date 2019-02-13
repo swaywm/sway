@@ -128,7 +128,10 @@ endif
 
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
 
-version = '"@0@"'.format(meson.project_version())
+version = get_option('sway-version')
+if version == ''
+	version = '"@0@"'.format(meson.project_version())
+endif
 if git.found()
 	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags'])
 	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD'])
