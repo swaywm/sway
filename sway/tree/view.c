@@ -708,6 +708,9 @@ static void subsurface_get_root_coords(struct sway_view_child *child,
 	while (surface && wlr_surface_is_subsurface(surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(surface);
+		if (subsurface == NULL) {
+			break;
+		}
 		*root_sx += subsurface->current.x;
 		*root_sy += subsurface->current.y;
 		surface = subsurface->parent;
