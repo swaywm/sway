@@ -725,6 +725,10 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	if (seat->focused_layer) {
+		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+		seat_set_focus_layer(seat, NULL);
+		seat_set_focus(seat, node);
+		seat_set_focus_layer(seat, layer);
 		return;
 	}
 
