@@ -46,6 +46,8 @@ struct swaybar {
 #if HAVE_TRAY
 	struct swaybar_tray *tray;
 #endif
+
+	bool running;
 };
 
 struct swaybar_output {
