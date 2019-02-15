@@ -425,11 +425,12 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 		dx, dy, dx_unaccel, dy_unaccel);
 
 	struct wlr_surface *surface = NULL;
+	struct sway_node *node = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(cursor->seat,
-		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-
 	if (cursor->active_constraint) {
+		node = node_at_coords(cursor->seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
 		if (cursor->active_constraint->surface != surface) {
 			return;
 		}
@@ -445,8 +446,13 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_cursor_move(cursor->cursor, event->device, dx, dy);
+
+	// Recalculate pointer location after layout checks
+	node = node_at_coords(cursor->seat,
+		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
 	cursor_send_pointer_motion(cursor, event->time_msec, node, surface,
-		sx + dx, sy + dy);
+		sx, sy);
 	transaction_commit_dirty();
 }
 
