@@ -40,10 +40,10 @@ Antes de iniciar la compilación, instale estas dependencias:
 * pango
 * cairo
 * gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) >= 1.8.1 (optional: man pages)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) >= 1.8.1 (opcional: man pages) \*
 * git \*
 
-_\*Dependencia en tiempo compilacion dep_
+_\*Dependencia en tiempo compilacion (pueden desintalarse al finalizar la compilación)
 
 _\*\*opcional: requerido por swaybg_
 
@@ -63,12 +63,12 @@ Sway dejará el permiso de root poco después del inicio.
 
 Si usa i3, puede copiar la configuración i3 a `~/.config/sway/config`,
 y este deberia trabajar. En otro caso copiar el archivo por defecto
-`/etc/sway/config` a `.config/sway/config` y configure a su conveniencia,
-teclado, monitores, atajos de teclado para sus aplicaciones.
+`/etc/sway/config` a `.config/sway/config` y configure a su conveniencia
+teclado, monitores, atajos de teclado para sus aplicaciones, etc.
 Para más información ejecute `man 5 sway`
 
 ## Ejecutando
 
 Solo necesita ejecutar `sway` desde la terminal (TTY).
-Algunos gestores de ventana (display manager) pueden no trabajar en sway
+Algunos gestores de entorno gráfico (display manager) pueden no trabajar en sway
 y entornos wayland. (gdm es uno que funciona bien).
