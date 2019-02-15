@@ -8,7 +8,7 @@ Leer el [FAQ](https://github.com/swaywm/sway/wiki). Participe en el [IRC
 canal ](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-Si desea apoyar al desarrolo de sway, por favor contribuir a [SirCmpwn's
+Si desea contribuir al desarrolo de sway, por favor comuniquese a [SirCmpwn's
 Patreon page](https://patreon.com/sircmpwn).
 
 ## Claves de autenticidad
