@@ -189,9 +189,9 @@ bool init_host(struct swaybar_host *host, char *protocol,
 		goto error;
 	}
 
-	sd_bus_slot_set_floating(reg_slot, 1);
-	sd_bus_slot_set_floating(unreg_slot, 1);
-	sd_bus_slot_set_floating(watcher_slot, 1);
+	sd_bus_slot_set_floating(reg_slot, 0);
+	sd_bus_slot_set_floating(unreg_slot, 0);
+	sd_bus_slot_set_floating(watcher_slot, 0);
 
 	sway_log(SWAY_DEBUG, "Registered %s", host->service);
 	return true;
