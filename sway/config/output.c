@@ -199,6 +199,11 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		return true;
 	}
 
+	if (oc && oc->dpms_state == DPMS_ON) {
+		sway_log(SWAY_DEBUG, "Turning on screen");
+		wlr_output_enable(wlr_output, true);
+	}
+
 	bool modeset_success;
 	if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
@@ -263,19 +268,9 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		}
 	}
 
-	if (oc) {
-		switch (oc->dpms_state) {
-		case DPMS_ON:
-			sway_log(SWAY_DEBUG, "Turning on screen");
-			wlr_output_enable(wlr_output, true);
-			break;
-		case DPMS_OFF:
-			sway_log(SWAY_DEBUG, "Turning off screen");
-			wlr_output_enable(wlr_output, false);
-			break;
-		case DPMS_IGNORE:
-			break;
-		}
+	if (oc && oc->dpms_state == DPMS_OFF) {
+		sway_log(SWAY_DEBUG, "Turning off screen");
+		wlr_output_enable(wlr_output, false);
 	}
 
 	return true;
@@ -294,6 +289,7 @@ static void default_output_config(struct output_config *oc,
 	oc->x = oc->y = -1;
 	oc->scale = 1;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
+	oc->dpms_state = DPMS_ON;
 }
 
 static struct output_config *get_output_config(char *identifier,
