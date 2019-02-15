@@ -413,10 +413,6 @@ The default colors are:
 :  #0c0c0c
 
 
-*debuglog* on|off|toggle
-	Enables, disables or toggles debug logging. _toggle_ cannot be used in the
-	configuration file.
-
 *default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.
 
@@ -505,6 +501,9 @@ The default colors are:
 	\* may be used in lieu of a specific device name to configure all input
 	devices. A list of input device names may be obtained via *swaymsg -t
 	get_inputs*.
+
+*log_level* debug|info|error|silent
+	Sets the logging verbosity. Default is error.
 
 *seat* <seat> <seat-subcommands...>
 	For details on seat subcommands, see *sway-input*(5).
