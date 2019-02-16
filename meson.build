@@ -60,7 +60,11 @@ rt             = cc.find_library('rt')
 git            = find_program('git', required: false)
 
 # Try first to find wlroots as a subproject, then as a system dependency
-wlroots_proj = subproject('wlroots', required: false)
+wlroots_proj = subproject(
+	'wlroots',
+	default_options: ['rootston=disabled', 'examples=disabled'],
+	required: false,
+)
 if wlroots_proj.found()
 	wlroots = wlroots_proj.get_variable('wlroots')
 	wlroots_conf = wlroots_proj.get_variable('conf_data')
