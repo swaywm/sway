@@ -4,7 +4,7 @@
 [Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--) - [Български](https://github.com/swaywm/sway/blob/master/README.bg.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--)
 
 sway es un compositor de [Wayland](http://wayland.freedesktop.org/) compatible con i3.
-Lea el [FAQ](https://github.com/swaywm/sway/wiki). Unase al [canal de IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
+Lea el [FAQ](https://github.com/swaywm/sway/wiki). Únase al [canal de IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
 Si quiere apoyar el desarrollo de sway, por favor, contribuya en [la página de Patreon de SirCmpwn](https://patreon.com/sircmpwn).
@@ -22,7 +22,7 @@ Sway está disponible en muchas distribuciones. Pruebe instalando el paquete "sw
 Si no está disponible, puede consultar [esta documentación](https://github.com/swaywm/sway/wiki/Unsupported-packages) 
 y así obtener información acerca de como instalarlo.
 
-Si está interesado en crear un paquete para su distribución, unase al canal de IRC  o
+Si está interesado en crear un paquete para su distribución, únase al canal de IRC  o
 escriba un email a sir@cmpwn.com
 
 ### Compilando el código fuente
@@ -45,7 +45,7 @@ _\*Compile-time dep_
 
 _\*\*opcional: necesario para swaybg_
 
-Desde su consola, ejecute las ordenes:
+Desde su consola, ejecute las órdenes:
 
     meson build
     ninja -C build
@@ -61,7 +61,7 @@ Sway abandonará los permisos de super-usuario al poco de arrancar.
 
 Si ya utiliza i3, copie su archivo de configuración de i3 a `~/.config/sway/config` y
 sway funcionará sin tener que configurar nada más. En otro caso, copie el archivo de
-configuración basico a `~/.config/sway/config`, normalmente se encuentra en `/etc/sway/config`.
+configuración básico a `~/.config/sway/config`, normalmente se encuentra en `/etc/sway/config`.
 Ejecute `man 5 sway` para obtener información sobre la configuración.
 
 ## Ejecución
