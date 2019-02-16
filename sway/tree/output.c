@@ -8,7 +8,6 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
-#include "sway/tree/output.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "util.h"
