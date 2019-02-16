@@ -506,6 +506,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->present.link);
 	wl_list_remove(&output->damage_destroy.link);
 	wl_list_remove(&output->damage_frame.link);
+	wl_list_remove(&output->swaybg_client_destroy.link);
 
 	transaction_commit_dirty();
 }
@@ -612,6 +613,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->damage_frame.notify = damage_handle_frame;
 	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
 	output->damage_destroy.notify = damage_handle_destroy;
+	wl_list_init(&output->swaybg_client_destroy.link);
 
 	struct output_config *oc = output_find_config(output);
 	if (!oc || oc->enabled) {
