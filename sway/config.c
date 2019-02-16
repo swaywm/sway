@@ -471,9 +471,8 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	}
 
 	if (is_active) {
-		for (int i = 0; i < config->output_configs->length; i++) {
-			apply_output_config_to_outputs(config->output_configs->items[i]);
-		}
+		reset_outputs();
+
 		config->reloading = false;
 		if (config->swaynag_config_errors.pid > 0) {
 			swaynag_show(&config->swaynag_config_errors);
