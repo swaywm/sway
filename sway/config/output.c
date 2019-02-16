@@ -391,6 +391,17 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	}
 }
 
+void reset_outputs(void) {
+	struct output_config *oc = NULL;
+	int i = list_seq_find(config->output_configs, output_name_cmp, "*");
+	if (i >= 0) {
+		oc = config->output_configs->items[i];
+	} else {
+		oc = store_output_config(new_output_config("*"));
+	}
+	apply_output_config_to_outputs(oc);
+}
+
 void free_output_config(struct output_config *oc) {
 	if (!oc) {
 		return;

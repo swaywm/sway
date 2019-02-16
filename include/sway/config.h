@@ -586,6 +586,8 @@ struct output_config *store_output_config(struct output_config *oc);
 
 void apply_output_config_to_outputs(struct output_config *oc);
 
+void reset_outputs(void);
+
 void free_output_config(struct output_config *oc);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
