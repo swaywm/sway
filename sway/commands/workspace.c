@@ -181,7 +181,9 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			++argv;
 		}
 
-
+		bool create = argc > 1 && strcasecmp(argv[1], "--create") == 0;
+		struct sway_seat *seat = config->handler_context.seat;
+		struct sway_workspace *current = seat_get_focused_workspace(seat);
 		struct sway_workspace *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (argc < 2) {
@@ -199,12 +201,13 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			}
 		} else if (strcasecmp(argv[0], "next") == 0 ||
 				strcasecmp(argv[0], "prev") == 0 ||
-				strcasecmp(argv[0], "next_on_output") == 0 ||
-				strcasecmp(argv[0], "prev_on_output") == 0 ||
 				strcasecmp(argv[0], "current") == 0) {
 			ws = workspace_by_name(argv[0]);
+		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
+			ws = workspace_output_next(current, create);
+		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
+			ws = workspace_output_prev(current, create);
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
-			struct sway_seat *seat = config->handler_context.seat;
 			if (!seat->prev_workspace_name) {
 				return cmd_results_new(CMD_INVALID,
 						"There is no previous workspace");
@@ -220,7 +223,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			free(name);
 		}
 		workspace_switch(ws, no_auto_back_and_forth);
-		seat_consider_warp_to_focus(config->handler_context.seat);
+		seat_consider_warp_to_focus(seat);
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
