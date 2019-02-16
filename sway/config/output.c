@@ -1,16 +1,17 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <string.h>
-#include <signal.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_output.h>
+#include "log.h"
 #include "sway/config.h"
 #include "sway/output.h"
 #include "sway/tree/root.h"
-#include "log.h"
 
 int output_name_cmp(const void *item, const void *data) {
 	const struct output_config *output = item;
@@ -165,14 +166,71 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 	return wlr_output_set_mode(output, best);
 }
 
-void terminate_swaybg(pid_t pid) {
-	int ret = kill(pid, SIGTERM);
-	if (ret != 0) {
-		sway_log(SWAY_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
-	} else {
-		int status;
-		waitpid(pid, &status, 0);
+static void handle_swaybg_client_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, swaybg_client_destroy);
+	wl_list_remove(&output->swaybg_client_destroy.link);
+	wl_list_init(&output->swaybg_client_destroy.link);
+	output->swaybg_client = NULL;
+}
+
+static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
+	int sockets[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sockets) != 0) {
+		sway_log_errno(SWAY_ERROR, "socketpair failed");
+		return false;
 	}
+
+	output->swaybg_client = wl_client_create(server.wl_display, sockets[0]);
+	if (output->swaybg_client == NULL) {
+		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
+		return false;
+	}
+
+	output->swaybg_client_destroy.notify = handle_swaybg_client_destroy;
+	wl_client_add_destroy_listener(output->swaybg_client,
+		&output->swaybg_client_destroy);
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		sway_log_errno(SWAY_ERROR, "fork failed");
+		return false;
+	} else if (pid == 0) {
+		pid = fork();
+		if (pid < 0) {
+			sway_log_errno(SWAY_ERROR, "fork failed");
+			exit(EXIT_FAILURE);
+		} else if (pid == 0) {
+			// Remove the CLOEXEC flag
+			int flags = fcntl(sockets[1], F_GETFD);
+			if (flags == -1) {
+				sway_log_errno(SWAY_ERROR, "fcntl() failed");
+				exit(EXIT_FAILURE);
+			}
+			if (fcntl(sockets[1], F_SETFD, flags & ~FD_CLOEXEC) == -1) {
+				sway_log_errno(SWAY_ERROR, "fcntl() failed");
+				exit(EXIT_FAILURE);
+			}
+
+			char wayland_socket_str[16];
+			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+				"%d", sockets[1]);
+			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+			execvp(cmd[0], cmd);
+			sway_log_errno(SWAY_ERROR, "execvp failed");
+			exit(EXIT_FAILURE);
+		}
+		exit(EXIT_SUCCESS);
+	}
+
+	if (waitpid(pid, NULL, 0) < 0) {
+		sway_log_errno(SWAY_ERROR, "waitpid failed");
+		return false;
+	}
+
+	return true;
 }
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
@@ -243,8 +301,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_output_layout_add_auto(root->output_layout, wlr_output);
 	}
 
-	if (output->bg_pid != 0) {
-		terminate_swaybg(output->bg_pid);
+	if (output->swaybg_client != NULL) {
+		wl_client_destroy(output->swaybg_client);
 	}
 	if (oc && oc->background && config->swaybg_command) {
 		sway_log(SWAY_DEBUG, "Setting background for output %s to %s",
@@ -258,13 +316,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 			oc->background_fallback ? oc->background_fallback : NULL,
 			NULL,
 		};
-
-		output->bg_pid = fork();
-		if (output->bg_pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-		} else if (output->bg_pid == 0) {
-			execvp(cmd[0], cmd);
-			sway_log_errno(SWAY_ERROR, "Failed to execute swaybg");
+		if (!spawn_swaybg(output, cmd)) {
+			return false;
 		}
 	}
 
