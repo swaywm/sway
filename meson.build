@@ -62,7 +62,7 @@ git            = find_program('git', required: false)
 # Try first to find wlroots as a subproject, then as a system dependency
 wlroots_proj = subproject(
 	'wlroots',
-	default_options: ['rootston=disabled', 'examples=disabled'],
+	default_options: ['rootston=false', 'examples=false'],
 	required: false,
 )
 if wlroots_proj.found()
