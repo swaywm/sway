@@ -8,6 +8,13 @@ sway-input - input configuration file and commands
 
 Sway allows for configuration of devices within the sway configuration file.
 To obtain a list of available device identifiers, run *swaymsg -t get_inputs*.
+Settings can also be applied to all input devices by using the wildcard, _\*_,
+in place of _\<identifier\>_ in the commands below.
+
+Tip: If the configuration settings do not appear to be taking effect, you could
+try using _\*_ instead of _\<identifier\>_. If it works with the wildcard, try
+using a different identifier from *swaymsg -t get_inputs* until you find the
+correct input device.
 
 # INPUT COMMANDS
 
@@ -144,7 +151,13 @@ configured. While sway is running, _-_ (hyphen) can be used as an alias for the
 current seat. Each seat has an independent keyboard focus and a separate cursor
 that is controlled by the pointer devices of the seat. This is useful for
 multiple people using the desktop at the same time with their own devices (each
-sitting in their own "seat").
+sitting in their own "seat"). The wildcard character, _\*_, can also be used in
+place of _\<identifier\>_ to change settings for all seats.
+
+Tip: If the configuration settings do not appear to be taking effect, you could
+try using _\*_ instead of _\<identifier\>_. If it works with the wildcard, try
+using a different identifier from *swaymsg -t get_seats* until you find the
+correct seat.
 
 *seat* <name> attach <input_identifier>
 	Attach an input device to this seat by its input identifier. A special
