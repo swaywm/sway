@@ -230,8 +230,10 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 		// not a command about workspaces
 		if (strcmp(_target, "next") == 0 ||
 				strcmp(_target, "prev") == 0 ||
-				strcmp(_target, "next_on_output") == 0 ||
-				strcmp(_target, "prev_on_output") == 0 ||
+				strncmp(_target, "next_on_output",
+					strlen("next_on_output")) == 0 ||
+				strncmp(_target, "prev_on_output",
+					strlen("next_on_output")) == 0 ||
 				strcmp(_target, "number") == 0 ||
 				strcmp(_target, "back_and_forth") == 0 ||
 				strcmp(_target, "current") == 0) {
@@ -372,11 +374,11 @@ struct sway_workspace *workspace_by_name(const char *name) {
 	if (strcmp(name, "prev") == 0) {
 		return workspace_prev(current);
 	} else if (strcmp(name, "prev_on_output") == 0) {
-		return workspace_output_prev(current);
+		return workspace_output_prev(current, false);
 	} else if (strcmp(name, "next") == 0) {
 		return workspace_next(current);
 	} else if (strcmp(name, "next_on_output") == 0) {
-		return workspace_output_next(current);
+		return workspace_output_next(current, false);
 	} else if (strcmp(name, "current") == 0) {
 		return current;
 	} else if (strcasecmp(name, "back_and_forth") == 0) {
@@ -397,11 +399,18 @@ struct sway_workspace *workspace_by_name(const char *name) {
  * otherwise the next one is returned.
  */
 static struct sway_workspace *workspace_output_prev_next_impl(
-		struct sway_output *output, int dir) {
+		struct sway_output *output, int dir, bool create) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *workspace = seat_get_focused_workspace(seat);
 
 	int index = list_find(output->workspaces, workspace);
+	if (!workspace_is_empty(workspace) && create &&
+			(index + dir < 0 || index + dir == output->workspaces->length)) {
+		struct sway_output *output = workspace->output;
+		char *next = workspace_next_name(output->wlr_output->name);
+		workspace_create(output, next);
+		free(next);
+	}
 	size_t new_index = wrap(index + dir, output->workspaces->length);
 	return output->workspaces->items[new_index];
 }
@@ -432,16 +441,18 @@ static struct sway_workspace *workspace_prev_next_impl(
 	}
 }
 
-struct sway_workspace *workspace_output_next(struct sway_workspace *current) {
-	return workspace_output_prev_next_impl(current->output, 1);
+struct sway_workspace *workspace_output_next(
+		struct sway_workspace *current, bool create) {
+	return workspace_output_prev_next_impl(current->output, 1, create);
 }
 
 struct sway_workspace *workspace_next(struct sway_workspace *current) {
 	return workspace_prev_next_impl(current, 1);
 }
 
-struct sway_workspace *workspace_output_prev(struct sway_workspace *current) {
-	return workspace_output_prev_next_impl(current->output, -1);
+struct sway_workspace *workspace_output_prev(
+		struct sway_workspace *current, bool create) {
+	return workspace_output_prev_next_impl(current->output, -1, create);
 }
 
 struct sway_workspace *workspace_prev(struct sway_workspace *current) {
