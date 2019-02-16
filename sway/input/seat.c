@@ -44,7 +44,8 @@ void seat_destroy(struct sway_seat *seat) {
 	}
 	sway_cursor_destroy(seat->cursor);
 	wl_list_remove(&seat->new_node.link);
-	wl_list_remove(&seat->new_drag_icon.link);
+	wl_list_remove(&seat->request_start_drag.link);
+	wl_list_remove(&seat->start_drag.link);
 	wl_list_remove(&seat->request_set_selection.link);
 	wl_list_remove(&seat->request_set_primary_selection.link);
 	wl_list_remove(&seat->link);
@@ -261,12 +262,16 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 	struct wlr_drag_icon *wlr_icon = icon->wlr_drag_icon;
 	struct sway_seat *seat = icon->seat;
 	struct wlr_cursor *cursor = seat->cursor->cursor;
-	if (wlr_icon->is_pointer) {
+	switch (wlr_icon->drag->grab_type) {
+	case WLR_DRAG_GRAB_KEYBOARD:
+		return;
+	case WLR_DRAG_GRAB_KEYBOARD_POINTER:
 		icon->x = cursor->x;
 		icon->y = cursor->y;
-	} else {
+		break;
+	case WLR_DRAG_GRAB_KEYBOARD_TOUCH:;
 		struct wlr_touch_point *point =
-			wlr_seat_touch_get_point(seat->wlr_seat, wlr_icon->touch_id);
+			wlr_seat_touch_get_point(seat->wlr_seat, wlr_icon->drag->touch_id);
 		if (point == NULL) {
 			return;
 		}
@@ -305,9 +310,39 @@ static void drag_icon_handle_destroy(struct wl_listener *listener, void *data) {
 	free(icon);
 }
 
-static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
-	struct sway_seat *seat = wl_container_of(listener, seat, new_drag_icon);
-	struct wlr_drag_icon *wlr_drag_icon = data;
+static void handle_request_start_drag(struct wl_listener *listener,
+		void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, request_start_drag);
+	struct wlr_seat_request_start_drag_event *event = data;
+
+	if (wlr_seat_validate_pointer_grab_serial(seat->wlr_seat,
+			event->origin, event->serial)) {
+		wlr_seat_start_pointer_drag(seat->wlr_seat, event->drag, event->serial);
+		return;
+	}
+
+	struct wlr_touch_point *point;
+	if (wlr_seat_validate_touch_grab_serial(seat->wlr_seat,
+			event->origin, event->serial, &point)) {
+		wlr_seat_start_touch_drag(seat->wlr_seat,
+			event->drag, event->serial, point);
+		return;
+	}
+
+	// TODO: tablet grabs
+
+	sway_log(SWAY_DEBUG, "Ignoring start_drag request: "
+		"could not validate pointer or touch serial %" PRIu32, event->serial);
+	wlr_data_source_destroy(event->drag->source);
+}
+
+static void handle_start_drag(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, start_drag);
+	struct wlr_drag *wlr_drag = data;
+	struct wlr_drag_icon *wlr_drag_icon = wlr_drag->icon;
+	if (wlr_drag_icon == NULL) {
+		return;
+	}
 
 	struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
 	if (icon == NULL) {
@@ -406,8 +441,12 @@ struct sway_seat *seat_create(const char *seat_name) {
 	wl_signal_add(&root->events.new_node, &seat->new_node);
 	seat->new_node.notify = handle_new_node;
 
-	wl_signal_add(&seat->wlr_seat->events.new_drag_icon, &seat->new_drag_icon);
-	seat->new_drag_icon.notify = handle_new_drag_icon;
+	wl_signal_add(&seat->wlr_seat->events.request_start_drag,
+		&seat->request_start_drag);
+	seat->request_start_drag.notify = handle_request_start_drag;
+
+	wl_signal_add(&seat->wlr_seat->events.start_drag, &seat->start_drag);
+	seat->start_drag.notify = handle_start_drag;
 
 	wl_signal_add(&seat->wlr_seat->events.request_set_selection,
 		&seat->request_set_selection);
