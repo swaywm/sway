@@ -334,16 +334,13 @@ char *workspace_next_name(const char *output_name) {
 	if (target != NULL) {
 		return target;
 	}
-	// As a fall back, get the current number of active workspaces
-	// and return that + 1 for the next workspace's name
-	int ws_num = root->outputs->length;
-	int l = snprintf(NULL, 0, "%d", ws_num);
-	char *name = malloc(l + 1);
-	if (!sway_assert(name, "Could not allocate workspace name")) {
-		return NULL;
-	}
-	sprintf(name, "%d", ws_num++);
-	return name;
+	// As a fall back, use the next available number
+	char name[12] = "";
+	unsigned int ws_num = 1;
+	do {
+		snprintf(name, sizeof(name), "%u", ws_num++);
+	} while (workspace_by_number(name));
+	return strdup(name);
 }
 
 static bool _workspace_by_number(struct sway_workspace *ws, void *data) {
