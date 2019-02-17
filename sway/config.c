@@ -33,6 +33,31 @@
 
 struct sway_config *config = NULL;
 
+static struct keysym_translation_data new_keysym_translation_data(
+		const char *layout) {
+	struct xkb_rule_names rules = {
+		.layout = layout,
+	};
+
+	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_names(
+		xkb_context_new(XKB_CONTEXT_NO_FLAGS),
+		&rules,
+		XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+	struct keysym_translation_data result = {
+		.xkb_keymap = xkb_keymap,
+		.xkb_state = xkb_state_new(xkb_keymap),
+	};
+
+	return result;
+}
+
+static void free_keysym_translation_data(
+		struct keysym_translation_data config) {
+	xkb_state_unref(config.xkb_state);
+	xkb_keymap_unref(config.xkb_keymap);
+}
+
 static void free_mode(struct sway_mode *mode) {
 	if (!mode) {
 		return;
@@ -146,6 +171,7 @@ void free_config(struct sway_config *config) {
 	free(config->swaynag_command);
 	free((char *)config->current_config_path);
 	free((char *)config->current_config);
+	free_keysym_translation_data(config->keysym_translation);
 	free(config);
 }
 
@@ -316,6 +342,9 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;
 	if (!(config->ipc_policies = create_list())) goto cleanup;
+
+	// The keysym to keycode translation
+	config->keysym_translation = new_keysym_translation_data(getenv("XKB_DEFAULT_LAYOUT"));
 
 	return;
 cleanup:
@@ -936,4 +965,51 @@ void config_update_font_height(bool recalculate) {
 	if (config->font_height != prev_max_height) {
 		arrange_root();
 	}
+}
+
+static void translate_binding_list(list_t *bindings, list_t *bindsyms,
+		list_t *bindcodes) {
+	for (int i = 0; i < bindings->length; ++i) {
+		struct sway_binding *binding = bindings->items[i];
+		translate_binding(binding);
+
+		list_t *bindings;
+		switch (binding->type) {
+		case BINDING_KEYSYM:
+			bindings = bindsyms;
+			break;
+		case BINDING_KEYCODE:
+			bindings = bindcodes;
+			break;
+		default:
+			sway_assert(false, "unexpected translated binding type: %d",
+					binding->type);
+			break;
+		}
+
+		binding_add_translated(binding, bindings);
+	}
+}
+
+void translate_keysyms(const char *layout) {
+	free_keysym_translation_data(config->keysym_translation);
+	config->keysym_translation = new_keysym_translation_data(layout);
+
+	for (int i = 0; i < config->modes->length; ++i) {
+		struct sway_mode *mode = config->modes->items[i];
+
+		list_t *bindsyms = create_list();
+		list_t *bindcodes = create_list();
+
+		translate_binding_list(mode->keysym_bindings, bindsyms, bindcodes);
+		translate_binding_list(mode->keycode_bindings, bindsyms, bindcodes);
+
+		list_free(mode->keysym_bindings);
+		list_free(mode->keycode_bindings);
+
+		mode->keysym_bindings = bindsyms;
+		mode->keycode_bindings = bindcodes;
+	}
+
+	sway_log(SWAY_DEBUG, "Translated keysyms for layout %s", layout);
 }
