@@ -24,7 +24,6 @@ struct sway_variable {
 	char *value;
 };
 
-
 enum binding_input_type {
 	BINDING_KEYCODE,
 	BINDING_KEYSYM,
@@ -39,6 +38,7 @@ enum binding_flags {
 	BINDING_BORDER=4,    // mouse only; trigger on container border
 	BINDING_CONTENTS=8,  // mouse only; trigger on container contents
 	BINDING_TITLEBAR=16, // mouse only; trigger on container titlebar
+	BINDING_CODE=32,     // keyboard only; convert keysyms into keycodes
 };
 
 /**
@@ -50,6 +50,7 @@ struct sway_binding {
 	char *input;
 	uint32_t flags;
 	list_t *keys; // sorted in ascending order
+	list_t *syms; // sorted in ascending order; NULL if BINDING_CODE is not set
 	uint32_t modifiers;
 	char *command;
 };
@@ -407,6 +408,14 @@ enum alignment {
 };
 
 /**
+ * The keysym to keycode translation.
+ */
+struct keysym_translation_data {
+	struct xkb_keymap *xkb_keymap;
+	struct xkb_state *xkb_state;
+};
+
+/**
  * The configuration struct. The result of loading a config file.
  */
 struct sway_config {
@@ -507,6 +516,9 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
+
+	// The keysym to keycode translation
+	struct keysym_translation_data keysym_translation;
 
 	// Context for command handlers
 	struct {
@@ -617,12 +629,6 @@ bool spawn_swaybg(void);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
-int sway_binding_cmp(const void *a, const void *b);
-
-int sway_binding_cmp_qsort(const void *a, const void *b);
-
-int sway_binding_cmp_keys(const void *a, const void *b);
-
 void free_sway_binding(struct sway_binding *sb);
 
 void free_switch_binding(struct sway_switch_binding *binding);
@@ -650,6 +656,16 @@ void free_workspace_config(struct workspace_config *wsc);
  * new size.
  */
 void config_update_font_height(bool recalculate);
+
+/**
+ * Convert bindsym into bindcode using the first configured layout.
+ * Return false in case the conversion is unsuccessful.
+ */
+bool translate_binding(struct sway_binding *binding);
+
+void translate_keysyms(const char *layout);
+
+void binding_add_translated(struct sway_binding *binding, list_t *bindings);
 
 /* Global config singleton. */
 extern struct sway_config *config;

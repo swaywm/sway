@@ -39,6 +39,30 @@ static struct cmd_handler input_config_handlers[] = {
 	{ "xkb_numlock", input_cmd_xkb_numlock },
 };
 
+/**
+ * Re-translate keysyms if a change in the input config could affect them.
+ */
+static void retranslate_keysyms(struct input_config *input_config) {
+	bool matched = false;
+	for (int i = 0; i < config->input_configs->length; ++i) {
+		struct input_config *ic = config->input_configs->items[i];
+		matched |= ic->identifier == input_config->identifier;
+
+		// the first configured xkb_layout
+		if (ic->xkb_layout) {
+			if (matched) {
+				translate_keysyms(ic->xkb_layout);
+			}
+
+			// nothing has changed
+			return;
+		}
+	}
+
+	// no xkb_layout has been set, restore the default
+	translate_keysyms(getenv("XKB_DEFAULT_LAYOUT"));
+}
+
 struct cmd_results *cmd_input(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 2))) {
@@ -73,6 +97,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			store_input_config(config->handler_context.input_config);
 
 		input_manager_apply_input_config(ic);
+		retranslate_keysyms(ic);
 	} else {
 		free_input_config(config->handler_context.input_config);
 	}
