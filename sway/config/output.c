@@ -1,4 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
+#ifdef __FreeBSD__
+// for SOCK_CLOEXEC
+#define __BSD_VISIBLE 1
+#endif
 #include <assert.h>
 #include <fcntl.h>
 #include <stdbool.h>
