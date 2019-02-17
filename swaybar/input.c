@@ -123,6 +123,23 @@ static bool check_bindings(struct swaybar *bar, uint32_t button,
 	return false;
 }
 
+static void process_hotspots(struct swaybar_output *output,
+		double x, double y, uint32_t button) {
+	x *= output->scale;
+	y *= output->scale;
+	struct swaybar_hotspot *hotspot;
+	wl_list_for_each(hotspot, &output->hotspots, link) {
+		if (x >= hotspot->x && y >= hotspot->y
+				&& x < hotspot->x + hotspot->width
+				&& y < hotspot->y + hotspot->height) {
+			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
+					x / output->scale, y / output->scale, button, hotspot->data)) {
+				return;
+			}
+		}
+	}
+}
+
 static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
 	struct swaybar *bar = data;
@@ -139,20 +156,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
 		return;
 	}
-	struct swaybar_hotspot *hotspot;
-	wl_list_for_each(hotspot, &output->hotspots, link) {
-		double x = pointer->x * output->scale;
-		double y = pointer->y * output->scale;
-		if (x >= hotspot->x
-				&& y >= hotspot->y
-				&& x < hotspot->x + hotspot->width
-				&& y < hotspot->y + hotspot->height) {
-			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
-					pointer->x, pointer->y, button, hotspot->data)) {
-				return;
-			}
-		}
-	}
+	process_hotspots(output, pointer->x, pointer->y, button);
 }
 
 static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
@@ -255,7 +259,7 @@ static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
 	// Who cares
 }
 
-struct wl_pointer_listener pointer_listener = {
+static struct wl_pointer_listener pointer_listener = {
 	.enter = wl_pointer_enter,
 	.leave = wl_pointer_leave,
 	.motion = wl_pointer_motion,
@@ -265,6 +269,107 @@ struct wl_pointer_listener pointer_listener = {
 	.axis_source = wl_pointer_axis_source,
 	.axis_stop = wl_pointer_axis_stop,
 	.axis_discrete = wl_pointer_axis_discrete,
+};
+
+static struct touch_slot *get_touch_slot(struct swaybar_touch *touch, int32_t id) {
+	int next = -1;
+	for (size_t i = 0; i < sizeof(touch->slots) / sizeof(*touch->slots); ++i) {
+		if (touch->slots[i].id == id) {
+			return &touch->slots[i];
+		}
+		if (next == -1 && !touch->slots[i].output) {
+			next = i;
+		}
+	}
+	if (next == -1) {
+		sway_log(SWAY_ERROR, "Ran out of touch slots");
+		return NULL;
+	}
+	return &touch->slots[next];
+}
+
+static void wl_touch_down(void *data, struct wl_touch *wl_touch,
+		uint32_t serial, uint32_t time, struct wl_surface *surface,
+		int32_t id, wl_fixed_t _x, wl_fixed_t _y) {
+	struct swaybar *bar = data;
+	struct swaybar_output *_output, *output;
+	wl_list_for_each(_output, &bar->outputs, link) {
+		if (_output->surface == surface) {
+			output = _output;
+			break;
+		}
+	}
+	if (!output) {
+		sway_log(SWAY_DEBUG, "Got touch event for unknown surface");
+		return;
+	}
+	struct touch_slot *slot = get_touch_slot(&bar->touch, id);
+	if (!slot) {
+		return;
+	}
+	slot->id = id;
+	slot->output = output;
+	slot->x = slot->start_x = wl_fixed_to_double(_x);
+	slot->y = slot->start_y = wl_fixed_to_double(_y);
+	slot->time = time;
+}
+
+static void wl_touch_up(void *data, struct wl_touch *wl_touch,
+		uint32_t serial, uint32_t time, int32_t id) {
+	struct swaybar *bar = data;
+	struct touch_slot *slot = get_touch_slot(&bar->touch, id);
+	if (!slot) {
+		return;
+	}
+	if (time - slot->time < 500) {
+		// Tap, treat it like a pointer click
+		process_hotspots(slot->output, slot->x, slot->y, BTN_LEFT);
+	}
+	slot->output = NULL;
+}
+
+static void wl_touch_motion(void *data, struct wl_touch *wl_touch,
+		uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y) {
+	struct swaybar *bar = data;
+	struct touch_slot *slot = get_touch_slot(&bar->touch, id);
+	if (!slot) {
+		return;
+	}
+	slot->x = wl_fixed_to_double(x);
+	slot->y = wl_fixed_to_double(y);
+	// TODO: Slide gestures
+}
+
+static void wl_touch_frame(void *data, struct wl_touch *wl_touch) {
+	// Who cares
+}
+
+static void wl_touch_cancel(void *data, struct wl_touch *wl_touch) {
+	struct swaybar *bar = data;
+	struct swaybar_touch *touch = &bar->touch;
+	for (size_t i = 0; i < sizeof(touch->slots) / sizeof(*touch->slots); ++i) {
+		touch->slots[i].output = NULL;
+	}
+}
+
+static void wl_touch_shape(void *data, struct wl_touch *wl_touch, int32_t id,
+		wl_fixed_t major, wl_fixed_t minor) {
+	// Who cares
+}
+
+static void wl_touch_orientation(void *data, struct wl_touch *wl_touch,
+		int32_t id, wl_fixed_t orientation) {
+	// Who cares
+}
+
+static struct wl_touch_listener touch_listener = {
+	.down = wl_touch_down,
+	.up = wl_touch_up,
+	.motion = wl_touch_motion,
+	.frame = wl_touch_frame,
+	.cancel = wl_touch_cancel,
+	.shape = wl_touch_shape,
+	.orientation = wl_touch_orientation,
 };
 
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
@@ -277,6 +382,10 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	if ((caps & WL_SEAT_CAPABILITY_POINTER)) {
 		bar->pointer.pointer = wl_seat_get_pointer(wl_seat);
 		wl_pointer_add_listener(bar->pointer.pointer, &pointer_listener, bar);
+	}
+	if ((caps & WL_SEAT_CAPABILITY_TOUCH)) {
+		bar->touch.touch = wl_seat_get_touch(wl_seat);
+		wl_touch_add_listener(bar->touch.touch, &touch_listener, bar);
 	}
 }
 

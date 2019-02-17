@@ -34,6 +34,7 @@ struct swaybar {
 
 	struct swaybar_config *config;
 	struct swaybar_pointer pointer;
+	struct swaybar_touch touch;
 	struct status_line *status;
 
 	struct loop *eventloop;
