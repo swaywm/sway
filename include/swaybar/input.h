@@ -22,6 +22,19 @@ struct swaybar_pointer {
 	uint32_t serial;
 };
 
+struct touch_slot {
+	int32_t id;
+	uint32_t time;
+	struct swaybar_output *output;
+	double start_x, start_y;
+	double x, y;
+};
+
+struct swaybar_touch {
+	struct wl_touch *touch;
+	struct touch_slot slots[16];
+};
+
 enum hotspot_event_handling {
 	HOTSPOT_IGNORE,
 	HOTSPOT_PROCESS,
