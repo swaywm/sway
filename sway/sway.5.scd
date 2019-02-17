@@ -413,10 +413,6 @@ The default colors are:
 :  #0c0c0c
 
 
-*debuglog* on|off|toggle
-	Enables, disables or toggles debug logging. _toggle_ cannot be used in the
-	configuration file.
-
 *default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.
 
