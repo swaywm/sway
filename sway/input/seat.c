@@ -287,6 +287,7 @@ static void drag_icon_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&icon->link);
 	wl_list_remove(&icon->surface_commit.link);
 	wl_list_remove(&icon->unmap.link);
+	wl_list_remove(&icon->map.link);
 	wl_list_remove(&icon->destroy.link);
 	free(icon);
 }
