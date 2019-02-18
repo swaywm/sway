@@ -1,10 +1,11 @@
 #define _POSIX_C_SOURCE 200809L
 #include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-names.h>
 #include <string.h>
 #include <strings.h>
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-names.h>
+#include <wlr/types/wlr_cursor.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/cursor.h"
@@ -330,7 +331,20 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) {
 	sway_log(SWAY_DEBUG, "running command for binding: %s", binding->command);
 
-	list_t *res_list = execute_command(binding->command, seat, NULL);
+	struct sway_container *con = NULL;
+	if (binding->type == BINDING_MOUSESYM
+			|| binding->type == BINDING_MOUSECODE) {
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
+		struct sway_node *node = node_at_coords(seat,
+				seat->cursor->cursor->x, seat->cursor->cursor->y,
+				&surface, &sx, &sy);
+		if (node && node->type == N_CONTAINER) {
+			con = node->sway_container;
+		}
+	}
+
+	list_t *res_list = execute_command(binding->command, seat, con);
 	bool success = true;
 	for (int i = 0; i < res_list->length; ++i) {
 		struct cmd_results *results = res_list->items[i];
