@@ -12,7 +12,7 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 
 static const char expected_syntax[] = "Expected 'cursor <move> <x> <y>' or "
 					"'cursor <set> <x> <y>' or "
-					"'curor <press|release> <button[1-9]|event-name-or-code>'";
+					"'cursor <press|release> <button[1-9]|event-name-or-code>'";
 
 static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		int argc, char **argv) {
