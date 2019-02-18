@@ -327,7 +327,7 @@ runtime.
 
 		for_window <criteria> move container to output <output>
 
-*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <key combo> <command>
+*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--to-code] [--input-device=<device>] [--no-warn] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
@@ -337,6 +337,10 @@ runtime.
 	instead of any binding that is generic to all devices. By default, if you
 	overwrite a binding, swaynag will give you a warning. To silence this, use
 	the _--no-warn_ flag.
+
+	Bindings to keysyms are layout-dependent. This can be changed with the
+	_--to-code_ flag. In this case, the keysyms will be translated into the
+	corresponding keycodes in the first configured layout.
 
 	Mouse bindings operate on the container under the cursor instead of the
 	container that has focus. Mouse buttons can either be specified in the form
