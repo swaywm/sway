@@ -43,24 +43,17 @@ static struct cmd_handler input_config_handlers[] = {
  * Re-translate keysyms if a change in the input config could affect them.
  */
 static void retranslate_keysyms(struct input_config *input_config) {
-	bool matched = false;
 	for (int i = 0; i < config->input_configs->length; ++i) {
 		struct input_config *ic = config->input_configs->items[i];
-		matched |= ic->identifier == input_config->identifier;
-
-		// the first configured xkb_layout
 		if (ic->xkb_layout) {
-			if (matched) {
+			// this is the first config with xkb_layout
+			if (ic->identifier == input_config->identifier) {
 				translate_keysyms(ic->xkb_layout);
 			}
 
-			// nothing has changed
 			return;
 		}
 	}
-
-	// no xkb_layout has been set, restore the default
-	translate_keysyms(getenv("XKB_DEFAULT_LAYOUT"));
 }
 
 struct cmd_results *cmd_input(int argc, char **argv) {
