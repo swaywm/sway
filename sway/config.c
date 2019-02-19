@@ -340,7 +340,7 @@ static void config_defaults(struct sway_config *config) {
 
 	// The keysym to keycode translation
 	config->keysym_translation_state =
-		keysym_translation_state_create(getenv("XKB_DEFAULT_LAYOUT"));
+		keysym_translation_state_create(NULL);
 
 	return;
 cleanup:
