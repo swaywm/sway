@@ -111,10 +111,8 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 				"Unable to change layout of floating windows");
 	}
 
-	// Typically we change the layout of the current container, but if the
-	// current container is a view (it usually is) then we'll change the layout
-	// of the parent instead, as it doesn't make sense for views to have layout.
-	if (container && container->view) {
+	// Operate on parent container, like i3.
+	if (container) {
 		container = container->parent;
 	}
 
