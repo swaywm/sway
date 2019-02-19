@@ -1,25 +1,25 @@
-# vim: ft=yaml ts=2 sw=2 et :
 image: archlinux
 packages:
-  - meson
-  - xorg-server-xwayland
-  - xcb-util-image
-  - json-c
-  - pango
   - cairo
+  - gdk-pixbuf2
+  - json-c
+  - libinput
+  - libxcb
+  - libxkbcommon
+  - meson
+  - pango
+  - scdoc
   - wayland
   - wayland-protocols
-  - gdk-pixbuf2
-  - libinput
-  - libxkbcommon
-  - scdoc
+  - xcb-util-image
+  - xorg-server-xwayland
 sources:
   - https://github.com/swaywm/sway
   - https://github.com/swaywm/wlroots
 tasks:
   - wlroots: |
       cd wlroots
-      meson --prefix=/usr build
+      meson --prefix=/usr build -Drootston=false -Dexamples=false
       ninja -C build
       sudo ninja -C build install
   - setup: |
