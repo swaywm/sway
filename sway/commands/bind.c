@@ -604,7 +604,7 @@ struct keycode_matches {
 static void find_keycode(struct xkb_keymap *keymap,
 		xkb_keycode_t keycode, void *data) {
 	xkb_keysym_t keysym = xkb_state_key_get_one_sym(
-			config->keysym_translation.xkb_state, keycode);
+			config->keysym_translation_state, keycode);
 
 	if (keysym == XKB_KEY_NoSymbol) {
 		return;
@@ -627,7 +627,8 @@ static struct keycode_matches get_keycode_for_keysym(xkb_keysym_t keysym) {
 		.count = 0,
 	};
 
-	xkb_keymap_key_for_each(config->keysym_translation.xkb_keymap,
+	xkb_keymap_key_for_each(
+			xkb_state_get_keymap(config->keysym_translation_state),
 			find_keycode, &matches);
 	return matches;
 }

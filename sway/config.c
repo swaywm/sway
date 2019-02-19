@@ -33,7 +33,7 @@
 
 struct sway_config *config = NULL;
 
-static struct keysym_translation_data new_keysym_translation_data(
+static struct xkb_state *keysym_translation_state_create(
 		const char *layout) {
 	struct xkb_rule_names rules = {
 		.layout = layout,
@@ -44,18 +44,13 @@ static struct keysym_translation_data new_keysym_translation_data(
 		&rules,
 		XKB_KEYMAP_COMPILE_NO_FLAGS);
 
-	struct keysym_translation_data result = {
-		.xkb_keymap = xkb_keymap,
-		.xkb_state = xkb_state_new(xkb_keymap),
-	};
-
-	return result;
+	return xkb_state_new(xkb_keymap);
 }
 
-static void free_keysym_translation_data(
-		struct keysym_translation_data config) {
-	xkb_state_unref(config.xkb_state);
-	xkb_keymap_unref(config.xkb_keymap);
+static void keysym_translation_state_destroy(
+		struct xkb_state *state) {
+	xkb_keymap_unref(xkb_state_get_keymap(state));
+	xkb_state_unref(state);
 }
 
 static void free_mode(struct sway_mode *mode) {
@@ -171,7 +166,7 @@ void free_config(struct sway_config *config) {
 	free(config->swaynag_command);
 	free((char *)config->current_config_path);
 	free((char *)config->current_config);
-	free_keysym_translation_data(config->keysym_translation);
+	keysym_translation_state_destroy(config->keysym_translation_state);
 	free(config);
 }
 
@@ -344,7 +339,8 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->ipc_policies = create_list())) goto cleanup;
 
 	// The keysym to keycode translation
-	config->keysym_translation = new_keysym_translation_data(getenv("XKB_DEFAULT_LAYOUT"));
+	config->keysym_translation_state =
+		keysym_translation_state_create(getenv("XKB_DEFAULT_LAYOUT"));
 
 	return;
 cleanup:
@@ -992,8 +988,8 @@ static void translate_binding_list(list_t *bindings, list_t *bindsyms,
 }
 
 void translate_keysyms(const char *layout) {
-	free_keysym_translation_data(config->keysym_translation);
-	config->keysym_translation = new_keysym_translation_data(layout);
+	keysym_translation_state_destroy(config->keysym_translation_state);
+	config->keysym_translation_state = keysym_translation_state_create(layout);
 
 	for (int i = 0; i < config->modes->length; ++i) {
 		struct sway_mode *mode = config->modes->items[i];

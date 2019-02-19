@@ -408,14 +408,6 @@ enum alignment {
 };
 
 /**
- * The keysym to keycode translation.
- */
-struct keysym_translation_data {
-	struct xkb_keymap *xkb_keymap;
-	struct xkb_state *xkb_state;
-};
-
-/**
  * The configuration struct. The result of loading a config file.
  */
 struct sway_config {
@@ -518,7 +510,7 @@ struct sway_config {
 	list_t *ipc_policies;
 
 	// The keysym to keycode translation
-	struct keysym_translation_data keysym_translation;
+	struct xkb_state *keysym_translation_state;
 
 	// Context for command handlers
 	struct {
