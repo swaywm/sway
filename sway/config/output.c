@@ -175,10 +175,31 @@ static void handle_swaybg_client_destroy(struct wl_listener *listener,
 	output->swaybg_client = NULL;
 }
 
+static bool set_cloexec(int fd, bool cloexec) {
+	int flags = fcntl(fd, F_GETFD);
+	if (flags == -1) {
+		sway_log_errno(SWAY_ERROR, "fcntl failed");
+		return false;
+	}
+	if (cloexec) {
+		flags = flags | FD_CLOEXEC;
+	} else {
+		flags = flags & ~FD_CLOEXEC;
+	}
+	if (fcntl(fd, F_SETFD, flags) == -1) {
+		sway_log_errno(SWAY_ERROR, "fcntl failed");
+		return false;
+	}
+	return true;
+}
+
 static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
 	int sockets[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sockets) != 0) {
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
 		sway_log_errno(SWAY_ERROR, "socketpair failed");
+		return false;
+	}
+	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
 		return false;
 	}
 
@@ -202,14 +223,7 @@ static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
 			sway_log_errno(SWAY_ERROR, "fork failed");
 			exit(EXIT_FAILURE);
 		} else if (pid == 0) {
-			// Remove the CLOEXEC flag
-			int flags = fcntl(sockets[1], F_GETFD);
-			if (flags == -1) {
-				sway_log_errno(SWAY_ERROR, "fcntl() failed");
-				exit(EXIT_FAILURE);
-			}
-			if (fcntl(sockets[1], F_SETFD, flags & ~FD_CLOEXEC) == -1) {
-				sway_log_errno(SWAY_ERROR, "fcntl() failed");
+			if (!set_cloexec(sockets[1], false)) {
 				exit(EXIT_FAILURE);
 			}
 
@@ -225,6 +239,10 @@ static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
 		exit(EXIT_SUCCESS);
 	}
 
+	if (close(sockets[1]) != 0) {
+		sway_log_errno(SWAY_ERROR, "close failed");
+		return false;
+	}
 	if (waitpid(pid, NULL, 0) < 0) {
 		sway_log_errno(SWAY_ERROR, "waitpid failed");
 		return false;
