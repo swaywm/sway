@@ -10,13 +10,14 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
-#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
+#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
-#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
+#include <wlr/types/wlr_primary_selection_v1.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -122,6 +123,7 @@ bool server_init(struct sway_server *server) {
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
 	wlr_data_control_manager_v1_create(server->wl_display);
+	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
