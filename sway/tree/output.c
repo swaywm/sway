@@ -189,10 +189,19 @@ static void output_evacuate(struct sway_output *output) {
 			continue;
 		}
 
+		struct sway_workspace *new_output_ws =
+			output_get_active_workspace(new_output);
+
 		workspace_output_add_priority(workspace, new_output);
 		output_add_workspace(new_output, workspace);
 		output_sort_workspaces(new_output);
 		ipc_event_workspace(NULL, workspace, "move");
+
+		// If there is an old workspace (the noop output may not have one),
+		// check to see if it is empty and should be destroyed.
+		if (new_output_ws) {
+			workspace_consider_destroy(new_output_ws);
+		}
 	}
 }
 
