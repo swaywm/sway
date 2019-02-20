@@ -48,7 +48,7 @@ static void retranslate_keysyms(struct input_config *input_config) {
 		if (ic->xkb_layout) {
 			// this is the first config with xkb_layout
 			if (ic->identifier == input_config->identifier) {
-				translate_keysyms(ic->xkb_layout);
+				translate_keysyms(ic);
 			}
 
 			return;

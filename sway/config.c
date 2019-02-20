@@ -34,16 +34,14 @@
 struct sway_config *config = NULL;
 
 static struct xkb_state *keysym_translation_state_create(
-		const char *layout) {
-	struct xkb_rule_names rules = {
-		.layout = layout,
-	};
-
+		struct xkb_rule_names rules) {
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_names(
-		xkb_context_new(XKB_CONTEXT_NO_FLAGS),
+		context,
 		&rules,
 		XKB_KEYMAP_COMPILE_NO_FLAGS);
 
+	xkb_context_unref(context);
 	return xkb_state_new(xkb_keymap);
 }
 
@@ -339,8 +337,9 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->ipc_policies = create_list())) goto cleanup;
 
 	// The keysym to keycode translation
+	struct xkb_rule_names rules = {};
 	config->keysym_translation_state =
-		keysym_translation_state_create(NULL);
+		keysym_translation_state_create(rules);
 
 	return;
 cleanup:
@@ -987,9 +986,12 @@ static void translate_binding_list(list_t *bindings, list_t *bindsyms,
 	}
 }
 
-void translate_keysyms(const char *layout) {
+void translate_keysyms(struct input_config *input_config) {
 	keysym_translation_state_destroy(config->keysym_translation_state);
-	config->keysym_translation_state = keysym_translation_state_create(layout);
+
+	struct xkb_rule_names rules = input_config_get_rule_names(input_config);
+	config->keysym_translation_state =
+		keysym_translation_state_create(rules);
 
 	for (int i = 0; i < config->modes->length; ++i) {
 		struct sway_mode *mode = config->modes->items[i];
@@ -1007,5 +1009,6 @@ void translate_keysyms(const char *layout) {
 		mode->keycode_bindings = bindcodes;
 	}
 
-	sway_log(SWAY_DEBUG, "Translated keysyms for layout %s", layout);
+	sway_log(SWAY_DEBUG, "Translated keysyms using config for device '%s'",
+			input_config->identifier);
 }

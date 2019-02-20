@@ -212,6 +212,18 @@ struct input_config *store_input_config(struct input_config *ic) {
 	return ic;
 }
 
+struct xkb_rule_names input_config_get_rule_names(struct input_config *ic) {
+	struct xkb_rule_names rules = {
+		.layout = ic->xkb_layout,
+		.model = ic->xkb_model,
+		.options = ic->xkb_options,
+		.rules = ic->xkb_rules,
+		.variant = ic->xkb_variant,
+	};
+
+	return rules;
+}
+
 void free_input_config(struct input_config *ic) {
 	if (!ic) {
 		return;

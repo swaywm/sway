@@ -470,39 +470,31 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 }
 
 void sway_keyboard_configure(struct sway_keyboard *keyboard) {
-	struct xkb_rule_names rules;
-	memset(&rules, 0, sizeof(rules));
 	struct input_config *input_config =
 		input_device_get_config(keyboard->seat_device->input_device);
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 
-	if (input_config && input_config->xkb_layout) {
-		rules.layout = input_config->xkb_layout;
+	struct xkb_rule_names rules;
+	if (input_config) {
+		rules = input_config_get_rule_names(input_config);
 	} else {
+		memset(&rules, 0, sizeof(rules));
+	}
+
+	if (!rules.layout) {
 		rules.layout = getenv("XKB_DEFAULT_LAYOUT");
 	}
-	if (input_config && input_config->xkb_model) {
-		rules.model = input_config->xkb_model;
-	} else {
+	if (!rules.model) {
 		rules.model = getenv("XKB_DEFAULT_MODEL");
 	}
-
-	if (input_config && input_config->xkb_options) {
-		rules.options = input_config->xkb_options;
-	} else {
+	if (!rules.options) {
 		rules.options = getenv("XKB_DEFAULT_OPTIONS");
 	}
-
-	if (input_config && input_config->xkb_rules) {
-		rules.rules = input_config->xkb_rules;
-	} else {
+	if (!rules.rules) {
 		rules.rules = getenv("XKB_DEFAULT_RULES");
 	}
-
-	if (input_config && input_config->xkb_variant) {
-		rules.variant = input_config->xkb_variant;
-	} else {
+	if (!rules.variant) {
 		rules.variant = getenv("XKB_DEFAULT_VARIANT");
 	}
 
