@@ -9,6 +9,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
+#include "log.h"
 #include "util.h"
 
 struct cmd_results *cmd_sticky(int argc, char **argv) {
@@ -29,6 +30,11 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 		// move container to active workspace
 		struct sway_workspace *active_workspace =
 			output_get_active_workspace(container->workspace->output);
+		if (!sway_assert(active_workspace,
+					"Expected output to have a workspace")) {
+			return cmd_results_new(CMD_FAILURE,
+					"Expected output to have a workspace");
+		}
 		if (container->workspace != active_workspace) {
 			struct sway_workspace *old_workspace = container->workspace;
 			container_detach(container);
