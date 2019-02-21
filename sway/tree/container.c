@@ -831,7 +831,7 @@ void container_floating_move_to(struct sway_container *con,
 	}
 	struct sway_workspace *new_workspace =
 		output_get_active_workspace(new_output);
-	if (old_workspace != new_workspace) {
+	if (new_workspace && old_workspace != new_workspace) {
 		container_detach(con);
 		workspace_add_floating(new_workspace, con);
 		arrange_workspace(old_workspace);

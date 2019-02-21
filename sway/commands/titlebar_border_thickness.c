@@ -21,7 +21,12 @@ struct cmd_results *cmd_titlebar_border_thickness(int argc, char **argv) {
 
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		arrange_workspace(output_get_active_workspace(output));
+		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (!sway_assert(ws, "Expected output to have a workspace")) {
+			return cmd_results_new(CMD_FAILURE,
+					"Expected output to have a workspace");
+		}
+		arrange_workspace(ws);
 		output_damage_whole(output);
 	}
 

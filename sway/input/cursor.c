@@ -104,6 +104,9 @@ struct sway_node *node_at_coords(
 
 	// find the focused workspace on the output for this seat
 	struct sway_workspace *ws = output_get_active_workspace(output);
+	if (!ws) {
+		return NULL;
+	}
 
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],

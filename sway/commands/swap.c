@@ -118,6 +118,10 @@ static void container_swap(struct sway_container *con1,
 		output_get_active_workspace(con1->workspace->output);
 	struct sway_workspace *vis2 =
 		output_get_active_workspace(con2->workspace->output);
+	if (!sway_assert(vis1 && vis2, "con1 or con2 are on an output without a"
+				"workspace. This should not happen")) {
+		return;
+	}
 
 	char *stored_prev_name = NULL;
 	if (seat->prev_workspace_name) {
