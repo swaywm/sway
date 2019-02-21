@@ -347,6 +347,7 @@ int main(int argc, char **argv) {
 		}
 		char *command = join_args(argv + optind, argc - optind);
 		run_as_ipc_client(command, socket_path);
+		free(command);
 		return 0;
 	}
 
