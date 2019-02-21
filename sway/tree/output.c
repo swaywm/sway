@@ -143,6 +143,9 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 static void evacuate_sticky(struct sway_workspace *old_ws,
 		struct sway_output *new_output) {
 	struct sway_workspace *new_ws = output_get_active_workspace(new_output);
+	if (!sway_assert(new_ws, "New output does not have a workspace")) {
+		return;
+	}
 	while (old_ws->floating->length) {
 		struct sway_container *sticky = old_ws->floating->items[0];
 		container_detach(sticky);
