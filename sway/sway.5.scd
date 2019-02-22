@@ -310,9 +310,9 @@ runtime.
 	conjunction with any other option to specify that the titlebar should be
 	excluded from the region of consideration.
 
-	There is currently, however, no way to execute a mouse binding over a layer
-	surface (which includes the background of an empty workspace). This behaviour
-	is carried over from i3.
+	If _--whole-window_ is given, the command can be triggered when the cursor
+	is over an empty workspace. Using a mouse binding over a layer surface's
+	exclusive region is not currently possible.
 
 	Example:
 ```
