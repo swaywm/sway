@@ -552,7 +552,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE,
 				"Expected output to have a workspace");
 	}
-	if (new_output_last_ws != new_workspace) {
+	if (new_output_last_ws && new_output_last_ws != new_workspace) {
 		struct sway_node *new_output_last_focus =
 			seat_get_focus_inactive(seat, &new_output_last_ws->node);
 		seat_set_raw_focus(seat, new_output_last_focus);
