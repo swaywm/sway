@@ -126,6 +126,7 @@ void run_as_ipc_client(char *command, char *socket_path) {
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, IPC_COMMAND, command, &len);
 	printf("%s\n", resp);
+	free(resp);
 	close(socketfd);
 }
 
@@ -347,6 +348,7 @@ int main(int argc, char **argv) {
 		}
 		char *command = join_args(argv + optind, argc - optind);
 		run_as_ipc_client(command, socket_path);
+		free(command);
 		return 0;
 	}
 
