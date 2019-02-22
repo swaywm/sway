@@ -847,16 +847,9 @@ void container_floating_move_to_center(struct sway_container *con) {
 		return;
 	}
 	struct sway_workspace *ws = con->workspace;
-	enum sway_fullscreen_mode fullscreen_mode = con->fullscreen_mode;
-	if (fullscreen_mode) {
-		container_fullscreen_disable(con);
-	}
 	double new_lx = ws->x + (ws->width - con->width) / 2;
 	double new_ly = ws->y + (ws->height - con->height) / 2;
 	container_floating_translate(con, new_lx - con->x, new_ly - con->y);
-	if (fullscreen_mode) {
-		container_set_fullscreen(con, fullscreen_mode);
-	}
 }
 
 static bool find_urgent_iterator(struct sway_container *con, void *data) {
