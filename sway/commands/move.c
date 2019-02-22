@@ -854,11 +854,11 @@ static struct cmd_results *cmd_move_to_scratchpad(void) {
 		}
 	}
 
-	if (con->scratchpad) {
-		return cmd_results_new(CMD_INVALID,
-				"Container is already in the scratchpad");
+	if (!con->scratchpad) {
+		root_scratchpad_add_container(con);
+	} else if (con->workspace) {
+		root_scratchpad_hide(con);
 	}
-	root_scratchpad_add_container(con);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
