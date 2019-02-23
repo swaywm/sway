@@ -10,7 +10,9 @@ static void xdg_decoration_handle_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_xdg_decoration *deco =
 		wl_container_of(listener, deco, destroy);
-	deco->view->xdg_decoration = NULL;
+	if(deco->view) {
+		deco->view->xdg_decoration = NULL;
+	}
 	wl_list_remove(&deco->destroy.link);
 	wl_list_remove(&deco->request_mode.link);
 	wl_list_remove(&deco->link);
