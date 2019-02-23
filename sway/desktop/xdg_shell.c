@@ -17,6 +17,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/xdg_decoration.h"
 
 static const struct sway_view_child_impl popup_impl;
 
@@ -461,6 +462,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->map.link);
 	wl_list_remove(&xdg_shell_view->unmap.link);
 	view->wlr_xdg_surface = NULL;
+	if (view->xdg_decoration) {
+		view->xdg_decoration->view = NULL;
+	}
 	view_begin_destroy(view);
 }
 
