@@ -1,5 +1,6 @@
 # sway(1) completion
 
+complete -f -c sway
 complete -c sway -s h -l help --description "Show help message and quit."
 complete -c sway -s c -l config --description "Specifies a config file."
 complete -c sway -s C -l validate --description "Check the validity of the config file, then exit."

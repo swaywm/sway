@@ -1,5 +1,6 @@
 # swaymsg(1) completion
 
+complete -f -c swaymsg
 complete -c swaymsg -s h -l help --description "Show help message and quit."
 complete -c swaymsg -s q -l quiet --description "Sends the IPC message but does not print the response from sway."
 complete -c swaymsg -s v -l version --description "Print the version (of swaymsg) and quit."
