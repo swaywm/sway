@@ -75,7 +75,8 @@ struct sway_seat {
 
 	struct wl_listener focus_destroy;
 	struct wl_listener new_node;
-	struct wl_listener new_drag_icon;
+	struct wl_listener request_start_drag;
+	struct wl_listener start_drag;
 	struct wl_listener request_set_selection;
 	struct wl_listener request_set_primary_selection;
 

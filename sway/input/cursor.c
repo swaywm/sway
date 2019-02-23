@@ -353,7 +353,6 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	}
 
 	struct sway_seat *seat = cursor->seat;
-	struct wlr_seat *wlr_seat = seat->wlr_seat;
 
 	if (seat_doing_seatop(seat)) {
 		seatop_motion(seat, time_msec);
@@ -404,10 +403,11 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	cursor_do_rebase(cursor, time_msec, node, surface, sx, sy);
 
-	struct wlr_drag_icon *wlr_drag_icon;
-	wl_list_for_each(wlr_drag_icon, &wlr_seat->drag_icons, link) {
-		struct sway_drag_icon *drag_icon = wlr_drag_icon->data;
-		drag_icon_update_position(drag_icon);
+	struct sway_drag_icon *drag_icon;
+	wl_list_for_each(drag_icon, &root->drag_icons, link) {
+		if (drag_icon->seat == seat) {
+			drag_icon_update_position(drag_icon);
+		}
 	}
 }
 
@@ -991,10 +991,11 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		seat->touch_x = lx;
 		seat->touch_y = ly;
 
-		struct wlr_drag_icon *wlr_drag_icon;
-		wl_list_for_each(wlr_drag_icon, &wlr_seat->drag_icons, link) {
-			struct sway_drag_icon *drag_icon = wlr_drag_icon->data;
-			drag_icon_update_position(drag_icon);
+		struct sway_drag_icon *drag_icon;
+		wl_list_for_each(drag_icon, &root->drag_icons, link) {
+			if (drag_icon->seat == seat) {
+				drag_icon_update_position(drag_icon);
+			}
 		}
 	}
 
