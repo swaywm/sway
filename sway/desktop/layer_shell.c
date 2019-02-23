@@ -378,7 +378,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 				output = ws->output;
 			}
 		}
-		if (!output) {
+		if (!output || output == root->noop_output) {
 			if (!root->outputs->length) {
 				sway_log(SWAY_ERROR,
 						"no output to auto-assign layer surface '%s' to",
