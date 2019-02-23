@@ -19,16 +19,15 @@ dan diterbitkan [di GitHub](https://github.com/swaywm/sway/releases).
 
 ### Dari Packages
 
-Sway tersedia dalam beberapa distribusi. Lakukan instalasi dengan package "sway" terlebih dahulu. 
-Apabila gagal, lihatlah [halaman wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
-untuk informasi instalasi untuk tiap distribusi.
+Sway tersedia untuk banyak distribusi Linux, coba instal package "sway" untuk distribusi Anda, kalau tidak tersedia, coba baca [halaman wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
+untuk informasi instalasi di distribusi Anda.
 
-Jika anda tertarik membuat package untuk distribusi anda, kunjungi channel IRC
+Jika Anda tertarik membuat package untuk distribusi Anda, kunjungi channel IRC
 atau kirim email ke sir@cmpwn.com untuk saran.
 
-### Kompilasi dari Sumber
+### Kompilasi dari Kode Sumber
 
-Ketergantungan dalam instaasi:
+Dependensi instalasi:
 
 * meson \*
 * [wlroots](https://github.com/swaywm/wlroots)
@@ -42,11 +41,11 @@ Ketergantungan dalam instaasi:
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) >= 1.8.1 (optional: man pages) \*
 * git \*
 
-_\*Ketergantungan kompilasi
+_\*Dependensi saat kompilasi
 
 _\*\*Tidak wajib: hanya diperlukan untuk swaybg_
 
-Jalankan commands dibawah:
+Mengetik perintah ini:
 
     meson build
     ninja -C build
@@ -60,8 +59,8 @@ Sway akan membuang permisi root setelah startup.
 
 ## Konfigurasi
 
-Jika anda sudah menggunakan i3, duplikatkan konfigurasi i3 anda ke `~/.config/sway/config` dan sway akan langsung siap. 
-Jika anda belum menggunakan i3, duplikatkan contoh konfigurasi ke
+Jika Anda sudah menggunakan i3, duplikatkan konfigurasi i3 Anda ke `~/.config/sway/config` dan sway akan langsung siap. 
+Jika Anda belum menggunakan i3, duplikatkan contoh konfigurasi ke
 `~/.config/sway/config`. Contoh dapat ditemukan di `/etc/sway/config`.
 Paki `man 5 sway` untuk informasi mengenai konfigurasi.
 
