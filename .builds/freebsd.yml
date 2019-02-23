@@ -1,0 +1,53 @@
+image: freebsd/latest
+packages:
+- devel/json-c
+- devel/libevdev
+- devel/meson
+- devel/pkgconf
+- graphics/cairo
+- graphics/gdk-pixbuf2
+- graphics/wayland
+- graphics/wayland-protocols
+- textproc/scdoc
+- x11-toolkits/pango
+- x11/libxcb
+- x11/libxkbcommon
+# wlroots dependencies
+- devel/evdev-proto
+- devel/libepoll-shim
+- devel/libudev-devd
+- graphics/libdrm
+- graphics/mesa-libs
+- x11/libinput
+- x11/libX11
+- x11/pixman
+- x11/xcb-util-wm
+sources:
+- https://github.com/swaywm/sway
+- https://github.com/swaywm/wlroots
+tasks:
+- fixup_epoll: |
+    cat << 'EOF' | sudo tee /usr/local/libdata/pkgconfig/epoll-shim.pc
+    prefix=/usr/local
+    exec_prefix=\$\{\$prefix\}
+    libdir=${prefix}/lib
+    sharedlibdir=${prefix}/lib
+    includedir=${prefix}/include/libepoll-shim
+    Name: epoll-shim
+    Description: epoll shim implemented using kevent
+    Version: 0
+    Requires:
+    Libs: -L${libdir} -L${sharedlibdir} -lepoll-shim
+    Libs.private: -pthread -lrt
+    Cflags: -I${includedir}
+    EOF
+- setup: |
+    cd sway
+    mkdir subprojects
+    cd subprojects
+    ln -s ../../wlroots wlroots
+    cd ..
+    meson build
+- build: |
+    cd sway
+    ninja -C build

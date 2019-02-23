@@ -67,11 +67,13 @@ struct sway_workspace *workspace_by_number(const char* name);
 
 struct sway_workspace *workspace_by_name(const char*);
 
-struct sway_workspace *workspace_output_next(struct sway_workspace *current);
+struct sway_workspace *workspace_output_next(
+		struct sway_workspace *current, bool create);
 
 struct sway_workspace *workspace_next(struct sway_workspace *current);
 
-struct sway_workspace *workspace_output_prev(struct sway_workspace *current);
+struct sway_workspace *workspace_output_prev(
+		struct sway_workspace *current, bool create);
 
 struct sway_workspace *workspace_prev(struct sway_workspace *current);
 

@@ -104,6 +104,9 @@ struct sway_node *node_at_coords(
 
 	// find the focused workspace on the output for this seat
 	struct sway_workspace *ws = output_get_active_workspace(output);
+	if (!ws) {
+		return NULL;
+	}
 
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
@@ -283,6 +286,19 @@ void cursor_rebase(struct sway_cursor *cursor) {
 	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
 }
 
+void cursor_rebase_all(void) {
+	if (!root->outputs->length) {
+		return;
+	}
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (!seat_doing_seatop(seat)) {
+			cursor_rebase(seat->cursor);
+		}
+	}
+}
+
 static int hide_notify(void *data) {
 	struct sway_cursor *cursor = data;
 	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
@@ -408,15 +424,16 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 
 	wlr_relative_pointer_manager_v1_send_relative_motion(
 		server.relative_pointer_manager,
-		cursor->seat->wlr_seat, event->time_msec, dx, dy,
-		dx_unaccel, dy_unaccel);
+		cursor->seat->wlr_seat, (uint64_t)event->time_msec * 1000,
+		dx, dy, dx_unaccel, dy_unaccel);
 
 	struct wlr_surface *surface = NULL;
+	struct sway_node *node = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(cursor->seat,
-		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-
 	if (cursor->active_constraint) {
+		node = node_at_coords(cursor->seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
 		if (cursor->active_constraint->surface != surface) {
 			return;
 		}
@@ -432,8 +449,13 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_cursor_move(cursor->cursor, event->device, dx, dy);
+
+	// Recalculate pointer location after layout checks
+	node = node_at_coords(cursor->seat,
+		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
 	cursor_send_pointer_motion(cursor, event->time_msec, node, surface,
-		sx + dx, sy + dy);
+		sx, sy);
 	transaction_commit_dirty();
 }
 
@@ -530,10 +552,11 @@ static void state_add_button(struct sway_cursor *cursor, uint32_t button) {
 static struct sway_binding* get_active_mouse_binding(
 		const struct sway_cursor *cursor, list_t *bindings, uint32_t modifiers,
 		bool release, bool on_titlebar, bool on_border, bool on_content,
-		const char *identifier) {
-	uint32_t click_region = (on_titlebar ? BINDING_TITLEBAR : 0) |
-			(on_border ? BINDING_BORDER : 0) |
-			(on_content ? BINDING_CONTENTS : 0);
+		bool on_workspace, const char *identifier) {
+	uint32_t click_region =
+			((on_titlebar || on_workspace) ? BINDING_TITLEBAR : 0) |
+			((on_border || on_workspace) ? BINDING_BORDER : 0) |
+			((on_content || on_workspace) ? BINDING_CONTENTS : 0);
 
 	struct sway_binding *current = NULL;
 	for (int i = 0; i < bindings->length; ++i) {
@@ -542,6 +565,8 @@ static struct sway_binding* get_active_mouse_binding(
 				cursor->pressed_button_count != (size_t)binding->keys->length ||
 				release != (binding->flags & BINDING_RELEASE) ||
 				!(click_region & binding->flags) ||
+				(on_workspace &&
+				 (click_region & binding->flags) != click_region) ||
 				(strcmp(binding->input, identifier) != 0 &&
 				 strcmp(binding->input, "*") != 0)) {
 			continue;
@@ -607,6 +632,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		find_resize_edge(cont, cursor) : WLR_EDGE_NONE;
 	bool on_border = edge != WLR_EDGE_NONE;
 	bool on_contents = cont && !on_border && surface;
+	bool on_workspace = node && node->type == N_WORKSPACE;
 	bool on_titlebar = cont && !on_border && !surface;
 
 	// Handle mouse bindings
@@ -620,11 +646,13 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		state_add_button(cursor, button);
 		binding = get_active_mouse_binding(cursor,
 			config->current_mode->mouse_bindings, modifiers, false,
-			on_titlebar, on_border, on_contents, device_identifier);
+			on_titlebar, on_border, on_contents, on_workspace,
+			device_identifier);
 	} else {
 		binding = get_active_mouse_binding(cursor,
 			config->current_mode->mouse_bindings, modifiers, true,
-			on_titlebar, on_border, on_contents, device_identifier);
+			on_titlebar, on_border, on_contents, on_workspace,
+			device_identifier);
 		state_erase_button(cursor, button);
 	}
 	free(device_identifier);
@@ -814,6 +842,7 @@ void dispatch_cursor_axis(struct sway_cursor *cursor,
 	bool on_titlebar_border = cont && on_border &&
 		cursor->cursor->y < cont->content_y;
 	bool on_contents = cont && !on_border && surface;
+	bool on_workspace = node && node->type == N_WORKSPACE;
 	float scroll_factor =
 		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
 
@@ -832,7 +861,7 @@ void dispatch_cursor_axis(struct sway_cursor *cursor,
 	state_add_button(cursor, button);
 	binding = get_active_mouse_binding(cursor,
 		config->current_mode->mouse_bindings, modifiers, false,
-		on_titlebar, on_border, on_contents, dev_id);
+		on_titlebar, on_border, on_contents, on_workspace, dev_id);
 	if (binding) {
 		seat_execute_command(seat, binding);
 		handled = true;
@@ -873,7 +902,7 @@ void dispatch_cursor_axis(struct sway_cursor *cursor,
 	// Handle mouse bindings - x11 mouse buttons 4-7 - release event
 	binding = get_active_mouse_binding(cursor,
 		config->current_mode->mouse_bindings, modifiers, true,
-		on_titlebar, on_border, on_contents, dev_id);
+		on_titlebar, on_border, on_contents, on_workspace, dev_id);
 	state_erase_button(cursor, button);
 	if (binding) {
 		seat_execute_command(seat, binding);

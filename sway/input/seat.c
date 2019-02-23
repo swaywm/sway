@@ -287,6 +287,7 @@ static void drag_icon_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&icon->link);
 	wl_list_remove(&icon->surface_commit.link);
 	wl_list_remove(&icon->unmap.link);
+	wl_list_remove(&icon->map.link);
 	wl_list_remove(&icon->destroy.link);
 	free(icon);
 }
@@ -725,6 +726,10 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	if (seat->focused_layer) {
+		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+		seat_set_focus_layer(seat, NULL);
+		seat_set_focus(seat, node);
+		seat_set_focus_layer(seat, layer);
 		return;
 	}
 

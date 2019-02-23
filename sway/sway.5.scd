@@ -293,12 +293,13 @@ runtime.
 	overwrite a binding, swaynag will give you a warning. To silence this, use
 	the _--no-warn_ flag.
 
-	Mouse buttons can either be specified in the form _button[1-9]_ or by using
-	the name of the event code (ex _BTN\_LEFT_ or _BTN\_RIGHT_). For the former
-	option, the buttons will be mapped to their values in X11 (1=left, 2=middle,
-	3=right, 4=scroll up, 5=scroll down, 6=scroll left, 7=scroll right, 8=back,
-	9=forward). For the latter option, you can find the event names using
-	_libinput debug-events_.
+	Mouse bindings operate on the container under the cursor instead of the
+	container that has focus. Mouse buttons can either be specified in the form
+	_button[1-9]_ or by using the name of the event code (ex _BTN\_LEFT_ or
+	_BTN\_RIGHT_). For the former option, the buttons will be mapped to their
+	values in X11 (1=left, 2=middle, 3=right, 4=scroll up, 5=scroll down,
+	6=scroll left, 7=scroll right, 8=back, 9=forward). For the latter option,
+	you can find the event names using _libinput debug-events_.
 	
 	_--whole-window_, _--border_, and _--exclude-titlebar_ are mouse-only options
 	which affect the region in which the mouse bindings can be triggered.  By
@@ -309,9 +310,9 @@ runtime.
 	conjunction with any other option to specify that the titlebar should be
 	excluded from the region of consideration.
 
-	There is currently, however, no way to execute a mouse binding over a layer
-	surface (which includes the background of an empty workspace). This behaviour
-	is carried over from i3.
+	If _--whole-window_ is given, the command can be triggered when the cursor
+	is over an empty workspace. Using a mouse binding over a layer surface's
+	exclusive region is not currently possible.
 
 	Example:
 ```
@@ -412,10 +413,6 @@ The default colors are:
 :  #000000
 :  #0c0c0c
 
-
-*debuglog* on|off|toggle
-	Enables, disables or toggles debug logging. _toggle_ cannot be used in the
-	configuration file.
 
 *default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.

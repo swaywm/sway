@@ -664,6 +664,13 @@ void view_unmap(struct sway_view *view) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		seat->cursor->image_surface = NULL;
+		if (seat->cursor->active_constraint) {
+			struct wlr_surface *constrain_surface =
+				seat->cursor->active_constraint->surface;
+			if (view_from_wlr_surface(constrain_surface) == view) {
+				sway_cursor_constrain(seat->cursor, NULL);
+			}
+		}
 		seat_consider_warp_to_focus(seat);
 	}
 
@@ -701,6 +708,9 @@ static void subsurface_get_root_coords(struct sway_view_child *child,
 	while (surface && wlr_surface_is_subsurface(surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(surface);
+		if (subsurface == NULL) {
+			break;
+		}
 		*root_sx += subsurface->current.x;
 		*root_sy += subsurface->current.y;
 		surface = subsurface->parent;

@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
@@ -403,8 +404,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 static void display_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
 	if (wl_display_dispatch(bar->display) == -1) {
-		bar_teardown(bar);
-		exit(0);
+		bar->running = false;
 	}
 }
 
@@ -439,7 +439,7 @@ void bar_run(struct swaybar *bar) {
 		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in, bar->tray->bus);
 	}
 #endif
-	while (1) {
+	while (bar->running) {
 		errno = 0;
 		if (wl_display_flush(bar->display) == -1 && errno != EAGAIN) {
 			break;

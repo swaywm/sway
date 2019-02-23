@@ -11,13 +11,7 @@
 static struct swaybar swaybar;
 
 void sig_handler(int signal) {
-	bar_teardown(&swaybar);
-	exit(0);
-}
-
-void sway_terminate(int code) {
-	bar_teardown(&swaybar);
-	exit(code);
+	swaybar.running = false;
 }
 
 int main(int argc, char **argv) {
@@ -93,8 +87,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	signal(SIGTERM, sig_handler);
-
 	if (!bar_setup(&swaybar, socket_path)) {
 		free(socket_path);
 		return 1;
@@ -102,6 +94,10 @@ int main(int argc, char **argv) {
 
 	free(socket_path);
 
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+
+	swaybar.running = true;
 	bar_run(&swaybar);
 	bar_teardown(&swaybar);
 	return 0;

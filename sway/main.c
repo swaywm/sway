@@ -126,6 +126,7 @@ void run_as_ipc_client(char *command, char *socket_path) {
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, IPC_COMMAND, command, &len);
 	printf("%s\n", resp);
+	free(resp);
 	close(socketfd);
 }
 
@@ -299,6 +300,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// Since wayland requires XDG_RUNTIME_DIR to be set, abort with just the
+	// clear error message (when not running as an IPC client).
+	if (!getenv("XDG_RUNTIME_DIR") && optind == argc) {
+		fprintf(stderr,
+				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	// As the 'callback' function for wlr_log is equivalent to that for
 	// sway, we do not need to override it.
 	if (debug) {
@@ -339,6 +348,7 @@ int main(int argc, char **argv) {
 		}
 		char *command = join_args(argv + optind, argc - optind);
 		run_as_ipc_client(command, socket_path);
+		free(command);
 		return 0;
 	}
 

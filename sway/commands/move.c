@@ -283,6 +283,9 @@ static bool container_move_in_direction(struct sway_container *container,
 			return false;
 		}
 		struct sway_workspace *ws = output_get_active_workspace(new_output);
+		if (!sway_assert(ws, "Expected output to have a workspace")) {
+			return false;
+		}
 		container_move_to_workspace(container, ws);
 		return true;
 	}
@@ -360,6 +363,9 @@ static bool container_move_in_direction(struct sway_container *container,
 		output_get_in_direction(container->workspace->output, move_dir);
 	if (output) {
 		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (!sway_assert(ws, "Expected output to have a workspace")) {
+			return false;
+		}
 		container_move_to_workspace_from_direction(container, ws, move_dir);
 		return true;
 	}
@@ -516,7 +522,6 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 
 	// move container
 	if (container->scratchpad) {
-		root_scratchpad_remove_container(container);
 		root_scratchpad_show(container);
 	}
 	switch (destination->type) {
@@ -526,6 +531,10 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	case N_OUTPUT: {
 			struct sway_output *output = destination->sway_output;
 			struct sway_workspace *ws = output_get_active_workspace(output);
+			if (!sway_assert(ws, "Expected output to have a workspace")) {
+				return cmd_results_new(CMD_FAILURE,
+						"Expected output to have a workspace");
+			}
 			container_move_to_workspace(container, ws);
 		}
 		break;
@@ -539,6 +548,10 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	// restore focus on destination output back to its last active workspace
 	struct sway_workspace *new_workspace =
 		output_get_active_workspace(new_output);
+	if (!sway_assert(new_workspace, "Expected output to have a workspace")) {
+		return cmd_results_new(CMD_FAILURE,
+				"Expected output to have a workspace");
+	}
 	if (new_output_last_ws && new_output_last_ws != new_workspace) {
 		struct sway_node *new_output_last_focus =
 			seat_get_focus_inactive(seat, &new_output_last_ws->node);
@@ -586,6 +599,9 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 	workspace_detach(workspace);
 	struct sway_workspace *new_output_old_ws =
 		output_get_active_workspace(output);
+	if (!sway_assert(new_output_old_ws, "Expected output to have a workspace")) {
+		return;
+	}
 
 	output_add_workspace(output, workspace);
 
@@ -838,11 +854,11 @@ static struct cmd_results *cmd_move_to_scratchpad(void) {
 		}
 	}
 
-	if (con->scratchpad) {
-		return cmd_results_new(CMD_INVALID,
-				"Container is already in the scratchpad");
+	if (!con->scratchpad) {
+		root_scratchpad_add_container(con);
+	} else if (con->workspace) {
+		root_scratchpad_hide(con);
 	}
-	root_scratchpad_add_container(con);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 

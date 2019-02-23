@@ -198,6 +198,9 @@ static void ipc_json_describe_output(struct sway_output *output,
 			ipc_json_output_transform_description(wlr_output->transform)));
 
 	struct sway_workspace *ws = output_get_active_workspace(output);
+	if (!sway_assert(ws, "Expected output to have a workspace")) {
+		return;
+	}
 	json_object_object_add(object, "current_workspace",
 			json_object_new_string(ws->name));
 
@@ -343,6 +346,9 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	const char *app_id = view_get_app_id(c->view);
 	json_object_object_add(object, "app_id",
 			app_id ? json_object_new_string(app_id) : NULL);
+
+	bool visible = view_is_visible(c->view);
+	json_object_object_add(object, "visible", json_object_new_boolean(visible));
 
 	json_object *marks = json_object_new_array();
 	list_t *con_marks = c->marks;
@@ -597,7 +603,7 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 				const char *layout =
 					xkb_keymap_layout_get_name(keymap, layout_idx);
 				json_object_object_add(object, "xkb_active_layout_name",
-						json_object_new_string(layout));
+						layout ? json_object_new_string(layout) : NULL);
 				break;
 			}
 		}

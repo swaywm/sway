@@ -118,7 +118,7 @@ void free_config(struct sway_config *config) {
 	}
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
-	list_free(config->config_chain);
+	list_free_items_and_destroy(config->config_chain);
 	list_free(config->command_policies);
 	list_free(config->feature_policies);
 	list_free(config->ipc_policies);
@@ -471,9 +471,8 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	}
 
 	if (is_active) {
-		for (int i = 0; i < config->output_configs->length; i++) {
-			apply_output_config_to_outputs(config->output_configs->items[i]);
-		}
+		reset_outputs();
+
 		config->reloading = false;
 		if (config->swaynag_config_errors.pid > 0) {
 			swaynag_show(&config->swaynag_config_errors);

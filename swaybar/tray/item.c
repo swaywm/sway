@@ -299,6 +299,8 @@ void destroy_sni(struct swaybar_sni *sni) {
 		return;
 	}
 
+	cairo_surface_destroy(sni->icon);
+
 	sd_bus_slot_unref(sni->new_icon_slot);
 	sd_bus_slot_unref(sni->new_attention_icon_slot);
 	sd_bus_slot_unref(sni->new_status_slot);
@@ -308,9 +310,11 @@ void destroy_sni(struct swaybar_sni *sni) {
 	free(sni->path);
 	free(sni->status);
 	free(sni->icon_name);
-	free(sni->icon_pixmap);
+	list_free_items_and_destroy(sni->icon_pixmap);
 	free(sni->attention_icon_name);
+	list_free_items_and_destroy(sni->attention_icon_pixmap);
 	free(sni->menu);
+	free(sni->icon_theme_path);
 	free(sni);
 }
 

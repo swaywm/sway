@@ -251,10 +251,12 @@ static struct sway_container *container_at_stacked(struct sway_node *parent,
 
 	// Title bars
 	int title_height = container_titlebar_height();
-	int child_index = (ly - box.y) / title_height;
-	if (child_index < children->length) {
-		struct sway_container *child = children->items[child_index];
-		return child;
+	if (title_height > 0) {
+		int child_index = (ly - box.y) / title_height;
+		if (child_index < children->length) {
+			struct sway_container *child = children->items[child_index];
+			return child;
+		}
 	}
 
 	// Surfaces
@@ -829,7 +831,7 @@ void container_floating_move_to(struct sway_container *con,
 	}
 	struct sway_workspace *new_workspace =
 		output_get_active_workspace(new_output);
-	if (old_workspace != new_workspace) {
+	if (new_workspace && old_workspace != new_workspace) {
 		container_detach(con);
 		workspace_add_floating(new_workspace, con);
 		arrange_workspace(old_workspace);

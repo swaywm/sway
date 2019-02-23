@@ -60,7 +60,11 @@ rt             = cc.find_library('rt')
 git            = find_program('git', required: false)
 
 # Try first to find wlroots as a subproject, then as a system dependency
-wlroots_proj = subproject('wlroots', required: false)
+wlroots_proj = subproject(
+	'wlroots',
+	default_options: ['rootston=false', 'examples=false'],
+	required: false,
+)
 if wlroots_proj.found()
 	wlroots = wlroots_proj.get_variable('wlroots')
 	wlroots_conf = wlroots_proj.get_variable('conf_data')
@@ -128,12 +132,13 @@ endif
 
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
 
+version = '"@0@"'.format(meson.project_version())
 if git.found()
-	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags']).stdout().strip()
-	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD']).stdout().strip()
-	version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash, git_branch)
-else
-	version = '"@0@"'.format(meson.project_version())
+	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags'])
+	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD'])
+	if git_commit_hash.returncode() == 0 and git_branch.returncode() == 0
+		version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash.stdout().strip(), git_branch.stdout().strip())
+	endif
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 

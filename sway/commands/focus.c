@@ -37,6 +37,9 @@ static struct sway_node *get_node_in_output_direction(
 		struct sway_output *output, enum wlr_direction dir) {
 	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_workspace *ws = output_get_active_workspace(output);
+	if (!sway_assert(ws, "Expected output to have a workspace")) {
+		return NULL;
+	}
 	if (ws->fullscreen) {
 		return seat_get_focus_inactive(seat, &ws->fullscreen->node);
 	}

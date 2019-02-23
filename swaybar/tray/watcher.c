@@ -18,10 +18,6 @@ static int cmp_id(const void *item, const void *cmp_to) {
 	return strcmp(item, cmp_to);
 }
 
-static int cmp_service(const void *item, const void *cmp_to) {
-	return strncmp(item, cmp_to, strlen(cmp_to));
-}
-
 static int handle_lost_service(sd_bus_message *msg,
 		void *data, sd_bus_error *error) {
 	char *service, *old_owner, *new_owner;
@@ -33,18 +29,23 @@ static int handle_lost_service(sd_bus_message *msg,
 
 	if (!*new_owner) {
 		struct swaybar_watcher *watcher = data;
-		int idx = list_seq_find(watcher->items,
-				using_standard_protocol(watcher) ? cmp_id : cmp_service, service);
-		if (idx != -1) {
+		for (int idx = 0; idx < watcher->items->length; ++idx) {
 			char *id = watcher->items->items[idx];
-			sway_log(SWAY_DEBUG, "Unregistering Status Notifier Item '%s'", id);
-			list_del(watcher->items, idx);
-			sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
-					"StatusNotifierItemUnregistered", "s", id);
-			free(id);
+			int cmp_res = using_standard_protocol(watcher) ?
+				cmp_id(id, service) : strncmp(id, service, strlen(service));
+			if (cmp_res == 0) {
+				sway_log(SWAY_DEBUG, "Unregistering Status Notifier Item '%s'", id);
+				list_del(watcher->items, idx--);
+				sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
+						"StatusNotifierItemUnregistered", "s", id);
+				free(id);
+				if (using_standard_protocol(watcher)) {
+					break;
+				}
+			}
 		}
 
-		idx = list_seq_find(watcher->hosts, cmp_id, service);
+		int idx = list_seq_find(watcher->hosts, cmp_id, service);
 		if (idx != -1) {
 			sway_log(SWAY_DEBUG, "Unregistering Status Notifier Host '%s'", service);
 			free(watcher->hosts->items[idx]);
@@ -185,8 +186,8 @@ struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus) {
 		goto error;
 	}
 
-	sd_bus_slot_set_floating(signal_slot, 1);
-	sd_bus_slot_set_floating(vtable_slot, 1);
+	sd_bus_slot_set_floating(signal_slot, 0);
+	sd_bus_slot_set_floating(vtable_slot, 0);
 
 	watcher->bus = bus;
 	watcher->hosts = create_list();

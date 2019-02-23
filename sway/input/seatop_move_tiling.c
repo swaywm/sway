@@ -150,6 +150,9 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		}
 		if (edge) {
 			e->target_node = node_get_parent(&con->node);
+			if (e->target_node == &e->con->node) {
+				e->target_node = node_get_parent(e->target_node);
+			}
 			e->target_edge = edge;
 			node_get_box(e->target_node, &e->drop_box);
 			resize_box(&e->drop_box, edge, DROP_LAYOUT_BORDER);
@@ -161,7 +164,8 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 
 	// Use the hovered view - but we must be over the actual surface
 	con = node->sway_container;
-	if (!con->view->surface || node == &e->con->node) {
+	if (!con->view->surface || node == &e->con->node
+			|| node_has_ancestor(node, &e->con->node)) {
 		e->target_node = NULL;
 		e->target_edge = WLR_EDGE_NONE;
 		return;
