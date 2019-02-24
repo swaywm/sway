@@ -84,11 +84,13 @@ Sway allows configuring swaybar in the sway configuration file.
 	debug-events`. To disable the default behavior for a button, use the
 	command _nop_.
 
-*mode* dock|hide|invisible
+*mode* dock|hide|invisible|overlay
 	Specifies the visibility of the bar. In _dock_ mode, it is permanently
 	visible at one edge of the screen. In _hide_ mode, it is hidden unless the
 	modifier key is pressed, though this behaviour depends on the hidden state.
-	In _invisible_ mode, it is permanently hidden. Default is _dock_.
+	In _invisible_ mode, it is permanently hidden. In _overlay_ mode, it is
+	permanently visible on top of other windows. (In _overlay_ mode the bar is
+	transparent to input events.) Default is _dock_.
 
 *hidden_state* hide|show
 	Specifies the behaviour of the bar when it is in _hide_ mode. When the
