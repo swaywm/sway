@@ -51,6 +51,9 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	if (output->surface != NULL) {
 		wl_surface_destroy(output->surface);
 	}
+	if (output->input_region != NULL) {
+		wl_region_destroy(output->input_region);
+	}
 	zxdg_output_v1_destroy(output->xdg_output);
 	wl_output_destroy(output->output);
 	destroy_buffer(&output->buffers[0]);
@@ -100,16 +103,25 @@ static void add_layer_surface(struct swaybar_output *output) {
 
 	struct swaybar_config *config = bar->config;
 	bool hidden = strcmp(config->mode, "hide") == 0;
+	bool overlay = !hidden && strcmp(config->mode, "overlay") == 0;
 	output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			bar->layer_shell, output->surface, output->output,
-			hidden ? ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY :
+			hidden || overlay ? ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY :
 			ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");
 	assert(output->layer_surface);
 	zwlr_layer_surface_v1_add_listener(output->layer_surface,
 			&layer_surface_listener, output);
 
+	if (overlay) {
+		// Empty input region
+		output->input_region = wl_compositor_create_region(bar->compositor);
+		assert(output->input_region);
+
+		wl_surface_set_input_region(output->surface, output->input_region);
+	}
+
 	zwlr_layer_surface_v1_set_anchor(output->layer_surface, config->position);
-	if (hidden) {
+	if (hidden || overlay) {
 		zwlr_layer_surface_v1_set_exclusive_zone(output->layer_surface, -1);
 	}
 }
