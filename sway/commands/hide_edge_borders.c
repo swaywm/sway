@@ -5,8 +5,14 @@
 
 struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "hide_edge_borders", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "hide_edge_borders", EXPECTED_AT_LEAST, 1))) {
 		return error;
+	}
+
+	if (strcmp(*argv, "--i3") == 0) {
+		config->hide_lone_tab = true;
+		++argv;
+		--argc;
 	}
 
 	if (strcmp(argv[0], "none") == 0) {
@@ -23,7 +29,7 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 		config->hide_edge_borders = E_SMART_NO_GAPS;
 	} else {
 		return cmd_results_new(CMD_INVALID, "Expected 'hide_edge_borders "
-				"<none|vertical|horizontal|both|smart|smart_no_gaps>'");
+				"[--i3] <none|vertical|horizontal|both|smart|smart_no_gaps>'");
 	}
 	config->saved_edge_borders = config->hide_edge_borders;
 

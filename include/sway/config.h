@@ -465,6 +465,7 @@ struct sway_config {
 	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
 	enum edge_border_types saved_edge_borders;
+	bool hide_lone_tab;
 
 	// border colors
 	struct {
