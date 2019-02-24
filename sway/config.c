@@ -549,43 +549,34 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	return true;
 }
 
-bool load_include_configs(const char *path, struct sway_config *config,
+void load_include_configs(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag) {
 	char *wd = getcwd(NULL, 0);
 	char *parent_path = strdup(config->current_config_path);
 	const char *parent_dir = dirname(parent_path);
 
 	if (chdir(parent_dir) < 0) {
-		free(parent_path);
-		free(wd);
-		return false;
+		sway_log(SWAY_ERROR, "failed to change working directory");
+		goto cleanup;
 	}
 
 	wordexp_t p;
-
-	if (wordexp(path, &p, 0) != 0) {
-		free(parent_path);
-		free(wd);
-		return false;
+	if (wordexp(path, &p, 0) == 0) {
+		char **w = p.we_wordv;
+		size_t i;
+		for (i = 0; i < p.we_wordc; ++i) {
+			load_include_config(w[i], parent_dir, config, swaynag);
+		}
+		wordfree(&p);
 	}
 
-	char **w = p.we_wordv;
-	size_t i;
-	for (i = 0; i < p.we_wordc; ++i) {
-		load_include_config(w[i], parent_dir, config, swaynag);
-	}
-	free(parent_path);
-	wordfree(&p);
-
-	// restore wd
+	// Attempt to restore working directory before returning.
 	if (chdir(wd) < 0) {
-		free(wd);
-		sway_log(SWAY_ERROR, "failed to restore working directory");
-		return false;
+		sway_log(SWAY_ERROR, "failed to change working directory");
 	}
-
+cleanup:
+	free(parent_path);
 	free(wd);
-	return true;
 }
 
 void run_deferred_commands(void) {

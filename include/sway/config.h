@@ -513,7 +513,7 @@ bool load_main_config(const char *path, bool is_active, bool validating);
 /**
  * Loads an included config. Can only be used after load_main_config.
  */
-bool load_include_configs(const char *path, struct sway_config *config,
+void load_include_configs(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag);
 
 /**
