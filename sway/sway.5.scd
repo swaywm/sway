@@ -513,9 +513,9 @@ The default colors are:
 
 *smart_borders* on|no_gaps|off
 	If smart_borders are _on_, borders will only be enabled if the workspace
-	only has one visible child (identical to _hide_edge_borders_ smart). If
-	smart_borders is set to _no_gaps_, borders will only be enabled if the
-	workspace only has one visible child and gaps greater than zero.
+	has more than one visible child (identical to _hide_edge_borders_ smart).
+	If smart_borders is set to _no_gaps_, borders will only be enabled if the
+	workspace has more than one visible child and gaps equal to zero.
 
 *smart_gaps* on|off
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
