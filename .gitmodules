@@ -1,0 +1,16 @@
+[submodule "wlroots"]
+	path = wlroots
+	clone = https://github.com/swaywm/wlroots
+	url = ./subprojects/wlroots
+[submodule "subprojects/swayidle"]
+	path = subprojects/swayidle
+	url = https://github.com/swaywm/swayidle
+[submodule "subprojects/swaylock"]
+	path = subprojects/swaylock
+	url = https://github.com/swaywm/swaylock
+[submodule "subprojects/wlroots"]
+	path = subprojects/wlroots
+	url = https://github.com/swaywm/wlroots
+[submodule "subprojects/swaybg"]
+	path = subprojects/swaybg
+	url = https://github.com/swaywm/swaybg
