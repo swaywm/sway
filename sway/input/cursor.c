@@ -280,7 +280,7 @@ static void cursor_do_rebase(struct sway_cursor *cursor, uint32_t time_msec,
 void cursor_rebase(struct sway_cursor *cursor) {
 	uint32_t time_msec = get_current_time_msec();
 	struct wlr_surface *surface = NULL;
-	double sx, sy;
+	double sx = 0.0, sy = 0.0;
 	cursor->previous.node = node_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
@@ -476,7 +476,7 @@ static void cursor_motion_absolute(struct sway_cursor *cursor,
 		dx, dy, dx, dy);
 
 	struct wlr_surface *surface = NULL;
-	double sx, sy;
+	double sx = 0.0, sy = 0.0;
 	struct sway_node *node = node_at_coords(cursor->seat,
 		lx, ly, &surface, &sx, &sy);
 
