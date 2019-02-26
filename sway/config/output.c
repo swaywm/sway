@@ -378,7 +378,7 @@ static struct output_config *get_output_config(char *identifier,
 		oc_id = config->output_configs->items[i];
 	}
 
-	struct output_config *result = result = new_output_config("temp");
+	struct output_config *result = new_output_config("temp");
 	if (config->reloading) {
 		default_output_config(result, sway_output->wlr_output);
 	}
