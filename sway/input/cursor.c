@@ -431,7 +431,7 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_node *node = NULL;
 	double sx, sy;
 	if (cursor->active_constraint) {
-		node = node_at_coords(cursor->seat,
+		node_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 		if (cursor->active_constraint->surface != surface) {
