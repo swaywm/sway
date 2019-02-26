@@ -255,7 +255,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			int argc;
 			char **argv = split_args(cmd, &argc);
 			if (strcmp(argv[0], "exec") != 0 &&
-					strcmp(argv[0], "exec_always") != 0) {
+					strcmp(argv[0], "exec_always") != 0 &&
+					strcmp(argv[0], "mode") != 0) {
 				int i;
 				for (i = 1; i < argc; ++i) {
 					if (*argv[i] == '\"' || *argv[i] == '\'') {
