@@ -89,3 +89,4 @@ source contributors. For more information about sway development, see
 # SEE ALSO
 
 *sway*(5) *swaymsg*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5)
+*sway-ipc*(7)
