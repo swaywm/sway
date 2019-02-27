@@ -95,8 +95,9 @@ conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
 conf_data.set10('HAVE_TRAY', have_tray)
 
-scdoc = find_program('scdoc', required: get_option('man-pages'))
+scdoc = dependency('scdoc', version: '>=1.9', native: true, required: get_option('man-pages'))
 if scdoc.found()
+	scdoc_prog = find_program('scdoc')
 	sh = find_program('sh')
 	mandir = get_option('mandir')
 	man_files = [
@@ -120,7 +121,7 @@ if scdoc.found()
 			input: filename,
 			output: output,
 			command: [
-				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
+				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc_prog.path(), output)
 			],
 			install: true,
 			install_dir: '@0@/man@1@'.format(mandir, section)
