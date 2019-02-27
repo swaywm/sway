@@ -95,11 +95,6 @@ conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
 conf_data.set10('HAVE_TRAY', have_tray)
 
-if not systemd.found() and not elogind.found()
-	warning('The sway binary must be setuid when compiled without (e)logind')
-	warning('You must do this manually post-install: chmod a+s /path/to/sway')
-endif
-
 scdoc = find_program('scdoc', required: get_option('man-pages'))
 if scdoc.found()
 	sh = find_program('sh')
@@ -237,4 +232,22 @@ if get_option('fish-completions')
 	fish_install_dir = datadir + '/fish/completions'
 
 	install_data(fish_files, install_dir: fish_install_dir)
+endif
+
+status = [
+	'',
+	'Features:',
+	'xwayland: @0@'.format(have_xwayland),
+	'gdk-pixbuf: @0@'.format(gdk_pixbuf.found()),
+	'systemd: @0@'.format(systemd.found()),
+	'elogind: @0@'.format(elogind.found()),
+	'tray: @0@'.format(have_tray),
+	'man-pages: @0@'.format(scdoc.found()),
+	'',
+]
+message('\n'.join(status))
+
+if not systemd.found() and not elogind.found()
+	warning('The sway binary must be setuid when compiled without (e)logind')
+	warning('You must do this manually post-install: chmod a+s /path/to/sway')
 endif
