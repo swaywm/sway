@@ -750,4 +750,4 @@ The following attributes may be matched with:
 
 # SEE ALSO
 
-*sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5)
+*sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)

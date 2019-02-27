@@ -39,7 +39,7 @@ Zainstaluj zależności:
 * pango
 * cairo
 * gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) >= 1.8.1 (opcjonalnie: strony pomocy man) \*
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) >= 1.9.0 (opcjonalnie: strony pomocy man) \*
 * git \*
 
 _\*zależności kompilacji_
