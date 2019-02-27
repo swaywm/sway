@@ -51,7 +51,7 @@ must be separated by one space. For example:
 
 		output eDP1 pos 1600 0 res 1920x1080
 
-	Note that the left x-pos of eDP1 is 1600 = 3200/2 and the bottom y-pos is 
+	Note that the left x-pos of eDP1 is 1600 = 3200/2 and the bottom y-pos is
 	1020 + (1800 / 2) = 1920 = 0 + 1920
 
 *output* <name> scale <factor>
@@ -69,8 +69,7 @@ must be separated by one space. For example:
 	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If
 	the specified file cannot be accessed or if the image does fill the entire
 	output, a fallback color may be provided to cover the rest of the output.
-	__fallback_color__ should be specified as _#RRGGBB_. Alpha is not
-	supported.
+	__fallback_color__ should be specified as _#RRGGBB_. Alpha is not supported.
 
 *output* <name> background|bg <color> solid_color
 	Sets the background of the given output to the specified color. _color_
@@ -80,13 +79,17 @@ must be separated by one space. For example:
 	Sets the background transform to the given value. Can be one of "90", "180",
 	"270" for rotation; or "flipped", "flipped-90", "flipped-180", "flipped-270"
 	to apply a rotation and flip, or "normal" to apply no transform. If a single
-	output is chosen and a rotation direction is specified 
-	(_clockwise_ or _anticlockwise_) then the transform is added or 
-	subtracted from the current transform.
+	output is chosen and a rotation direction is specified (_clockwise_ or
+	_anticlockwise_) then the transform is added or subtracted from the current
+	transform.
 
 *output* <name> disable|enable
 	Enables or disables the specified output (all outputs are enabled by
 	default).
+
+*output* <name> dpms on|off
+	Enables or disables the specified output via DPMS. To turn an output off
+	(ie. blank the screen but keep workspaces as-is), one can set DPMS to off.
 
 # SEE ALSO
 
