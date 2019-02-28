@@ -317,7 +317,8 @@ node and will have the following properties:
 :  The absolute geometry of the node
 |- window_rect
 :  object
-:  The geometry of the contents inside the node
+:  The geometry of the contents inside the node. The window decorations are
+   excluded from this calculation, but borders are included.
 |- deco_rect
 :  object
 :  The geometry of the decorations inside the node
