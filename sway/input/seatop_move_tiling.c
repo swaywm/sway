@@ -226,7 +226,7 @@ static bool is_parallel(enum sway_container_layout layout,
 	return layout_is_horiz == edge_is_horiz;
 }
 
-static void handle_finish(struct sway_seat *seat) {
+static void handle_finish(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 
 	if (!e->target_node) {

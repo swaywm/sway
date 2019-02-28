@@ -142,7 +142,7 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
 	arrange_container(con);
 }
 
-static void handle_finish(struct sway_seat *seat) {
+static void handle_finish(struct sway_seat *seat, uint32_t time_msec) {
 	cursor_set_image(seat->cursor, "left_ptr", NULL);
 }
 
