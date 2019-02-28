@@ -1211,9 +1211,9 @@ void seatop_motion(struct sway_seat *seat, uint32_t time_msec) {
 	}
 }
 
-void seatop_finish(struct sway_seat *seat) {
+void seatop_finish(struct sway_seat *seat, uint32_t time_msec) {
 	if (seat->seatop_impl && seat->seatop_impl->finish) {
-		seat->seatop_impl->finish(seat);
+		seat->seatop_impl->finish(seat, time_msec);
 	}
 	free(seat->seatop_data);
 	seat->seatop_data = NULL;

@@ -606,8 +606,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Handle existing seat operation
 	if (seat_doing_seatop(seat)) {
 		if (button == seat->seatop_button && state == WLR_BUTTON_RELEASED) {
-			seatop_finish(seat);
-			seat_pointer_notify_button(seat, time_msec, button, state);
+			seatop_finish(seat, time_msec);
 		}
 		if (state == WLR_BUTTON_PRESSED) {
 			state_add_button(cursor, button);
@@ -784,8 +783,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Handle mousedown on a container surface
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
 		seat_set_focus_container(seat, cont);
-		seat_pointer_notify_button(seat, time_msec, button, state);
-		seatop_begin_down(seat, cont, button, sx, sy);
+		seatop_begin_down(seat, cont, time_msec, button, sx, sy);
 		return;
 	}
 
