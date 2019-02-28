@@ -20,6 +20,15 @@ typedef enum {
 #define ATTRIB_PRINTF(start, end)
 #endif
 
+#if !defined(CLANG_ANALYZER_NORETURN) && defined(__has_feature)
+#if __has_feature(attribute_analyzer_noreturn)
+#define CLANG_ANALYZER_NORETURN __attribute__((analyzer_noreturn))
+#endif
+#endif
+#ifndef CLANG_ANALYZER_NORETURN
+#define CLANG_ANALYZER_NORETURN
+#endif
+
 void error_handler(int sig);
 
 typedef void (*terminate_callback_t)(int exit_code);
@@ -31,7 +40,7 @@ void sway_log_init(sway_log_importance_t verbosity, terminate_callback_t termina
 void _sway_log(sway_log_importance_t verbosity, const char *format, ...) ATTRIB_PRINTF(2, 3);
 void _sway_vlog(sway_log_importance_t verbosity, const char *format, va_list args) ATTRIB_PRINTF(2, 0);
 void _sway_abort(const char *filename, ...) ATTRIB_PRINTF(1, 2);
-bool _sway_assert(bool condition, const char* format, ...) ATTRIB_PRINTF(2, 3);
+bool _sway_assert(bool condition, const char* format, ...) ATTRIB_PRINTF(2, 3) CLANG_ANALYZER_NORETURN;
 
 // TODO: get meson to precompute this, for better reproducibility/less overhead
 const char *_sway_strip_path(const char *filepath);
