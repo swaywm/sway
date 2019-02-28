@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <arpa/inet.h>
 #include <cairo.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -76,7 +77,12 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 			struct swaybar_pixmap *pixmap =
 				malloc(sizeof(struct swaybar_pixmap) + npixels);
 			pixmap->size = height;
-			memcpy(pixmap->pixels, pixels, npixels);
+
+			// convert from network byte order to host byte order
+			for (int i = 0; i < height * width; ++i) {
+				((uint32_t *)pixmap->pixels)[i] = ntohl(((uint32_t *)pixels)[i]);
+			}
+
 			list_add(pixmaps, pixmap);
 		} else {
 			sway_log(SWAY_DEBUG, "%s %s: discard invalid icon w:%d h:%d", sni->watcher_id, prop, width, height);
