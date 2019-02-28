@@ -17,7 +17,7 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
 	desktop_damage_whole_container(e->con);
 }
 
-static void handle_finish(struct sway_seat *seat) {
+static void handle_finish(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_move_floating_event *e = seat->seatop_data;
 
 	// We "move" the container to its own location

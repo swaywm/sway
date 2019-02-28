@@ -10,7 +10,7 @@ struct sway_seat;
 
 struct sway_seatop_impl {
 	void (*motion)(struct sway_seat *seat, uint32_t time_msec);
-	void (*finish)(struct sway_seat *seat);
+	void (*finish)(struct sway_seat *seat, uint32_t time_msec);
 	void (*abort)(struct sway_seat *seat);
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
 	void (*render)(struct sway_seat *seat, struct sway_output *output,
@@ -185,8 +185,8 @@ bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
 
-void seatop_begin_down(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button, int sx, int sy);
+void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
+		uint32_t time_msec, uint32_t button, int sx, int sy);
 
 void seatop_begin_move_floating(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button);
@@ -218,7 +218,7 @@ void seatop_motion(struct sway_seat *seat, uint32_t time_msec);
 /**
  * End a seatop and apply the affects.
  */
-void seatop_finish(struct sway_seat *seat);
+void seatop_finish(struct sway_seat *seat, uint32_t time_msec);
 
 /**
  * End a seatop without applying the affects.
@@ -238,6 +238,5 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con);
  */
 void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		pixman_region32_t *damage);
-
 
 #endif
