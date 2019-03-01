@@ -4,6 +4,13 @@
 #include "log.h"
 #include "sway/output.h"
 
+static enum wl_output_transform rotation_to_transform(int deg, bool flipped) {
+	// Calculate the modulus.
+	int mod = (((deg / 90) % 4) + 4) % 4;
+	// The last 4 variants of wl_output_transform are FLIPPED.
+	return flipped ? mod + 4 : mod;
+}
+
 struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
@@ -11,27 +18,51 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID, "Missing transform argument.");
 	}
+
 	enum wl_output_transform transform;
-	if (strcmp(*argv, "normal") == 0 ||
-			strcmp(*argv, "0") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	} else if (strcmp(*argv, "90") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_90;
-	} else if (strcmp(*argv, "180") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_180;
-	} else if (strcmp(*argv, "270") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_270;
-	} else if (strcmp(*argv, "flipped") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_FLIPPED;
-	} else if (strcmp(*argv, "flipped-90") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_FLIPPED_90;
-	} else if (strcmp(*argv, "flipped-180") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_FLIPPED_180;
-	} else if (strcmp(*argv, "flipped-270") == 0) {
-		transform = WL_OUTPUT_TRANSFORM_FLIPPED_270;
+
+	// This allows for:
+	// <deg>
+	// normal
+	// normal-<deg>
+	// flipped
+	// flipped-<deg>
+
+	if (strncmp(*argv, "normal", 6) == 0) {
+		int len = strlen(*argv);
+		if (len >= 8) {
+			char *end = NULL;
+			int deg = strtol(&(*argv)[7], &end, 10);
+			if (end == *argv) {
+				return cmd_results_new(CMD_INVALID, "Invalid output rotation.");
+			}
+			transform = rotation_to_transform(deg, false);
+		} else {
+			transform = WL_OUTPUT_TRANSFORM_NORMAL;
+		}
+	} else if (strncmp(*argv, "flipped", 7) == 0) {
+		int len = strlen(*argv);
+		if (len >= 9) {
+			char *end = NULL;
+			int deg = strtol(&(*argv)[8], &end, 10);
+			if (end == *argv) {
+				return cmd_results_new(CMD_INVALID, "Invalid output rotation.");
+			}
+			transform = rotation_to_transform(deg, true);
+		} else {
+			transform = WL_OUTPUT_TRANSFORM_FLIPPED;
+		}
 	} else {
-		return cmd_results_new(CMD_INVALID, "Invalid output transform.");
+		char *end = NULL;
+		int deg = strtol(*argv, &end, 10);
+		if (end == *argv) {
+			// A rotation wasn't passed and none of the other transforms
+			// matched, so it's an invalid *transform*.
+			return cmd_results_new(CMD_INVALID, "Invalid output transform.");
+		}
+		transform = rotation_to_transform(deg, false);
 	}
+
 	struct output_config *output = config->handler_context.output_config;
 	config->handler_context.leftovers.argc = argc - 1;
 	config->handler_context.leftovers.argv = argv + 1;
