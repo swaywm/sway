@@ -186,11 +186,7 @@ static void log_kernel(void) {
 
 static bool drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
-		if (setgid(getgid()) != 0) {
-			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
-			return false;
-		}
-		if (setuid(getuid()) != 0) {
+		if (setuid(getuid()) != 0 || setgid(getgid()) != 0) {
 			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
 			return false;
 		}
