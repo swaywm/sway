@@ -8,7 +8,6 @@ packages:
 - graphics/gdk-pixbuf2
 - graphics/wayland
 - graphics/wayland-protocols
-- textproc/scdoc
 - x11-toolkits/pango
 - x11/libxcb
 - x11/libxkbcommon
@@ -22,10 +21,17 @@ packages:
 - x11/libX11
 - x11/pixman
 - x11/xcb-util-wm
+# scdoc dependencies
+- devel/gmake
 sources:
 - https://github.com/swaywm/sway
 - https://github.com/swaywm/wlroots
+- https://git.sr.ht/~sircmpwn/scdoc
 tasks:
+- scdoc: |
+    cd scdoc
+    gmake PREFIX=/usr/local
+    sudo gmake install PREFIX=/usr/local
 - fixup_epoll: |
     cat << 'EOF' | sudo tee /usr/local/libdata/pkgconfig/epoll-shim.pc
     prefix=/usr/local
