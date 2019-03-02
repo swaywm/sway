@@ -221,10 +221,10 @@ static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
 		pid = fork();
 		if (pid < 0) {
 			sway_log_errno(SWAY_ERROR, "fork failed");
-			exit(EXIT_FAILURE);
+			_exit(EXIT_FAILURE);
 		} else if (pid == 0) {
 			if (!set_cloexec(sockets[1], false)) {
-				exit(EXIT_FAILURE);
+				_exit(EXIT_FAILURE);
 			}
 
 			char wayland_socket_str[16];
@@ -234,9 +234,9 @@ static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
 
 			execvp(cmd[0], cmd);
 			sway_log_errno(SWAY_ERROR, "execvp failed");
-			exit(EXIT_FAILURE);
+			_exit(EXIT_FAILURE);
 		}
-		exit(EXIT_SUCCESS);
+		_exit(EXIT_SUCCESS);
 	}
 
 	if (close(sockets[1]) != 0) {
