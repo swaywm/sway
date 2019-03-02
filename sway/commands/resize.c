@@ -66,45 +66,6 @@ static int parse_resize_amount(int argc, char **argv,
 	return 2;
 }
 
-static void calculate_constraints(int *min_width, int *max_width,
-		int *min_height, int *max_height) {
-	struct sway_container *con = config->handler_context.container;
-
-	if (config->floating_minimum_width == -1) { // no minimum
-		*min_width = 0;
-	} else if (config->floating_minimum_width == 0) { // automatic
-		*min_width = 75;
-	} else {
-		*min_width = config->floating_minimum_width;
-	}
-
-	if (config->floating_minimum_height == -1) { // no minimum
-		*min_height = 0;
-	} else if (config->floating_minimum_height == 0) { // automatic
-		*min_height = 50;
-	} else {
-		*min_height = config->floating_minimum_height;
-	}
-
-	if (config->floating_maximum_width == -1 ||
-			container_is_scratchpad_hidden(con)) { // no max
-		*max_width = INT_MAX;
-	} else if (config->floating_maximum_width == 0) { // automatic
-		*max_width = con->workspace->width;
-	} else {
-		*max_width = config->floating_maximum_width;
-	}
-
-	if (config->floating_maximum_height == -1 ||
-			container_is_scratchpad_hidden(con)) { // no max
-		*max_height = INT_MAX;
-	} else if (config->floating_maximum_height == 0) { // automatic
-		*max_height = con->workspace->height;
-	} else {
-		*max_height = config->floating_maximum_height;
-	}
-}
-
 static uint32_t parse_resize_axis(const char *axis) {
 	if (strcasecmp(axis, "width") == 0 || strcasecmp(axis, "horizontal") == 0) {
 		return AXIS_HORIZONTAL;
@@ -258,7 +219,8 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 
 	// Make sure we're not adjusting beyond floating min/max size
 	int min_width, max_width, min_height, max_height;
-	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
 	if (con->width + grow_width < min_width) {
 		grow_width = min_width - con->width;
 	} else if (con->width + grow_width > max_width) {
@@ -383,7 +345,8 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 static struct cmd_results *resize_set_floating(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
 	int min_width, max_width, min_height, max_height, grow_width = 0, grow_height = 0;
-	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
 
 	if (width->amount) {
 		switch (width->unit) {

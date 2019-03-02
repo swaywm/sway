@@ -430,7 +430,8 @@ The default colors are:
 
 *floating_maximum_size* <width> x <height>
 	Specifies the maximum size of floating windows. -1 x -1 removes the upper
-	limit.
+	limit. The default is 0 x 0, which will use the width and height of the
+	entire output layout as the maximums
 
 *floating_minimum_size* <width> x <height>
 	Specifies the minimum size of floating windows. The default is 75 x 50.

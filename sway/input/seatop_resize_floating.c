@@ -17,41 +17,6 @@ struct seatop_resize_floating_event {
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 };
 
-static void calculate_floating_constraints(struct sway_container *con,
-		int *min_width, int *max_width, int *min_height, int *max_height) {
-	if (config->floating_minimum_width == -1) { // no minimum
-		*min_width = 0;
-	} else if (config->floating_minimum_width == 0) { // automatic
-		*min_width = 75;
-	} else {
-		*min_width = config->floating_minimum_width;
-	}
-
-	if (config->floating_minimum_height == -1) { // no minimum
-		*min_height = 0;
-	} else if (config->floating_minimum_height == 0) { // automatic
-		*min_height = 50;
-	} else {
-		*min_height = config->floating_minimum_height;
-	}
-
-	if (config->floating_maximum_width == -1) { // no maximum
-		*max_width = INT_MAX;
-	} else if (config->floating_maximum_width == 0) { // automatic
-		*max_width = con->workspace->width;
-	} else {
-		*max_width = config->floating_maximum_width;
-	}
-
-	if (config->floating_maximum_height == -1) { // no maximum
-		*max_height = INT_MAX;
-	} else if (config->floating_maximum_height == 0) { // automatic
-		*max_height = con->workspace->height;
-	} else {
-		*max_height = config->floating_maximum_height;
-	}
-}
-
 static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_resize_floating_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
@@ -85,7 +50,7 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
 	double width = e->ref_width + grow_width;
 	double height = e->ref_height + grow_height;
 	int min_width, max_width, min_height, max_height;
-	calculate_floating_constraints(con, &min_width, &max_width,
+	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
 	width = fmax(min_width, fmin(width, max_width));
 	height = fmax(min_height, fmin(height, max_height));

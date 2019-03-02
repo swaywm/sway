@@ -611,56 +611,78 @@ size_t container_titlebar_height(void) {
 	return config->font_height + config->titlebar_v_padding * 2;
 }
 
-void container_init_floating(struct sway_container *con) {
-	struct sway_workspace *ws = con->workspace;
-	int min_width, min_height;
-	int max_width, max_height;
-
+void floating_calculate_constraints(int *min_width, int *max_width,
+		int *min_height, int *max_height) {
 	if (config->floating_minimum_width == -1) { // no minimum
-		min_width = 0;
+		*min_width = 0;
 	} else if (config->floating_minimum_width == 0) { // automatic
-		min_width = 75;
+		*min_width = 75;
 	} else {
-		min_width = config->floating_minimum_width;
+		*min_width = config->floating_minimum_width;
 	}
 
 	if (config->floating_minimum_height == -1) { // no minimum
-		min_height = 0;
+		*min_height = 0;
 	} else if (config->floating_minimum_height == 0) { // automatic
-		min_height = 50;
+		*min_height = 50;
 	} else {
-		min_height = config->floating_minimum_height;
+		*min_height = config->floating_minimum_height;
 	}
 
+	struct wlr_box *box = wlr_output_layout_get_box(root->output_layout, NULL);
+
 	if (config->floating_maximum_width == -1) { // no maximum
-		max_width = INT_MAX;
+		*max_width = INT_MAX;
 	} else if (config->floating_maximum_width == 0) { // automatic
-		max_width = ws->width * 0.6666;
+		*max_width = box->width;
 	} else {
-		max_width = config->floating_maximum_width;
+		*max_width = config->floating_maximum_width;
 	}
 
 	if (config->floating_maximum_height == -1) { // no maximum
-		max_height = INT_MAX;
+		*max_height = INT_MAX;
 	} else if (config->floating_maximum_height == 0) { // automatic
-		max_height = ws->height * 0.6666;
+		*max_height = box->height;
 	} else {
-		max_height = config->floating_maximum_height;
+		*max_height = config->floating_maximum_height;
 	}
+
+}
+
+void container_init_floating(struct sway_container *con) {
+	struct sway_workspace *ws = con->workspace;
+	int min_width, max_width, min_height, max_height;
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
 
 	if (!con->view) {
 		con->width = max_width;
 		con->height = max_height;
-		con->x = ws->x + (ws->width - con->width) / 2;
-		con->y = ws->y + (ws->height - con->height) / 2;
+		if (con->width > ws->width || con->height > ws->height) {
+			struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
+					ws->output->wlr_output);
+			con->x = ob->x + (ob->width - con->width) / 2;
+			con->y = ob->y + (ob->height - con->height) / 2;
+		} else {
+			con->x = ws->x + (ws->width - con->width) / 2;
+			con->y = ws->y + (ws->height - con->height) / 2;
+		}
 	} else {
 		struct sway_view *view = con->view;
 		con->content_width =
 			fmax(min_width, fmin(view->natural_width, max_width));
 		con->content_height =
 			fmax(min_height, fmin(view->natural_height, max_height));
-		con->content_x = ws->x + (ws->width - con->content_width) / 2;
-		con->content_y = ws->y + (ws->height - con->content_height) / 2;
+		if (con->content_width > ws->width
+				|| con->content_height > ws->height) {
+			struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
+					ws->output->wlr_output);
+			con->content_x = ob->x + (ob->width - con->content_width) / 2;
+			con->content_y = ob->y + (ob->height - con->content_height) / 2;
+		} else {
+			con->content_x = ws->x + (ws->width - con->content_width) / 2;
+			con->content_y = ws->y + (ws->height - con->content_height) / 2;
+		}
 
 		// If the view's border is B_NONE then these properties are ignored.
 		con->border_top = con->border_bottom = true;
