@@ -212,6 +212,9 @@ void container_update_representation(struct sway_container *container);
  */
 size_t container_titlebar_height(void);
 
+void floating_calculate_constraints(int *min_width, int *max_width,
+		int *min_height, int *max_height);
+
 /**
  * Resize and center the container in its workspace.
  */
