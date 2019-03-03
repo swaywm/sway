@@ -936,6 +936,9 @@ static void render_floating(struct sway_output *soutput,
 			}
 			for (int k = 0; k < ws->current.floating->length; ++k) {
 				struct sway_container *floater = ws->current.floating->items[k];
+				if (floater->fullscreen_mode != FULLSCREEN_NONE) {
+					continue;
+				}
 				render_floating_container(soutput, damage, floater);
 			}
 		}
