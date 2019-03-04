@@ -184,6 +184,8 @@ bool server_start(struct sway_server *server) {
 			&server->xwayland_ready);
 		server->xwayland_ready.notify = handle_xwayland_ready;
 
+		setenv("DISPLAY", server->xwayland.wlr_xwayland->display_name, true);
+
 		server->xwayland.xcursor_manager =
 			wlr_xcursor_manager_create(cursor_theme, cursor_size);
 		wlr_xcursor_manager_load(server->xwayland.xcursor_manager, 1);
