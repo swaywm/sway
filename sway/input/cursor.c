@@ -728,6 +728,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			while (cont->parent) {
 				cont = cont->parent;
 			}
+			// refocus container to close anything that extends over the bounds
+			seat_set_focus_container(seat, NULL);
 			seat_set_focus_container(seat, cont);
 			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_move_floating(seat, cont, button);
@@ -740,6 +742,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			state == WLR_BUTTON_PRESSED) {
 		// Via border
 		if (button == BTN_LEFT && resize_edge != WLR_EDGE_NONE) {
+			// refocus container to close anything that extends over the bounds
+			seat_set_focus_container(seat, NULL);
+			seat_set_focus_container(seat, cont);
 			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_resize_floating(seat, cont, button, resize_edge);
 			return;
@@ -758,6 +763,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
 			edge |= cursor->cursor->y > floater->y + floater->height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+			// refocus container to close anything that extends over the bounds
+			seat_set_focus_container(seat, NULL);
+			seat_set_focus_container(seat, cont);
 			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_resize_floating(seat, floater, button, edge);
 			return;
