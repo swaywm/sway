@@ -40,8 +40,6 @@ static void handle_finish(struct sway_seat *seat, uint32_t time_msec) {
 				cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 		cursor_send_pointer_motion(cursor, 0, node, surface, sx, sy);
 	}
-	seat_pointer_notify_button(seat, time_msec,
-		seat->seatop_button, WLR_BUTTON_RELEASED);
 }
 
 static void handle_abort(struct sway_seat *seat) {
@@ -82,6 +80,5 @@ void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->seatop_data = e;
 	seat->seatop_button = button;
 
-	seat_pointer_notify_button(seat, time_msec, button, WLR_BUTTON_PRESSED);
 	container_raise_floating(con);
 }
