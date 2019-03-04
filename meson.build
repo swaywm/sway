@@ -95,7 +95,7 @@ conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
 conf_data.set10('HAVE_TRAY', have_tray)
 
-scdoc = dependency('scdoc', version: '>=1.9', native: true, required: get_option('man-pages'))
+scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
 	scdoc_prog = find_program('scdoc')
 	sh = find_program('sh')
