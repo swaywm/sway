@@ -337,7 +337,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->ipc_policies = create_list())) goto cleanup;
 
 	// The keysym to keycode translation
-	struct xkb_rule_names rules = {};
+	struct xkb_rule_names rules = {0};
 	config->keysym_translation_state =
 		keysym_translation_state_create(rules);
 
@@ -989,7 +989,8 @@ static void translate_binding_list(list_t *bindings, list_t *bindsyms,
 void translate_keysyms(struct input_config *input_config) {
 	keysym_translation_state_destroy(config->keysym_translation_state);
 
-	struct xkb_rule_names rules = input_config_get_rule_names(input_config);
+	struct xkb_rule_names rules = {0};
+	input_config_fill_rule_names(input_config, &rules);
 	config->keysym_translation_state =
 		keysym_translation_state_create(rules);
 
