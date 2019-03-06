@@ -613,7 +613,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		} else {
 			state_erase_button(cursor, button);
 		}
-		seat_pointer_notify_button(seat, time_msec, button, state);
+		if (seatop_allows_events(seat)) {
+			seat_pointer_notify_button(seat, time_msec, button, state);
+		}
 		return;
 	}
 
@@ -682,7 +684,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	if (cont && resize_edge && button == BTN_LEFT &&
 			state == WLR_BUTTON_PRESSED && !is_floating) {
 		seat_set_focus_container(seat, cont);
-		seat_pointer_notify_button(seat, time_msec, button, state);
 		seatop_begin_resize_tiling(seat, cont, button, edge);
 		return;
 	}
@@ -713,7 +714,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			}
 			cursor_set_image(seat->cursor, image, NULL);
 			seat_set_focus_container(seat, cont);
-			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_resize_tiling(seat, cont, button, edge);
 			return;
 		}
@@ -729,7 +729,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 				cont = cont->parent;
 			}
 			seat_set_focus_container(seat, cont);
-			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_move_floating(seat, cont, button);
 			return;
 		}
@@ -740,7 +739,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			state == WLR_BUTTON_PRESSED) {
 		// Via border
 		if (button == BTN_LEFT && resize_edge != WLR_EDGE_NONE) {
-			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_resize_floating(seat, cont, button, resize_edge);
 			return;
 		}
@@ -758,7 +756,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
 			edge |= cursor->cursor->y > floater->y + floater->height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
-			seat_pointer_notify_button(seat, time_msec, button, state);
 			seatop_begin_resize_floating(seat, floater, button, edge);
 			return;
 		}
@@ -774,8 +771,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			node = seat_get_focus_inactive(seat, &cont->node);
 			seat_set_focus(seat, node);
 		}
-
-		seat_pointer_notify_button(seat, time_msec, button, state);
 
 		// If moving a container by it's title bar, use a threshold for the drag
 		if (!mod_pressed && config->tiling_drag_threshold > 0) {

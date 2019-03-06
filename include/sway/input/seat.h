@@ -15,6 +15,7 @@ struct sway_seatop_impl {
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
 	void (*render)(struct sway_seat *seat, struct sway_output *output,
 			pixman_region32_t *damage);
+	bool allows_events;
 };
 
 struct sway_seat_device {
@@ -238,5 +239,7 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con);
  */
 void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		pixman_region32_t *damage);
+
+bool seatop_allows_events(struct sway_seat *seat);
 
 #endif
