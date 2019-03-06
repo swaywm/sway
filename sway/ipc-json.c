@@ -350,6 +350,38 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 	json_object_object_add(object, "floating_nodes", floating_array);
 }
 
+static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
+	enum sway_container_layout parent_layout = container_parent_layout(c);
+	if (parent_layout != L_TABBED && parent_layout != L_STACKED &&
+			c->current.border != B_NORMAL) {
+		deco_rect->x = deco_rect->y = deco_rect->width = deco_rect->height = 0;
+		return;
+	}
+
+	if (c->parent) {
+		deco_rect->x = c->x - c->parent->x;
+		deco_rect->y = c->y - c->parent->y;
+	} else {
+		deco_rect->x = c->x - c->workspace->x;
+		deco_rect->y = c->y - c->workspace->y;
+	}
+	deco_rect->width = c->width;
+	deco_rect->height = container_titlebar_height();
+
+	if (parent_layout == L_TABBED) {
+		deco_rect->width = c->parent
+			? c->parent->width / c->parent->children->length
+			: c->workspace->width / c->workspace->tiling->length;
+		deco_rect->x += deco_rect->width * container_sibling_index(c);
+	} else if (container_parent_layout(c) == L_STACKED) {
+		if (!c->view) {
+			size_t siblings = container_get_siblings(c)->length;
+			deco_rect->y -= deco_rect->height * siblings;
+		}
+		deco_rect->y += deco_rect->height * container_sibling_index(c);
+	}
+}
+
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
 	json_object_object_add(object, "pid", json_object_new_int(c->view->pid));
 
@@ -376,15 +408,6 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	};
 
 	json_object_object_add(object, "window_rect", ipc_json_create_rect(&window_box));
-
-	struct wlr_box deco_box = {0, 0, 0, 0};
-
-	if (c->current.border == B_NORMAL) {
-		deco_box.width = c->width;
-		deco_box.height = c->content_y - c->y;
-	}
-
-	json_object_object_add(object, "deco_rect", ipc_json_create_rect(&deco_box));
 
 	struct wlr_box geometry = {0, 0, c->view->natural_width, c->view->natural_height};
 	json_object_object_add(object, "geometry", ipc_json_create_rect(&geometry));
@@ -465,6 +488,10 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 			json_object_new_int(c->current.border_thickness));
 	json_object_object_add(object, "floating_nodes", json_object_new_array());
 
+	struct wlr_box deco_box = {0, 0, 0, 0};
+	get_deco_rect(c, &deco_box);
+	json_object_object_add(object, "deco_rect", ipc_json_create_rect(&deco_box));
+
 	if (c->view) {
 		ipc_json_describe_view(c, object);
 	}
@@ -505,6 +532,12 @@ json_object *ipc_json_describe_node(struct sway_node *node) {
 
 	struct wlr_box box;
 	node_get_box(node, &box);
+	if (node->type == N_CONTAINER) {
+		struct wlr_box deco_rect = {0, 0, 0, 0};
+		get_deco_rect(node->sway_container, &deco_rect);
+		box.y += deco_rect.height;
+		box.height -= deco_rect.height;
+	}
 
 	json_object *focus = json_object_new_array();
 	struct focus_inactive_data data = {
