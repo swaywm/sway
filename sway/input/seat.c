@@ -1234,3 +1234,7 @@ void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		seat->seatop_impl->render(seat, output, damage);
 	}
 }
+
+bool seatop_allows_events(struct sway_seat *seat) {
+	return seat->seatop_impl && seat->seatop_impl->allows_events;
+}

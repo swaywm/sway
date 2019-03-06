@@ -58,6 +58,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.finish = handle_finish,
 	.abort = handle_abort,
 	.unref = handle_unref,
+	.allows_events = true,
 };
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
