@@ -352,8 +352,9 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 
 static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	enum sway_container_layout parent_layout = container_parent_layout(c);
-	if (parent_layout != L_TABBED && parent_layout != L_STACKED &&
-			c->current.border != B_NORMAL) {
+	if ((parent_layout != L_TABBED && parent_layout != L_STACKED &&
+			c->current.border != B_NORMAL) ||
+			c->fullscreen_mode != FULLSCREEN_NONE) {
 		deco_rect->x = deco_rect->y = deco_rect->width = deco_rect->height = 0;
 		return;
 	}
