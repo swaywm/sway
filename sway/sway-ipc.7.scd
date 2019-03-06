@@ -314,14 +314,15 @@ node and will have the following properties:
    and other special nodes such as the scratchpad
 |- rect
 :  object
-:  The absolute geometry of the node
+:  The absolute geometry of the node. The window decorations are excluded from
+   this, but borders are included.
 |- window_rect
 :  object
 :  The geometry of the contents inside the node. The window decorations are
    excluded from this calculation, but borders are included.
 |- deco_rect
 :  object
-:  The geometry of the decorations inside the node
+:  The geometry of the decorations for the node relative to the parent node
 |- geometry
 :  object
 :  The natural geometry of the contents if it were to size itself
