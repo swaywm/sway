@@ -1034,10 +1034,66 @@ following properties:
 |- xkb_active_layout_name
 :  string
 :  (Only keyboards) The active keyboard layout in use
-|- libinput_send_events
+|- libinput
+:  object
+:  (Only libinput devices) An object describing the current device settings.
+   See below for more information
+
+The _libinput_ object describes the device configuration for libinput devices.
+Only properties that are supported for the device will be added to the object.
+In addition to the possible options listed, all string properties may also be
+_unknown_, in the case that a new option is added to libinput. See
+*sway-input*(5) for information on the meaning of the possible values. The
+following properties will be included for devices that support them:
+
+[- *PROPERTY*
+:- *DATA TYPE*
+:- *DESCRIPTION*
+|- send_events
 :  string
-:  (Only libinput devices) The send events value in use by libinput for this
-   device. It can be _enabled_, _disabled_, or _disabled\_on\_external\_mouse_
+:[ Whether events are being sent by the device. It can be _enabled_,
+   _disabled_, or _disabled\_on\_external\_mouse_
+|- tap
+:  string
+:  Whether tap to click is enabled. It can be _enabled_ or _disabled_
+|- tap_button_map
+:  string
+:  The finger to button mapping in use. It can be _lmr_ or _lrm_
+|- tap_drag
+:  string
+:  Whether tap-and-drag is enabled. It can be _enabled_ or _disabled_
+|- tap_drag_lock
+:  string
+:  Whether drag-lock is enabled. It can be _enabled_ or _disabled_
+|- accel_speed
+:  double
+:  The pointer-acceleration in use
+|- accel_profile
+:  string
+:  The acceleration profile in use. It can be _none_, _flat_, or _adaptive_
+|- natural_scroll
+:  string
+:  Whether natural scrolling is enabled. It can be _enabled_ or _disabled_
+|- left_handed
+:  string
+:  Whether left-handed mode is enabled. It can be _enabled_ or _disabled_
+|- click_method
+:  string
+:  The click method in use. It can be _none_, _button_areas_, or _clickfinger_
+|- middle_emulation
+:  string
+:  Whether middle emulation is enabled. It can be _enabled_ or _disabled_
+|- scroll_method
+:  string
+:  The scroll method in use. It can be _none_, _two_finger_, _edge_, or
+   _on_button_down_
+|- scroll_button
+:  int
+:  The scroll button to use when _scroll_method_ is _on_button_down_. This
+   will be given as an input event code
+|- dwt
+:  string
+:  Whether disable-while-typing is enabled. It can be _enabled_ or _disabled_
 
 
 *Example Reply:*
@@ -1050,7 +1106,9 @@ following properties:
 		"product": 1,
 		"type": "keyboard",
 		"xkb_active_layout_name": "English (US)",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled"
+		}
 	},
 	{
 		"identifier": "1267:5:Elan_Touchpad",
@@ -1058,7 +1116,21 @@ following properties:
 		"vendor": 1267,
 		"product": 5,
 		"type": "pointer",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled",
+			"tap": "enabled",
+			"tap_button_map": "lmr",
+			"tap_drag": "enabled",
+			"tap_drag_lock": "disabled",
+			"accel_speed": 0.0,
+			"accel_profile": "none",
+			"natural_scroll", "disabled",
+			"left_handed": "disabled",
+			"click_method": "button_areas",
+			"middle_emulation": "disabled",
+			"scroll_method": "edge",
+			"dwt": "enabled"
+		}
 	},
 	{
 		"identifier": "3034:22494:USB2.0_VGA_UVC_WebCam:_USB2.0_V",
@@ -1067,7 +1139,9 @@ following properties:
 		"product": 22494,
 		"type": "keyboard",
 		"xkb_active_layout_name": "English (US)",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled"
+		}
 	},
 	{
 		"identifier": "0:3:Sleep_Button",
@@ -1076,7 +1150,9 @@ following properties:
 		"product": 3,
 		"type": "keyboard",
 		"xkb_active_layout_name": "English (US)",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled"
+		}
 	},
 	{
 		"identifier": "0:5:Lid_Switch",
@@ -1084,7 +1160,10 @@ following properties:
 		"vendor": 0,
 		"product": 5,
 		"type": "switch",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled"
+		}
+	},
 	{
 		"identifier": "0:6:Video_Bus",
 		"name": "Video Bus",
@@ -1092,7 +1171,9 @@ following properties:
 		"product": 6,
 		"type": "keyboard",
 		"xkb_active_layout_name": "English (US)",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled"
+		}
 	},
 	{
 		"identifier": "0:1:Power_Button",
@@ -1101,7 +1182,9 @@ following properties:
 		"product": 1,
 		"type": "keyboard",
 		"xkb_active_layout_name": "English (US)",
-		"libinput_send_events": "enabled"
+		"libinput": {
+			"send_events": "enabled"
+		}
 	}
 ]
 ```
@@ -1150,7 +1233,9 @@ one seat. Each object has the following properties:
 				"product": 1,
 				"type": "keyboard",
 				"xkb_active_layout_name": "English (US)",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled"
+				}
 			},
 			{
 				"identifier": "1267:5:Elan_Touchpad",
@@ -1158,7 +1243,21 @@ one seat. Each object has the following properties:
 				"vendor": 1267,
 				"product": 5,
 				"type": "pointer",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled",
+					"tap": "enabled",
+					"tap_button_map": "lmr",
+					"tap_drag": "enabled",
+					"tap_drag_lock": "disabled",
+					"accel_speed": 0.0,
+					"accel_profile": "none",
+					"natural_scroll", "disabled",
+					"left_handed": "disabled",
+					"click_method": "button_areas",
+					"middle_emulation": "disabled",
+					"scroll_method": "edge",
+					"dwt": "enabled"
+				}
 			},
 			{
 				"identifier": "3034:22494:USB2.0_VGA_UVC_WebCam:_USB2.0_V",
@@ -1167,7 +1266,9 @@ one seat. Each object has the following properties:
 				"product": 22494,
 				"type": "keyboard",
 				"xkb_active_layout_name": "English (US)",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled"
+				}
 			},
 			{
 				"identifier": "0:3:Sleep_Button",
@@ -1176,7 +1277,9 @@ one seat. Each object has the following properties:
 				"product": 3,
 				"type": "keyboard",
 				"xkb_active_layout_name": "English (US)",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled"
+				}
 			},
 			{
 				"identifier": "0:5:Lid_Switch",
@@ -1184,7 +1287,10 @@ one seat. Each object has the following properties:
 				"vendor": 0,
 				"product": 5,
 				"type": "switch",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled"
+				}
+			},
 			{
 				"identifier": "0:6:Video_Bus",
 				"name": "Video Bus",
@@ -1192,7 +1298,9 @@ one seat. Each object has the following properties:
 				"product": 6,
 				"type": "keyboard",
 				"xkb_active_layout_name": "English (US)",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled"
+				}
 			},
 			{
 				"identifier": "0:1:Power_Button",
@@ -1201,7 +1309,9 @@ one seat. Each object has the following properties:
 				"product": 1,
 				"type": "keyboard",
 				"xkb_active_layout_name": "English (US)",
-				"libinput_send_events": "enabled"
+				"libinput": {
+					"send_events": "enabled"
+				}
 			}
 		]
 	}
