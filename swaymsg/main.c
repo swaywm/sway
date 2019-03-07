@@ -113,7 +113,7 @@ static const char *pretty_type_name(const char *name) {
 }
 
 static void pretty_print_input(json_object *i) {
-	json_object *id, *name, *type, *product, *vendor, *kbdlayout, *events;
+	json_object *id, *name, *type, *product, *vendor, *kbdlayout, *libinput;
 	json_object_object_get_ex(i, "identifier", &id);
 	json_object_object_get_ex(i, "name", &name);
 	json_object_object_get_ex(i, "type", &type);
@@ -139,8 +139,12 @@ static void pretty_print_input(json_object *i) {
 		printf("  Active Keyboard Layout: %s\n", layout ? layout : "(unnamed)");
 	}
 
-	if (json_object_object_get_ex(i, "libinput_send_events", &events)) {
-		printf("  Libinput Send Events: %s\n", json_object_get_string(events));
+	if (json_object_object_get_ex(i, "libinput", &libinput)) {
+		json_object *events;
+		if (json_object_object_get_ex(libinput, "send_events", &events)) {
+			printf("  Libinput Send Events: %s\n",
+					json_object_get_string(events));
+		}
 	}
 
 	printf("\n");
