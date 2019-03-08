@@ -2,6 +2,7 @@
 
 complete -f -c swaymsg
 complete -c swaymsg -s h -l help --description "Show help message and quit."
+complete -c swaymsg -s m -l monitor --description "Monitor subscribed events until killed."
 complete -c swaymsg -s p -l pretty --description "Use pretty output even when not using a tty."
 complete -c swaymsg -s q -l quiet --description "Sends the IPC message but does not print the response from sway."
 complete -c swaymsg -s r -l raw --description "Use raw output even if using tty."
@@ -20,3 +21,4 @@ complete -c swaymsg -s t -l type -fra 'get_binding_modes' --description "Gets a 
 complete -c swaymsg -s t -l type -fra 'get_config' --description "Gets a JSON-encoded copy of the current configuration."
 complete -c swaymsg -s t -l type -fra 'get_seats' --description "Gets a JSON-encoded list of all seats, its properties and all assigned devices."
 complete -c swaymsg -s t -l type -fra 'send_tick' --description "Sends a tick event to all subscribed clients."
+complete -c swaymsg -s t -l type -fra 'subscribe' --description "Subscribe to a list of event types."
