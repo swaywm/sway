@@ -254,6 +254,180 @@ static void pretty_print_output(json_object *o) {
 	printf("\n");
 }
 
+static int binding_cmp(const void *a, const void *b) {
+	int cmp = 0;
+	json_object *binding_a = *(json_object **)a;
+	json_object *binding_b = *(json_object **)b;
+
+	json_object *cmd_a;
+	json_object *cmd_b;
+	json_object_object_get_ex(binding_a, "command", &cmd_a);
+	json_object_object_get_ex(binding_b, "command", &cmd_b);
+	const char *cmd_a_str = json_object_get_string(cmd_a);
+	const char *cmd_b_str = json_object_get_string(cmd_b);
+
+	list_t *cmd_list_a = split_string(cmd_a_str, " ");
+	list_t *cmd_list_b = split_string(cmd_b_str, " ");
+
+	int min_cmd_list_len = (cmd_list_a->length < cmd_list_b->length) ?
+		cmd_list_a->length : cmd_list_b->length;
+	for (int i = 0; !cmp && i < min_cmd_list_len - 1; ++i) {
+		cmp = strcmp(cmd_list_a->items[i], cmd_list_b->items[i]);
+	}
+
+	list_free(cmd_list_a);
+	list_free(cmd_list_b);
+
+	if (cmp) {
+		return cmp;
+	}
+
+	json_object *modifiers_a;
+	json_object *modifiers_b;
+
+	json_object_object_get_ex(binding_a, "event_state_mask", &modifiers_a);
+	json_object_object_get_ex(binding_b, "event_state_mask", &modifiers_b);
+
+	size_t mod_len_a = json_object_array_length(modifiers_a);
+	size_t mod_len_b = json_object_array_length(modifiers_b);
+
+	for (size_t i = 0; i < mod_len_a && i < mod_len_b; ++i) {
+		json_object *mod_a = json_object_array_get_idx(modifiers_a, i);
+		json_object *mod_b = json_object_array_get_idx(modifiers_b, i);
+		const char *mod_a_str = json_object_get_string(mod_a);
+		const char *mod_b_str = json_object_get_string(mod_b);
+
+		cmp = strcmp(mod_a_str, mod_b_str);
+		if (cmp) {
+			return cmp;
+		}
+	}
+
+	if (mod_len_a < mod_len_b) {
+		return -1;
+	} else if (mod_len_a > mod_len_b) {
+		return 1;
+	}
+
+	json_object *symbols_a;
+	json_object *symbols_b;
+
+	json_object_object_get_ex(binding_a, "symbols", &symbols_a);
+	json_object_object_get_ex(binding_b, "symbols", &symbols_b);
+
+	size_t sym_len_a = json_object_array_length(symbols_a);
+	size_t sym_len_b = json_object_array_length(symbols_b);
+
+	for (size_t i = 0; i < sym_len_a && i < sym_len_b; ++i) {
+		json_object *sym_a = json_object_array_get_idx(symbols_a, i);
+		json_object *sym_b = json_object_array_get_idx(symbols_b, i);
+		const char *sym_a_str = json_object_get_string(sym_a);
+		const char *sym_b_str = json_object_get_string(sym_b);
+		cmp = strcmp(sym_a_str, sym_b_str);
+
+		if (cmp) {
+			return cmp;
+		}
+	}
+
+	if (sym_len_a < sym_len_b) {
+		return -1;
+	} else if (sym_len_a > sym_len_b) {
+		return 1;
+	}
+
+	json_object *codes_a;
+	json_object *codes_b;
+
+	json_object_object_get_ex(binding_a, "input_codes", &codes_a);
+	json_object_object_get_ex(binding_b, "input_codes", &codes_b);
+
+	size_t codes_len_a = json_object_array_length(codes_a);
+	size_t codes_len_b = json_object_array_length(codes_b);
+
+	for (size_t i = 0; i < codes_len_a && i < codes_len_b; ++i) {
+		uint32_t code_a = (uint32_t)json_object_get_int64(
+				json_object_array_get_idx(codes_a, i));
+		uint32_t code_b = (uint32_t)json_object_get_int64(
+				json_object_array_get_idx(codes_b, i));
+		if (code_a < code_b) {
+			return -1;
+		} else if (code_a > code_b) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static void pretty_print_binding(json_object *binding) {
+	char keys_str[64];
+	size_t keys_len = 0;
+	size_t array_len;
+
+	json_object *modifiers;
+	json_object_object_get_ex(binding, "event_state_mask", &modifiers);
+	array_len = json_object_array_length(modifiers);
+	for (size_t i = 0; i < array_len; ++i) {
+		json_object *modifier = json_object_array_get_idx(modifiers, i);
+		const char *mod_str = json_object_get_string(modifier);
+		int len = snprintf(keys_str + keys_len, sizeof(keys_str) - keys_len,
+			"%s%s", keys_len ? "+" : "", mod_str);
+		if (len < 0) {
+			fprintf(stderr, "error printing modifier symbol\n");
+			return;
+		}
+		keys_len += len;
+	}
+
+	json_object *symbols;
+	json_object_object_get_ex(binding, "symbols", &symbols);
+	array_len = json_object_array_length(symbols);
+	for (size_t i = 0; i < array_len; ++i) {
+		json_object *symbol = json_object_array_get_idx(symbols, i);
+		const char *sym_str = json_object_get_string(symbol);
+		int len = snprintf(keys_str + keys_len, sizeof(keys_str) - keys_len,
+			"%s%s", keys_len ? "+" : "", sym_str);
+		if (len < 0) {
+			fprintf(stderr, "error printing key symbol\n");
+			return;
+		}
+		keys_len += len;
+	}
+
+	json_object *input_codes;
+	json_object_object_get_ex(binding, "input_codes", &input_codes);
+	array_len = json_object_array_length(input_codes);
+	for (size_t i = 0; i < array_len; ++i) {
+		json_object *input_code = json_object_array_get_idx(input_codes, i);
+		uint32_t code = (uint32_t)json_object_get_int64(input_code);
+		int len = snprintf(keys_str + keys_len, sizeof(keys_str) - keys_len,
+			"%s%d", keys_len ? "+" : "", code);
+		if (len < 0) {
+			fprintf(stderr, "error printing input code\n");
+			return;
+		}
+		keys_len += len;
+	}
+
+	json_object *command;
+	json_object_object_get_ex(binding, "command", &command);
+	const char *cmd_str = json_object_get_string(command);
+	printf("%-30s %s\n", keys_str, cmd_str);
+}
+
+static void pretty_print_bindings(json_object *binding_modes) {
+	json_object_object_foreach(binding_modes, mode_name, bindings) {
+		printf("%s:\n", mode_name);
+		json_object_array_sort(bindings, binding_cmp);
+		size_t len = json_object_array_length(bindings);
+		for (size_t i = 0; i < len; ++i) {
+			printf("  ");
+			pretty_print_binding(json_object_array_get_idx(bindings, i));
+		}
+	}
+}
+
 static void pretty_print_version(json_object *v) {
 	json_object *ver;
 	json_object_object_get_ex(v, "human_readable", &ver);
@@ -270,7 +444,8 @@ static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
 			type != IPC_GET_VERSION && type != IPC_GET_SEATS &&
-			type != IPC_GET_CONFIG && type != IPC_SEND_TICK) {
+			type != IPC_GET_CONFIG && type != IPC_SEND_TICK &&
+			type != IPC_GET_BINDINGS) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
@@ -287,6 +462,11 @@ static void pretty_print(int type, json_object *resp) {
 
 	if (type == IPC_GET_CONFIG) {
 		pretty_print_config(resp);
+		return;
+	}
+
+	if (type == IPC_GET_BINDINGS) {
+		pretty_print_bindings(resp);
 		return;
 	}
 
