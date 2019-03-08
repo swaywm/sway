@@ -473,6 +473,17 @@ void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
 	wlr_output_damage_add_box(output->damage, &box);
 }
 
+static void damage_child_views_iterator(struct sway_container *con,
+		void *data) {
+	if (!con->view || !view_is_visible(con->view)) {
+		return;
+	}
+	struct sway_output *output = data;
+	bool whole = true;
+	output_view_for_each_surface(output, con->view, damage_surface_iterator,
+			&whole);
+}
+
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	// Pad the box by 1px, because the width is a double and might be a fraction
@@ -484,6 +495,12 @@ void output_damage_whole_container(struct sway_output *output,
 	};
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);
+	// Damage subsurfaces as well, which may extend outside the box
+	if (con->view) {
+		damage_child_views_iterator(con, output);
+	} else {
+		container_for_each_child(con, damage_child_views_iterator, output);
+	}
 }
 
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
