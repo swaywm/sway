@@ -75,6 +75,10 @@ _swaymsg_ [options...] [message]
 *get\_binding\_modes*
 	Gets a JSON-encoded list of currently configured binding modes.
 
+*get\_bindings*
+	Gets a JSON-encoded object mapping binding modes to their keyboard and
+	mouse bindings.
+
 *get\_config*
 	Gets a JSON-encoded copy of the current configuration.
 

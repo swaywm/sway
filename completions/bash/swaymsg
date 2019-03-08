@@ -15,6 +15,7 @@ _swaymsg()
     'get_bar_config'
     'get_version'
     'get_binding_modes'
+    'get_bindings'
     'get_config'
     'send_tick'
   )

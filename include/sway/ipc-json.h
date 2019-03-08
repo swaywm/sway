@@ -12,5 +12,7 @@ json_object *ipc_json_describe_node_recursive(struct sway_node *node);
 json_object *ipc_json_describe_input(struct sway_input_device *device);
 json_object *ipc_json_describe_seat(struct sway_seat *seat);
 json_object *ipc_json_describe_bar_config(struct bar_config *bar);
+json_object *ipc_json_describe_binding(struct sway_binding *binding);
+json_object *ipc_json_describe_mode_bindings(struct sway_mode *mode);
 
 #endif

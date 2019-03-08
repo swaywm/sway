@@ -12,6 +12,7 @@
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
+#include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_box.h>
@@ -1102,4 +1103,96 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 			json_object_new_int(bar->tray_padding));
 #endif
 	return json;
+}
+
+json_object *ipc_json_describe_binding(struct sway_binding *binding) {
+	if (!sway_assert(binding, "Binding must not be NULL")) {
+		return NULL;
+	}
+
+	json_object *json_binding = json_object_new_object();
+	json_object_object_add(json_binding, "command", json_object_new_string(binding->command));
+
+	const char *names[10];
+	int len = get_modifier_names(names, binding->modifiers);
+	json_object *modifiers = json_object_new_array();
+	for (int i = 0; i < len; ++i) {
+		json_object_array_add(modifiers, json_object_new_string(names[i]));
+	}
+	json_object_object_add(json_binding, "event_state_mask", modifiers);
+
+	json_object *input_codes = json_object_new_array();
+	int input_code = 0;
+	json_object *symbols = json_object_new_array();
+	json_object *symbol = NULL;
+
+	if (binding->type == BINDING_KEYCODE) { // bindcode: populate input_codes
+		uint32_t keycode;
+		for (int i = 0; i < binding->keys->length; ++i) {
+			keycode = *(uint32_t *)binding->keys->items[i];
+			json_object_array_add(input_codes, json_object_new_int(keycode));
+			if (i == 0) {
+				input_code = keycode;
+			}
+		}
+	} else { // bindsym/mouse: populate symbols
+		uint32_t keysym;
+		char buffer[64];
+		for (int i = 0; i < binding->keys->length; ++i) {
+			keysym = *(uint32_t *)binding->keys->items[i];
+			if (keysym >= BTN_LEFT && keysym <= BTN_LEFT + 8) {
+				snprintf(buffer, 64, "button%u", keysym - BTN_LEFT + 1);
+			} else if (xkb_keysym_get_name(keysym, buffer, 64) < 0) {
+				continue;
+			}
+
+			json_object *str = json_object_new_string(buffer);
+			if (i == 0) {
+				// str is owned by both symbol and symbols. Make sure
+				// to bump the ref count.
+				json_object_array_add(symbols, json_object_get(str));
+				symbol = str;
+			} else {
+				json_object_array_add(symbols, str);
+			}
+		}
+	}
+
+	json_object_object_add(json_binding, "input_codes", input_codes);
+	json_object_object_add(json_binding, "input_code", json_object_new_int(input_code));
+	json_object_object_add(json_binding, "symbols", symbols);
+	json_object_object_add(json_binding, "symbol", symbol);
+
+	bool mouse = binding->type == BINDING_MOUSECODE ||
+		binding->type == BINDING_MOUSESYM;
+	json_object_object_add(json_binding, "input_type", mouse
+			? json_object_new_string("mouse")
+			: json_object_new_string("keyboard"));
+
+	return json_binding;
+}
+
+json_object *ipc_json_describe_mode_bindings(struct sway_mode * mode) {
+	if (!sway_assert(mode, "Mode must not be NULL")) {
+		return NULL;
+	}
+
+	json_object *json_bindings = json_object_new_array();
+
+	for (int i = 0; i < mode->keysym_bindings->length; i++) {
+		json_object_array_add(json_bindings,
+			ipc_json_describe_binding(mode->keysym_bindings->items[i]));
+	}
+
+	for (int i = 0; i < mode->keycode_bindings->length; i++) {
+		json_object_array_add(json_bindings,
+			ipc_json_describe_binding(mode->keycode_bindings->items[i]));
+	}
+
+	for (int i = 0; i < mode->mouse_bindings->length; i++) {
+		json_object_array_add(json_bindings,
+			ipc_json_describe_binding(mode->mouse_bindings->items[i]));
+	}
+
+	return json_bindings;
 }
