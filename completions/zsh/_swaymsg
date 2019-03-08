@@ -25,6 +25,7 @@ types=(
 'get_binding_modes'
 'get_config'
 'send_tick'
+'subscribe'
 )
 
 _arguments -s \
