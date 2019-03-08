@@ -21,6 +21,7 @@ _swaymsg()
 
   short=(
     -h
+    -p
     -q
     -r
     -s
@@ -30,6 +31,7 @@ _swaymsg()
 
   long=(
     --help
+    --pretty
     --quiet
     --raw
     --socket

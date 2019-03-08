@@ -326,6 +326,7 @@ int main(int argc, char **argv) {
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"monitor", no_argument, NULL, 'm'},
+		{"pretty", no_argument, NULL, 'p'},
 		{"quiet", no_argument, NULL, 'q'},
 		{"raw", no_argument, NULL, 'r'},
 		{"socket", required_argument, NULL, 's'},
@@ -339,6 +340,7 @@ int main(int argc, char **argv) {
 		"\n"
 		"  -h, --help             Show help message and quit.\n"
 		"  -m, --monitor          Monitor until killed (-t SUBSCRIBE only)\n"
+		"  -p, --pretty           Use pretty output even when not using a tty\n"
 		"  -q, --quiet            Be quiet.\n"
 		"  -r, --raw              Use raw output even if using a tty\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
@@ -350,13 +352,16 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hmqrs:t:v", long_options, &option_index);
+		c = getopt_long(argc, argv, "hmpqrs:t:v", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 'm': // Monitor
 			monitor = true;
+			break;
+		case 'p': // Pretty
+			raw = false;
 			break;
 		case 'q': // Quiet
 			quiet = true;
