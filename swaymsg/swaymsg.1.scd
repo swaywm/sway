@@ -19,6 +19,9 @@ _swaymsg_ [options...] [message]
 	there is a malformed response or an invalid event type was requested,
 	swaymsg will stop monitoring and exit.
 
+*-p, --pretty*
+	Use raw output even when not using a tty.
+
 *-q, --quiet*
 	Sends the IPC message but does not print the response from sway.
 
