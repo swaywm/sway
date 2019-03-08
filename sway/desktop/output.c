@@ -450,17 +450,13 @@ void output_damage_surface(struct sway_output *output, double ox, double oy,
 		damage_surface_iterator, &whole);
 }
 
-static void output_damage_view(struct sway_output *output,
-		struct sway_view *view, bool whole) {
+void output_damage_from_view(struct sway_output *output,
+		struct sway_view *view) {
 	if (!view_is_visible(view)) {
 		return;
 	}
+	bool whole = false;
 	output_view_for_each_surface(output, view, damage_surface_iterator, &whole);
-}
-
-void output_damage_from_view(struct sway_output *output,
-		struct sway_view *view) {
-	output_damage_view(output, view, false);
 }
 
 // Expecting an unscaled box in layout coordinates
