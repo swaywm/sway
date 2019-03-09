@@ -624,8 +624,8 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 				in_quotes = false;
 			}
 			unescape(value);
+			sway_log(SWAY_DEBUG, "Found pair: %s=%s", name, value);
 		}
-		sway_log(SWAY_DEBUG, "Found pair: %s=%s", name, value);
 		if (!parse_token(criteria, name, value)) {
 			*error_arg = error;
 			goto cleanup;
