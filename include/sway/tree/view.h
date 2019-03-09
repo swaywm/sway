@@ -202,6 +202,7 @@ struct sway_view_child {
 	struct wl_listener surface_map;
 	struct wl_listener surface_unmap;
 	struct wl_listener surface_destroy;
+	struct wl_listener view_unmap;
 };
 
 struct sway_subsurface {
