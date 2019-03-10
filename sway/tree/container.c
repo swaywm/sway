@@ -984,6 +984,13 @@ void container_fullscreen_disable(struct sway_container *con) {
 		root->fullscreen_global = NULL;
 	}
 
+	// If the container was mapped as fullscreen and set as floating by
+	// criteria, it needs to be reinitialized as floating to get the proper
+	// size and location
+	if (container_is_floating(con) && (con->width == 0 || con->height == 0)) {
+		container_init_floating(con);
+	}
+
 	con->fullscreen_mode = FULLSCREEN_NONE;
 	container_end_mouse_operation(con);
 	ipc_event_window(con, "fullscreen_mode");
