@@ -2,7 +2,7 @@ sway(1)
 
 # NAME
 
-sway - SirCmpwn's Wayland window manager
+sway - An i3-compatible Wayland compositor
 
 # SYNOPSIS
 
