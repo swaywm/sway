@@ -1101,7 +1101,7 @@ struct sway_node *seat_get_focus(struct sway_seat *seat) {
 }
 
 struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat) {
-	struct sway_node *focus = seat_get_focus(seat);
+	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	if (!focus) {
 		return NULL;
 	}
@@ -1111,7 +1111,7 @@ struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat) {
 	if (focus->type == N_WORKSPACE) {
 		return focus->sway_workspace;
 	}
-	return NULL; // unreachable
+	return NULL; // output doesn't have a workspace yet
 }
 
 struct sway_container *seat_get_focused_container(struct sway_seat *seat) {
