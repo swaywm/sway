@@ -57,7 +57,7 @@ elogind        = dependency('libelogind', version: '>=239', required: false)
 xcb            = dependency('xcb', required: get_option('xwayland'))
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
-git            = find_program('git', required: false)
+git            = find_program('git', native: true, required: false)
 
 # Try first to find wlroots as a subproject, then as a system dependency
 wlroots_version = '>=0.4.1'
@@ -97,8 +97,8 @@ conf_data.set10('HAVE_TRAY', have_tray)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
-	scdoc_prog = find_program('scdoc')
-	sh = find_program('sh')
+	scdoc_prog = find_program(scdoc.get_pkgconfig_variable('scdoc'), native: true)
+	sh = find_program('sh', native: true)
 	mandir = get_option('mandir')
 	man_files = [
 		'sway/sway.1.scd',
