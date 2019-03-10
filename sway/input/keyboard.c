@@ -292,30 +292,30 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	// Identify new keycode, raw keysym(s), and translated keysym(s)
 	xkb_keycode_t keycode = event->keycode + 8;
 
+	const xkb_keysym_t *raw_keysyms;
+	uint32_t raw_modifiers;
+	size_t raw_keysyms_len =
+		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &raw_modifiers);
+
 	const xkb_keysym_t *translated_keysyms;
 	uint32_t translated_modifiers;
 	size_t translated_keysyms_len =
 		keyboard_keysyms_translated(keyboard, keycode, &translated_keysyms,
 			&translated_modifiers);
 
-	const xkb_keysym_t *raw_keysyms;
-	uint32_t raw_modifiers;
-	size_t raw_keysyms_len =
-		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &raw_modifiers);
-
 	uint32_t code_modifiers = wlr_keyboard_get_modifiers(wlr_device->keyboard);
 
 	// Update shortcut model state
 	update_shortcut_state(&keyboard->state_keycodes, event,
 			(uint32_t)keycode, code_modifiers);
-	for (size_t i = 0; i < translated_keysyms_len; ++i) {
-		update_shortcut_state(&keyboard->state_keysyms_translated,
-				event, (uint32_t)translated_keysyms[i],
-				code_modifiers);
-	}
 	for (size_t i = 0; i < raw_keysyms_len; ++i) {
 		update_shortcut_state(&keyboard->state_keysyms_raw,
 				event, (uint32_t)raw_keysyms[i],
+				code_modifiers);
+	}
+	for (size_t i = 0; i < translated_keysyms_len; ++i) {
+		update_shortcut_state(&keyboard->state_keysyms_translated,
+				event, (uint32_t)translated_keysyms[i],
 				code_modifiers);
 	}
 
@@ -326,12 +326,12 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	get_active_binding(&keyboard->state_keycodes,
 			config->current_mode->keycode_bindings, &binding_released,
 			code_modifiers, true, input_inhibited, device_identifier);
-	get_active_binding(&keyboard->state_keysyms_translated,
-			config->current_mode->keysym_bindings, &binding_released,
-			translated_modifiers, true, input_inhibited, device_identifier);
 	get_active_binding(&keyboard->state_keysyms_raw,
 			config->current_mode->keysym_bindings, &binding_released,
 			raw_modifiers, true, input_inhibited, device_identifier);
+	get_active_binding(&keyboard->state_keysyms_translated,
+			config->current_mode->keysym_bindings, &binding_released,
+			translated_modifiers, true, input_inhibited, device_identifier);
 
 	// Execute stored release binding once no longer active
 	if (keyboard->held_binding && binding_released != keyboard->held_binding &&
@@ -352,13 +352,13 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		get_active_binding(&keyboard->state_keycodes,
 				config->current_mode->keycode_bindings, &binding,
 				code_modifiers, false, input_inhibited, device_identifier);
+		get_active_binding(&keyboard->state_keysyms_raw,
+				config->current_mode->keysym_bindings, &binding,
+				raw_modifiers, false, input_inhibited, device_identifier);
 		get_active_binding(&keyboard->state_keysyms_translated,
 				config->current_mode->keysym_bindings, &binding,
 				translated_modifiers, false, input_inhibited,
 				device_identifier);
-		get_active_binding(&keyboard->state_keysyms_raw,
-				config->current_mode->keysym_bindings, &binding,
-				raw_modifiers, false, input_inhibited, device_identifier);
 	}
 
 	// Set up (or clear) keyboard repeat for a pressed binding. Since the
