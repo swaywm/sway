@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=Sway
-Comment=SirCmpwn's Wayland window manager
+Comment=An i3-compatible Wayland compositor
 Exec=sway
 Type=Application
