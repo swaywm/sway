@@ -432,8 +432,16 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		return;
 	}
 	if (container_is_floating(view->container)) {
-		configure(view, view->container->current.content_x,
-				view->container->current.content_y, ev->width, ev->height);
+		// Respect minimum and maximum sizes
+		view->natural_width = ev->width;
+		view->natural_height = ev->height;
+		container_init_floating(view->container);
+
+		configure(view, view->container->content_x,
+				view->container->content_y,
+				view->container->content_width,
+				view->container->content_height);
+		node_set_dirty(&view->container->node);
 	} else {
 		configure(view, view->container->current.content_x,
 				view->container->current.content_y,
