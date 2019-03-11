@@ -473,7 +473,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 			// We have to create the workspace, but if the container is
 			// sticky and the workspace is going to be created on the same
 			// output, we'll bail out first.
-			if (container->is_sticky) {
+			if (container->is_sticky && container_is_floating_or_child(container)) {
 				struct sway_output *new_output =
 					workspace_get_initial_output(ws_name);
 				if (old_output == new_output) {
@@ -507,8 +507,8 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 
-	if (container->is_sticky && old_output &&
-			node_has_ancestor(destination, &old_output->node)) {
+	if (container->is_sticky && container_is_floating_or_child(container) &&
+			old_output && node_has_ancestor(destination, &old_output->node)) {
 		return cmd_results_new(CMD_FAILURE, "Can't move sticky "
 				"container to another workspace on the same output");
 	}
