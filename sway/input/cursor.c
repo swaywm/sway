@@ -605,9 +605,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 	// Handle existing seat operation
 	if (seat_doing_seatop(seat)) {
-		if (button == seat->seatop_button && state == WLR_BUTTON_RELEASED) {
-			seatop_finish(seat, time_msec);
-		}
 		if (state == WLR_BUTTON_PRESSED) {
 			state_add_button(cursor, button);
 		} else {
@@ -615,6 +612,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		}
 		if (seatop_allows_events(seat)) {
 			seat_pointer_notify_button(seat, time_msec, button, state);
+		}
+		if (button == seat->seatop_button && state == WLR_BUTTON_RELEASED) {
+			seatop_finish(seat, time_msec);
 		}
 		return;
 	}
