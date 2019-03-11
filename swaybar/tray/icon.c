@@ -310,9 +310,11 @@ static void log_loaded_themes(list_t *themes) {
 	const char *sep = ", ";
 	size_t sep_len = strlen(sep);
 
-	size_t len = 1 - sep_len;
-	for (int i = 0; i < themes->length; ++i) {
-		struct icon_theme *theme = themes->items[i];
+	size_t len = 1;
+	struct icon_theme *theme = themes->items[0];
+	len += strlen(theme->name);
+	for (int i = 1; i < themes->length; ++i) {
+		theme = themes->items[i];
 		len += strlen(theme->name) + sep_len;
 	}
 
