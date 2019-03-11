@@ -91,7 +91,7 @@ void detect_proprietary(int allow_unsupported_gpu) {
 	char *line = NULL;
 	size_t line_size = 0;
 	while (getline(&line, &line_size, f) != -1) {
-		if (strstr(line, "nvidia")) {
+		if (strncmp(line, "nvidia ", 7) == 0) {
 			if (allow_unsupported_gpu) {
 				sway_log(SWAY_ERROR,
 						"!!! Proprietary Nvidia drivers are in use !!!");
