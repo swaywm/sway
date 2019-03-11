@@ -157,16 +157,17 @@ static void render_drag_icons(struct sway_output *output,
 
 // _box.x and .y are expected to be layout-local
 // _box.width and .height are expected to be output-buffer-local
-void render_rect(struct wlr_output *wlr_output,
+void render_rect(struct sway_output *output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]) {
+	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 
 	struct wlr_box box;
 	memcpy(&box, _box, sizeof(struct wlr_box));
-	box.x -= wlr_output->lx * wlr_output->scale;
-	box.y -= wlr_output->ly * wlr_output->scale;
+	box.x -= output->lx * wlr_output->scale;
+	box.y -= output->ly * wlr_output->scale;
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
@@ -205,9 +206,9 @@ static void render_view_toplevels(struct sway_view *view,
 	};
 	// Render all toplevels without descending into popups
 	double ox = view->container->surface_x -
-		output->wlr_output->lx - view->geometry.x;
+		output->lx - view->geometry.x;
 	double oy = view->container->surface_y -
-		output->wlr_output->ly - view->geometry.y;
+		output->ly - view->geometry.y;
 	output_surface_for_each_surface(output, view->surface, ox, oy,
 			render_surface_iterator, &data);
 }
@@ -240,9 +241,9 @@ static void render_saved_view(struct sway_view *view,
 		return;
 	}
 	struct wlr_box box = {
-		.x = view->container->surface_x - output->wlr_output->lx -
+		.x = view->container->surface_x - output->lx -
 			view->saved_geometry.x,
-		.y = view->container->surface_y - output->wlr_output->ly -
+		.y = view->container->surface_y - output->ly -
 			view->saved_geometry.y,
 		.width = view->saved_buffer_width,
 		.height = view->saved_buffer_height,
@@ -298,7 +299,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		box.width = state->border_thickness;
 		box.height = state->content_height;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, damage, &box, color);
+		render_rect(output, damage, &box, color);
 	}
 
 	list_t *siblings = container_get_current_siblings(con);
@@ -317,7 +318,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		box.width = state->border_thickness;
 		box.height = state->content_height;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, damage, &box, color);
+		render_rect(output, damage, &box, color);
 	}
 
 	if (state->border_bottom) {
@@ -332,7 +333,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		box.width = state->width;
 		box.height = state->border_thickness;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, damage, &box, color);
+		render_rect(output, damage, &box, color);
 	}
 }
 
@@ -359,8 +360,8 @@ static void render_titlebar(struct sway_output *output,
 	list_t *children = container_get_current_siblings(con);
 	bool is_last_child = children->length == 0 ||
 		children->items[children->length - 1] == con;
-	double output_x = output->wlr_output->lx;
-	double output_y = output->wlr_output->ly;
+	double output_x = output->lx;
+	double output_y = output->ly;
 	int titlebar_border_thickness = config->titlebar_border_thickness;
 	int titlebar_h_padding = config->titlebar_h_padding;
 	int titlebar_v_padding = config->titlebar_v_padding;
@@ -374,7 +375,7 @@ static void render_titlebar(struct sway_output *output,
 	box.width = width;
 	box.height = titlebar_border_thickness;
 	scale_box(&box, output_scale);
-	render_rect(output->wlr_output, output_damage, &box, color);
+	render_rect(output, output_damage, &box, color);
 
 	// Single pixel bar below title
 	size_t left_offset = 0, right_offset = 0;
@@ -392,7 +393,7 @@ static void render_titlebar(struct sway_output *output,
 	box.width = width - left_offset - right_offset;
 	box.height = titlebar_border_thickness;
 	scale_box(&box, output_scale);
-	render_rect(output->wlr_output, output_damage, &box, color);
+	render_rect(output, output_damage, &box, color);
 
 	if (layout == L_TABBED) {
 		// Single pixel left edge
@@ -402,7 +403,7 @@ static void render_titlebar(struct sway_output *output,
 		box.height =
 			container_titlebar_height() - titlebar_border_thickness * 2;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 
 		// Single pixel right edge
 		box.x = x + width - titlebar_border_thickness;
@@ -411,7 +412,7 @@ static void render_titlebar(struct sway_output *output,
 		box.height =
 			container_titlebar_height() - titlebar_border_thickness * 2;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 	}
 
 	int inner_x = x - output_x + titlebar_h_padding;
@@ -470,12 +471,12 @@ static void render_titlebar(struct sway_output *output,
 		box.y = round((y + titlebar_border_thickness) * output_scale);
 		box.width = texture_box.width;
 		box.height = ob_padding_above;
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 
 		// Padding below
 		box.y += ob_padding_above + texture_box.height;
 		box.height = ob_padding_below;
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 	}
 
 	// Title text
@@ -538,12 +539,12 @@ static void render_titlebar(struct sway_output *output,
 		box.y = round((y + titlebar_border_thickness) * output_scale);
 		box.width = texture_box.width;
 		box.height = ob_padding_above;
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 
 		// Padding below
 		box.y += ob_padding_above + texture_box.height;
 		box.height = ob_padding_below;
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 	}
 
 	// Determine the left + right extends of the textures (output-buffer local)
@@ -577,7 +578,7 @@ static void render_titlebar(struct sway_output *output,
 		box.x = ob_left_x + ob_left_width + round(output_x * output_scale);
 		box.y = round(bg_y * output_scale);
 		box.height = ob_bg_height;
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 	}
 
 	// Padding on left side
@@ -592,7 +593,7 @@ static void render_titlebar(struct sway_output *output,
 	if (box.x + box.width < left_x) {
 		box.width += left_x - box.x - box.width;
 	}
-	render_rect(output->wlr_output, output_damage, &box, color);
+	render_rect(output, output_damage, &box, color);
 
 	// Padding on right side
 	right_offset = (layout == L_TABBED) * titlebar_border_thickness;
@@ -607,7 +608,7 @@ static void render_titlebar(struct sway_output *output,
 		box.width += box.x - right_rx;
 		box.x = right_rx;
 	}
-	render_rect(output->wlr_output, output_damage, &box, color);
+	render_rect(output, output_damage, &box, color);
 
 	if (connects_sides) {
 		// Left pixel in line with bottom bar
@@ -616,7 +617,7 @@ static void render_titlebar(struct sway_output *output,
 		box.width = state->border_thickness * state->border_left;
 		box.height = titlebar_border_thickness;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 
 		// Right pixel in line with bottom bar
 		box.x = x + width - state->border_thickness * state->border_right;
@@ -624,7 +625,7 @@ static void render_titlebar(struct sway_output *output,
 		box.width = state->border_thickness * state->border_right;
 		box.height = titlebar_border_thickness;
 		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, output_damage, &box, color);
+		render_rect(output, output_damage, &box, color);
 	}
 }
 
@@ -650,7 +651,7 @@ static void render_top_border(struct sway_output *output,
 	box.width = state->width;
 	box.height = state->border_thickness;
 	scale_box(&box, output_scale);
-	render_rect(output->wlr_output, output_damage, &box, color);
+	render_rect(output, output_damage, &box, color);
 }
 
 struct parent_data {
