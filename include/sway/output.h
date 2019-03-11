@@ -29,8 +29,8 @@ struct sway_output {
 	struct timespec last_frame;
 	struct wlr_output_damage *damage;
 
-	int lx, ly;
-	int width, height;
+	int lx, ly; // layout coords
+	int width, height; // transformed buffer size
 
 	bool enabled, configured;
 	list_t *workspaces;
@@ -144,7 +144,7 @@ void output_get_box(struct sway_output *output, struct wlr_box *box);
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
 
-void render_rect(struct wlr_output *wlr_output,
+void render_rect(struct sway_output *output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]);
 

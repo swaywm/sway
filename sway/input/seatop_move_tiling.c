@@ -37,7 +37,7 @@ static void handle_render(struct sway_seat *seat,
 		struct wlr_box box;
 		memcpy(&box, &e->drop_box, sizeof(struct wlr_box));
 		scale_box(&box, output->wlr_output->scale);
-		render_rect(output->wlr_output, damage, &box, color);
+		render_rect(output, damage, &box, color);
 	}
 }
 

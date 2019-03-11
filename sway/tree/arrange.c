@@ -195,8 +195,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	double prev_y = workspace->y;
 	workspace->width = area->width;
 	workspace->height = area->height;
-	workspace->x = output->wlr_output->lx + area->x;
-	workspace->y = output->wlr_output->ly + area->y;
+	workspace->x = output->lx + area->x;
+	workspace->y = output->ly + area->y;
 
 	// Adjust any floating containers
 	double diff_x = workspace->x - prev_x;

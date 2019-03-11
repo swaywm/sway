@@ -319,6 +319,14 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_output_layout_add_auto(root->output_layout, wlr_output);
 	}
 
+	// Update output->{lx, ly, width, height}
+	struct wlr_box *output_box =
+		wlr_output_layout_get_box(root->output_layout, wlr_output);
+	output->lx = output_box->x;
+	output->ly = output_box->y;
+	wlr_output_transformed_resolution(wlr_output,
+		&output->width, &output->height);
+
 	if (output->swaybg_client != NULL) {
 		wl_client_destroy(output->swaybg_client);
 	}
