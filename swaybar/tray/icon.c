@@ -307,16 +307,16 @@ static void log_loaded_themes(list_t *themes) {
 		return;
 	}
 
-	const char *sep = ", ";
+	const char sep[] = ", ";
 	size_t sep_len = strlen(sep);
 
-	size_t len = 1 - sep_len;
+	size_t len = 0;
 	for (int i = 0; i < themes->length; ++i) {
 		struct icon_theme *theme = themes->items[i];
 		len += strlen(theme->name) + sep_len;
 	}
 
-	char *str = malloc(len);
+	char *str = malloc(len + 1);
 	if (!str) {
 		return;
 	}
