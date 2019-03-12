@@ -96,6 +96,10 @@ void root_scratchpad_remove_container(struct sway_container *con) {
 void root_scratchpad_show(struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *new_ws = seat_get_focused_workspace(seat);
+	if (!new_ws) {
+		sway_log(SWAY_DEBUG, "No focused workspace to show scratchpad on");
+		return;
+	}
 	struct sway_workspace *old_ws = con->workspace;
 
 	// If the current con or any of its parents are in fullscreen mode, we

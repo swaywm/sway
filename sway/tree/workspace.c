@@ -368,13 +368,13 @@ struct sway_workspace *workspace_by_name(const char *name) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *current = seat_get_focused_workspace(seat);
 
-	if (strcmp(name, "prev") == 0) {
+	if (current && strcmp(name, "prev") == 0) {
 		return workspace_prev(current);
-	} else if (strcmp(name, "prev_on_output") == 0) {
+	} else if (current && strcmp(name, "prev_on_output") == 0) {
 		return workspace_output_prev(current, false);
-	} else if (strcmp(name, "next") == 0) {
+	} else if (current && strcmp(name, "next") == 0) {
 		return workspace_next(current);
-	} else if (strcmp(name, "next_on_output") == 0) {
+	} else if (current && strcmp(name, "next_on_output") == 0) {
 		return workspace_output_next(current, false);
 	} else if (strcmp(name, "current") == 0) {
 		return current;
@@ -399,6 +399,11 @@ static struct sway_workspace *workspace_output_prev_next_impl(
 		struct sway_output *output, int dir, bool create) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *workspace = seat_get_focused_workspace(seat);
+	if (!workspace) {
+		sway_log(SWAY_DEBUG,
+				"No focused workspace to base prev/next on output off of");
+		return NULL;
+	}
 
 	int index = list_find(output->workspaces, workspace);
 	if (!workspace_is_empty(workspace) && create &&

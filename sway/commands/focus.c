@@ -208,6 +208,11 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 				"There is no output with that name");
 		}
 		struct sway_workspace *ws = seat_get_focused_workspace(seat);
+		if (!ws) {
+			free(identifier);
+			return cmd_results_new(CMD_FAILURE,
+				"No focused workspace to base directions off of");
+		}
 		output = output_get_in_direction(ws->output, direction);
 
 		if (!output) {
