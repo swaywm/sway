@@ -17,7 +17,7 @@ set $right l
 set $term urxvt
 # Your preferred application launcher
 # Note: it's recommended that you pass the final command to sway
-set $menu dmenu_path | dmenu | xargs swaymsg exec
+set $menu dmenu_path | dmenu | xargs swaymsg exec --
 
 ### Output configuration
 #
