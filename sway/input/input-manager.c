@@ -71,6 +71,40 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 	return identifier;
 }
 
+static bool device_is_touchpad(struct sway_input_device *device) {
+	if (device->wlr_device->type != WLR_INPUT_DEVICE_POINTER ||
+			!wlr_input_device_is_libinput(device->wlr_device)) {
+		return false;
+	}
+
+	struct libinput_device *libinput_device =
+		wlr_libinput_get_device_handle(device->wlr_device);
+
+	return libinput_device_config_tap_get_finger_count(libinput_device) > 0;
+}
+
+const char *input_device_get_type(struct sway_input_device *device) {
+	switch (device->wlr_device->type) {
+	case WLR_INPUT_DEVICE_POINTER:
+		if (device_is_touchpad(device)) {
+			return "touchpad";
+		} else {
+			return "pointer";
+		}
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return "keyboard";
+	case WLR_INPUT_DEVICE_TOUCH:
+		return "touch";
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return "tablet_tool";
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		return "tablet_pad";
+	case WLR_INPUT_DEVICE_SWITCH:
+		return "switch";
+	}
+	return "unknown";
+}
+
 static struct sway_input_device *input_sway_device_from_wlr(
 		struct wlr_input_device *device) {
 	struct sway_input_device *input_device = NULL;
