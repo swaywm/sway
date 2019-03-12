@@ -85,24 +85,6 @@ static const char *ipc_json_output_transform_description(enum wl_output_transfor
 	return NULL;
 }
 
-static const char *ipc_json_device_type_description(struct sway_input_device *device) {
-	switch (device->wlr_device->type) {
-	case WLR_INPUT_DEVICE_POINTER:
-		return "pointer";
-	case WLR_INPUT_DEVICE_KEYBOARD:
-		return "keyboard";
-	case WLR_INPUT_DEVICE_SWITCH:
-		return "switch";
-	case WLR_INPUT_DEVICE_TOUCH:
-		return "touch";
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		return "tablet_tool";
-	case WLR_INPUT_DEVICE_TABLET_PAD:
-		return "tablet_pad";
-	}
-	return "unknown";
-}
-
 json_object *ipc_json_get_version(void) {
 	int major = 0, minor = 0, patch = 0;
 	json_object *version = json_object_new_object();
@@ -819,7 +801,7 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		json_object_new_int(device->wlr_device->product));
 	json_object_object_add(object, "type",
 		json_object_new_string(
-			ipc_json_device_type_description(device)));
+			input_device_get_type(device)));
 
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
 		struct wlr_keyboard *keyboard = device->wlr_device->keyboard;
