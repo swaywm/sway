@@ -352,8 +352,9 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 
 static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	enum sway_container_layout parent_layout = container_parent_layout(c);
-	if ((parent_layout != L_TABBED && parent_layout != L_STACKED &&
-			c->current.border != B_NORMAL) ||
+	bool tab_or_stack = parent_layout == L_TABBED || parent_layout == L_STACKED;
+	if (((!tab_or_stack || container_is_floating(c)) &&
+				c->current.border != B_NORMAL) ||
 			c->fullscreen_mode != FULLSCREEN_NONE ||
 			c->workspace == NULL) {
 		deco_rect->x = deco_rect->y = deco_rect->width = deco_rect->height = 0;
@@ -370,17 +371,19 @@ static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	deco_rect->width = c->width;
 	deco_rect->height = container_titlebar_height();
 
-	if (parent_layout == L_TABBED) {
-		deco_rect->width = c->parent
-			? c->parent->width / c->parent->children->length
-			: c->workspace->width / c->workspace->tiling->length;
-		deco_rect->x += deco_rect->width * container_sibling_index(c);
-	} else if (container_parent_layout(c) == L_STACKED) {
-		if (!c->view) {
-			size_t siblings = container_get_siblings(c)->length;
-			deco_rect->y -= deco_rect->height * siblings;
+	if (!container_is_floating(c)) {
+		if (parent_layout == L_TABBED) {
+			deco_rect->width = c->parent
+				? c->parent->width / c->parent->children->length
+				: c->workspace->width / c->workspace->tiling->length;
+			deco_rect->x += deco_rect->width * container_sibling_index(c);
+		} else if (parent_layout == L_STACKED) {
+			if (!c->view) {
+				size_t siblings = container_get_siblings(c)->length;
+				deco_rect->y -= deco_rect->height * siblings;
+			}
+			deco_rect->y += deco_rect->height * container_sibling_index(c);
 		}
-		deco_rect->y += deco_rect->height * container_sibling_index(c);
 	}
 }
 
