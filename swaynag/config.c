@@ -18,7 +18,7 @@ static char *read_from_stdin(void) {
 	size_t line_size = 0;
 	ssize_t nread;
 	while ((nread = getline(&line, &line_size, stdin)) != -1) {
-		buffer = realloc(buffer, buffer_len + nread);
+		buffer = realloc(buffer, buffer_len + nread + 1);
 		snprintf(&buffer[buffer_len], nread + 1, "%s", line);
 		buffer_len += nread;
 	}
