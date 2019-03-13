@@ -35,7 +35,7 @@ struct criteria {
 	bool floating;
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest
-	char *workspace;
+	pcre *workspace;
 };
 
 bool criteria_is_empty(struct criteria *criteria);
