@@ -243,6 +243,10 @@ static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 			free(group);
 			group = strdup(&line[1]);
 		} else { // key-value pair
+			if (!group) {
+				error = true;
+				break;
+			}
 			// check well-formed
 			int eok = 0;
 			for (; isalnum(line[eok]) || line[eok] == '-'; ++eok) {} // TODO locale?
