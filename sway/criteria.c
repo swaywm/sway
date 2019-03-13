@@ -208,7 +208,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 	if (criteria->workspace) {
 		struct sway_workspace *ws = view->container->workspace;
-		if (!ws || strcmp(ws->name, criteria->workspace) != 0) {
+		if (!ws || regex_cmp(ws->name, criteria->workspace) != 0) {
 			return false;
 		}
 	}
@@ -515,7 +515,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		}
 		break;
 	case T_WORKSPACE:
-		criteria->workspace = strdup(effective_value);
+		generate_regex(&criteria->workspace, effective_value);
 		break;
 	case T_INVALID:
 		break;
