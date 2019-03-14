@@ -481,18 +481,6 @@ bool workspace_switch(struct sway_workspace *workspace,
 			workspace_create(NULL, seat->prev_workspace_name);
 	}
 
-	if (active_ws && (!seat->prev_workspace_name ||
-			(strcmp(seat->prev_workspace_name, active_ws->name)
-				&& active_ws != workspace))) {
-		free(seat->prev_workspace_name);
-		seat->prev_workspace_name = malloc(strlen(active_ws->name) + 1);
-		if (!seat->prev_workspace_name) {
-			sway_log(SWAY_ERROR, "Unable to allocate previous workspace name");
-			return false;
-		}
-		strcpy(seat->prev_workspace_name, active_ws->name);
-	}
-
 	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
 	struct sway_node *next = seat_get_focus_inactive(seat, &workspace->node);
