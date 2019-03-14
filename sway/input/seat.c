@@ -763,6 +763,18 @@ static void set_workspace(struct sway_seat *seat,
 	if (seat->workspace == new_ws) {
 		return;
 	}
+
+	if (seat->workspace) {
+		free(seat->prev_workspace_name);
+		seat->prev_workspace_name = malloc(strlen(seat->workspace->name) + 1);
+		if (!seat->prev_workspace_name) {
+			sway_log(SWAY_ERROR, "Unable to allocate previous workspace name");
+			seat->prev_workspace_name = NULL;
+		} else {
+			strcpy(seat->prev_workspace_name, seat->workspace->name);
+		}
+	}
+
 	ipc_event_workspace(seat->workspace, new_ws, "focus");
 	seat->workspace = new_ws;
 }
