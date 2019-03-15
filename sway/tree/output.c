@@ -267,36 +267,6 @@ void output_begin_destroy(struct sway_output *output) {
 	output->wlr_output = NULL;
 }
 
-struct output_config *output_find_config(struct sway_output *output) {
-	const char *name = output->wlr_output->name;
-	char identifier[128];
-	output_get_identifier(identifier, sizeof(identifier), output);
-
-	struct output_config *oc = NULL, *all = NULL;
-	for (int i = 0; i < config->output_configs->length; ++i) {
-		struct output_config *cur = config->output_configs->items[i];
-
-		if (strcasecmp(name, cur->name) == 0 ||
-				strcasecmp(identifier, cur->name) == 0) {
-			sway_log(SWAY_DEBUG, "Matched output config for %s", name);
-			oc = cur;
-		}
-		if (strcasecmp("*", cur->name) == 0) {
-			sway_log(SWAY_DEBUG, "Matched wildcard output config for %s", name);
-			all = cur;
-		}
-
-		if (oc && all) {
-			break;
-		}
-	}
-	if (!oc) {
-		oc = all;
-	}
-
-	return oc;
-}
-
 struct sway_output *output_from_wlr_output(struct wlr_output *output) {
 	return output->data;
 }

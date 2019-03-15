@@ -438,6 +438,12 @@ static struct output_config *get_output_config(char *identifier,
 	return result;
 }
 
+struct output_config *find_output_config(struct sway_output *output) {
+	char id[128];
+	output_get_identifier(id, sizeof(id), output);
+	return get_output_config(id, output);
+}
+
 void apply_output_config_to_outputs(struct output_config *oc) {
 	// Try to find the output container and apply configuration now. If
 	// this is during startup then there will be no container and config

@@ -88,8 +88,6 @@ struct sway_output *output_by_name_or_id(const char *name_or_id);
 
 void output_sort_workspaces(struct sway_output *output);
 
-struct output_config *output_find_config(struct sway_output *output);
-
 void output_enable(struct sway_output *output, struct output_config *oc);
 
 void output_disable(struct sway_output *output);
