@@ -387,6 +387,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
 				&& handler->handle != cmd_set
+				&& handler->handle != cmd_for_window
 				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
 			strip_quotes(argv[i]);
 		}
