@@ -11,6 +11,12 @@ struct seatop_down_event {
 	bool moved;
 };
 
+static void handle_button(struct sway_seat *seat, uint32_t time_msec,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state) {
+	seat_pointer_notify_button(seat, time_msec, button, state);
+}
+
 static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
@@ -54,11 +60,11 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 }
 
 static const struct sway_seatop_impl seatop_impl = {
+	.button = handle_button,
 	.motion = handle_motion,
 	.finish = handle_finish,
 	.abort = handle_abort,
 	.unref = handle_unref,
-	.allows_events = true,
 };
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,

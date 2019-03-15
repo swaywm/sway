@@ -1216,6 +1216,14 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
 	}
 }
 
+void seatop_button(struct sway_seat *seat, uint32_t time_msec,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state) {
+	if (seat->seatop_impl && seat->seatop_impl->button) {
+		seat->seatop_impl->button(seat, time_msec, device, button, state);
+	}
+}
+
 void seatop_motion(struct sway_seat *seat, uint32_t time_msec) {
 	if (seat->seatop_impl && seat->seatop_impl->motion) {
 		seat->seatop_impl->motion(seat, time_msec);
@@ -1245,8 +1253,4 @@ void seatop_render(struct sway_seat *seat, struct sway_output *output,
 	if (seat->seatop_impl && seat->seatop_impl->render) {
 		seat->seatop_impl->render(seat, output, damage);
 	}
-}
-
-bool seatop_allows_events(struct sway_seat *seat) {
-	return seat->seatop_impl && seat->seatop_impl->allows_events;
 }

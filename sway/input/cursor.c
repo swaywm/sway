@@ -610,9 +610,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		} else {
 			state_erase_button(cursor, button);
 		}
-		if (seatop_allows_events(seat)) {
-			seat_pointer_notify_button(seat, time_msec, button, state);
-		}
+		seatop_button(seat, time_msec, device, button, state);
 		if (button == seat->seatop_button && state == WLR_BUTTON_RELEASED) {
 			seatop_finish(seat, time_msec);
 		}
