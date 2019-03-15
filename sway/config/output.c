@@ -98,10 +98,67 @@ static void merge_wildcard_on_all(struct output_config *wildcard) {
 	}
 }
 
+static void merge_id_on_name(struct output_config *oc) {
+	char *id_on_name = NULL;
+	char id[128];
+	char *name = NULL;
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
+		name = output->wlr_output->name;
+		output_get_identifier(id, sizeof(id), output);
+		if (strcmp(name, oc->name) != 0 || strcmp(id, oc->name) != 0) {
+			size_t length = snprintf(NULL, 0, "%s on %s", id, name) + 1;
+			id_on_name = malloc(length);
+			if (!id_on_name) {
+				sway_log(SWAY_ERROR, "Failed to allocate id on name string");
+				return;
+			}
+			snprintf(id_on_name, length, "%s on %s", id, name);
+			break;
+		}
+	}
+
+	if (!id_on_name) {
+		return;
+	}
+
+	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
+	if (i >= 0) {
+		sway_log(SWAY_DEBUG, "Merging on top of existing id on name config");
+		merge_output_config(config->output_configs->items[i], oc);
+	} else {
+		// If both a name and identifier config, exist generate an id on name
+		int ni = list_seq_find(config->output_configs, output_name_cmp, name);
+		int ii = list_seq_find(config->output_configs, output_name_cmp, id);
+		if ((ni >= 0 && ii >= 0) || (ni >= 0 && strcmp(oc->name, id) == 0)
+				|| (ii >= 0 && strcmp(oc->name, name) == 0)) {
+			struct output_config *ion_oc = new_output_config(id_on_name);
+			if (ni >= 0) {
+				merge_output_config(ion_oc, config->output_configs->items[ni]);
+			}
+			if (ii >= 0) {
+				merge_output_config(ion_oc, config->output_configs->items[ii]);
+			}
+			merge_output_config(ion_oc, oc);
+			list_add(config->output_configs, ion_oc);
+			sway_log(SWAY_DEBUG, "Generated id on name output config \"%s\""
+				" (enabled: %d) (%dx%d@%fHz position %d,%d scale %f "
+				"transform %d) (bg %s %s) (dpms %d)", ion_oc->name,
+				ion_oc->enabled, ion_oc->width, ion_oc->height,
+				ion_oc->refresh_rate, ion_oc->x, ion_oc->y, ion_oc->scale,
+				ion_oc->transform, ion_oc->background,
+				ion_oc->background_option, ion_oc->dpms_state);
+		}
+	}
+	free(id_on_name);
+}
+
 struct output_config *store_output_config(struct output_config *oc) {
 	bool wildcard = strcmp(oc->name, "*") == 0;
 	if (wildcard) {
 		merge_wildcard_on_all(oc);
+	} else {
+		merge_id_on_name(oc);
 	}
 
 	int i = list_seq_find(config->output_configs, output_name_cmp, oc->name);
@@ -374,35 +431,51 @@ static void default_output_config(struct output_config *oc,
 static struct output_config *get_output_config(char *identifier,
 		struct sway_output *sway_output) {
 	const char *name = sway_output->wlr_output->name;
-	struct output_config *oc_name = NULL;
-	int i = list_seq_find(config->output_configs, output_name_cmp, name);
-	if (i >= 0) {
-		oc_name = config->output_configs->items[i];
-	}
 
+	struct output_config *oc_id_on_name = NULL;
+	struct output_config *oc_name = NULL;
 	struct output_config *oc_id = NULL;
-	i = list_seq_find(config->output_configs, output_name_cmp, identifier);
+
+	size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
+	char *id_on_name = malloc(length);
+	snprintf(id_on_name, length, "%s on %s", identifier, name);
+	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
 	if (i >= 0) {
-		oc_id = config->output_configs->items[i];
+		oc_id_on_name = config->output_configs->items[i];
+	} else {
+		i = list_seq_find(config->output_configs, output_name_cmp, name);
+		if (i >= 0) {
+			oc_name = config->output_configs->items[i];
+		}
+
+		i = list_seq_find(config->output_configs, output_name_cmp, identifier);
+		if (i >= 0) {
+			oc_id = config->output_configs->items[i];
+		}
 	}
 
 	struct output_config *result = new_output_config("temp");
 	if (config->reloading) {
 		default_output_config(result, sway_output->wlr_output);
 	}
-	if (oc_name && oc_id) {
+	if (oc_id_on_name) {
+		// Already have an identifier on name config, use that
+		free(result->name);
+		result->name = strdup(id_on_name);
+		merge_output_config(result, oc_id_on_name);
+	} else if (oc_name && oc_id) {
 		// Generate a config named `<identifier> on <name>` which contains a
 		// merged copy of the identifier on name. This will make sure that both
 		// identifier and name configs are respected, with identifier getting
 		// priority
-		size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
-		char *temp = malloc(length);
-		snprintf(temp, length, "%s on %s", identifier, name);
+		struct output_config *temp = new_output_config(id_on_name);
+		merge_output_config(temp, oc_name);
+		merge_output_config(temp, oc_id);
+		list_add(config->output_configs, temp);
 
 		free(result->name);
-		result->name = temp;
-		merge_output_config(result, oc_name);
-		merge_output_config(result, oc_id);
+		result->name = strdup(id_on_name);
+		merge_output_config(result, temp);
 
 		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
 			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
@@ -435,6 +508,7 @@ static struct output_config *get_output_config(char *identifier,
 		result = NULL;
 	}
 
+	free(id_on_name);
 	return result;
 }
 
@@ -455,14 +529,12 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 		char *name = sway_output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), sway_output);
 		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
-			struct output_config *current = new_output_config(oc->name);
-			merge_output_config(current, oc);
-			if (wildcard) {
-				struct output_config *tmp = get_output_config(id, sway_output);
-				if (tmp) {
-					free_output_config(current);
-					current = tmp;
-				}
+			struct output_config *current = get_output_config(id, sway_output);
+			if (!current) {
+				// No stored output config matched, apply oc directly
+				sway_log(SWAY_DEBUG, "Applying oc directly");
+				current = new_output_config(oc->name);
+				merge_output_config(current, oc);
 			}
 			apply_output_config(current, sway_output);
 			free_output_config(current);
