@@ -20,6 +20,16 @@ static const char *bg_options[] = {
 	"tile",
 };
 
+static bool validate_color(const char *color) {
+	if (strlen(color) != 7 || color[0] != '#') {
+		return false;
+	}
+
+	char *ptr = NULL;
+	strtol(&color[1], &ptr, 16);
+	return *ptr == '\0';
+}
+
 struct cmd_results *output_cmd_background(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
@@ -36,6 +46,10 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 	struct output_config *output = config->handler_context.output_config;
 
 	if (strcasecmp(argv[1], "solid_color") == 0) {
+		if (!validate_color(argv[0])) {
+			return cmd_results_new(CMD_INVALID,
+					"Colors should be of the form #RRGGBB");
+		}
 		output->background = strdup(argv[0]);
 		output->background_option = strdup("solid_color");
 		output->background_fallback = NULL;
@@ -130,6 +144,11 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 		output->background_fallback = NULL;
 		if (argc && *argv[0] == '#') {
+			if (!validate_color(argv[0])) {
+				return cmd_results_new(CMD_INVALID,
+						"fallback color should be of the form #RRGGBB");
+			}
+
 			output->background_fallback = strdup(argv[0]);
 			argc--; argv++;
 
