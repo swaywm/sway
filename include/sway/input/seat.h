@@ -9,13 +9,15 @@
 struct sway_seat;
 
 struct sway_seatop_impl {
+	void (*button)(struct sway_seat *seat, uint32_t time_msec,
+			struct wlr_input_device *device, uint32_t button,
+			enum wlr_button_state state);
 	void (*motion)(struct sway_seat *seat, uint32_t time_msec);
 	void (*finish)(struct sway_seat *seat, uint32_t time_msec);
 	void (*abort)(struct sway_seat *seat);
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
 	void (*render)(struct sway_seat *seat, struct sway_output *output,
 			pixman_region32_t *damage);
-	bool allows_events;
 };
 
 struct sway_seat_device {
@@ -214,6 +216,10 @@ void seat_consider_warp_to_focus(struct sway_seat *seat);
 
 bool seat_doing_seatop(struct sway_seat *seat);
 
+void seatop_button(struct sway_seat *seat, uint32_t time_msec,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state);
+
 void seatop_motion(struct sway_seat *seat, uint32_t time_msec);
 
 /**
@@ -239,7 +245,5 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con);
  */
 void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		pixman_region32_t *damage);
-
-bool seatop_allows_events(struct sway_seat *seat);
 
 #endif
