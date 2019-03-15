@@ -533,7 +533,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	if (!output->configured && !output->enabled) {
-		struct output_config *oc = output_find_config(output);
+		struct output_config *oc = find_output_config(output);
 		if (output->wlr_output->current_mode != NULL &&
 				(!oc || oc->enabled)) {
 			// We want to enable this output, but it didn't work last time,
@@ -634,7 +634,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->damage_destroy.notify = damage_handle_destroy;
 	wl_list_init(&output->swaybg_client_destroy.link);
 
-	struct output_config *oc = output_find_config(output);
+	struct output_config *oc = find_output_config(output);
 	if (!oc || oc->enabled) {
 		output_enable(output, oc);
 	} else {
