@@ -365,7 +365,7 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 	wl_list_insert(&root->drag_icons, &icon->link);
 
 	drag_icon_update_position(icon);
-	seatop_abort(seat);
+	seatop_begin_default(seat);
 }
 
 static void handle_request_set_selection(struct wl_listener *listener,
@@ -460,6 +460,8 @@ struct sway_seat *seat_create(const char *seat_name) {
 	wl_list_init(&seat->devices);
 
 	wl_list_insert(&server.input->seats, &seat->link);
+
+	seatop_begin_default(seat);
 
 	return seat;
 }
@@ -1175,7 +1177,6 @@ struct seat_config *seat_get_config_by_name(const char *name) {
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 		uint32_t button, enum wlr_button_state state) {
-	seat->last_button = button;
 	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
 			time_msec, button, state);
 }
@@ -1206,12 +1207,8 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	}
 }
 
-bool seat_doing_seatop(struct sway_seat *seat) {
-	return seat->seatop_impl != NULL;
-}
-
 void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
-	if (seat->seatop_impl && seat->seatop_impl->unref) {
+	if (seat->seatop_impl->unref) {
 		seat->seatop_impl->unref(seat, con);
 	}
 }
@@ -1219,29 +1216,33 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
 void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
 		enum wlr_button_state state) {
-	if (seat->seatop_impl && seat->seatop_impl->button) {
+	if (seat->seatop_impl->button) {
 		seat->seatop_impl->button(seat, time_msec, device, button, state);
 	}
 }
 
-void seatop_motion(struct sway_seat *seat, uint32_t time_msec) {
-	if (seat->seatop_impl && seat->seatop_impl->motion) {
-		seat->seatop_impl->motion(seat, time_msec);
+void seatop_motion(struct sway_seat *seat, uint32_t time_msec,
+		double dx, double dy) {
+	if (seat->seatop_impl->motion) {
+		seat->seatop_impl->motion(seat, time_msec, dx, dy);
 	}
 }
 
-void seatop_finish(struct sway_seat *seat, uint32_t time_msec) {
-	if (seat->seatop_impl && seat->seatop_impl->finish) {
-		seat->seatop_impl->finish(seat, time_msec);
+void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event) {
+	if (seat->seatop_impl->axis) {
+		seat->seatop_impl->axis(seat, event);
 	}
-	free(seat->seatop_data);
-	seat->seatop_data = NULL;
-	seat->seatop_impl = NULL;
 }
 
-void seatop_abort(struct sway_seat *seat) {
-	if (seat->seatop_impl && seat->seatop_impl->abort) {
-		seat->seatop_impl->abort(seat);
+void seatop_rebase(struct sway_seat *seat, uint32_t time_msec) {
+	if (seat->seatop_impl->rebase) {
+		seat->seatop_impl->rebase(seat, time_msec);
+	}
+}
+
+void seatop_end(struct sway_seat *seat) {
+	if (seat->seatop_impl && seat->seatop_impl->end) {
+		seat->seatop_impl->end(seat);
 	}
 	free(seat->seatop_data);
 	seat->seatop_data = NULL;
@@ -1250,7 +1251,11 @@ void seatop_abort(struct sway_seat *seat) {
 
 void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		pixman_region32_t *damage) {
-	if (seat->seatop_impl && seat->seatop_impl->render) {
+	if (seat->seatop_impl->render) {
 		seat->seatop_impl->render(seat, output, damage);
 	}
+}
+
+bool seatop_allows_set_cursor(struct sway_seat *seat) {
+	return seat->seatop_impl->allow_set_cursor;
 }

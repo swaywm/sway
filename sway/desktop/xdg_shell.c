@@ -355,7 +355,7 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_move_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seatop_begin_move_floating(seat, view->container, seat->last_button);
+		seatop_begin_move_floating(seat, view->container);
 	}
 }
 
@@ -369,8 +369,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_resize_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seatop_begin_resize_floating(seat, view->container,
-				seat->last_button, e->edges);
+		seatop_begin_resize_floating(seat, view->container, e->edges);
 	}
 }
 
