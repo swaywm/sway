@@ -52,8 +52,6 @@ struct sway_cursor {
 	struct wl_event_source *hide_source;
 	bool hidden;
 
-	// Mouse binding state
-	uint32_t pressed_buttons[SWAY_CURSOR_PRESSED_BUTTONS_CAP];
 	size_t pressed_button_count;
 };
 
@@ -77,13 +75,6 @@ void cursor_rebase_all(void);
 void cursor_handle_activity(struct sway_cursor *cursor);
 void cursor_unhide(struct sway_cursor *cursor);
 int cursor_get_timeout(struct sway_cursor *cursor);
-
-/**
- * Like cursor_rebase, but also allows focus to change when the cursor enters a
- * new container.
- */
-void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
-	struct sway_node *node, struct wlr_surface *surface, double sx, double sy);
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
 	struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
