@@ -493,6 +493,7 @@ int main(int argc, char **argv) {
 					printf("%s\n", json_object_to_json_string_ext(obj,
 						JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 				}
+				fflush(stdout);
 				json_object_put(obj);
 			}
 
