@@ -493,19 +493,20 @@ static struct output_config *get_output_config(char *identifier,
 		free(result->name);
 		result->name = strdup(identifier);
 		merge_output_config(result, oc_id);
-	} else if (config->reloading) {
-		// Neither config exists, but we need to reset the output so create a
-		// default config for the output and if a wildcard config exists, merge
-		// that on top
-		free(result->name);
-		result->name = strdup("*");
+	} else {
 		i = list_seq_find(config->output_configs, output_name_cmp, "*");
 		if (i >= 0) {
+			// No name or identifier config, but there is a wildcard config
+			free(result->name);
+			result->name = strdup("*");
 			merge_output_config(result, config->output_configs->items[i]);
+		} else if (!config->reloading) {
+			// No name, identifier, or wildcard config. Since we are not
+			// reloading with defaults, the output config will be empty, so
+			// just return NULL
+			free_output_config(result);
+			result = NULL;
 		}
-	} else {
-		free_output_config(result);
-		result = NULL;
 	}
 
 	free(id_on_name);
