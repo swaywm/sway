@@ -21,8 +21,6 @@ struct sway_root {
 #endif
 	struct wl_list drag_icons; // sway_drag_icon::link
 
-	struct wlr_texture *debug_tree;
-
 	// Includes disabled outputs
 	struct wl_list all_outputs; // sway_output::link
 

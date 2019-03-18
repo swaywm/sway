@@ -16,7 +16,6 @@
 #include "log.h"
 #include "config.h"
 #include "sway/config.h"
-#include "sway/debug.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -1075,12 +1074,6 @@ render_overlay:
 	render_drag_icons(output, damage, &root->drag_icons);
 
 renderer_end:
-	if (debug.render_tree) {
-		wlr_renderer_scissor(renderer, NULL);
-		wlr_render_texture(renderer, root->debug_tree,
-			wlr_output->transform_matrix, 0, 40, 1);
-	}
-
 	wlr_renderer_scissor(renderer, NULL);
 	wlr_output_render_software_cursors(wlr_output, damage);
 	wlr_renderer_end(renderer);

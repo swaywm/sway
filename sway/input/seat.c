@@ -10,7 +10,6 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "config.h"
 #include "log.h"
-#include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
@@ -812,7 +811,6 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		}
 		seat_send_unfocus(last_focus, seat);
 		seat->has_focus = false;
-		update_debug_tree();
 		return;
 	}
 
@@ -937,8 +935,6 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		// the workspace needs to be arranged
 		arrange_workspace(new_workspace);
 	}
-
-	update_debug_tree();
 }
 
 void seat_set_focus_container(struct sway_seat *seat,

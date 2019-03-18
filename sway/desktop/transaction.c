@@ -5,7 +5,6 @@
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
 #include "sway/config.h"
-#include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
@@ -465,11 +464,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			transaction->num_waiting = 0;
 		}
 	}
-
-	// The debug tree shows the pending/live tree. Here is a good place to
-	// update it, because we make a transaction every time we change the pending
-	// tree.
-	update_debug_tree();
 }
 
 static void set_instruction_ready(
