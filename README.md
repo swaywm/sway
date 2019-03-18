@@ -70,4 +70,6 @@ Run `man 5 sway` for information on the configuration.
 ## Running
 
 Run `sway` from a TTY. Some display managers may work but are not supported by
-sway (gdm is known to work fairly well).
+sway (gdm is known to work fairly well). You will probably want to have xwayland
+installed, since most wayland applications (including dmenu and sway) will not
+start without it.
