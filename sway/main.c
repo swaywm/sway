@@ -15,7 +15,6 @@
 #include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/debug.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/root.h"
@@ -206,8 +205,6 @@ void enable_debug_flag(const char *flag) {
 		debug.damage = DAMAGE_RERENDER;
 	} else if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
-	} else if (strcmp(flag, "render-tree") == 0) {
-		debug.render_tree = true;
 	} else if (strcmp(flag, "txn-wait") == 0) {
 		debug.txn_wait = true;
 	} else if (strcmp(flag, "txn-timings") == 0) {

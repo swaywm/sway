@@ -74,6 +74,20 @@ struct sway_server {
 
 struct sway_server server;
 
+struct sway_debug {
+	bool noatomic;         // Ignore atomic layout updates
+	bool txn_timings;      // Log verbose messages about transactions
+	bool txn_wait;         // Always wait for the timeout before applying
+
+	enum {
+		DAMAGE_DEFAULT,    // Default behaviour
+		DAMAGE_HIGHLIGHT,  // Highlight regions of the screen being damaged
+		DAMAGE_RERENDER,   // Render the full output when any damage occurs
+	} damage;
+};
+
+struct sway_debug debug;
+
 /* Prepares an unprivileged server_init by performing all privileged operations in advance */
 bool server_privileged_prepare(struct sway_server *server);
 bool server_init(struct sway_server *server);
