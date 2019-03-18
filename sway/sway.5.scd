@@ -265,6 +265,24 @@ set|plus|minus <amount>
 	becomes fullscreen on the same workspace as the first container. In either
 	of those cases, the second container will gain focus.
 
+*title_format* <format>
+	Sets the format of window titles. The following placeholders may be used:
+
+		%title - The title supplied by the window
+		%app_id - The wayland app ID (applicable to wayland windows only)
+		%class - The X11 classname (applicable to xwayland windows only)
+		%instance - The X11 instance (applicable to xwayland windows only)
+		%shell - The protocol the window is using (typically xwayland or
+			xdg_shell)
+
+	This command is typically used with *for_window* criteria. For example:
+
+		for_window [title="."] title_format "<b>%title</b> (%app_id)"
+
+	Note that markup requires pango to be enabled via the *font* command.
+
+	The default format is "%title".
+
 The following commands may be used either in the configuration file or at
 runtime.
 
@@ -300,7 +318,7 @@ runtime.
 	values in X11 (1=left, 2=middle, 3=right, 4=scroll up, 5=scroll down,
 	6=scroll left, 7=scroll right, 8=back, 9=forward). For the latter option,
 	you can find the event names using _libinput debug-events_.
-	
+
 	_--whole-window_, _--border_, and _--exclude-titlebar_ are mouse-only options
 	which affect the region in which the mouse bindings can be triggered.  By
 	default, mouse bindings are only triggered when over the title bar. With the
