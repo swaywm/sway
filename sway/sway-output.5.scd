@@ -19,6 +19,11 @@ model and serial which you can get from *swaymsg -t get_outputs*. Each value
 must be separated by one space. For example:
 
 	output "Some Company ABC123 0x00000000" pos 1920,0
+	
+Using the make, model and serial string to identify a monitor might need an
+extra set of quotes, if used through the command line. For example:
+
+	sway output '"Some Company ABC123 0x00000000"' pos 1920,0
 
 # COMMANDS
 
