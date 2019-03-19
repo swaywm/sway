@@ -439,18 +439,17 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		return;
 	}
 
-	if (node_is_view(hovered_node)) {
+	// This is where we handle the common case. We don't want to focus inactive
+	// tabs, hence the view_is_visible check.
+	if (node_is_view(hovered_node) &&
+			view_is_visible(hovered_node->sway_container->view)) {
+		// e->previous_node is the node which the cursor was over previously.
+		// If focus_follows_mouse is yes and the cursor got over the view due
+		// to, say, a workspace switch, we don't want to set the focus.
+		// But if focus_follows_mouse is "always", we do.
 		if (hovered_node != e->previous_node ||
 				config->focus_follows_mouse == FOLLOWS_ALWAYS) {
 			seat_set_focus(seat, hovered_node);
-		} else {
-			// Focusing a tab which contains a split child
-			struct sway_node *next_focus =
-				seat_get_focus_inactive(seat, &root->node);
-			if (next_focus && node_is_view(next_focus) &&
-					view_is_visible(next_focus->sway_container->view)) {
-				seat_set_focus(seat, next_focus);
-			}
 		}
 	}
 }
