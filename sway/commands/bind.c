@@ -29,6 +29,28 @@ void free_sway_binding(struct sway_binding *binding) {
 	free(binding);
 }
 
+void free_switch_binding(struct sway_switch_binding *binding) {
+	if (!binding) {
+		return;
+	}
+	free(binding->command);
+	free(binding);
+}
+
+/**
+ * Returns true if the bindings have the same switch type and state combinations.
+ */
+static bool binding_switch_compare(struct sway_switch_binding *binding_a,
+		struct sway_switch_binding *binding_b) {
+	if (binding_a->type != binding_b->type) {
+		return false;
+	}
+	if (binding_a->state != binding_b->state) {
+		return false;
+	}
+	return true;
+}
+
 /**
  * Returns true if the bindings have the same key and modifier combinations.
  * Note that keyboard layout is not considered, so the bindings might actually
@@ -323,6 +345,102 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 
 struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, true);
+}
+
+struct cmd_results *cmd_bindswitch(int argc, char **argv) {
+
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "bindswitch", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+	struct sway_switch_binding *binding = calloc(1, sizeof(struct sway_switch_binding));
+	if (!binding) {
+		return cmd_results_new(CMD_FAILURE, "Unable to allocate binding");
+	}
+
+	bool warn = true;
+
+	// Handle flags
+	while (argc > 0) {
+		if (strcmp("--locked", argv[0]) == 0) {
+			binding->flags |= BINDING_LOCKED;
+		} else if (strcmp("--no-warn", argv[0]) == 0) {
+			warn = false;
+		} else {
+			break;
+		}
+		argv++;
+		argc--;
+	}
+
+	if (argc < 2) {
+		free(binding);
+		return cmd_results_new(CMD_FAILURE,
+			"Invalid bindswitch command (expected at least 2 "
+			"non-option arguments, got %d)", argc);
+	}
+	binding->command = join_args(argv + 1, argc - 1);
+
+	list_t *split = split_string(argv[0], ":");
+	if (split->length != 2) {
+		free_switch_binding(binding);
+		return cmd_results_new(CMD_FAILURE,
+			"Invalid bindswitch command (expected two arguments with "
+			"format <switch>:<state> <action>, got %d)", argc);
+	}
+	if (strcmp(split->items[0], "tablet") == 0) {
+		binding->type = WLR_SWITCH_TYPE_TABLET_MODE;
+	} else if (strcmp(split->items[0], "lid") == 0) {
+		binding->type = WLR_SWITCH_TYPE_LID;
+	} else {
+		free_switch_binding(binding);
+		return cmd_results_new(CMD_FAILURE,
+			"Invalid bindswitch command (expected switch binding: "
+			"unknown switch %s)", split->items[0]);
+	}
+	if (strcmp(split->items[1], "on") == 0) {
+		binding->state = WLR_SWITCH_STATE_ON;
+	} else if (strcmp(split->items[1], "off") == 0) {
+		binding->state = WLR_SWITCH_STATE_OFF;
+	} else if (strcmp(split->items[1], "toggle") == 0) {
+		binding->state = WLR_SWITCH_STATE_TOGGLE;
+	} else {
+		free_switch_binding(binding);
+		return cmd_results_new(CMD_FAILURE,
+			"Invalid bindswitch command "
+			"(expected switch state: unknown state %d)",
+					split->items[0]);
+	}
+	list_free_items_and_destroy(split);
+
+	list_t *mode_bindings = config->current_mode->switch_bindings;
+
+	// overwrite the binding if it already exists
+	bool overwritten = false;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_switch_binding *config_binding = mode_bindings->items[i];
+		if (binding_switch_compare(binding, config_binding)) {
+			sway_log(SWAY_INFO, "Overwriting binding '%s' from `%s` to `%s`",
+			         argv[0], binding->command, config_binding->command);
+			if (warn) {
+				config_add_swaynag_warning("Overwriting binding"
+					"'%s' to `%s` from `%s`",
+					argv[0], binding->command,
+					config_binding->command);
+			}
+			free_switch_binding(config_binding);
+			mode_bindings->items[i] = binding;
+			overwritten = true;
+		}
+	}
+
+	if (!overwritten) {
+		list_add(mode_bindings, binding);
+	}
+
+	sway_log(SWAY_DEBUG, "bindswitch - Bound %s to command `%s`",
+			argv[0], binding->command);
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 /**

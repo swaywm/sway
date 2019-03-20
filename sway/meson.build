@@ -30,6 +30,7 @@ sway_sources = files(
 	'input/seatop_resize_tiling.c',
 	'input/cursor.c',
 	'input/keyboard.c',
+	'input/switch.c',
 
 	'config/bar.c',
 	'config/output.c',
