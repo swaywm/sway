@@ -13,7 +13,8 @@
 static struct cmd_handler mode_handlers[] = {
 	{ "bindcode", cmd_bindcode },
 	{ "bindswitch", cmd_bindswitch },
-	{ "bindsym", cmd_bindsym }
+	{ "bindsym", cmd_bindsym },
+	{ "set", cmd_set },
 };
 
 struct cmd_results *cmd_mode(int argc, char **argv) {
