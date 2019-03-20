@@ -1,3 +1,4 @@
+#include <float.h>
 #include <strings.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "log.h"
@@ -90,8 +91,9 @@ static struct sway_node *get_node_in_output_direction(
 	return &ws->node;
 }
 
-static struct sway_node *node_get_in_direction(struct sway_container *container,
-		struct sway_seat *seat, enum wlr_direction dir) {
+static struct sway_node *node_get_in_direction_tiling(
+		struct sway_container *container, struct sway_seat *seat,
+		enum wlr_direction dir) {
 	struct sway_container *wrap_candidate = NULL;
 	struct sway_container *current = container;
 	while (current) {
@@ -170,6 +172,37 @@ static struct sway_node *node_get_in_direction(struct sway_container *container,
 	}
 
 	return NULL;
+}
+
+static struct sway_node *node_get_in_direction_floating(
+		struct sway_container *con, struct sway_seat *seat,
+		enum wlr_direction dir) {
+	double ref_lx = con->x + con->width / 2;
+	double ref_ly = con->y + con->height / 2;
+	double closest_distance = DBL_MAX;
+	struct sway_container *closest_con = NULL;
+
+	for (int i = 0; i < con->workspace->floating->length; i++) {
+		struct sway_container *floater = con->workspace->floating->items[i];
+		if (floater == con) {
+			continue;
+		}
+		float distance = dir == WLR_DIRECTION_LEFT || dir == WLR_DIRECTION_RIGHT
+			? (floater->x + floater->width / 2) - ref_lx
+			: (floater->y + floater->height / 2) - ref_ly;
+		if (dir == WLR_DIRECTION_LEFT || dir == WLR_DIRECTION_UP) {
+			distance = -distance;
+		}
+		if (distance < 0) {
+			continue;
+		}
+		if (distance < closest_distance) {
+			closest_distance = distance;
+			closest_con = floater;
+		}
+	}
+
+	return closest_con ? &closest_con->node : NULL;
 }
 
 static struct cmd_results *focus_mode(struct sway_workspace *ws,
@@ -330,11 +363,19 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
 
-	struct sway_node *next_focus =
-		node_get_in_direction(container, seat, direction);
+	struct sway_node *next_focus = NULL;
+	if (container_is_floating(container)) {
+		next_focus = node_get_in_direction_floating(container, seat, direction);
+	} else {
+		next_focus = node_get_in_direction_tiling(container, seat, direction);
+	}
 	if (next_focus) {
 		seat_set_focus(seat, next_focus);
 		seat_consider_warp_to_focus(seat);
+
+		if (next_focus->type == N_CONTAINER) {
+			container_raise_floating(next_focus->sway_container);
+		}
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
