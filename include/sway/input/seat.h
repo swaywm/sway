@@ -27,6 +27,7 @@ struct sway_seat_device {
 	struct sway_seat *sway_seat;
 	struct sway_input_device *input_device;
 	struct sway_keyboard *keyboard;
+	struct sway_switch *switch_device;
 	struct wl_list link; // sway_seat::devices
 };
 

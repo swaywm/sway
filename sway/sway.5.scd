@@ -341,6 +341,28 @@ runtime.
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
+*bindswitch* [--locked] [--no-warn] <switch>:<state> <command>
+	Binds <switch> to execute the sway command _command_ on state changes.
+	Supported switches are _lid_ (laptop lid) and _tablet_ (tablet mode)
+	switches. Valid values for _state_ are _on_, _off_ and _toggle. These
+	switches are on when the device lid is shut and when tablet mode is active
+	respectively. _toggle_ is also supported to run a command both when the
+	switch is toggled on or off.
+
+	Unless the flag _--locked_ is set, the command will not be run
+	when a screen locking program is active. By default, if you
+	overwrite a binding, swaynag will give you a warning. To silence this, use
+	the _--no-warn_ flag.
+
+	Example:
+```
+		# Show the virtual keyboard when tablet mode is entered.
+		bindswitch tablet:on busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
+
+		# Log a message when the laptop lid is opened or closed.
+		bindswitch lid:toggle exec echo "Lid moved"
+```
+
 *client.<class>* <border> <background> <text> <indicator> <child_border>
 	Configures the color of window borders and title bars. All 5 colors are
 	required, with the exception of *client.background*, which requires exactly
@@ -551,9 +573,9 @@ The default colors are:
 	Switches to the specified mode. The default mode _default_.
 
 *mode* [--pango_markup] <mode> <mode-subcommands...>
-	The only two valid _mode-subcommands..._ are *bindsym* and *bindcode*.
-	If _--pango_markup_ is given, then _mode_ will be interpreted as pango
-	markup.
+	The only valid _mode-subcommands..._ are *bindsym*, *bindcode* and
+	*bindswitch*. If _--pango_markup_ is given, then _mode_ will be interpreted
+	as pango markup.
 
 *mouse_warping* output|container|none
 	If _output_ is specified, the mouse will be moved to new outputs as you

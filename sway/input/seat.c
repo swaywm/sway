@@ -15,6 +15,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
+#include "sway/input/switch.h"
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -482,8 +483,8 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
 			caps |= WL_SEAT_CAPABILITY_POINTER;
 			break;
-		case WLR_INPUT_DEVICE_TABLET_PAD:
 		case WLR_INPUT_DEVICE_SWITCH:
+		case WLR_INPUT_DEVICE_TABLET_PAD:
 			break;
 		}
 	}
@@ -570,6 +571,15 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	}
 }
 
+static void seat_configure_switch(struct sway_seat *seat,
+        struct sway_seat_device *seat_device) {
+	if (!seat_device->switch_device) {
+		sway_switch_create(seat, seat_device);
+	}
+	seat_apply_input_config(seat, seat_device);
+	sway_switch_configure(seat_device->switch_device);
+}
+
 static void seat_configure_touch(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
@@ -611,6 +621,9 @@ void seat_configure_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_KEYBOARD:
 			seat_configure_keyboard(seat, seat_device);
 			break;
+		case WLR_INPUT_DEVICE_SWITCH:
+			seat_configure_switch(seat, seat_device);
+			break;
 		case WLR_INPUT_DEVICE_TOUCH:
 			seat_configure_touch(seat, seat_device);
 			break;
@@ -619,9 +632,6 @@ void seat_configure_device(struct sway_seat *seat,
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 			sway_log(SWAY_DEBUG, "TODO: configure tablet pad");
-			break;
-		case WLR_INPUT_DEVICE_SWITCH:
-			sway_log(SWAY_DEBUG, "TODO: configure switch device");
 			break;
 	}
 }

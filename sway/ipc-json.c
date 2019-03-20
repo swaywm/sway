@@ -91,14 +91,14 @@ static const char *ipc_json_device_type_description(struct sway_input_device *de
 		return "pointer";
 	case WLR_INPUT_DEVICE_KEYBOARD:
 		return "keyboard";
+	case WLR_INPUT_DEVICE_SWITCH:
+		return "switch";
 	case WLR_INPUT_DEVICE_TOUCH:
 		return "touch";
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
 		return "tablet_tool";
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return "tablet_pad";
-	case WLR_INPUT_DEVICE_SWITCH:
-		return "switch";
 	}
 	return "unknown";
 }
