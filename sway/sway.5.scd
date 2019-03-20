@@ -573,9 +573,9 @@ The default colors are:
 	Switches to the specified mode. The default mode _default_.
 
 *mode* [--pango_markup] <mode> <mode-subcommands...>
-	The only valid _mode-subcommands..._ are *bindsym*, *bindcode* and
-	*bindswitch*. If _--pango_markup_ is given, then _mode_ will be interpreted
-	as pango markup.
+	The only valid _mode-subcommands..._ are *bindsym*, *bindcode*,
+	*bindswitch*, and *set*. If _--pango_markup_ is given, then _mode_ will be
+	interpreted as pango markup.
 
 *mouse_warping* output|container|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
