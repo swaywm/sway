@@ -276,7 +276,6 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			// Var replacement, for all but first argument of set
 			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 				argv[i] = do_var_replacement(argv[i]);
-				unescape_string(argv[i]);
 			}
 
 			if (!config->handler_context.using_criteria) {
