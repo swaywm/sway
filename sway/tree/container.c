@@ -651,6 +651,17 @@ void floating_calculate_constraints(int *min_width, int *max_width,
 
 void container_init_floating(struct sway_container *con) {
 	struct sway_workspace *ws = con->workspace;
+	struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
+			ws->output->wlr_output);
+	if (!ob) {
+		// On NOOP output. Will be called again when moved to an output
+		con->x = 0;
+		con->y = 0;
+		con->width = 0;
+		con->height = 0;
+		return;
+	}
+
 	int min_width, max_width, min_height, max_height;
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
@@ -659,8 +670,6 @@ void container_init_floating(struct sway_container *con) {
 		con->width = max_width;
 		con->height = max_height;
 		if (con->width > ws->width || con->height > ws->height) {
-			struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
-					ws->output->wlr_output);
 			con->x = ob->x + (ob->width - con->width) / 2;
 			con->y = ob->y + (ob->height - con->height) / 2;
 		} else {
@@ -675,8 +684,6 @@ void container_init_floating(struct sway_container *con) {
 			fmax(min_height, fmin(view->natural_height, max_height));
 		if (con->content_width > ws->width
 				|| con->content_height > ws->height) {
-			struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
-					ws->output->wlr_output);
 			con->content_x = ob->x + (ob->width - con->content_width) / 2;
 			con->content_y = ob->y + (ob->height - con->content_height) / 2;
 		} else {
