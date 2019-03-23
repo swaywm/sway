@@ -60,6 +60,27 @@ static void restore_workspaces(struct sway_output *output) {
 		struct sway_workspace *ws = root->noop_output->workspaces->items[0];
 		workspace_detach(ws);
 		output_add_workspace(output, ws);
+		
+		// If the floater was made floating while on the NOOP output, its width
+		// and height will be zero and it should be reinitialized as a floating
+		// container to get the appropriate size and location. Additionally, if
+		// the floater is wider or taller than the output or is completely
+		// outside of the output's bounds, do the same as the output layout has
+		// likely changed and the maximum size needs to be checked and the
+		// floater re-centered
+		for (int i = 0; i < ws->floating->length; i++) {
+			struct sway_container *floater = ws->floating->items[i];
+			if (floater->width == 0 || floater->height == 0 ||
+					floater->width > output->width ||
+					floater->height > output->height ||
+					floater->x > output->lx + output->width ||
+					floater->y > output->ly + output->height ||
+					floater->x + floater->width < output->lx ||
+					floater->y + floater->height < output->ly) {
+				container_init_floating(floater);
+			}
+		}
+
 		ipc_event_workspace(NULL, ws, "move");
 	}
 
