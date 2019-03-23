@@ -85,4 +85,6 @@ struct sway_container *root_find_container(
 
 void root_get_box(struct sway_root *root, struct wlr_box *box);
 
+void root_rename_pid_workspaces(const char *old_name, const char *new_name);
+
 #endif
