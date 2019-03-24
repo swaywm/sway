@@ -6,7 +6,7 @@ avec i3, **en cours de développement**.  Lisez la
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway sur
 irc.freenode.net).
 
-Si vous souhaitez soutenir le développement de Sway, vous pouvez contribuer à [La page
+Si vous souhaitez soutenir le développement de Sway, vous pouvez contribuer à [la page
 Patreon de SirCmpwn](https://patreon.com/sircmpwn).
 
 ## Aide en français
@@ -47,7 +47,7 @@ Installez les dépendances :
 
 _\*Requis uniquement pour la compilation_
 
-_\*\*optionnel: requis uniquement pour swaybg_
+_\*\*Optionnel: requis uniquement pour swaybg_
 
 Exécutez ces commandes :
 
@@ -59,7 +59,7 @@ Sur les systèmes sans logind, vous devez suid le binaire de sway :
 
     sudo chmod a+s /usr/local/bin/sway
 
-Sway se débarassera des permissions root peu de temps après le démarrage.
+Sway se débarassera des permissions *root* peu de temps après le démarrage.
 
 ## Configuration
 
