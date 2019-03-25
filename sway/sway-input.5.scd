@@ -184,7 +184,16 @@ correct seat.
 	Hides the cursor image after the specified _timeout_ (in milliseconds)
 	has elapsed with no activity on that cursor. A timeout of 0 (default)
 	disables hiding the cursor. The minimal timeout is 100 and any value less
-	than that (aside from 0), will be increased to 100.
+	than that (aside from 0), will be increased to 100. This may be used in
+	conjunction with _hide_cursor_while_typing_ to have complex cursor hiding
+	rules.
+
+*seat* <name> hide_cursor_while_typing <timeout>
+	Hides the cursor image while typing. The cursor image will be hidden until
+	the timeout expires after the last key is released. A timeout of 0
+	(default) disables hiding the cursor. The minimal timeout is 100 and any
+	value less than that (aside from 0), will be increased to 100. This may be
+	used in conjunction with _hide_cursor_ to have complex cursor hiding rules
 
 *seat* <name> pointer_constraint enable|disable|escape
 	Enables or disables the ability for clients to capture the cursor (enabled

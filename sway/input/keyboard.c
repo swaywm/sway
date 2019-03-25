@@ -9,6 +9,7 @@
 #include "sway/commands.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
@@ -394,6 +395,19 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		wlr_seat_set_keyboard(wlr_seat, wlr_device);
 		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 				event->keycode, event->state);
+	}
+
+	// Handle hiding the cursor while typing
+	int timeout = cursor_get_timeout(seat->cursor, CURSOR_HIDDEN_TYPING);
+	if (timeout > 0) {
+		if (event->state == WLR_KEY_PRESSED) {
+			cursor_hide(seat->cursor, CURSOR_HIDDEN_TYPING);
+			wl_event_source_timer_update(seat->cursor->hide_source_typing, 0);
+		} else if (event->state == WLR_KEY_RELEASED
+				&& keyboard->state_keycodes.npressed == 0) {
+			wl_event_source_timer_update(seat->cursor->hide_source_typing,
+					timeout);
+		}
 	}
 
 	transaction_commit_dirty();

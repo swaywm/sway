@@ -176,18 +176,48 @@ void cursor_rebase_all(void) {
 
 static int hide_notify(void *data) {
 	struct sway_cursor *cursor = data;
-	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
-	cursor->hidden = true;
-	wlr_seat_pointer_clear_focus(cursor->seat->wlr_seat);
+	cursor_hide(cursor, CURSOR_HIDDEN_IDLE);
 	return 1;
 }
 
-int cursor_get_timeout(struct sway_cursor *cursor){
+void cursor_hide(struct sway_cursor *cursor,
+		enum sway_cursor_hidden_reason reason) {
+	if (!sway_assert(reason != CURSOR_VISIBLE,
+				"Cannot hide cursor for reason CURSOR_VISIBLE")) {
+		return;
+	}
+	if (cursor->hidden == CURSOR_VISIBLE) {
+		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+		cursor->hidden |= reason;
+		wlr_seat_pointer_clear_focus(cursor->seat->wlr_seat);
+	} else {
+		cursor->hidden |= reason;
+	}
+}
+
+int cursor_get_timeout(struct sway_cursor *cursor,
+		enum sway_cursor_hidden_reason reason) {
 	struct seat_config *sc = seat_get_config(cursor->seat);
 	if (!sc) {
 		sc = seat_get_config_by_name("*");
 	}
-	int timeout = sc ? sc->hide_cursor_timeout : 0;
+	int timeout = 0;
+	switch (reason) {
+	case CURSOR_VISIBLE:
+		sway_assert(false, "There should not be attempt to retrieve the "
+				"timeout for CURSOR_VISIBLE");
+		break;
+	case CURSOR_HIDDEN_IDLE:
+		if (sc) {
+			timeout = sc->hide_cursor_timeout;
+		}
+		break;
+	case CURSOR_HIDDEN_TYPING:
+		if (sc) {
+			timeout = sc->hide_cursor_typing_timeout;
+		}
+		break;
+	}
 	if (timeout < 0) {
 		timeout = 0;
 	}
@@ -195,29 +225,44 @@ int cursor_get_timeout(struct sway_cursor *cursor){
 }
 
 void cursor_handle_activity(struct sway_cursor *cursor) {
-	wl_event_source_timer_update(
-			cursor->hide_source, cursor_get_timeout(cursor));
+	wl_event_source_timer_update(cursor->hide_source,
+			cursor_get_timeout(cursor, CURSOR_HIDDEN_IDLE));
 
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
-	if (cursor->hidden) {
-		cursor_unhide(cursor);
+	if ((cursor->hidden & CURSOR_HIDDEN_IDLE) != 0) {
+		cursor_unhide(cursor, CURSOR_HIDDEN_IDLE);
 	}
 }
 
-void cursor_unhide(struct sway_cursor *cursor) {
-	cursor->hidden = false;
-	if (cursor->image_surface) {
-		cursor_set_image_surface(cursor,
-				cursor->image_surface,
-				cursor->hotspot_x,
-				cursor->hotspot_y,
-				cursor->image_client);
-	} else {
-		const char *image = cursor->image;
-		cursor->image = NULL;
-		cursor_set_image(cursor, image, cursor->image_client);
+static int handle_typing_unhide(void *data) {
+	struct sway_cursor *cursor = data;
+	if ((cursor->hidden & CURSOR_HIDDEN_TYPING) != 0) {
+		cursor_unhide(cursor, CURSOR_HIDDEN_TYPING);
 	}
-	cursor_rebase(cursor);
+	return 1;
+}
+
+void cursor_unhide(struct sway_cursor *cursor,
+		enum sway_cursor_hidden_reason reason) {
+	if (reason == CURSOR_VISIBLE) {
+		cursor->hidden = CURSOR_VISIBLE;
+	} else {
+		cursor->hidden &= ~reason;
+	}
+	if (cursor->hidden == CURSOR_VISIBLE) {
+		if (cursor->image_surface) {
+			cursor_set_image_surface(cursor,
+					cursor->image_surface,
+					cursor->hotspot_x,
+					cursor->hotspot_y,
+					cursor->image_client);
+		} else {
+			const char *image = cursor->image;
+			cursor->image = NULL;
+			cursor_set_image(cursor, image, cursor->image_client);
+		}
+		cursor_rebase(cursor);
+	}
 }
 
 static void cursor_motion(struct sway_cursor *cursor, uint32_t time_msec,
@@ -587,7 +632,7 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	cursor->hotspot_x = cursor->hotspot_y = 0;
 	cursor->image_client = client;
 
-	if (cursor->hidden) {
+	if (cursor->hidden != CURSOR_VISIBLE) {
 		return;
 	}
 
@@ -612,7 +657,7 @@ void cursor_set_image_surface(struct sway_cursor *cursor,
 	cursor->hotspot_y = hotspot_y;
 	cursor->image_client = client;
 
-	if (cursor->hidden) {
+	if (cursor->hidden != CURSOR_VISIBLE) {
 		return;
 	}
 
@@ -625,6 +670,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	}
 
 	wl_event_source_remove(cursor->hide_source);
+	wl_event_source_remove(cursor->hide_source_typing);
 
 	wl_list_remove(&cursor->motion.link);
 	wl_list_remove(&cursor->motion_absolute.link);
@@ -664,6 +710,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	cursor->hide_source = wl_event_loop_add_timer(server.wl_event_loop,
 			hide_notify, cursor);
+	cursor->hide_source_typing = wl_event_loop_add_timer(server.wl_event_loop,
+			handle_typing_unhide, cursor);
 
 	// input events
 	wl_signal_add(&wlr_cursor->events.motion, &cursor->motion);

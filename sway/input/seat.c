@@ -507,6 +507,7 @@ static void seat_reset_input_config(struct sway_seat *seat,
 		sway_device->input_device->identifier);
 	wlr_cursor_map_input_to_output(seat->cursor->cursor,
 		sway_device->input_device->wlr_device, NULL);
+	cursor_unhide(seat->cursor, CURSOR_VISIBLE);
 }
 
 static void seat_apply_input_config(struct sway_seat *seat,
@@ -1207,9 +1208,10 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	} else {
 		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
 	}
-	if (seat->cursor->hidden){
-		cursor_unhide(seat->cursor);
-		wl_event_source_timer_update(seat->cursor->hide_source, cursor_get_timeout(seat->cursor));
+	if (seat->cursor->hidden != CURSOR_VISIBLE) {
+		cursor_unhide(seat->cursor, CURSOR_VISIBLE);
+		wl_event_source_timer_update(seat->cursor->hide_source,
+				cursor_get_timeout(seat->cursor, CURSOR_HIDDEN_IDLE));
 	}
 }
 
