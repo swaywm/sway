@@ -9,13 +9,8 @@ Sway ist ein i3-kompatibler
 [IRC-Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway in
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
 Falls du die Entwicklung von Sway unterstützen möchtest, kannst du das auf der 
-[Patreon-Seite](https://patreon.com/sircmpwn) tun, oder indem du zu
-[Entwicklungsprämien](https://github.com/swaywm/sway/issues/986) 
-bestimmter Features beiträgst. Jeder ist dazu eingeladen, eine Prämie in Anspruch
-zu nehmen oder für gewünschte Features bereitzustellen. Patreon ist eher dafür
+[Patreon-Seite](https://patreon.com/sircmpwn). Patreon ist eher dafür
 gedacht, Sways Wartung und das Projekt generell zu unterstützen.
 
 ## Deutscher Support
@@ -43,21 +38,7 @@ schaue im IRC-Channel vorbei oder schreibe eine E‑Mail an sir@cmpwn.com (nur e
 
 ### Kompilieren des Quellcodes
 
-Abhängigkeiten:
-
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
-* wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
-* pcre
-* json-c >= 0.13
-* pango
-* cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (erforderlich für man pages)
-* git
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Nur erforderlich für swaybar, swaybg_
 

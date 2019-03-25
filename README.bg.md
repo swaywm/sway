@@ -6,8 +6,6 @@ Sway е в процес на разработка, съвместим с i3,
 канала](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
 Ако желаете, може да дарите на [Patreon страницата на автора](https://patreon.com/sircmpwn), което ще помогне за цялостното здраве и развитие на проекта.
 
 ## Помощ
@@ -32,36 +30,15 @@ Sway съществува в репотата (хранилищата) на мн
 
 ### Компилиране от сорс-код
 
-Инсталирайте следните пакети:
-
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
-* wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
-* pcre
-* json-c >= 0.13
-* pango
-* cairo
-* gdk-pixbuf2 *
-* dbus >= 1.10 **
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (Нужен за man страници)
-* git
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Нужен само за swaybar, swaybg_
-
-_\*\*Нужен само за tray_
 
 Изпълнете следните команди:
 
     meson build
     ninja -C build
     sudo ninja -C build install
-
-Ако имате logind:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Иначе:
 

@@ -6,15 +6,8 @@
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
 Якщо ви хочете підтримати розробку Sway, ви можете зробити свій внесок у
-[SirCmpwn'ову сторінку Patreon](https://patreon.com/sircmpwn) або до
-[фонду винагород](https://github.com/swaywm/sway/issues/986) за реалізацію
-певного функціоналу.
-Кожен може виставити винагороду за реалізацію довільної функції
-(і, відповідно, забрати її собі, виконавши це завдання);
-кошти від сторінки Patreon підтримують загальну розробку та підтримку Sway.
+[SirCmpwn'ову сторінку Patreon](https://patreon.com/sircmpwn). кошти від сторінки Patreon підтримують загальну розробку та підтримку Sway.
 
 ## Підтримка українською мовою
 
@@ -44,21 +37,7 @@ Sway доступний у багатьох дистрибутивах Linux (а
 
 ### З вихідного коду
 
-Встановіть залежності:
-
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
-* wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
-* pcre
-* json-c >= 0.13
-* pango
-* cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
-* git
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Лише для swaybar, swaybg_
 
@@ -67,11 +46,6 @@ _\*Лише для swaybar, swaybg_
     meson build
     ninja -C build
     sudo ninja -C build install
-
-На системах **з** logind, варто встановити декілька можливостей (caps)
-на виконуваний файл sway:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 На системах **без** logind, необхідно встановити біт SUID на виконуваний файл sway:
 

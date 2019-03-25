@@ -6,14 +6,8 @@ Inglese)](https://github.com/swaywm/sway/wiki). Unisciti al [canale IRC (in
 Inglese)](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
 Se vuoi supportare lo sviluppo di Sway, puoi contribuire dalla 
-[pagina Patreon di SirCmpwn's](https://patreon.com/sircmpwn) o con dei
-[premi](https://github.com/swaywm/sway/issues/986) per finanziare lo sviluppo
-di funzionalità specifiche.
-Chiunque è libero di reclamare un premio o crearne uno per qualsiasi funzionalità.
-Patreon è più utile al supporto e alla manutenzione generale di Sway.
+[pagina Patreon di SirCmpwn's](https://patreon.com/sircmpwn). Patreon è più utile al supporto e alla manutenzione generale di Sway.
 
 ## Supporto italiano
 syknro offre supporto in Italiano su GitHub nel fuso orario UTC+2.
@@ -37,21 +31,7 @@ a sir@cmpwn.com.
 
 ### Compilando il codice sorgente
 
-Installa queste dipendenze:
-
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
-* wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
-* pcre
-* json-c >= 0.13
-* pango
-* cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (rrichiesto per man pages)
-* git
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Richiesto solo per swaybar, swaybg_
 

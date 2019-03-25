@@ -4,9 +4,7 @@ Swayはi3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタで�
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
 [IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)もあります。
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
-Swayの開発を支援したい場合は、[SirCmpwnのPatreon](https://patreon.com/sircmpwn)や、特定の機能に対する[報奨金のページ](https://github.com/swaywm/sway/issues/986)から寄付ができます。誰でも報奨金を請求できますし、自分の欲しい機能に報奨金を懸ける事も出来ます。またSwayのメンテナンスを支援するには、Patreonがより有用です。
+Swayの開発を支援したい場合は、[SirCmpwnのPatreon](https://patreon.com/sircmpwn).。またSwayのメンテナンスを支援するには、Patreonがより有用です。
 
 ## 日本語サポート
 
@@ -26,23 +24,9 @@ Swayは沢山のディストリビューションで提供されています。"
 
 ### ソースコードからコンパイル
 
-次の依存パッケージをインストールしてください:
-
-* meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
-* wayland
-* wayland-protocols \*
-* pcre
-* json-c
-* pango
-* cairo
-* gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です) \*
-* git \*
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*コンパイルの時_
-
-_\*\*オプション: swaybgでのみ必要です_
 
 次のコマンドを実行してください:
 

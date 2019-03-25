@@ -1,8 +1,5 @@
 # sway
 
-[**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/swaywm/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/swaywm/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/swaywm/sway/blob/master/README.pt.md#sway--) -
-[Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--) - [Български](https://github.com/swaywm/sway/blob/master/README.bg.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--)
-
 sway es un compositor de [Wayland](http://wayland.freedesktop.org/) compatible con i3.
 Lea el [FAQ](https://github.com/swaywm/sway/wiki). Únase al [canal de IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
@@ -27,23 +24,9 @@ escriba un email a sir@cmpwn.com
 
 ### Compilando el código fuente
 
-Instale las dependencias:
-
-* meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
-* wayland
-* wayland-protocols \*
-* pcre
-* json-c
-* pango
-* cairo
-* gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
-* git \*
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Compile-time dep_
-
-_\*\*opcional: necesario para swaybg_
 
 Desde su consola, ejecute las órdenes:
 

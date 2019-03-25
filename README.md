@@ -30,23 +30,9 @@ channel or shoot an email to sir@cmpwn.com for advice.
 
 ### Compiling from Source
 
-Install dependencies:
-
-* meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
-* wayland
-* wayland-protocols \*
-* pcre
-* json-c
-* pango
-* cairo
-* gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
-* git \*
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Compile-time dep_
-
-_\*\*optional: required for swaybg_
 
 Run these commands:
 

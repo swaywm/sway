@@ -31,23 +31,9 @@ IRC ou envoyez un e-mail à sir@cmpwn.com (en anglais seulement) pour des consei
 
 ### Compilation depuis la source
 
-Installez les dépendances :
-
-* meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
-* wayland
-* wayland-protocols \*
-* pcre
-* json-c
-* pango
-* cairo
-* gdk-pixbuf2 \*\*
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optionnel: requis pour les pages man) \*
-* git \*
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Requis uniquement pour la compilation_
-
-_\*\*Optionnel: requis uniquement pour swaybg_
 
 Exécutez ces commandes :
 

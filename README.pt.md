@@ -5,14 +5,8 @@ i3. Leia o [FAQ](https://github.com/swaywm/sway/wiki). Participe do [canal
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway no
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
 Se você deseja apoiar o desenvolvimento do Sway, você pode contribuir com o
-SirCmpwn em sua [página no Patreon](https://patreon.com/sircmpwn) ou você
-pode colaborar com [premiações](https://github.com/swaywm/sway/issues/986)
-para recursos específicos. Qualquer um pode requerer uma premiação ao implementar
-o recurso especificado, e você pode criar uma premiação para qualquer recurso que desejar.
-O Patreon é melhor direcionado para a manutenção a longo prazo do Sway.
+SirCmpwn em sua [página no Patreon](https://patreon.com/sircmpwn). O Patreon é melhor direcionado para a manutenção a longo prazo do Sway.
 
 ## Ajuda em português
 
@@ -44,21 +38,7 @@ visite o canal no IRC ou mande um email para sir@cmpwn.com (*em inglês*).
 
 ### A partir do código-fonte
 
-Antes de iniciar a compilação, instale as dependências:
-
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
-* wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
-* pcre
-* json-c >= 0.13
-* pango
-* cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (man pages)
-* git
+See [DEPENDENCIES.md](DEPENDENCIES.md)
 
 _\*Dependência apenas de swaybar, swaybg_
 
@@ -67,10 +47,6 @@ Para compilar, execute estes comandos:
     meson build
     ninja -C build
     sudo ninja -C build install
-
-Em sistemas com logind, configure as seguintes capacidades para o arquivo binário:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Em sistemas sem logind, ative a *flag* de *suid* do arquivo binário:
 
