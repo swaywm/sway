@@ -349,7 +349,7 @@ static void transaction_progress_queue(void) {
 	list_del(server.transactions, 0);
 
 	if (!server.transactions->length) {
-		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
+		sway_idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 		return;
 	}
 
