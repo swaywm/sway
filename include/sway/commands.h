@@ -136,6 +136,7 @@ sway_cmd cmd_fullscreen;
 sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
+sway_cmd cmd_inhibit_idle;
 sway_cmd cmd_input;
 sway_cmd cmd_seat;
 sway_cmd cmd_ipc;

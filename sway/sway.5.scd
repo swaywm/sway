@@ -146,6 +146,18 @@ set|plus|minus <amount>
 	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
 	_vertical_.
 
+*inhibit_idle* focus|fullscreen|open|none|visible
+	Set/unset an idle inhibitor for the view. _focus_ will inhibit idle when
+	the view is focused by any seat. _fullscreen_ will inhibit idle when the
+	view is fullscreen (or a descendant of a fullscreen container) and is
+	visible. _open_ will inhibit idle until the view is closed (or the
+	inhibitor is unset/changed). _visible_ will inhibit idle when the view is
+	visible on any output. _none_ will remove any existing idle inhibitor for
+	the view.
+
+	This can also be used with criteria to set an idle inhibitor for any
+	existing view or with _for_window_ to set idle inhibitors for future views.
+
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
 
