@@ -314,7 +314,7 @@ void view_destroy(struct sway_view *view);
 void view_begin_destroy(struct sway_view *view);
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
-	bool fullscreen, bool decoration);
+	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
 
 void view_unmap(struct sway_view *view);
 

@@ -339,6 +339,18 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
+	if (e->fullscreen && e->output && e->output->data) {
+		struct sway_output *output = e->output->data;
+		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (ws && !container_is_scratchpad_hidden(view->container)) {
+			if (container_is_floating(view->container)) {
+				workspace_add_floating(ws, view->container);
+			} else {
+				workspace_add_tiling(ws, view->container);
+			}
+		}
+	}
+
 	container_set_fullscreen(view->container, e->fullscreen);
 
 	arrange_root();
@@ -417,7 +429,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	}
 
 	view_map(view, view->wlr_xdg_surface->surface,
-		xdg_surface->toplevel->client_pending.fullscreen, csd);
+		xdg_surface->toplevel->client_pending.fullscreen,
+		xdg_surface->toplevel->client_pending.fullscreen_output,
+		csd);
 
 	transaction_commit_dirty();
 
