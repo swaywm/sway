@@ -415,7 +415,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xwayland_view->commit.notify = handle_commit;
 
 	// Put it back into the tree
-	view_map(view, xsurface->surface, xsurface->fullscreen, false);
+	view_map(view, xsurface->surface, xsurface->fullscreen, NULL, false);
 
 	transaction_commit_dirty();
 }

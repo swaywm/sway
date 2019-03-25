@@ -561,14 +561,26 @@ static bool should_focus(struct sway_view *view) {
 }
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
-			  bool fullscreen, bool decoration) {
+			  bool fullscreen, struct wlr_output *fullscreen_output,
+			  bool decoration) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
 	}
 	view->surface = wlr_surface;
 
+	// If there is a request to be opened fullscreen on a specific output, try
+	// to honor that request. Otherwise, fallback to assigns, pid mappings,
+	// focused workspace, etc
+	struct sway_workspace *ws = NULL;
+	if (fullscreen_output && fullscreen_output->data) {
+		struct sway_output *output = fullscreen_output->data;
+		ws = output_get_active_workspace(output);
+	}
+	if (!ws) {
+		ws = select_workspace(view);
+	}
+
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_workspace *ws = select_workspace(view);
 	struct sway_node *node = seat_get_focus_inactive(seat, &ws->node);
 	struct sway_container *target_sibling = node->type == N_CONTAINER ?
 		node->sway_container : NULL;
