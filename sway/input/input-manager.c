@@ -105,6 +105,37 @@ const char *input_device_get_type(struct sway_input_device *device) {
 	return "unknown";
 }
 
+static void apply_input_type_config(struct sway_input_device *input_device) {
+	const char *device_type = input_device_get_type(input_device);
+	struct input_config *type_config = NULL;
+	for (int i = 0; i < config->input_type_configs->length; i++) {
+		struct input_config *ic = config->input_type_configs->items[i];
+		if (strcmp(ic->identifier + 5, device_type) == 0) {
+			type_config = ic;
+			break;
+		}
+	}
+	if (type_config == NULL) {
+		return;
+	}
+
+	for (int i = 0; i < config->input_configs->length; i++) {
+		struct input_config *ic = config->input_configs->items[i];
+		if (strcmp(input_device->identifier, ic->identifier) == 0) {
+			struct input_config *current = new_input_config(ic->identifier);
+			merge_input_config(current, type_config);
+			merge_input_config(current, ic);
+
+			current->input_type = device_type;
+			config->input_configs->items[i] = current;
+			free_input_config(ic);
+			ic = NULL;
+
+			break;
+		}
+	}
+}
+
 static struct sway_input_device *input_sway_device_from_wlr(
 		struct wlr_input_device *device) {
 	struct sway_input_device *input_device = NULL;
@@ -541,6 +572,8 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "adding device: '%s'",
 		input_device->identifier);
 
+	apply_input_type_config(input_device);
+
 	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
 			input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 		input_manager_libinput_config_pointer(input_device);
@@ -693,9 +726,13 @@ void input_manager_set_focus(struct sway_node *node) {
 void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
 	bool wildcard = strcmp(input_config->identifier, "*") == 0;
+	bool type_wildcard = strncmp(input_config->identifier, "type:", 5) == 0;
 	wl_list_for_each(input_device, &server.input->devices, link) {
+		bool type_matches = type_wildcard &&
+			strcmp(input_device_get_type(input_device), input_config->identifier + 5) == 0;
 		if (strcmp(input_device->identifier, input_config->identifier) == 0
-				|| wildcard) {
+				|| wildcard
+				|| type_matches) {
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
 					input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 				input_manager_libinput_config_pointer(input_device);
@@ -826,6 +863,14 @@ struct input_config *input_device_get_config(struct sway_input_device *device) {
 			return input_config;
 		} else if (strcmp(input_config->identifier, "*") == 0) {
 			wildcard_config = input_config;
+		}
+	}
+
+	const char *device_type = input_device_get_type(device);
+	for (int i = 0; i < config->input_type_configs->length; ++i) {
+		input_config = config->input_type_configs->items[i];
+		if (strcmp(input_config->identifier + 5, device_type) == 0) {
+			return input_config;
 		}
 	}
 
