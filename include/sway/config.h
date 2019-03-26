@@ -105,6 +105,7 @@ struct input_config_mapped_from_region {
  */
 struct input_config {
 	char *identifier;
+	const char *input_type;
 
 	int accel_profile;
 	int click_method;
@@ -418,6 +419,7 @@ struct sway_config {
 	list_t *workspace_configs;
 	list_t *output_configs;
 	list_t *input_configs;
+	list_t *input_type_configs;
 	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;

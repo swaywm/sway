@@ -113,6 +113,12 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->input_configs);
 	}
+	if (config->input_type_configs) {
+		for (int i = 0; i < config->input_type_configs->length; i++) {
+			free_input_config(config->input_type_configs->items[i]);
+		}
+		list_free(config->input_type_configs);
+	}
 	if (config->seat_configs) {
 		for (int i = 0; i < config->seat_configs->length; i++) {
 			free_seat_config(config->seat_configs->items[i]);
@@ -191,9 +197,11 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->workspace_configs = create_list())) goto cleanup;
 	if (!(config->criteria = create_list())) goto cleanup;
 	if (!(config->no_focus = create_list())) goto cleanup;
-	if (!(config->input_configs = create_list())) goto cleanup;
 	if (!(config->seat_configs = create_list())) goto cleanup;
 	if (!(config->output_configs = create_list())) goto cleanup;
+
+	if (!(config->input_type_configs = create_list())) goto cleanup;
+	if (!(config->input_configs = create_list())) goto cleanup;
 
 	if (!(config->cmd_queue = create_list())) goto cleanup;
 
