@@ -2,7 +2,7 @@
 
 [**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/swaywm/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/swaywm/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/swaywm/sway/blob/master/README.pt.md#sway--) -
 [Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--) - [Български](https://github.com/swaywm/sway/blob/master/README.bg.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) -
-[Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--)
+[Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--) - [**中文-简体**](https://github.com/swaywm/sway/blob/master/README-zh-CN.md#sway--)
 
 sway is an i3-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
 Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the [IRC
