@@ -5,12 +5,12 @@ sway 是和 i3 兼容的 [Wayland](http://wayland.freedesktop.org/) compositor.
 频道](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-如果你想要支持 sway 的发展, 请到这 [SirCmpwn's
+如果你想要支持 sway 的发展, 请到 [SirCmpwn's
 Patreon page](https://patreon.com/sircmpwn)贡献.
 
 ## 发布签名
 
-发布以 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 签名
+发布是以 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 签名
 并发布在 [GitHub](https://github.com/swaywm/sway/releases).
 
 ## 安装
