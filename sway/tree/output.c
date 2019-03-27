@@ -77,7 +77,7 @@ static void restore_workspaces(struct sway_output *output) {
 					floater->y > output->ly + output->height ||
 					floater->x + floater->width < output->lx ||
 					floater->y + floater->height < output->ly) {
-				container_init_floating(floater);
+				container_floating_resize_and_center(floater);
 			}
 		}
 

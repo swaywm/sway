@@ -124,15 +124,7 @@ void root_scratchpad_show(struct sway_container *con) {
 	struct wlr_box workspace_box;
 	workspace_get_box(new_ws, &workspace_box);
 	if (!wlr_box_contains_point(&workspace_box, center_lx, center_ly)) {
-		// Maybe resize it
-		if (con->width > new_ws->width || con->height > new_ws->height) {
-			container_init_floating(con);
-		}
-
-		// Center it
-		double new_lx = new_ws->x + (new_ws->width - con->width) / 2;
-		double new_ly = new_ws->y + (new_ws->height - con->height) / 2;
-		container_floating_move_to(con, new_lx, new_ly);
+		container_floating_resize_and_center(con);
 	}
 
 	arrange_workspace(new_ws);

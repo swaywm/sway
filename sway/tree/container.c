@@ -649,8 +649,31 @@ void floating_calculate_constraints(int *min_width, int *max_width,
 
 }
 
-void container_init_floating(struct sway_container *con) {
+static void floating_natural_resize(struct sway_container *con) {
+	int min_width, max_width, min_height, max_height;
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
+	if (!con->view) {
+		con->width = max_width;
+		con->height = max_height;
+	} else {
+		struct sway_view *view = con->view;
+		con->content_width =
+			fmax(min_width, fmin(view->natural_width, max_width));
+		con->content_height =
+			fmax(min_height, fmin(view->natural_height, max_height));
+		container_set_geometry_from_content(con);
+	}
+}
+
+void container_floating_resize_and_center(struct sway_container *con) {
 	struct sway_workspace *ws = con->workspace;
+	if (!ws) {
+		// On scratchpad, just resize
+		floating_natural_resize(con);
+		return;
+	}
+
 	struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
 			ws->output->wlr_output);
 	if (!ob) {
@@ -662,13 +685,8 @@ void container_init_floating(struct sway_container *con) {
 		return;
 	}
 
-	int min_width, max_width, min_height, max_height;
-	floating_calculate_constraints(&min_width, &max_width,
-			&min_height, &max_height);
-
+	floating_natural_resize(con);
 	if (!con->view) {
-		con->width = max_width;
-		con->height = max_height;
 		if (con->width > ws->width || con->height > ws->height) {
 			con->x = ob->x + (ob->width - con->width) / 2;
 			con->y = ob->y + (ob->height - con->height) / 2;
@@ -677,11 +695,6 @@ void container_init_floating(struct sway_container *con) {
 			con->y = ws->y + (ws->height - con->height) / 2;
 		}
 	} else {
-		struct sway_view *view = con->view;
-		con->content_width =
-			fmax(min_width, fmin(view->natural_width, max_width));
-		con->content_height =
-			fmax(min_height, fmin(view->natural_height, max_height));
 		if (con->content_width > ws->width
 				|| con->content_height > ws->height) {
 			con->content_x = ob->x + (ob->width - con->content_width) / 2;
@@ -711,7 +724,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		struct sway_container *old_parent = container->parent;
 		container_detach(container);
 		workspace_add_floating(workspace, container);
-		container_init_floating(container);
+		container_floating_resize_and_center(container);
 		if (container->view) {
 			view_set_tiled(container->view, false);
 			if (container->view->using_csd) {
@@ -995,7 +1008,7 @@ void container_fullscreen_disable(struct sway_container *con) {
 	// criteria, it needs to be reinitialized as floating to get the proper
 	// size and location
 	if (container_is_floating(con) && (con->width == 0 || con->height == 0)) {
-		container_init_floating(con);
+		container_floating_resize_and_center(con);
 	}
 
 	con->fullscreen_mode = FULLSCREEN_NONE;
