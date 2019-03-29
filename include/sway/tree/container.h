@@ -217,6 +217,8 @@ void floating_calculate_constraints(int *min_width, int *max_width,
 
 void container_floating_resize_and_center(struct sway_container *con);
 
+void container_floating_set_default_size(struct sway_container *con);
+
 void container_set_floating(struct sway_container *container, bool enable);
 
 void container_set_geometry_from_content(struct sway_container *con);

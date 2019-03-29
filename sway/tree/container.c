@@ -712,19 +712,28 @@ void container_floating_resize_and_center(struct sway_container *con) {
 	}
 }
 
-static void container_floating_set_default_size(struct sway_container *con) {
+void container_floating_set_default_size(struct sway_container *con) {
 	if (!sway_assert(con->workspace, "Expected a container on a workspace")) {
 		return;
 	}
+
 	int min_width, max_width, min_height, max_height;
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
 	struct wlr_box *box = calloc(1, sizeof(struct wlr_box));
 	workspace_get_box(con->workspace, box);
+
+	double width = fmax(min_width, fmin(box->width * 0.5, max_width));
+	double height = fmax(min_height, fmin(box->height * 0.75, max_height));
 	if (!con->view) {
-		con->width = fmax(min_width, fmin(box->width * 0.5, max_width));
-		con->height = fmax(min_height, fmin(box->height * 0.75, max_height));
+		con->width = width;
+		con->height = height;
+	} else {
+		con->content_width = width;
+		con->content_height = height;
+		container_set_geometry_from_content(con);
 	}
+
 	free(box);
 }
 
