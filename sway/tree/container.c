@@ -654,8 +654,8 @@ static void floating_natural_resize(struct sway_container *con) {
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
 	if (!con->view) {
-		con->width = max_width;
-		con->height = max_height;
+		con->width = fmax(min_width, fmin(con->width, max_width));
+		con->height = fmax(min_height, fmin(con->height, max_height));
 	} else {
 		struct sway_view *view = con->view;
 		con->content_width =
@@ -712,6 +712,22 @@ void container_floating_resize_and_center(struct sway_container *con) {
 	}
 }
 
+static void container_floating_set_default_size(struct sway_container *con) {
+	if (!sway_assert(con->workspace, "Expected a container on a workspace")) {
+		return;
+	}
+	int min_width, max_width, min_height, max_height;
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
+	struct wlr_box *box = calloc(1, sizeof(struct wlr_box));
+	workspace_get_box(con->workspace, box);
+	if (!con->view) {
+		con->width = fmax(min_width, fmin(box->width * 0.5, max_width));
+		con->height = fmax(min_height, fmin(box->height * 0.75, max_height));
+	}
+	free(box);
+}
+
 void container_set_floating(struct sway_container *container, bool enable) {
 	if (container_is_floating(container) == enable) {
 		return;
@@ -724,6 +740,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		struct sway_container *old_parent = container->parent;
 		container_detach(container);
 		workspace_add_floating(workspace, container);
+		container_floating_set_default_size(container);
 		container_floating_resize_and_center(container);
 		if (container->view) {
 			view_set_tiled(container->view, false);
