@@ -32,6 +32,11 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 		seat_set_focus_container(config->handler_context.seat, container);
 	}
 
+	if (container_is_scratchpad_hidden(container)) {
+		return cmd_results_new(CMD_INVALID,
+				"Can't change floating on hidden scratchpad container");
+	}
+
 	// If the container is in a floating split container,
 	// operate on the split container instead of the child.
 	if (container_is_floating_or_child(container)) {

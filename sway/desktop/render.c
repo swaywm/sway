@@ -997,9 +997,6 @@ void output_render(struct sway_output *output, struct timespec *when,
 	}
 
 	struct sway_container *fullscreen_con = root->fullscreen_global;
-	if (fullscreen_con && container_is_scratchpad_hidden(fullscreen_con)) {
-		fullscreen_con = NULL;
-	}
 	if (!fullscreen_con) {
 		fullscreen_con = workspace->current.fullscreen;
 	}

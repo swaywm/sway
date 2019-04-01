@@ -95,6 +95,10 @@ void container_begin_destroy(struct sway_container *con) {
 	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE && con->workspace) {
 		con->workspace->fullscreen = NULL;
 	}
+	if (con->scratchpad && con->fullscreen_mode == FULLSCREEN_GLOBAL) {
+		container_fullscreen_disable(con);
+	}
+
 	wl_signal_emit(&con->node.events.destroy, &con->node);
 
 	container_end_mouse_operation(con);
@@ -128,7 +132,9 @@ void container_reap_empty(struct sway_container *con) {
 		container_begin_destroy(con);
 		con = parent;
 	}
-	workspace_consider_destroy(ws);
+	if (ws) {
+		workspace_consider_destroy(ws);
+	}
 }
 
 struct sway_container *container_flatten(struct sway_container *container) {
@@ -954,18 +960,20 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 	set_fullscreen_iterator(con, &enable);
 	container_for_each_child(con, set_fullscreen_iterator, &enable);
 
-	con->workspace->fullscreen = con;
 	con->saved_x = con->x;
 	con->saved_y = con->y;
 	con->saved_width = con->width;
 	con->saved_height = con->height;
 
-	struct sway_seat *seat;
-	struct sway_workspace *focus_ws;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		focus_ws = seat_get_focused_workspace(seat);
-		if (focus_ws == con->workspace) {
-			seat_set_focus_container(seat, con);
+	if (con->workspace) {
+		con->workspace->fullscreen = con;
+		struct sway_seat *seat;
+		struct sway_workspace *focus_ws;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			focus_ws = seat_get_focused_workspace(seat);
+			if (focus_ws == con->workspace) {
+				seat_set_focus_container(seat, con);
+			}
 		}
 	}
 
@@ -1019,11 +1027,14 @@ void container_fullscreen_disable(struct sway_container *con) {
 	con->height = con->saved_height;
 
 	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE) {
-		con->workspace->fullscreen = NULL;
-		if (container_is_floating(con)) {
-			struct sway_output *output = container_floating_find_output(con);
-			if (con->workspace->output != output) {
-				container_floating_move_to_center(con);
+		if (con->workspace) {
+			con->workspace->fullscreen = NULL;
+			if (container_is_floating(con)) {
+				struct sway_output *output =
+					container_floating_find_output(con);
+				if (con->workspace->output != output) {
+					container_floating_move_to_center(con);
+				}
 			}
 		}
 	} else {
@@ -1040,6 +1051,17 @@ void container_fullscreen_disable(struct sway_container *con) {
 	con->fullscreen_mode = FULLSCREEN_NONE;
 	container_end_mouse_operation(con);
 	ipc_event_window(con, "fullscreen_mode");
+
+	if (con->scratchpad) {
+		struct sway_seat *seat;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			struct sway_container *focus = seat_get_focused_container(seat);
+			if (focus == con || container_has_ancestor(focus, con)) {
+				seat_set_focus(seat,
+						seat_get_focus_inactive(seat, &root->node));
+			}
+		}
+	}
 }
 
 void container_set_fullscreen(struct sway_container *con,
@@ -1056,7 +1078,7 @@ void container_set_fullscreen(struct sway_container *con,
 		if (root->fullscreen_global) {
 			container_fullscreen_disable(root->fullscreen_global);
 		}
-		if (con->workspace->fullscreen) {
+		if (con->workspace && con->workspace->fullscreen) {
 			container_fullscreen_disable(con->workspace->fullscreen);
 		}
 		container_fullscreen_workspace(con);
@@ -1171,6 +1193,11 @@ void container_add_gaps(struct sway_container *c) {
 			c->current_gaps.bottom > 0 || c->current_gaps.left > 0) {
 		return;
 	}
+	// Fullscreen global scratchpad containers cannot have gaps
+	struct sway_workspace *ws = c->workspace;
+	if (!ws) {
+		return;
+	}
 	// Linear containers don't have gaps because it'd create double gaps
 	if (!c->view && c->layout != L_TABBED && c->layout != L_STACKED) {
 		return;
@@ -1198,8 +1225,6 @@ void container_add_gaps(struct sway_container *c) {
 			return;
 		}
 	}
-
-	struct sway_workspace *ws = c->workspace;
 
 	c->current_gaps.top = c->y == ws->y ? ws->gaps_inner : 0;
 	c->current_gaps.right = ws->gaps_inner;
@@ -1308,6 +1333,10 @@ void container_add_child(struct sway_container *parent,
 	child->parent = parent;
 	child->workspace = parent->workspace;
 	container_for_each_child(child, set_workspace, NULL);
+	bool fullscreen = child->fullscreen_mode != FULLSCREEN_NONE ||
+		parent->fullscreen_mode != FULLSCREEN_NONE;
+	set_fullscreen_iterator(child, &fullscreen);
+	container_for_each_child(child, set_fullscreen_iterator, &fullscreen);
 	container_handle_fullscreen_reparent(child);
 	container_update_representation(parent);
 	node_set_dirty(&child->node);
@@ -1347,8 +1376,31 @@ void container_detach(struct sway_container *child) {
 
 void container_replace(struct sway_container *container,
 		struct sway_container *replacement) {
+	enum sway_fullscreen_mode fullscreen = container->fullscreen_mode;
+	bool scratchpad = container->scratchpad;
+	if (fullscreen != FULLSCREEN_NONE) {
+		container_fullscreen_disable(container);
+	}
+	if (scratchpad) {
+		root_scratchpad_show(container);
+		root_scratchpad_remove_container(container);
+	}
 	container_add_sibling(container, replacement, 1);
 	container_detach(container);
+	if (scratchpad) {
+		root_scratchpad_add_container(replacement);
+	}
+	switch (fullscreen) {
+	case FULLSCREEN_WORKSPACE:
+		container_fullscreen_workspace(replacement);
+		break;
+	case FULLSCREEN_GLOBAL:
+		container_fullscreen_global(replacement);
+		break;
+	case FULLSCREEN_NONE:
+		// noop
+		break;
+	}
 }
 
 struct sway_container *container_split(struct sway_container *child,
@@ -1369,7 +1421,11 @@ struct sway_container *container_split(struct sway_container *child,
 
 	if (set_focus) {
 		seat_set_raw_focus(seat, &cont->node);
-		seat_set_raw_focus(seat, &child->node);
+		if (cont->fullscreen_mode == FULLSCREEN_GLOBAL) {
+			seat_set_focus(seat, &child->node);
+		} else {
+			seat_set_raw_focus(seat, &child->node);
+		}
 	}
 
 	return cont;
@@ -1529,7 +1585,7 @@ void container_raise_floating(struct sway_container *con) {
 	while (floater->parent) {
 		floater = floater->parent;
 	}
-	if (container_is_floating(floater)) {
+	if (container_is_floating(floater) && floater->workspace) {
 		list_move_to_end(floater->workspace->floating, floater);
 		node_set_dirty(&floater->workspace->node);
 	}

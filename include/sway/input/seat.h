@@ -143,6 +143,11 @@ struct sway_node *seat_get_focus(struct sway_seat *seat);
 
 struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat);
 
+// If a scratchpad container is fullscreen global, this can be used to try to
+// determine the last focused workspace. Otherwise, this should yield the same
+// results as seat_get_focused_workspace.
+struct sway_workspace *seat_get_last_known_workspace(struct sway_seat *seat);
+
 struct sway_container *seat_get_focused_container(struct sway_seat *seat);
 
 /**
