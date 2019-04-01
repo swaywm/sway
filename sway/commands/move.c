@@ -395,6 +395,11 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		container = workspace_wrap_children(workspace);
 	}
 
+	if (container->fullscreen_mode == FULLSCREEN_GLOBAL) {
+		return cmd_results_new(CMD_FAILURE,
+				"Can't move fullscreen global container");
+	}
+
 	bool no_auto_back_and_forth = false;
 	while (strcasecmp(argv[0], "--no-auto-back-and-forth") == 0) {
 		no_auto_back_and_forth = true;
@@ -646,6 +651,10 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	}
 
 	struct sway_workspace *workspace = config->handler_context.workspace;
+	if (!workspace) {
+		return cmd_results_new(CMD_FAILURE, "No workspace to move");
+	}
+
 	struct sway_output *old_output = workspace->output;
 	int center_x = workspace->width / 2 + workspace->x,
 		center_y = workspace->height / 2 + workspace->y;

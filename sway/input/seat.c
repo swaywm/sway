@@ -172,14 +172,14 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 
 	seat_node_destroy(seat_node);
 
-	if (!parent) {
+	if (!parent && !needs_new_focus) {
 		// Destroying a container that is no longer in the tree
 		return;
 	}
 
 	// Find new focus_inactive (ie. sibling, or workspace if no siblings left)
 	struct sway_node *next_focus = NULL;
-	while (next_focus == NULL) {
+	while (next_focus == NULL && parent != NULL) {
 		struct sway_container *con =
 			seat_get_focus_inactive_view(seat, parent);
 		next_focus = con ? &con->node : NULL;
@@ -192,6 +192,16 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		parent = node_get_parent(parent);
 	}
 
+	if (!next_focus) {
+		struct sway_workspace *ws = seat_get_last_known_workspace(seat);
+		if (!ws) {
+			return;
+		}
+		struct sway_container *con =
+			seat_get_focus_inactive_view(seat, &ws->node);
+		next_focus = con ? &(con->node) : &(ws->node);
+	}
+
 	if (next_focus->type == N_WORKSPACE &&
 			!workspace_is_visible(next_focus->sway_workspace)) {
 		// Do not change focus to a non-visible workspace
@@ -199,6 +209,10 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 	}
 
 	if (needs_new_focus) {
+		// Make sure the workspace IPC event gets sent
+		if (node->type == N_CONTAINER && node->sway_container->scratchpad) {
+			seat_set_focus(seat, NULL);
+		}
 		// The structure change might have caused it to move up to the top of
 		// the focus stack without sending focus notifications to the view
 		seat_send_focus(next_focus, seat);
@@ -207,7 +221,7 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		// Setting focus_inactive
 		focus = seat_get_focus_inactive(seat, &root->node);
 		seat_set_raw_focus(seat, next_focus);
-		if (focus->type == N_CONTAINER) {
+		if (focus->type == N_CONTAINER && focus->sway_container->workspace) {
 			seat_set_raw_focus(seat, &focus->sway_container->workspace->node);
 		}
 		seat_set_raw_focus(seat, focus);
@@ -795,7 +809,13 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 	wl_list_remove(&seat_node->link);
 	wl_list_insert(&seat->focus_stack, &seat_node->link);
 	node_set_dirty(node);
-	node_set_dirty(node_get_parent(node));
+
+	// If focusing a scratchpad container that is fullscreen global, parent
+	// will be NULL
+	struct sway_node *parent = node_get_parent(node);
+	if (parent) {
+		node_set_dirty(parent);
+	}
 }
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
@@ -850,7 +870,8 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		}
 	}
 
-	struct sway_output *new_output = new_workspace->output;
+	struct sway_output *new_output =
+		new_workspace ? new_workspace->output : NULL;
 
 	if (last_workspace != new_workspace && new_output) {
 		node_set_dirty(&new_output->node);
@@ -894,7 +915,8 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 
 	// Move sticky containers to new workspace
-	if (new_output_last_ws && new_workspace != new_output_last_ws) {
+	if (new_workspace && new_output_last_ws
+			&& new_workspace != new_output_last_ws) {
 		for (int i = 0; i < new_output_last_ws->floating->length; ++i) {
 			struct sway_container *floater =
 				new_output_last_ws->floating->items[i];
@@ -940,7 +962,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 
 	seat->has_focus = true;
 
-	if (config->smart_gaps) {
+	if (config->smart_gaps && new_workspace) {
 		// When smart gaps is on, gaps may change when the focus changes so
 		// the workspace needs to be arranged
 		arrange_workspace(new_workspace);
@@ -1132,6 +1154,20 @@ struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat) {
 		return focus->sway_workspace;
 	}
 	return NULL; // output doesn't have a workspace yet
+}
+
+struct sway_workspace *seat_get_last_known_workspace(struct sway_seat *seat) {
+	struct sway_seat_node *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		struct sway_node *node = current->node;
+		if (node->type == N_CONTAINER &&
+				node->sway_container->workspace) {
+			return node->sway_container->workspace;
+		} else if (node->type == N_WORKSPACE) {
+			return node->sway_workspace;
+		}
+	}
+	return NULL;
 }
 
 struct sway_container *seat_get_focused_container(struct sway_seat *seat) {

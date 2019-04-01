@@ -147,7 +147,11 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			workspace->layout = new_layout;
 			workspace_update_representation(workspace);
 		}
-		arrange_workspace(workspace);
+		if (root->fullscreen_global) {
+			arrange_root();
+		} else {
+			arrange_workspace(workspace);
+		}
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

@@ -182,6 +182,10 @@ static struct sway_node *node_get_in_direction_floating(
 	double closest_distance = DBL_MAX;
 	struct sway_container *closest_con = NULL;
 
+	if (!con->workspace) {
+		return NULL;
+	}
+
 	for (int i = 0; i < con->workspace->floating->length; i++) {
 		struct sway_container *floater = con->workspace->floating->items[i];
 		if (floater == con) {

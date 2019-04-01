@@ -62,6 +62,11 @@ void root_scratchpad_add_container(struct sway_container *con) {
 	struct sway_container *parent = con->parent;
 	struct sway_workspace *workspace = con->workspace;
 
+	// Clear the fullscreen mode when sending to the scratchpad
+	if (con->fullscreen_mode != FULLSCREEN_NONE) {
+		container_fullscreen_disable(con);
+	}
+
 	// When a tiled window is sent to scratchpad, center and resize it.
 	if (!container_is_floating(con)) {
 		container_set_floating(con, true);
@@ -143,6 +148,15 @@ void root_scratchpad_hide(struct sway_container *con) {
 	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	struct sway_workspace *ws = con->workspace;
 
+	if (con->fullscreen_mode == FULLSCREEN_GLOBAL && !con->workspace) {
+		// If the container was made fullscreen global while in the scratchpad,
+		// it should be shown until fullscreen has been disabled
+		return;
+	}
+
+	if (con->fullscreen_mode != FULLSCREEN_NONE) {
+		container_fullscreen_disable(con);
+	}
 	container_detach(con);
 	arrange_workspace(ws);
 	if (&con->node == focus || node_has_ancestor(focus, &con->node)) {
