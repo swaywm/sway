@@ -64,6 +64,13 @@ must be separated by one space. For example:
 	applications to taste. HiDPI isn't supported with Xwayland clients (windows
 	will blur).
 
+*output* <name> subpixel rgb|bgr|vrgb|vbgr|none
+	Manually sets the subpixel hinting for the specified output. This value is
+	usually auto-detected, but some displays may misreport their subpixel
+	geometry. Using the correct subpixel hinting allows for sharper text.
+	Incorrect values will result in blurrier text. When changing this via
+	*swaymsg*, some applications may need to be restarted to use the new value.
+
 *output* <name> background|bg <file> <mode> [<fallback_color>]
 	Sets the wallpaper for the given output to the specified file, using the
 	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If

@@ -45,7 +45,10 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 
 	container_set_floating(container, wants_floating);
 
-	arrange_workspace(container->workspace);
+	// Floating containers in the scratchpad should be ignored
+	if (container->workspace) {
+		arrange_workspace(container->workspace);
+	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

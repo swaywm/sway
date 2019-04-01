@@ -112,6 +112,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
 	{ "fullscreen", cmd_fullscreen },
+	{ "inhibit_idle", cmd_inhibit_idle },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "mark", cmd_mark },
@@ -276,7 +277,6 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			// Var replacement, for all but first argument of set
 			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 				argv[i] = do_var_replacement(argv[i]);
-				unescape_string(argv[i]);
 			}
 
 			if (!config->handler_context.using_criteria) {

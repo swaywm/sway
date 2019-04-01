@@ -63,6 +63,7 @@ sway_sources = files(
 	'commands/fullscreen.c',
 	'commands/gaps.c',
 	'commands/hide_edge_borders.c',
+	'commands/inhibit_idle.c',
 	'commands/kill.c',
 	'commands/mark.c',
 	'commands/opacity.c',
@@ -169,6 +170,7 @@ sway_sources = files(
 	'commands/output/mode.c',
 	'commands/output/position.c',
 	'commands/output/scale.c',
+	'commands/output/subpixel.c',
 	'commands/output/transform.c',
 
 	'tree/arrange.c',

@@ -16,7 +16,8 @@
 #include "config.h"
 
 bool criteria_is_empty(struct criteria *criteria) {
-	return !criteria->title
+	return !criteria->autofail
+		&& !criteria->title
 		&& !criteria->shell
 		&& !criteria->app_id
 		&& !criteria->con_mark
@@ -98,6 +99,10 @@ static void find_urgent_iterator(struct sway_container *con, void *data) {
 
 static bool criteria_matches_view(struct criteria *criteria,
 		struct sway_view *view) {
+	if (criteria->autofail) {
+		return false;
+	}
+
 	if (criteria->title) {
 		const char *title = view_get_title(view);
 		if (!title || regex_cmp(title, criteria->title) != 0) {
@@ -366,50 +371,66 @@ static enum criteria_token token_from_name(char *name) {
  * using criteria via IPC. Using __focused__ in config is not useful because
  * criteria is only executed once per view.
  */
-static char *get_focused_prop(enum criteria_token token) {
+static char *get_focused_prop(enum criteria_token token, bool *autofail) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
 
-	if (!focus || !focus->view) {
-		return NULL;
-	}
-	struct sway_view *view = focus->view;
+	struct sway_view *view = focus ? focus->view : NULL;
 	const char *value = NULL;
 
 	switch (token) {
 	case T_APP_ID:
-		value = view_get_app_id(view);
+		*autofail = true;
+		if (view) {
+			value = view_get_app_id(view);
+		}
 		break;
 	case T_SHELL:
-		value = view_get_shell(view);
+		*autofail = true;
+		if (view) {
+			value = view_get_shell(view);
+		}
 		break;
 	case T_TITLE:
-		value = view_get_title(view);
+		*autofail = true;
+		if (view) {
+			value = view_get_title(view);
+		}
 		break;
 	case T_WORKSPACE:
-		if (focus->workspace) {
+		*autofail = true;
+		if (focus && focus->workspace) {
 			value = focus->workspace->name;
 		}
 		break;
 	case T_CON_ID:
-		if (view->container == NULL) {
-			return NULL;
+		*autofail = true;
+		if (view && view->container) {
+			size_t id = view->container->node.id;
+			size_t id_size = snprintf(NULL, 0, "%zu", id) + 1;
+			char *id_str = malloc(id_size);
+			snprintf(id_str, id_size, "%zu", id);
+			value = id_str;
 		}
-		size_t id = view->container->node.id;
-		size_t id_size = snprintf(NULL, 0, "%zu", id) + 1;
-		char *id_str = malloc(id_size);
-		snprintf(id_str, id_size, "%zu", id);
-		value = id_str;
 		break;
 #if HAVE_XWAYLAND
 	case T_CLASS:
-		value = view_get_class(view);
+		*autofail = true;
+		if (view) {
+			value = view_get_class(view);
+		}
 		break;
 	case T_INSTANCE:
-		value = view_get_instance(view);
+		*autofail = true;
+		if (view) {
+			value = view_get_instance(view);
+		}
 		break;
 	case T_WINDOW_ROLE:
-		value = view_get_window_role(view);
+		*autofail = true;
+		if (view) {
+			value = view_get_window_role(view);
+		}
 		break;
 	case T_WINDOW_TYPE: // These do not support __focused__
 	case T_ID:
@@ -419,6 +440,7 @@ static char *get_focused_prop(enum criteria_token token) {
 	case T_TILING:
 	case T_URGENT:
 	case T_INVALID:
+		*autofail = false;
 		break;
 	}
 	if (value) {
@@ -439,7 +461,12 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 
 	char *effective_value = NULL;
 	if (value && strcmp(value, "__focused__") == 0) {
-		effective_value = get_focused_prop(token);
+		bool autofail = false;
+		effective_value = get_focused_prop(token, &autofail);
+		if (!effective_value && autofail) {
+			criteria->autofail = true;
+			return true;
+		}
 	} else if (value) {
 		effective_value = strdup(value);
 	}

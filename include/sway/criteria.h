@@ -20,6 +20,7 @@ struct criteria {
 	char *cmdlist;
 	char *target; // workspace or output name for `assign` criteria
 
+	bool autofail; // __focused__ while no focus or n/a for focused view
 	pcre *title;
 	pcre *shell;
 	pcre *app_id;

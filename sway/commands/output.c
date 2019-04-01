@@ -18,6 +18,7 @@ static struct cmd_handler output_handlers[] = {
 	{ "res", output_cmd_mode },
 	{ "resolution", output_cmd_mode },
 	{ "scale", output_cmd_scale },
+	{ "subpixel", output_cmd_subpixel },
 	{ "transform", output_cmd_transform },
 };
 

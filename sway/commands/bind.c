@@ -316,7 +316,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		struct sway_binding *config_binding = mode_bindings->items[i];
 		if (binding_key_compare(binding, config_binding)) {
 			sway_log(SWAY_INFO, "Overwriting binding '%s' for device '%s' "
-					"from `%s` to `%s`", argv[0], binding->input,
+					"to `%s` from `%s`", argv[0], binding->input,
 					binding->command, config_binding->command);
 			if (warn) {
 				config_add_swaynag_warning("Overwriting binding"
@@ -420,7 +420,7 @@ struct cmd_results *cmd_bindswitch(int argc, char **argv) {
 	for (int i = 0; i < mode_bindings->length; ++i) {
 		struct sway_switch_binding *config_binding = mode_bindings->items[i];
 		if (binding_switch_compare(binding, config_binding)) {
-			sway_log(SWAY_INFO, "Overwriting binding '%s' from `%s` to `%s`",
+			sway_log(SWAY_INFO, "Overwriting binding '%s' to `%s` from `%s`",
 			         argv[0], binding->command, config_binding->command);
 			if (warn) {
 				config_add_swaynag_warning("Overwriting binding"

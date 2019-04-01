@@ -215,10 +215,9 @@ size_t container_titlebar_height(void);
 void floating_calculate_constraints(int *min_width, int *max_width,
 		int *min_height, int *max_height);
 
-/**
- * Resize and center the container in its workspace.
- */
-void container_init_floating(struct sway_container *container);
+void container_floating_resize_and_center(struct sway_container *con);
+
+void container_floating_set_default_size(struct sway_container *con);
 
 void container_set_floating(struct sway_container *container, bool enable);
 

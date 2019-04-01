@@ -8,10 +8,11 @@
 #include <unistd.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
-#include "log.h"
 #include "sway/config.h"
 #include "sway/output.h"
 #include "sway/tree/root.h"
+#include "log.h"
+#include "util.h"
 
 int output_name_cmp(const void *item, const void *data) {
 	const struct output_config *output = item;
@@ -43,6 +44,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->x = oc->y = -1;
 	oc->scale = -1;
 	oc->transform = -1;
+	oc->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
 	return oc;
 }
 
@@ -64,6 +66,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->scale != -1) {
 		dst->scale = src->scale;
+	}
+	if (src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
+		dst->subpixel = src->subpixel;
 	}
 	if (src->refresh_rate != -1) {
 		dst->refresh_rate = src->refresh_rate;
@@ -187,10 +192,10 @@ struct output_config *store_output_config(struct output_config *oc) {
 	}
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
+		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (dpms %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
-		oc->x, oc->y, oc->scale, oc->transform, oc->background,
-		oc->background_option, oc->dpms_state);
+		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
+		oc->transform, oc->background, oc->background_option, oc->dpms_state);
 
 	return oc;
 }
@@ -363,6 +368,14 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
 	}
+
+	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
+		sway_log(SWAY_DEBUG, "Set %s subpixel to %s", oc->name,
+			sway_wl_output_subpixel_to_string(oc->subpixel));
+		wlr_output_set_subpixel(wlr_output, oc->subpixel);
+		output_damage_whole(output);
+	}
+
 	if (oc && oc->transform >= 0) {
 		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
@@ -424,6 +437,8 @@ static void default_output_config(struct output_config *oc,
 	}
 	oc->x = oc->y = -1;
 	oc->scale = 1;
+	struct sway_output *output = wlr_output->data;
+	oc->subpixel = output->detected_subpixel;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
 	oc->dpms_state = DPMS_ON;
 }
