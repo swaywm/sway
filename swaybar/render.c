@@ -453,10 +453,10 @@ static uint32_t render_status_line_i3bar(cairo_t *cairo,
 	struct i3bar_block *block;
 	bool use_short_text = false;
 
-	// TODO: Add margin here?
 	double reserved_width =
 			predict_workspace_buttons_length(cairo, output) +
-			predict_binding_mode_indicator_length(cairo, output);
+			predict_binding_mode_indicator_length(cairo, output) +
+			3 * output->scale; // require a bit of space for margin
 
 	double predicted_full_pos =
 			predict_status_line_pos(cairo, output, *x);
