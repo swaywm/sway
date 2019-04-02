@@ -18,7 +18,7 @@ Patreon page](https://patreon.com/sircmpwn)贡献.
 ### 从软件包中
 
 Sway 在很多发行版中可用. 尝试在你的发行版中安装 "sway" 包.
-如何这不可用, 请到 [此 wiki 页](https://github.com/swaywm/sway/wiki/Unsupported-packages)
+如果这不可用, 请到 [此 wiki 页](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 检查针对你的发行版关于安装的信息.
 
 如果你有兴趣给你的发行版打包 sway, 停下来到 IRC 频道或者发邮件至 sir@cmpwn.com 获取建议.
