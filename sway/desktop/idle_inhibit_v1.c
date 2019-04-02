@@ -93,7 +93,8 @@ static bool check_active(struct sway_idle_inhibitor_v1 *inhibitor) {
 	switch (inhibitor->mode) {
 	case INHIBIT_IDLE_APPLICATION:
 		// If there is no view associated with the inhibitor, assume visible
-		return !inhibitor->view || view_is_visible(inhibitor->view);
+		return !inhibitor->view || !inhibitor->view->container ||
+			view_is_visible(inhibitor->view);
 	case INHIBIT_IDLE_FOCUS:;
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &server.input->seats, link) {
