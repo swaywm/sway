@@ -135,7 +135,7 @@ void root_scratchpad_show(struct sway_container *con) {
 
 void root_scratchpad_hide(struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_node *focus = seat_get_focus(seat);
+	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	struct sway_workspace *ws = con->workspace;
 
 	container_detach(con);
