@@ -228,91 +228,6 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 	return wlr_output_set_mode(output, best);
 }
 
-static void handle_swaybg_client_destroy(struct wl_listener *listener,
-		void *data) {
-	struct sway_output *output =
-		wl_container_of(listener, output, swaybg_client_destroy);
-	wl_list_remove(&output->swaybg_client_destroy.link);
-	wl_list_init(&output->swaybg_client_destroy.link);
-	output->swaybg_client = NULL;
-}
-
-static bool set_cloexec(int fd, bool cloexec) {
-	int flags = fcntl(fd, F_GETFD);
-	if (flags == -1) {
-		sway_log_errno(SWAY_ERROR, "fcntl failed");
-		return false;
-	}
-	if (cloexec) {
-		flags = flags | FD_CLOEXEC;
-	} else {
-		flags = flags & ~FD_CLOEXEC;
-	}
-	if (fcntl(fd, F_SETFD, flags) == -1) {
-		sway_log_errno(SWAY_ERROR, "fcntl failed");
-		return false;
-	}
-	return true;
-}
-
-static bool spawn_swaybg(struct sway_output *output, char *const cmd[]) {
-	int sockets[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
-		sway_log_errno(SWAY_ERROR, "socketpair failed");
-		return false;
-	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
-		return false;
-	}
-
-	output->swaybg_client = wl_client_create(server.wl_display, sockets[0]);
-	if (output->swaybg_client == NULL) {
-		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
-		return false;
-	}
-
-	output->swaybg_client_destroy.notify = handle_swaybg_client_destroy;
-	wl_client_add_destroy_listener(output->swaybg_client,
-		&output->swaybg_client_destroy);
-
-	pid_t pid = fork();
-	if (pid < 0) {
-		sway_log_errno(SWAY_ERROR, "fork failed");
-		return false;
-	} else if (pid == 0) {
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-				"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			execvp(cmd[0], cmd);
-			sway_log_errno(SWAY_ERROR, "execvp failed");
-			_exit(EXIT_FAILURE);
-		}
-		_exit(EXIT_SUCCESS);
-	}
-
-	if (close(sockets[1]) != 0) {
-		sway_log_errno(SWAY_ERROR, "close failed");
-		return false;
-	}
-	if (waitpid(pid, NULL, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
-		return false;
-	}
-
-	return true;
-}
-
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (output == root->noop_output) {
 		return false;
@@ -397,25 +312,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	wlr_output_transformed_resolution(wlr_output,
 		&output->width, &output->height);
 
-	if (output->swaybg_client != NULL) {
-		wl_client_destroy(output->swaybg_client);
-	}
-	if (oc && oc->background && config->swaybg_command) {
-		sway_log(SWAY_DEBUG, "Setting background for output %s to %s",
-			wlr_output->name, oc->background);
-
-		char *const cmd[] = {
-			config->swaybg_command,
-			wlr_output->name,
-			oc->background,
-			oc->background_option,
-			oc->background_fallback ? oc->background_fallback : NULL,
-			NULL,
-		};
-		if (!spawn_swaybg(output, cmd)) {
-			return false;
-		}
-	}
 
 	if (oc && oc->dpms_state == DPMS_OFF) {
 		sway_log(SWAY_DEBUG, "Turning off screen");
@@ -583,4 +479,152 @@ void free_output_config(struct output_config *oc) {
 	free(oc->background);
 	free(oc->background_option);
 	free(oc);
+}
+
+static void handle_swaybg_client_destroy(struct wl_listener *listener,
+		void *data) {
+	wl_list_remove(&config->swaybg_client_destroy.link);
+	wl_list_init(&config->swaybg_client_destroy.link);
+	config->swaybg_client = NULL;
+}
+
+static bool set_cloexec(int fd, bool cloexec) {
+	int flags = fcntl(fd, F_GETFD);
+	if (flags == -1) {
+		sway_log_errno(SWAY_ERROR, "fcntl failed");
+		return false;
+	}
+	if (cloexec) {
+		flags = flags | FD_CLOEXEC;
+	} else {
+		flags = flags & ~FD_CLOEXEC;
+	}
+	if (fcntl(fd, F_SETFD, flags) == -1) {
+		sway_log_errno(SWAY_ERROR, "fcntl failed");
+		return false;
+	}
+	return true;
+}
+
+static bool _spawn_swaybg(char **command) {
+	if (config->swaybg_client != NULL) {
+		wl_client_destroy(config->swaybg_client);
+	}
+	int sockets[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
+		sway_log_errno(SWAY_ERROR, "socketpair failed");
+		return false;
+	}
+	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
+		return false;
+	}
+
+	config->swaybg_client = wl_client_create(server.wl_display, sockets[0]);
+	if (config->swaybg_client == NULL) {
+		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
+		return false;
+	}
+
+	config->swaybg_client_destroy.notify = handle_swaybg_client_destroy;
+	wl_client_add_destroy_listener(config->swaybg_client,
+		&config->swaybg_client_destroy);
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		sway_log_errno(SWAY_ERROR, "fork failed");
+		return false;
+	} else if (pid == 0) {
+		pid = fork();
+		if (pid < 0) {
+			sway_log_errno(SWAY_ERROR, "fork failed");
+			_exit(EXIT_FAILURE);
+		} else if (pid == 0) {
+			if (!set_cloexec(sockets[1], false)) {
+				_exit(EXIT_FAILURE);
+			}
+
+			char wayland_socket_str[16];
+			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+				"%d", sockets[1]);
+			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+			execvp(command[0], command);
+			sway_log_errno(SWAY_ERROR, "execvp failed");
+			_exit(EXIT_FAILURE);
+		}
+		_exit(EXIT_SUCCESS);
+	}
+
+	if (close(sockets[1]) != 0) {
+		sway_log_errno(SWAY_ERROR, "close failed");
+		return false;
+	}
+	if (waitpid(pid, NULL, 0) < 0) {
+		sway_log_errno(SWAY_ERROR, "waitpid failed");
+		return false;
+	}
+
+	return true;
+}
+
+bool spawn_swaybg(void) {
+	if (!config->swaybg_command) {
+		return true;
+	}
+
+	size_t length = 2;
+	for (int i = 0; i < config->output_configs->length; i++) {
+		struct output_config *oc = config->output_configs->items[i];
+		if (!oc->background) {
+			continue;
+		}
+		if (strcmp(oc->background_option, "solid_color") == 0) {
+			length += 4;
+		} else if (oc->background_fallback) {
+			length += 8;
+		} else {
+			length += 6;
+		}
+	}
+
+	char **cmd = calloc(1, sizeof(char **) * length);
+	if (!cmd) {
+		sway_log(SWAY_ERROR, "Failed to allocate spawn_swaybg command");
+		return false;
+	}
+
+	size_t i = 0;
+	cmd[i++] = config->swaybg_command;
+	for (int j = 0; j < config->output_configs->length; j++) {
+		struct output_config *oc = config->output_configs->items[j];
+		if (!oc->background) {
+			continue;
+		}
+		if (strcmp(oc->background_option, "solid_color") == 0) {
+			cmd[i++] = "-o";
+			cmd[i++] = oc->name;
+			cmd[i++] = "-c";
+			cmd[i++] = oc->background;
+		} else {
+			cmd[i++] = "-o";
+			cmd[i++] = oc->name;
+			cmd[i++] = "-i";
+			cmd[i++] = oc->background;
+			cmd[i++] = "-m";
+			cmd[i++] = oc->background_option;
+			if (oc->background_fallback) {
+				cmd[i++] = "-c";
+				cmd[i++] = oc->background_fallback;
+			}
+		}
+		assert(i <= length);
+	}
+
+	for (size_t k = 0; k < i; k++) {
+		sway_log(SWAY_DEBUG, "spawn_swaybg cmd[%ld] = %s", k, cmd[k]);
+	}
+
+	bool result = _spawn_swaybg(cmd);
+	free(cmd);
+	return result;
 }

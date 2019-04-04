@@ -104,6 +104,9 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->output_configs);
 	}
+	if (config->swaybg_client != NULL) {
+		wl_client_destroy(config->swaybg_client);
+	}
 	if (config->input_configs) {
 		for (int i = 0; i < config->input_configs->length; i++) {
 			free_input_config(config->input_configs->items[i]);
@@ -480,6 +483,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 	if (is_active) {
 		reset_outputs();
+		spawn_swaybg();
 
 		config->reloading = false;
 		if (config->swaynag_config_errors.pid > 0) {

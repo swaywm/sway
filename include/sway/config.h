@@ -424,7 +424,6 @@ struct sway_config {
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;
-	char *swaybg_command;
 	uint32_t floating_mod;
 	bool floating_mod_inverse;
 	uint32_t dragging_key;
@@ -446,6 +445,11 @@ struct sway_config {
 	enum sway_fowa focus_on_window_activation;
 	enum sway_popup_during_fullscreen popup_during_fullscreen;
 	bool xwayland;
+
+	// swaybg
+	char *swaybg_command;
+	struct wl_client *swaybg_client;
+	struct wl_listener swaybg_client_destroy;
 
 	// Flags
 	enum focus_follows_mouse_mode focus_follows_mouse;
@@ -607,6 +611,8 @@ void reset_outputs(void);
 
 void free_output_config(struct output_config *oc);
 
+bool spawn_swaybg(void);
+
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
@@ -624,8 +630,6 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 void load_swaybar(struct bar_config *bar);
 
 void load_swaybars(void);
-
-void terminate_swaybg(pid_t pid);
 
 struct bar_config *default_bar_config(void);
 

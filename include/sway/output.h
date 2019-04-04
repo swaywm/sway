@@ -38,8 +38,6 @@ struct sway_output {
 
 	struct sway_output_state current;
 
-	struct wl_client *swaybg_client;
-
 	struct wl_listener destroy;
 	struct wl_listener mode;
 	struct wl_listener transform;
@@ -47,7 +45,6 @@ struct sway_output {
 	struct wl_listener present;
 	struct wl_listener damage_destroy;
 	struct wl_listener damage_frame;
-	struct wl_listener swaybg_client_destroy;
 
 	struct {
 		struct wl_signal destroy;
