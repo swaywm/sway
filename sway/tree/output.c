@@ -262,10 +262,6 @@ void output_disable(struct sway_output *output) {
 
 	root_for_each_container(untrack_output, output);
 
-	if (output->swaybg_client != NULL) {
-		wl_client_destroy(output->swaybg_client);
-	}
-
 	int index = list_find(root->outputs, output);
 	list_del(root->outputs, index);
 
