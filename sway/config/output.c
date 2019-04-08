@@ -621,7 +621,7 @@ bool spawn_swaybg(void) {
 	}
 
 	for (size_t k = 0; k < i; k++) {
-		sway_log(SWAY_DEBUG, "spawn_swaybg cmd[%ld] = %s", k, cmd[k]);
+		sway_log(SWAY_DEBUG, "spawn_swaybg cmd[%zd] = %s", k, cmd[k]);
 	}
 
 	bool result = _spawn_swaybg(cmd);
