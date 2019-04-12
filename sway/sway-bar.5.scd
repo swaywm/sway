@@ -112,6 +112,12 @@ Sway allows configuring swaybar in the sway configuration file.
 	the bar. This value will be multiplied by the output scale. The default is
 	_3_.
 
+*unbindcode* [--release] <event-code>
+	Removes the binding with the given <event-code>.
+
+*unbindsym* [--release] button[1-9]|<event-name>
+	Removes the binding with the given <button> or <event-name>.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.

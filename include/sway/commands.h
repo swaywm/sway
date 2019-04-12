@@ -217,6 +217,8 @@ sway_cmd bar_cmd_tray_bindcode;
 sway_cmd bar_cmd_tray_bindsym;
 sway_cmd bar_cmd_tray_output;
 sway_cmd bar_cmd_tray_padding;
+sway_cmd bar_cmd_unbindcode;
+sway_cmd bar_cmd_unbindsym;
 sway_cmd bar_cmd_wrap_scroll;
 sway_cmd bar_cmd_workspace_buttons;
 

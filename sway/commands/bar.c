@@ -32,6 +32,8 @@ static struct cmd_handler bar_handlers[] = {
 	{ "tray_bindsym", bar_cmd_tray_bindsym },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
+	{ "unbindcode", bar_cmd_unbindcode },
+	{ "unbindsym", bar_cmd_unbindsym },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 	{ "wrap_scroll", bar_cmd_wrap_scroll },
 };
