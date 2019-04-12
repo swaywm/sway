@@ -196,6 +196,59 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 	return NULL;
 }
 
+static struct cmd_results *switch_binding_add(
+		struct sway_switch_binding *binding, const char *bindtype,
+		const char *switchcombo, bool warn) {
+	list_t *mode_bindings = config->current_mode->switch_bindings;
+	// overwrite the binding if it already exists
+	bool overwritten = false;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_switch_binding *config_binding = mode_bindings->items[i];
+		if (binding_switch_compare(binding, config_binding)) {
+			sway_log(SWAY_INFO, "Overwriting binding '%s' to `%s` from `%s`",
+					switchcombo, binding->command, config_binding->command);
+			if (warn) {
+				config_add_swaynag_warning("Overwriting binding"
+						"'%s' to `%s` from `%s`",
+						switchcombo, binding->command,
+						config_binding->command);
+			}
+			free_switch_binding(config_binding);
+			mode_bindings->items[i] = binding;
+			overwritten = true;
+		}
+	}
+
+	if (!overwritten) {
+		list_add(mode_bindings, binding);
+		sway_log(SWAY_DEBUG, "%s - Bound %s to command `%s`",
+				bindtype, switchcombo, binding->command);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
+static struct cmd_results *switch_binding_remove(
+		struct sway_switch_binding *binding, const char *bindtype,
+		const char *switchcombo) {
+	list_t *mode_bindings = config->current_mode->switch_bindings;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_switch_binding *config_binding = mode_bindings->items[i];
+		if (binding_switch_compare(binding, config_binding)) {
+			free_switch_binding(config_binding);
+			free_switch_binding(binding);
+			list_del(mode_bindings, i);
+			sway_log(SWAY_DEBUG, "%s - Unbound %s switch",
+					bindtype, switchcombo);
+			return cmd_results_new(CMD_SUCCESS, NULL);
+		}
+	}
+
+	free_switch_binding(binding);
+	return cmd_results_new(CMD_FAILURE, "Could not find switch binding `%s`",
+			switchcombo);
+}
+
 static struct cmd_results *binding_add(struct sway_binding *binding,
 		list_t *mode_bindings, const char *bindtype,
 		const char *keycombo, bool warn) {
@@ -375,26 +428,17 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	return binding_add(binding, mode_bindings, bindtype, argv[0], warn);
 }
 
-struct cmd_results *cmd_bindsym(int argc, char **argv) {
-	return cmd_bindsym_or_bindcode(argc, argv, false, false);
-}
-
-struct cmd_results *cmd_bindcode(int argc, char **argv) {
-	return cmd_bindsym_or_bindcode(argc, argv, true, false);
-}
-
-struct cmd_results *cmd_unbindsym(int argc, char **argv) {
-	return cmd_bindsym_or_bindcode(argc, argv, false, true);
-}
-
-struct cmd_results *cmd_unbindcode(int argc, char **argv) {
-	return cmd_bindsym_or_bindcode(argc, argv, true, true);
-}
-
-struct cmd_results *cmd_bindswitch(int argc, char **argv) {
+struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
+		bool unbind) {
+	int minargs = 2;
+	char *bindtype = "bindswitch";
+	if (unbind) {
+		minargs--;
+		bindtype = "unbindswitch";
+	}
 
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bindswitch", EXPECTED_AT_LEAST, 2))) {
+	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, minargs))) {
 		return error;
 	}
 	struct sway_switch_binding *binding = calloc(1, sizeof(struct sway_switch_binding));
@@ -417,20 +461,19 @@ struct cmd_results *cmd_bindswitch(int argc, char **argv) {
 		argc--;
 	}
 
-	if (argc < 2) {
+	if (argc < minargs) {
 		free(binding);
 		return cmd_results_new(CMD_FAILURE,
-			"Invalid bindswitch command (expected at least 2 "
-			"non-option arguments, got %d)", argc);
+				"Invalid %s command (expected at least %d "
+				"non-option arguments, got %d)", bindtype, minargs, argc);
 	}
-	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], ":");
 	if (split->length != 2) {
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
-			"Invalid bindswitch command (expected two arguments with "
-			"format <switch>:<state> <action>, got %d)", argc);
+				"Invalid %s command (expected binding with the form "
+				"<switch>:<state>)", bindtype, argc);
 	}
 	if (strcmp(split->items[0], "tablet") == 0) {
 		binding->type = WLR_SWITCH_TYPE_TABLET_MODE;
@@ -439,8 +482,8 @@ struct cmd_results *cmd_bindswitch(int argc, char **argv) {
 	} else {
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
-			"Invalid bindswitch command (expected switch binding: "
-			"unknown switch %s)", split->items[0]);
+				"Invalid %s command (expected switch binding: "
+				"unknown switch %s)", bindtype, split->items[0]);
 	}
 	if (strcmp(split->items[1], "on") == 0) {
 		binding->state = WLR_SWITCH_STATE_ON;
@@ -451,40 +494,41 @@ struct cmd_results *cmd_bindswitch(int argc, char **argv) {
 	} else {
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
-			"Invalid bindswitch command "
-			"(expected switch state: unknown state %d)",
-					split->items[0]);
+				"Invalid %s command "
+				"(expected switch state: unknown state %d)",
+				bindtype, split->items[0]);
 	}
 	list_free_items_and_destroy(split);
 
-	list_t *mode_bindings = config->current_mode->switch_bindings;
-
-	// overwrite the binding if it already exists
-	bool overwritten = false;
-	for (int i = 0; i < mode_bindings->length; ++i) {
-		struct sway_switch_binding *config_binding = mode_bindings->items[i];
-		if (binding_switch_compare(binding, config_binding)) {
-			sway_log(SWAY_INFO, "Overwriting binding '%s' to `%s` from `%s`",
-			         argv[0], binding->command, config_binding->command);
-			if (warn) {
-				config_add_swaynag_warning("Overwriting binding"
-					"'%s' to `%s` from `%s`",
-					argv[0], binding->command,
-					config_binding->command);
-			}
-			free_switch_binding(config_binding);
-			mode_bindings->items[i] = binding;
-			overwritten = true;
-		}
+	if (unbind) {
+		return switch_binding_remove(binding, bindtype, argv[0]);
 	}
+	binding->command = join_args(argv + 1, argc - 1);
+	return switch_binding_add(binding, bindtype, argv[0], warn);
+}
 
-	if (!overwritten) {
-		list_add(mode_bindings, binding);
-	}
+struct cmd_results *cmd_bindsym(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, false, false);
+}
 
-	sway_log(SWAY_DEBUG, "bindswitch - Bound %s to command `%s`",
-			argv[0], binding->command);
-	return cmd_results_new(CMD_SUCCESS, NULL);
+struct cmd_results *cmd_bindcode(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, true, false);
+}
+
+struct cmd_results *cmd_unbindsym(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, false, true);
+}
+
+struct cmd_results *cmd_unbindcode(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, true, true);
+}
+
+struct cmd_results *cmd_bindswitch(int argc, char **argv) {
+	return cmd_bind_or_unbind_switch(argc, argv, false);
+}
+
+struct cmd_results *cmd_unbindswitch(int argc, char **argv) {
+	return cmd_bind_or_unbind_switch(argc, argv, true);
 }
 
 /**
