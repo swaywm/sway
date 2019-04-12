@@ -644,6 +644,9 @@ The default colors are:
 	to _yes_, the marks will be shown on the _left_ side instead of the
 	_right_ side.
 
+*unbindswitch* <switch>:<state>
+	Removes a binding for when <switch> changes to <state>.
+
 *unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--input-device=<device>] <key combo>
 	Removes the binding for _key combo_ that was previously bound with the
 	given flags.  If _input-device_ is given, only the binding for that
