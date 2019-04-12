@@ -644,6 +644,14 @@ The default colors are:
 	to _yes_, the marks will be shown on the _left_ side instead of the
 	_right_ side.
 
+*unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--input-device=<device>] <key combo>
+	Removes the binding for _key combo_ that was previously bound with the
+	given flags.  If _input-device_ is given, only the binding for that
+	input device will be unbound.
+
+	*unbindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [input-device=<device>] <code>
+	is also available for unbinding with key/button codes instead of key/button names.
+
 *unmark* [<identifier>]
 	*unmark* will remove _identifier_ from the list of current marks on a
 	window. If _identifier_ is omitted, all marks are removed.

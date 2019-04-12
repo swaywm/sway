@@ -92,6 +92,8 @@ static struct cmd_handler handlers[] = {
 	{ "title_align", cmd_title_align },
 	{ "titlebar_border_thickness", cmd_titlebar_border_thickness },
 	{ "titlebar_padding", cmd_titlebar_padding },
+	{ "unbindcode", cmd_unbindcode },
+	{ "unbindsym", cmd_unbindsym },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
