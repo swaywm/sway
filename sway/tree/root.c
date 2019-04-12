@@ -61,9 +61,14 @@ void root_scratchpad_add_container(struct sway_container *con) {
 
 	struct sway_container *parent = con->parent;
 	struct sway_workspace *workspace = con->workspace;
-	container_set_floating(con, true);
-	container_floating_set_default_size(con);
-	container_floating_move_to_center(con);
+
+	// When a tiled window is sent to scratchpad, center and resize it.
+	if (!container_is_floating(con)) {
+		container_set_floating(con, true);
+		container_floating_set_default_size(con);
+		container_floating_move_to_center(con);
+	}
+
 	container_detach(con);
 	con->scratchpad = true;
 	list_add(root->scratchpad, con);
