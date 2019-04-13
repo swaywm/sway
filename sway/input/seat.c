@@ -1194,11 +1194,13 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	}
 	if (config->mouse_warping == WARP_OUTPUT) {
 		struct sway_output *output = node_get_output(focus);
-		struct wlr_box box;
-		output_get_box(output, &box);
-		if (wlr_box_contains_point(&box,
-					seat->cursor->cursor->x, seat->cursor->cursor->y)) {
-			return;
+		if (output) {
+			struct wlr_box box;
+			output_get_box(output, &box);
+			if (wlr_box_contains_point(&box,
+						seat->cursor->cursor->x, seat->cursor->cursor->y)) {
+				return;
+			}
 		}
 	}
 
