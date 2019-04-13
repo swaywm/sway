@@ -311,37 +311,39 @@ static bool container_move_in_direction(struct sway_container *container,
 
 	while (current) {
 		list_t *siblings = container_get_siblings(current);
-		enum sway_container_layout layout = container_parent_layout(current);
-		int index = list_find(siblings, current);
-		int desired = index + offs;
+		if (siblings) {
+			enum sway_container_layout layout = container_parent_layout(current);
+			int index = list_find(siblings, current);
+			int desired = index + offs;
 
-		// Don't allow containers to move out of their
-		// fullscreen or floating parent
-		if (current->fullscreen_mode || container_is_floating(current)) {
-			return false;
-		}
+			// Don't allow containers to move out of their
+			// fullscreen or floating parent
+			if (current->fullscreen_mode || container_is_floating(current)) {
+				return false;
+			}
 
-		if (is_parallel(layout, move_dir)) {
-			if (desired == -1 || desired == siblings->length) {
-				if (current->parent == container->parent) {
-					current = current->parent;
-					continue;
-				} else {
-					// Reparenting
-					if (current->parent) {
-						container_insert_child(current->parent, container,
-								index + (offs < 0 ? 0 : 1));
+			if (is_parallel(layout, move_dir)) {
+				if (desired == -1 || desired == siblings->length) {
+					if (current->parent == container->parent) {
+						current = current->parent;
+						continue;
 					} else {
-						workspace_insert_tiling(current->workspace, container,
-								index + (offs < 0 ? 0 : 1));
+						// Reparenting
+						if (current->parent) {
+							container_insert_child(current->parent, container,
+									index + (offs < 0 ? 0 : 1));
+						} else {
+							workspace_insert_tiling(current->workspace, container,
+									index + (offs < 0 ? 0 : 1));
+						}
+						return true;
 					}
+				} else {
+					// Container can move within its siblings
+					container_move_to_container_from_direction(container,
+							siblings->items[desired], move_dir);
 					return true;
 				}
-			} else {
-				// Container can move within its siblings
-				container_move_to_container_from_direction(container,
-						siblings->items[desired], move_dir);
-				return true;
 			}
 		}
 
@@ -350,26 +352,28 @@ static bool container_move_in_direction(struct sway_container *container,
 
 	// Maybe rejigger the workspace
 	struct sway_workspace *ws = container->workspace;
-	if (!is_parallel(ws->layout, move_dir)) {
-		workspace_rejigger(ws, container, move_dir);
-		return true;
-	} else if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
-		workspace_rejigger(ws, container, move_dir);
-		return true;
-	}
-
-	// Try adjacent output
-	struct sway_output *output =
-		output_get_in_direction(container->workspace->output, move_dir);
-	if (output) {
-		struct sway_workspace *ws = output_get_active_workspace(output);
-		if (!sway_assert(ws, "Expected output to have a workspace")) {
-			return false;
+	if (ws) {
+		if (!is_parallel(ws->layout, move_dir)) {
+			workspace_rejigger(ws, container, move_dir);
+			return true;
+		} else if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
+			workspace_rejigger(ws, container, move_dir);
+			return true;
 		}
-		container_move_to_workspace_from_direction(container, ws, move_dir);
-		return true;
+
+		// Try adjacent output
+		struct sway_output *output =
+			output_get_in_direction(container->workspace->output, move_dir);
+		if (output) {
+			struct sway_workspace *ws = output_get_active_workspace(output);
+			if (!sway_assert(ws, "Expected output to have a workspace")) {
+				return false;
+			}
+			container_move_to_workspace_from_direction(container, ws, move_dir);
+			return true;
+		}
+		sway_log(SWAY_DEBUG, "Hit edge of output, nowhere else to go");
 	}
-	sway_log(SWAY_DEBUG, "Hit edge of output, nowhere else to go");
 	return false;
 }
 
