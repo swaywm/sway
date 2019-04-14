@@ -239,10 +239,14 @@ static struct wl_pointer_listener pointer_listener = {
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		enum wl_seat_capability caps) {
 	struct swaynag *swaynag = data;
-	if ((caps & WL_SEAT_CAPABILITY_POINTER)) {
+	bool cap_pointer = caps & WL_SEAT_CAPABILITY_POINTER;
+	if (cap_pointer && !swaynag->pointer.pointer) {
 		swaynag->pointer.pointer = wl_seat_get_pointer(wl_seat);
 		wl_pointer_add_listener(swaynag->pointer.pointer, &pointer_listener,
 				swaynag);
+	} else if (!cap_pointer && swaynag->pointer.pointer) {
+		wl_pointer_destroy(swaynag->pointer.pointer);
+		swaynag->pointer.pointer = NULL;
 	}
 }
 
