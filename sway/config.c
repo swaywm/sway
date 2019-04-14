@@ -175,15 +175,13 @@ static void set_color(float dest[static 4], uint32_t color) {
 
 static void config_defaults(struct sway_config *config) {
 	if (!(config->swaynag_command = strdup("swaynag"))) goto cleanup;
-	config->swaynag_config_errors = (struct swaynag_instance){
-		.args = "--type error "
+	config->swaynag_config_errors = (struct swaynag_instance){0};
+	config->swaynag_config_errors.args = "--type error "
 			"--message 'There are errors in your config file' "
 			"--detailed-message "
-			"--button 'Exit sway' 'swaymsg exit' "
-			"--button 'Reload sway' 'swaymsg reload'",
-		.pid = -1,
-		.detailed = true,
-	};
+			"--button-no-terminal 'Exit sway' 'swaymsg exit' "
+			"--button-no-terminal 'Reload sway' 'swaymsg reload'";
+	config->swaynag_config_errors.detailed = true;
 
 	if (!(config->symbols = create_list())) goto cleanup;
 	if (!(config->modes = create_list())) goto cleanup;
@@ -411,10 +409,9 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		config->reloading = true;
 		config->active = true;
 
-		swaynag_kill(&old_config->swaynag_config_errors);
-		memcpy(&config->swaynag_config_errors,
-				&old_config->swaynag_config_errors,
-				sizeof(struct swaynag_instance));
+		if (old_config->swaynag_config_errors.client != NULL) {
+			wl_client_destroy(old_config->swaynag_config_errors.client);
+		}
 
 		input_manager_reset_all_inputs();
 	}
@@ -486,7 +483,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		spawn_swaybg();
 
 		config->reloading = false;
-		if (config->swaynag_config_errors.pid > 0) {
+		if (config->swaynag_config_errors.client != NULL) {
 			swaynag_show(&config->swaynag_config_errors);
 		}
 

@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <float.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,4 +75,22 @@ const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel) 
 	}
 	sway_assert(false, "Unknown value for wl_output_subpixel.");
 	return NULL;
+}
+
+bool set_cloexec(int fd, bool cloexec) {
+	int flags = fcntl(fd, F_GETFD);
+	if (flags == -1) {
+		sway_log_errno(SWAY_ERROR, "fcntl failed");
+		return false;
+	}
+	if (cloexec) {
+		flags = flags | FD_CLOEXEC;
+	} else {
+		flags = flags & ~FD_CLOEXEC;
+	}
+	if (fcntl(fd, F_SETFD, flags) == -1) {
+		sway_log_errno(SWAY_ERROR, "fcntl failed");
+		return false;
+	}
+	return true;
 }

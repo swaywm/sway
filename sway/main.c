@@ -391,7 +391,7 @@ int main(int argc, char **argv) {
 	load_swaybars();
 	run_deferred_commands();
 
-	if (config->swaynag_config_errors.pid > 0) {
+	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);
 	}
 

@@ -32,4 +32,6 @@ float parse_float(const char *value);
 
 const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel);
 
+bool set_cloexec(int fd, bool cloexec);
+
 #endif
