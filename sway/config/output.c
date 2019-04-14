@@ -1,6 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
-#include <fcntl.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -486,24 +485,6 @@ static void handle_swaybg_client_destroy(struct wl_listener *listener,
 	wl_list_remove(&config->swaybg_client_destroy.link);
 	wl_list_init(&config->swaybg_client_destroy.link);
 	config->swaybg_client = NULL;
-}
-
-static bool set_cloexec(int fd, bool cloexec) {
-	int flags = fcntl(fd, F_GETFD);
-	if (flags == -1) {
-		sway_log_errno(SWAY_ERROR, "fcntl failed");
-		return false;
-	}
-	if (cloexec) {
-		flags = flags | FD_CLOEXEC;
-	} else {
-		flags = flags & ~FD_CLOEXEC;
-	}
-	if (fcntl(fd, F_SETFD, flags) == -1) {
-		sway_log_errno(SWAY_ERROR, "fcntl failed");
-		return false;
-	}
-	return true;
 }
 
 static bool _spawn_swaybg(char **command) {

@@ -45,17 +45,24 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 		swaynag->details.visible = !swaynag->details.visible;
 		render_frame(swaynag);
 	} else {
-		if (fork() == 0) {
+		pid_t pid = fork();
+		if (pid < 0) {
+			sway_log_errno(SWAY_DEBUG, "Failed to fork");
+			return;
+		} else if (pid == 0) {
 			// Child process. Will be used to prevent zombie processes
-			setsid();
-			if (fork() == 0) {
+			pid = fork();
+			if (pid < 0) {
+				sway_log_errno(SWAY_DEBUG, "Failed to fork");
+				return;
+			} else if (pid == 0) {
 				// Child of the child. Will be reparented to the init process
 				char *terminal = getenv("TERMINAL");
 				if (button->terminal && terminal && strlen(terminal)) {
 					sway_log(SWAY_DEBUG, "Found $TERMINAL: %s", terminal);
 					if (!terminal_execute(terminal, button->action)) {
 						swaynag_destroy(swaynag);
-						exit(EXIT_FAILURE);
+						_exit(EXIT_FAILURE);
 					}
 				} else {
 					if (button->terminal) {
@@ -63,12 +70,16 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 								"$TERMINAL not found. Running directly");
 					}
 					execl("/bin/sh", "/bin/sh", "-c", button->action, NULL);
+					sway_log_errno(SWAY_DEBUG, "execl failed");
+					_exit(EXIT_FAILURE);
 				}
 			}
-			exit(EXIT_SUCCESS);
+			_exit(EXIT_SUCCESS);
+		}
+		if (waitpid(pid, NULL, 0) < 0) {
+			sway_log_errno(SWAY_DEBUG, "waitpid failed");
 		}
 	}
-	wait(0);
 }
 
 static void layer_surface_configure(void *data,
