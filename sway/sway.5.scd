@@ -529,12 +529,6 @@ The default colors are:
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
 
-*force_focus_wrapping* yes|no
-	This option is a wrapper to support i3's legacy syntax. _no_ is equivalent
-	to _focus_wrapping yes_ and _yes_ is equivalent to
-	_focus_wrapping force_. This is only available for convenience. Please
-	use _focus_wrapping_ instead when possible.
-
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
 	affects spacing around each view and outer affects the spacing around each
