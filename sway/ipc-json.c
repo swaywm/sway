@@ -240,7 +240,21 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 			json_object_new_string(wlr_output->model));
 	json_object_object_add(object, "serial",
 			json_object_new_string(wlr_output->serial));
-	json_object_object_add(object, "modes", json_object_new_array());
+
+	json_object *modes_array = json_object_new_array();
+	struct wlr_output_mode *mode;
+	wl_list_for_each(mode, &wlr_output->modes, link) {
+		json_object *mode_object = json_object_new_object();
+		json_object_object_add(mode_object, "width",
+			json_object_new_int(mode->width));
+		json_object_object_add(mode_object, "height",
+			json_object_new_int(mode->height));
+		json_object_object_add(mode_object, "refresh",
+			json_object_new_int(mode->refresh));
+		json_object_array_add(modes_array, mode_object);
+	}
+
+	json_object_object_add(object, "modes", modes_array);
 
 	json_object_object_add(object, "current_workspace", NULL);
 
