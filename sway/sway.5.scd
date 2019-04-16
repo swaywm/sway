@@ -223,6 +223,9 @@ set|plus|minus <amount>
 *reload*
 	Reloads the sway config file and applies any changes.
 
+*rename workspace* [<old_name>] to <new_name>
+	Rename either <old_name> or the focused workspace to the <new_name>
+
 *resize* shrink|grow width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are resized
