@@ -221,8 +221,10 @@ void view_autoconfigure(struct sway_view *view) {
 
 	con->border_top = con->border_bottom = true;
 	con->border_left = con->border_right = true;
+	double y_offset = 0;
 
-	if (ws) {
+	if (!container_is_floating(con) && ws) {
+
 		bool smart = config->hide_edge_borders == E_SMART ||
 			(config->hide_edge_borders == E_SMART_NO_GAPS &&
 			!gaps_to_edge(view));
@@ -240,24 +242,22 @@ void view_autoconfigure(struct sway_view *view) {
 			int bottom_y = con->y + con->height + con->current_gaps.bottom;
 			con->border_bottom = bottom_y != ws->y + ws->height;
 		}
-	}
 
-	double y_offset = 0;
-
-	// In a tabbed or stacked container, the container's y is the top of the
-	// title area. We have to offset the surface y by the height of the title,
-	// bar, and disable any top border because we'll always have the title bar.
-	list_t *siblings = container_get_siblings(con);
-	bool show_titlebar = (siblings && siblings->length > 1)
-		|| !config->hide_lone_tab;
-	if (show_titlebar && !container_is_floating(con)) {
-		enum sway_container_layout layout = container_parent_layout(con);
-		if (layout == L_TABBED) {
-			y_offset = container_titlebar_height();
-			con->border_top = false;
-		} else if (layout == L_STACKED) {
-			y_offset = container_titlebar_height() * siblings->length;
-			con->border_top = false;
+		// In a tabbed or stacked container, the container's y is the top of the
+		// title area. We have to offset the surface y by the height of the title,
+		// bar, and disable any top border because we'll always have the title bar.
+		list_t *siblings = container_get_siblings(con);
+		bool show_titlebar = (siblings && siblings->length > 1)
+			|| !config->hide_lone_tab;
+		if (show_titlebar) {
+			enum sway_container_layout layout = container_parent_layout(con);
+			if (layout == L_TABBED) {
+				y_offset = container_titlebar_height();
+				con->border_top = false;
+			} else if (layout == L_STACKED) {
+				y_offset = container_titlebar_height() * siblings->length;
+				con->border_top = false;
+			}
 		}
 	}
 
