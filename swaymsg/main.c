@@ -230,7 +230,7 @@ static void pretty_print_output(json_object *o) {
 		);
 	} else {
 		printf(
-			"Output %s '%s %s %s' (inactive)",
+			"Output %s '%s %s %s' (inactive)\n",
 			json_object_get_string(name),
 			json_object_get_string(make),
 			json_object_get_string(model),
