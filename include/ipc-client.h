@@ -1,7 +1,9 @@
 #ifndef _SWAY_IPC_CLIENT_H
 #define _SWAY_IPC_CLIENT_H
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include "ipc.h"
 
@@ -36,5 +38,9 @@ struct ipc_response *ipc_recv_response(int socketfd);
  * Free ipc_response struct
  */
 void free_ipc_response(struct ipc_response *response);
+/**
+ * Sets the receive timeout for the IPC socket
+ */
+bool ipc_set_recv_timeout(int socketfd, struct timeval tv);
 
 #endif

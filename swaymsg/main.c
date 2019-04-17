@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <sys/un.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <json.h>
@@ -238,7 +239,8 @@ static void pretty_print_output(json_object *o) {
 		);
 	}
 
-	size_t modes_len = json_object_array_length(modes);
+	size_t modes_len = json_object_is_type(modes, json_type_array)
+		? json_object_array_length(modes) : 0;
 	if (modes_len > 0) {
 		printf("  Available modes:\n");
 		for (size_t i = 0; i < modes_len; ++i) {
@@ -448,6 +450,8 @@ int main(int argc, char **argv) {
 
 	int ret = 0;
 	int socketfd = ipc_open_socket(socket_path);
+	struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
+	ipc_set_recv_timeout(socketfd, timeout);
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 	if (!quiet) {
@@ -478,6 +482,11 @@ int main(int argc, char **argv) {
 	free(resp);
 
 	if (type == IPC_SUBSCRIBE && ret == 0) {
+		// Remove the timeout for subscribed events
+		timeout.tv_sec = 0;
+		timeout.tv_usec = 0;
+		ipc_set_recv_timeout(socketfd, timeout);
+
 		do {
 			struct ipc_response *reply = ipc_recv_response(socketfd);
 			if (!reply) {

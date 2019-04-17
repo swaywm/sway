@@ -69,6 +69,16 @@ int ipc_open_socket(const char *socket_path) {
 	return socketfd;
 }
 
+bool ipc_set_recv_timeout(int socketfd, struct timeval tv) {
+	if (setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1) {
+		sway_log_errno(SWAY_ERROR, "Failed to set ipc recv timeout");
+		return false;
+	}
+	sway_log(SWAY_DEBUG, "ipc recv timeout set to %ld.%06ld",
+			tv.tv_sec, tv.tv_usec);
+	return true;
+}
+
 struct ipc_response *ipc_recv_response(int socketfd) {
 	char data[IPC_HEADER_SIZE];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
