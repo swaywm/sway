@@ -13,6 +13,8 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 		config->hide_lone_tab = true;
 		++argv;
 		--argc;
+	} else {
+		config->hide_lone_tab = false;
 	}
 
 	if (strcmp(argv[0], "none") == 0) {
