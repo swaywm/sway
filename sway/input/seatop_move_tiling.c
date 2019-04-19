@@ -327,6 +327,7 @@ void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
 	seat->seatop_data = e;
 
 	container_raise_floating(con);
+	wlr_seat_pointer_clear_focus(seat->wlr_seat);
 }
 
 void seatop_begin_move_tiling(struct sway_seat *seat,
