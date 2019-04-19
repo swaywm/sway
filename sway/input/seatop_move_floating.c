@@ -60,4 +60,5 @@ void seatop_begin_move_floating(struct sway_seat *seat,
 	container_raise_floating(con);
 
 	cursor_set_image(seat->cursor, "grab", NULL);
+	wlr_seat_pointer_clear_focus(seat->wlr_seat);
 }
