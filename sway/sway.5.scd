@@ -187,34 +187,46 @@ set|plus|minus <amount>
 *move* position cursor|mouse|pointer
 	Moves the focused container to be centered on the cursor.
 
-*move* container|window [to] mark <mark>
+*move* [container|window] [to] mark <mark>
 	Moves the focused container to the specified mark.
 
-*move* [--no-auto-back-and-forth] container|window [to] workspace [number] <name>
+*move* [--no-auto-back-and-forth] [container|window] [to] workspace [number] <name>
 	Moves the focused container to the specified workspace. The string "number"
 	is optional and is used to match a workspace with the same number, even if
 	it has a different name.
 
-*move* container|window [to] workspace prev|next|current
+*move* [container|window] [to] workspace prev|next|current
 	Moves the focused container to the previous, next or current workspace on
 	this output, or if no workspaces remain, the previous or next output.
 
-*move* container|window [to] workspace prev_on_output|next_on_output
+*move* [container|window] [to] workspace prev_on_output|next_on_output
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window [to] workspace back_and_forth
+*move* [container|window] [to] workspace back_and_forth
 	Moves the focused container to previously focused workspace.
 
-*move* container|window|workspace [to] output <name>
-	Moves the focused container or workspace to the specified output.
+*move* [container|window] [to] output <name-or-id>
+	Moves the focused container to the specified output.
 
-*move* container|window|workspace [to] output up|right|down|left
-	Moves the focused container or workspace to next output in the specified
+*move* [container|window] [to] output up|right|down|left
+	Moves the focused container to next output in the specified
 	direction.
 
-*move* [to] scratchpad
-	Moves the focused window to the scratchpad.
+*move* [container|window] [to] scratchpad
+	Moves the focused container to the scratchpad.
+
+*move* workspace [to] output <name-or-id>
+	Moves the focused workspace to the specified output.
+
+*move* workspace to [output] <name-or-id>
+	Moves the focused workspace to the specified output.
+
+*move* workspace [to] output up|right|down|left
+	Moves the focused workspace to next output in the specified direction.
+
+*move* workspace to [output] up|right|down|left
+	Moves the focused workspace to next output in the specified direction.
 
 *nop* <comment>
 	A no operation command that can be used to override default behaviour. The
