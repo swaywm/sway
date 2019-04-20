@@ -424,11 +424,18 @@ static int handle_keyboard_repeat(void *data) {
 static void determine_bar_visibility(uint32_t modifiers) {
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
-		if (strcmp(bar->mode, bar->hidden_state) == 0) { // both are "hide"
-			bool should_be_visible = 
-				bar->modifier != 0 && (~modifiers & bar->modifier) == 0;
-			if (bar->visible_by_modifier != should_be_visible) {
-				bar->visible_by_modifier = should_be_visible;
+		if (bar->modifier == 0) {
+			continue;
+		}
+
+		bool vis_by_mod = (~modifiers & bar->modifier) == 0;
+		if (bar->visible_by_modifier != vis_by_mod) {
+			// If visible by modifier is set, send that it is no longer visible
+			// by modifier (regardless of bar mode and state). Otherwise, only
+			// send the visible by modifier status if mode and state are hide
+			if (bar->visible_by_modifier
+					|| strcmp(bar->mode, bar->hidden_state) == 0) {
+				bar->visible_by_modifier = vis_by_mod;
 				ipc_event_bar_state_update(bar);
 			}
 		}
