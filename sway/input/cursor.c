@@ -378,8 +378,6 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
-
-	sway_log(SWAY_DEBUG, "Touch pos: (%f, %f)", lx,ly);
 	libtouch_progress_register_touch(cursor->gesture_tracker, event->time_msec,
 					 event->touch_id, LIBTOUCH_TOUCH_DOWN,
 					 lx, ly);
@@ -400,7 +398,6 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_up);
-	struct libtouch_engine *engine = cursor->gesture_engine;
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_up *event = data;
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
@@ -456,7 +453,6 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
 			event->touch_id, sx, sy);
 	}
-	
 }
 
 
