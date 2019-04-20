@@ -6,15 +6,31 @@
 #include <string.h>
 #include <strings.h>
 #include "list.h"
+#include "log.h"
 #include "swaynag/config.h"
 #include "swaynag/types.h"
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
+struct swaynag_type *swaynag_type_new(const char *name) {
+	struct swaynag_type *type = calloc(1, sizeof(struct swaynag_type));
+	if (!type) {
+		sway_abort("Failed to allocate type: %s", name);
+	}
+	type->name = strdup(name);
+	type->bar_border_thickness = -1;
+	type->message_padding = -1;
+	type->details_border_thickness = -1;
+	type->button_border_thickness = -1;
+	type->button_gap = -1;
+	type->button_gap_close = -1;
+	type->button_margin_right = -1;
+	type->button_padding = -1;
+	return type;
+}
+
 void swaynag_types_add_default(list_t *types) {
-	struct swaynag_type *type_defaults;
-	type_defaults = calloc(1, sizeof(struct swaynag_type));
-	type_defaults->name = strdup("<defaults>");
+	struct swaynag_type *type_defaults = swaynag_type_new("<defaults>");
 	type_defaults->font = strdup("pango:Monospace 10");
 	type_defaults->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
@@ -34,19 +50,15 @@ void swaynag_types_add_default(list_t *types) {
 	type_defaults->button_padding = 3;
 	list_add(types, type_defaults);
 
-	struct swaynag_type *type_error;
-	type_error = calloc(1, sizeof(struct swaynag_type));
+	struct swaynag_type *type_error = swaynag_type_new("error");
 	type_error->button_background = 0x680A0AFF;
 	type_error->background = 0x900000FF;
 	type_error->text = 0xFFFFFFFF;
 	type_error->border = 0xD92424FF;
 	type_error->border_bottom = 0x470909FF;
-	type_error->name = strdup("error");
 	list_add(types, type_error);
 
-	struct swaynag_type *type_warning;
-	type_warning = calloc(1, sizeof(struct swaynag_type));
-	type_warning->name = strdup("warning");
+	struct swaynag_type *type_warning = swaynag_type_new("warning");
 	type_warning->button_background = 0xFFC100FF;
 	type_warning->background = 0xFFA800FF;
 	type_warning->text = 0x000000FF;
@@ -70,71 +82,69 @@ void swaynag_type_merge(struct swaynag_type *dest, struct swaynag_type *src) {
 		return;
 	}
 
-	if (!dest->font && src->font) {
+	if (src->font) {
 		dest->font = strdup(src->font);
 	}
 
-	if (!dest->output && src->output) {
+	if (src->output) {
 		dest->output = strdup(src->output);
 	}
 
-	if (dest->anchors == 0 && src->anchors > 0) {
+	if (src->anchors > 0) {
 		dest->anchors = src->anchors;
 	}
 
 	// Colors
-	if (dest->button_background == 0 && src->button_background > 0) {
+	if (src->button_background > 0) {
 		dest->button_background = src->button_background;
 	}
 
-	if (dest->background == 0 && src->background > 0) {
+	if (src->background > 0) {
 		dest->background = src->background;
 	}
 
-	if (dest->text == 0 && src->text > 0) {
+	if (src->text > 0) {
 		dest->text = src->text;
 	}
 
-	if (dest->border == 0 && src->border > 0) {
+	if (src->border > 0) {
 		dest->border = src->border;
 	}
 
-	if (dest->border_bottom == 0 && src->border_bottom > 0) {
+	if (src->border_bottom > 0) {
 		dest->border_bottom = src->border_bottom;
 	}
 
 	// Sizing
-	if (dest->bar_border_thickness == 0 && src->bar_border_thickness > 0) {
+	if (src->bar_border_thickness > -1) {
 		dest->bar_border_thickness = src->bar_border_thickness;
 	}
 
-	if (dest->message_padding == 0 && src->message_padding > 0) {
+	if (src->message_padding > -1) {
 		dest->message_padding = src->message_padding;
 	}
 
-	if (dest->details_border_thickness == 0
-			&& src->details_border_thickness > 0) {
+	if (src->details_border_thickness > -1) {
 		dest->details_border_thickness = src->details_border_thickness;
 	}
 
-	if (dest->button_border_thickness == 0
-			&& src->button_border_thickness > 0) {
+	if (src->button_border_thickness > -1) {
 		dest->button_border_thickness = src->button_border_thickness;
 	}
 
-	if (dest->button_gap == 0 && src->button_gap > 0) {
+	if (src->button_gap > -1) {
 		dest->button_gap = src->button_gap;
 	}
 
-	if (dest->button_gap_close == 0 && src->button_gap_close > 0) {
+	if (src->button_gap_close > -1) {
 		dest->button_gap_close = src->button_gap_close;
 	}
 
-	if (dest->button_margin_right == 0 && src->button_margin_right > 0) {
+	if (src->button_margin_right > -1) {
 		dest->button_margin_right = src->button_margin_right;
 	}
 
-	if (dest->button_padding == 0 && src->button_padding > 0) {
+	if (src->button_padding > -1) {
 		dest->button_padding = src->button_padding;
 	}
 }

@@ -63,9 +63,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (argc > 1) {
-		struct swaynag_type *type_args;
-		type_args = calloc(1, sizeof(struct swaynag_type));
-		type_args->name = strdup("<args>");
+		struct swaynag_type *type_args = swaynag_type_new("<args>");
 		list_add(types, type_args);
 
 		int result = swaynag_parse_options(argc, argv, &swaynag, types,
@@ -86,15 +84,14 @@ int main(int argc, char **argv) {
 		swaynag.type = swaynag_type_get(types, "error");
 	}
 
-	// Construct a new type using the config defaults as base, then merging
-	// config type defaults on top, then merging arguments on top of that, and
-	// finally merging defaults on top.
-	struct swaynag_type *type = calloc(1, sizeof(struct swaynag_type));
-	type->name = strdup(swaynag.type->name);
-	swaynag_type_merge(type, swaynag_type_get(types, "<args>"));
-	swaynag_type_merge(type, swaynag.type);
-	swaynag_type_merge(type, swaynag_type_get(types, "<config>"));
+	// Construct a new type with the defaults as the base, the general config
+	// on top of that, followed by the type config, and finally any command
+	// line arguments
+	struct swaynag_type *type = swaynag_type_new(swaynag.type->name);
 	swaynag_type_merge(type, swaynag_type_get(types, "<defaults>"));
+	swaynag_type_merge(type, swaynag_type_get(types, "<config>"));
+	swaynag_type_merge(type, swaynag.type);
+	swaynag_type_merge(type, swaynag_type_get(types, "<args>"));
 	swaynag.type = type;
 
 	swaynag_types_free(types);

@@ -8,21 +8,25 @@ struct swaynag_type {
 	char *output;
 	uint32_t anchors;
 
+	// Colors
 	uint32_t button_background;
 	uint32_t background;
 	uint32_t text;
 	uint32_t border;
 	uint32_t border_bottom;
 
-	uint32_t bar_border_thickness;
-	uint32_t message_padding;
-	uint32_t details_border_thickness;
-	uint32_t button_border_thickness;
-	uint32_t button_gap;
-	uint32_t button_gap_close;
-	uint32_t button_margin_right;
-	uint32_t button_padding;
+	// Sizing
+	ssize_t bar_border_thickness;
+	ssize_t message_padding;
+	ssize_t details_border_thickness;
+	ssize_t button_border_thickness;
+	ssize_t button_gap;
+	ssize_t button_gap_close;
+	ssize_t button_margin_right;
+	ssize_t button_padding;
 };
+
+struct swaynag_type *swaynag_type_new(const char *name);
 
 void swaynag_types_add_default(list_t *types);
 

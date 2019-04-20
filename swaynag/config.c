@@ -332,9 +332,7 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 		return 0;
 	}
 
-	struct swaynag_type *type;
-	type = calloc(1, sizeof(struct swaynag_type));
-	type->name = strdup("<config>");
+	struct swaynag_type *type = swaynag_type_new("<config>");
 	list_add(types, type);
 
 	char *line = NULL;
@@ -364,8 +362,7 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 			strncat(name, line + 1, close - line - 1);
 			type = swaynag_type_get(types, name);
 			if (!type) {
-				type = calloc(1, sizeof(struct swaynag_type));
-				type->name = strdup(name);
+				type = swaynag_type_new(name);
 				list_add(types, type);
 			}
 			free(name);
