@@ -968,13 +968,12 @@ static void translate_binding_list(list_t *bindings, list_t *bindsyms,
 		struct sway_binding *binding = bindings->items[i];
 		translate_binding(binding);
 
-		list_t *bindings;
 		switch (binding->type) {
 		case BINDING_KEYSYM:
-			bindings = bindsyms;
+			binding_add_translated(binding, bindsyms);
 			break;
 		case BINDING_KEYCODE:
-			bindings = bindcodes;
+			binding_add_translated(binding, bindcodes);
 			break;
 		default:
 			sway_assert(false, "unexpected translated binding type: %d",
@@ -982,7 +981,6 @@ static void translate_binding_list(list_t *bindings, list_t *bindsyms,
 			break;
 		}
 
-		binding_add_translated(binding, bindings);
 	}
 }
 
