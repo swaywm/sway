@@ -82,6 +82,10 @@ static int cmp_group(const void *item, const void *cmp_to) {
 	return strcmp(item, cmp_to);
 }
 
+static bool validate_icon_theme(struct icon_theme *theme) {
+	return theme && theme->name && theme->comment && theme->directories;
+}
+
 static bool group_handler(char *old_group, char *new_group,
 		struct icon_theme *theme) {
 	if (!old_group) { // first group must be "Icon Theme"
@@ -89,7 +93,7 @@ static bool group_handler(char *old_group, char *new_group,
 	}
 
 	if (strcmp(old_group, "Icon Theme") == 0) {
-		if (!(theme->name && theme->comment && theme->directories)) {
+		if (!validate_icon_theme(theme)) {
 			return true;
 		}
 	} else {
@@ -276,7 +280,7 @@ static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 	free(full_line);
 	fclose(theme_file);
 
-	if (!error) {
+	if (!error && validate_icon_theme(theme)) {
 		theme->dir = strdup(theme_name);
 		return theme;
 	} else {
