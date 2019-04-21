@@ -427,9 +427,10 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			// means we can send a frame done event to make the client redraw it
 			// as soon as possible. Additionally, this is required if a view is
 			// mapping and its default geometry doesn't intersect an output.
-			struct timespec when;
+			struct timespec now;
+			clock_gettime(CLOCK_MONOTONIC, &now);
 			wlr_surface_send_frame_done(
-					node->sway_container->view->surface, &when);
+					node->sway_container->view->surface, &now);
 		}
 		if (node_is_view(node) && !node->sway_container->view->saved_buffer) {
 			view_save_buffer(node->sway_container->view);
