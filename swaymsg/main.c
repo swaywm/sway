@@ -443,7 +443,21 @@ int main(int argc, char **argv) {
 
 	char *command = NULL;
 	if (optind < argc) {
-		command = join_args(argv + optind, argc - optind);
+		char **commands = malloc(sizeof(char *) * (argc - optind));
+		for (int i = 0; i < argc - optind; ++i) {
+			// quote arguments containing spaces
+			if (strchr(argv[optind + i], ' ')) {
+				size_t len = strlen(argv[optind + i]);
+				commands[i] = malloc(sizeof(char) * (len + 3));
+				strcpy(commands[i], "\"");
+				strcat(commands[i], argv[optind + i]);
+				strcat(commands[i], "\"");
+			} else {
+				commands[i] = strdup(argv[optind + i]);
+			}
+		}
+		command = join_args(commands, argc - optind);
+		free_argv(argc - optind, commands);
 	} else {
 		command = strdup("");
 	}
