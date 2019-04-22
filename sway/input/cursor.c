@@ -353,6 +353,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_down *event = data;
+	
 	struct sway_seat *seat = cursor->seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
@@ -379,7 +380,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-		// TODO: fall back to cursor simulation if client has not bound to touch
+	// TODO: fall back to cursor simulation if client has not bound to touch
 	if (seat_is_input_allowed(seat, surface)) {
 		wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
 				event->touch_id, sx, sy);
@@ -406,17 +407,16 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, cursor, touch_motion);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_motion *event = data;
+	
 	struct sway_seat *seat = cursor->seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 
-	
 	double lx, ly;
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
 	node_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
-
 
         sway_log(SWAY_DEBUG, "move gesture");
 	libtouch_progress_register_move(cursor->gesture_tracker, event->time_msec,
@@ -439,15 +439,13 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	if (!surface) {
 		return;
 	}
-	
+
 	// TODO: fall back to cursor simulation if client has not bound to touch
 	if (seat_is_input_allowed(cursor->seat, surface)) {
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
 			event->touch_id, sx, sy);
 	}
 }
-
-
 
 static double apply_mapping_from_coord(double low, double high, double value) {
 	if (isnan(value)) {

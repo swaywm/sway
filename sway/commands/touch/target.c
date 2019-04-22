@@ -46,7 +46,5 @@ struct cmd_results *touch_cmd_target(int argc, char **argv) {
 	}
 
 	conf->target = target;
-
-	
 	return cmd_results_new(CMD_SUCCESS, "Created target: %s", argv[0]);
 };

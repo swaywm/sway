@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <libtouch.h>
 #include <wordexp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -30,7 +31,6 @@
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
-#include <libtouch.h>
 
 struct sway_config *config = NULL;
 
@@ -132,7 +132,6 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->criteria);
 	}
-
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
 	list_free_items_and_destroy(config->config_chain);

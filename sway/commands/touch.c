@@ -17,7 +17,6 @@ static struct cmd_handler touch_handlers[] = {
 	{ "target", touch_cmd_target },
 };
 
-
 struct cmd_results *cmd_touch(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "touch", EXPECTED_AT_LEAST, 2))) {
