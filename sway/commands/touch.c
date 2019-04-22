@@ -2,13 +2,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include <strings.h>
+#include <libtouch.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
-#include <libtouch.h>
 
 // Must be in alphabetical order for bsearch
 static struct cmd_handler touch_handlers[] = {
@@ -28,13 +28,10 @@ struct cmd_results *cmd_touch(int argc, char **argv) {
 		config->gesture_engine = libtouch_engine_create();
 		sway_log(SWAY_DEBUG, "Created a new gesture engine");
 	}
-	struct cmd_handler *cmd = find_handler(argv[0], touch_handlers, sizeof(touch_handlers));
-	if( cmd ) {
-		return config_subcommand(argv, argc, touch_handlers, sizeof(touch_handlers));	
-	}
-	return cmd_results_new(CMD_FAILURE,
-			       "Invalid subcommand: %s",
-			       argv[0]);
-		
 	
+	if (find_handler(argv[0], touch_handlers, sizeof(touch_handlers))) {
+		return config_subcommand(
+			argv,argc,touch_handlers, sizeof(touch_handlers));
+	}
+	return cmd_results_new(CMD_INVALID, "Invalid subcommand: %s", argv[0]);
 };

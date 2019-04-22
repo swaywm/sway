@@ -25,7 +25,6 @@ struct cmd_results *touch_cmd_gesture(int argc, char **argv) {
 	if((error = checkarg(argc, "gesture", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
-	sway_log(SWAY_DEBUG, "Getting gesture conf");
 	
 	struct gesture_config *gesture = get_gesture_config(argv[0]);
 	
@@ -36,12 +35,14 @@ struct cmd_results *touch_cmd_gesture(int argc, char **argv) {
 
 	config->handler_context.current_gesture = gesture;
 	
-	struct cmd_handler *cmd = find_handler(argv[1], gesture_handlers, sizeof(gesture_handlers));
+	struct cmd_handler *cmd = find_handler(
+		argv[1], gesture_handlers, sizeof(gesture_handlers));
 	if (cmd) {
-		return config_subcommand(argv + 1,argc - 1,gesture_handlers, sizeof(gesture_handlers));
+		return config_subcommand(
+			argv + 1,argc - 1,
+			gesture_handlers, sizeof(gesture_handlers));
 	}
-
-		
+	
 	return cmd_results_new(CMD_FAILURE,
 			       "Invalid Subcommand: %s",
 			       argv[1]);

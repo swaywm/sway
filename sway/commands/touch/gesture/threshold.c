@@ -15,15 +15,16 @@ struct cmd_results *touch_gesture_cmd_threshold(int argc, char **argv) {
 	if((error = checkarg(argc, "touch", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	struct libtouch_action *current = config->handler_context.current_gesture_action;
+	struct libtouch_action *current =
+		config->handler_context.current_gesture_action;
 	if(!current) {
 		return cmd_results_new(CMD_FAILURE, "No action created");
 	}
 
-	int threshold = atoi(argv[0]);
-	if(threshold < 0) {
-		return cmd_results_new(CMD_INVALID,
-				       "Invalid threshold: %s", argv[0]);
+	long int threshold = strtol(argv[0], NULL, 10);
+	if(threshold == 0) {
+		return cmd_results_new(
+			CMD_INVALID, "Invalid threshold: %s", argv[0]);
 	}
 	sway_log(SWAY_DEBUG, "Set threshold %d", threshold);
 	libtouch_action_set_threshold(current, threshold);

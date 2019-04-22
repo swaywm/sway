@@ -53,6 +53,7 @@ struct sway_binding {
 	uint32_t modifiers;
 	char *command;
 };
+
 /**
  * A mouse binding and an associated command.
  */
@@ -110,7 +111,6 @@ struct gesture_target_config {
 	char *identifier;
 	struct libtouch_target *target;
 };
-
 
 /**
  * options for input devices
@@ -521,7 +521,7 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
-	
+
 	struct libtouch_engine *gesture_engine;
 	// Context for command handlers
 	struct {

@@ -22,13 +22,11 @@ struct cmd_results *touch_gesture_cmd_pinch(int argc, char **argv) {
 	} else if (strcmp(argv[0],"out") == 0) {
 		mode = LIBTOUCH_PINCH_OUT;
 	} else {
-		return cmd_results_new(CMD_FAILURE, "pinch: %s is not in or out", argv[0]);
+		return cmd_results_new(CMD_INVALID, "pinch: %s is not in or out", argv[0]);
 	}
 	
 	if(!config->handler_context.current_gesture) {
 		return cmd_results_new(CMD_FAILURE, "No current gesture");
-	} else if (!config->handler_context.current_gesture->gesture) {
-		return cmd_results_new(CMD_FAILURE, "No gesture in gesture config");
 	}
 	struct libtouch_gesture *gesture = config->handler_context.current_gesture->gesture;
 	

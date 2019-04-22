@@ -32,7 +32,7 @@ struct cmd_results *touch_gesture_cmd_swipe(int argc, char **argv) {
 
 	sway_log(SWAY_DEBUG, "Direction: %d", direction);
 	if (direction == 0) {
-	  return cmd_results_new(CMD_FAILURE, "Direction %s invalid", argv[0]);
+	  return cmd_results_new(CMD_INVALID, "Direction %s invalid", argv[0]);
 	}
 
 	struct libtouch_gesture *gesture = config->handler_context.current_gesture->gesture;

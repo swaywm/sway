@@ -334,30 +334,19 @@ static void handle_cursor_frame(struct wl_listener *listener, void *data) {
 
 static void handle_gestures(struct libtouch_progress_tracker *tracker, struct sway_seat *seat) {
 	struct libtouch_gesture *complete;
-	struct gesture_config *cfg;
-	int idx;
-	cfg = (struct gesture_config*) config->gesture_configs->items[0];
-	sway_log(SWAY_DEBUG, "Tracking %d gestures", libtouch_progress_tracker_n_gestures(tracker));
-	for(uint32_t i = 0; i < libtouch_progress_tracker_n_gestures(tracker); i++) {
-	  sway_log(SWAY_DEBUG, "Progress %d: %f", i, libtouch_gesture_progress_get_progress(libtouch_gesture_get_progress(tracker, i)));
-	}
-	while((complete = libtouch_handle_finished_gesture(tracker)) != NULL){
-		
-		
-		idx = list_seq_find(config->gesture_configs, gesture_libtouch_cmp, complete);
-		if(idx >= 0) {
-			sway_log(SWAY_DEBUG, "Completed gesture %s", cfg->identifier);
+	while ((complete = libtouch_handle_finished_gesture(tracker)) != NULL) {
+		int idx = list_seq_find(config->gesture_configs,
+					gesture_libtouch_cmp, complete);
+		if (idx >= 0) {
+			struct gesture_config *cfg;
 			cfg = config->gesture_configs->items[idx];
-			
-			if(cfg->command) {
+			if (cfg->command) {
 				execute_command(cfg->command, seat, NULL);
 			}
 		} else {
-			sway_log(SWAY_DEBUG, "Gesture unbound!");
+			sway_log(SWAY_ERROR, "Gesture unbound!");
 		}
 	}
-
-	
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
@@ -378,9 +367,12 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
-	libtouch_progress_register_touch(cursor->gesture_tracker, event->time_msec,
-					 event->touch_id, LIBTOUCH_TOUCH_DOWN,
-					 lx, ly);
+	libtouch_progress_register_touch(
+		cursor->gesture_tracker,
+		event->time_msec,
+		event->touch_id, LIBTOUCH_TOUCH_DOWN,
+		lx, ly);
+
 	handle_gestures(cursor->gesture_tracker, seat);
 
 	if (!surface) {

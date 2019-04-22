@@ -16,10 +16,10 @@ struct cmd_results *touch_cmd_target(int argc, char **argv) {
 		return error;
 	}
 	sway_log(SWAY_DEBUG, "Trying to convert");
-	double x = atoi(argv[1]);
-	double y = atoi(argv[2]);
-	double w = atoi(argv[3]);
-	double h = atoi(argv[4]);
+	double x = strtod(argv[1], NULL);
+	double y = strtod(argv[2], NULL);
+	double w = strtod(argv[3], NULL);
+	double h = strtod(argv[4], NULL);
 	sway_log(SWAY_DEBUG, "Converted: %f, %f, %f, %f", x,y,w,h);
 
 	if(!config->gesture_engine) {
@@ -29,14 +29,17 @@ struct cmd_results *touch_cmd_target(int argc, char **argv) {
 	struct gesture_target_config *conf = get_gesture_target_config(argv[0]);
 
 	if(!conf) {
-		return cmd_results_new(CMD_FAILURE, "Could not create target: %s", argv[0]);
+		return cmd_results_new(
+			CMD_FAILURE, "Could not create target: %s", argv[0]);
 	}
 
 	if(conf->target != NULL) {
-		return cmd_results_new(CMD_FAILURE, "target %s already bound", argv[0]);
+		return cmd_results_new(
+			CMD_FAILURE, "target %s already bound", argv[0]);
 	}
 	
-	struct libtouch_target *target = libtouch_target_create(config->gesture_engine, x,y,w,h);
+	struct libtouch_target *target =
+		libtouch_target_create(config->gesture_engine, x,y,w,h);
 
 	if(!target) {
 		return cmd_results_new(CMD_FAILURE, "Could not create target");
@@ -46,5 +49,4 @@ struct cmd_results *touch_cmd_target(int argc, char **argv) {
 
 	
 	return cmd_results_new(CMD_SUCCESS, "Created target: %s", argv[0]);
-	
 };

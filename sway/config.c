@@ -132,6 +132,7 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->criteria);
 	}
+
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
 	list_free_items_and_destroy(config->config_chain);
@@ -143,6 +144,7 @@ void free_config(struct sway_config *config) {
 	free(config->floating_scroll_left_cmd);
 	free(config->floating_scroll_right_cmd);
 	free(config->font);
+	free(config->gesture_engine);
 	free(config->swaybg_command);
 	free(config->swaynag_command);
 	free((char *)config->current_config_path);
@@ -314,7 +316,7 @@ static void config_defaults(struct sway_config *config) {
 
 	set_color(config->border_colors.background, 0xFFFFFF);
 
-	config->gesture_engine = libtouch_engine_create();
+	if (!(config->gesture_engine = libtouch_engine_create())) goto cleanup;
 	// Security
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;
