@@ -30,7 +30,7 @@ struct cmd_results *touch_gesture_cmd_delay(int argc, char **argv) {
 		config->handler_context.current_gesture->gesture;
 	
 	struct libtouch_action *action =
-		libtouch_gesture_add_delay(gesture, mode);
+		libtouch_gesture_add_delay(gesture, delay);
 	
 	config->handler_context.current_gesture_action = action;
 
