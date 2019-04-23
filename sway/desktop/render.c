@@ -1086,7 +1086,8 @@ renderer_end:
 		wlr_output_transform_invert(wlr_output->transform);
 	wlr_region_transform(damage, damage, transform, width, height);
 
-	if (!wlr_output_damage_swap_buffers(output->damage, when, damage)) {
+	wlr_output_set_damage(wlr_output, damage);
+	if (!wlr_output_commit(wlr_output)) {
 		return;
 	}
 	output->last_frame = *when;
