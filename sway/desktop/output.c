@@ -378,14 +378,15 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	bool needs_swap;
+	bool needs_frame;
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
-	if (!wlr_output_damage_make_current(output->damage, &needs_swap, &damage)) {
+	if (!wlr_output_damage_attach_render(output->damage,
+			&needs_frame, &damage)) {
 		return;
 	}
 
-	if (needs_swap) {
+	if (needs_frame) {
 		output_render(output, &now, &damage);
 	}
 
