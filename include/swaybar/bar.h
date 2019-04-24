@@ -23,6 +23,7 @@ struct swaybar {
 	// only relevant when bar is in "hide" mode
 	bool visible_by_modifier;
 	bool visible_by_urgency;
+	bool visible_by_mode;
 	bool visible;
 
 	struct wl_display *display;

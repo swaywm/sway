@@ -148,7 +148,8 @@ bool determine_bar_visibility(struct swaybar *bar, bool moving_layer) {
 	struct swaybar_config *config = bar->config;
 	bool visible = !(strcmp(config->mode, "invisible") == 0 ||
 		(strcmp(config->mode, config->hidden_state) == 0 // both "hide"
-			&& !bar->visible_by_modifier && !bar->visible_by_urgency));
+			&& !bar->visible_by_modifier && !bar->visible_by_urgency
+			&& !bar->visible_by_mode));
 
 	// Create/destroy layer surfaces as needed
 	struct swaybar_output *output;
