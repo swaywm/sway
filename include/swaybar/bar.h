@@ -31,11 +31,8 @@ struct swaybar {
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
 	struct wl_shm *shm;
-	struct wl_seat *seat;
 
 	struct swaybar_config *config;
-	struct swaybar_pointer pointer;
-	struct swaybar_touch touch;
 	struct status_line *status;
 
 	struct loop *eventloop;
@@ -44,6 +41,7 @@ struct swaybar {
 	int ipc_socketfd;
 
 	struct wl_list outputs; // swaybar_output::link
+	struct wl_list seats; // swaybar_seat::link
 
 #if HAVE_TRAY
 	struct swaybar_tray *tray;
