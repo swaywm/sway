@@ -50,12 +50,23 @@ struct swaybar_hotspot {
 	void *data;
 };
 
+struct swaybar_seat {
+	struct swaybar *bar;
+	uint32_t wl_name;
+	struct wl_seat *wl_seat;
+	struct swaybar_pointer pointer;
+	struct swaybar_touch touch;
+	struct wl_list link; // swaybar_seat:link
+};
+
 extern const struct wl_seat_listener seat_listener;
 
-void update_cursor(struct swaybar *bar);
+void update_cursor(struct swaybar_seat *seat);
 
 uint32_t event_to_x11_button(uint32_t event);
 
 void free_hotspots(struct wl_list *list);
+
+void swaybar_seat_free(struct swaybar_seat *seat);
 
 #endif
