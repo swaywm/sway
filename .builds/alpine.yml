@@ -32,7 +32,7 @@ tasks:
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build
+      meson build -Dauto_features=enabled -Dtray=disabled
   - build: |
       cd sway
       ninja -C build
