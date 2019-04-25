@@ -36,13 +36,11 @@ Swayは沢山のディストリビューションで提供されています。"
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 \*\*
+* gdk-pixbuf2 (システムイコンで必要です)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です) \*
 * git \*
 
 _\*コンパイルの時_
-
-_\*\*オプション: swaybgでのみ必要です_
 
 次のコマンドを実行してください:
 

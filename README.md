@@ -38,13 +38,11 @@ Install dependencies:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 \*\*
+* gdk-pixbuf2 (optional: system tray)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
 * git \*
 
 _\*Compile-time dep_
-
-_\*\*optional: required for swaybg_
 
 Run these commands:
 

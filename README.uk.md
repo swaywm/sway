@@ -46,13 +46,11 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 \*\*
+* gdk-pixbuf2 (optional: system tray)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (необов'язково, необхідно для сторінок man) \*
 * git \*
 
 _\*Лише для компіляції_
-
-_\*\*Необов'язково, необхідно для swaybg_
 
 Виконайте ці команди:
 

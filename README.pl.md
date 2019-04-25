@@ -34,13 +34,11 @@ Zainstaluj zależności:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 \*\*
+* gdk-pixbuf2 (opcjonalnie: system tray)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (opcjonalnie: strony pomocy man) \*
 * git \*
 
 _\*zależności kompilacji_
-
-_\*\*opcjonalnie: wymagane dla swaybg_
 
 Wykonaj następujące polecenia:
 

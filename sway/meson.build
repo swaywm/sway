@@ -186,7 +186,6 @@ sway_sources = files(
 
 sway_deps = [
 	cairo,
-	gdk_pixbuf,
 	jsonc,
 	libevdev,
 	libinput,
