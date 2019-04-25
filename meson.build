@@ -60,7 +60,7 @@ rt             = cc.find_library('rt')
 git            = find_program('git', native: true, required: false)
 
 # Try first to find wlroots as a subproject, then as a system dependency
-wlroots_version = '>=0.4.1'
+wlroots_version = '>=0.5'
 wlroots_proj = subproject(
 	'wlroots',
 	default_options: ['rootston=false', 'examples=false'],
