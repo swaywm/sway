@@ -1,9 +1,5 @@
 # sway
 
-[**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/swaywm/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/swaywm/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/swaywm/sway/blob/master/README.pt.md#sway--) -
-[Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--) - [Български](https://github.com/swaywm/sway/blob/master/README.bg.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) -
-[Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--)
-
 sway jest kompozytorem [Wayland](http://wayland.freedesktop.org/) kompatybilnym z i3.
 Przeczytaj [FAQ](https://github.com/swaywm/sway/wiki). Dołącz do [kanału IRC](http://webchat.freenode.net/?channels=sway&uio=d4)
 (#sway na irc.freenode.net).
