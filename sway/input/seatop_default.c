@@ -193,11 +193,9 @@ static void cursor_do_rebase(struct sway_cursor *cursor, uint32_t time_msec,
 		struct sway_node *node, struct wlr_surface *surface,
 		double sx, double sy) {
 	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
-	// Handle cursor image
 	if (surface) {
 		if (seat_is_input_allowed(cursor->seat, surface)) {
 			wlr_seat_pointer_notify_enter(wlr_seat, surface, sx, sy);
-			wlr_seat_pointer_notify_motion(wlr_seat, time_msec, sx, sy);
 		}
 	} else if (node && node->type == N_CONTAINER) {
 		// Try a node's resize edge
@@ -462,6 +460,9 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	cursor_do_rebase(cursor, time_msec, node, surface, sx, sy);
+	if (surface && seat_is_input_allowed(cursor->seat, surface)) {
+		wlr_seat_pointer_notify_motion(wlr_seat, time_msec, sx, sy);
+	}
 
 	struct sway_drag_icon *drag_icon;
 	wl_list_for_each(drag_icon, &root->drag_icons, link) {
