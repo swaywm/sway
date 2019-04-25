@@ -36,7 +36,9 @@ sway_sources = files(
 	'config/output.c',
 	'config/seat.c',
 	'config/input.c',
-
+	'config/gesture.c',
+	'config/target.c',
+	
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
@@ -62,6 +64,7 @@ sway_sources = files(
 	'commands/force_focus_wrapping.c',
 	'commands/fullscreen.c',
 	'commands/gaps.c',
+	'commands/touch.c',
 	'commands/hide_edge_borders.c',
 	'commands/inhibit_idle.c',
 	'commands/kill.c',
@@ -175,6 +178,17 @@ sway_sources = files(
 	'commands/output/subpixel.c',
 	'commands/output/transform.c',
 
+	'commands/touch/binding.c',
+	'commands/touch/gesture.c',
+	'commands/touch/target.c',
+	'commands/touch/gesture/touch.c',
+	'commands/touch/gesture/threshold.c',
+	'commands/touch/gesture/target.c',
+	'commands/touch/gesture/swipe.c',
+	'commands/touch/gesture/rotate.c',
+	'commands/touch/gesture/pinch.c',
+	'commands/touch/gesture/delay.c',
+
 	'tree/arrange.c',
 	'tree/container.c',
 	'tree/node.c',
@@ -185,6 +199,7 @@ sway_sources = files(
 )
 
 sway_deps = [
+	libtouch,
 	cairo,
 	jsonc,
 	libevdev,

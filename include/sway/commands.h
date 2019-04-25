@@ -134,6 +134,7 @@ sway_cmd cmd_force_display_urgency_hint;
 sway_cmd cmd_force_focus_wrapping;
 sway_cmd cmd_fullscreen;
 sway_cmd cmd_gaps;
+sway_cmd cmd_gesture;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_inhibit_idle;
@@ -184,6 +185,7 @@ sway_cmd cmd_titlebar_padding;
 sway_cmd cmd_unbindcode;
 sway_cmd cmd_unbindswitch;
 sway_cmd cmd_unbindsym;
+sway_cmd cmd_touch;
 sway_cmd cmd_unmark;
 sway_cmd cmd_urgent;
 sway_cmd cmd_workspace;
@@ -277,6 +279,18 @@ sway_cmd seat_cmd_cursor;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
 sway_cmd seat_cmd_pointer_constraint;
+
+sway_cmd touch_cmd_gesture;
+sway_cmd touch_cmd_binding;
+sway_cmd touch_cmd_target;
+
+sway_cmd touch_gesture_cmd_touch;
+sway_cmd touch_gesture_cmd_threshold;
+sway_cmd touch_gesture_cmd_target;
+sway_cmd touch_gesture_cmd_swipe;
+sway_cmd touch_gesture_cmd_pinch;
+sway_cmd touch_gesture_cmd_rotate;
+sway_cmd touch_gesture_cmd_delay;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

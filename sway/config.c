@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <libtouch.h>
 #include <wordexp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -142,6 +143,7 @@ void free_config(struct sway_config *config) {
 	free(config->floating_scroll_left_cmd);
 	free(config->floating_scroll_right_cmd);
 	free(config->font);
+	free(config->gesture_engine);
 	free(config->swaybg_command);
 	free(config->swaynag_command);
 	free((char *)config->current_config_path);
@@ -188,7 +190,8 @@ static void config_defaults(struct sway_config *config) {
 			"--button-no-terminal 'Exit sway' 'swaymsg exit' "
 			"--button-no-terminal 'Reload sway' 'swaymsg reload'";
 	config->swaynag_config_errors.detailed = true;
-
+	if (!(config->gesture_configs = create_list())) goto cleanup;
+	if (!(config->gesture_target_configs = create_list())) goto cleanup;
 	if (!(config->symbols = create_list())) goto cleanup;
 	if (!(config->modes = create_list())) goto cleanup;
 	if (!(config->bars = create_list())) goto cleanup;
@@ -312,6 +315,7 @@ static void config_defaults(struct sway_config *config) {
 
 	set_color(config->border_colors.background, 0xFFFFFF);
 
+	if (!(config->gesture_engine = libtouch_engine_create())) goto cleanup;
 	// Security
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;

@@ -24,6 +24,7 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include <libtouch.h>
 
 static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	if (!seat_device) {
@@ -1189,7 +1190,17 @@ void seat_apply_config(struct sway_seat *seat,
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_configure_device(seat, seat_device->input_device);
 	}
-
+	
+	if(config->gesture_engine) {
+		sway_log(SWAY_DEBUG, "gesture engine exists");
+		if(seat->cursor->gesture_tracker) {
+			free(seat->cursor->gesture_tracker);
+		}	
+		sway_log(SWAY_DEBUG, "Gesture progress tracker created");
+		seat->cursor->gesture_tracker =	libtouch_progress_tracker_create(
+			config->gesture_engine);
+		
+	}
 	cursor_handle_activity(seat->cursor);
 }
 

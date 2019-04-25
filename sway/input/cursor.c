@@ -28,6 +28,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include <libtouch.h>
 
 static uint32_t get_current_time_msec(void) {
 	struct timespec now;
@@ -331,11 +332,28 @@ static void handle_cursor_frame(struct wl_listener *listener, void *data) {
 	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 }
 
+static void handle_gestures(struct libtouch_progress_tracker *tracker, struct sway_seat *seat) {
+	struct libtouch_gesture *complete;
+	while ((complete = libtouch_handle_finished_gesture(tracker)) != NULL) {
+		int idx = list_seq_find(config->gesture_configs,
+					gesture_libtouch_cmp, complete);
+		if (idx >= 0) {
+			struct gesture_config *cfg;
+			cfg = config->gesture_configs->items[idx];
+			if (cfg->command) {
+				execute_command(cfg->command, seat, NULL);
+			}
+		} else {
+			sway_log(SWAY_ERROR, "Gesture unbound!");
+		}
+	}
+}
+
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_down *event = data;
-
+	
 	struct sway_seat *seat = cursor->seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
@@ -350,6 +368,14 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
+	libtouch_progress_register_touch(
+		cursor->gesture_tracker,
+		event->time_msec,
+		event->touch_id, LIBTOUCH_TOUCH_DOWN,
+		lx, ly);
+
+	handle_gestures(cursor->gesture_tracker, seat);
+
 	if (!surface) {
 		return;
 	}
@@ -360,6 +386,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 				event->touch_id, sx, sy);
 		cursor_set_image(cursor, NULL, NULL);
 	}
+
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
@@ -369,6 +396,10 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	// TODO: fall back to cursor simulation if client has not bound to touch
 	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
+	
+	libtouch_progress_register_touch(cursor->gesture_tracker, event->time_msec,
+				       event->touch_id, LIBTOUCH_TOUCH_UP, 0, 0);
+	handle_gestures(cursor->gesture_tracker, cursor->seat);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
@@ -376,7 +407,7 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, cursor, touch_motion);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_motion *event = data;
-
+	
 	struct sway_seat *seat = cursor->seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
@@ -386,6 +417,12 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
 	node_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+
+        sway_log(SWAY_DEBUG, "move gesture");
+	libtouch_progress_register_move(cursor->gesture_tracker, event->time_msec,
+					event->touch_id, lx,ly);
+
+	handle_gestures(cursor->gesture_tracker, seat);
 
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;

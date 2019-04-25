@@ -91,6 +91,7 @@ struct sway_mode {
 	list_t *keycode_bindings;
 	list_t *mouse_bindings;
 	list_t *switch_bindings;
+	list_t *gesture_bindings;
 	bool pango;
 };
 
@@ -98,6 +99,17 @@ struct input_config_mapped_from_region {
 	double x1, y1;
 	double x2, y2;
 	bool mm;
+};
+
+struct gesture_config {
+	char *identifier;
+	struct libtouch_gesture *gesture;
+	char *command;
+};
+
+struct gesture_target_config {
+	char *identifier;
+	struct libtouch_target *target;
 };
 
 /**
@@ -420,6 +432,8 @@ struct sway_config {
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *input_type_configs;
+	list_t *gesture_configs;
+	list_t *gesture_target_configs;
 	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;
@@ -508,6 +522,7 @@ struct sway_config {
 	list_t *feature_policies;
 	list_t *ipc_policies;
 
+	struct libtouch_engine *gesture_engine;
 	// Context for command handlers
 	struct {
 		struct input_config *input_config;
@@ -517,6 +532,10 @@ struct sway_config {
 		struct sway_node *node;
 		struct sway_container *container;
 		struct sway_workspace *workspace;
+
+		struct gesture_config *current_gesture;
+		struct libtouch_action *current_gesture_action;
+		
 		bool using_criteria;
 		struct {
 			int argc;
@@ -640,6 +659,20 @@ void free_bar_config(struct bar_config *bar);
 void free_bar_binding(struct bar_binding *binding);
 
 void free_workspace_config(struct workspace_config *wsc);
+
+int gesture_identifier_cmp(const void *item, const void *data);
+
+int gesture_libtouch_cmp(const void *item, const void *data);
+
+int gesture_target_identifier_cmp(const void *item, const void *data);
+
+struct gesture_config *get_gesture_config(const char *identifier);
+
+struct gesture_config *new_gesture_config(const char *identifier);
+
+struct gesture_target_config *get_gesture_target_config(const char* identifier);
+
+struct gesture_target_config *create_gesture_target_config(const char* identifier);
 
 /**
  * Updates the value of config->font_height based on the max title height
