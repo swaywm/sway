@@ -1385,8 +1385,10 @@ void container_replace(struct sway_container *container,
 		root_scratchpad_show(container);
 		root_scratchpad_remove_container(container);
 	}
-	container_add_sibling(container, replacement, 1);
-	container_detach(container);
+	if (container->parent || container->workspace) {
+		container_add_sibling(container, replacement, 1);
+		container_detach(container);
+	}
 	if (scratchpad) {
 		root_scratchpad_add_container(replacement);
 	}

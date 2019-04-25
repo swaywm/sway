@@ -688,6 +688,9 @@ void workspace_insert_tiling(struct sway_workspace *workspace,
 	if (con->workspace) {
 		container_detach(con);
 	}
+	if (workspace->layout == L_STACKED || workspace->layout == L_TABBED) {
+		con = container_split(con, workspace->layout);
+	}
 	list_insert(workspace->tiling, index, con);
 	con->workspace = workspace;
 	container_for_each_child(con, set_workspace, NULL);
