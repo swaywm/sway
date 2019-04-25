@@ -10,7 +10,6 @@ executable(
 	dependencies: [
 		cairo,
 		client_protos,
-		gdk_pixbuf,
 		pango,
 		pangocairo,
 		wayland_client,

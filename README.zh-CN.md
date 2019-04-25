@@ -35,13 +35,11 @@ Sway 在很多发行版中可用. 尝试在你的发行版中安装 "sway" 包.
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 \*\*
+* gdk-pixbuf2 (可选的: system tray)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (可选的: man pages) \*
 * git \*
 
 _\*编译时依赖_
-
-_\*\*可选的: swaybg 依赖_
 
 运行这些命令:
 

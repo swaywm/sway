@@ -41,13 +41,11 @@ Installez les dépendances :
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 \*\*
+* gdk-pixbuf2 (optionnel: system tray)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optionnel: requis pour les pages man) \*
 * git \*
 
 _\*Requis uniquement pour la compilation_
-
-_\*\*Optionnel: requis uniquement pour swaybg_
 
 Exécutez ces commandes :
 
