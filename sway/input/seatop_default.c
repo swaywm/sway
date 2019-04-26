@@ -461,7 +461,7 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
 
 	cursor_do_rebase(cursor, time_msec, node, surface, sx, sy);
 	if (surface && seat_is_input_allowed(cursor->seat, surface)) {
-		wlr_seat_pointer_notify_motion(wlr_seat, time_msec, sx, sy);
+		wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
 	}
 
 	struct sway_drag_icon *drag_icon;
