@@ -1078,15 +1078,22 @@ renderer_end:
 	int width, height;
 	wlr_output_transformed_resolution(wlr_output, &width, &height);
 
-	if (debug.damage == DAMAGE_HIGHLIGHT) {
-		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
-	}
+	pixman_region32_t frame_damage;
+	pixman_region32_init(&frame_damage);
 
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(wlr_output->transform);
-	wlr_region_transform(damage, damage, transform, width, height);
+	wlr_region_transform(&frame_damage, &output->damage->current,
+		transform, width, height);
 
-	wlr_output_set_damage(wlr_output, damage);
+	if (debug.damage == DAMAGE_HIGHLIGHT) {
+		pixman_region32_union_rect(&frame_damage, &frame_damage,
+			0, 0, wlr_output->width, wlr_output->height);
+	}
+
+	wlr_output_set_damage(wlr_output, &frame_damage);
+	pixman_region32_fini(&frame_damage);
+
 	if (!wlr_output_commit(wlr_output)) {
 		return;
 	}
