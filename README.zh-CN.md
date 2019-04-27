@@ -1,6 +1,6 @@
 # sway
 
-sway 是和 i3 兼容的 [Wayland](http://wayland.freedesktop.org/) compositor.
+sway 是和 [i3](https://i3wm.org/) 兼容的 [Wayland](http://wayland.freedesktop.org/) compositor.
 阅读 [FAQ](https://github.com/swaywm/sway/wiki). 加入 [IRC
 频道](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
