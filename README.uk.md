@@ -1,6 +1,6 @@
 # sway
 
-Sway це сумісний з i3 композитор [Wayland](http://wayland.freedesktop.org/).
+Sway це сумісний з [i3](https://i3wm.org/) композитор [Wayland](http://wayland.freedesktop.org/).
 Ознайомтесь з [ЧаПами](https://github.com/swaywm/sway/wiki). Приєднуйтесь до [спільноти в
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
