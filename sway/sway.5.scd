@@ -206,7 +206,7 @@ set|plus|minus <amount>
 *move* [container|window] [to] workspace back_and_forth
 	Moves the focused container to previously focused workspace.
 
-*move* [container|window] [to] output <name-or-id>
+*move* [container|window] [to] output <name-or-id>|current
 	Moves the focused container to the specified output.
 
 *move* [container|window] [to] output up|right|down|left
@@ -216,10 +216,10 @@ set|plus|minus <amount>
 *move* [container|window] [to] scratchpad
 	Moves the focused container to the scratchpad.
 
-*move* workspace [to] output <name-or-id>
+*move* workspace [to] output <name-or-id>|current
 	Moves the focused workspace to the specified output.
 
-*move* workspace to [output] <name-or-id>
+*move* workspace to [output] <name-or-id>|current
 	Moves the focused workspace to the specified output.
 
 *move* workspace [to] output up|right|down|left

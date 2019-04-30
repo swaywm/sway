@@ -28,6 +28,15 @@ static const char expected_syntax[] =
 
 static struct sway_output *output_in_direction(const char *direction_string,
 		struct sway_output *reference, int ref_lx, int ref_ly) {
+	if (strcasecmp(direction_string, "current") == 0) {
+		struct sway_workspace *active_ws =
+			seat_get_focused_workspace(config->handler_context.seat);
+		if (!active_ws) {
+			return NULL;
+		}
+		return active_ws->output;
+	}
+
 	struct {
 		char *name;
 		enum wlr_direction direction;
