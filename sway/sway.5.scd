@@ -699,12 +699,20 @@ The default colors are:
 	Specifies that workspace _name_ should have the given gaps settings when it
 	is created.
 
+	This command does not affect existing workspaces. To alter the gaps of an
+	existing workspace, use the _gaps_ command.
+
 *workspace* <name> output <outputs...>
 	Specifies that workspace _name_ should be shown on the specified _outputs_.
 	Multiple outputs can be listed and the first available will be used. If the
 	workspace gets placed on an output further down the list and an output that
 	is higher on the list becomes available, the workspace will be move to the
 	higher priority output.
+
+	This command does not affect existing workspaces. To move an existing
+	workspace, use the _move_ command in combination with the _workspace_
+	criteria (non-empty workspaces only) or _workspace_ command (to switch
+	to the workspace before moving).
 
 *workspace_auto_back_and_forth* yes|no
 	When _yes_, repeating a workspace switch command will switch back to the
