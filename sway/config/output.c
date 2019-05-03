@@ -482,9 +482,11 @@ void free_output_config(struct output_config *oc) {
 
 static void handle_swaybg_client_destroy(struct wl_listener *listener,
 		void *data) {
-	wl_list_remove(&config->swaybg_client_destroy.link);
-	wl_list_init(&config->swaybg_client_destroy.link);
-	config->swaybg_client = NULL;
+	struct wl_client *client = data;
+	wl_list_remove(&listener->link);
+	if (client == config->swaybg_client) {
+		config->swaybg_client = NULL;
+	}
 }
 
 static bool _spawn_swaybg(char **command) {
