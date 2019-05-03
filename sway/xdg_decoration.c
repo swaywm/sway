@@ -47,6 +47,8 @@ void handle_xdg_decoration(struct wl_listener *listener, void *data) {
 	deco->request_mode.notify = xdg_decoration_handle_request_mode;
 
 	wl_list_insert(&server.xdg_decorations, &deco->link);
+
+	xdg_decoration_handle_request_mode(&deco->request_mode, wlr_deco);
 }
 
 struct sway_xdg_decoration *xdg_decoration_from_surface(
