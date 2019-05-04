@@ -441,6 +441,10 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		config->reloading = true;
 		config->active = true;
 
+		if (old_config->swaybg_client != NULL) {
+			wl_client_destroy(old_config->swaybg_client);
+		}
+
 		if (old_config->swaynag_config_errors.client != NULL) {
 			wl_client_destroy(old_config->swaynag_config_errors.client);
 		}
