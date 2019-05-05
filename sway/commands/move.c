@@ -320,6 +320,8 @@ static bool container_move_in_direction(struct sway_container *container,
 	int offs =
 		move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_UP ? -1 : 1;
 
+	enum sway_container_layout old_layout = container_parent_layout(container);
+
 	while (current) {
 		list_t *siblings = container_get_siblings(current);
 		if (siblings) {
@@ -346,6 +348,9 @@ static bool container_move_in_direction(struct sway_container *container,
 						} else {
 							workspace_insert_tiling(current->workspace, container,
 									index + (offs < 0 ? 0 : 1));
+							if (old_layout == L_TABBED || old_layout == L_STACKED) {
+								container_split(container, old_layout);
+							}
 						}
 						return true;
 					}
@@ -364,8 +369,23 @@ static bool container_move_in_direction(struct sway_container *container,
 	// Maybe rejigger the workspace
 	struct sway_workspace *ws = container->workspace;
 	if (ws) {
+		if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
+			list_t *siblings = container_get_siblings(container);
+			if (siblings->length == 2) {
+				if (offs == 1) {
+					container_split(siblings->items[0], old_layout);
+				} else {
+					container_split(siblings->items[1], old_layout);
+				}
+			}
+		}
 		if (!is_parallel(ws->layout, move_dir)) {
 			workspace_rejigger(ws, container, move_dir);
+			if ((old_layout == L_TABBED || old_layout == L_STACKED)
+				&& container_parent_layout(container) != L_TABBED
+				&& container_parent_layout(container) != L_STACKED) {
+				container_split(container, old_layout);
+			}
 			return true;
 		} else if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
 			workspace_rejigger(ws, container, move_dir);
