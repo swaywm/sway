@@ -110,7 +110,7 @@ static void merge_id_on_name(struct output_config *oc) {
 	wl_list_for_each(output, &root->all_outputs, link) {
 		name = output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), output);
-		if (strcmp(name, oc->name) != 0 || strcmp(id, oc->name) != 0) {
+		if (strcmp(name, oc->name) == 0 || strcmp(id, oc->name) == 0) {
 			size_t length = snprintf(NULL, 0, "%s on %s", id, name) + 1;
 			id_on_name = malloc(length);
 			if (!id_on_name) {
