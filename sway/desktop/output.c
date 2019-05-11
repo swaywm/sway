@@ -42,6 +42,19 @@ struct sway_output *output_by_name_or_id(const char *name_or_id) {
 	return NULL;
 }
 
+struct sway_output *all_output_by_name_or_id(const char *name_or_id) {
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
+		char identifier[128];
+		output_get_identifier(identifier, sizeof(identifier), output);
+		if (strcasecmp(identifier, name_or_id) == 0
+				|| strcasecmp(output->wlr_output->name, name_or_id) == 0) {
+			return output;
+		}
+	}
+	return NULL;
+}
+
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
  * the child position is (*sx, *sy) and its size is (sw, sh).

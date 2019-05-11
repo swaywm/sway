@@ -94,6 +94,9 @@ must be separated by one space. For example:
 	Enables or disables the specified output (all outputs are enabled by
 	default).
 
+*output* <name> toggle
+	Toggle the specified output.
+
 *output* <name> dpms on|off
 	Enables or disables the specified output via DPMS. To turn an output off
 	(ie. blank the screen but keep workspaces as-is), one can set DPMS to off.
