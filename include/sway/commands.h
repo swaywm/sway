@@ -270,6 +270,7 @@ sway_cmd output_cmd_mode;
 sway_cmd output_cmd_position;
 sway_cmd output_cmd_scale;
 sway_cmd output_cmd_subpixel;
+sway_cmd output_cmd_toggle;
 sway_cmd output_cmd_transform;
 
 sway_cmd seat_cmd_attach;

@@ -82,7 +82,11 @@ void output_damage_box(struct sway_output *output, struct wlr_box *box);
 void output_damage_whole_container(struct sway_output *output,
 	struct sway_container *con);
 
+// this ONLY includes the enabled outputs
 struct sway_output *output_by_name_or_id(const char *name_or_id);
+
+// this includes all the outputs, including disabled ones
+struct sway_output *all_output_by_name_or_id(const char *name_or_id);
 
 void output_sort_workspaces(struct sway_output *output);
 
