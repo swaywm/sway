@@ -216,6 +216,10 @@ struct workspace_config {
 };
 
 struct bar_config {
+	char *swaybar_command;
+	struct wl_client *client;
+	struct wl_listener client_destroy;
+
 	/**
 	 * One of "dock", "hide", "invisible"
 	 *
@@ -243,7 +247,6 @@ struct bar_config {
 	list_t *bindings;
 	char *status_command;
 	bool pango_markup;
-	char *swaybar_command;
 	char *font;
 	int height; // -1 not defined
 	bool workspace_buttons;
@@ -254,7 +257,6 @@ struct bar_config {
 	bool binding_mode_indicator;
 	bool verbose;
 	struct side_gaps gaps;
-	pid_t pid;
 	int status_padding;
 	int status_edge_padding;
 	struct {
