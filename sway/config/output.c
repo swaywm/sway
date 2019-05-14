@@ -10,6 +10,7 @@
 #include "sway/config.h"
 #include "sway/output.h"
 #include "sway/tree/root.h"
+#include "sway/util.h"
 #include "log.h"
 #include "util.h"
 
@@ -489,67 +490,6 @@ static void handle_swaybg_client_destroy(struct wl_listener *listener,
 	sway_config->swaybg_client = NULL;
 }
 
-static bool _spawn_swaybg(char **command) {
-	if (config->swaybg_client != NULL) {
-		wl_client_destroy(config->swaybg_client);
-	}
-	int sockets[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
-		sway_log_errno(SWAY_ERROR, "socketpair failed");
-		return false;
-	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
-		return false;
-	}
-
-	config->swaybg_client = wl_client_create(server.wl_display, sockets[0]);
-	if (config->swaybg_client == NULL) {
-		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
-		return false;
-	}
-
-	config->swaybg_client_destroy.notify = handle_swaybg_client_destroy;
-	wl_client_add_destroy_listener(config->swaybg_client,
-		&config->swaybg_client_destroy);
-
-	pid_t pid = fork();
-	if (pid < 0) {
-		sway_log_errno(SWAY_ERROR, "fork failed");
-		return false;
-	} else if (pid == 0) {
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-				"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			execvp(command[0], command);
-			sway_log_errno(SWAY_ERROR, "execvp failed");
-			_exit(EXIT_FAILURE);
-		}
-		_exit(EXIT_SUCCESS);
-	}
-
-	if (close(sockets[1]) != 0) {
-		sway_log_errno(SWAY_ERROR, "close failed");
-		return false;
-	}
-	if (waitpid(pid, NULL, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
-		return false;
-	}
-
-	return true;
-}
-
 bool spawn_swaybg(void) {
 	if (!config->swaybg_command) {
 		return true;
@@ -607,7 +547,17 @@ bool spawn_swaybg(void) {
 		sway_log(SWAY_DEBUG, "spawn_swaybg cmd[%zd] = %s", k, cmd[k]);
 	}
 
-	bool result = _spawn_swaybg(cmd);
+	if (config->swaybg_client) {
+		wl_client_destroy(config->swaybg_client);
+	}
+
+	config->swaybg_client = spawn_wl_client(cmd, server.wl_display);
+
+	if (config->swaybg_client) {
+		config->swaybg_client_destroy.notify = handle_swaybg_client_destroy;
+		wl_client_add_destroy_listener(config->swaybg_client, &config->swaybg_client_destroy);
+	}
+
 	free(cmd);
-	return result;
+	return config->swaybg_client != NULL;
 }
