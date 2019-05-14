@@ -770,17 +770,20 @@ Mark all Firefox windows with "Browser":
 [class="Firefox"] mark Browser
 ```
 
+You may like to use swaymsg -t get_tree for finding the values of these 
+properties in practice for your applications.
+
 The following attributes may be matched with:
 
 *app_id*
 	Compare value against the app id. Can be a regular expression. If value is
 	\_\_focused\_\_, then the app id must be the same as that of the currently
-	focused window.
+	focused window. _app_id_ are specific to Wayland applications.
 
 *class*
 	Compare value against the window class. Can be a regular expression. If
 	value is \_\_focused\_\_, then the window class must be the same as that of
-	the currently focused window.
+	the currently focused window. _class_ are specific to X11 applications.
 
 *con_id*
 	Compare against the internal container ID, which you can find via IPC. If
