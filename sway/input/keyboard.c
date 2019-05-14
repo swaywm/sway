@@ -476,45 +476,38 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 	return keyboard;
 }
 
+struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic) {
+	struct xkb_rule_names rules = {0};
+	if (ic) {
+		input_config_fill_rule_names(ic, &rules);
+	}
+
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (!sway_assert(context, "cannot create XKB context")) {
+		return NULL;
+	}
+
+	struct xkb_keymap *keymap =
+		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	xkb_context_unref(context);
+	return keymap;
+}
+
 void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct input_config *input_config =
 		input_device_get_config(keyboard->seat_device->input_device);
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 
-	struct xkb_rule_names rules = {0};
-	if (input_config) {
-		input_config_fill_rule_names(input_config, &rules);
-	}
-
-	if (!rules.layout) {
-		rules.layout = getenv("XKB_DEFAULT_LAYOUT");
-	}
-	if (!rules.model) {
-		rules.model = getenv("XKB_DEFAULT_MODEL");
-	}
-	if (!rules.options) {
-		rules.options = getenv("XKB_DEFAULT_OPTIONS");
-	}
-	if (!rules.rules) {
-		rules.rules = getenv("XKB_DEFAULT_RULES");
-	}
-	if (!rules.variant) {
-		rules.variant = getenv("XKB_DEFAULT_VARIANT");
-	}
-
-	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!sway_assert(context, "cannot create XKB context")) {
-		return;
-	}
-
-	struct xkb_keymap *keymap =
-		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
-
+	struct xkb_keymap *keymap = sway_keyboard_compile_keymap(input_config);
 	if (!keymap) {
-		sway_log(SWAY_DEBUG, "cannot configure keyboard: keymap does not exist");
-		xkb_context_unref(context);
-		return;
+		sway_log(SWAY_ERROR, "Failed to compile keymap. Attempting defaults");
+		keymap = sway_keyboard_compile_keymap(NULL);
+		if (!keymap) {
+			sway_log(SWAY_ERROR,
+					"Failed to compile default keymap. Aborting configure");
+			return;
+		}
 	}
 
 	xkb_keymap_unref(keyboard->keymap);
@@ -557,7 +550,6 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	wlr_keyboard_set_repeat_info(wlr_device->keyboard, repeat_rate,
 			repeat_delay);
 
-	xkb_context_unref(context);
 	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
 	wlr_seat_set_keyboard(seat, wlr_device);
 
