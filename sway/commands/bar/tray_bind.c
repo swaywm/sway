@@ -12,9 +12,6 @@ static struct cmd_results *tray_bind(int argc, char **argv, bool code) {
 	if ((error = checkarg(argc, command, EXPECTED_EQUAL_TO, 2))) {
 		return error;
 	}
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
 
 	struct tray_binding *binding = calloc(1, sizeof(struct tray_binding));
 	if (!binding) {

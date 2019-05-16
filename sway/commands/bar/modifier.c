@@ -10,10 +10,6 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 		return error;
 	}
 
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
-
 	uint32_t mod = 0;
 	if (strcmp(argv[0], "none") != 0) {
 		list_t *split = split_string(argv[0], "+");

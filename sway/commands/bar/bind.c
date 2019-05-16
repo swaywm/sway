@@ -75,9 +75,6 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code,
 	if ((error = checkarg(argc, command, EXPECTED_AT_LEAST, minargs))) {
 		return error;
 	}
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
 
 	struct bar_binding *binding = calloc(1, sizeof(struct bar_binding));
 	if (!binding) {
