@@ -125,10 +125,10 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 	struct cmd_results *res =
 		config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
+	if (res && config->active && !config->validating) {
+		load_swaybar(config->current_bar);
+	}
 	if (!config->reading) {
-		if (spawn) {
-			load_swaybar(config->current_bar);
-		}
 		config->current_bar = NULL;
 	}
 	return res;
