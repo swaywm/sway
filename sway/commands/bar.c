@@ -82,26 +82,30 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		++argv; --argc;
 	}
 
-	if (!config->current_bar && config->reading) {
-		// Create new bar with default values
-		struct bar_config *bar = default_bar_config();
-		if (!bar) {
-			return cmd_results_new(CMD_FAILURE,
-					"Unable to allocate bar state");
-		}
+	if (!config->current_bar) {
+		if (config->reading) {
+			// Create new bar with default values
+			struct bar_config *bar = default_bar_config();
+			if (!bar) {
+				return cmd_results_new(CMD_FAILURE,
+						"Unable to allocate bar state");
+			}
 
-		// set bar id
-		const int len = snprintf(NULL, 0, "bar-%d", config->bars->length - 1) + 1;
-		bar->id = malloc(len * sizeof(char));
-		if (bar->id) {
-			snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
+			// set bar id
+			int len = snprintf(NULL, 0, "bar-%d", config->bars->length - 1) + 1;
+			bar->id = malloc(len * sizeof(char));
+			if (bar->id) {
+				snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
+			} else {
+				return cmd_results_new(CMD_FAILURE, "Unable to allocate bar ID");
+			}
+
+			// Set current bar
+			config->current_bar = bar;
+			sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
 		} else {
-			return cmd_results_new(CMD_FAILURE, "Unable to allocate bar ID");
+			return cmd_results_new(CMD_FAILURE, "No bar defined.");
 		}
-
-		// Set current bar
-		config->current_bar = bar;
-		sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
 	}
 
 	if (find_handler(argv[0], bar_config_handlers,

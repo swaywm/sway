@@ -12,10 +12,6 @@ struct cmd_results *bar_cmd_icon_theme(int argc, char **argv) {
 		return error;
 	}
 
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
-
 	sway_log(SWAY_DEBUG, "[Bar %s] Setting icon theme to %s",
 			config->current_bar->id, argv[0]);
 	free(config->current_bar->icon_theme);

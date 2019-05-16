@@ -9,9 +9,6 @@ struct cmd_results *bar_cmd_font(int argc, char **argv) {
 	if ((error = checkarg(argc, "font", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
 	char *font = join_args(argv, argc);
 	free(config->current_bar->font);
 	config->current_bar->font = font;

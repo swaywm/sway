@@ -15,9 +15,6 @@ struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 		return error;
 	}
 
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
 	struct bar_config *bar = config->current_bar;
 
 	char *end;
