@@ -80,6 +80,13 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 		config->current_bar = bar;
 		++argv; --argc;
+	} else if (!config->reading) {
+		if (is_subcommand(argv[0])) {
+			return cmd_results_new(CMD_INVALID, "No bar defined.");
+		} else {
+			return cmd_results_new(CMD_INVALID,
+					"Unknown/invalid command '%s'", argv[1]);
+		}
 	}
 
 	if (!config->current_bar) {
@@ -103,8 +110,6 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 			// Set current bar
 			config->current_bar = bar;
 			sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
-		} else {
-			return cmd_results_new(CMD_FAILURE, "No bar defined.");
 		}
 	}
 
