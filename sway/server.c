@@ -120,6 +120,15 @@ bool server_init(struct sway_server *server) {
 	server->presentation =
 		wlr_presentation_create(server->wl_display, server->backend);
 
+	server->output_manager_v1 =
+		wlr_output_manager_v1_create(server->wl_display);
+	server->output_manager_apply.notify = handle_output_manager_apply;
+	wl_signal_add(&server->output_manager_v1->events.apply,
+		&server->output_manager_apply);
+	server->output_manager_test.notify = handle_output_manager_test;
+	wl_signal_add(&server->output_manager_v1->events.test,
+		&server->output_manager_test);
+
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
 	wlr_data_control_manager_v1_create(server->wl_display);
