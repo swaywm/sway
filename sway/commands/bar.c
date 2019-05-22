@@ -80,6 +80,14 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 		config->current_bar = bar;
 		++argv; --argc;
+	} else if (!config->reading && strcmp(argv[0], "mode") != 0 &&
+			strcmp(argv[0], "hidden_state") != 0) {
+		if (is_subcommand(argv[0])) {
+			return cmd_results_new(CMD_INVALID, "No bar defined.");
+		} else {
+			return cmd_results_new(CMD_INVALID,
+					"Unknown/invalid command '%s'", argv[1]);
+		}
 	}
 
 	if (!config->current_bar) {
