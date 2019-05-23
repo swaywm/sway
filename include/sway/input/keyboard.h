@@ -65,7 +65,8 @@ struct sway_keyboard {
 	struct sway_binding *repeat_binding;
 };
 
-struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic);
+struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
+		char **error);
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 		struct sway_seat_device *device);

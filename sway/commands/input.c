@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/keyboard.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -86,6 +87,20 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	}
 
 	if (!res || res->status == CMD_SUCCESS) {
+		char *error = NULL;
+		struct xkb_keymap *keymap = sway_keyboard_compile_keymap(
+				config->handler_context.input_config, &error);
+		if (!keymap) {
+			if (res) {
+				free_cmd_results(res);
+			}
+			res = cmd_results_new(CMD_FAILURE, "Failed to compile keymap: %s",
+					error ? error : "(details unavailable)");
+			free(error);
+			return res;
+		}
+		xkb_keymap_unref(keymap);
+
 		struct input_config *ic =
 			store_input_config(config->handler_context.input_config);
 
