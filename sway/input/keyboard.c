@@ -495,7 +495,45 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 	return keyboard;
 }
 
-struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic) {
+static void handle_xkb_context_log(struct xkb_context *context,
+		enum xkb_log_level level, const char *format, va_list args) {
+	va_list args_copy;
+	va_copy(args_copy, args);
+	size_t length = vsnprintf(NULL, 0, format, args_copy) + 1;
+	va_end(args_copy);
+
+	char *error = malloc(length);
+	if (!error) {
+		sway_log(SWAY_ERROR, "Failed to allocate libxkbcommon log message");
+		return;
+	}
+
+	va_copy(args_copy, args);
+	vsnprintf(error, length, format, args_copy);
+	va_end(args_copy);
+
+	if (error[length - 2] == '\n') {
+		error[length - 2] = '\0';
+	}
+
+	sway_log_importance_t importance = SWAY_DEBUG;
+	if (level <= XKB_LOG_LEVEL_ERROR) { // Critical and Error
+		importance = SWAY_ERROR;
+	} else if (level <= XKB_LOG_LEVEL_INFO) { // Warning and Info
+		importance = SWAY_INFO;
+	}
+	sway_log(importance, "[xkbcommon] %s", error);
+
+	char **data = xkb_context_get_user_data(context);
+	if (importance == SWAY_ERROR && data && !*data) {
+		*data = error;
+	} else {
+		free(error);
+	}
+}
+
+struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
+		char **error) {
 	struct xkb_rule_names rules = {0};
 	if (ic) {
 		input_config_fill_rule_names(ic, &rules);
@@ -505,9 +543,12 @@ struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic) {
 	if (!sway_assert(context, "cannot create XKB context")) {
 		return NULL;
 	}
+	xkb_context_set_user_data(context, error);
+	xkb_context_set_log_fn(context, handle_xkb_context_log);
 
 	struct xkb_keymap *keymap =
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	xkb_context_set_user_data(context, NULL);
 	xkb_context_unref(context);
 	return keymap;
 }
@@ -518,10 +559,10 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 
-	struct xkb_keymap *keymap = sway_keyboard_compile_keymap(input_config);
+	struct xkb_keymap *keymap = sway_keyboard_compile_keymap(input_config, NULL);
 	if (!keymap) {
 		sway_log(SWAY_ERROR, "Failed to compile keymap. Attempting defaults");
-		keymap = sway_keyboard_compile_keymap(NULL);
+		keymap = sway_keyboard_compile_keymap(NULL, NULL);
 		if (!keymap) {
 			sway_log(SWAY_ERROR,
 					"Failed to compile default keymap. Aborting configure");
