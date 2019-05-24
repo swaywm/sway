@@ -520,64 +520,6 @@ static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
-static void handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, destroy);
-	wl_signal_emit(&output->events.destroy, output);
-
-	if (output->enabled) {
-		output_disable(output);
-	}
-	output_begin_destroy(output);
-
-	wl_list_remove(&output->destroy.link);
-	wl_list_remove(&output->mode.link);
-	wl_list_remove(&output->transform.link);
-	wl_list_remove(&output->scale.link);
-	wl_list_remove(&output->present.link);
-	wl_list_remove(&output->damage_destroy.link);
-	wl_list_remove(&output->damage_frame.link);
-
-	transaction_commit_dirty();
-}
-
-static void handle_mode(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, mode);
-	if (!output->configured && !output->enabled) {
-		struct output_config *oc = find_output_config(output);
-		if (output->wlr_output->current_mode != NULL &&
-				(!oc || oc->enabled)) {
-			// We want to enable this output, but it didn't work last time,
-			// possibly because we hadn't enough CRTCs. Try again now that the
-			// output has a mode.
-			sway_log(SWAY_DEBUG, "Output %s has gained a CRTC, "
-				"trying to enable it", output->wlr_output->name);
-			apply_output_config(oc, output);
-		}
-		return;
-	}
-	if (!output->enabled || !output->configured) {
-		return;
-	}
-	arrange_layers(output);
-	arrange_output(output);
-	transaction_commit_dirty();
-}
-
-static void handle_transform(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, transform);
-	if (!output->enabled || !output->configured) {
-		return;
-	}
-	arrange_layers(output);
-	arrange_output(output);
-	transaction_commit_dirty();
-}
-
-static void update_textures(struct sway_container *con, void *data) {
-	container_update_title_textures(con);
-	container_update_marks_textures(con);
-}
-
 static void update_output_manager_config(struct sway_server *server) {
 	struct wlr_output_configuration_v1 *config =
 		wlr_output_configuration_v1_create();
@@ -602,6 +544,70 @@ static void update_output_manager_config(struct sway_server *server) {
 	wlr_output_manager_v1_set_configuration(server->output_manager_v1, config);
 }
 
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, destroy);
+	wl_signal_emit(&output->events.destroy, output);
+
+	if (output->enabled) {
+		output_disable(output);
+	}
+	output_begin_destroy(output);
+
+	wl_list_remove(&output->destroy.link);
+	wl_list_remove(&output->mode.link);
+	wl_list_remove(&output->transform.link);
+	wl_list_remove(&output->scale.link);
+	wl_list_remove(&output->present.link);
+	wl_list_remove(&output->damage_destroy.link);
+	wl_list_remove(&output->damage_frame.link);
+
+	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
+}
+
+static void handle_mode(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, mode);
+	if (!output->configured && !output->enabled) {
+		struct output_config *oc = find_output_config(output);
+		if (output->wlr_output->current_mode != NULL &&
+				(!oc || oc->enabled)) {
+			// We want to enable this output, but it didn't work last time,
+			// possibly because we hadn't enough CRTCs. Try again now that the
+			// output has a mode.
+			sway_log(SWAY_DEBUG, "Output %s has gained a CRTC, "
+				"trying to enable it", output->wlr_output->name);
+			apply_output_config(oc, output);
+		}
+		return;
+	}
+	if (!output->enabled || !output->configured) {
+		return;
+	}
+	arrange_layers(output);
+	arrange_output(output);
+	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
+}
+
+static void handle_transform(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, transform);
+	if (!output->enabled || !output->configured) {
+		return;
+	}
+	arrange_layers(output);
+	arrange_output(output);
+	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
+}
+
+static void update_textures(struct sway_container *con, void *data) {
+	container_update_title_textures(con);
+	container_update_marks_textures(con);
+}
+
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	if (!output->enabled || !output->configured) {
@@ -611,6 +617,8 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	output_for_each_container(output, update_textures, NULL);
 	arrange_output(output);
 	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
 }
 
 static void send_presented_iterator(struct sway_output *output,
