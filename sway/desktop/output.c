@@ -507,6 +507,30 @@ static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
+static void update_output_manager_config(struct sway_server *server) {
+	struct wlr_output_configuration_v1 *config =
+		wlr_output_configuration_v1_create();
+
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
+		if (output == root->noop_output) {
+			continue;
+		}
+		struct wlr_output_configuration_head_v1 *config_head =
+			wlr_output_configuration_head_v1_create(config, output->wlr_output);
+		struct wlr_box *output_box = wlr_output_layout_get_box(
+			root->output_layout, output->wlr_output);
+		// We mark the output enabled even if it is switched off by DPMS
+		config_head->state.enabled = output->enabled;
+		if (output_box) {
+			config_head->state.x = output_box->x;
+			config_head->state.y = output_box->y;
+		}
+	}
+
+	wlr_output_manager_v1_set_configuration(server->output_manager_v1, config);
+}
+
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
 	wl_signal_emit(&output->events.destroy, output);
@@ -525,6 +549,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->damage_frame.link);
 
 	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
@@ -548,6 +574,8 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 	arrange_layers(output);
 	arrange_output(output);
 	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
 }
 
 static void handle_transform(struct wl_listener *listener, void *data) {
@@ -558,6 +586,8 @@ static void handle_transform(struct wl_listener *listener, void *data) {
 	arrange_layers(output);
 	arrange_output(output);
 	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
 }
 
 static void update_textures(struct sway_container *con, void *data) {
@@ -574,6 +604,8 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	output_for_each_container(output, update_textures, NULL);
 	arrange_output(output);
 	transaction_commit_dirty();
+
+	update_output_manager_config(output->server);
 }
 
 static void send_presented_iterator(struct sway_output *output,
