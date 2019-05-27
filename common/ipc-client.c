@@ -74,8 +74,6 @@ bool ipc_set_recv_timeout(int socketfd, struct timeval tv) {
 		sway_log_errno(SWAY_ERROR, "Failed to set ipc recv timeout");
 		return false;
 	}
-	sway_log(SWAY_DEBUG, "ipc recv timeout set to %ld.%06ld",
-			tv.tv_sec, tv.tv_usec);
 	return true;
 }
 
