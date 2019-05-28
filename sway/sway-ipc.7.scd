@@ -205,6 +205,9 @@ following properties:
 |- active
 :  boolean
 :  Whether this output is active/enabled
+|- dpms
+:  boolean
+:  Whether this output is on/off (via DPMS)
 |- primary
 :  boolean
 :  For i3 compatibility, this will be false. It does not make sense in Wayland

@@ -162,6 +162,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 	struct wlr_output *wlr_output = output->wlr_output;
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "active", json_object_new_boolean(true));
+	json_object_object_add(object, "dpms",
+			json_object_new_boolean(output->wlr_output->enabled));
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "layout", json_object_new_string("output"));
 	json_object_object_add(object, "orientation",
@@ -233,6 +235,7 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 	json_object_object_add(object, "name",
 			json_object_new_string(wlr_output->name));
 	json_object_object_add(object, "active", json_object_new_boolean(false));
+	json_object_object_add(object, "dpms", json_object_new_boolean(false));
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "make",
 			json_object_new_string(wlr_output->make));
