@@ -192,8 +192,11 @@ struct sway_view_child_impl {
  */
 struct sway_view_child {
 	const struct sway_view_child_impl *impl;
+	struct wl_list link;
 
 	struct sway_view *view;
+	struct sway_view_child *parent;
+	struct wl_list children; // sway_view_child::link
 	struct wlr_surface *surface;
 	bool mapped;
 
