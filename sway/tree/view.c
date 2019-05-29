@@ -728,15 +728,23 @@ static void subsurface_get_root_coords(struct sway_view_child *child,
 	*root_sx = -child->view->geometry.x;
 	*root_sy = -child->view->geometry.y;
 
-	while (surface && wlr_surface_is_subsurface(surface)) {
-		struct wlr_subsurface *subsurface =
-			wlr_subsurface_from_wlr_surface(surface);
-		if (subsurface == NULL) {
-			break;
+	if (child->parent && child->parent->impl &&
+			child->parent->impl->get_root_coords) {
+		int sx, sy;
+		child->parent->impl->get_root_coords(child->parent, &sx, &sy);
+		*root_sx += sx;
+		*root_sy += sy;
+	} else {
+		while (surface && wlr_surface_is_subsurface(surface)) {
+			struct wlr_subsurface *subsurface =
+				wlr_subsurface_from_wlr_surface(surface);
+			if (subsurface == NULL) {
+				break;
+			}
+			*root_sx += subsurface->current.x;
+			*root_sy += subsurface->current.y;
+			surface = subsurface->parent;
 		}
-		*root_sx += subsurface->current.x;
-		*root_sy += subsurface->current.y;
-		surface = subsurface->parent;
 	}
 }
 
@@ -780,6 +788,28 @@ static void view_subsurface_create(struct sway_view *view,
 	subsurface->destroy.notify = subsurface_handle_destroy;
 
 	subsurface->child.mapped = true;
+
+	view_child_damage(&subsurface->child, true);
+}
+
+static void view_child_subsurface_create(struct sway_view_child *child,
+		struct wlr_subsurface *wlr_subsurface) {
+	struct sway_subsurface *subsurface =
+		calloc(1, sizeof(struct sway_subsurface));
+	if (subsurface == NULL) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		return;
+	}
+	subsurface->child.parent = child;
+	wl_list_insert(&child->children, &subsurface->child.link);
+	view_child_init(&subsurface->child, &subsurface_impl, child->view,
+		wlr_subsurface->surface);
+
+	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
+	subsurface->destroy.notify = subsurface_handle_destroy;
+
+	subsurface->child.mapped = true;
+
 	view_child_damage(&subsurface->child, true);
 }
 
@@ -806,7 +836,7 @@ static void view_child_handle_surface_new_subsurface(
 	struct sway_view_child *child =
 		wl_container_of(listener, child, surface_new_subsurface);
 	struct wlr_subsurface *subsurface = data;
-	view_subsurface_create(child->view, subsurface);
+	view_child_subsurface_create(child, subsurface);
 }
 
 static void view_child_handle_surface_destroy(struct wl_listener *listener,
@@ -854,6 +884,7 @@ void view_child_init(struct sway_view_child *child,
 	child->impl = impl;
 	child->view = view;
 	child->surface = surface;
+	wl_list_init(&child->children);
 
 	wl_signal_add(&surface->events.commit, &child->surface_commit);
 	child->surface_commit.notify = view_child_handle_surface_commit;
@@ -880,6 +911,17 @@ void view_child_init(struct sway_view_child *child,
 void view_child_destroy(struct sway_view_child *child) {
 	if (child->mapped && child->view->container != NULL) {
 		view_child_damage(child, true);
+	}
+
+	if (child->parent != NULL) {
+		wl_list_remove(&child->link);
+		child->parent = NULL;
+	}
+
+	struct sway_view_child *subchild, *tmpchild;
+	wl_list_for_each_safe(subchild, tmpchild, &child->children, link) {
+		wl_list_remove(&subchild->link);
+		subchild->parent = NULL;
 	}
 
 	wl_list_remove(&child->surface_commit.link);
