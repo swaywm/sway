@@ -146,7 +146,7 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		uint32_t modifiers, bool release, bool locked, const char *input) {
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
-		bool binding_locked = binding->flags & BINDING_LOCKED;
+		bool binding_locked = (binding->flags & BINDING_LOCKED) != 0;
 		bool binding_release = binding->flags & BINDING_RELEASE;
 
 		if (modifiers ^ binding->modifiers ||
@@ -178,18 +178,37 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 			continue;
 		}
 
-		if (*current_binding && *current_binding != binding &&
-				strcmp((*current_binding)->input, binding->input) == 0) {
-			sway_log(SWAY_DEBUG, "encountered duplicate bindings %d and %d",
-					(*current_binding)->order, binding->order);
-		} else if (!*current_binding ||
-				strcmp((*current_binding)->input, "*") == 0) {
-			*current_binding = binding;
-
-			if (strcmp((*current_binding)->input, input) == 0) {
-				// If a binding is found for the exact input, quit searching
-				return;
+		if (*current_binding) {
+			if (*current_binding == binding) {
+				continue;
 			}
+
+			bool current_locked =
+				((*current_binding)->flags & BINDING_LOCKED) != 0;
+			bool current_input = strcmp((*current_binding)->input, input) == 0;
+			bool binding_input = strcmp(binding->input, input) == 0;
+
+			if (current_input == binding_input
+					&& current_locked == binding_locked) {
+				sway_log(SWAY_DEBUG,
+						"Encountered conflicting bindings %d and %d",
+						(*current_binding)->order, binding->order);
+				continue;
+			}
+
+			if (current_input && !binding_input) {
+				continue; // Prefer the correct input
+			}
+
+			if (current_input == binding_input && current_locked == locked) {
+				continue; // Prefer correct lock state for matching inputs
+			}
+		}
+
+		*current_binding = binding;
+		if (strcmp((*current_binding)->input, input) == 0 &&
+				(((*current_binding)->flags & BINDING_LOCKED) == locked)) {
+			return; // If a perfect match is found, quit searching
 		}
 	}
 }

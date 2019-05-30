@@ -38,6 +38,7 @@ static void handle_switch_toggle(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "%s: type %d state %d", device_identifier, type, state);
 
 	list_t *bindings = config->current_mode->switch_bindings;
+	struct sway_switch_binding *matched_binding = NULL;
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_switch_binding *binding = bindings->items[i];
 		if (binding->type != type) {
@@ -52,10 +53,19 @@ static void handle_switch_toggle(struct wl_listener *listener, void *data) {
 			continue;
 		}
 
-		struct sway_binding *dummy_binding = calloc(1, sizeof(struct sway_binding));
+		matched_binding = binding;
+
+		if (binding_locked == input_inhibited) {
+			break;
+		}
+	}
+
+	if (matched_binding) {
+		struct sway_binding *dummy_binding =
+			calloc(1, sizeof(struct sway_binding));
 		dummy_binding->type = BINDING_SWITCH;
-		dummy_binding->flags = binding->flags;
-		dummy_binding->command = binding->command;
+		dummy_binding->flags = matched_binding->flags;
+		dummy_binding->command = matched_binding->command;
 
 		seat_execute_command(seat, dummy_binding);
 		free(dummy_binding);
