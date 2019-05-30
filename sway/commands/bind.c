@@ -49,6 +49,10 @@ static bool binding_switch_compare(struct sway_switch_binding *binding_a,
 	if (binding_a->state != binding_b->state) {
 		return false;
 	}
+	if ((binding_a->flags & BINDING_LOCKED) !=
+			(binding_b->flags & BINDING_LOCKED)) {
+		return false;
+	}
 	return true;
 }
 
@@ -68,7 +72,7 @@ static bool binding_key_compare(struct sway_binding *binding_a,
 	}
 
 	uint32_t conflict_generating_flags = BINDING_RELEASE | BINDING_BORDER
-			| BINDING_CONTENTS | BINDING_TITLEBAR;
+			| BINDING_CONTENTS | BINDING_TITLEBAR | BINDING_LOCKED;
 	if ((binding_a->flags & conflict_generating_flags) !=
 			(binding_b->flags & conflict_generating_flags)) {
 		return false;

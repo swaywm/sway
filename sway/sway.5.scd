@@ -331,12 +331,17 @@ runtime.
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
-	released. Unless the flag _--locked_ is set, the command will not be run
-	when a screen locking program is active. If _input-device_ is given, the
-	binding will only be executed for that input device and will be executed
-	instead of any binding that is generic to all devices. By default, if you
-	overwrite a binding, swaynag will give you a warning. To silence this, use
-	the _--no-warn_ flag.
+	released. If _input-device_ is given, the binding will only be executed for
+	that input device and will be executed instead of any binding that is
+	generic to all devices. By default, if you overwrite a binding, swaynag
+	will give you a warning. To silence this, use the _--no-warn_ flag.
+
+	Unless the flag _--locked_ is set, the command will not be run when a
+	screen locking program is active. If there is a matching binding with
+	and without _--locked_, the one with will be preferred when locked and the
+	one without will be preferred when unlocked. If there are matching bindings
+	and one has both _--input-device_ and _--locked_ and the other has neither,
+	the former will be preferred even when unlocked.
 
 	Bindings to keysyms are layout-dependent. This can be changed with the
 	_--to-code_ flag. In this case, the keysyms will be translated into the
@@ -380,10 +385,13 @@ runtime.
 	respectively. _toggle_ is also supported to run a command both when the
 	switch is toggled on or off.
 
-	Unless the flag _--locked_ is set, the command will not be run
-	when a screen locking program is active. By default, if you
-	overwrite a binding, swaynag will give you a warning. To silence this, use
-	the _--no-warn_ flag.
+	Unless the flag _--locked_ is set, the command will not be run when a
+	screen locking program is active. If there is a matching binding with
+	and without _--locked_, the one with will be preferred when locked and the
+	one without will be preferred when unlocked.
+
+	By default, if you overwrite a binding, swaynag will give you a warning. To
+	silence this, use the _--no-warn_ flag.
 
 	Example:
 ```
