@@ -107,6 +107,7 @@ if scdoc.found()
 		'sway/sway-input.5.scd',
 		'sway/sway-ipc.7.scd',
 		'sway/sway-output.5.scd',
+		'swaybar/swaybar-protocol.7.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swaynag/swaynag.1.scd',
 		'swaynag/swaynag.5.scd',

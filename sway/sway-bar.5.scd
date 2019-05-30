@@ -13,9 +13,8 @@ Sway allows configuring swaybar in the sway configuration file.
 *status_command* <status command>
 	Executes the bar _status command_ with _sh -c_. Each line of text printed
 	to stdout from this command will be displayed in the status area of the
-	bar. You may also use the i3bar JSON protocol:
-
-	https://i3wm.org/docs/i3bar-protocol.html
+	bar. You may also use swaybar's JSON status line protocol. See
+	*swaybar-protocol*(7) for more information on the protocol
 
 	If running this command via IPC, you can disable a running status command by
 	setting the command to a single dash: _swaybar bar bar-0 status\_command -_
@@ -202,5 +201,4 @@ must be defined in hex: _#RRGGBB_ or _#RRGGBBAA_.
 
 # SEE ALSO
 
-*sway*(5)
-
+*sway*(5) *swaybar-protocol*(7)
