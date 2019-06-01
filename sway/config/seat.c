@@ -27,6 +27,8 @@ struct seat_config *new_seat_config(const char* name) {
 	}
 	seat->hide_cursor_timeout = -1;
 	seat->allow_constrain = CONSTRAIN_DEFAULT;
+	seat->xcursor_theme.name = NULL;
+	seat->xcursor_theme.size = 24;
 
 	return seat;
 }
@@ -147,6 +149,12 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 	if (source->allow_constrain != CONSTRAIN_DEFAULT) {
 		dest->allow_constrain = source->allow_constrain;
 	}
+
+	if (source->xcursor_theme.name != NULL) {
+		free(dest->xcursor_theme.name);
+		dest->xcursor_theme.name = strdup(source->xcursor_theme.name);
+		dest->xcursor_theme.size = source->xcursor_theme.size;
+	}
 }
 
 struct seat_config *copy_seat_config(struct seat_config *seat) {
@@ -170,6 +178,7 @@ void free_seat_config(struct seat_config *seat) {
 		seat_attachment_config_free(seat->attachments->items[i]);
 	}
 	list_free(seat->attachments);
+	free(seat->xcursor_theme.name);
 	free(seat);
 }
 

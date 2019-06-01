@@ -19,6 +19,7 @@
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
@@ -722,17 +723,72 @@ void seat_remove_device(struct sway_seat *seat,
 	seat_update_capabilities(seat);
 }
 
+static bool xcursor_manager_is_named(const struct wlr_xcursor_manager *manager,
+		const char *name) {
+	return (!manager->name && !name) ||
+		(name && manager->name && strcmp(name, manager->name) == 0);
+}
+
 void seat_configure_xcursor(struct sway_seat *seat) {
-	// TODO configure theme and size
+	unsigned cursor_size = 24;
 	const char *cursor_theme = NULL;
 
-	if (!seat->cursor->xcursor_manager) {
-		seat->cursor->xcursor_manager =
-			wlr_xcursor_manager_create(cursor_theme, 24);
-		if (sway_assert(seat->cursor->xcursor_manager,
-					"Cannot create XCursor manager for theme")) {
-			return;
+	const struct seat_config *seat_config = seat_get_config(seat);
+	if (!seat_config) {
+		seat_config = seat_get_config_by_name("*");
+	}
+	if (seat_config) {
+		cursor_size = seat_config->xcursor_theme.size;
+		cursor_theme = seat_config->xcursor_theme.name;
+	}
+
+	if (seat == input_manager_get_default_seat()) {
+		char cursor_size_fmt[16];
+		snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%d", cursor_size);
+		setenv("XCURSOR_SIZE", cursor_size_fmt, 1);
+		if (cursor_theme != NULL) {
+			setenv("XCURSOR_THEME", cursor_theme, 1);
 		}
+
+#if HAVE_XWAYLAND
+		if (!server.xwayland.xcursor_manager ||
+				!xcursor_manager_is_named(server.xwayland.xcursor_manager,
+					cursor_theme) ||
+				server.xwayland.xcursor_manager->size != cursor_size) {
+
+			wlr_xcursor_manager_destroy(server.xwayland.xcursor_manager);
+
+			server.xwayland.xcursor_manager =
+				wlr_xcursor_manager_create(cursor_theme, cursor_size);
+			sway_assert(server.xwayland.xcursor_manager,
+						"Cannot create XCursor manager for theme");
+
+			wlr_xcursor_manager_load(server.xwayland.xcursor_manager, 1);
+			struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
+				server.xwayland.xcursor_manager, "left_ptr", 1);
+			if (xcursor != NULL) {
+				struct wlr_xcursor_image *image = xcursor->images[0];
+				wlr_xwayland_set_cursor(
+					server.xwayland.wlr_xwayland, image->buffer,
+					image->width * 4, image->width, image->height,
+					image->hotspot_x, image->hotspot_y);
+			}
+		}
+#endif
+	}
+
+	/* Create xcursor manager if we don't have one already, or if the
+	 * theme has changed */
+	if (!seat->cursor->xcursor_manager ||
+			!xcursor_manager_is_named(
+				seat->cursor->xcursor_manager, cursor_theme) ||
+			seat->cursor->xcursor_manager->size != cursor_size) {
+
+		wlr_xcursor_manager_destroy(seat->cursor->xcursor_manager);
+		seat->cursor->xcursor_manager =
+			wlr_xcursor_manager_create(cursor_theme, cursor_size);
+		sway_assert(seat->cursor->xcursor_manager,
+					"Cannot create XCursor manager for theme");
 	}
 
 	for (int i = 0; i < root->outputs->length; ++i) {

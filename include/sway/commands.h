@@ -278,6 +278,7 @@ sway_cmd seat_cmd_cursor;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
 sway_cmd seat_cmd_pointer_constraint;
+sway_cmd seat_cmd_xcursor_theme;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

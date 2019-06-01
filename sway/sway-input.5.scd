@@ -206,6 +206,12 @@ correct seat.
 	by default) for the seat. This is primarily useful for video games. The
 	"escape" command can be used at runtime to escape from a captured client.
 
+*seat* <name> xcursor_theme <theme> [<size>]
+	Override the system default XCursor theme. The default seat's
+	(_seat0_) theme is also used as the default cursor theme in
+	XWayland, and exported through the _XCURSOR_THEME_ and
+	_XCURSOR_SIZE_ environment variables.
+
 # SEE ALSO
 
 *sway*(5) *sway-output*(5) *xkeyboard-config*(7)
