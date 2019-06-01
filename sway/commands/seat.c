@@ -13,6 +13,7 @@ static struct cmd_handler seat_handlers[] = {
 	{ "fallback", seat_cmd_fallback },
 	{ "hide_cursor", seat_cmd_hide_cursor },
 	{ "pointer_constraint", seat_cmd_pointer_constraint },
+	{ "xcursor_theme", seat_cmd_xcursor_theme },
 };
 
 struct cmd_results *cmd_seat(int argc, char **argv) {

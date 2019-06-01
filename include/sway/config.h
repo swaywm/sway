@@ -165,6 +165,10 @@ struct seat_config {
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
 	enum seat_config_allow_constrain allow_constrain;
+	struct {
+		char *name;
+		int size;
+	} xcursor_theme;
 };
 
 enum config_dpms {
