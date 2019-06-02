@@ -533,6 +533,7 @@ static void update_output_manager_config(struct sway_server *server) {
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
+	struct sway_server *server = output->server;
 	wl_signal_emit(&output->events.destroy, output);
 
 	if (output->enabled) {
@@ -550,7 +551,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	transaction_commit_dirty();
 
-	update_output_manager_config(output->server);
+	update_output_manager_config(server);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
