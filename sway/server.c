@@ -11,7 +11,6 @@
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
-#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
@@ -62,7 +61,6 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	wlr_gamma_control_manager_create(server->wl_display);
 	wlr_gamma_control_manager_v1_create(server->wl_display);
 	wlr_gtk_primary_selection_device_manager_create(server->wl_display);
 
