@@ -129,8 +129,18 @@ static void update_cursor(struct swaynag *swaynag) {
 	if (swaynag->pointer.cursor_theme) {
 		wl_cursor_theme_destroy(swaynag->pointer.cursor_theme);
 	}
-	pointer->cursor_theme = wl_cursor_theme_load(NULL, 24 * swaynag->scale,
-			swaynag->shm);
+	const char *cursor_theme = getenv("XCURSOR_THEME");
+	unsigned cursor_size = 24;
+	const char *env_cursor_size = getenv("XCURSOR_SIZE");
+	if (env_cursor_size) {
+		char *end;
+		unsigned size = strtoul(env_cursor_size, &end, 10);
+		if (!*end) {
+			cursor_size = size;
+		}
+	}
+	pointer->cursor_theme = wl_cursor_theme_load(
+		cursor_theme, cursor_size * swaynag->scale, swaynag->shm);
 	struct wl_cursor *cursor =
 		wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
 	pointer->cursor_image = cursor->images[0];
