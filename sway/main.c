@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -15,7 +14,6 @@
 #include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/debug.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/root.h"
@@ -91,7 +89,7 @@ void detect_proprietary(int allow_unsupported_gpu) {
 	char *line = NULL;
 	size_t line_size = 0;
 	while (getline(&line, &line_size, f) != -1) {
-		if (strstr(line, "nvidia")) {
+		if (strncmp(line, "nvidia ", 7) == 0) {
 			if (allow_unsupported_gpu) {
 				sway_log(SWAY_ERROR,
 						"!!! Proprietary Nvidia drivers are in use !!!");
@@ -186,11 +184,7 @@ static void log_kernel(void) {
 
 static bool drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
-		if (setgid(getgid()) != 0) {
-			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
-			return false;
-		}
-		if (setuid(getuid()) != 0) {
+		if (setuid(getuid()) != 0 || setgid(getgid()) != 0) {
 			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
 			return false;
 		}
@@ -210,8 +204,6 @@ void enable_debug_flag(const char *flag) {
 		debug.damage = DAMAGE_RERENDER;
 	} else if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
-	} else if (strcmp(flag, "render-tree") == 0) {
-		debug.render_tree = true;
 	} else if (strcmp(flag, "txn-wait") == 0) {
 		debug.txn_wait = true;
 	} else if (strcmp(flag, "txn-timings") == 0) {
@@ -398,7 +390,7 @@ int main(int argc, char **argv) {
 	load_swaybars();
 	run_deferred_commands();
 
-	if (config->swaynag_config_errors.pid > 0) {
+	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);
 	}
 

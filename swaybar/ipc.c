@@ -499,6 +499,13 @@ static bool handle_bar_state_update(struct swaybar *bar, json_object *event) {
 	json_object *visible_by_modifier;
 	json_object_object_get_ex(event, "visible_by_modifier", &visible_by_modifier);
 	bar->visible_by_modifier = json_object_get_boolean(visible_by_modifier);
+	if (bar->visible_by_modifier) {
+		// If the bar is visible by modifier, clear both visible by mode and
+		// urgency as modifier has precedence and the bar should be hidden
+		// again when it is no longer visible by modifier.
+		bar->visible_by_mode = false;
+		bar->visible_by_urgency = false;
+	}
 	return determine_bar_visibility(bar, false);
 }
 
@@ -578,6 +585,8 @@ bool handle_ipc_readable(struct swaybar *bar) {
 			const char *change = json_object_get_string(json_change);
 			free(bar->mode);
 			bar->mode = strcmp(change, "default") != 0 ? strdup(change) : NULL;
+			bar->visible_by_mode = bar->mode != NULL;
+			determine_bar_visibility(bar, false);
 		} else {
 			sway_log(SWAY_ERROR, "failed to parse response");
 			bar_is_dirty = false;

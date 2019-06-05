@@ -60,6 +60,27 @@ static void restore_workspaces(struct sway_output *output) {
 		struct sway_workspace *ws = root->noop_output->workspaces->items[0];
 		workspace_detach(ws);
 		output_add_workspace(output, ws);
+		
+		// If the floater was made floating while on the NOOP output, its width
+		// and height will be zero and it should be reinitialized as a floating
+		// container to get the appropriate size and location. Additionally, if
+		// the floater is wider or taller than the output or is completely
+		// outside of the output's bounds, do the same as the output layout has
+		// likely changed and the maximum size needs to be checked and the
+		// floater re-centered
+		for (int i = 0; i < ws->floating->length; i++) {
+			struct sway_container *floater = ws->floating->items[i];
+			if (floater->width == 0 || floater->height == 0 ||
+					floater->width > output->width ||
+					floater->height > output->height ||
+					floater->x > output->lx + output->width ||
+					floater->y > output->ly + output->height ||
+					floater->x + floater->width < output->lx ||
+					floater->y + floater->height < output->ly) {
+				container_floating_resize_and_center(floater);
+			}
+		}
+
 		ipc_event_workspace(NULL, ws, "move");
 	}
 
@@ -71,6 +92,7 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	node_init(&output->node, N_OUTPUT, output);
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
+	output->detected_subpixel = wlr_output->subpixel;
 
 	wl_signal_init(&output->events.destroy);
 
@@ -100,11 +122,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 
 	output->configured = true;
 	list_add(root->outputs, output);
-
-	output->lx = wlr_output->lx;
-	output->ly = wlr_output->ly;
-	wlr_output_transformed_resolution(wlr_output,
-			&output->width, &output->height);
 
 	restore_workspaces(output);
 
@@ -245,10 +262,6 @@ void output_disable(struct sway_output *output) {
 
 	root_for_each_container(untrack_output, output);
 
-	if (output->swaybg_client != NULL) {
-		wl_client_destroy(output->swaybg_client);
-	}
-
 	int index = list_find(root->outputs, output);
 	list_del(root->outputs, index);
 
@@ -272,36 +285,6 @@ void output_begin_destroy(struct sway_output *output) {
 	output->wlr_output = NULL;
 }
 
-struct output_config *output_find_config(struct sway_output *output) {
-	const char *name = output->wlr_output->name;
-	char identifier[128];
-	output_get_identifier(identifier, sizeof(identifier), output);
-
-	struct output_config *oc = NULL, *all = NULL;
-	for (int i = 0; i < config->output_configs->length; ++i) {
-		struct output_config *cur = config->output_configs->items[i];
-
-		if (strcasecmp(name, cur->name) == 0 ||
-				strcasecmp(identifier, cur->name) == 0) {
-			sway_log(SWAY_DEBUG, "Matched output config for %s", name);
-			oc = cur;
-		}
-		if (strcasecmp("*", cur->name) == 0) {
-			sway_log(SWAY_DEBUG, "Matched wildcard output config for %s", name);
-			all = cur;
-		}
-
-		if (oc && all) {
-			break;
-		}
-	}
-	if (!oc) {
-		oc = all;
-	}
-
-	return oc;
-}
-
 struct sway_output *output_from_wlr_output(struct wlr_output *output) {
 	return output->data;
 }
@@ -311,8 +294,10 @@ struct sway_output *output_get_in_direction(struct sway_output *reference,
 	if (!sway_assert(direction, "got invalid direction: %d", direction)) {
 		return NULL;
 	}
-	int lx = reference->wlr_output->lx + reference->width / 2;
-	int ly = reference->wlr_output->ly + reference->height / 2;
+	struct wlr_box *output_box =
+		wlr_output_layout_get_box(root->output_layout, reference->wlr_output);
+	int lx = output_box->x + output_box->width / 2;
+	int ly = output_box->y + output_box->height / 2;
 	struct wlr_output *wlr_adjacent = wlr_output_layout_adjacent_output(
 			root->output_layout, direction, reference->wlr_output, lx, ly);
 	if (!wlr_adjacent) {

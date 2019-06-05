@@ -8,9 +8,6 @@ struct cmd_results *bar_cmd_separator_symbol(int argc, char **argv) {
 	if ((error = checkarg(argc, "separator_symbol", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
 	free(config->current_bar->separator_symbol);
 	config->current_bar->separator_symbol = strdup(argv[0]);
 	sway_log(SWAY_DEBUG, "Settings separator_symbol '%s' for bar: %s",

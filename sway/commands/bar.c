@@ -32,6 +32,8 @@ static struct cmd_handler bar_handlers[] = {
 	{ "tray_bindsym", bar_cmd_tray_bindsym },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
+	{ "unbindcode", bar_cmd_unbindcode },
+	{ "unbindsym", bar_cmd_unbindsym },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 	{ "wrap_scroll", bar_cmd_wrap_scroll },
 };
@@ -78,28 +80,38 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 		config->current_bar = bar;
 		++argv; --argc;
+	} else if (!config->reading && strcmp(argv[0], "mode") != 0 &&
+			strcmp(argv[0], "hidden_state") != 0) {
+		if (is_subcommand(argv[0])) {
+			return cmd_results_new(CMD_INVALID, "No bar defined.");
+		} else {
+			return cmd_results_new(CMD_INVALID,
+					"Unknown/invalid command '%s'", argv[1]);
+		}
 	}
 
-	if (!config->current_bar && config->reading) {
-		// Create new bar with default values
-		struct bar_config *bar = default_bar_config();
-		if (!bar) {
-			return cmd_results_new(CMD_FAILURE,
-					"Unable to allocate bar state");
-		}
+	if (!config->current_bar) {
+		if (config->reading) {
+			// Create new bar with default values
+			struct bar_config *bar = default_bar_config();
+			if (!bar) {
+				return cmd_results_new(CMD_FAILURE,
+						"Unable to allocate bar state");
+			}
 
-		// set bar id
-		const int len = snprintf(NULL, 0, "bar-%d", config->bars->length - 1) + 1;
-		bar->id = malloc(len * sizeof(char));
-		if (bar->id) {
-			snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
-		} else {
-			return cmd_results_new(CMD_FAILURE, "Unable to allocate bar ID");
-		}
+			// set bar id
+			int len = snprintf(NULL, 0, "bar-%d", config->bars->length - 1) + 1;
+			bar->id = malloc(len * sizeof(char));
+			if (bar->id) {
+				snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
+			} else {
+				return cmd_results_new(CMD_FAILURE, "Unable to allocate bar ID");
+			}
 
-		// Set current bar
-		config->current_bar = bar;
-		sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
+			// Set current bar
+			config->current_bar = bar;
+			sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
+		}
 	}
 
 	if (find_handler(argv[0], bar_config_handlers,

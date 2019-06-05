@@ -339,6 +339,18 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
+	if (e->fullscreen && e->output && e->output->data) {
+		struct sway_output *output = e->output->data;
+		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (ws && !container_is_scratchpad_hidden(view->container)) {
+			if (container_is_floating(view->container)) {
+				workspace_add_floating(ws, view->container);
+			} else {
+				workspace_add_tiling(ws, view->container);
+			}
+		}
+	}
+
 	container_set_fullscreen(view->container, e->fullscreen);
 
 	arrange_root();
@@ -355,7 +367,7 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_v6_move_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seatop_begin_move_floating(seat, view->container, seat->last_button);
+		seatop_begin_move_floating(seat, view->container);
 	}
 }
 
@@ -369,8 +381,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_v6_resize_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seatop_begin_resize_floating(seat, view->container,
-				seat->last_button, e->edges);
+		seatop_begin_resize_floating(seat, view->container, e->edges);
 	}
 }
 
@@ -412,7 +423,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		== WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
 
 	view_map(view, view->wlr_xdg_surface_v6->surface,
-		xdg_surface->toplevel->client_pending.fullscreen, csd);
+		xdg_surface->toplevel->client_pending.fullscreen,
+		xdg_surface->toplevel->client_pending.fullscreen_output,
+		csd);
 
 	transaction_commit_dirty();
 

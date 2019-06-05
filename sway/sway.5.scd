@@ -146,6 +146,18 @@ set|plus|minus <amount>
 	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
 	_vertical_.
 
+*inhibit_idle* focus|fullscreen|open|none|visible
+	Set/unset an idle inhibitor for the view. _focus_ will inhibit idle when
+	the view is focused by any seat. _fullscreen_ will inhibit idle when the
+	view is fullscreen (or a descendant of a fullscreen container) and is
+	visible. _open_ will inhibit idle until the view is closed (or the
+	inhibitor is unset/changed). _visible_ will inhibit idle when the view is
+	visible on any output. _none_ will remove any existing idle inhibitor for
+	the view.
+
+	This can also be used with criteria to set an idle inhibitor for any
+	existing view or with _for_window_ to set idle inhibitors for future views.
+
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
 
@@ -175,34 +187,46 @@ set|plus|minus <amount>
 *move* position cursor|mouse|pointer
 	Moves the focused container to be centered on the cursor.
 
-*move* container|window [to] mark <mark>
+*move* [container|window] [to] mark <mark>
 	Moves the focused container to the specified mark.
 
-*move* [--no-auto-back-and-forth] container|window [to] workspace [number] <name>
+*move* [--no-auto-back-and-forth] [container|window] [to] workspace [number] <name>
 	Moves the focused container to the specified workspace. The string "number"
 	is optional and is used to match a workspace with the same number, even if
 	it has a different name.
 
-*move* container|window [to] workspace prev|next|current
+*move* [container|window] [to] workspace prev|next|current
 	Moves the focused container to the previous, next or current workspace on
 	this output, or if no workspaces remain, the previous or next output.
 
-*move* container|window [to] workspace prev_on_output|next_on_output
+*move* [container|window] [to] workspace prev_on_output|next_on_output
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window [to] workspace back_and_forth
+*move* [container|window] [to] workspace back_and_forth
 	Moves the focused container to previously focused workspace.
 
-*move* container|window|workspace [to] output <name>
-	Moves the focused container or workspace to the specified output.
+*move* [container|window] [to] output <name-or-id>|current
+	Moves the focused container to the specified output.
 
-*move* container|window|workspace [to] output up|right|down|left
-	Moves the focused container or workspace to next output in the specified
+*move* [container|window] [to] output up|right|down|left
+	Moves the focused container to next output in the specified
 	direction.
 
-*move* [to] scratchpad
-	Moves the focused window to the scratchpad.
+*move* [container|window] [to] scratchpad
+	Moves the focused container to the scratchpad.
+
+*move* workspace [to] output <name-or-id>|current
+	Moves the focused workspace to the specified output.
+
+*move* workspace to [output] <name-or-id>|current
+	Moves the focused workspace to the specified output.
+
+*move* workspace [to] output up|right|down|left
+	Moves the focused workspace to next output in the specified direction.
+
+*move* workspace to [output] up|right|down|left
+	Moves the focused workspace to next output in the specified direction.
 
 *nop* <comment>
 	A no operation command that can be used to override default behaviour. The
@@ -210,6 +234,9 @@ set|plus|minus <amount>
 
 *reload*
 	Reloads the sway config file and applies any changes.
+
+*rename workspace* [<old_name>] to <new_name>
+	Rename either <old_name> or the focused workspace to the <new_name>
 
 *resize* shrink|grow width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
@@ -265,6 +292,24 @@ set|plus|minus <amount>
 	becomes fullscreen on the same workspace as the first container. In either
 	of those cases, the second container will gain focus.
 
+*title_format* <format>
+	Sets the format of window titles. The following placeholders may be used:
+
+		%title - The title supplied by the window
+		%app_id - The wayland app ID (applicable to wayland windows only)
+		%class - The X11 classname (applicable to xwayland windows only)
+		%instance - The X11 instance (applicable to xwayland windows only)
+		%shell - The protocol the window is using (typically xwayland or
+			xdg_shell)
+
+	This command is typically used with *for_window* criteria. For example:
+
+		for_window [title="."] title_format "<b>%title</b> (%app_id)"
+
+	Note that markup requires pango to be enabled via the *font* command.
+
+	The default format is "%title".
+
 The following commands may be used either in the configuration file or at
 runtime.
 
@@ -282,16 +327,25 @@ runtime.
 
 		for_window <criteria> move container to output <output>
 
-*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <key combo> <command>
+*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--to-code] [--input-device=<device>] [--no-warn] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
-	released. Unless the flag _--locked_ is set, the command will not be run
-	when a screen locking program is active. If _input-device_ is given, the
-	binding will only be executed for that input device and will be executed
-	instead of any binding that is generic to all devices. By default, if you
-	overwrite a binding, swaynag will give you a warning. To silence this, use
-	the _--no-warn_ flag.
+	released. If _input-device_ is given, the binding will only be executed for
+	that input device and will be executed instead of any binding that is
+	generic to all devices. By default, if you overwrite a binding, swaynag
+	will give you a warning. To silence this, use the _--no-warn_ flag.
+
+	Unless the flag _--locked_ is set, the command will not be run when a
+	screen locking program is active. If there is a matching binding with
+	and without _--locked_, the one with will be preferred when locked and the
+	one without will be preferred when unlocked. If there are matching bindings
+	and one has both _--input-device_ and _--locked_ and the other has neither,
+	the former will be preferred even when unlocked.
+
+	Bindings to keysyms are layout-dependent. This can be changed with the
+	_--to-code_ flag. In this case, the keysyms will be translated into the
+	corresponding keycodes in the first configured layout.
 
 	Mouse bindings operate on the container under the cursor instead of the
 	container that has focus. Mouse buttons can either be specified in the form
@@ -300,7 +354,7 @@ runtime.
 	values in X11 (1=left, 2=middle, 3=right, 4=scroll up, 5=scroll down,
 	6=scroll left, 7=scroll right, 8=back, 9=forward). For the latter option,
 	you can find the event names using _libinput debug-events_.
-	
+
 	_--whole-window_, _--border_, and _--exclude-titlebar_ are mouse-only options
 	which affect the region in which the mouse bindings can be triggered.  By
 	default, mouse bindings are only triggered when over the title bar. With the
@@ -322,6 +376,31 @@ runtime.
 
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <code> <command>
 	is also available for binding with key/button codes instead of key/button names.
+
+*bindswitch* [--locked] [--no-warn] <switch>:<state> <command>
+	Binds <switch> to execute the sway command _command_ on state changes.
+	Supported switches are _lid_ (laptop lid) and _tablet_ (tablet mode)
+	switches. Valid values for _state_ are _on_, _off_ and _toggle. These
+	switches are on when the device lid is shut and when tablet mode is active
+	respectively. _toggle_ is also supported to run a command both when the
+	switch is toggled on or off.
+
+	Unless the flag _--locked_ is set, the command will not be run when a
+	screen locking program is active. If there is a matching binding with
+	and without _--locked_, the one with will be preferred when locked and the
+	one without will be preferred when unlocked.
+
+	By default, if you overwrite a binding, swaynag will give you a warning. To
+	silence this, use the _--no-warn_ flag.
+
+	Example:
+```
+		# Show the virtual keyboard when tablet mode is entered.
+		bindswitch tablet:on busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
+
+		# Log a message when the laptop lid is opened or closed.
+		bindswitch lid:toggle exec echo "Lid moved"
+```
 
 *client.<class>* <border> <background> <text> <indicator> <child_border>
 	Configures the color of window borders and title bars. All 5 colors are
@@ -430,7 +509,8 @@ The default colors are:
 
 *floating_maximum_size* <width> x <height>
 	Specifies the maximum size of floating windows. -1 x -1 removes the upper
-	limit.
+	limit. The default is 0 x 0, which will use the width and height of the
+	entire output layout as the maximums
 
 *floating_minimum_size* <width> x <height>
 	Specifies the minimum size of floating windows. The default is 75 x 50.
@@ -476,12 +556,6 @@ The default colors are:
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
 
-*force_focus_wrapping* yes|no
-	This option is a wrapper to support i3's legacy syntax. _no_ is equivalent
-	to _focus_wrapping yes_ and _yes_ is equivalent to
-	_focus_wrapping force_. This is only available for convenience. Please
-	use _focus_wrapping_ instead when possible.
-
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
 	affects spacing around each view and outer affects the spacing around each
@@ -493,8 +567,10 @@ The default colors are:
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps ...).
 
-*hide_edge_borders* none|vertical|horizontal|both|smart|smart_no_gaps
-	Hides window borders adjacent to the screen edges. Default is _none_.
+*hide_edge_borders* [--i3] none|vertical|horizontal|both|smart|smart_no_gaps
+	Hides window borders adjacent to the screen edges. Default is _none_. The
+	_--i3_ option enables i3-compatible behavior to hide the title bar on tabbed
+	and stacked containers with one child.
 
 *input* <input_device> <input-subcommands...>
 	For details on input subcommands, see *sway-input*(5).
@@ -511,9 +587,9 @@ The default colors are:
 
 *smart_borders* on|no_gaps|off
 	If smart_borders are _on_, borders will only be enabled if the workspace
-	only has one visible child (identical to _hide_edge_borders_ smart). If
-	smart_borders is set to _no_gaps_, borders will only be enabled if the
-	workspace only has one visible child and gaps greater than zero.
+	has more than one visible child (identical to _hide_edge_borders_ smart).
+	If smart_borders is set to _no_gaps_, borders will only be enabled if the
+	workspace has more than one visible child and gaps equal to zero.
 
 *smart_gaps* on|off
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
@@ -530,9 +606,9 @@ The default colors are:
 	Switches to the specified mode. The default mode _default_.
 
 *mode* [--pango_markup] <mode> <mode-subcommands...>
-	The only two valid _mode-subcommands..._ are *bindsym* and *bindcode*.
-	If _--pango_markup_ is given, then _mode_ will be interpreted as pango
-	markup.
+	The only valid _mode-subcommands..._ are *bindsym*, *bindcode*,
+	*bindswitch*, and *set*. If _--pango_markup_ is given, then _mode_ will be
+	interpreted as pango markup.
 
 *mouse_warping* output|container|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
@@ -592,6 +668,17 @@ The default colors are:
 	to _yes_, the marks will be shown on the _left_ side instead of the
 	_right_ side.
 
+*unbindswitch* <switch>:<state>
+	Removes a binding for when <switch> changes to <state>.
+
+*unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--input-device=<device>] <key combo>
+	Removes the binding for _key combo_ that was previously bound with the
+	given flags.  If _input-device_ is given, only the binding for that
+	input device will be unbound.
+
+	*unbindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [input-device=<device>] <code>
+	is also available for unbinding with key/button codes instead of key/button names.
+
 *unmark* [<identifier>]
 	*unmark* will remove _identifier_ from the list of current marks on a
 	window. If _identifier_ is omitted, all marks are removed.
@@ -620,12 +707,20 @@ The default colors are:
 	Specifies that workspace _name_ should have the given gaps settings when it
 	is created.
 
+	This command does not affect existing workspaces. To alter the gaps of an
+	existing workspace, use the _gaps_ command.
+
 *workspace* <name> output <outputs...>
 	Specifies that workspace _name_ should be shown on the specified _outputs_.
 	Multiple outputs can be listed and the first available will be used. If the
 	workspace gets placed on an output further down the list and an output that
 	is higher on the list becomes available, the workspace will be move to the
 	higher priority output.
+
+	This command does not affect existing workspaces. To move an existing
+	workspace, use the _move_ command in combination with the _workspace_
+	criteria (non-empty workspaces only) or _workspace_ command (to switch
+	to the workspace before moving).
 
 *workspace_auto_back_and_forth* yes|no
 	When _yes_, repeating a workspace switch command will switch back to the
@@ -683,17 +778,20 @@ Mark all Firefox windows with "Browser":
 [class="Firefox"] mark Browser
 ```
 
+You may like to use swaymsg -t get_tree for finding the values of these 
+properties in practice for your applications.
+
 The following attributes may be matched with:
 
 *app_id*
 	Compare value against the app id. Can be a regular expression. If value is
 	\_\_focused\_\_, then the app id must be the same as that of the currently
-	focused window.
+	focused window. _app_id_ are specific to Wayland applications.
 
 *class*
 	Compare value against the window class. Can be a regular expression. If
 	value is \_\_focused\_\_, then the window class must be the same as that of
-	the currently focused window.
+	the currently focused window. _class_ are specific to X11 applications.
 
 *con_id*
 	Compare against the internal container ID, which you can find via IPC. If
@@ -748,4 +846,4 @@ The following attributes may be matched with:
 
 # SEE ALSO
 
-*sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5)
+*sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)

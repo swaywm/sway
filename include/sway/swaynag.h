@@ -1,9 +1,12 @@
 #ifndef _SWAY_SWAYNAG_H
 #define _SWAY_SWAYNAG_H
+#include <wayland-server-core.h>
 
 struct swaynag_instance {
+	struct wl_client *client;
+	struct wl_listener client_destroy;
+
 	const char *args;
-	pid_t pid;
 	int fd[2];
 	bool detailed;
 };
@@ -14,9 +17,6 @@ struct swaynag_instance {
 // swaynag->detailed is true.
 bool swaynag_spawn(const char *swaynag_command,
 		struct swaynag_instance *swaynag);
-
-// Kill the swaynag instance
-void swaynag_kill(struct swaynag_instance *swaynag);
 
 // Write a log message to swaynag->fd[1]. This will fail when swaynag->detailed
 // is false.

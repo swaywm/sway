@@ -9,12 +9,27 @@ sway-input - input configuration file and commands
 Sway allows for configuration of devices within the sway configuration file.
 To obtain a list of available device identifiers, run *swaymsg -t get_inputs*.
 Settings can also be applied to all input devices by using the wildcard, _\*_,
-in place of _\<identifier\>_ in the commands below.
+in place of _\<identifier\>_ in the commands below. In addition, the settings
+can be applied to a type of device, by using _type:\<input_type\>_ in place
+of _\<identifier\>_.
 
 Tip: If the configuration settings do not appear to be taking effect, you could
 try using _\*_ instead of _\<identifier\>_. If it works with the wildcard, try
 using a different identifier from *swaymsg -t get_inputs* until you find the
 correct input device.
+
+Current available input types are:
+
+- touchpad
+- pointer
+- keyboard
+- touch
+- tablet_tool
+- tablet_pad
+- switch
+
+Note: The type configurations are applied as the devices appear and get applied
+on top of the existing device configurations.
 
 # INPUT COMMANDS
 
@@ -193,4 +208,4 @@ correct seat.
 
 # SEE ALSO
 
-*sway*(5) *sway-output*(5)
+*sway*(5) *sway-output*(5) *xkeyboard-config*(7)

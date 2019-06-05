@@ -29,15 +29,14 @@ struct sway_output {
 	struct timespec last_frame;
 	struct wlr_output_damage *damage;
 
-	int lx, ly;
-	int width, height;
+	int lx, ly; // layout coords
+	int width, height; // transformed buffer size
+	enum wl_output_subpixel detected_subpixel;
 
 	bool enabled, configured;
 	list_t *workspaces;
 
 	struct sway_output_state current;
-
-	struct wl_client *swaybg_client;
 
 	struct wl_listener destroy;
 	struct wl_listener mode;
@@ -46,7 +45,6 @@ struct sway_output {
 	struct wl_listener present;
 	struct wl_listener damage_destroy;
 	struct wl_listener damage_frame;
-	struct wl_listener swaybg_client_destroy;
 
 	struct {
 		struct wl_signal destroy;
@@ -84,11 +82,13 @@ void output_damage_box(struct sway_output *output, struct wlr_box *box);
 void output_damage_whole_container(struct sway_output *output,
 	struct sway_container *con);
 
+// this ONLY includes the enabled outputs
 struct sway_output *output_by_name_or_id(const char *name_or_id);
 
-void output_sort_workspaces(struct sway_output *output);
+// this includes all the outputs, including disabled ones
+struct sway_output *all_output_by_name_or_id(const char *name_or_id);
 
-struct output_config *output_find_config(struct sway_output *output);
+void output_sort_workspaces(struct sway_output *output);
 
 void output_enable(struct sway_output *output, struct output_config *oc);
 
@@ -144,7 +144,7 @@ void output_get_box(struct sway_output *output, struct wlr_box *box);
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
 
-void render_rect(struct wlr_output *wlr_output,
+void render_rect(struct sway_output *output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]);
 
@@ -153,5 +153,9 @@ void premultiply_alpha(float color[4], float opacity);
 void scale_box(struct wlr_box *box, float scale);
 
 enum wlr_direction opposite_direction(enum wlr_direction d);
+
+void handle_output_manager_apply(struct wl_listener *listener, void *data);
+
+void handle_output_manager_test(struct wl_listener *listener, void *data);
 
 #endif

@@ -17,10 +17,13 @@ _swaymsg()
     'get_binding_modes'
     'get_config'
     'send_tick'
+    'subscribe'
   )
 
   short=(
     -h
+    -m
+    -p
     -q
     -r
     -s
@@ -30,6 +33,8 @@ _swaymsg()
 
   long=(
     --help
+    --monitor
+    --pretty
     --quiet
     --raw
     --socket

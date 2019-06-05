@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
 #include "../include/config.h"
@@ -23,12 +24,12 @@ struct sway_variable {
 	char *value;
 };
 
-
 enum binding_input_type {
 	BINDING_KEYCODE,
 	BINDING_KEYSYM,
 	BINDING_MOUSECODE,
 	BINDING_MOUSESYM,
+	BINDING_SWITCH
 };
 
 enum binding_flags {
@@ -37,6 +38,7 @@ enum binding_flags {
 	BINDING_BORDER=4,    // mouse only; trigger on container border
 	BINDING_CONTENTS=8,  // mouse only; trigger on container contents
 	BINDING_TITLEBAR=16, // mouse only; trigger on container titlebar
+	BINDING_CODE=32,     // keyboard only; convert keysyms into keycodes
 };
 
 /**
@@ -48,6 +50,7 @@ struct sway_binding {
 	char *input;
 	uint32_t flags;
 	list_t *keys; // sorted in ascending order
+	list_t *syms; // sorted in ascending order; NULL if BINDING_CODE is not set
 	uint32_t modifiers;
 	char *command;
 };
@@ -57,6 +60,16 @@ struct sway_binding {
  */
 struct sway_mouse_binding {
 	uint32_t button;
+	char *command;
+};
+
+/**
+ * A laptop switch binding and an associated command.
+ */
+struct sway_switch_binding {
+	enum wlr_switch_type type;
+	enum wlr_switch_state state;
+	uint32_t flags;
 	char *command;
 };
 
@@ -78,6 +91,7 @@ struct sway_mode {
 	list_t *keysym_bindings;
 	list_t *keycode_bindings;
 	list_t *mouse_bindings;
+	list_t *switch_bindings;
 	bool pango;
 };
 
@@ -92,6 +106,7 @@ struct input_config_mapped_from_region {
  */
 struct input_config {
 	char *identifier;
+	const char *input_type;
 
 	int accel_profile;
 	int click_method;
@@ -171,6 +186,7 @@ struct output_config {
 	int x, y;
 	float scale;
 	int32_t transform;
+	enum wl_output_subpixel subpixel;
 
 	char *background;
 	char *background_option;
@@ -200,6 +216,10 @@ struct workspace_config {
 };
 
 struct bar_config {
+	char *swaybar_command;
+	struct wl_client *client;
+	struct wl_listener client_destroy;
+
 	/**
 	 * One of "dock", "hide", "invisible"
 	 *
@@ -227,7 +247,6 @@ struct bar_config {
 	list_t *bindings;
 	char *status_command;
 	bool pango_markup;
-	char *swaybar_command;
 	char *font;
 	int height; // -1 not defined
 	bool workspace_buttons;
@@ -238,7 +257,6 @@ struct bar_config {
 	bool binding_mode_indicator;
 	bool verbose;
 	struct side_gaps gaps;
-	pid_t pid;
 	int status_padding;
 	int status_edge_padding;
 	struct {
@@ -404,13 +422,13 @@ struct sway_config {
 	list_t *workspace_configs;
 	list_t *output_configs;
 	list_t *input_configs;
+	list_t *input_type_configs;
 	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;
-	char *swaybg_command;
 	uint32_t floating_mod;
 	bool floating_mod_inverse;
 	uint32_t dragging_key;
@@ -432,6 +450,11 @@ struct sway_config {
 	enum sway_fowa focus_on_window_activation;
 	enum sway_popup_during_fullscreen popup_during_fullscreen;
 	bool xwayland;
+
+	// swaybg
+	char *swaybg_command;
+	struct wl_client *swaybg_client;
+	struct wl_listener swaybg_client_destroy;
 
 	// Flags
 	enum focus_follows_mouse_mode focus_follows_mouse;
@@ -465,6 +488,7 @@ struct sway_config {
 	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
 	enum edge_border_types saved_edge_borders;
+	bool hide_lone_tab;
 
 	// border colors
 	struct {
@@ -486,6 +510,9 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
+
+	// The keysym to keycode translation
+	struct xkb_state *keysym_translation_state;
 
 	// Context for command handlers
 	struct {
@@ -513,7 +540,7 @@ bool load_main_config(const char *path, bool is_active, bool validating);
 /**
  * Loads an included config. Can only be used after load_main_config.
  */
-bool load_include_configs(const char *path, struct sway_config *config,
+void load_include_configs(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag);
 
 /**
@@ -552,6 +579,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src);
 
 struct input_config *store_input_config(struct input_config *ic);
 
+void input_config_fill_rule_names(struct input_config *ic,
+		struct xkb_rule_names *rules);
+
 void free_input_config(struct input_config *ic);
 
 int seat_name_cmp(const void *item, const void *data);
@@ -584,29 +614,27 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output);
 
 struct output_config *store_output_config(struct output_config *oc);
 
+struct output_config *find_output_config(struct sway_output *output);
+
 void apply_output_config_to_outputs(struct output_config *oc);
 
 void reset_outputs(void);
 
 void free_output_config(struct output_config *oc);
 
+bool spawn_swaybg(void);
+
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
-int sway_binding_cmp(const void *a, const void *b);
-
-int sway_binding_cmp_qsort(const void *a, const void *b);
-
-int sway_binding_cmp_keys(const void *a, const void *b);
-
 void free_sway_binding(struct sway_binding *sb);
+
+void free_switch_binding(struct sway_switch_binding *binding);
 
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 
 void load_swaybar(struct bar_config *bar);
 
 void load_swaybars(void);
-
-void terminate_swaybg(pid_t pid);
 
 struct bar_config *default_bar_config(void);
 
@@ -625,6 +653,16 @@ void free_workspace_config(struct workspace_config *wsc);
  * new size.
  */
 void config_update_font_height(bool recalculate);
+
+/**
+ * Convert bindsym into bindcode using the first configured layout.
+ * Return false in case the conversion is unsuccessful.
+ */
+bool translate_binding(struct sway_binding *binding);
+
+void translate_keysyms(struct input_config *input_config);
+
+void binding_add_translated(struct sway_binding *binding, list_t *bindings);
 
 /* Global config singleton. */
 extern struct sway_config *config;

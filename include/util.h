@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <wayland-server-protocol.h>
 
 /**
  * Wrap i into the range [0, max[
@@ -28,5 +29,9 @@ bool parse_boolean(const char *boolean, bool current);
  * Returns NAN on error.
  */
 float parse_float(const char *value);
+
+const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel);
+
+bool set_cloexec(int fd, bool cloexec);
 
 #endif

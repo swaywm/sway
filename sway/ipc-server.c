@@ -47,13 +47,14 @@ struct ipc_client {
 	struct wl_event_source *writable_event_source;
 	struct sway_server *server;
 	int fd;
-	uint32_t payload_length;
 	uint32_t security_policy;
-	enum ipc_command_type current_command;
 	enum ipc_command_type subscribed_events;
 	size_t write_buffer_len;
 	size_t write_buffer_size;
 	char *write_buffer;
+	// The following are for storing data between event_loop calls
+	uint32_t pending_length;
+	enum ipc_command_type pending_type;
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -61,8 +62,10 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data);
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data);
 void ipc_client_disconnect(struct ipc_client *client);
-void ipc_client_handle_command(struct ipc_client *client);
-bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
+void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_length,
+	enum ipc_command_type payload_type);
+bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_type,
+	const char *payload, uint32_t payload_length);
 
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	if (ipc_event_source) {
@@ -178,7 +181,7 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 		return 0;
 	}
 	client->server = server;
-	client->payload_length = 0;
+	client->pending_length = 0;
 	client->fd = client_fd;
 	client->subscribed_events = 0;
 	client->event_source = wl_event_loop_add_fd(server->wl_event_loop,
@@ -224,9 +227,13 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	}
 
 	// Wait for the rest of the command payload in case the header has already been read
-	if (client->payload_length > 0) {
-		if ((uint32_t)read_available >= client->payload_length) {
-			ipc_client_handle_command(client);
+	if (client->pending_length > 0) {
+		if ((uint32_t)read_available >= client->pending_length) {
+			// Reset pending values.
+			uint32_t pending_length = client->pending_length;
+			enum ipc_command_type pending_type = client->pending_type;
+			client->pending_length = 0;
+			ipc_client_handle_command(client, pending_length, pending_type);
 		}
 		return 0;
 	}
@@ -251,11 +258,15 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	memcpy(&client->payload_length, &buf32[0], sizeof(buf32[0]));
-	memcpy(&client->current_command, &buf32[1], sizeof(buf32[1]));
+	memcpy(&client->pending_length, &buf32[0], sizeof(buf32[0]));
+	memcpy(&client->pending_type, &buf32[1], sizeof(buf32[1]));
 
-	if (read_available - received >= (long)client->payload_length) {
-		ipc_client_handle_command(client);
+	if (read_available - received >= (long)client->pending_length) {
+		// Reset pending values.
+		uint32_t pending_length = client->pending_length;
+		enum ipc_command_type pending_type = client->pending_type;
+		client->pending_length = 0;
+		ipc_client_handle_command(client, pending_length, pending_type);
 	}
 
 	return 0;
@@ -278,8 +289,8 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 		if ((client->subscribed_events & event_mask(event)) == 0) {
 			continue;
 		}
-		client->current_command = event;
-		if (!ipc_send_reply(client, json_string, (uint32_t) strlen(json_string))) {
+		if (!ipc_send_reply(client, event, json_string,
+				(uint32_t)strlen(json_string))) {
 			sway_log_errno(SWAY_INFO, "Unable to send reply to IPC client");
 			/* ipc_send_reply destroys client on error, which also
 			 * removes it from the list, so we need to process
@@ -567,20 +578,21 @@ static void ipc_get_marks_callback(struct sway_container *con, void *data) {
 	}
 }
 
-void ipc_client_handle_command(struct ipc_client *client) {
+void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_length,
+		enum ipc_command_type payload_type) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
 	}
 
-	char *buf = malloc(client->payload_length + 1);
+	char *buf = malloc(payload_length + 1);
 	if (!buf) {
 		sway_log_errno(SWAY_INFO, "Unable to allocate IPC payload");
 		ipc_client_disconnect(client);
 		return;
 	}
-	if (client->payload_length > 0) {
+	if (payload_length > 0) {
 		// Payload should be fully available
-		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
+		ssize_t received = recv(client->fd, buf, payload_length, 0);
 		if (received == -1)
 		{
 			sway_log_errno(SWAY_INFO, "Unable to receive payload from IPC client");
@@ -589,16 +601,15 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			return;
 		}
 	}
-	buf[client->payload_length] = '\0';
+	buf[payload_length] = '\0';
 
-	bool client_valid = true;
-	switch (client->current_command) {
+	switch (payload_type) {
 	case IPC_COMMAND:
 	{
 		char *line = strtok(buf, "\n");
 		while (line) {
 			size_t line_length = strlen(line);
-			if (line + line_length >= buf + client->payload_length) {
+			if (line + line_length >= buf + payload_length) {
 				break;
 			}
 			line[line_length] = ';';
@@ -609,7 +620,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		transaction_commit_dirty();
 		char *json = cmd_results_to_json(res_list);
 		int length = strlen(json);
-		client_valid = ipc_send_reply(client, json, (uint32_t)length);
+		ipc_send_reply(client, payload_type, json, (uint32_t)length);
 		free(json);
 		while (res_list->length) {
 			struct cmd_results *results = res_list->items[0];
@@ -623,7 +634,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_SEND_TICK:
 	{
 		ipc_event_tick(buf);
-		ipc_send_reply(client, "{\"success\": true}", 17);
+		ipc_send_reply(client, payload_type, "{\"success\": true}", 17);
 		goto exit_cleanup;
 	}
 
@@ -644,6 +655,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_object_add(output_json, "focused",
 				json_object_new_boolean(focused));
 
+			const char *subpixel = sway_wl_output_subpixel_to_string(output->wlr_output->subpixel);
+			json_object_object_add(output_json, "subpixel_hinting", json_object_new_string(subpixel));
 			json_object_array_add(outputs, output_json);
 		}
 		struct sway_output *output;
@@ -654,8 +667,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			}
 		}
 		const char *json_string = json_object_to_json_string(outputs);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(outputs); // free
 		goto exit_cleanup;
 	}
@@ -665,8 +678,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		json_object *workspaces = json_object_new_array();
 		root_for_each_workspace(ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(workspaces); // free
 		goto exit_cleanup;
 	}
@@ -677,7 +690,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		struct json_object *request = json_tokener_parse(buf);
 		if (request == NULL || !json_object_is_type(request, json_type_array)) {
 			const char msg[] = "{\"success\": false}";
-			client_valid = ipc_send_reply(client, msg, strlen(msg));
+			ipc_send_reply(client, payload_type, msg, strlen(msg));
 			sway_log(SWAY_INFO, "Failed to parse subscribe request");
 			goto exit_cleanup;
 		}
@@ -705,7 +718,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				is_tick = true;
 			} else {
 				const char msg[] = "{\"success\": false}";
-				client_valid = ipc_send_reply(client, msg, strlen(msg));
+				ipc_send_reply(client, payload_type, msg, strlen(msg));
 				json_object_put(request);
 				sway_log(SWAY_INFO, "Unsupported event type in subscribe request");
 				goto exit_cleanup;
@@ -714,11 +727,11 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 		json_object_put(request);
 		const char msg[] = "{\"success\": true}";
-		client_valid = ipc_send_reply(client, msg, strlen(msg));
+		ipc_send_reply(client, payload_type, msg, strlen(msg));
 		if (is_tick) {
-			client->current_command = IPC_EVENT_TICK;
 			const char tickmsg[] = "{\"first\": true, \"payload\": \"\"}";
-			ipc_send_reply(client, tickmsg, strlen(tickmsg));
+			ipc_send_reply(client, IPC_EVENT_TICK, tickmsg,
+				strlen(tickmsg));
 		}
 		goto exit_cleanup;
 	}
@@ -731,8 +744,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_array_add(inputs, ipc_json_describe_input(device));
 		}
 		const char *json_string = json_object_to_json_string(inputs);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(inputs); // free
 		goto exit_cleanup;
 	}
@@ -745,8 +758,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_array_add(seats, ipc_json_describe_seat(seat));
 		}
 		const char *json_string = json_object_to_json_string(seats);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(seats); // free
 		goto exit_cleanup;
 	}
@@ -755,8 +768,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *tree = ipc_json_describe_node_recursive(&root->node);
 		const char *json_string = json_object_to_json_string(tree);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(tree);
 		goto exit_cleanup;
 	}
@@ -766,8 +779,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		json_object *marks = json_object_new_array();
 		root_for_each_container(ipc_get_marks_callback, marks);
 		const char *json_string = json_object_to_json_string(marks);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(marks);
 		goto exit_cleanup;
 	}
@@ -776,8 +789,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *version = ipc_json_get_version();
 		const char *json_string = json_object_to_json_string(version);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(version); // free
 		goto exit_cleanup;
 	}
@@ -792,9 +805,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				json_object_array_add(bars, json_object_new_string(bar->id));
 			}
 			const char *json_string = json_object_to_json_string(bars);
-			client_valid =
-				ipc_send_reply(client, json_string,
-					(uint32_t)strlen(json_string));
+			ipc_send_reply(client, payload_type, json_string,
+				(uint32_t)strlen(json_string));
 			json_object_put(bars); // free
 		} else {
 			// Send particular bar's details
@@ -808,15 +820,14 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			}
 			if (!bar) {
 				const char *error = "{ \"success\": false, \"error\": \"No bar with that ID\" }";
-				client_valid =
-					ipc_send_reply(client, error, (uint32_t)strlen(error));
+				ipc_send_reply(client, payload_type, error,
+					(uint32_t)strlen(error));
 				goto exit_cleanup;
 			}
 			json_object *json = ipc_json_describe_bar_config(bar);
 			const char *json_string = json_object_to_json_string(json);
-			client_valid =
-				ipc_send_reply(client, json_string,
-					(uint32_t)strlen(json_string));
+			ipc_send_reply(client, payload_type, json_string,
+				(uint32_t)strlen(json_string));
 			json_object_put(json); // free
 		}
 		goto exit_cleanup;
@@ -830,8 +841,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_array_add(modes, json_object_new_string(mode->name));
 		}
 		const char *json_string = json_object_to_json_string(modes);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(modes); // free
 		goto exit_cleanup;
 	}
@@ -841,34 +852,32 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		json_object *json = json_object_new_object();
 		json_object_object_add(json, "config", json_object_new_string(config->current_config));
 		const char *json_string = json_object_to_json_string(json);
-		client_valid =
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
 		json_object_put(json); // free
 		goto exit_cleanup;
-    }
+	}
 
 	case IPC_SYNC:
 	{
 		// It was decided sway will not support this, just return success:false
 		const char msg[] = "{\"success\": false}";
-		ipc_send_reply(client, msg, strlen(msg));
+		ipc_send_reply(client, payload_type, msg, strlen(msg));
 		goto exit_cleanup;
 	}
 
 	default:
-		sway_log(SWAY_INFO, "Unknown IPC command type %i", client->current_command);
+		sway_log(SWAY_INFO, "Unknown IPC command type %x", payload_type);
 		goto exit_cleanup;
 	}
 
 exit_cleanup:
-	if (client_valid) {
-		client->payload_length = 0;
-	}
 	free(buf);
 	return;
 }
 
-bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length) {
+bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_type,
+		const char *payload, uint32_t payload_length) {
 	assert(payload);
 
 	char data[IPC_HEADER_SIZE];
@@ -876,7 +885,7 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
 	memcpy(&data32[0], &payload_length, sizeof(payload_length));
-	memcpy(&data32[1], &client->current_command, sizeof(client->current_command));
+	memcpy(&data32[1], &payload_type, sizeof(payload_type));
 
 	while (client->write_buffer_len + IPC_HEADER_SIZE + payload_length >=
 				 client->write_buffer_size) {
@@ -908,6 +917,7 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 				ipc_client_handle_writable, client);
 	}
 
-	sway_log(SWAY_DEBUG, "Added IPC reply to client %d queue: %s", client->fd, payload);
+	sway_log(SWAY_DEBUG, "Added IPC reply of type 0x%x to client %d queue: %s",
+		payload_type, client->fd, payload);
 	return true;
 }

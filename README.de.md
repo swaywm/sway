@@ -1,84 +1,51 @@
-# sway
+# Sway
+Sway ist ein [i3](https://i3wm.org/)-kompatibler [Wayland](http://wayland.freedesktop.org/)-Compositor. Lies die [FAQ](https://github.com/swaywm/sway/wiki). Tritt dem [IRC Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway on irc.freenode.net; Englisch).
 
-Der Fortschritt dieser Übersetzung kann [hier](https://github.com/swaywm/sway/issues/1318) 
-eingesehen werden.
+Falls du die Entwicklung von Sway unterstützen möchtest, kannst du das auf [SirCmpwn's Patreon Seite](https://patreon.com/sircmpwn) machen.
 
-Sway ist ein i3-kompatibler
-[Wayland](http://wayland.freedesktop.org/)-Kompositor. Lies die
-[FAQ](https://github.com/swaywm/sway/wiki#faq). Tritt dem
-[IRC-Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway in
-irc.freenode.net).
-
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
-Falls du die Entwicklung von Sway unterstützen möchtest, kannst du das auf der 
-[Patreon-Seite](https://patreon.com/sircmpwn) tun, oder indem du zu
-[Entwicklungsprämien](https://github.com/swaywm/sway/issues/986) 
-bestimmter Features beiträgst. Jeder ist dazu eingeladen, eine Prämie in Anspruch
-zu nehmen oder für gewünschte Features bereitzustellen. Patreon ist eher dafür
-gedacht, Sways Wartung und das Projekt generell zu unterstützen.
-
-## Deutscher Support
-
-refacto(UTC+2) bietet Support im IRC (unter dem Namen azarus) und auf Github an.
-ParadoxSpiral(UTC+2) bietet Support im IRC und auf Github an.
-
-## Releasesignaturen
-
-Neue Versionen werden mit 
-[B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 
-signiert und [auf Github](https://github.com/swaywm/sway/releases) veröffentlicht.
+## Signaturen
+Jedes Release wird mit dem PGP-Schlüssel [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) signiert und auf GitHub veröffentlicht.
 
 ## Installation
+### Mit der Paketverwaltung
+Sway kann in vielen Distributionen direkt durch die Paketverwaltung installiert werden. Das Paket sollte "sway" heißen. Falls es kein solches Paket gibt, kannst du im [Wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages) (Englisch) nach mehr Informationen bezüglich deiner Distribution suchen.
 
-### Als Paket
+Falls du sway für deine eigene Distribution als Paket bereitstellen möchtest, solltest du die Entwickler per IRC oder E-Mail (sir@cmpwn.com) kontaktieren.
 
-Sway ist in vielen Distributionen verfügbar: versuche einfach, das „sway“-Paket
-zu installieren. Falls es nicht vorhanden ist, schaue dir 
-[diese Wikiseite](https://github.com/swaywm/sway/wiki/Unsupported-packages) für 
-distributionsspezifische Installationsinformationen an.
+### Quellcode selbst kompilieren
 
-Wenn du Interesse hast, Sway für deine Distribution als Paket bereitzustellen, 
-schaue im IRC-Channel vorbei oder schreibe eine E‑Mail an sir@cmpwn.com (nur englischsprachig).
+sway benötigt die folgenden Pakete:
 
-### Kompilieren des Quellcodes
-
-Abhängigkeiten:
-
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
+* meson\*
+* [wlroots](https://github.com/swaywm/wlroots)
 * wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
+* wayland-protocols\*
 * pcre
-* json-c >= 0.13
+* json-c
 * pango
 * cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (erforderlich für man pages)
-* git
+* gdk-pixbuf2 (Optional, wird für das Benachrichtigungsfeld (System Tray) benötigt)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc)\* (Optional, wird für die Dokumentation (Man Pages) benötigt)
+* git\*
 
-_\*Nur erforderlich für swaybar, swaybg_
+_\*Werden nur während des Kompilierens benötigt_
 
-Führe diese Befehle aus:
+Führe die folgenden Befehle aus
 
     meson build
     ninja -C build
     sudo ninja -C build install
 
-In Systemen ohne logind musst du `sway` das suid-Flag geben:
+Falls dein System nicht logind benutzt, musst du sway noch die passenden Berechtigungen geben:
 
     sudo chmod a+s /usr/local/bin/sway
 
+Sway läuft nur in der Startphase mit Root-Rechten.
+
 ## Konfiguration
 
-Wenn du schon i3 benutzt, kopiere einfach deine i3 Konfiguration nach
-`~/.config/sway/config`. Falls nicht, kannst du die Beispielkonfiguration
-benutzen. Die befindet sich normalerweise unter `/etc/sway/config`.
-Um mehr Informationen über die Konfiguration zu erhalten, führe `man 5 sway` aus.
+Falls du von i3 migrierst, kannst du deine Konfigurationsdatei nach `~/.config/sway/config` kopieren, und die Einstellungen sollten ohne Weiteres funktionieren. Ansonsten kannst du die Beispielkonfiguration, die normalerweise in `/etc/sway/config` liegt, nach `~/.config/sway/config` kopieren. Die Dokumentation zur Konfigurationsdatei findest du in `man 5 sway`.
 
-## Verwendung
-
-Führe `sway` von einem TTY aus. Manche Displaymanager könnten funktionieren, werden aber
-nicht von Sway unterstützt (gdm scheint relativ gut zu funktionieren).
+## Sway Starten
+Sway kann einfach mit dem Befehl `sway` vom TTY gestartet werden.
+Display-Manager werden nicht offiziell unterstützt. Es gibt aber durchaus einige, die mit Sway funktionieren. (z.B. gdm)

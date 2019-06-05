@@ -82,6 +82,10 @@ static int cmp_group(const void *item, const void *cmp_to) {
 	return strcmp(item, cmp_to);
 }
 
+static bool validate_icon_theme(struct icon_theme *theme) {
+	return theme && theme->name && theme->comment && theme->directories;
+}
+
 static bool group_handler(char *old_group, char *new_group,
 		struct icon_theme *theme) {
 	if (!old_group) { // first group must be "Icon Theme"
@@ -89,7 +93,7 @@ static bool group_handler(char *old_group, char *new_group,
 	}
 
 	if (strcmp(old_group, "Icon Theme") == 0) {
-		if (!(theme->name && theme->comment && theme->directories)) {
+		if (!validate_icon_theme(theme)) {
 			return true;
 		}
 	} else {
@@ -243,6 +247,10 @@ static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 			free(group);
 			group = strdup(&line[1]);
 		} else { // key-value pair
+			if (!group) {
+				error = true;
+				break;
+			}
 			// check well-formed
 			int eok = 0;
 			for (; isalnum(line[eok]) || line[eok] == '-'; ++eok) {} // TODO locale?
@@ -272,7 +280,7 @@ static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 	free(full_line);
 	fclose(theme_file);
 
-	if (!error) {
+	if (!error && validate_icon_theme(theme)) {
 		theme->dir = strdup(theme_name);
 		return theme;
 	} else {
@@ -301,25 +309,57 @@ static list_t *load_themes_in_dir(char *basedir) {
 	return themes;
 }
 
+static void log_loaded_themes(list_t *themes) {
+	if (themes->length == 0) {
+		sway_log(SWAY_INFO, "Warning: no icon themes loaded");
+		return;
+	}
+
+	const char sep[] = ", ";
+	size_t sep_len = strlen(sep);
+
+	size_t len = 0;
+	for (int i = 0; i < themes->length; ++i) {
+		struct icon_theme *theme = themes->items[i];
+		len += strlen(theme->name) + sep_len;
+	}
+
+	char *str = malloc(len + 1);
+	if (!str) {
+		return;
+	}
+	char *p = str;
+	for (int i = 0; i < themes->length; ++i) {
+		if (i > 0) {
+			memcpy(p, sep, sep_len);
+			p += sep_len;
+		}
+
+		struct icon_theme *theme = themes->items[i];
+		size_t name_len = strlen(theme->name);
+		memcpy(p, theme->name, name_len);
+		p += name_len;
+	}
+	*p = '\0';
+
+	sway_log(SWAY_DEBUG, "Loaded icon themes: %s", str);
+	free(str);
+}
+
 void init_themes(list_t **themes, list_t **basedirs) {
 	*basedirs = get_basedirs();
 
 	*themes = create_list();
 	for (int i = 0; i < (*basedirs)->length; ++i) {
 		list_t *dir_themes = load_themes_in_dir((*basedirs)->items[i]);
+		if (dir_themes == NULL) {
+			continue;
+		}
 		list_cat(*themes, dir_themes);
 		list_free(dir_themes);
 	}
 
-	list_t *theme_names = create_list();
-	for (int i = 0; i < (*themes)->length; ++i) {
-		struct icon_theme *theme = (*themes)->items[i];
-		list_add(theme_names, theme->name);
-	}
-	char *theme_list = join_list(theme_names, ", ");
-	sway_log(SWAY_DEBUG, "Loaded themes: %s", theme_list);
-	free(theme_list);
-	list_free(theme_names);
+	log_loaded_themes(*themes);
 }
 
 void finish_themes(list_t *themes, list_t *basedirs) {

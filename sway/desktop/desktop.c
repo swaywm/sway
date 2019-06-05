@@ -6,8 +6,10 @@ void desktop_damage_surface(struct wlr_surface *surface, double lx, double ly,
 		bool whole) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		output_damage_surface(output, lx - output->wlr_output->lx,
-				ly - output->wlr_output->ly, surface, whole);
+		struct wlr_box *output_box = wlr_output_layout_get_box(
+			root->output_layout, output->wlr_output);
+		output_damage_surface(output, lx - output_box->x,
+			ly - output_box->y, surface, whole);
 	}
 }
 

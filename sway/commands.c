@@ -47,6 +47,7 @@ static struct cmd_handler handlers[] = {
 	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
+	{ "bindswitch", cmd_bindswitch },
 	{ "bindsym", cmd_bindsym },
 	{ "client.background", cmd_client_noop },
 	{ "client.focused", cmd_client_focused },
@@ -76,8 +77,8 @@ static struct cmd_handler handlers[] = {
 	{ "input", cmd_input },
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
-	{ "new_float", cmd_default_floating_border },
-	{ "new_window", cmd_default_border },
+	{ "new_float", cmd_new_float },
+	{ "new_window", cmd_new_window },
 	{ "no_focus", cmd_no_focus },
 	{ "output", cmd_output },
 	{ "popup_during_fullscreen", cmd_popup_during_fullscreen },
@@ -91,6 +92,9 @@ static struct cmd_handler handlers[] = {
 	{ "title_align", cmd_title_align },
 	{ "titlebar_border_thickness", cmd_titlebar_border_thickness },
 	{ "titlebar_padding", cmd_titlebar_padding },
+	{ "unbindcode", cmd_unbindcode },
+	{ "unbindswitch", cmd_unbindswitch },
+	{ "unbindsym", cmd_unbindsym },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
@@ -111,6 +115,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
 	{ "fullscreen", cmd_fullscreen },
+	{ "inhibit_idle", cmd_inhibit_idle },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "mark", cmd_mark },
@@ -255,7 +260,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			int argc;
 			char **argv = split_args(cmd, &argc);
 			if (strcmp(argv[0], "exec") != 0 &&
-					strcmp(argv[0], "exec_always") != 0) {
+					strcmp(argv[0], "exec_always") != 0 &&
+					strcmp(argv[0], "mode") != 0) {
 				int i;
 				for (i = 1; i < argc; ++i) {
 					if (*argv[i] == '\"' || *argv[i] == '\'') {
@@ -274,7 +280,6 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			// Var replacement, for all but first argument of set
 			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 				argv[i] = do_var_replacement(argv[i]);
-				unescape_string(argv[i]);
 			}
 
 			if (!config->handler_context.using_criteria) {
@@ -385,7 +390,9 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 				&& handler->handle != cmd_mode
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
+				&& handler->handle != cmd_bindswitch
 				&& handler->handle != cmd_set
+				&& handler->handle != cmd_for_window
 				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
 			strip_quotes(argv[i]);
 		}

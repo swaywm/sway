@@ -23,6 +23,7 @@ struct swaybar {
 	// only relevant when bar is in "hide" mode
 	bool visible_by_modifier;
 	bool visible_by_urgency;
+	bool visible_by_mode;
 	bool visible;
 
 	struct wl_display *display;
@@ -30,10 +31,8 @@ struct swaybar {
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
 	struct wl_shm *shm;
-	struct wl_seat *seat;
 
 	struct swaybar_config *config;
-	struct swaybar_pointer pointer;
 	struct status_line *status;
 
 	struct loop *eventloop;
@@ -42,6 +41,7 @@ struct swaybar {
 	int ipc_socketfd;
 
 	struct wl_list outputs; // swaybar_output::link
+	struct wl_list seats; // swaybar_seat::link
 
 #if HAVE_TRAY
 	struct swaybar_tray *tray;
@@ -57,6 +57,7 @@ struct swaybar_output {
 	struct zxdg_output_v1 *xdg_output;
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
+	struct wl_region *input_region;
 	uint32_t wl_name;
 
 	struct wl_list workspaces; // swaybar_workspace::link

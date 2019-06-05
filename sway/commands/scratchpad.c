@@ -12,6 +12,11 @@ static void scratchpad_toggle_auto(void) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
+	if (!ws) {
+		sway_log(SWAY_DEBUG,
+				"No focused workspace to toggle scratchpad windows on");
+		return;
+	}
 
 	// If the focus is in a floating split container,
 	// operate on the split container instead of the child.

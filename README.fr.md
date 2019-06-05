@@ -1,19 +1,13 @@
 # sway
 
 Sway est un compositeur [Wayland](http://wayland.freedesktop.org/) compatible
-avec i3, **en cours de développement**.  Lisez la
+avec [i3](https://i3wm.org/), **en cours de développement**.  Lisez la
 [FAQ](https://github.com/swaywm/sway/wiki). Rejoignez le [canal
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway sur
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
-Si vous souhaitez soutenir le développement de Sway, vous pouvez contribuer à [ma page
-Patreon](https://patreon.com/sircmpwn) ou aux [primes](https://github.com/swaywm/sway/issues/986)
-pour des fonctionnalités spécifiques.
-Tout le monde est invité à réclamer une prime et vous pouvez donner une prime pour n'importe quelle
-fonctionnalité souhaitée. Patreon est plus utile pour supporter l'état général et la
-maintenance de Sway.
+Si vous souhaitez soutenir le développement de Sway, vous pouvez contribuer à [la page
+Patreon de SirCmpwn](https://patreon.com/sircmpwn).
 
 ## Aide en français
 
@@ -39,21 +33,19 @@ IRC ou envoyez un e-mail à sir@cmpwn.com (en anglais seulement) pour des consei
 
 Installez les dépendances :
 
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
+* meson \*
+* [wlroots](https://github.com/swaywm/wlroots)
 * wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
+* wayland-protocols \*
 * pcre
-* json-c >= 0.13
+* json-c
 * pango
 * cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (requis pour les pages man)
-* git
+* gdk-pixbuf2 (optionnel: system tray)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optionnel: requis pour les pages man) \*
+* git \*
 
-_\*Uniquement requis pour swaybar, swaybg_
+_\*Requis uniquement pour la compilation_
 
 Exécutez ces commandes :
 
@@ -65,16 +57,14 @@ Sur les systèmes sans logind, vous devez suid le binaire de sway :
 
     sudo chmod a+s /usr/local/bin/sway
 
+Sway se débarassera des permissions *root* peu de temps après le démarrage.
+
 ## Configuration
 
 Si vous utilisez déjà i3, copiez votre configuration i3 à `~/.config/sway/config` et
 cela va fonctionner. Sinon, copiez l'exemple de fichier de configuration à
 `~/.config/sway/config`. Il se trouve généralement dans `/etc/sway/config`.
 Exécutez `man 5 sway` pour l'information sur la configuration.
-
-Mes propres dotfiles sont disponibles [ici](https://git.sr.ht/~sircmpwn/dotfiles) si
-vous voulez un peu d'inspiration. Je vous recommande aussi de consulter le
-[wiki](https://github.com/swaywm/sway/wiki).
 
 ## Exécution
 

@@ -13,9 +13,8 @@ Sway allows configuring swaybar in the sway configuration file.
 *status_command* <status command>
 	Executes the bar _status command_ with _sh -c_. Each line of text printed
 	to stdout from this command will be displayed in the status area of the
-	bar. You may also use the i3bar JSON protocol:
-
-	https://i3wm.org/docs/i3bar-protocol.html
+	bar. You may also use swaybar's JSON status line protocol. See
+	*swaybar-protocol*(7) for more information on the protocol
 
 	If running this command via IPC, you can disable a running status command by
 	setting the command to a single dash: _swaybar bar bar-0 status\_command -_
@@ -84,11 +83,13 @@ Sway allows configuring swaybar in the sway configuration file.
 	debug-events`. To disable the default behavior for a button, use the
 	command _nop_.
 
-*mode* dock|hide|invisible
+*mode* dock|hide|invisible|overlay
 	Specifies the visibility of the bar. In _dock_ mode, it is permanently
 	visible at one edge of the screen. In _hide_ mode, it is hidden unless the
 	modifier key is pressed, though this behaviour depends on the hidden state.
-	In _invisible_ mode, it is permanently hidden. Default is _dock_.
+	In _invisible_ mode, it is permanently hidden. In _overlay_ mode, it is
+	permanently visible on top of other windows. (In _overlay_ mode the bar is
+	transparent to input events.) Default is _dock_.
 
 *hidden_state* hide|show
 	Specifies the behaviour of the bar when it is in _hide_ mode. When the
@@ -109,6 +110,12 @@ Sway allows configuring swaybar in the sway configuration file.
 	Sets the padding that is used when the status line is at the right edge of
 	the bar. This value will be multiplied by the output scale. The default is
 	_3_.
+
+*unbindcode* [--release] <event-code>
+	Removes the binding with the given <event-code>.
+
+*unbindsym* [--release] button[1-9]|<event-name>
+	Removes the binding with the given <button> or <event-name>.
 
 ## TRAY
 
@@ -194,5 +201,4 @@ must be defined in hex: _#RRGGBB_ or _#RRGGBBAA_.
 
 # SEE ALSO
 
-*sway*(5)
-
+*sway*(5) *swaybar-protocol*(7)

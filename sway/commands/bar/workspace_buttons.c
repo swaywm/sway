@@ -9,10 +9,7 @@ struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 	if ((error = checkarg(argc, "workspace_buttons", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
-	config->current_bar->workspace_buttons = 
+	config->current_bar->workspace_buttons =
 		parse_boolean(argv[0], config->current_bar->workspace_buttons);
 	if (config->current_bar->workspace_buttons) {
 		sway_log(SWAY_DEBUG, "Enabling workspace buttons on bar: %s",

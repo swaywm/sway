@@ -5,6 +5,8 @@ If you are using the nvidia proprietary driver for any reason, you have two choi
 
 If `lsmod | grep nvidia | wc -l` shows anything other than zero, your bug report is not welcome here.
 
+Additionally, problems with Firefox are almost certainly Firefox bugs, not sway bugs. Start by submitting your issue to the Firefox bugzilla and come back here only after they confirm otherwise.
+
 Otherwise, please include the following four components in your bug report: sway version, debug log, configuration (if applicable), and an explanation of steps taken to reproduce the issue. If sway crashes, also include a stack trace.
 
 Obtain your version like so:

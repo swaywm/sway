@@ -13,9 +13,6 @@ struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 	if ((error = checkarg(argc, "gaps", EXPECTED_AT_MOST, 4))) {
 		return error;
 	}
-	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "No bar defined.");
-	}
 
 	int top = 0, right = 0, bottom = 0, left = 0;
 

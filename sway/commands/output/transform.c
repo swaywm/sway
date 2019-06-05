@@ -12,7 +12,8 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Missing transform argument.");
 	}
 	enum wl_output_transform transform;
-	if (strcmp(*argv, "normal") == 0) {
+	if (strcmp(*argv, "normal") == 0 ||
+			strcmp(*argv, "0") == 0) {
 		transform = WL_OUTPUT_TRANSFORM_NORMAL;
 	} else if (strcmp(*argv, "90") == 0) {
 		transform = WL_OUTPUT_TRANSFORM_90;

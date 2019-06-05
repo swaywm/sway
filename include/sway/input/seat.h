@@ -9,18 +9,25 @@
 struct sway_seat;
 
 struct sway_seatop_impl {
-	void (*motion)(struct sway_seat *seat, uint32_t time_msec);
-	void (*finish)(struct sway_seat *seat);
-	void (*abort)(struct sway_seat *seat);
+	void (*button)(struct sway_seat *seat, uint32_t time_msec,
+			struct wlr_input_device *device, uint32_t button,
+			enum wlr_button_state state);
+	void (*motion)(struct sway_seat *seat, uint32_t time_msec,
+			double dx, double dy);
+	void (*axis)(struct sway_seat *seat, struct wlr_event_pointer_axis *event);
+	void (*rebase)(struct sway_seat *seat, uint32_t time_msec);
+	void (*end)(struct sway_seat *seat);
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
 	void (*render)(struct sway_seat *seat, struct sway_output *output,
 			pixman_region32_t *damage);
+	bool allow_set_cursor;
 };
 
 struct sway_seat_device {
 	struct sway_seat *sway_seat;
 	struct sway_input_device *input_device;
 	struct sway_keyboard *keyboard;
+	struct sway_switch *switch_device;
 	struct wl_list link; // sway_seat::devices
 };
 
@@ -68,14 +75,13 @@ struct sway_seat {
 	// Seat operations (drag and resize)
 	const struct sway_seatop_impl *seatop_impl;
 	void *seatop_data;
-	uint32_t seatop_button;
 
-	uint32_t last_button;
 	uint32_t last_button_serial;
 
 	struct wl_listener focus_destroy;
 	struct wl_listener new_node;
-	struct wl_listener new_drag_icon;
+	struct wl_listener request_start_drag;
+	struct wl_listener start_drag;
 	struct wl_listener request_set_selection;
 	struct wl_listener request_set_primary_selection;
 
@@ -137,6 +143,11 @@ struct sway_node *seat_get_focus(struct sway_seat *seat);
 
 struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat);
 
+// If a scratchpad container is fullscreen global, this can be used to try to
+// determine the last focused workspace. Otherwise, this should yield the same
+// results as seat_get_focused_workspace.
+struct sway_workspace *seat_get_last_known_workspace(struct sway_seat *seat);
+
 struct sway_container *seat_get_focused_container(struct sway_seat *seat);
 
 /**
@@ -184,23 +195,25 @@ bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
 
-void seatop_begin_down(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button, int sx, int sy);
+void seatop_begin_default(struct sway_seat *seat);
+
+void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
+		uint32_t time_msec, int sx, int sy);
 
 void seatop_begin_move_floating(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button);
+		struct sway_container *con);
 
 void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button);
+		struct sway_container *con);
 
 void seatop_begin_move_tiling(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button);
+		struct sway_container *con);
 
 void seatop_begin_resize_floating(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button, enum wlr_edges edge);
+		struct sway_container *con, enum wlr_edges edge);
 
 void seatop_begin_resize_tiling(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button, enum wlr_edges edge);
+		struct sway_container *con, enum wlr_edges edge);
 
 struct sway_container *seat_get_focus_inactive_floating(struct sway_seat *seat,
 		struct sway_workspace *workspace);
@@ -210,19 +223,24 @@ void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 
 void seat_consider_warp_to_focus(struct sway_seat *seat);
 
-bool seat_doing_seatop(struct sway_seat *seat);
-
-void seatop_motion(struct sway_seat *seat, uint32_t time_msec);
-
-/**
- * End a seatop and apply the affects.
- */
-void seatop_finish(struct sway_seat *seat);
+void seatop_button(struct sway_seat *seat, uint32_t time_msec,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state);
 
 /**
- * End a seatop without applying the affects.
+ * dx and dy are distances relative to previous position.
  */
-void seatop_abort(struct sway_seat *seat);
+void seatop_motion(struct sway_seat *seat, uint32_t time_msec,
+		double dx, double dy);
+
+void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event);
+
+void seatop_rebase(struct sway_seat *seat, uint32_t time_msec);
+
+/**
+ * End a seatop (ie. free any seatop specific resources).
+ */
+void seatop_end(struct sway_seat *seat);
 
 /**
  * Instructs the seatop implementation to drop any references to the given
@@ -238,5 +256,6 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con);
 void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		pixman_region32_t *damage);
 
+bool seatop_allows_set_cursor(struct sway_seat *seat);
 
 #endif

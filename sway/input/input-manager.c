@@ -71,6 +71,71 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 	return identifier;
 }
 
+static bool device_is_touchpad(struct sway_input_device *device) {
+	if (device->wlr_device->type != WLR_INPUT_DEVICE_POINTER ||
+			!wlr_input_device_is_libinput(device->wlr_device)) {
+		return false;
+	}
+
+	struct libinput_device *libinput_device =
+		wlr_libinput_get_device_handle(device->wlr_device);
+
+	return libinput_device_config_tap_get_finger_count(libinput_device) > 0;
+}
+
+const char *input_device_get_type(struct sway_input_device *device) {
+	switch (device->wlr_device->type) {
+	case WLR_INPUT_DEVICE_POINTER:
+		if (device_is_touchpad(device)) {
+			return "touchpad";
+		} else {
+			return "pointer";
+		}
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return "keyboard";
+	case WLR_INPUT_DEVICE_TOUCH:
+		return "touch";
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return "tablet_tool";
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		return "tablet_pad";
+	case WLR_INPUT_DEVICE_SWITCH:
+		return "switch";
+	}
+	return "unknown";
+}
+
+static void apply_input_type_config(struct sway_input_device *input_device) {
+	const char *device_type = input_device_get_type(input_device);
+	struct input_config *type_config = NULL;
+	for (int i = 0; i < config->input_type_configs->length; i++) {
+		struct input_config *ic = config->input_type_configs->items[i];
+		if (strcmp(ic->identifier + 5, device_type) == 0) {
+			type_config = ic;
+			break;
+		}
+	}
+	if (type_config == NULL) {
+		return;
+	}
+
+	for (int i = 0; i < config->input_configs->length; i++) {
+		struct input_config *ic = config->input_configs->items[i];
+		if (strcmp(input_device->identifier, ic->identifier) == 0) {
+			struct input_config *current = new_input_config(ic->identifier);
+			merge_input_config(current, type_config);
+			merge_input_config(current, ic);
+
+			current->input_type = device_type;
+			config->input_configs->items[i] = current;
+			free_input_config(ic);
+			ic = NULL;
+
+			break;
+		}
+	}
+}
+
 static struct sway_input_device *input_sway_device_from_wlr(
 		struct wlr_input_device *device) {
 	struct sway_input_device *input_device = NULL;
@@ -150,6 +215,47 @@ static void input_manager_libinput_reset_keyboard(
 	uint32_t send_events =
 		libinput_device_config_send_events_get_default_mode(libinput_device);
 	sway_log(SWAY_DEBUG, "libinput_reset_keyboard(%s) send_events_set_mode(%d)",
+		input_device->identifier, send_events);
+	log_libinput_config_status(libinput_device_config_send_events_set_mode(
+				libinput_device, send_events));
+}
+
+static void input_manager_libinput_config_switch(
+		struct sway_input_device *input_device) {
+	struct wlr_input_device *wlr_device = input_device->wlr_device;
+	struct input_config *ic = input_device_get_config(input_device);
+	struct libinput_device *libinput_device;
+
+	if (!ic || !wlr_input_device_is_libinput(wlr_device)) {
+		return;
+	}
+
+	libinput_device = wlr_libinput_get_device_handle(wlr_device);
+	sway_log(SWAY_DEBUG, "input_manager_libinput_config_switch(%s)",
+		ic->identifier);
+
+	if (ic->send_events != INT_MIN) {
+		sway_log(SWAY_DEBUG, "libinput_config_switch(%s) send_events_set_mode(%d)",
+			ic->identifier, ic->send_events);
+		log_libinput_config_status(libinput_device_config_send_events_set_mode(
+				libinput_device, ic->send_events));
+	}
+}
+
+static void input_manager_libinput_reset_switch(
+		struct sway_input_device *input_device) {
+	struct wlr_input_device *wlr_device = input_device->wlr_device;
+	struct libinput_device *libinput_device;
+
+	if (!wlr_input_device_is_libinput(wlr_device)) {
+		return;
+	}
+
+	libinput_device = wlr_libinput_get_device_handle(wlr_device);
+
+	uint32_t send_events =
+		libinput_device_config_send_events_get_default_mode(libinput_device);
+	sway_log(SWAY_DEBUG, "libinput_reset_switch(%s) send_events_set_mode(%d)",
 		input_device->identifier, send_events);
 	log_libinput_config_status(libinput_device_config_send_events_set_mode(
 				libinput_device, send_events));
@@ -466,11 +572,15 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "adding device: '%s'",
 		input_device->identifier);
 
+	apply_input_type_config(input_device);
+
 	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
 			input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 		input_manager_libinput_config_pointer(input_device);
 	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
 		input_manager_libinput_config_keyboard(input_device);
+	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_SWITCH) {
+		input_manager_libinput_config_switch(input_device);
 	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_TOUCH) {
 		input_manager_libinput_config_touch(input_device);
 	}
@@ -616,14 +726,20 @@ void input_manager_set_focus(struct sway_node *node) {
 void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
 	bool wildcard = strcmp(input_config->identifier, "*") == 0;
+	bool type_wildcard = strncmp(input_config->identifier, "type:", 5) == 0;
 	wl_list_for_each(input_device, &server.input->devices, link) {
+		bool type_matches = type_wildcard &&
+			strcmp(input_device_get_type(input_device), input_config->identifier + 5) == 0;
 		if (strcmp(input_device->identifier, input_config->identifier) == 0
-				|| wildcard) {
+				|| wildcard
+				|| type_matches) {
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
 					input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 				input_manager_libinput_config_pointer(input_device);
 			} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
 				input_manager_libinput_config_keyboard(input_device);
+			} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_SWITCH) {
+				input_manager_libinput_config_switch(input_device);
 			} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_TOUCH) {
 				input_manager_libinput_config_touch(input_device);
 			}
@@ -642,6 +758,8 @@ void input_manager_reset_input(struct sway_input_device *input_device) {
 		input_manager_libinput_reset_pointer(input_device);
 	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
 		input_manager_libinput_reset_keyboard(input_device);
+	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_SWITCH) {
+		input_manager_libinput_reset_switch(input_device);
 	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_TOUCH) {
 		input_manager_libinput_reset_touch(input_device);
 	}
@@ -745,6 +863,14 @@ struct input_config *input_device_get_config(struct sway_input_device *device) {
 			return input_config;
 		} else if (strcmp(input_config->identifier, "*") == 0) {
 			wildcard_config = input_config;
+		}
+	}
+
+	const char *device_type = input_device_get_type(device);
+	for (int i = 0; i < config->input_type_configs->length; ++i) {
+		input_config = config->input_type_configs->items[i];
+		if (strcmp(input_config->identifier + 5, device_type) == 0) {
+			return input_config;
 		}
 	}
 

@@ -415,7 +415,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xwayland_view->commit.notify = handle_commit;
 
 	// Put it back into the tree
-	view_map(view, xsurface->surface, xsurface->fullscreen, false);
+	view_map(view, xsurface->surface, xsurface->fullscreen, NULL, false);
 
 	transaction_commit_dirty();
 }
@@ -432,8 +432,16 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		return;
 	}
 	if (container_is_floating(view->container)) {
-		configure(view, view->container->current.content_x,
-				view->container->current.content_y, ev->width, ev->height);
+		// Respect minimum and maximum sizes
+		view->natural_width = ev->width;
+		view->natural_height = ev->height;
+		container_floating_resize_and_center(view->container);
+
+		configure(view, view->container->content_x,
+				view->container->content_y,
+				view->container->content_width,
+				view->container->content_height);
+		node_set_dirty(&view->container->node);
 	} else {
 		configure(view, view->container->current.content_x,
 				view->container->current.content_y,
@@ -468,7 +476,7 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat();
-	seatop_begin_move_floating(seat, view->container, seat->last_button);
+	seatop_begin_move_floating(seat, view->container);
 }
 
 static void handle_request_resize(struct wl_listener *listener, void *data) {
@@ -484,8 +492,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	}
 	struct wlr_xwayland_resize_event *e = data;
 	struct sway_seat *seat = input_manager_current_seat();
-	seatop_begin_resize_floating(seat, view->container,
-			seat->last_button, e->edges);
+	seatop_begin_resize_floating(seat, view->container, e->edges);
 }
 
 static void handle_request_activate(struct wl_listener *listener, void *data) {

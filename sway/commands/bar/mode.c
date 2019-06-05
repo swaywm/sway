@@ -20,6 +20,8 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 		bar->mode = strdup("hide");
 	} else if (strcasecmp("invisible", mode) == 0) {
 		bar->mode = strdup("invisible");
+	} else if (strcasecmp("overlay", mode) == 0) {
+		bar->mode = strdup("overlay");
 	} else {
 		return cmd_results_new(CMD_INVALID, "Invalid value %s", mode);
 	}

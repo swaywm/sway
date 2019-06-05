@@ -192,8 +192,11 @@ struct sway_view_child_impl {
  */
 struct sway_view_child {
 	const struct sway_view_child_impl *impl;
+	struct wl_list link;
 
 	struct sway_view *view;
+	struct sway_view_child *parent;
+	struct wl_list children; // sway_view_child::link
 	struct wlr_surface *surface;
 	bool mapped;
 
@@ -202,6 +205,7 @@ struct sway_view_child {
 	struct wl_listener surface_map;
 	struct wl_listener surface_unmap;
 	struct wl_listener surface_destroy;
+	struct wl_listener view_unmap;
 };
 
 struct sway_subsurface {
@@ -313,7 +317,7 @@ void view_destroy(struct sway_view *view);
 void view_begin_destroy(struct sway_view *view);
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
-	bool fullscreen, bool decoration);
+	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
 
 void view_unmap(struct sway_view *view);
 

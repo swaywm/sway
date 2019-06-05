@@ -32,6 +32,11 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 		seat_set_focus_container(config->handler_context.seat, container);
 	}
 
+	if (container_is_scratchpad_hidden(container)) {
+		return cmd_results_new(CMD_INVALID,
+				"Can't change floating on hidden scratchpad container");
+	}
+
 	// If the container is in a floating split container,
 	// operate on the split container instead of the child.
 	if (container_is_floating_or_child(container)) {
@@ -45,7 +50,10 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 
 	container_set_floating(container, wants_floating);
 
-	arrange_workspace(container->workspace);
+	// Floating containers in the scratchpad should be ignored
+	if (container->workspace) {
+		arrange_workspace(container->workspace);
+	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

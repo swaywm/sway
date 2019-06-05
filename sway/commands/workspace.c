@@ -184,6 +184,10 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		bool create = argc > 1 && strcasecmp(argv[1], "--create") == 0;
 		struct sway_seat *seat = config->handler_context.seat;
 		struct sway_workspace *current = seat_get_focused_workspace(seat);
+		if (!current) {
+			return cmd_results_new(CMD_FAILURE, "No workspace to switch from");
+		}
+
 		struct sway_workspace *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (argc < 2) {
@@ -221,6 +225,9 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				ws = workspace_create(NULL, name);
 			}
 			free(name);
+		}
+		if (!ws) {
+			return cmd_results_new(CMD_FAILURE, "No workspace to switch to");
 		}
 		workspace_switch(ws, no_auto_back_and_forth);
 		seat_consider_warp_to_focus(seat);

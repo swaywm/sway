@@ -37,7 +37,7 @@ static void handle_render(struct sway_seat *seat,
 		struct wlr_box box;
 		memcpy(&box, &e->drop_box, sizeof(struct wlr_box));
 		scale_box(&box, output->wlr_output->scale);
-		render_rect(output->wlr_output, damage, &box, color);
+		render_rect(output, damage, &box, color);
 	}
 }
 
@@ -108,7 +108,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	}
 
 	if (node->type == N_WORKSPACE) {
-		// Emtpy workspace
+		// Empty workspace
 		e->target_node = node;
 		e->target_edge = WLR_EDGE_NONE;
 		workspace_get_box(node->sway_workspace, &e->drop_box);
@@ -164,7 +164,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 
 	// Use the hovered view - but we must be over the actual surface
 	con = node->sway_container;
-	if (!con->view->surface || node == &e->con->node
+	if (!con->view || !con->view->surface || node == &e->con->node
 			|| node_has_ancestor(node, &e->con->node)) {
 		e->target_node = NULL;
 		e->target_edge = WLR_EDGE_NONE;
@@ -206,17 +206,14 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	desktop_damage_box(&e->drop_box);
 }
 
-static void handle_motion(struct sway_seat *seat, uint32_t time_msec) {
+static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
+		double dx, double dy) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (e->threshold_reached) {
 		handle_motion_postthreshold(seat);
 	} else {
 		handle_motion_prethreshold(seat);
 	}
-}
-
-static void handle_abort(struct sway_seat *seat) {
-	cursor_set_image(seat->cursor, "left_ptr", NULL);
 }
 
 static bool is_parallel(enum sway_container_layout layout,
@@ -226,11 +223,17 @@ static bool is_parallel(enum sway_container_layout layout,
 	return layout_is_horiz == edge_is_horiz;
 }
 
-static void handle_finish(struct sway_seat *seat) {
+static void handle_button(struct sway_seat *seat, uint32_t time_msec,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state) {
+	if (seat->cursor->pressed_button_count != 0) {
+		return;
+	}
+
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 
 	if (!e->target_node) {
-		handle_abort(seat);
+		seatop_begin_default(seat);
 		return;
 	}
 
@@ -287,7 +290,7 @@ static void handle_finish(struct sway_seat *seat) {
 		arrange_workspace(new_ws);
 	}
 
-	cursor_set_image(seat->cursor, "left_ptr", NULL);
+	seatop_begin_default(seat);
 }
 
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
@@ -296,21 +299,20 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 		e->target_node = NULL;
 	}
 	if (e->con == con) { // The container being moved
-		seatop_abort(seat);
+		seatop_begin_default(seat);
 	}
 }
 
 static const struct sway_seatop_impl seatop_impl = {
+	.button = handle_button,
 	.motion = handle_motion,
-	.finish = handle_finish,
-	.abort = handle_abort,
 	.unref = handle_unref,
 	.render = handle_render,
 };
 
 void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button) {
-	seatop_abort(seat);
+		struct sway_container *con) {
+	seatop_end(seat);
 
 	struct seatop_move_tiling_event *e =
 		calloc(1, sizeof(struct seatop_move_tiling_event));
@@ -323,14 +325,14 @@ void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
-	seat->seatop_button = button;
 
 	container_raise_floating(con);
+	wlr_seat_pointer_clear_focus(seat->wlr_seat);
 }
 
 void seatop_begin_move_tiling(struct sway_seat *seat,
-		struct sway_container *con, uint32_t button) {
-	seatop_begin_move_tiling_threshold(seat, con, button);
+		struct sway_container *con) {
+	seatop_begin_move_tiling_threshold(seat, con);
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (e) {
 		e->threshold_reached = true;

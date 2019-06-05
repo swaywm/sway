@@ -1,7 +1,7 @@
 project(
 	'sway',
 	'c',
-	version: '1.0',
+	version: '1.1',
 	license: 'MIT',
 	meson_version: '>=0.48.0',
 	default_options: [
@@ -57,20 +57,22 @@ elogind        = dependency('libelogind', version: '>=239', required: false)
 xcb            = dependency('xcb', required: get_option('xwayland'))
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
-git            = find_program('git', required: false)
+git            = find_program('git', native: true, required: false)
 
 # Try first to find wlroots as a subproject, then as a system dependency
+wlroots_version = '>=0.6'
 wlroots_proj = subproject(
 	'wlroots',
 	default_options: ['rootston=false', 'examples=false'],
 	required: false,
+	version: wlroots_version,
 )
 if wlroots_proj.found()
 	wlroots = wlroots_proj.get_variable('wlroots')
 	wlroots_conf = wlroots_proj.get_variable('conf_data')
 	wlroots_has_xwayland = wlroots_conf.get('WLR_HAS_XWAYLAND') == 1
 else
-	wlroots = dependency('wlroots')
+	wlroots = dependency('wlroots', version: wlroots_version)
 	wlroots_has_xwayland = cc.get_define('WLR_HAS_XWAYLAND', prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
 endif
 
@@ -93,21 +95,19 @@ conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
 conf_data.set10('HAVE_TRAY', have_tray)
 
-if not systemd.found() and not elogind.found()
-	warning('The sway binary must be setuid when compiled without (e)logind')
-	warning('You must do this manually post-install: chmod a+s /path/to/sway')
-endif
-
-scdoc = find_program('scdoc', required: get_option('man-pages'))
+scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
-	sh = find_program('sh')
+	scdoc_prog = find_program(scdoc.get_pkgconfig_variable('scdoc'), native: true)
+	sh = find_program('sh', native: true)
 	mandir = get_option('mandir')
 	man_files = [
 		'sway/sway.1.scd',
 		'sway/sway.5.scd',
 		'sway/sway-bar.5.scd',
 		'sway/sway-input.5.scd',
+		'sway/sway-ipc.7.scd',
 		'sway/sway-output.5.scd',
+		'swaybar/swaybar-protocol.7.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swaynag/swaynag.1.scd',
 		'swaynag/swaynag.5.scd',
@@ -122,7 +122,7 @@ if scdoc.found()
 			input: filename,
 			output: output,
 			command: [
-				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
+				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc_prog.path(), output)
 			],
 			install: true,
 			install_dir: '@0@/man@1@'.format(mandir, section)
@@ -151,7 +151,6 @@ subdir('sway')
 subdir('swaymsg')
 
 subdir('client')
-subdir('swaybg')
 subdir('swaybar')
 subdir('swaynag')
 
@@ -234,4 +233,22 @@ if get_option('fish-completions')
 	fish_install_dir = datadir + '/fish/completions'
 
 	install_data(fish_files, install_dir: fish_install_dir)
+endif
+
+status = [
+	'',
+	'Features:',
+	'xwayland: @0@'.format(have_xwayland),
+	'gdk-pixbuf: @0@'.format(gdk_pixbuf.found()),
+	'systemd: @0@'.format(systemd.found()),
+	'elogind: @0@'.format(elogind.found()),
+	'tray: @0@'.format(have_tray),
+	'man-pages: @0@'.format(scdoc.found()),
+	'',
+]
+message('\n'.join(status))
+
+if not systemd.found() and not elogind.found()
+	warning('The sway binary must be setuid when compiled without (e)logind')
+	warning('You must do this manually post-install: chmod a+s /path/to/sway')
 endif

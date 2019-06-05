@@ -99,7 +99,7 @@ static void apply_tabbed_layout(list_t *children, struct wlr_box *parent) {
 	}
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		size_t parent_offset = child->view ? 0 : container_titlebar_height();
+		int parent_offset = child->view ? 0 : container_titlebar_height();
 		container_remove_gaps(child);
 		child->x = parent->x;
 		child->y = parent->y + parent_offset;
@@ -115,7 +115,7 @@ static void apply_stacked_layout(list_t *children, struct wlr_box *parent) {
 	}
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		size_t parent_offset = child->view ?  0 :
+		int parent_offset = child->view ?  0 :
 			container_titlebar_height() * children->length;
 		container_remove_gaps(child);
 		child->x = parent->x;
@@ -195,8 +195,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	double prev_y = workspace->y;
 	workspace->width = area->width;
 	workspace->height = area->height;
-	workspace->x = output->wlr_output->lx + area->x;
-	workspace->y = output->wlr_output->ly + area->y;
+	workspace->x = output->lx + area->x;
+	workspace->y = output->ly + area->y;
 
 	// Adjust any floating containers
 	double diff_x = workspace->x - prev_x;

@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
@@ -67,12 +68,30 @@ struct sway_server {
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
 	struct wl_listener pointer_constraint;
 
+	struct wlr_output_manager_v1 *output_manager_v1;
+	struct wl_listener output_manager_apply;
+	struct wl_listener output_manager_test;
+
 	size_t txn_timeout_ms;
 	list_t *transactions;
 	list_t *dirty_nodes;
 };
 
 struct sway_server server;
+
+struct sway_debug {
+	bool noatomic;         // Ignore atomic layout updates
+	bool txn_timings;      // Log verbose messages about transactions
+	bool txn_wait;         // Always wait for the timeout before applying
+
+	enum {
+		DAMAGE_DEFAULT,    // Default behaviour
+		DAMAGE_HIGHLIGHT,  // Highlight regions of the screen being damaged
+		DAMAGE_RERENDER,   // Render the full output when any damage occurs
+	} damage;
+};
+
+struct sway_debug debug;
 
 /* Prepares an unprivileged server_init by performing all privileged operations in advance */
 bool server_privileged_prepare(struct sway_server *server);

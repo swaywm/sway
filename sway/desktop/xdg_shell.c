@@ -17,6 +17,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/xdg_decoration.h"
 
 static const struct sway_view_child_impl popup_impl;
 
@@ -338,6 +339,18 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
+	if (e->fullscreen && e->output && e->output->data) {
+		struct sway_output *output = e->output->data;
+		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (ws && !container_is_scratchpad_hidden(view->container)) {
+			if (container_is_floating(view->container)) {
+				workspace_add_floating(ws, view->container);
+			} else {
+				workspace_add_tiling(ws, view->container);
+			}
+		}
+	}
+
 	container_set_fullscreen(view->container, e->fullscreen);
 
 	arrange_root();
@@ -354,7 +367,7 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_move_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seatop_begin_move_floating(seat, view->container, seat->last_button);
+		seatop_begin_move_floating(seat, view->container);
 	}
 }
 
@@ -368,8 +381,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_resize_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seatop_begin_resize_floating(seat, view->container,
-				seat->last_button, e->edges);
+		seatop_begin_resize_floating(seat, view->container, e->edges);
 	}
 }
 
@@ -417,7 +429,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	}
 
 	view_map(view, view->wlr_xdg_surface->surface,
-		xdg_surface->toplevel->client_pending.fullscreen, csd);
+		xdg_surface->toplevel->client_pending.fullscreen,
+		xdg_surface->toplevel->client_pending.fullscreen_output,
+		csd);
 
 	transaction_commit_dirty();
 
@@ -461,6 +475,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->map.link);
 	wl_list_remove(&xdg_shell_view->unmap.link);
 	view->wlr_xdg_surface = NULL;
+	if (view->xdg_decoration) {
+		view->xdg_decoration->view = NULL;
+	}
 	view_begin_destroy(view);
 }
 

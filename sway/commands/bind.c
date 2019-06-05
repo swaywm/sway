@@ -24,9 +24,36 @@ void free_sway_binding(struct sway_binding *binding) {
 	}
 
 	list_free_items_and_destroy(binding->keys);
+	list_free_items_and_destroy(binding->syms);
 	free(binding->input);
 	free(binding->command);
 	free(binding);
+}
+
+void free_switch_binding(struct sway_switch_binding *binding) {
+	if (!binding) {
+		return;
+	}
+	free(binding->command);
+	free(binding);
+}
+
+/**
+ * Returns true if the bindings have the same switch type and state combinations.
+ */
+static bool binding_switch_compare(struct sway_switch_binding *binding_a,
+		struct sway_switch_binding *binding_b) {
+	if (binding_a->type != binding_b->type) {
+		return false;
+	}
+	if (binding_a->state != binding_b->state) {
+		return false;
+	}
+	if ((binding_a->flags & BINDING_LOCKED) !=
+			(binding_b->flags & BINDING_LOCKED)) {
+		return false;
+	}
+	return true;
 }
 
 /**
@@ -45,7 +72,7 @@ static bool binding_key_compare(struct sway_binding *binding_a,
 	}
 
 	uint32_t conflict_generating_flags = BINDING_RELEASE | BINDING_BORDER
-			| BINDING_CONTENTS | BINDING_TITLEBAR;
+			| BINDING_CONTENTS | BINDING_TITLEBAR | BINDING_LOCKED;
 	if ((binding_a->flags & conflict_generating_flags) !=
 			(binding_b->flags & conflict_generating_flags)) {
 		return false;
@@ -174,12 +201,133 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 	return NULL;
 }
 
+static struct cmd_results *switch_binding_add(
+		struct sway_switch_binding *binding, const char *bindtype,
+		const char *switchcombo, bool warn) {
+	list_t *mode_bindings = config->current_mode->switch_bindings;
+	// overwrite the binding if it already exists
+	bool overwritten = false;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_switch_binding *config_binding = mode_bindings->items[i];
+		if (binding_switch_compare(binding, config_binding)) {
+			sway_log(SWAY_INFO, "Overwriting binding '%s' to `%s` from `%s`",
+					switchcombo, binding->command, config_binding->command);
+			if (warn) {
+				config_add_swaynag_warning("Overwriting binding"
+						"'%s' to `%s` from `%s`",
+						switchcombo, binding->command,
+						config_binding->command);
+			}
+			free_switch_binding(config_binding);
+			mode_bindings->items[i] = binding;
+			overwritten = true;
+		}
+	}
+
+	if (!overwritten) {
+		list_add(mode_bindings, binding);
+		sway_log(SWAY_DEBUG, "%s - Bound %s to command `%s`",
+				bindtype, switchcombo, binding->command);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
+static struct cmd_results *switch_binding_remove(
+		struct sway_switch_binding *binding, const char *bindtype,
+		const char *switchcombo) {
+	list_t *mode_bindings = config->current_mode->switch_bindings;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_switch_binding *config_binding = mode_bindings->items[i];
+		if (binding_switch_compare(binding, config_binding)) {
+			free_switch_binding(config_binding);
+			free_switch_binding(binding);
+			list_del(mode_bindings, i);
+			sway_log(SWAY_DEBUG, "%s - Unbound %s switch",
+					bindtype, switchcombo);
+			return cmd_results_new(CMD_SUCCESS, NULL);
+		}
+	}
+
+	free_switch_binding(binding);
+	return cmd_results_new(CMD_FAILURE, "Could not find switch binding `%s`",
+			switchcombo);
+}
+
+/**
+ * Insert or update the binding.
+ * Return the binding which has been replaced or NULL.
+ */
+static struct sway_binding *binding_upsert(struct sway_binding *binding,
+		list_t *mode_bindings) {
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_binding *config_binding = mode_bindings->items[i];
+		if (binding_key_compare(binding, config_binding)) {
+			mode_bindings->items[i] = binding;
+			return config_binding;
+		}
+	}
+
+	list_add(mode_bindings, binding);
+	return NULL;
+}
+
+static struct cmd_results *binding_add(struct sway_binding *binding,
+		list_t *mode_bindings, const char *bindtype,
+		const char *keycombo, bool warn) {
+	struct sway_binding *config_binding = binding_upsert(binding, mode_bindings);
+
+	if (config_binding) {
+		sway_log(SWAY_INFO, "Overwriting binding '%s' for device '%s' "
+				"to `%s` from `%s`", keycombo, binding->input,
+				binding->command, config_binding->command);
+		if (warn) {
+			config_add_swaynag_warning("Overwriting binding"
+					"'%s' for device '%s' to `%s` from `%s`",
+					keycombo, binding->input, binding->command,
+					config_binding->command);
+		}
+		free_sway_binding(config_binding);
+	} else {
+		sway_log(SWAY_DEBUG, "%s - Bound %s to command `%s` for device '%s'",
+				bindtype, keycombo, binding->command, binding->input);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
+static struct cmd_results *binding_remove(struct sway_binding *binding,
+		list_t *mode_bindings, const char *bindtype,
+		const char *keycombo) {
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_binding *config_binding = mode_bindings->items[i];
+		if (binding_key_compare(binding, config_binding)) {
+			sway_log(SWAY_DEBUG, "%s - Unbound `%s` from device '%s'",
+					bindtype, keycombo, binding->input);
+			free_sway_binding(config_binding);
+			free_sway_binding(binding);
+			list_del(mode_bindings, i);
+			return cmd_results_new(CMD_SUCCESS, NULL);
+		}
+	}
+	free_sway_binding(binding);
+	return cmd_results_new(CMD_FAILURE, "Could not find binding `%s` "
+			"for the given flags", keycombo);
+}
+
 static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
-		bool bindcode) {
-	const char *bindtype = bindcode ? "bindcode" : "bindsym";
+		bool bindcode, bool unbind) {
+	const char *bindtype;
+	int minargs = 2;
+	if (unbind) {
+		bindtype = bindcode ? "unbindcode" : "unbindsym";
+		minargs--;
+	} else {
+		bindtype = bindcode ? "bindcode": "bindsym";
+	}
 
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, 2))) {
+	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, minargs))) {
 		return error;
 	}
 
@@ -196,7 +344,6 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	bool exclude_titlebar = false;
 	bool warn = true;
 
-	// Handle --release and --locked
 	while (argc > 0) {
 		if (strcmp("--release", argv[0]) == 0) {
 			binding->flags |= BINDING_RELEASE;
@@ -206,6 +353,10 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			binding->flags |= BINDING_BORDER | BINDING_CONTENTS | BINDING_TITLEBAR;
 		} else if (strcmp("--border", argv[0]) == 0) {
 			binding->flags |= BINDING_BORDER;
+		} else if (strcmp("--to-code", argv[0]) == 0) {
+			if (!bindcode) {
+				binding->flags |= BINDING_CODE;
+			}
 		} else if (strcmp("--exclude-titlebar", argv[0]) == 0) {
 			exclude_titlebar = true;
 		} else if (strncmp("--input-device=", argv[0],
@@ -226,14 +377,13 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			BINDING_MOUSECODE : BINDING_MOUSESYM;
 	}
 
-	if (argc < 2) {
+	if (argc < minargs) {
 		free_sway_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
 			"Invalid %s command "
-			"(expected at least 2 non-option arguments, got %d)", bindtype, argc);
+			"(expected at least %d non-option arguments, got %d)",
+			bindtype, minargs, argc);
 	}
-
-	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
@@ -265,7 +415,6 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		list_add(binding->keys, key);
 	}
 	list_free_items_and_destroy(split);
-	binding->order = binding_order++;
 
 	// refine region of interest for mouse binding once we are certain
 	// that this is one
@@ -279,6 +428,12 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	// sort ascending
 	list_qsort(binding->keys, key_qsort_cmp);
 
+	// translate keysyms into keycodes
+	if (!translate_binding(binding)) {
+		sway_log(SWAY_INFO,
+				"Unable to translate bindsym into bindcode: %s", argv[0]);
+	}
+
 	list_t *mode_bindings;
 	if (binding->type == BINDING_KEYCODE) {
 		mode_bindings = config->current_mode->keycode_bindings;
@@ -288,41 +443,116 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		mode_bindings = config->current_mode->mouse_bindings;
 	}
 
-	// overwrite the binding if it already exists
-	bool overwritten = false;
-	for (int i = 0; i < mode_bindings->length; ++i) {
-		struct sway_binding *config_binding = mode_bindings->items[i];
-		if (binding_key_compare(binding, config_binding)) {
-			sway_log(SWAY_INFO, "Overwriting binding '%s' for device '%s' "
-					"from `%s` to `%s`", argv[0], binding->input,
-					binding->command, config_binding->command);
-			if (warn) {
-				config_add_swaynag_warning("Overwriting binding"
-					"'%s' for device '%s' to `%s` from `%s`",
-					argv[0], binding->input, binding->command,
-					config_binding->command);
-			}
-			free_sway_binding(config_binding);
-			mode_bindings->items[i] = binding;
-			overwritten = true;
+	if (unbind) {
+		return binding_remove(binding, mode_bindings, bindtype, argv[0]);
+	}
+
+	binding->command = join_args(argv + 1, argc - 1);
+	binding->order = binding_order++;
+	return binding_add(binding, mode_bindings, bindtype, argv[0], warn);
+}
+
+struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
+		bool unbind) {
+	int minargs = 2;
+	char *bindtype = "bindswitch";
+	if (unbind) {
+		minargs--;
+		bindtype = "unbindswitch";
+	}
+
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, minargs))) {
+		return error;
+	}
+	struct sway_switch_binding *binding = calloc(1, sizeof(struct sway_switch_binding));
+	if (!binding) {
+		return cmd_results_new(CMD_FAILURE, "Unable to allocate binding");
+	}
+
+	bool warn = true;
+
+	// Handle flags
+	while (argc > 0) {
+		if (strcmp("--locked", argv[0]) == 0) {
+			binding->flags |= BINDING_LOCKED;
+		} else if (strcmp("--no-warn", argv[0]) == 0) {
+			warn = false;
+		} else {
+			break;
 		}
+		argv++;
+		argc--;
 	}
 
-	if (!overwritten) {
-		list_add(mode_bindings, binding);
+	if (argc < minargs) {
+		free(binding);
+		return cmd_results_new(CMD_FAILURE,
+				"Invalid %s command (expected at least %d "
+				"non-option arguments, got %d)", bindtype, minargs, argc);
 	}
 
-	sway_log(SWAY_DEBUG, "%s - Bound %s to command `%s` for device '%s'",
-		bindtype, argv[0], binding->command, binding->input);
-	return cmd_results_new(CMD_SUCCESS, NULL);
+	list_t *split = split_string(argv[0], ":");
+	if (split->length != 2) {
+		free_switch_binding(binding);
+		return cmd_results_new(CMD_FAILURE,
+				"Invalid %s command (expected binding with the form "
+				"<switch>:<state>)", bindtype, argc);
+	}
+	if (strcmp(split->items[0], "tablet") == 0) {
+		binding->type = WLR_SWITCH_TYPE_TABLET_MODE;
+	} else if (strcmp(split->items[0], "lid") == 0) {
+		binding->type = WLR_SWITCH_TYPE_LID;
+	} else {
+		free_switch_binding(binding);
+		return cmd_results_new(CMD_FAILURE,
+				"Invalid %s command (expected switch binding: "
+				"unknown switch %s)", bindtype, split->items[0]);
+	}
+	if (strcmp(split->items[1], "on") == 0) {
+		binding->state = WLR_SWITCH_STATE_ON;
+	} else if (strcmp(split->items[1], "off") == 0) {
+		binding->state = WLR_SWITCH_STATE_OFF;
+	} else if (strcmp(split->items[1], "toggle") == 0) {
+		binding->state = WLR_SWITCH_STATE_TOGGLE;
+	} else {
+		free_switch_binding(binding);
+		return cmd_results_new(CMD_FAILURE,
+				"Invalid %s command "
+				"(expected switch state: unknown state %d)",
+				bindtype, split->items[0]);
+	}
+	list_free_items_and_destroy(split);
+
+	if (unbind) {
+		return switch_binding_remove(binding, bindtype, argv[0]);
+	}
+	binding->command = join_args(argv + 1, argc - 1);
+	return switch_binding_add(binding, bindtype, argv[0], warn);
 }
 
 struct cmd_results *cmd_bindsym(int argc, char **argv) {
-	return cmd_bindsym_or_bindcode(argc, argv, false);
+	return cmd_bindsym_or_bindcode(argc, argv, false, false);
 }
 
 struct cmd_results *cmd_bindcode(int argc, char **argv) {
-	return cmd_bindsym_or_bindcode(argc, argv, true);
+	return cmd_bindsym_or_bindcode(argc, argv, true, false);
+}
+
+struct cmd_results *cmd_unbindsym(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, false, true);
+}
+
+struct cmd_results *cmd_unbindcode(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, true, true);
+}
+
+struct cmd_results *cmd_bindswitch(int argc, char **argv) {
+	return cmd_bind_or_unbind_switch(argc, argv, false);
+}
+
+struct cmd_results *cmd_unbindswitch(int argc, char **argv) {
+	return cmd_bind_or_unbind_switch(argc, argv, true);
 }
 
 /**
@@ -358,5 +588,117 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 	list_free(res_list);
 	if (success) {
 		ipc_event_binding(binding);
+	}
+}
+
+/**
+ * The last found keycode associated with the keysym
+ * and the total count of matches.
+ */
+struct keycode_matches {
+	xkb_keysym_t keysym;
+	xkb_keycode_t keycode;
+	int count;
+};
+
+/**
+ * Iterate through keycodes in the keymap to find ones matching
+ * the specified keysym.
+ */
+static void find_keycode(struct xkb_keymap *keymap,
+		xkb_keycode_t keycode, void *data) {
+	xkb_keysym_t keysym = xkb_state_key_get_one_sym(
+			config->keysym_translation_state, keycode);
+
+	if (keysym == XKB_KEY_NoSymbol) {
+		return;
+	}
+
+	struct keycode_matches *matches = data;
+	if (matches->keysym == keysym) {
+		matches->keycode = keycode;
+		matches->count++;
+	}
+}
+
+/**
+ * Return the keycode for the specified keysym.
+ */
+static struct keycode_matches get_keycode_for_keysym(xkb_keysym_t keysym) {
+	struct keycode_matches matches = {
+		.keysym = keysym,
+		.keycode = XKB_KEYCODE_INVALID,
+		.count = 0,
+	};
+
+	xkb_keymap_key_for_each(
+			xkb_state_get_keymap(config->keysym_translation_state),
+			find_keycode, &matches);
+	return matches;
+}
+
+bool translate_binding(struct sway_binding *binding) {
+	if ((binding->flags & BINDING_CODE) == 0) {
+		return true;
+	}
+
+	switch (binding->type) {
+	// a bindsym to translate
+	case BINDING_KEYSYM:
+		binding->syms = binding->keys;
+		binding->keys = create_list();
+		break;
+	// a bindsym to re-translate
+	case BINDING_KEYCODE:
+		list_free_items_and_destroy(binding->keys);
+		binding->keys = create_list();
+		break;
+	default:
+		return true;
+	}
+
+	for (int i = 0; i < binding->syms->length; ++i) {
+		xkb_keysym_t *keysym = binding->syms->items[i];
+		struct keycode_matches matches = get_keycode_for_keysym(*keysym);
+
+		if (matches.count != 1) {
+			sway_log(SWAY_INFO, "Unable to convert keysym %d into"
+					" a single keycode (found %d matches)",
+					*keysym, matches.count);
+			goto error;
+		}
+
+		xkb_keycode_t *keycode = malloc(sizeof(xkb_keycode_t));
+		if (!keycode) {
+			sway_log(SWAY_ERROR, "Unable to allocate memory for a keycode");
+			goto error;
+		}
+
+		*keycode = matches.keycode;
+		list_add(binding->keys, keycode);
+	}
+
+	list_qsort(binding->keys, key_qsort_cmp);
+	binding->type = BINDING_KEYCODE;
+	return true;
+
+error:
+	list_free_items_and_destroy(binding->keys);
+	binding->type = BINDING_KEYSYM;
+	binding->keys = binding->syms;
+	binding->syms = NULL;
+	return false;
+}
+
+void binding_add_translated(struct sway_binding *binding,
+		list_t *mode_bindings) {
+	struct sway_binding *config_binding =
+		binding_upsert(binding, mode_bindings);
+
+	if (config_binding) {
+		sway_log(SWAY_INFO, "Overwriting binding for device '%s' "
+				"to `%s` from `%s`", binding->input,
+				binding->command, config_binding->command);
+		free_sway_binding(config_binding);
 	}
 }

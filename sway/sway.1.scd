@@ -2,7 +2,7 @@ sway(1)
 
 # NAME
 
-sway - SirCmpwn's Wayland window manager
+sway - An i3-compatible Wayland compositor
 
 # SYNOPSIS
 
@@ -80,6 +80,27 @@ _XKB\_DEFAULT\_VARIANT_, _XKB\_DEFAULT\_OPTIONS_
 	preferred way to configure the keyboard is via the configuration file, see
 	*sway-input*(5).
 
+The following environment variables are set by sway:
+
+_DISPLAY_
+	If compiled with Xwayland support and Xwayland is not disabled by the
+	config, this will be set to the name of the X display used for Xwayland
+
+_I3SOCK_
+	For compatibility with i3, specifies the path to the sway IPC socket
+
+_SWAYSOCK_
+	Specifies the path to the sway IPC socket
+
+_WAYLAND_DISPLAY_
+	Specifies the name of the Wayland display that sway is running on
+
+_XCURSOR_SIZE_
+	Specifies the configured cursor size
+
+_XCURSOR_THEME_
+	Specifies the configured cursor theme
+
 # AUTHORS
 
 Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
@@ -89,3 +110,4 @@ source contributors. For more information about sway development, see
 # SEE ALSO
 
 *sway*(5) *swaymsg*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5)
+*sway-ipc*(7)

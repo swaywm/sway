@@ -5,7 +5,6 @@ lib_sway_client = static_library(
 	),
 	dependencies: [
 		cairo,
-		gdk_pixbuf,
 		pango,
 		pangocairo,
 		wayland_client

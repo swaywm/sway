@@ -61,7 +61,19 @@ void root_scratchpad_add_container(struct sway_container *con) {
 
 	struct sway_container *parent = con->parent;
 	struct sway_workspace *workspace = con->workspace;
-	container_set_floating(con, true);
+
+	// Clear the fullscreen mode when sending to the scratchpad
+	if (con->fullscreen_mode != FULLSCREEN_NONE) {
+		container_fullscreen_disable(con);
+	}
+
+	// When a tiled window is sent to scratchpad, center and resize it.
+	if (!container_is_floating(con)) {
+		container_set_floating(con, true);
+		container_floating_set_default_size(con);
+		container_floating_move_to_center(con);
+	}
+
 	container_detach(con);
 	con->scratchpad = true;
 	list_add(root->scratchpad, con);
@@ -96,6 +108,10 @@ void root_scratchpad_remove_container(struct sway_container *con) {
 void root_scratchpad_show(struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *new_ws = seat_get_focused_workspace(seat);
+	if (!new_ws) {
+		sway_log(SWAY_DEBUG, "No focused workspace to show scratchpad on");
+		return;
+	}
 	struct sway_workspace *old_ws = con->workspace;
 
 	// If the current con or any of its parents are in fullscreen mode, we
@@ -120,15 +136,7 @@ void root_scratchpad_show(struct sway_container *con) {
 	struct wlr_box workspace_box;
 	workspace_get_box(new_ws, &workspace_box);
 	if (!wlr_box_contains_point(&workspace_box, center_lx, center_ly)) {
-		// Maybe resize it
-		if (con->width > new_ws->width || con->height > new_ws->height) {
-			container_init_floating(con);
-		}
-
-		// Center it
-		double new_lx = new_ws->x + (new_ws->width - con->width) / 2;
-		double new_ly = new_ws->y + (new_ws->height - con->height) / 2;
-		container_floating_move_to(con, new_lx, new_ly);
+		container_floating_resize_and_center(con);
 	}
 
 	arrange_workspace(new_ws);
@@ -137,9 +145,18 @@ void root_scratchpad_show(struct sway_container *con) {
 
 void root_scratchpad_hide(struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_node *focus = seat_get_focus(seat);
+	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	struct sway_workspace *ws = con->workspace;
 
+	if (con->fullscreen_mode == FULLSCREEN_GLOBAL && !con->workspace) {
+		// If the container was made fullscreen global while in the scratchpad,
+		// it should be shown until fullscreen has been disabled
+		return;
+	}
+
+	if (con->fullscreen_mode != FULLSCREEN_NONE) {
+		container_fullscreen_disable(con);
+	}
 	container_detach(con);
 	arrange_workspace(ws);
 	if (&con->node == focus || node_has_ancestor(focus, &con->node)) {
@@ -385,4 +402,18 @@ void root_get_box(struct sway_root *root, struct wlr_box *box) {
 	box->y = root->y;
 	box->width = root->width;
 	box->height = root->height;
+}
+
+void root_rename_pid_workspaces(const char *old_name, const char *new_name) {
+	if (!pid_workspaces.prev && !pid_workspaces.next) {
+		wl_list_init(&pid_workspaces);
+	}
+
+	struct pid_workspace *pw = NULL;
+	wl_list_for_each(pw, &pid_workspaces, link) {
+		if (strcmp(pw->workspace, old_name) == 0) {
+			free(pw->workspace);
+			pw->workspace = strdup(new_name);
+		}
+	}
 }

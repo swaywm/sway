@@ -12,7 +12,9 @@
 // Must be in order for the bsearch
 static struct cmd_handler mode_handlers[] = {
 	{ "bindcode", cmd_bindcode },
-	{ "bindsym", cmd_bindsym }
+	{ "bindswitch", cmd_bindswitch },
+	{ "bindsym", cmd_bindsym },
+	{ "set", cmd_set },
 };
 
 struct cmd_results *cmd_mode(int argc, char **argv) {
@@ -54,6 +56,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		mode->keysym_bindings = create_list();
 		mode->keycode_bindings = create_list();
 		mode->mouse_bindings = create_list();
+		mode->switch_bindings = create_list();
 		mode->pango = pango;
 		list_add(config->modes, mode);
 	}

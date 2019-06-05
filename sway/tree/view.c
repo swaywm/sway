@@ -197,10 +197,13 @@ static bool gaps_to_edge(struct sway_view *view) {
 
 void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *con = view->container;
-	if (container_is_scratchpad_hidden(con)) {
+	struct sway_workspace *ws = con->workspace;
+
+	if (container_is_scratchpad_hidden(con) &&
+			con->fullscreen_mode != FULLSCREEN_GLOBAL) {
 		return;
 	}
-	struct sway_output *output = con->workspace->output;
+	struct sway_output *output = ws ? ws->output : NULL;
 
 	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		con->content_x = output->lx;
@@ -216,44 +219,46 @@ void view_autoconfigure(struct sway_view *view) {
 		return;
 	}
 
-	struct sway_workspace *ws = view->container->workspace;
-
-	bool smart = config->hide_edge_borders == E_SMART ||
-		config->hide_edge_borders == E_SMART_NO_GAPS;
-	bool other_views = smart && !view_is_only_visible(view);
-	bool no_gaps = config->hide_edge_borders != E_SMART_NO_GAPS
-		|| !gaps_to_edge(view);
-
 	con->border_top = con->border_bottom = true;
 	con->border_left = con->border_right = true;
-	if (config->hide_edge_borders == E_BOTH
-			|| config->hide_edge_borders == E_VERTICAL
-			|| (smart && !other_views && no_gaps)) {
-		con->border_left = con->x - con->current_gaps.left != ws->x;
-		int right_x = con->x + con->width + con->current_gaps.right;
-		con->border_right = right_x != ws->x + ws->width;
-	}
-	if (config->hide_edge_borders == E_BOTH
-			|| config->hide_edge_borders == E_HORIZONTAL
-			|| (smart && !other_views && no_gaps)) {
-		con->border_top = con->y - con->current_gaps.top != ws->y;
-		int bottom_y = con->y + con->height + con->current_gaps.bottom;
-		con->border_bottom = bottom_y != ws->y + ws->height;
-	}
-
 	double y_offset = 0;
 
-	// In a tabbed or stacked container, the container's y is the top of the
-	// title area. We have to offset the surface y by the height of the title,
-	// bar, and disable any top border because we'll always have the title bar.
-	enum sway_container_layout layout = container_parent_layout(con);
-	if (layout == L_TABBED && !container_is_floating(con)) {
-		y_offset = container_titlebar_height();
-		con->border_top = false;
-	} else if (layout == L_STACKED && !container_is_floating(con)) {
+	if (!container_is_floating(con) && ws) {
+
+		bool smart = config->hide_edge_borders == E_SMART ||
+			(config->hide_edge_borders == E_SMART_NO_GAPS &&
+			!gaps_to_edge(view));
+		bool hide_smart = smart && view_is_only_visible(view);
+
+		if (config->hide_edge_borders == E_BOTH
+				|| config->hide_edge_borders == E_VERTICAL || hide_smart) {
+			con->border_left = con->x - con->current_gaps.left != ws->x;
+			int right_x = con->x + con->width + con->current_gaps.right;
+			con->border_right = right_x != ws->x + ws->width;
+		}
+		if (config->hide_edge_borders == E_BOTH
+				|| config->hide_edge_borders == E_HORIZONTAL || hide_smart) {
+			con->border_top = con->y - con->current_gaps.top != ws->y;
+			int bottom_y = con->y + con->height + con->current_gaps.bottom;
+			con->border_bottom = bottom_y != ws->y + ws->height;
+		}
+
+		// In a tabbed or stacked container, the container's y is the top of the
+		// title area. We have to offset the surface y by the height of the title,
+		// bar, and disable any top border because we'll always have the title bar.
 		list_t *siblings = container_get_siblings(con);
-		y_offset = container_titlebar_height() * siblings->length;
-		con->border_top = false;
+		bool show_titlebar = (siblings && siblings->length > 1)
+			|| !config->hide_lone_tab;
+		if (show_titlebar) {
+			enum sway_container_layout layout = container_parent_layout(con);
+			if (layout == L_TABBED) {
+				y_offset = container_titlebar_height();
+				con->border_top = false;
+			} else if (layout == L_STACKED) {
+				y_offset = container_titlebar_height() * siblings->length;
+				con->border_top = false;
+			}
+		}
 	}
 
 	double x, y, width, height;
@@ -535,6 +540,10 @@ static bool should_focus(struct sway_view *view) {
 	struct sway_workspace *prev_ws = seat_get_focused_workspace(seat);
 	struct sway_workspace *map_ws = view->container->workspace;
 
+	if (view->container->fullscreen_mode == FULLSCREEN_GLOBAL) {
+		return true;
+	}
+
 	// Views can only take focus if they are mapped into the active workspace
 	if (prev_ws != map_ws) {
 		return false;
@@ -558,15 +567,28 @@ static bool should_focus(struct sway_view *view) {
 }
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
-			  bool fullscreen, bool decoration) {
+			  bool fullscreen, struct wlr_output *fullscreen_output,
+			  bool decoration) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
 	}
 	view->surface = wlr_surface;
 
+	// If there is a request to be opened fullscreen on a specific output, try
+	// to honor that request. Otherwise, fallback to assigns, pid mappings,
+	// focused workspace, etc
+	struct sway_workspace *ws = NULL;
+	if (fullscreen_output && fullscreen_output->data) {
+		struct sway_output *output = fullscreen_output->data;
+		ws = output_get_active_workspace(output);
+	}
+	if (!ws) {
+		ws = select_workspace(view);
+	}
+
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_workspace *ws = select_workspace(view);
-	struct sway_node *node = seat_get_focus_inactive(seat, &ws->node);
+	struct sway_node *node = ws ? seat_get_focus_inactive(seat, &ws->node)
+		: seat_get_focus_inactive(seat, &root->node);
 	struct sway_container *target_sibling = node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 
@@ -574,12 +596,13 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	// launch it as a tiled view in the root of the workspace instead.
 	if (target_sibling && container_is_floating(target_sibling)) {
 		target_sibling = NULL;
+		ws = seat_get_last_known_workspace(seat);
 	}
 
 	view->container = container_create(view);
 	if (target_sibling) {
 		container_add_sibling(target_sibling, view->container, 1);
-	} else {
+	} else if (ws) {
 		workspace_add_tiling(ws, view->container);
 	}
 	ipc_event_window(view->container, "new");
@@ -705,15 +728,23 @@ static void subsurface_get_root_coords(struct sway_view_child *child,
 	*root_sx = -child->view->geometry.x;
 	*root_sy = -child->view->geometry.y;
 
-	while (surface && wlr_surface_is_subsurface(surface)) {
-		struct wlr_subsurface *subsurface =
-			wlr_subsurface_from_wlr_surface(surface);
-		if (subsurface == NULL) {
-			break;
+	if (child->parent && child->parent->impl &&
+			child->parent->impl->get_root_coords) {
+		int sx, sy;
+		child->parent->impl->get_root_coords(child->parent, &sx, &sy);
+		*root_sx += sx;
+		*root_sy += sy;
+	} else {
+		while (surface && wlr_surface_is_subsurface(surface)) {
+			struct wlr_subsurface *subsurface =
+				wlr_subsurface_from_wlr_surface(surface);
+			if (subsurface == NULL) {
+				break;
+			}
+			*root_sx += subsurface->current.x;
+			*root_sy += subsurface->current.y;
+			surface = subsurface->parent;
 		}
-		*root_sx += subsurface->current.x;
-		*root_sy += subsurface->current.y;
-		surface = subsurface->parent;
 	}
 }
 
@@ -757,6 +788,28 @@ static void view_subsurface_create(struct sway_view *view,
 	subsurface->destroy.notify = subsurface_handle_destroy;
 
 	subsurface->child.mapped = true;
+
+	view_child_damage(&subsurface->child, true);
+}
+
+static void view_child_subsurface_create(struct sway_view_child *child,
+		struct wlr_subsurface *wlr_subsurface) {
+	struct sway_subsurface *subsurface =
+		calloc(1, sizeof(struct sway_subsurface));
+	if (subsurface == NULL) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		return;
+	}
+	subsurface->child.parent = child;
+	wl_list_insert(&child->children, &subsurface->child.link);
+	view_child_init(&subsurface->child, &subsurface_impl, child->view,
+		wlr_subsurface->surface);
+
+	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
+	subsurface->destroy.notify = subsurface_handle_destroy;
+
+	subsurface->child.mapped = true;
+
 	view_child_damage(&subsurface->child, true);
 }
 
@@ -783,7 +836,7 @@ static void view_child_handle_surface_new_subsurface(
 	struct sway_view_child *child =
 		wl_container_of(listener, child, surface_new_subsurface);
 	struct wlr_subsurface *subsurface = data;
-	view_subsurface_create(child->view, subsurface);
+	view_child_subsurface_create(child, subsurface);
 }
 
 static void view_child_handle_surface_destroy(struct wl_listener *listener,
@@ -817,12 +870,21 @@ static void view_child_handle_surface_unmap(struct wl_listener *listener,
 	child->mapped = false;
 }
 
+static void view_child_handle_view_unmap(struct wl_listener *listener,
+		void *data) {
+	struct sway_view_child *child =
+		wl_container_of(listener, child, view_unmap);
+	view_child_damage(child, true);
+	child->mapped = false;
+}
+
 void view_child_init(struct sway_view_child *child,
 		const struct sway_view_child_impl *impl, struct sway_view *view,
 		struct wlr_surface *surface) {
 	child->impl = impl;
 	child->view = view;
 	child->surface = surface;
+	wl_list_init(&child->children);
 
 	wl_signal_add(&surface->events.commit, &child->surface_commit);
 	child->surface_commit.notify = view_child_handle_surface_commit;
@@ -837,6 +899,9 @@ void view_child_init(struct sway_view_child *child,
 	child->surface_map.notify = view_child_handle_surface_map;
 	child->surface_unmap.notify = view_child_handle_surface_unmap;
 
+	wl_signal_add(&view->events.unmap, &child->view_unmap);
+	child->view_unmap.notify = view_child_handle_view_unmap;
+
 	struct sway_output *output = child->view->container->workspace->output;
 	wlr_surface_send_enter(child->surface, output->wlr_output);
 
@@ -848,8 +913,20 @@ void view_child_destroy(struct sway_view_child *child) {
 		view_child_damage(child, true);
 	}
 
+	if (child->parent != NULL) {
+		wl_list_remove(&child->link);
+		child->parent = NULL;
+	}
+
+	struct sway_view_child *subchild, *tmpchild;
+	wl_list_for_each_safe(subchild, tmpchild, &child->children, link) {
+		wl_list_remove(&subchild->link);
+		subchild->parent = NULL;
+	}
+
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);
+	wl_list_remove(&child->view_unmap.link);
 
 	if (child->impl && child->impl->destroy) {
 		child->impl->destroy(child);
@@ -1005,8 +1082,18 @@ bool view_is_visible(struct sway_view *view) {
 		return false;
 	}
 	struct sway_workspace *workspace = view->container->workspace;
-	if (!workspace) {
-		return false;
+	if (!workspace && view->container->fullscreen_mode != FULLSCREEN_GLOBAL) {
+		bool fs_global_descendant = false;
+		struct sway_container *parent = view->container->parent;
+		while (parent) {
+			if (parent->fullscreen_mode == FULLSCREEN_GLOBAL) {
+				fs_global_descendant = true;
+			}
+			parent = parent->parent;
+		}
+		if (!fs_global_descendant) {
+			return false;
+		}
 	}
 	// Determine if view is nested inside a floating container which is sticky
 	struct sway_container *floater = view->container;
@@ -1014,7 +1101,7 @@ bool view_is_visible(struct sway_view *view) {
 		floater = floater->parent;
 	}
 	bool is_sticky = container_is_floating(floater) && floater->is_sticky;
-	if (!is_sticky && !workspace_is_visible(workspace)) {
+	if (!is_sticky && workspace && !workspace_is_visible(workspace)) {
 		return false;
 	}
 	// Check view isn't in a tabbed or stacked container on an inactive tab

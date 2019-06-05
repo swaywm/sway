@@ -1,15 +1,15 @@
 #define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
+#include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <wordexp.h>
+#include <strings.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <signal.h>
-#include <strings.h>
-#include <signal.h>
+#include <unistd.h>
+#include <wordexp.h>
 #include "sway/config.h"
 #include "sway/input/keyboard.h"
 #include "sway/output.h"
@@ -17,17 +17,7 @@
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
-
-static void terminate_swaybar(pid_t pid) {
-	sway_log(SWAY_DEBUG, "Terminating swaybar %d", pid);
-	int ret = kill(-pid, SIGTERM);
-	if (ret != 0) {
-		sway_log_errno(SWAY_ERROR, "Unable to terminate swaybar %d", pid);
-	} else {
-		int status;
-		waitpid(pid, &status, 0);
-	}
-}
+#include "util.h"
 
 void free_bar_binding(struct bar_binding *binding) {
 	if (!binding) {
@@ -54,8 +44,8 @@ void free_bar_config(struct bar_config *bar) {
 	}
 	list_free(bar->bindings);
 	list_free_items_and_destroy(bar->outputs);
-	if (bar->pid != 0) {
-		terminate_swaybar(bar->pid);
+	if (bar->client != NULL) {
+		wl_client_destroy(bar->client);
 	}
 	free(bar->colors.background);
 	free(bar->colors.statusline);
@@ -110,7 +100,6 @@ struct bar_config *default_bar_config(void) {
 	bar->strip_workspace_name = false;
 	bar->binding_mode_indicator = true;
 	bar->verbose = false;
-	bar->pid = 0;
 	bar->modifier = get_modifier_mask_by_name("Mod4");
 	bar->status_padding = 1;
 	bar->status_edge_padding = 3;
@@ -190,63 +179,84 @@ cleanup:
 	return NULL;
 }
 
+static void handle_swaybar_client_destroy(struct wl_listener *listener,
+		void *data) {
+	struct bar_config *bar = wl_container_of(listener, bar, client_destroy);
+	wl_list_remove(&bar->client_destroy.link);
+	wl_list_init(&bar->client_destroy.link);
+	bar->client = NULL;
+}
+
 static void invoke_swaybar(struct bar_config *bar) {
-	// Pipe to communicate errors
-	int filedes[2];
-	if (pipe(filedes) == -1) {
-		sway_log(SWAY_ERROR, "Pipe setup failed! Cannot fork into bar");
+	int sockets[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
+		sway_log_errno(SWAY_ERROR, "socketpair failed");
+		return;
+	}
+	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
 		return;
 	}
 
-	bar->pid = fork();
-	if (bar->pid == 0) {
-		setpgid(0, 0);
-		close(filedes[0]);
+	bar->client = wl_client_create(server.wl_display, sockets[0]);
+	if (bar->client == NULL) {
+		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
+		return;
+	}
+
+	bar->client_destroy.notify = handle_swaybar_client_destroy;
+	wl_client_add_destroy_listener(bar->client, &bar->client_destroy);
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		sway_log(SWAY_ERROR, "Failed to create fork for swaybar");
+		return;
+	} else if (pid == 0) {
+		// Remove the SIGUSR1 handler that wlroots adds for xwayland
 		sigset_t set;
 		sigemptyset(&set);
 		sigprocmask(SIG_SETMASK, &set, NULL);
 
-		// run custom swaybar
-		size_t len = snprintf(NULL, 0, "%s -b %s",
-				bar->swaybar_command ? bar->swaybar_command : "swaybar",
-				bar->id);
-		char *command = malloc(len + 1);
-		if (!command) {
-			const char msg[] = "Unable to allocate swaybar command string";
-			size_t msg_len = sizeof(msg);
-			if (write(filedes[1], &msg_len, sizeof(size_t))) {};
-			if (write(filedes[1], msg, msg_len)) {};
-			close(filedes[1]);
-			exit(1);
+		pid = fork();
+		if (pid < 0) {
+			sway_log_errno(SWAY_ERROR, "fork failed");
+			_exit(EXIT_FAILURE);
+		} else if (pid == 0) {
+			if (!set_cloexec(sockets[1], false)) {
+				_exit(EXIT_FAILURE);
+			}
+
+			char wayland_socket_str[16];
+			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+					"%d", sockets[1]);
+			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+			// run custom swaybar
+			char *const cmd[] = {
+					bar->swaybar_command ? bar->swaybar_command : "swaybar",
+					"-b", bar->id, NULL};
+			execvp(cmd[0], cmd);
+			_exit(EXIT_FAILURE);
 		}
-		snprintf(command, len + 1, "%s -b %s",
-				bar->swaybar_command ? bar->swaybar_command : "swaybar",
-				bar->id);
-		char *const cmd[] = { "sh", "-c", command, NULL, };
-		close(filedes[1]);
-		execvp(cmd[0], cmd);
-		exit(1);
+		_exit(EXIT_SUCCESS);
 	}
-	sway_log(SWAY_DEBUG, "Spawned swaybar %d", bar->pid);
-	close(filedes[0]);
-	size_t len;
-	if (read(filedes[1], &len, sizeof(size_t)) == sizeof(size_t)) {
-		char *buf = malloc(len);
-		if(!buf) {
-			sway_log(SWAY_ERROR, "Cannot allocate error string");
-			return;
-		}
-		if (read(filedes[1], buf, len)) {
-			sway_log(SWAY_ERROR, "%s", buf);
-		}
-		free(buf);
+
+	if (close(sockets[1]) != 0) {
+		sway_log_errno(SWAY_ERROR, "close failed");
+		return;
 	}
-	close(filedes[1]);
+
+	if (waitpid(pid, NULL, 0) < 0) {
+		sway_log_errno(SWAY_ERROR, "waitpid failed");
+		return;
+	}
+
+	sway_log(SWAY_DEBUG, "Spawned swaybar %s", bar->id);
+	return;
 }
 
 void load_swaybar(struct bar_config *bar) {
-	if (bar->pid != 0) {
-		terminate_swaybar(bar->pid);
+	if (bar->client != NULL) {
+		wl_client_destroy(bar->client);
 	}
 	sway_log(SWAY_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
 	invoke_swaybar(bar);

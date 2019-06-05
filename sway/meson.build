@@ -2,7 +2,6 @@ sway_sources = files(
 	'commands.c',
 	'config.c',
 	'criteria.c',
-	'debug-tree.c',
 	'decoration.c',
 	'ipc-json.c',
 	'ipc-server.c',
@@ -23,6 +22,7 @@ sway_sources = files(
 
 	'input/input-manager.c',
 	'input/seat.c',
+	'input/seatop_default.c',
 	'input/seatop_down.c',
 	'input/seatop_move_floating.c',
 	'input/seatop_move_tiling.c',
@@ -30,6 +30,7 @@ sway_sources = files(
 	'input/seatop_resize_tiling.c',
 	'input/cursor.c',
 	'input/keyboard.c',
+	'input/switch.c',
 
 	'config/bar.c',
 	'config/output.c',
@@ -62,6 +63,7 @@ sway_sources = files(
 	'commands/fullscreen.c',
 	'commands/gaps.c',
 	'commands/hide_edge_borders.c',
+	'commands/inhibit_idle.c',
 	'commands/kill.c',
 	'commands/mark.c',
 	'commands/opacity.c',
@@ -71,6 +73,8 @@ sway_sources = files(
 	'commands/mode.c',
 	'commands/mouse_warping.c',
 	'commands/move.c',
+	'commands/new_float.c',
+	'commands/new_window.c',
 	'commands/no_focus.c',
 	'commands/nop.c',
 	'commands/output.c',
@@ -168,6 +172,8 @@ sway_sources = files(
 	'commands/output/mode.c',
 	'commands/output/position.c',
 	'commands/output/scale.c',
+	'commands/output/subpixel.c',
+	'commands/output/toggle.c',
 	'commands/output/transform.c',
 
 	'tree/arrange.c',
@@ -181,7 +187,6 @@ sway_sources = files(
 
 sway_deps = [
 	cairo,
-	gdk_pixbuf,
 	jsonc,
 	libevdev,
 	libinput,

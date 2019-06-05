@@ -5,7 +5,6 @@
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
 #include "sway/config.h"
-#include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
@@ -350,7 +349,7 @@ static void transaction_progress_queue(void) {
 	list_del(server.transactions, 0);
 
 	if (!server.transactions->length) {
-		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
+		sway_idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 		return;
 	}
 
@@ -428,9 +427,10 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			// means we can send a frame done event to make the client redraw it
 			// as soon as possible. Additionally, this is required if a view is
 			// mapping and its default geometry doesn't intersect an output.
-			struct timespec when;
+			struct timespec now;
+			clock_gettime(CLOCK_MONOTONIC, &now);
 			wlr_surface_send_frame_done(
-					node->sway_container->view->surface, &when);
+					node->sway_container->view->surface, &now);
 		}
 		if (node_is_view(node) && !node->sway_container->view->saved_buffer) {
 			view_save_buffer(node->sway_container->view);
@@ -465,11 +465,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			transaction->num_waiting = 0;
 		}
 	}
-
-	// The debug tree shows the pending/live tree. Here is a good place to
-	// update it, because we make a transaction every time we change the pending
-	// tree.
-	update_debug_tree();
 }
 
 static void set_instruction_ready(

@@ -1,20 +1,12 @@
 # sway
 
-**Sway** це сумісний з i3 композитор [Wayland](http://wayland.freedesktop.org/)
-(**у стані розробки**).  Ознайомтесь з
-[ЧаПами](https://github.com/swaywm/sway/wiki).  Приєднуйтесь до [спільноти в
+Sway це сумісний з [i3](https://i3wm.org/) композитор [Wayland](http://wayland.freedesktop.org/).
+Ознайомтесь з [ЧаПами](https://github.com/swaywm/sway/wiki). Приєднуйтесь до [спільноти в
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
-Якщо ви хочете підтримати розробку Sway, ви можете зробити свій внесок у
-[SirCmpwn'ову сторінку Patreon](https://patreon.com/sircmpwn) або до
-[фонду винагород](https://github.com/swaywm/sway/issues/986) за реалізацію
-певного функціоналу.
-Кожен може виставити винагороду за реалізацію довільної функції
-(і, відповідно, забрати її собі, виконавши це завдання);
-кошти від сторінки Patreon підтримують загальну розробку та підтримку Sway.
+Якщо ви маєте бажання підтримати розробку sway, ви можете зробити свій внесок на сторінці
+[SirCmpwn у Patreon](https://patreon.com/sircmpwn).
 
 ## Підтримка українською мовою
 
@@ -39,28 +31,26 @@ Sway доступний у багатьох дистрибутивах Linux (а
 для інформації щодо встановлення на вашому дистрибутиві.
 
 Якщо ви готові та зацікавлені запакувати і підтримувати Sway у вашому
-дистрибутиві, будемо раді вас бачити у нашому каналі IRC. Ви також можете
-спитати порад за адресою sir@cmpwn.com.
+дистрибутиві, звертайтесь за порадами до нашого каналу в IRC або
+пишіть на електронну пошту [sir@cmpwn.com](mailto:sir@cmpwn.com).
 
 ### З вихідного коду
 
 Встановіть залежності:
 
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
+* meson \*
+* [wlroots](https://github.com/swaywm/wlroots)
 * wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
+* wayland-protocols \*
 * pcre
-* json-c >= 0.13
+* json-c
 * pango
 * cairo
-* gdk-pixbuf2 *
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
-* git
+* gdk-pixbuf2 (optional: system tray)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (необов'язково, необхідно для сторінок man) \*
+* git \*
 
-_\*Лише для swaybar, swaybg_
+_\*Лише для компіляції_
 
 Виконайте ці команди:
 
@@ -68,14 +58,11 @@ _\*Лише для swaybar, swaybg_
     ninja -C build
     sudo ninja -C build install
 
-На системах **з** logind, варто встановити декілька можливостей (caps)
-на виконуваний файл sway:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
-
-На системах **без** logind, необхідно встановити біт SUID на виконуваний файл sway:
+На системах без logind, необхідно встановити біт SUID на виконуваний файл sway:
 
     sudo chmod a+s /usr/local/bin/sway
+
+Sway втратить права доступу root незабаром після запуску.
 
 ## Налаштування
 

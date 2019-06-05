@@ -62,4 +62,6 @@ struct input_config *input_device_get_config(struct sway_input_device *device);
 
 char *input_device_get_identifier(struct wlr_input_device *device);
 
+const char *input_device_get_type(struct sway_input_device *device);
+
 #endif

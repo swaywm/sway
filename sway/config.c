@@ -33,6 +33,24 @@
 
 struct sway_config *config = NULL;
 
+static struct xkb_state *keysym_translation_state_create(
+		struct xkb_rule_names rules) {
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_names(
+		context,
+		&rules,
+		XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+	xkb_context_unref(context);
+	return xkb_state_new(xkb_keymap);
+}
+
+static void keysym_translation_state_destroy(
+		struct xkb_state *state) {
+	xkb_keymap_unref(xkb_state_get_keymap(state));
+	xkb_state_unref(state);
+}
+
 static void free_mode(struct sway_mode *mode) {
 	if (!mode) {
 		return;
@@ -55,6 +73,12 @@ static void free_mode(struct sway_mode *mode) {
 			free_sway_binding(mode->mouse_bindings->items[i]);
 		}
 		list_free(mode->mouse_bindings);
+	}
+	if (mode->switch_bindings) {
+		for (int i = 0; i < mode->switch_bindings->length; i++) {
+			free_switch_binding(mode->switch_bindings->items[i]);
+		}
+		list_free(mode->switch_bindings);
 	}
 	free(mode);
 }
@@ -98,11 +122,20 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->output_configs);
 	}
+	if (config->swaybg_client != NULL) {
+		wl_client_destroy(config->swaybg_client);
+	}
 	if (config->input_configs) {
 		for (int i = 0; i < config->input_configs->length; i++) {
 			free_input_config(config->input_configs->items[i]);
 		}
 		list_free(config->input_configs);
+	}
+	if (config->input_type_configs) {
+		for (int i = 0; i < config->input_type_configs->length; i++) {
+			free_input_config(config->input_type_configs->items[i]);
+		}
+		list_free(config->input_type_configs);
 	}
 	if (config->seat_configs) {
 		for (int i = 0; i < config->seat_configs->length; i++) {
@@ -131,6 +164,7 @@ void free_config(struct sway_config *config) {
 	free(config->swaynag_command);
 	free((char *)config->current_config_path);
 	free((char *)config->current_config);
+	keysym_translation_state_destroy(config->keysym_translation_state);
 	free(config);
 }
 
@@ -166,15 +200,13 @@ static void set_color(float dest[static 4], uint32_t color) {
 
 static void config_defaults(struct sway_config *config) {
 	if (!(config->swaynag_command = strdup("swaynag"))) goto cleanup;
-	config->swaynag_config_errors = (struct swaynag_instance){
-		.args = "--type error "
+	config->swaynag_config_errors = (struct swaynag_instance){0};
+	config->swaynag_config_errors.args = "--type error "
 			"--message 'There are errors in your config file' "
 			"--detailed-message "
-			"--button 'Exit sway' 'swaymsg exit' "
-			"--button 'Reload sway' 'swaymsg reload'",
-		.pid = -1,
-		.detailed = true,
-	};
+			"--button-no-terminal 'Exit sway' 'swaymsg exit' "
+			"--button-no-terminal 'Reload sway' 'swaymsg reload'";
+	config->swaynag_config_errors.detailed = true;
 
 	if (!(config->symbols = create_list())) goto cleanup;
 	if (!(config->modes = create_list())) goto cleanup;
@@ -182,9 +214,11 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->workspace_configs = create_list())) goto cleanup;
 	if (!(config->criteria = create_list())) goto cleanup;
 	if (!(config->no_focus = create_list())) goto cleanup;
-	if (!(config->input_configs = create_list())) goto cleanup;
 	if (!(config->seat_configs = create_list())) goto cleanup;
 	if (!(config->output_configs = create_list())) goto cleanup;
+
+	if (!(config->input_type_configs = create_list())) goto cleanup;
+	if (!(config->input_configs = create_list())) goto cleanup;
 
 	if (!(config->cmd_queue = create_list())) goto cleanup;
 
@@ -195,6 +229,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->current_mode->keysym_bindings = create_list())) goto cleanup;
 	if (!(config->current_mode->keycode_bindings = create_list())) goto cleanup;
 	if (!(config->current_mode->mouse_bindings = create_list())) goto cleanup;
+	if (!(config->current_mode->switch_bindings = create_list())) goto cleanup;
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;
@@ -261,6 +296,7 @@ static void config_defaults(struct sway_config *config) {
 	config->floating_border_thickness = 2;
 	config->hide_edge_borders = E_NONE;
 	config->saved_edge_borders = E_NONE;
+	config->hide_lone_tab = false;
 
 	// border colors
 	set_color(config->border_colors.focused.border, 0x4C7899);
@@ -299,6 +335,11 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;
 	if (!(config->ipc_policies = create_list())) goto cleanup;
+
+	// The keysym to keycode translation
+	struct xkb_rule_names rules = {0};
+	config->keysym_translation_state =
+		keysym_translation_state_create(rules);
 
 	return;
 cleanup:
@@ -400,10 +441,13 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		config->reloading = true;
 		config->active = true;
 
-		swaynag_kill(&old_config->swaynag_config_errors);
-		memcpy(&config->swaynag_config_errors,
-				&old_config->swaynag_config_errors,
-				sizeof(struct swaynag_instance));
+		if (old_config->swaybg_client != NULL) {
+			wl_client_destroy(old_config->swaybg_client);
+		}
+
+		if (old_config->swaynag_config_errors.client != NULL) {
+			wl_client_destroy(old_config->swaynag_config_errors.client);
+		}
 
 		input_manager_reset_all_inputs();
 	}
@@ -472,9 +516,10 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 	if (is_active) {
 		reset_outputs();
+		spawn_swaybg();
 
 		config->reloading = false;
-		if (config->swaynag_config_errors.pid > 0) {
+		if (config->swaynag_config_errors.client != NULL) {
 			swaynag_show(&config->swaynag_config_errors);
 		}
 
@@ -549,43 +594,34 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	return true;
 }
 
-bool load_include_configs(const char *path, struct sway_config *config,
+void load_include_configs(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag) {
 	char *wd = getcwd(NULL, 0);
 	char *parent_path = strdup(config->current_config_path);
 	const char *parent_dir = dirname(parent_path);
 
 	if (chdir(parent_dir) < 0) {
-		free(parent_path);
-		free(wd);
-		return false;
+		sway_log(SWAY_ERROR, "failed to change working directory");
+		goto cleanup;
 	}
 
 	wordexp_t p;
-
-	if (wordexp(path, &p, 0) != 0) {
-		free(parent_path);
-		free(wd);
-		return false;
+	if (wordexp(path, &p, 0) == 0) {
+		char **w = p.we_wordv;
+		size_t i;
+		for (i = 0; i < p.we_wordc; ++i) {
+			load_include_config(w[i], parent_dir, config, swaynag);
+		}
+		wordfree(&p);
 	}
 
-	char **w = p.we_wordv;
-	size_t i;
-	for (i = 0; i < p.we_wordc; ++i) {
-		load_include_config(w[i], parent_dir, config, swaynag);
-	}
-	free(parent_path);
-	wordfree(&p);
-
-	// restore wd
+	// Attempt to restore working directory before returning.
 	if (chdir(wd) < 0) {
-		free(wd);
-		sway_log(SWAY_ERROR, "failed to restore working directory");
-		return false;
+		sway_log(SWAY_ERROR, "failed to change working directory");
 	}
-
+cleanup:
+	free(parent_path);
 	free(wd);
-	return true;
 }
 
 void run_deferred_commands(void) {
@@ -928,4 +964,54 @@ void config_update_font_height(bool recalculate) {
 	if (config->font_height != prev_max_height) {
 		arrange_root();
 	}
+}
+
+static void translate_binding_list(list_t *bindings, list_t *bindsyms,
+		list_t *bindcodes) {
+	for (int i = 0; i < bindings->length; ++i) {
+		struct sway_binding *binding = bindings->items[i];
+		translate_binding(binding);
+
+		switch (binding->type) {
+		case BINDING_KEYSYM:
+			binding_add_translated(binding, bindsyms);
+			break;
+		case BINDING_KEYCODE:
+			binding_add_translated(binding, bindcodes);
+			break;
+		default:
+			sway_assert(false, "unexpected translated binding type: %d",
+					binding->type);
+			break;
+		}
+
+	}
+}
+
+void translate_keysyms(struct input_config *input_config) {
+	keysym_translation_state_destroy(config->keysym_translation_state);
+
+	struct xkb_rule_names rules = {0};
+	input_config_fill_rule_names(input_config, &rules);
+	config->keysym_translation_state =
+		keysym_translation_state_create(rules);
+
+	for (int i = 0; i < config->modes->length; ++i) {
+		struct sway_mode *mode = config->modes->items[i];
+
+		list_t *bindsyms = create_list();
+		list_t *bindcodes = create_list();
+
+		translate_binding_list(mode->keysym_bindings, bindsyms, bindcodes);
+		translate_binding_list(mode->keycode_bindings, bindsyms, bindcodes);
+
+		list_free(mode->keysym_bindings);
+		list_free(mode->keycode_bindings);
+
+		mode->keysym_bindings = bindsyms;
+		mode->keycode_bindings = bindcodes;
+	}
+
+	sway_log(SWAY_DEBUG, "Translated keysyms using config for device '%s'",
+			input_config->identifier);
 }
