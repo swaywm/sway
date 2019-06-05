@@ -227,28 +227,31 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 
 	head = exec;
 	do {
-		// Extract criteria (valid for this command list only).
-		config->handler_context.using_criteria = false;
-		if (*head == '[') {
-			char *error = NULL;
-			struct criteria *criteria = criteria_parse(head, &error);
-			if (!criteria) {
-				list_add(res_list, cmd_results_new(CMD_INVALID,	"%s", error));
-				free(error);
-				goto cleanup;
-			}
-			views = criteria_get_views(criteria);
-			head += strlen(criteria->raw);
-			criteria_destroy(criteria);
-			config->handler_context.using_criteria = true;
-			// Skip leading whitespace
-			for (; isspace(*head); ++head) {}
-		}
 		// Split command list
 		cmdlist = argsep(&head, ";");
-		for (; isspace(*cmdlist); ++cmdlist) {}
 		do {
-			// Split commands
+			// Skip leading whitespace
+			for (; isspace(*cmdlist); ++cmdlist) {}
+			// Extract criteria (valid for this command chain only).
+			config->handler_context.using_criteria = false;
+			if (*cmdlist == '[') {
+				char *error = NULL;
+				struct criteria *criteria = criteria_parse(cmdlist, &error);
+				if (!criteria) {
+					list_add(res_list,
+							cmd_results_new(CMD_INVALID, "%s", error));
+					free(error);
+					goto cleanup;
+				}
+				list_free(views);
+				views = criteria_get_views(criteria);
+				cmdlist += strlen(criteria->raw);
+				criteria_destroy(criteria);
+				config->handler_context.using_criteria = true;
+				// Skip leading whitespace
+				for (; isspace(*cmdlist); ++cmdlist) {}
+			}
+			// Split command chain into commands
 			cmd = argsep(&cmdlist, ",");
 			for (; isspace(*cmd); ++cmd) {}
 			if (strcmp(cmd, "") == 0) {
