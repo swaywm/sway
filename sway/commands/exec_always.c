@@ -61,6 +61,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		close(fd[0]);
 		if ((child = fork()) == 0) {
 			close(fd[1]);
+			close(STDIN_FILENO);
 			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
 			_exit(0);
 		}
