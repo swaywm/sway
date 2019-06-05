@@ -132,10 +132,11 @@ static void update_cursor(struct swaynag *swaynag) {
 	const char *cursor_theme = getenv("XCURSOR_THEME");
 	unsigned cursor_size = 24;
 	const char *env_cursor_size = getenv("XCURSOR_SIZE");
-	if (env_cursor_size) {
+	if (env_cursor_size && strlen(env_cursor_size) > 0) {
+		errno = 0;
 		char *end;
 		unsigned size = strtoul(env_cursor_size, &end, 10);
-		if (!*end) {
+		if (!*end && errno == 0) {
 			cursor_size = size;
 		}
 	}
