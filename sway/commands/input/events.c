@@ -101,7 +101,7 @@ static void toggle_wildcard_send_events(int argc, char **argv) {
 		} else {
 			toggle_supported_send_events_for_device(ic, input_device);
 		}
-		store_input_config(ic);
+		store_input_config(ic, NULL);
 	}
 }
 

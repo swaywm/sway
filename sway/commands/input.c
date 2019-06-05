@@ -88,9 +88,10 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 
 	if (!res || res->status == CMD_SUCCESS) {
 		char *error = NULL;
-		struct xkb_keymap *keymap = sway_keyboard_compile_keymap(
-				config->handler_context.input_config, &error);
-		if (!keymap) {
+		struct input_config *ic =
+			store_input_config(config->handler_context.input_config, &error);
+		if (!ic) {
+			free_input_config(config->handler_context.input_config);
 			if (res) {
 				free_cmd_results(res);
 			}
@@ -99,10 +100,6 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			free(error);
 			return res;
 		}
-		xkb_keymap_unref(keymap);
-
-		struct input_config *ic =
-			store_input_config(config->handler_context.input_config);
 
 		input_manager_apply_input_config(ic);
 		retranslate_keysyms(ic);

@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <float.h>
 #include "sway/config.h"
+#include "sway/input/keyboard.h"
 #include "log.h"
 
 struct input_config *new_input_config(const char* identifier) {
@@ -133,6 +134,49 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 }
 
+static bool validate_xkb_merge(struct input_config *dest,
+		struct input_config *src, char **xkb_error) {
+	struct input_config *temp = new_input_config("temp");
+	if (dest) {
+		merge_input_config(temp, dest);
+	}
+	merge_input_config(temp, src);
+
+	struct xkb_keymap *keymap = sway_keyboard_compile_keymap(temp, xkb_error);
+	free_input_config(temp);
+	if (!keymap) {
+		return false;
+	}
+
+	xkb_keymap_unref(keymap);
+	return true;
+}
+
+static bool validate_wildcard_on_all(struct input_config *wildcard,
+		char **error) {
+	for (int i = 0; i < config->input_configs->length; i++) {
+		struct input_config *ic = config->input_configs->items[i];
+		if (strcmp(wildcard->identifier, ic->identifier) != 0) {
+			sway_log(SWAY_DEBUG, "Validating xkb merge of * on %s",
+					ic->identifier);
+			if (!validate_xkb_merge(ic, wildcard, error)) {
+				return false;
+			}
+		}
+	}
+
+	for (int i = 0; i < config->input_type_configs->length; i++) {
+		struct input_config *ic = config->input_type_configs->items[i];
+		sway_log(SWAY_DEBUG, "Validating xkb merge of * config on %s",
+				ic->identifier);
+		if (!validate_xkb_merge(ic, wildcard, error)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static void merge_wildcard_on_all(struct input_config *wildcard) {
 	for (int i = 0; i < config->input_configs->length; i++) {
 		struct input_config *ic = config->input_configs->items[i];
@@ -144,11 +188,28 @@ static void merge_wildcard_on_all(struct input_config *wildcard) {
 
 	for (int i = 0; i < config->input_type_configs->length; i++) {
 		struct input_config *ic = config->input_type_configs->items[i];
-		if (strcmp(wildcard->identifier, ic->identifier) != 0) {
-			sway_log(SWAY_DEBUG, "Merging input * config on %s", ic->identifier);
-			merge_input_config(ic, wildcard);
+		sway_log(SWAY_DEBUG, "Merging input * config on %s", ic->identifier);
+		merge_input_config(ic, wildcard);
+	}
+}
+
+static bool validate_type_on_existing(struct input_config *type_wildcard,
+		char **error) {
+	for (int i = 0; i < config->input_configs->length; i++) {
+		struct input_config *ic = config->input_configs->items[i];
+		if (ic->input_type == NULL) {
+			continue;
+		}
+
+		if (strcmp(ic->input_type, type_wildcard->identifier + 5) == 0) {
+			sway_log(SWAY_DEBUG, "Validating merge of %s on %s",
+				type_wildcard->identifier, ic->identifier);
+			if (!validate_xkb_merge(ic, type_wildcard, error)) {
+				return false;
+			}
 		}
 	}
+	return true;
 }
 
 static void merge_type_on_existing(struct input_config *type_wildcard) {
@@ -167,44 +228,59 @@ static void merge_type_on_existing(struct input_config *type_wildcard) {
 	}
 }
 
-struct input_config *store_input_config(struct input_config *ic) {
+struct input_config *store_input_config(struct input_config *ic,
+		char **error) {
 	bool wildcard = strcmp(ic->identifier, "*") == 0;
+	if (wildcard && error && !validate_wildcard_on_all(ic, error)) {
+		return NULL;
+	}
+
+	bool type = strncmp(ic->identifier, "type:", strlen("type:")) == 0;
+	if (type && error && !validate_type_on_existing(ic, error)) {
+		return NULL;
+	}
+
+	list_t *config_list = type ? config->input_type_configs
+		: config->input_configs;
+
+	struct input_config *current = NULL;
+	bool new_current = false;
+
+	int i = list_seq_find(config_list, input_identifier_cmp, ic->identifier);
+	if (i >= 0) {
+		current = config_list->items[i];
+	}
+
+	i = list_seq_find(config->input_configs, input_identifier_cmp, "*");
+	if (!current && i >= 0) {
+		current = new_input_config(ic->identifier);
+		merge_input_config(current, config->input_configs->items[i]);
+		new_current = true;
+	}
+
+	if (error && !validate_xkb_merge(current, ic, error)) {
+		if (new_current) {
+			free_input_config(current);
+		}
+		return NULL;
+	}
+
 	if (wildcard) {
 		merge_wildcard_on_all(ic);
 	}
 
-	list_t *config_list = NULL;
-	if (strncmp(ic->identifier, "type:", 5) == 0) {
-		config_list = config->input_type_configs;
+	if (type) {
 		merge_type_on_existing(ic);
-	} else {
-		config_list = config->input_configs;
 	}
 
-	int i = list_seq_find(config_list, input_identifier_cmp,
-			ic->identifier);
-	if (i >= 0) {
-		sway_log(SWAY_DEBUG, "Merging on top of existing input config");
-		struct input_config *current = config_list->items[i];
+	if (current) {
 		merge_input_config(current, ic);
 		free_input_config(ic);
 		ic = current;
-	} else if (!wildcard) {
-		sway_log(SWAY_DEBUG, "Adding non-wildcard input config");
-		i = list_seq_find(config->input_configs, input_identifier_cmp, "*");
-		if (i >= 0) {
-			sway_log(SWAY_DEBUG, "Merging on top of input * config");
-			struct input_config *current = new_input_config(ic->identifier);
-			merge_input_config(current, config->input_configs->items[i]);
-			merge_input_config(current, ic);
-			free_input_config(ic);
-			ic = current;
-		}
+	}
+
+	if (!current || new_current) {
 		list_add(config_list, ic);
-	} else {
-		// New wildcard config. Just add it
-		sway_log(SWAY_DEBUG, "Adding input * config");
-		list_add(config->input_configs, ic);
 	}
 
 	sway_log(SWAY_DEBUG, "Config stored for input %s", ic->identifier);

@@ -581,7 +581,7 @@ struct input_config *new_input_config(const char* identifier);
 
 void merge_input_config(struct input_config *dst, struct input_config *src);
 
-struct input_config *store_input_config(struct input_config *ic);
+struct input_config *store_input_config(struct input_config *ic, char **error);
 
 void input_config_fill_rule_names(struct input_config *ic,
 		struct xkb_rule_names *rules);
