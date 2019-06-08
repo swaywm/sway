@@ -124,7 +124,9 @@ uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output, double *x) {
 	struct swaybar_tray *tray = output->bar->tray;
 	for (int i = 0; i < tray->items->length; ++i) {
 		uint32_t h = render_sni(cairo, output, x, tray->items->items[i]);
-		max_height = h > max_height ? h : max_height;
+		if (h > max_height) {
+			max_height = h;
+		}
 	}
 
 	return max_height;
