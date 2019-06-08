@@ -174,11 +174,15 @@ void cursor_rebase_all(void) {
 	}
 }
 
-static int hide_notify(void *data) {
-	struct sway_cursor *cursor = data;
+static void cursor_hide(struct sway_cursor *cursor) {
 	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	cursor->hidden = true;
 	wlr_seat_pointer_clear_focus(cursor->seat->wlr_seat);
+}
+
+static int hide_notify(void *data) {
+	struct sway_cursor *cursor = data;
+	cursor_hide(cursor);
 	return 1;
 }
 
@@ -358,7 +362,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	if (seat_is_input_allowed(seat, surface)) {
 		wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
 				event->touch_id, sx, sy);
-		cursor_set_image(cursor, NULL, NULL);
+		cursor_hide(cursor);
 	}
 }
 
