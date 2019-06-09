@@ -260,6 +260,7 @@ sway_cmd input_cmd_xkb_model;
 sway_cmd input_cmd_xkb_numlock;
 sway_cmd input_cmd_xkb_options;
 sway_cmd input_cmd_xkb_rules;
+sway_cmd input_cmd_xkb_switch_layout;
 sway_cmd input_cmd_xkb_variant;
 
 sway_cmd output_cmd_background;

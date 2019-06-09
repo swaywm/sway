@@ -164,6 +164,7 @@ sway_sources = files(
 	'commands/input/xkb_numlock.c',
 	'commands/input/xkb_options.c',
 	'commands/input/xkb_rules.c',
+	'commands/input/xkb_switch_layout.c',
 	'commands/input/xkb_variant.c',
 
 	'commands/output/background.c',
