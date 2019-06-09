@@ -31,6 +31,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "xkb_model", input_cmd_xkb_model },
 	{ "xkb_options", input_cmd_xkb_options },
 	{ "xkb_rules", input_cmd_xkb_rules },
+	{ "xkb_switch_layout", input_cmd_xkb_switch_layout },
 	{ "xkb_variant", input_cmd_xkb_variant },
 };
 
@@ -86,7 +87,8 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			input_handlers, sizeof(input_handlers));
 	}
 
-	if (!res || res->status == CMD_SUCCESS) {
+	if ((!res || res->status == CMD_SUCCESS) &&
+			strcmp(argv[1], "xkb_switch_layout") != 0) {
 		char *error = NULL;
 		struct input_config *ic =
 			store_input_config(config->handler_context.input_config, &error);
