@@ -57,6 +57,11 @@ For more information on these xkb configuration options, see
 *input* <identifier> xkb_rules <rules>
 	Sets files of rules to be used for keyboard mapping composition.
 
+*input* <identifier> xkb_switch_layout <index>
+	Changes the active keyboard layout index. This can be used when multiple
+	layouts are configured with `xkb_layout`. A list of layouts you can switch
+	between can be obtained with `swaymsg -t get_inputs`.
+
 *input* <identifier> xkb_variant <variant>
 	Sets the variant of the keyboard like _dvorak_ or _colemak_.
 
