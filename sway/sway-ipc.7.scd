@@ -1040,7 +1040,13 @@ following properties:
    _tablet\_tool_, _tablet\_pad_, or _switch_
 |- xkb_active_layout_name
 :  string
-:  (Only keyboards) The active keyboard layout in use
+:  (Only keyboards) The name of the active keyboard layout in use
+|- xkb_layout_names
+:  array
+:  (Only keyboards) A list a layout names configured for the keyboard
+|- xkb_active_layout_index
+:  integer
+:  (Only keyboards) The index of the active keyboard layout in use
 |- libinput
 :  object
 :  (Only libinput devices) An object describing the current device settings.
