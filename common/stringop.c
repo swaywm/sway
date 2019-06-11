@@ -251,37 +251,61 @@ char *join_args(char **argv, int argc) {
 	return res;
 }
 
-char *argsep(char **stringp, const char *delim) {
+static inline char *argsep_next_interesting(const char *src, const char *delim) {
+	char *special = strpbrk(src, "\"'\\");
+	char *next_delim = strpbrk(src, delim);
+	if (!special) {
+		return next_delim;
+	}
+	if (!next_delim) {
+		return special;
+	}
+	return (next_delim < special) ? next_delim : special;
+}
+
+char *argsep(char **stringp, const char *delim, char *matched) {
 	char *start = *stringp;
 	char *end = start;
 	bool in_string = false;
 	bool in_char = false;
 	bool escaped = false;
-	while (1) {
-		if (*end == '"' && !in_char && !escaped) {
-			in_string = !in_string;
-		} else if (*end == '\'' && !in_string && !escaped) {
-			in_char = !in_char;
-		} else if (*end == '\\') {
-			escaped = !escaped;
-		} else if (*end == '\0') {
-			*stringp = NULL;
-			break;
-		} else if (!in_string && !in_char && !escaped && strchr(delim, *end)) {
-			if (end - start) {
-				*(end++) = 0;
-				*stringp = end + strspn(end, delim);;
-				if (!**stringp) *stringp = NULL;
-				break;
-			} else {
-				++start;
-				end = start;
-			}
-		}
-		if (*end != '\\') {
+	char *interesting = NULL;
+
+	while ((interesting = argsep_next_interesting(end, delim))) {
+		if (escaped && interesting != end) {
 			escaped = false;
 		}
-		++end;
+		if (*interesting == '"' && !in_char && !escaped) {
+			in_string = !in_string;
+			end = interesting + 1;
+		} else if (*interesting == '\'' && !in_string && !escaped) {
+			in_char = !in_char;
+			end = interesting + 1;
+		} else if (*interesting == '\\') {
+			escaped = !escaped;
+			end = interesting + 1;
+		} else if (!in_string && !in_char && !escaped) {
+			// We must have matched a separator
+			end = interesting;
+			if (matched) {
+				*matched = *end;
+			}
+			if (end - start) {
+				*(end++) = 0;
+				*stringp = end;
+				break;
+			} else {
+				end = ++start;
+			}
+		} else {
+			end++;
+		}
+	}
+	if (!interesting) {
+		*stringp = NULL;
+		if (matched) {
+			*matched = '\0';
+		}
 	}
 	return start;
 }

@@ -24,6 +24,6 @@ int unescape_string(char *string);
 char *join_args(char **argv, int argc);
 
 // Split string into 2 by delim, handle quotes
-char *argsep(char **stringp, const char *delim);
+char *argsep(char **stringp, const char *delim, char *matched_delim);
 
 #endif
