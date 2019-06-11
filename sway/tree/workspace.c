@@ -212,9 +212,9 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 	char *name = NULL;
 
 	// workspace n
-	char *cmd = argsep(&cmdlist, " ");
+	char *cmd = argsep(&cmdlist, " ", NULL);
 	if (cmdlist) {
-		name = argsep(&cmdlist, ",;");
+		name = argsep(&cmdlist, ",;", NULL);
 	}
 
 	// TODO: support "move container to workspace" bindings as well

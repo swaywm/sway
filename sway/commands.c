@@ -211,8 +211,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 	list_t *res_list = create_list();
 	char *exec = strdup(_exec);
 	char *head = exec;
-	char *cmdlist;
 	char *cmd;
+	char matched_delim = ';';
 	list_t *views = NULL;
 
 	if (seat == NULL) {
@@ -227,16 +227,13 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 
 	head = exec;
 	do {
-		// Split command list
-		cmdlist = argsep(&head, ";");
-		do {
-			// Skip leading whitespace
-			for (; isspace(*cmdlist); ++cmdlist) {}
-			// Extract criteria (valid for this command chain only).
+		for (; isspace(*head); ++head) {}
+		// Extract criteria (valid for this command list only).
+		if (matched_delim == ';') {
 			config->handler_context.using_criteria = false;
-			if (*cmdlist == '[') {
+			if (*head == '[') {
 				char *error = NULL;
-				struct criteria *criteria = criteria_parse(cmdlist, &error);
+				struct criteria *criteria = criteria_parse(head, &error);
 				if (!criteria) {
 					list_add(res_list,
 							cmd_results_new(CMD_INVALID, "%s", error));
@@ -245,71 +242,71 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				}
 				list_free(views);
 				views = criteria_get_views(criteria);
-				cmdlist += strlen(criteria->raw);
+				head += strlen(criteria->raw);
 				criteria_destroy(criteria);
 				config->handler_context.using_criteria = true;
 				// Skip leading whitespace
-				for (; isspace(*cmdlist); ++cmdlist) {}
+				for (; isspace(*head); ++head) {}
 			}
-			// Split command chain into commands
-			cmd = argsep(&cmdlist, ",");
-			for (; isspace(*cmd); ++cmd) {}
-			if (strcmp(cmd, "") == 0) {
-				sway_log(SWAY_INFO, "Ignoring empty command.");
-				continue;
-			}
-			sway_log(SWAY_INFO, "Handling command '%s'", cmd);
-			//TODO better handling of argv
-			int argc;
-			char **argv = split_args(cmd, &argc);
-			if (strcmp(argv[0], "exec") != 0 &&
-					strcmp(argv[0], "exec_always") != 0 &&
-					strcmp(argv[0], "mode") != 0) {
-				int i;
-				for (i = 1; i < argc; ++i) {
-					if (*argv[i] == '\"' || *argv[i] == '\'') {
-						strip_quotes(argv[i]);
-					}
+		}
+		// Split command list
+		cmd = argsep(&head, ";,", &matched_delim);
+		for (; isspace(*cmd); ++cmd) {}
+
+		if (strcmp(cmd, "") == 0) {
+			sway_log(SWAY_INFO, "Ignoring empty command.");
+			continue;
+		}
+		sway_log(SWAY_INFO, "Handling command '%s'", cmd);
+		//TODO better handling of argv
+		int argc;
+		char **argv = split_args(cmd, &argc);
+		if (strcmp(argv[0], "exec") != 0 &&
+				strcmp(argv[0], "exec_always") != 0 &&
+				strcmp(argv[0], "mode") != 0) {
+			for (int i = 1; i < argc; ++i) {
+				if (*argv[i] == '\"' || *argv[i] == '\'') {
+					strip_quotes(argv[i]);
 				}
 			}
-			struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
-			if (!handler) {
-				list_add(res_list, cmd_results_new(CMD_INVALID,
-						"Unknown/invalid command '%s'", argv[0]));
+		}
+		struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
+		if (!handler) {
+			list_add(res_list, cmd_results_new(CMD_INVALID,
+					"Unknown/invalid command '%s'", argv[0]));
+			free_argv(argc, argv);
+			goto cleanup;
+		}
+
+		// Var replacement, for all but first argument of set
+		for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
+			argv[i] = do_var_replacement(argv[i]);
+		}
+
+		if (!config->handler_context.using_criteria) {
+			// The container or workspace which this command will run on.
+			struct sway_node *node = con ? &con->node :
+					seat_get_focus_inactive(seat, &root->node);
+			set_config_node(node);
+			struct cmd_results *res = handler->handle(argc-1, argv+1);
+			list_add(res_list, res);
+			if (res->status == CMD_INVALID) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-
-			// Var replacement, for all but first argument of set
-			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
-				argv[i] = do_var_replacement(argv[i]);
-			}
-
-			if (!config->handler_context.using_criteria) {
-				// The container or workspace which this command will run on.
-				struct sway_node *node = con ? &con->node :
-						seat_get_focus_inactive(seat, &root->node);
-				set_config_node(node);
+		} else {
+			for (int i = 0; i < views->length; ++i) {
+				struct sway_view *view = views->items[i];
+				set_config_node(&view->container->node);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				list_add(res_list, res);
 				if (res->status == CMD_INVALID) {
 					free_argv(argc, argv);
 					goto cleanup;
 				}
-			} else {
-				for (int i = 0; i < views->length; ++i) {
-					struct sway_view *view = views->items[i];
-					set_config_node(&view->container->node);
-					struct cmd_results *res = handler->handle(argc-1, argv+1);
-					list_add(res_list, res);
-					if (res->status == CMD_INVALID) {
-						free_argv(argc, argv);
-						goto cleanup;
-					}
-				}
 			}
-			free_argv(argc, argv);
-		} while(cmdlist);
+		}
+		free_argv(argc, argv);
 	} while(head);
 cleanup:
 	free(exec);
