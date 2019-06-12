@@ -559,8 +559,20 @@ struct cmd_results *cmd_unbindswitch(int argc, char **argv) {
  * Execute the command associated to a binding
  */
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) {
-	sway_log(SWAY_DEBUG, "running command for binding: %s", binding->command);
+	if (!config->active) {
+		sway_log(SWAY_DEBUG, "deferring command for binding: %s",
+				binding->command);
+		struct sway_binding *deferred = calloc(1, sizeof(struct sway_binding));
+		if (!deferred) {
+			sway_log(SWAY_ERROR, "Failed to allocate deferred binding");
+			return;
+		}
+		memcpy(deferred, binding, sizeof(struct sway_binding));
+		list_add(seat->deferred_bindings, deferred);
+		return;
+	}
 
+	sway_log(SWAY_DEBUG, "running command for binding: %s", binding->command);
 	struct sway_container *con = NULL;
 	if (binding->type == BINDING_MOUSESYM
 			|| binding->type == BINDING_MOUSECODE) {
