@@ -644,7 +644,23 @@ void run_deferred_commands(void) {
 		list_free(res_list);
 		free(line);
 	}
-	transaction_commit_dirty();
+}
+
+void run_deferred_bindings(void) {
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &(server.input->seats), link) {
+		if (!seat->deferred_bindings->length) {
+			continue;
+		}
+		sway_log(SWAY_DEBUG, "Running deferred bindings for seat %s",
+				seat->wlr_seat->name);
+		while (seat->deferred_bindings->length) {
+			struct sway_binding *binding = seat->deferred_bindings->items[0];
+			seat_execute_command(seat, binding);
+			list_del(seat->deferred_bindings, 0);
+			free_sway_binding(binding);
+		}
+	}
 }
 
 // get line, with backslash continuation

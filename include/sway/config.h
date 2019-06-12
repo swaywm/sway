@@ -559,6 +559,11 @@ bool read_config(FILE *file, struct sway_config *config,
 void run_deferred_commands(void);
 
 /**
+ * Run the binding commands that were deferred when initializing the inputs
+ */
+void run_deferred_bindings(void);
+
+/**
  * Adds a warning entry to the swaynag instance used for errors.
  */
 void config_add_swaynag_warning(char *fmt, ...);

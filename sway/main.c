@@ -16,6 +16,7 @@
 #include "sway/config.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
+#include "sway/desktop/transaction.h"
 #include "sway/tree/root.h"
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
@@ -389,6 +390,8 @@ int main(int argc, char **argv) {
 	config->active = true;
 	load_swaybars();
 	run_deferred_commands();
+	run_deferred_bindings();
+	transaction_commit_dirty();
 
 	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);

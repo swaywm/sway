@@ -78,6 +78,8 @@ struct sway_seat {
 
 	uint32_t last_button_serial;
 
+	list_t *deferred_bindings; // struct sway_binding
+
 	struct wl_listener focus_destroy;
 	struct wl_listener new_node;
 	struct wl_listener request_start_drag;
