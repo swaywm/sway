@@ -163,12 +163,12 @@ void output_view_for_each_surface(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
-		.ox = view->container->current.content_x - output->lx
+		.ox = view->container->surface_x - output->lx
 			- view->geometry.x,
-		.oy = view->container->current.content_y - output->ly
+		.oy = view->container->surface_y - output->ly
 			- view->geometry.y,
-		.width = view->container->current.content_width,
-		.height = view->container->current.content_height,
+		.width = view->container->surface_width,
+		.height = view->container->surface_height,
 		.rotation = 0, // TODO
 	};
 
@@ -182,12 +182,12 @@ void output_view_for_each_popup(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
-		.ox = view->container->current.content_x - output->lx
+		.ox = view->container->surface_x - output->lx
 			- view->geometry.x,
-		.oy = view->container->current.content_y - output->ly
+		.oy = view->container->surface_y - output->ly
 			- view->geometry.y,
-		.width = view->container->current.content_width,
-		.height = view->container->current.content_height,
+		.width = view->container->surface_width,
+		.height = view->container->surface_height,
 		.rotation = 0, // TODO
 	};
 
