@@ -101,6 +101,8 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
 
+	output_init_shadow_shader();
+
 	return output;
 }
 

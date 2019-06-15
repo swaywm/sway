@@ -331,6 +331,22 @@ static void config_defaults(struct sway_config *config) {
 
 	set_color(config->border_colors.background, 0xFFFFFF);
 
+  config->shadow_config.focused.radius = 25;
+  config->shadow_config.focused.offset = 5;
+  set_color(config->shadow_config.focused.color, 0x203040);
+
+  config->shadow_config.focused_inactive.radius = 25;
+  config->shadow_config.focused_inactive.offset = 5;
+  set_color(config->shadow_config.focused_inactive.color, 0x404040);
+
+  config->shadow_config.unfocused.radius = 25;
+  config->shadow_config.unfocused.offset = 5;
+  set_color(config->shadow_config.unfocused.color, 0x000000);
+
+  config->shadow_config.urgent.radius = 25;
+  config->shadow_config.urgent.offset = 5;
+  set_color(config->shadow_config.urgent.color, 0x402020);
+
 	// Security
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;

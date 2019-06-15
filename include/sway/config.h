@@ -317,6 +317,12 @@ struct border_colors {
 	float child_border[4];
 };
 
+struct shadow_config {
+  int offset;
+  int radius;
+  float color[4];
+};
+
 enum edge_border_types {
 	E_NONE,         /**< Don't hide edge borders */
 	E_VERTICAL,     /**< hide vertical edge borders */
@@ -503,6 +509,15 @@ struct sway_config {
 		struct border_colors placeholder;
 		float background[4];
 	} border_colors;
+
+#if HAVE_SHADOWS
+	struct {
+		struct shadow_config focused;
+		struct shadow_config focused_inactive;
+		struct shadow_config unfocused;
+		struct shadow_config urgent;
+	} shadow_config;
+#endif
 
 	// floating view
 	int32_t floating_maximum_width;

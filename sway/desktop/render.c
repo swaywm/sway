@@ -27,6 +27,10 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 
+#if HAVE_SHADOWS
+#include <GLES2/gl2.h>
+#endif
+
 struct render_data {
 	pixman_region32_t *damage;
 	float alpha;
@@ -269,12 +273,238 @@ static void render_saved_view(struct sway_view *view,
 			&box, matrix, alpha);
 }
 
+#if HAVE_SHADOWS
+
+static bool check_shader_compilation(unsigned shader, const char* type) {
+  int success;
+  char infoLog[1024];
+  if (strcmp(type,"PROGRAM") != 0) {
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+      sway_log(SWAY_ERROR, "ERROR::SHADER_COMPILATION_ERROR of type: %s ", type);
+      sway_log(SWAY_ERROR, "%s", infoLog);
+      sway_log(SWAY_ERROR, " -- --------------------------------------------------- -- ");
+    }
+  } else {
+    glGetProgramiv(shader, GL_LINK_STATUS, &success);
+    if (!success) {
+      glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+      sway_log(SWAY_ERROR, "ERROR::SHADER_LINKING_ERROR of type: %s ", type);
+      sway_log(SWAY_ERROR, "%s", infoLog);
+      sway_log(SWAY_ERROR, " -- --------------------------------------------------- -- ");
+    }
+  }
+  return !!success;
+}
+
+static unsigned shadow_shader = 0;
+
+void output_init_shadow_shader() {
+  if (shadow_shader != 0) return;
+  sway_log(SWAY_INFO, "Initializing shadow shader");
+  static const char* vcode = 
+    "uniform mat3 proj;\n"
+    "uniform vec4 color;\n"
+    "attribute vec2 pos;\n"
+    "attribute vec2 texcoord;\n"
+    "varying vec4 v_color;\n"
+    "varying vec2 v_texcoord;\n"
+    "\n"
+    "void main() {\n"
+    "	gl_Position = vec4(proj * vec3(pos, 1.0), 1.0);\n"
+    "	v_color = color;\n"
+    "	v_texcoord = texcoord;\n"
+    "}\n";
+
+  static const char* fcode = 
+    "precision mediump float; \n"
+    "varying vec4 v_color; \n"
+    "varying vec2 v_texcoord; \n"
+    "uniform float aspect; \n"
+    "uniform float radius; \n"
+    " \n"
+    "void main() \n"
+    "{ \n"
+    "  vec2 pos = v_texcoord; \n"
+    " \n"
+    "  //pos.x /= aspect; \n"
+    " \n"
+    "  float dx = smoothstep(0.0, radius * aspect, min(pos.x, 1.0 - pos.x)); \n"
+    "  float dy = smoothstep(0.0, radius, min(pos.y, 1.0 - pos.y)); \n"
+    " \n"
+    "  float alpha = dx * dy; \n"
+    "  gl_FragColor = vec4(v_color.rgb, v_color.a * alpha); \n"
+    "} \n";
+
+  unsigned int vertex, fragment;
+
+  unsigned int shader; 
+  vertex = glCreateShader(GL_VERTEX_SHADER);
+  sway_log(SWAY_INFO, "vertex shader: %d", vertex);
+  glShaderSource(vertex, 1, &vcode, NULL);
+  glCompileShader(vertex);
+  bool failed = !check_shader_compilation(vertex, "VERTEX");
+
+  fragment = glCreateShader(GL_FRAGMENT_SHADER);
+  sway_log(SWAY_INFO, "fragment shader: %d", fragment);
+  glShaderSource(fragment, 1, &fcode, NULL);
+  glCompileShader(fragment);
+  failed |= !check_shader_compilation(fragment, "FRAGMENT");
+
+  shader = glCreateProgram();
+  glAttachShader(shader, vertex);
+  glAttachShader(shader, fragment);
+  glLinkProgram(shader);
+  failed |= !check_shader_compilation(shader, "PROGRAM");
+
+  glDeleteShader(vertex);
+  glDeleteShader(fragment);
+  if (!failed) {
+    shadow_shader = shader;
+  } else {
+    sway_log(SWAY_ERROR, "Failure initializing shadow shader");
+  }
+}
+
+static void draw_quad()
+{
+  GLfloat verts[] = {
+    1, 0, // top right
+    0, 0, // top left
+    1, 1, // bottom right
+    0, 1, // bottom left
+  };
+  GLfloat texcoord[] = {
+    1, 0, // top right
+    0, 0, // top left
+    1, 1, // bottom right
+    0, 1, // bottom left
+  };
+
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, verts);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, texcoord);
+
+  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(1);
+
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
+}
+
+static void render_shadow(struct sway_output *output, pixman_region32_t *output_damage, struct wlr_box box,
+		float rotation, float alpha, struct shadow_config* shadow) {
+
+  if (shadow_shader == 0) return;
+
+  float offset = shadow->offset, radius = shadow->radius;
+
+	box.x += offset - radius / 2.f;
+	box.y += offset - radius / 2.f;
+	box.height += radius;
+	box.width += radius;
+
+	struct wlr_output *wlr_output = output->wlr_output;
+	// struct wlr_renderer *renderer =
+	// wlr_backend_get_renderer(wlr_output->backend);
+
+	box.x -= output->lx * wlr_output->scale;
+	box.y -= output->ly * wlr_output->scale;
+
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	pixman_region32_union_rect(
+			&damage, &damage, box.x, box.y, box.width, box.height);
+	pixman_region32_intersect(&damage, &damage, output_damage);
+	bool damaged = pixman_region32_not_empty(&damage);
+	if (!damaged) {
+		goto damage_finish;
+	}
+
+	float matrix[9];
+	wlr_matrix_project_box(matrix,
+			&box,
+			WL_OUTPUT_TRANSFORM_NORMAL,
+			rotation,
+			wlr_output->transform_matrix);
+
+	int nrects;
+	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
+	for (int i = 0; i < nrects; ++i) {
+		scissor_output(output->wlr_output, &rects[i]);
+
+		float transposition[9];
+		wlr_matrix_transpose(transposition, matrix);
+
+    // save current shader and blend settings
+		GLint prevShader;
+		glGetIntegerv(GL_CURRENT_PROGRAM, &prevShader);
+    GLboolean blendEnabled;
+    glGetBooleanv(GL_BLEND, &blendEnabled);
+    GLint blendSrc;
+    GLint blendDst;
+    glGetIntegerv(GL_BLEND_SRC_ALPHA, &blendSrc);
+    glGetIntegerv(GL_BLEND_DST_ALPHA, &blendDst);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glUseProgram(shadow_shader);
+
+		// update the uniform color
+		glUniformMatrix3fv(glGetUniformLocation(shadow_shader, "proj"),
+				1,
+				false,
+				transposition);
+		glUniform4f(glGetUniformLocation(shadow_shader, "color"),
+				shadow->color[0],
+				shadow->color[1],
+				shadow->color[2],
+				alpha);
+		glUniform1f(glGetUniformLocation(shadow_shader, "aspect"),
+				box.height / (float)box.width);
+		glUniform1f(glGetUniformLocation(shadow_shader, "radius"),
+				radius / (float)box.height);
+		draw_quad();
+
+    // restore state
+		glUseProgram(prevShader);
+    if (blendEnabled) glEnable(GL_BLEND);
+    else glDisable(GL_BLEND);
+    glBlendFunc(blendSrc, blendDst);
+	}
+
+damage_finish:
+	pixman_region32_fini(&damage);
+}
+
+static void render_shadow_for_view(struct sway_output *output, pixman_region32_t *damage,
+		struct sway_container *con, struct shadow_config *shadow) {
+
+	float output_scale = output->wlr_output->scale;
+	struct sway_container_state *state = &con->current;
+
+  struct wlr_box shadow_box = {state->x, state->content_y, state->width, state->height};
+	scale_box(&shadow_box, output_scale);
+	render_shadow(output, damage, shadow_box, 0, con->alpha, shadow);
+}
+#else
+void output_init_shadow_shader() {}
+
+static void render_shadow_for_view(struct sway_output *output, pixman_region32_t *damage,
+		struct sway_container *con, struct shadow_config *shadow) {
+
+#endif
+// SHADOWS END
+
 /**
  * Render a view's surface and left/bottom/right borders.
  */
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->view;
+
 	if (view->saved_buffer) {
 		render_saved_view(view, output, damage, view->container->alpha);
 	} else if (view->surface) {
@@ -285,10 +515,11 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		return;
 	}
 
-	struct wlr_box box;
 	float output_scale = output->wlr_output->scale;
-	float color[4];
 	struct sway_container_state *state = &con->current;
+
+	struct wlr_box box;
+	float color[4];
 
 	if (state->border_left) {
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
@@ -678,27 +909,34 @@ static void render_containers_linear(struct sway_output *output,
 		if (child->view) {
 			struct sway_view *view = child->view;
 			struct border_colors *colors;
+			struct shadow_config *shadow;
 			struct wlr_texture *title_texture;
 			struct wlr_texture *marks_texture;
 			struct sway_container_state *state = &child->current;
 
 			if (view_is_urgent(view)) {
 				colors = &config->border_colors.urgent;
+				shadow = &config->shadow_config.urgent;
 				title_texture = child->title_urgent;
 				marks_texture = child->marks_urgent;
 			} else if (state->focused || parent->focused) {
 				colors = &config->border_colors.focused;
+				shadow = &config->shadow_config.focused;
 				title_texture = child->title_focused;
 				marks_texture = child->marks_focused;
 			} else if (child == parent->active_child) {
 				colors = &config->border_colors.focused_inactive;
+				shadow = &config->shadow_config.focused_inactive;
 				title_texture = child->title_focused_inactive;
 				marks_texture = child->marks_focused_inactive;
 			} else {
 				colors = &config->border_colors.unfocused;
+				shadow = &config->shadow_config.unfocused;
 				title_texture = child->title_unfocused;
 				marks_texture = child->marks_unfocused;
 			}
+
+  		render_shadow_for_view(output, damage, child, shadow);
 
 			if (state->border == B_NORMAL) {
 				render_titlebar(output, damage, child, state->x,
@@ -726,6 +964,32 @@ static void render_containers_tabbed(struct sway_output *output,
 	struct sway_container *current = parent->active_child;
 	struct border_colors *current_colors = &config->border_colors.unfocused;
 	int tab_width = parent->box.width / parent->children->length;
+
+#if HAVE_SHADOWS
+	struct shadow_config *current_shadow = &config->shadow_config.unfocused;
+
+  // Render shadow
+	for (int i = 0; i < parent->children->length; ++i) {
+		struct sway_container *child = parent->children->items[i];
+		struct sway_view *view = child->view;
+		struct sway_container_state *cstate = &child->current;
+		bool urgent = view ?
+			view_is_urgent(view) : container_has_urgent_child(child);
+
+		if (child == current) {
+  		if (urgent) {
+  			current_shadow = &config->shadow_config.urgent;
+  		} else if (cstate->focused || parent->focused) {
+  			current_shadow = &config->shadow_config.focused;
+  		} else if (child == parent->active_child) {
+  			current_shadow = &config->shadow_config.focused_inactive;
+  		} else {
+  			current_shadow = &config->shadow_config.unfocused;
+  		}
+		}
+	}
+	render_shadow_for_view(output, damage, current, current_shadow);
+#endif
 
 	// Render tabs
 	for (int i = 0; i < parent->children->length; ++i) {
@@ -790,7 +1054,34 @@ static void render_containers_stacked(struct sway_output *output,
 	}
 	struct sway_container *current = parent->active_child;
 	struct border_colors *current_colors = &config->border_colors.unfocused;
+	struct shadow_config *current_shadows = &config->shadow_config.unfocused;
 	size_t titlebar_height = container_titlebar_height();
+
+#if HAVE_SHADOWS
+	struct shadow_config *current_shadow = &config->shadow_config.unfocused;
+
+  // Render shadow
+	for (int i = 0; i < parent->children->length; ++i) {
+		struct sway_container *child = parent->children->items[i];
+		struct sway_view *view = child->view;
+		struct sway_container_state *cstate = &child->current;
+		bool urgent = view ?
+			view_is_urgent(view) : container_has_urgent_child(child);
+
+		if (child == current) {
+  		if (urgent) {
+  			current_shadow = &config->shadow_config.urgent;
+  		} else if (cstate->focused || parent->focused) {
+  			current_shadow = &config->shadow_config.focused;
+  		} else if (child == parent->active_child) {
+  			current_shadow = &config->shadow_config.focused_inactive;
+  		} else {
+  			current_shadow = &config->shadow_config.unfocused;
+  		}
+		}
+	}
+	render_shadow_for_view(output, damage, current, current_shadow);
+#endif
 
 	// Render titles
 	for (int i = 0; i < parent->children->length; ++i) {
@@ -798,6 +1089,7 @@ static void render_containers_stacked(struct sway_output *output,
 		struct sway_view *view = child->view;
 		struct sway_container_state *cstate = &child->current;
 		struct border_colors *colors;
+		struct shadow_config *shadows;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
 		bool urgent = view ?
@@ -805,18 +1097,22 @@ static void render_containers_stacked(struct sway_output *output,
 
 		if (urgent) {
 			colors = &config->border_colors.urgent;
+			shadows = &config->shadow_config.urgent;
 			title_texture = child->title_urgent;
 			marks_texture = child->marks_urgent;
 		} else if (cstate->focused || parent->focused) {
 			colors = &config->border_colors.focused;
+			shadows = &config->shadow_config.focused;
 			title_texture = child->title_focused;
 			marks_texture = child->marks_focused;
 		} else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
+			shadows = &config->shadow_config.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = child->marks_focused_inactive;
 		} else {
 			colors = &config->border_colors.unfocused;
+			shadows = &config->shadow_config.unfocused;
 			title_texture = child->title_unfocused;
 			marks_texture = child->marks_unfocused;
 		}
@@ -827,6 +1123,7 @@ static void render_containers_stacked(struct sway_output *output,
 
 		if (child == current) {
 			current_colors = colors;
+			current_shadows = shadows;
 		}
 	}
 
@@ -903,22 +1200,28 @@ static void render_floating_container(struct sway_output *soutput,
 	if (con->view) {
 		struct sway_view *view = con->view;
 		struct border_colors *colors;
+		struct shadow_config *shadows;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
 
 		if (view_is_urgent(view)) {
 			colors = &config->border_colors.urgent;
+			shadows = &config->shadow_config.urgent;
 			title_texture = con->title_urgent;
 			marks_texture = con->marks_urgent;
 		} else if (con->current.focused) {
 			colors = &config->border_colors.focused;
+			shadows = &config->shadow_config.focused;
 			title_texture = con->title_focused;
 			marks_texture = con->marks_focused;
 		} else {
 			colors = &config->border_colors.unfocused;
+			shadows = &config->shadow_config.unfocused;
 			title_texture = con->title_unfocused;
 			marks_texture = con->marks_unfocused;
 		}
+
+		render_shadow_for_view(soutput, damage, con, shadows);
 
 		if (con->current.border == B_NORMAL) {
 			render_titlebar(soutput, damage, con, con->current.x,

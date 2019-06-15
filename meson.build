@@ -87,6 +87,7 @@ if get_option('tray').enabled() and not tray_deps_found
 endif
 have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
+have_shadows = (not get_option('shadows').disabled())
 conf_data = configuration_data()
 
 conf_data.set10('HAVE_XWAYLAND', have_xwayland)
@@ -94,6 +95,7 @@ conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
 conf_data.set10('HAVE_TRAY', have_tray)
+conf_data.set10('HAVE_SHADOWS', have_shadows)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
@@ -244,6 +246,7 @@ status = [
 	'elogind: @0@'.format(elogind.found()),
 	'tray: @0@'.format(have_tray),
 	'man-pages: @0@'.format(scdoc.found()),
+	'shadows: @0@'.format(have_shadows),
 	'',
 ]
 message('\n'.join(status))

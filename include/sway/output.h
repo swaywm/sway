@@ -101,6 +101,8 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 void output_render(struct sway_output *output, struct timespec *when,
 	pixman_region32_t *damage);
 
+void output_init_shadow_shader();
+
 void output_surface_for_each_surface(struct sway_output *output,
 		struct wlr_surface *surface, double ox, double oy,
 		sway_surface_iterator_func_t iterator, void *user_data);

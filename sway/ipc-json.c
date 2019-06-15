@@ -339,6 +339,11 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 			json_object_new_string(
 				ipc_json_orientation_description(workspace->layout)));
 
+	json_object *gaps = json_object_new_object();
+  json_object_object_add(gaps, "inner", json_object_new_int(workspace->gaps_inner));
+  // Add outer
+	json_object_object_add(object, "gaps", gaps);
+
 	// Floating
 	json_object *floating_array = json_object_new_array();
 	for (int i = 0; i < workspace->floating->length; ++i) {
