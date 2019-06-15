@@ -485,7 +485,7 @@ static void render_shadow_for_view(struct sway_output *output, pixman_region32_t
 	float output_scale = output->wlr_output->scale;
 	struct sway_container_state *state = &con->current;
 
-  struct wlr_box shadow_box = {state->x, state->content_y, state->width, state->height};
+  struct wlr_box shadow_box = {state->x, state->y, state->width, state->height};
 	scale_box(&shadow_box, output_scale);
 	render_shadow(output, damage, shadow_box, 0, con->alpha, shadow);
 }
@@ -1054,7 +1054,6 @@ static void render_containers_stacked(struct sway_output *output,
 	}
 	struct sway_container *current = parent->active_child;
 	struct border_colors *current_colors = &config->border_colors.unfocused;
-	struct shadow_config *current_shadows = &config->shadow_config.unfocused;
 	size_t titlebar_height = container_titlebar_height();
 
 #if HAVE_SHADOWS
@@ -1089,7 +1088,6 @@ static void render_containers_stacked(struct sway_output *output,
 		struct sway_view *view = child->view;
 		struct sway_container_state *cstate = &child->current;
 		struct border_colors *colors;
-		struct shadow_config *shadows;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
 		bool urgent = view ?
@@ -1097,22 +1095,18 @@ static void render_containers_stacked(struct sway_output *output,
 
 		if (urgent) {
 			colors = &config->border_colors.urgent;
-			shadows = &config->shadow_config.urgent;
 			title_texture = child->title_urgent;
 			marks_texture = child->marks_urgent;
 		} else if (cstate->focused || parent->focused) {
 			colors = &config->border_colors.focused;
-			shadows = &config->shadow_config.focused;
 			title_texture = child->title_focused;
 			marks_texture = child->marks_focused;
 		} else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
-			shadows = &config->shadow_config.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = child->marks_focused_inactive;
 		} else {
 			colors = &config->border_colors.unfocused;
-			shadows = &config->shadow_config.unfocused;
 			title_texture = child->title_unfocused;
 			marks_texture = child->marks_unfocused;
 		}
@@ -1123,7 +1117,6 @@ static void render_containers_stacked(struct sway_output *output,
 
 		if (child == current) {
 			current_colors = colors;
-			current_shadows = shadows;
 		}
 	}
 
