@@ -21,7 +21,7 @@ struct icon_theme_subdir {
 struct icon_theme {
 	char *name;
 	char *comment;
-	char *inherits;
+	list_t *inherits; // char *
 	list_t *directories; // char *
 
 	char *dir;

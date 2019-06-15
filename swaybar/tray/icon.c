@@ -69,7 +69,7 @@ static void destroy_theme(struct icon_theme *theme) {
 	}
 	free(theme->name);
 	free(theme->comment);
-	free(theme->inherits);
+	list_free_items_and_destroy(theme->inherits);
 	list_free_items_and_destroy(theme->directories);
 	free(theme->dir);
 
@@ -149,7 +149,7 @@ static const char *entry_handler(char *group, char *key, char *value,
 		} else if (strcmp(key, "Comment") == 0) {
 			theme->comment = strdup(value);
 		} else if (strcmp(key, "Inherits") == 0) {
-			theme->inherits = strdup(value);
+			theme->inherits = split_string(value, ",");
 		} else if (strcmp(key, "Directories") == 0) {
 			theme->directories = split_string(value, ",");
 		} // Ignored: ScaledDirectories, Hidden, Example
@@ -496,8 +496,13 @@ static char *find_icon_with_theme(list_t *basedirs, list_t *themes, char *name,
 	}
 
 	if (!icon && theme->inherits) {
-		icon = find_icon_with_theme(basedirs, themes, name, size,
-				theme->inherits, min_size, max_size);
+		for (int i = 0; i < theme->inherits->length; ++i) {
+			icon = find_icon_with_theme(basedirs, themes, name, size,
+					theme->inherits->items[i], min_size, max_size);
+			if (icon) {
+				break;
+			}
+		}
 	}
 
 	return icon;
