@@ -381,7 +381,7 @@ runtime.
 *bindswitch* [--locked] [--no-warn] <switch>:<state> <command>
 	Binds <switch> to execute the sway command _command_ on state changes.
 	Supported switches are _lid_ (laptop lid) and _tablet_ (tablet mode)
-	switches. Valid values for _state_ are _on_, _off_ and _toggle. These
+	switches. Valid values for _state_ are _on_, _off_ and _toggle_. These
 	switches are on when the device lid is shut and when tablet mode is active
 	respectively. _toggle_ is also supported to run a command both when the
 	switch is toggled on or off.
