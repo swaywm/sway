@@ -108,6 +108,9 @@ struct sway_container {
 
 	enum sway_fullscreen_mode fullscreen_mode;
 
+	bool inhibit_fullscreen;
+	bool is_fullscreen;
+
 	enum sway_container_border border;
 
 	// Used when the view changes to CSD unexpectedly. This will be a non-B_CSD
@@ -268,6 +271,8 @@ void container_end_mouse_operation(struct sway_container *container);
 
 void container_set_fullscreen(struct sway_container *con,
 		enum sway_fullscreen_mode mode);
+
+void container_request_fullscreen(struct sway_container *con, bool enable);
 
 /**
  * Convenience function.
