@@ -856,7 +856,7 @@ static struct cmd_results *cmd_move_to_scratchpad(void) {
 	}
 
 	if (!con->scratchpad) {
-		root_scratchpad_add_container(con);
+		root_scratchpad_add_container(con, NULL);
 	} else if (con->workspace) {
 		root_scratchpad_hide(con);
 	}

@@ -54,7 +54,7 @@ void root_destroy(struct sway_root *root) {
 	free(root);
 }
 
-void root_scratchpad_add_container(struct sway_container *con) {
+void root_scratchpad_add_container(struct sway_container *con, struct sway_workspace *ws) {
 	if (!sway_assert(!con->scratchpad, "Container is already in scratchpad")) {
 		return;
 	}
@@ -77,18 +77,23 @@ void root_scratchpad_add_container(struct sway_container *con) {
 	container_detach(con);
 	con->scratchpad = true;
 	list_add(root->scratchpad, con);
+	if (ws) {
+		workspace_add_floating(ws, con);
+	}
 
-	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_node *new_focus = NULL;
-	if (parent) {
-		arrange_container(parent);
-		new_focus = seat_get_focus_inactive(seat, &parent->node);
+	if (!ws) {
+		struct sway_seat *seat = input_manager_current_seat();
+		struct sway_node *new_focus = NULL;
+		if (parent) {
+			arrange_container(parent);
+			new_focus = seat_get_focus_inactive(seat, &parent->node);
+		}
+		if (!new_focus) {
+			arrange_workspace(workspace);
+			new_focus = seat_get_focus_inactive(seat, &workspace->node);
+		}
+		seat_set_focus(seat, new_focus);
 	}
-	if (!new_focus) {
-		arrange_workspace(workspace);
-		new_focus = seat_get_focus_inactive(seat, &workspace->node);
-	}
-	seat_set_focus(seat, new_focus);
 
 	ipc_event_window(con, "move");
 }

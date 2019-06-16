@@ -1378,10 +1378,12 @@ void container_replace(struct sway_container *container,
 		struct sway_container *replacement) {
 	enum sway_fullscreen_mode fullscreen = container->fullscreen_mode;
 	bool scratchpad = container->scratchpad;
+	struct sway_workspace *ws = NULL;
 	if (fullscreen != FULLSCREEN_NONE) {
 		container_fullscreen_disable(container);
 	}
 	if (scratchpad) {
+		ws = container->workspace;
 		root_scratchpad_show(container);
 		root_scratchpad_remove_container(container);
 	}
@@ -1390,7 +1392,7 @@ void container_replace(struct sway_container *container,
 		container_detach(container);
 	}
 	if (scratchpad) {
-		root_scratchpad_add_container(replacement);
+		root_scratchpad_add_container(replacement, ws);
 	}
 	switch (fullscreen) {
 	case FULLSCREEN_WORKSPACE:
