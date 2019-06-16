@@ -46,8 +46,12 @@ void root_destroy(struct sway_root *root);
 
 /**
  * Move a container to the scratchpad.
+ * If a workspace is passed, the container is assumed to have been in
+ * the scratchpad before and is shown on the workspace.
+ * The ws parameter can safely be NULL.
  */
-void root_scratchpad_add_container(struct sway_container *con);
+void root_scratchpad_add_container(struct sway_container *con,
+   struct sway_workspace *ws);
 
 /**
  * Remove a container from the scratchpad.
