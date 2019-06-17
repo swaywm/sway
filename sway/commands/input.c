@@ -9,6 +9,7 @@
 // must be in order for the bsearch
 static struct cmd_handler input_handlers[] = {
 	{ "accel_profile", input_cmd_accel_profile },
+	{ "calibration_matrix", input_cmd_calibration_matrix },
 	{ "click_method", input_cmd_click_method },
 	{ "drag", input_cmd_drag },
 	{ "drag_lock", input_cmd_drag_lock },

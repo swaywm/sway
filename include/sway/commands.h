@@ -237,6 +237,7 @@ sway_cmd bar_colors_cmd_urgent_workspace;
 
 sway_cmd input_cmd_seat;
 sway_cmd input_cmd_accel_profile;
+sway_cmd input_cmd_calibration_matrix;
 sway_cmd input_cmd_click_method;
 sway_cmd input_cmd_drag;
 sway_cmd input_cmd_drag_lock;

@@ -132,6 +132,11 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		free(dst->mapped_to_output);
 		dst->mapped_to_output = strdup(src->mapped_to_output);
 	}
+	if (src->calibration_matrix.configured) {
+		dst->calibration_matrix.configured = src->calibration_matrix.configured;
+		memcpy(dst->calibration_matrix.matrix, src->calibration_matrix.matrix,
+			sizeof(src->calibration_matrix.matrix));
+	}
 }
 
 static bool validate_xkb_merge(struct input_config *dest,
