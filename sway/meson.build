@@ -140,6 +140,7 @@ sway_sources = files(
 	'commands/bar/wrap_scroll.c',
 
 	'commands/input/accel_profile.c',
+	'commands/input/calibration_matrix.c',
 	'commands/input/click_method.c',
 	'commands/input/drag.c',
 	'commands/input/drag_lock.c',

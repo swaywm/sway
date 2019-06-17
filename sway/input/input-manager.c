@@ -281,6 +281,13 @@ static void input_manager_libinput_config_touch(
 		log_libinput_config_status(libinput_device_config_send_events_set_mode(
 					libinput_device, ic->send_events));
 	}
+	float *m = ic->calibration_matrix.matrix;
+	if (ic->calibration_matrix.configured) {
+		sway_log(SWAY_DEBUG, "libinput_config_touch(%s) calibration_set_matrix(%f %f %f %f %f %f)",
+			ic->identifier, m[0], m[1], m[2], m[3], m[4], m[5]);
+		log_libinput_config_status(libinput_device_config_calibration_set_matrix(
+					libinput_device, ic->calibration_matrix.matrix));
+	}
 }
 
 static void input_manager_libinput_reset_touch(
@@ -300,6 +307,12 @@ static void input_manager_libinput_reset_touch(
 		input_device->identifier, send_events);
 	log_libinput_config_status(libinput_device_config_send_events_set_mode(
 				libinput_device, send_events));
+	float m[6];
+	libinput_device_config_calibration_get_default_matrix(libinput_device, m);
+	sway_log(SWAY_DEBUG, "libinput_reset_touch(%s) calibration_set_matrix(%f %f %f %f %f %f)",
+		input_device->identifier, m[0], m[1], m[2], m[3], m[4], m[5]);
+	log_libinput_config_status(libinput_device_config_calibration_set_matrix(
+				libinput_device, m));
 }
 
 static void input_manager_libinput_config_pointer(

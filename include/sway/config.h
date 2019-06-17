@@ -101,6 +101,11 @@ struct input_config_mapped_from_region {
 	bool mm;
 };
 
+struct calibration_matrix {
+	bool configured;
+	float matrix[6];
+};
+
 /**
  * options for input devices
  */
@@ -109,6 +114,7 @@ struct input_config {
 	const char *input_type;
 
 	int accel_profile;
+	struct calibration_matrix calibration_matrix;
 	int click_method;
 	int drag;
 	int drag_lock;
