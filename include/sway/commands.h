@@ -47,7 +47,8 @@ struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
 
 struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
-		int handlers_size);
+		size_t handlers_size);
+
 /**
  * Parse and executes a command.
  *
