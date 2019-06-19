@@ -441,6 +441,11 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		config->reloading = true;
 		config->active = true;
 
+		// xwayland can only be enabled/disabled at launch
+		sway_log(SWAY_DEBUG, "xwayland will remain %s",
+				old_config->xwayland ? "enabled" : "disabled");
+		config->xwayland = old_config->xwayland;
+
 		if (old_config->swaybg_client != NULL) {
 			wl_client_destroy(old_config->swaybg_client);
 		}
