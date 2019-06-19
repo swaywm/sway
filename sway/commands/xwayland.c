@@ -11,7 +11,12 @@ struct cmd_results *cmd_xwayland(int argc, char **argv) {
 	}
 
 #ifdef HAVE_XWAYLAND
-	config->xwayland = parse_boolean(argv[0], config->xwayland);
+	bool xwayland = parse_boolean(argv[0], true);
+	if (config->reloading && config->xwayland != xwayland) {
+		return cmd_results_new(CMD_FAILURE,
+				"xwayland can only be enabled/disabled at launch");
+	}
+	config->xwayland = xwayland;
 #else
 	sway_log(SWAY_INFO, "Ignoring `xwayland` command, "
 		"sway hasn't been built with Xwayland support");
