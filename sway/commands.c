@@ -143,44 +143,34 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
-struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
-		int handlers_size) {
-	struct cmd_handler d = { .command=line };
-	struct cmd_handler *res = NULL;
-	sway_log(SWAY_DEBUG, "find_handler(%s)", line);
-
-	bool config_loading = config->reading || !config->active;
-
-	if (!config_loading) {
-		res = bsearch(&d, command_handlers,
-				sizeof(command_handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
-
-		if (res) {
-			return res;
-		}
+struct cmd_handler *find_handler(char *line, struct cmd_handler *handlers,
+		size_t handlers_size) {
+	if (!handlers || !handlers_size) {
+		return NULL;
 	}
-
-	if (config->reading) {
-		res = bsearch(&d, config_handlers,
-				sizeof(config_handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
-
-		if (res) {
-			return res;
-		}
-	}
-
-	if (!cmd_handlers) {
-		cmd_handlers = handlers;
-		handlers_size = sizeof(handlers);
-	}
-
-	res = bsearch(&d, cmd_handlers,
+	struct cmd_handler query = { .command = line };
+	return bsearch(&query, handlers,
 			handlers_size / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
+}
 
-	return res;
+static struct cmd_handler *find_handler_ex(char *line,
+		struct cmd_handler *config_handlers, size_t config_handlers_size,
+		struct cmd_handler *command_handlers, size_t command_handlers_size,
+		struct cmd_handler *handlers, size_t handlers_size) {
+	struct cmd_handler *handler = NULL;
+	if (config->reading) {
+		handler = find_handler(line, config_handlers, config_handlers_size);
+	} else if (config->active) {
+		handler = find_handler(line, command_handlers, command_handlers_size);
+	}
+	return handler ? handler : find_handler(line, handlers, handlers_size);
+}
+
+static struct cmd_handler *find_core_handler(char *line) {
+	return find_handler_ex(line, config_handlers, sizeof(config_handlers),
+			command_handlers, sizeof(command_handlers),
+			handlers, sizeof(handlers));
 }
 
 static void set_config_node(struct sway_node *node) {
@@ -270,7 +260,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				}
 			}
 		}
-		struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
+		struct cmd_handler *handler = find_core_handler(argv[0]);
 		if (!handler) {
 			list_add(res_list, cmd_results_new(CMD_INVALID,
 					"Unknown/invalid command '%s'", argv[0]));
@@ -360,7 +350,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 
 	// Determine the command handler
 	sway_log(SWAY_INFO, "Config command: %s", exec);
-	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
+	struct cmd_handler *handler = find_core_handler(argv[0]);
 	if (!handler || !handler->handle) {
 		const char *error = handler
 			? "Command '%s' is shimmed, but unimplemented"
