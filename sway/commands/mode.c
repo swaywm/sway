@@ -15,6 +15,9 @@ static struct cmd_handler mode_handlers[] = {
 	{ "bindswitch", cmd_bindswitch },
 	{ "bindsym", cmd_bindsym },
 	{ "set", cmd_set },
+	{ "unbindcode", cmd_unbindcode },
+	{ "unbindswitch", cmd_unbindswitch },
+	{ "unbindsym", cmd_unbindsym },
 };
 
 struct cmd_results *cmd_mode(int argc, char **argv) {
@@ -23,16 +26,16 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		return error;
 	}
 
-	if (argc > 1 && !config->reading) {
-		return cmd_results_new(CMD_FAILURE, "Can only be used in config file");
-	}
-
 	bool pango = strcmp(*argv, "--pango_markup") == 0;
 	if (pango) {
 		argc--; argv++;
 		if (argc == 0) {
 			return cmd_results_new(CMD_FAILURE, "Mode name is missing");
 		}
+	}
+
+	if (config->reading && argc == 1) {
+		return cmd_results_new(CMD_DEFER, NULL);
 	}
 
 	char *mode_name = *argv;
@@ -64,14 +67,12 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		error = cmd_results_new(CMD_INVALID, "Unknown mode `%s'", mode_name);
 		return error;
 	}
-	if ((config->reading && argc > 1) || (!config->reading && argc == 1)) {
-		sway_log(SWAY_DEBUG, "Switching to mode `%s' (pango=%d)",
-				mode->name, mode->pango);
-	}
 	// Set current mode
 	config->current_mode = mode;
 	if (argc == 1) {
 		// trigger IPC mode event
+		sway_log(SWAY_DEBUG, "Switching to mode `%s' (pango=%d)",
+				mode->name, mode->pango);
 		ipc_event_mode(config->current_mode->name,
 				config->current_mode->pango);
 		return cmd_results_new(CMD_SUCCESS, NULL);
