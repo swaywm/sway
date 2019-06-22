@@ -798,6 +798,18 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		json_object_object_add(object, "dwt", json_object_new_string(dwt));
 	}
 
+	if (libinput_device_config_calibration_has_matrix(device)) {
+		float matrix[6];
+		libinput_device_config_calibration_get_matrix(device, matrix);
+		struct json_object* array = json_object_new_array();
+		struct json_object* x;
+		for (int i = 0; i < 6; i++) {
+			x = json_object_new_double(matrix[i]);
+			json_object_array_add(array, x);
+		}
+		json_object_object_add(object, "calibration_matrix", array);
+	}
+
 	return object;
 }
 
