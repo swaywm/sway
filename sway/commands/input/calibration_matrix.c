@@ -10,7 +10,7 @@
 
 struct cmd_results *input_cmd_calibration_matrix(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "calibration_matrix", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "calibration_matrix", EXPECTED_EQUAL_TO, 6))) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;
@@ -18,14 +18,9 @@ struct cmd_results *input_cmd_calibration_matrix(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
-	list_t *split = split_string(argv[0], " ");
-	if (split->length != 6) {
-		return cmd_results_new(CMD_FAILURE, "calibration_matrix should be a space-separated list of length 6");
-	}
-
 	float parsed[6];
-	for (int i = 0; i < split->length; ++i) {
-		char *item = split->items[i];
+	for (int i = 0; i < argc; ++i) {
+		char *item = argv[i];
 		float x = parse_float(item);
 		if (isnan(x)) {
 			return cmd_results_new(CMD_FAILURE, "calibration_matrix: unable to parse float: %s", item);
