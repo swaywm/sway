@@ -27,7 +27,7 @@ struct cmd_results *input_cmd_calibration_matrix(int argc, char **argv) {
 	for (int i = 0; i < split->length; ++i) {
 		char *item = split->items[i];
 		float x = parse_float(item);
-		if (x != x) {
+		if (isnan(x)) {
 			return cmd_results_new(CMD_FAILURE, "calibration_matrix: unable to parse float: %s", item);
 		}
 		parsed[i] = x;
