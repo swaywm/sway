@@ -206,7 +206,6 @@ static void container_move_to_workspace(struct sway_container *container,
 	} else {
 		container_detach(container);
 		container->width = container->height = 0;
-		container->saved_width = container->saved_height = 0;
 		workspace_add_tiling(workspace, container);
 		container_update_representation(container);
 	}
@@ -234,7 +233,6 @@ static void container_move_to_container(struct sway_container *container,
 	container_detach(container);
 	container_remove_gaps(container);
 	container->width = container->height = 0;
-	container->saved_width = container->saved_height = 0;
 
 	if (destination->view) {
 		container_add_sibling(destination, container, 1);

@@ -85,8 +85,6 @@ struct sway_container {
 	// Includes borders
 	double x, y;
 	double width, height;
-	double saved_x, saved_y;
-	double saved_width, saved_height;
 
 	// These are in layout coordinates.
 	double content_x, content_y;

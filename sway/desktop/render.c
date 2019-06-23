@@ -881,6 +881,23 @@ static void render_container(struct sway_output *output,
 	render_containers(output, damage, &data);
 }
 
+static void render_container_fullscreen(struct sway_output *output,
+		pixman_region32_t *damage, struct sway_container *con, bool focused) {
+	struct parent_data data = {
+		.layout = con->current.layout,
+		.box = {
+			.x = output->lx,
+			.y = output->ly,
+			.width = output->width,
+			.height = output->height,
+		},
+		.children = con->current.children,
+		.focused = focused,
+		.active_child = con->current.focused_inactive_child,
+	};
+	render_containers(output, damage, &data);
+}
+
 static void render_workspace(struct sway_output *output,
 		pixman_region32_t *damage, struct sway_workspace *ws, bool focused) {
 	struct parent_data data = {
@@ -1019,7 +1036,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 						output, damage, 1.0f);
 			}
 		} else {
-			render_container(output, damage, fullscreen_con,
+			render_container_fullscreen(output, damage, fullscreen_con,
 					fullscreen_con->current.focused);
 		}
 

@@ -960,11 +960,6 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 	set_fullscreen_iterator(con, &enable);
 	container_for_each_child(con, set_fullscreen_iterator, &enable);
 
-	con->saved_x = con->x;
-	con->saved_y = con->y;
-	con->saved_width = con->width;
-	con->saved_height = con->height;
-
 	if (con->workspace) {
 		con->workspace->fullscreen = con;
 		struct sway_seat *seat;
@@ -992,10 +987,6 @@ static void container_fullscreen_global(struct sway_container *con) {
 	container_for_each_child(con, set_fullscreen_iterator, &enable);
 
 	root->fullscreen_global = con;
-	con->saved_x = con->x;
-	con->saved_y = con->y;
-	con->saved_width = con->width;
-	con->saved_height = con->height;
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
@@ -1018,13 +1009,6 @@ void container_fullscreen_disable(struct sway_container *con) {
 	bool enable = false;
 	set_fullscreen_iterator(con, &enable);
 	container_for_each_child(con, set_fullscreen_iterator, &enable);
-
-	if (container_is_floating(con)) {
-		con->x = con->saved_x;
-		con->y = con->saved_y;
-	}
-	con->width = con->saved_width;
-	con->height = con->saved_height;
 
 	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		if (con->workspace) {
