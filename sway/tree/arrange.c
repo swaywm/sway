@@ -18,13 +18,22 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		return;
 	}
 
+	// Count the number of new windows we are resizing
+	int new_children = 0;
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+		if (child->width <= 0) {
+			new_children += 1;
+		}
+	}
+
 	// Calculate total width of children
 	double total_width = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
 		if (child->width <= 0) {
-			if (children->length > 1) {
-				child->width = parent->width / (children->length - 1);
+			if (children->length > new_children) {
+				child->width = parent->width / (children->length - new_children);
 			} else {
 				child->width = parent->width;
 			}
@@ -58,13 +67,22 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 		return;
 	}
 
+	// Count the number of new windows we are resizing
+	int new_children = 0;
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+		if (child->height <= 0) {
+			new_children += 1;
+		}
+	}
+
 	// Calculate total height of children
 	double total_height = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
 		if (child->height <= 0) {
-			if (children->length > 1) {
-				child->height = parent->height / (children->length - 1);
+			if (children->length > new_children) {
+				child->height = parent->height / (children->length - new_children);
 			} else {
 				child->height = parent->height;
 			}
