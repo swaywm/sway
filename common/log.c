@@ -93,20 +93,3 @@ void _sway_log(sway_log_importance_t verbosity, const char *fmt, ...) {
 	sway_log_stderr(verbosity, fmt, args);
 	va_end(args);
 }
-
-// strips the path prefix from filepath
-// will try to strip SWAY_SRC_DIR as well as a relative src dir
-// e.g. '/src/build/sway/util/log.c' and
-// '../util/log.c' will both be stripped to
-// 'util/log.c'
-const char *_sway_strip_path(const char *filepath) {
-	static int srclen = sizeof(SWAY_SRC_DIR);
-	if (strstr(filepath, SWAY_SRC_DIR) == filepath) {
-		filepath += srclen;
-	} else if (*filepath == '.') {
-		while (*filepath == '.' || *filepath == '/') {
-			++filepath;
-		}
-	}
-	return filepath;
-}
