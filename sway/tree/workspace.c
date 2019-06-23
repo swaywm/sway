@@ -514,7 +514,7 @@ bool workspace_is_empty(struct sway_workspace *ws) {
 }
 
 static int find_output(const void *id1, const void *id2) {
-	return strcmp(id1, id2) ? 0 : 1;
+	return strcmp(id1, id2);
 }
 
 void workspace_output_raise_priority(struct sway_workspace *ws,
