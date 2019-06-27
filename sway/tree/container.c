@@ -35,6 +35,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	c->layout = L_NONE;
 	c->view = view;
 	c->alpha = 1.0f;
+	c->saved_dims = false;
 
 	if (!view) {
 		c->children = create_list();
@@ -964,6 +965,7 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 	con->saved_y = con->y;
 	con->saved_width = con->width;
 	con->saved_height = con->height;
+	con->saved_dims = true;
 
 	if (con->workspace) {
 		con->workspace->fullscreen = con;
@@ -996,6 +998,7 @@ static void container_fullscreen_global(struct sway_container *con) {
 	con->saved_y = con->y;
 	con->saved_width = con->width;
 	con->saved_height = con->height;
+	con->saved_dims = true;
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
@@ -1025,6 +1028,7 @@ void container_fullscreen_disable(struct sway_container *con) {
 	}
 	con->width = con->saved_width;
 	con->height = con->saved_height;
+	con->saved_dims = false;
 
 	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		if (con->workspace) {

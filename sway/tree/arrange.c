@@ -39,7 +39,11 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 			}
 		}
 		container_remove_gaps(child);
-		total_width += child->width;
+		if (child->saved_dims) {
+			total_width += child->saved_width;
+		} else {
+			total_width += child->width;
+		}
 	}
 	double scale = parent->width / total_width;
 
@@ -51,12 +55,16 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		child->x = child_x;
 		child->y = parent->y;
 		child->width = floor(child->width * scale);
+		child->saved_width = floor(child->saved_width * scale);
 		child->height = parent->height;
-		child_x += child->width;
-
+		if (child->saved_dims) {
+			child_x += child->saved_width;
+		} else {
+			child_x += child->width;
+		}
 		// Make last child use remaining width of parent
 		if (i == children->length - 1) {
-			child->width = parent->x + parent->width - child->x;
+			child->width = child->saved_width = parent->x + parent->width - child->x;
 		}
 		container_add_gaps(child);
 	}
@@ -88,7 +96,11 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 			}
 		}
 		container_remove_gaps(child);
-		total_height += child->height;
+		if (child->saved_dims) {
+			total_height += child->saved_height;
+		} else {
+			total_height += child->height;
+		}
 	}
 	double scale = parent->height / total_height;
 
@@ -101,11 +113,15 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 		child->y = child_y;
 		child->width = parent->width;
 		child->height = floor(child->height * scale);
-		child_y += child->height;
-
+		child->saved_height = floor(child->saved_height * scale);
+		if (child->saved_dims) {
+			child_y += child->saved_height;
+		} else {
+			child_y += child->height;
+		}
 		// Make last child use remaining height of parent
 		if (i == children->length - 1) {
-			child->height = parent->y + parent->height - child->y;
+			child->height = child->saved_height = parent->y + parent->height - child->y;
 		}
 		container_add_gaps(child);
 	}
