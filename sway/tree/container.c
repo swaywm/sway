@@ -1182,9 +1182,13 @@ void container_remove_gaps(struct sway_container *c) {
 	}
 
 	c->width += c->current_gaps.left + c->current_gaps.right;
+	c->saved_width += c->current_gaps.left + c->current_gaps.right;
 	c->height += c->current_gaps.top + c->current_gaps.bottom;
+	c->saved_height += c->current_gaps.top + c->current_gaps.bottom;
 	c->x -= c->current_gaps.left;
+	c->saved_x -= c->current_gaps.left;
 	c->y -= c->current_gaps.top;
+	c->saved_y -= c->current_gaps.top;
 
 	c->current_gaps.top = 0;
 	c->current_gaps.right = 0;
@@ -1236,9 +1240,13 @@ void container_add_gaps(struct sway_container *c) {
 	c->current_gaps.left = c->x == ws->x ? ws->gaps_inner : 0;
 
 	c->x += c->current_gaps.left;
+	c->saved_x += c->current_gaps.left;
 	c->y += c->current_gaps.top;
+	c->saved_y += c->current_gaps.top;
 	c->width -= c->current_gaps.left + c->current_gaps.right;
+	c->saved_width -= c->current_gaps.left + c->current_gaps.right;
 	c->height -= c->current_gaps.top + c->current_gaps.bottom;
+	c->saved_height -= c->current_gaps.top + c->current_gaps.bottom;
 }
 
 enum sway_container_layout container_parent_layout(struct sway_container *con) {
