@@ -755,14 +755,14 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		struct sway_container *old_parent = container->parent;
 		container_detach(container);
 		workspace_add_floating(workspace, container);
-		container_floating_set_default_size(container);
-		container_floating_resize_and_center(container);
 		if (container->view) {
 			view_set_tiled(container->view, false);
 			if (container->view->using_csd) {
 				container->border = B_CSD;
 			}
 		}
+		container_floating_set_default_size(container);
+		container_floating_resize_and_center(container);
 		if (old_parent) {
 			container_reap_empty(old_parent);
 		}
