@@ -612,6 +612,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		&view->surface_new_subsurface);
 	view->surface_new_subsurface.notify = view_handle_surface_new_subsurface;
 
+	if (decoration) {
+		view_update_csd_from_client(view, decoration);
+	}
+
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		view->container->border = config->floating_border;
 		view->container->border_thickness = config->floating_border_thickness;
@@ -634,10 +638,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	view_update_title(view, false);
 	container_update_representation(view->container);
-
-	if (decoration) {
-		view_update_csd_from_client(view, decoration);
-	}
 
 	if (fullscreen) {
 		container_set_fullscreen(view->container, true);
