@@ -18,39 +18,49 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		return;
 	}
 
-	// Count the number of new windows we are resizing
+	// Count the number of new windows we are resizing, and how much space
+	// is currently occupied
 	int new_children = 0;
+	double current_width_fraction = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		if (child->width <= 0) {
+		current_width_fraction += child->width_fraction;
+		if (child->width_fraction <= 0) {
 			new_children += 1;
 		}
 	}
 
-	// Calculate total width of children
-	double total_width = 0;
+	// Calculate each height fraction
+	double total_width_fraction = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		if (child->width <= 0) {
-			if (children->length > new_children) {
-				child->width = parent->width / (children->length - new_children);
+		if (child->width_fraction <= 0) {
+			if (current_width_fraction <= 0) {
+				child->width_fraction = 1.0;
+			} else if (children->length > new_children) {
+				child->width_fraction = current_width_fraction /
+					(children->length - new_children);
 			} else {
-				child->width = parent->width;
+				child->width_fraction = current_width_fraction;
 			}
 		}
-		container_remove_gaps(child);
-		total_width += child->width;
+		total_width_fraction += child->width_fraction;
 	}
-	double scale = parent->width / total_width;
+	// Normalize width fractions so the sum is 1.0
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+		child->width_fraction /= total_width_fraction;
+	}
 
 	// Resize windows
 	sway_log(SWAY_DEBUG, "Arranging %p horizontally", parent);
 	double child_x = parent->x;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
+		container_remove_gaps(child);
 		child->x = child_x;
 		child->y = parent->y;
-		child->width = floor(child->width * scale);
+		child->width = floor(child->width_fraction * parent->width);
 		child->height = parent->height;
 		child_x += child->width;
 
@@ -67,40 +77,50 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 		return;
 	}
 
-	// Count the number of new windows we are resizing
+	// Count the number of new windows we are resizing, and how much space
+	// is currently occupied
 	int new_children = 0;
+	double current_height_fraction = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		if (child->height <= 0) {
+		current_height_fraction += child->height_fraction;
+		if (child->height_fraction <= 0) {
 			new_children += 1;
 		}
 	}
 
-	// Calculate total height of children
-	double total_height = 0;
+	// Calculate each height fraction
+	double total_height_fraction = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		if (child->height <= 0) {
-			if (children->length > new_children) {
-				child->height = parent->height / (children->length - new_children);
+		if (child->height_fraction <= 0) {
+			if (current_height_fraction <= 0) {
+				child->height_fraction = 1.0;
+			} else if (children->length > new_children) {
+				child->height_fraction = current_height_fraction /
+					(children->length - new_children);
 			} else {
-				child->height = parent->height;
+				child->height_fraction = current_height_fraction;
 			}
 		}
-		container_remove_gaps(child);
-		total_height += child->height;
+		total_height_fraction += child->height_fraction;
 	}
-	double scale = parent->height / total_height;
+	// Normalize height fractions so the sum is 1.0
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+		child->height_fraction /= total_height_fraction;
+	}
 
 	// Resize
 	sway_log(SWAY_DEBUG, "Arranging %p vertically", parent);
 	double child_y = parent->y;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
+		container_remove_gaps(child);
 		child->x = parent->x;
 		child->y = child_y;
 		child->width = parent->width;
-		child->height = floor(child->height * scale);
+		child->height = floor(child->height_fraction * parent->height);
 		child_y += child->height;
 
 		// Make last child use remaining height of parent

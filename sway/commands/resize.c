@@ -174,10 +174,14 @@ void container_resize_tiled(struct sway_container *con,
 		if (prev && prev->width - sibling_amount < MIN_SANE_W) {
 			return;
 		}
-		con->width += amount;
-		next->width -= sibling_amount;
+
+		con->width_fraction +=
+			((double)amount / con->width) * con->width_fraction;
+		next->width_fraction -=
+			((double)sibling_amount / con->width) * con->width_fraction;
 		if (prev) {
-			prev->width -= sibling_amount;
+			prev->width_fraction -=
+				((double)sibling_amount / con->width) * con->width_fraction;
 		}
 	} else {
 		if (con->height + amount < MIN_SANE_H) {
@@ -189,10 +193,14 @@ void container_resize_tiled(struct sway_container *con,
 		if (prev && prev->height - sibling_amount < MIN_SANE_H) {
 			return;
 		}
-		con->height += amount;
-		next->height -= sibling_amount;
+
+		con->height_fraction +=
+			((double)amount / con->height) * con->height_fraction;
+		next->height_fraction -=
+			((double)sibling_amount / con->height) * con->height_fraction;
 		if (prev) {
-			prev->height -= sibling_amount;
+			prev->height_fraction -=
+				((double)sibling_amount / con->height) * con->height_fraction;
 		}
 	}
 
@@ -280,10 +288,11 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 		}
 	}
 
-	double old_width = current->width;
-	double old_height = current->height;
+	double old_width = current->width_fraction;
+	double old_height = current->height_fraction;
 	container_resize_tiled(current, axis, amount->amount);
-	if (current->width == old_width && current->height == old_height) {
+	if (current->width_fraction == old_width &&
+			current->height_fraction == old_height) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL);

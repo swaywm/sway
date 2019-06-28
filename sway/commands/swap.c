@@ -20,6 +20,8 @@ static void swap_places(struct sway_container *con1,
 	temp->y = con1->y;
 	temp->width = con1->width;
 	temp->height = con1->height;
+	temp->width_fraction = con1->width_fraction;
+	temp->height_fraction = con1->height_fraction;
 	temp->parent = con1->parent;
 	temp->workspace = con1->workspace;
 
@@ -27,11 +29,15 @@ static void swap_places(struct sway_container *con1,
 	con1->y = con2->y;
 	con1->width = con2->width;
 	con1->height = con2->height;
+	con1->width_fraction = con2->width_fraction;
+	con1->height_fraction = con2->height_fraction;
 
 	con2->x = temp->x;
 	con2->y = temp->y;
 	con2->width = temp->width;
 	con2->height = temp->height;
+	con2->width_fraction = temp->width_fraction;
+	con2->height_fraction = temp->height_fraction;
 
 	int temp_index = container_sibling_index(con1);
 	if (con2->parent) {
