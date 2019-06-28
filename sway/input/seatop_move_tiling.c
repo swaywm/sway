@@ -291,6 +291,8 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			siblings->items[1] : siblings->items[index - 1];
 		con->width = sibling->width;
 		con->height = sibling->height;
+		con->width_fraction = sibling->width_fraction;
+		con->height_fraction = sibling->height_fraction;
 	}
 
 	arrange_workspace(old_ws);

@@ -88,6 +88,10 @@ struct sway_container {
 	double saved_x, saved_y;
 	double saved_width, saved_height;
 
+	// The share of the space of parent container this container occupies
+	double width_fraction;
+	double height_fraction;
+
 	// These are in layout coordinates.
 	double content_x, content_y;
 	int content_width, content_height;

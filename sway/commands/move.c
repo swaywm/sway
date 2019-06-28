@@ -131,6 +131,7 @@ static void container_move_to_container_from_direction(
 						container, index);
 			}
 			container->width = container->height = 0;
+			container->width_fraction = container->height_fraction = 0;
 		}
 		return;
 	}
@@ -142,6 +143,7 @@ static void container_move_to_container_from_direction(
 			0 : destination->children->length;
 		container_insert_child(destination, container, index);
 		container->width = container->height = 0;
+		container->width_fraction = container->height_fraction = 0;
 		return;
 	}
 
@@ -163,6 +165,7 @@ static void container_move_to_workspace_from_direction(
 		struct sway_container *container, struct sway_workspace *workspace,
 		enum wlr_direction move_dir) {
 	container->width = container->height = 0;
+	container->width_fraction = container->height_fraction = 0;
 
 	if (is_parallel(workspace->layout, move_dir)) {
 		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
@@ -206,7 +209,7 @@ static void container_move_to_workspace(struct sway_container *container,
 	} else {
 		container_detach(container);
 		container->width = container->height = 0;
-		container->saved_width = container->saved_height = 0;
+		container->width_fraction = container->height_fraction = 0;
 		workspace_add_tiling(workspace, container);
 		container_update_representation(container);
 	}
@@ -234,7 +237,7 @@ static void container_move_to_container(struct sway_container *container,
 	container_detach(container);
 	container_remove_gaps(container);
 	container->width = container->height = 0;
-	container->saved_width = container->saved_height = 0;
+	container->width_fraction = container->height_fraction = 0;
 
 	if (destination->view) {
 		container_add_sibling(destination, container, 1);

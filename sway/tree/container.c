@@ -789,6 +789,8 @@ void container_set_floating(struct sway_container *container, bool enable) {
 				container->border = container->saved_border;
 			}
 		}
+		container->width_fraction = 0;
+		container->height_fraction = 0;
 	}
 
 	container_end_mouse_operation(container);
@@ -1022,9 +1024,9 @@ void container_fullscreen_disable(struct sway_container *con) {
 	if (container_is_floating(con)) {
 		con->x = con->saved_x;
 		con->y = con->saved_y;
+		con->width = con->saved_width;
+		con->height = con->saved_height;
 	}
-	con->width = con->saved_width;
-	con->height = con->saved_height;
 
 	if (con->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		if (con->workspace) {
@@ -1415,6 +1417,8 @@ struct sway_container *container_split(struct sway_container *child,
 	struct sway_container *cont = container_create(NULL);
 	cont->width = child->width;
 	cont->height = child->height;
+	cont->width_fraction = child->width_fraction;
+	cont->height_fraction = child->height_fraction;
 	cont->x = child->x;
 	cont->y = child->y;
 	cont->current_gaps = child->current_gaps;
