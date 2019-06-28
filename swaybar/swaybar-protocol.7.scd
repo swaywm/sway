@@ -84,16 +84,15 @@ properties (only _full_text_ is required):
 :  The border color for the block in #RRGGBBAA or #RRGGBB notation
 |- border_top
 :  integer
-:  Whether to draw the top border. This should be _0_ or _1_ (default).
-|- border_bottom
+:  The height in pixels of the top border. The default is 1
 :  integer
-:  Whether to draw the bottom border. This should be _0_ or _1_ (default).
+:  The height in pixels of the bottom border. The default is 1
 |- border_left
 :  integer
-:  Whether to draw the left border. This should be _0_ or _1_ (default).
+:  The width in pixels of the left border. The default is 1
 |- border_right
 :  integer
-:  Whether to draw the right border. This should be _0_ or _1_ (default).
+:  The width in pixels of the right border. The default is 1
 |- min_width
 :  integer or string
 :  The minimum width to use for the block. This can either be given in pixels
