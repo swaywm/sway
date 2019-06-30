@@ -1226,10 +1226,13 @@ void container_add_gaps(struct sway_container *c) {
 		}
 	}
 
-	c->current_gaps.top = c->y == ws->y ? ws->gaps_inner : 0;
-	c->current_gaps.right = ws->gaps_inner;
-	c->current_gaps.bottom = ws->gaps_inner;
-	c->current_gaps.left = c->x == ws->x ? ws->gaps_inner : 0;
+	int gaps1 = ws->gaps_inner / 2;
+	int gaps2 = ws->gaps_inner - gaps1;
+
+	c->current_gaps.top = gaps1;
+	c->current_gaps.bottom = gaps2;
+	c->current_gaps.left = gaps1;
+	c->current_gaps.right = gaps2;
 
 	c->x += c->current_gaps.left;
 	c->y += c->current_gaps.top;

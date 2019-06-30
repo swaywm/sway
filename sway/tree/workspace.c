@@ -743,6 +743,18 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		ws->current_gaps.right += ws->gaps_inner;
 		ws->current_gaps.bottom += ws->gaps_inner;
 		ws->current_gaps.left += ws->gaps_inner;
+	} else {
+		// For tiled containers we need to add the half-gap all around the edge
+		// to match the half gaps that the children have all already added around
+		// themselves. We use the opposite gaps1/gaps2 order so that the sum adds
+		// up to the correct total gap size in all circumstances.
+		int gaps1 = ws->gaps_inner / 2;
+		int gaps2 = ws->gaps_inner - gaps1;
+
+		ws->current_gaps.top += gaps2;
+		ws->current_gaps.bottom += gaps1;
+		ws->current_gaps.left += gaps2;
+		ws->current_gaps.right += gaps1;
 	}
 
 	ws->x += ws->current_gaps.left;
