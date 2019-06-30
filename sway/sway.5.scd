@@ -568,6 +568,9 @@ The default colors are:
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps ...).
 
+	If the gaps are too large and would make a view too narrow or short they
+	are adjusted to be smaller or even removed for that specific view.
+
 *hide_edge_borders* [--i3] none|vertical|horizontal|both|smart|smart_no_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_. The
 	_--i3_ option enables i3-compatible behavior to hide the title bar on tabbed

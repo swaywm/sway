@@ -1226,13 +1226,17 @@ void container_add_gaps(struct sway_container *c) {
 		}
 	}
 
-	int gaps1 = ws->gaps_inner / 2;
-	int gaps2 = ws->gaps_inner - gaps1;
+	int gaps_horizontal = MAX(0, MIN(ws->gaps_inner, c->width - MIN_SANE_W));
+	int gaps_horizontal1 = gaps_horizontal / 2;
+	int gaps_horizontal2 = gaps_horizontal - gaps_horizontal1;
+	c->current_gaps.left = gaps_horizontal1;
+	c->current_gaps.right = gaps_horizontal2;
 
-	c->current_gaps.top = gaps1;
-	c->current_gaps.bottom = gaps2;
-	c->current_gaps.left = gaps1;
-	c->current_gaps.right = gaps2;
+	int gaps_vertical = MAX(0, MIN(ws->gaps_inner, c->height - MIN_SANE_H));
+	int gaps_vertical1 = gaps_vertical / 2;
+	int gaps_vertical2 = gaps_vertical - gaps_vertical1;
+	c->current_gaps.top = gaps_vertical1;
+	c->current_gaps.bottom = gaps_vertical2;
 
 	c->x += c->current_gaps.left;
 	c->y += c->current_gaps.top;

@@ -15,8 +15,6 @@
 #define AXIS_HORIZONTAL (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)
 #define AXIS_VERTICAL   (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)
 
-static const int MIN_SANE_W = 100, MIN_SANE_H = 60;
-
 enum resize_unit {
 	RESIZE_UNIT_PX,
 	RESIZE_UNIT_PPT,
