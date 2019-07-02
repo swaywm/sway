@@ -748,17 +748,34 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		// to match the half gaps that the children have all already added around
 		// themselves. We use the opposite order for the two halves so that the
 		// sum adds up to the correct total gap size in all circumstances.
-		int gaps_horizontal = MAX(0, MIN(ws->gaps_inner, ws->width - MIN_SANE_W));
-		int gaps_horizontal1 = gaps_horizontal / 2;
-		int gaps_horizontal2 = gaps_horizontal - gaps_horizontal1;
+		int gaps_horizontal1 = ws->gaps_inner / 2;
+		int gaps_horizontal2 = ws->gaps_inner - gaps_horizontal1;
 		ws->current_gaps.left += gaps_horizontal2;
 		ws->current_gaps.right += gaps_horizontal1;
 
-		int gaps_vertical = MAX(0, MIN(ws->gaps_inner, ws->height - MIN_SANE_H));
-		int gaps_vertical1 = gaps_vertical / 2;
-		int gaps_vertical2 = gaps_vertical - gaps_vertical1;
+		int gaps_vertical1 = ws->gaps_inner / 2;
+		int gaps_vertical2 = ws->gaps_inner - gaps_vertical1;
 		ws->current_gaps.top += gaps_vertical2;
 		ws->current_gaps.bottom += gaps_vertical1;
+	}
+
+	// Now that we have the total gaps calculated we may need to clamp them in
+	// case they've made the available area too small
+	if (ws->width - ws->current_gaps.left - ws->current_gaps.right < MIN_SANE_W &&
+			ws->current_gaps.left + ws->current_gaps.right > 0) {
+		int total_gap = MAX(0, ws->width - MIN_SANE_W);
+		double left_gap_frac = ((float) ws->current_gaps.left /
+			((float) ws->current_gaps.left + (float) ws->current_gaps.right));
+		ws->current_gaps.left = left_gap_frac * total_gap;
+		ws->current_gaps.right = total_gap - ws->current_gaps.left;
+	}
+	if (ws->height - ws->current_gaps.top - ws->current_gaps.bottom < MIN_SANE_H &&
+			ws->current_gaps.top + ws->current_gaps.bottom > 0) {
+		int total_gap = MAX(0, ws->height - MIN_SANE_H);
+		double top_gap_frac = ((float) ws->current_gaps.top /
+			((float) ws->current_gaps.top + (float) ws->current_gaps.bottom));
+		ws->current_gaps.top = top_gap_frac * total_gap;
+		ws->current_gaps.bottom = total_gap - ws->current_gaps.top;
 	}
 
 	ws->x += ws->current_gaps.left;
