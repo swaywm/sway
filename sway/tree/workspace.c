@@ -54,21 +54,6 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 	return root->outputs->length ? root->outputs->items[0] : root->noop_output;
 }
 
-static void prevent_invalid_outer_gaps(struct sway_workspace *ws) {
-	if (ws->gaps_outer.top < -ws->gaps_inner) {
-		ws->gaps_outer.top = -ws->gaps_inner;
-	}
-	if (ws->gaps_outer.right < -ws->gaps_inner) {
-		ws->gaps_outer.right = -ws->gaps_inner;
-	}
-	if (ws->gaps_outer.bottom < -ws->gaps_inner) {
-		ws->gaps_outer.bottom = -ws->gaps_inner;
-	}
-	if (ws->gaps_outer.left < -ws->gaps_inner) {
-		ws->gaps_outer.left = -ws->gaps_inner;
-	}
-}
-
 struct sway_workspace *workspace_create(struct sway_output *output,
 		const char *name) {
 	if (output == NULL) {
@@ -111,9 +96,6 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 			if (wsc->gaps_inner != INT_MIN) {
 				ws->gaps_inner = wsc->gaps_inner;
 			}
-			// Since default outer gaps can be smaller than the negation of
-			// workspace specific inner gaps, check outer gaps again
-			prevent_invalid_outer_gaps(ws);
 
 			// Add output priorities
 			for (int i = 0; i < wsc->outputs->length; ++i) {
@@ -743,6 +725,14 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		ws->current_gaps.right += ws->gaps_inner;
 		ws->current_gaps.bottom += ws->gaps_inner;
 		ws->current_gaps.left += ws->gaps_inner;
+
+		// Prevent the resulting gaps from turning out negative, since outer gaps
+		// can be negative and nothing ensures they will not be larger than the
+		// current inner gaps.
+		ws->current_gaps.left = MAX(0, ws->current_gaps.left);
+		ws->current_gaps.right = MAX(0, ws->current_gaps.right);
+		ws->current_gaps.top = MAX(0, ws->current_gaps.top);
+		ws->current_gaps.bottom = MAX(0, ws->current_gaps.bottom);
 	} else {
 		// For tiled containers we need to add the half-gap all around the edge
 		// to match the half gaps that the children have all already added around
@@ -757,6 +747,14 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		int gaps_vertical2 = ws->gaps_inner - gaps_vertical1;
 		ws->current_gaps.top += gaps_vertical2;
 		ws->current_gaps.bottom += gaps_vertical1;
+
+		// Prevent the resulting gaps from turning out negative, since outer gaps
+		// can be negative and nothing ensures they will not be larger than the
+		// current inner gaps.
+		ws->current_gaps.left = MAX(-gaps_horizontal1, ws->current_gaps.left);
+		ws->current_gaps.right = MAX(-gaps_horizontal2, ws->current_gaps.right);
+		ws->current_gaps.top = MAX(-gaps_vertical1, ws->current_gaps.top);
+		ws->current_gaps.bottom = MAX(-gaps_vertical2, ws->current_gaps.bottom);
 	}
 
 	// Now that we have the total gaps calculated we may need to clamp them in
