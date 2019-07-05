@@ -320,6 +320,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->map.link);
 	wl_list_remove(&sway_layer->unmap.link);
 	wl_list_remove(&sway_layer->surface_commit.link);
+	wl_list_remove(&sway_layer->new_popup.link);
 	if (sway_layer->layer_surface->output != NULL) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
 		if (output != NULL) {
@@ -338,7 +339,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_output *output = sway_layer->layer_surface->output->data;
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
-	// TODO: send enter to subsurfaces and popups
 	wlr_surface_send_enter(sway_layer->layer_surface->surface,
 		sway_layer->layer_surface->output);
 	cursor_rebase_all();
@@ -348,6 +348,131 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer = wl_container_of(
 			listener, sway_layer, unmap);
 	unmap(sway_layer);
+}
+
+static struct sway_layer_surface *popup_get_layer(
+		struct sway_layer_popup *popup) {
+	while (popup->parent_type == LAYER_PARENT_POPUP) {
+		popup = popup->parent_popup;
+	}
+	return popup->parent_layer;
+}
+
+static void popup_damage(struct sway_layer_popup *layer_popup, bool whole) {
+	struct wlr_xdg_popup *popup = layer_popup->wlr_popup;
+	struct wlr_surface *surface = popup->base->surface;
+	int popup_sx = popup->geometry.x - popup->base->geometry.x;
+	int popup_sy = popup->geometry.y - popup->base->geometry.y;
+	int ox = popup_sx, oy = popup_sy;
+	struct sway_layer_surface *layer;
+	while (true) {
+		if (layer_popup->parent_type == LAYER_PARENT_POPUP) {
+			layer_popup = layer_popup->parent_popup;
+			ox += layer_popup->wlr_popup->base->geometry.x +
+				layer_popup->wlr_popup->geometry.x;
+			oy += layer_popup->wlr_popup->base->geometry.y +
+				layer_popup->wlr_popup->geometry.y;
+		} else {
+			layer = layer_popup->parent_layer;
+			ox += layer->geo.x;
+			oy += layer->geo.y;
+			break;
+		}
+	}
+	struct wlr_output *wlr_output = layer->layer_surface->output;
+	struct sway_output *output = wlr_output->data;
+	output_damage_surface(output, ox, oy, surface, whole);
+}
+
+static void popup_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, map);
+	struct sway_layer_surface *layer = popup_get_layer(popup);
+	struct wlr_output *wlr_output = layer->layer_surface->output;
+	wlr_surface_send_enter(popup->wlr_popup->base->surface, wlr_output);
+	popup_damage(popup, true);
+}
+
+static void popup_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, unmap);
+	popup_damage(popup, true);
+}
+
+static void popup_handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, commit);
+	popup_damage(popup, false);
+}
+
+static void popup_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup =
+		wl_container_of(listener, popup, destroy);
+
+	wl_list_remove(&popup->map.link);
+	wl_list_remove(&popup->unmap.link);
+	wl_list_remove(&popup->destroy.link);
+	wl_list_remove(&popup->commit.link);
+	free(popup);
+}
+
+static void popup_unconstrain(struct sway_layer_popup *popup) {
+	struct sway_layer_surface *layer = popup_get_layer(popup);
+	struct wlr_xdg_popup *wlr_popup = popup->wlr_popup;
+
+	struct sway_output *output = layer->layer_surface->output->data;
+
+	// the output box expressed in the coordinate system of the toplevel parent
+	// of the popup
+	struct wlr_box output_toplevel_sx_box = {
+		.x = -layer->geo.x,
+		.y = -layer->geo.y,
+		.width = output->width,
+		.height = output->height,
+	};
+
+	wlr_xdg_popup_unconstrain_from_box(wlr_popup, &output_toplevel_sx_box);
+}
+
+static void popup_handle_new_popup(struct wl_listener *listener, void *data);
+
+static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
+		enum layer_parent parent_type, void *parent) {
+	struct sway_layer_popup *popup =
+		calloc(1, sizeof(struct sway_layer_popup));
+	if (popup == NULL) {
+		return NULL;
+	}
+
+	popup->wlr_popup = wlr_popup;
+	popup->parent_type = parent_type;
+	popup->parent_layer = parent;
+
+	popup->map.notify = popup_handle_map;
+	wl_signal_add(&wlr_popup->base->events.map, &popup->map);
+	popup->unmap.notify = popup_handle_unmap;
+	wl_signal_add(&wlr_popup->base->events.unmap, &popup->unmap);
+	popup->destroy.notify = popup_handle_destroy;
+	wl_signal_add(&wlr_popup->base->events.destroy, &popup->destroy);
+	popup->commit.notify = popup_handle_commit;
+	wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
+	popup->new_popup.notify = popup_handle_new_popup;
+	wl_signal_add(&wlr_popup->base->events.new_popup, &popup->new_popup);
+
+	popup_unconstrain(popup);
+
+	return popup;
+}
+
+static void popup_handle_new_popup(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *sway_layer_popup =
+		wl_container_of(listener, sway_layer_popup, new_popup);
+	struct wlr_xdg_popup *wlr_popup = data;
+	create_popup(wlr_popup, LAYER_PARENT_POPUP, sway_layer_popup);
+}
+
+static void handle_new_popup(struct wl_listener *listener, void *data) {
+	struct sway_layer_surface *sway_layer_surface =
+		wl_container_of(listener, sway_layer_surface, new_popup);
+	struct wlr_xdg_popup *wlr_popup = data;
+	create_popup(wlr_popup, LAYER_PARENT_LAYER, sway_layer_surface);
 }
 
 struct sway_layer_surface *layer_from_wlr_layer_surface_v1(
@@ -406,7 +531,8 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&layer_surface->events.map, &sway_layer->map);
 	sway_layer->unmap.notify = handle_unmap;
 	wl_signal_add(&layer_surface->events.unmap, &sway_layer->unmap);
-	// TODO: Listen for subsurfaces
+	sway_layer->new_popup.notify = handle_new_popup;
+	wl_signal_add(&layer_surface->events.new_popup, &sway_layer->new_popup);
 
 	sway_layer->layer_surface = layer_surface;
 	layer_surface->data = sway_layer;
