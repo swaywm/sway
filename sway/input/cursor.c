@@ -39,15 +39,12 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
 		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
 	struct sway_layer_surface *sway_layer;
 	wl_list_for_each_reverse(sway_layer, layer, link) {
-		struct wlr_surface *wlr_surface =
-			sway_layer->layer_surface->surface;
 		double _sx = ox - sway_layer->geo.x;
 		double _sy = oy - sway_layer->geo.y;
-		// TODO: Test popups/subsurfaces
-		if (wlr_surface_point_accepts_input(wlr_surface, _sx, _sy)) {
-			*sx = _sx;
-			*sy = _sy;
-			return wlr_surface;
+		struct wlr_surface *sub = wlr_layer_surface_v1_surface_at(
+			sway_layer->layer_surface, _sx, _sy, sx, sy);
+		if (sub) {
+			return sub;
 		}
 	}
 	return NULL;
