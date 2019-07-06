@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include "list.h"
 
+#define MIN_SANE_W 100
+#define MIN_SANE_H 60
+
 struct sway_root;
 struct sway_output;
 struct sway_workspace;
