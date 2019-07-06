@@ -47,7 +47,7 @@ Esegui questi comandi:
     ninja -C build
     sudo ninja -C build install
 
-Sui sistemi senza logind, è necessario settare il permesso `setuid` al binario sway:
+Sui sistemi senza logind, è necessario impostare il permesso `setuid` al binario sway:
 
     sudo chmod a+s /usr/local/bin/sway
 
