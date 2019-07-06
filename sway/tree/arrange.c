@@ -68,7 +68,10 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		}
 		temp = temp->parent;
 	}
-	double child_total_width = parent->width - inner_gap * (children->length - 1);
+	double total_gap = fmin(inner_gap * (children->length - 1),
+		fmax(0, parent->width - MIN_SANE_W * children->length));
+	double child_total_width = parent->width - total_gap;
+	inner_gap = total_gap / (children->length - 1);
 
 	// Resize windows
 	sway_log(SWAY_DEBUG, "Arranging %p horizontally", parent);
@@ -143,7 +146,10 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 		}
 		temp = temp->parent;
 	}
-	double child_total_height = parent->height - inner_gap * (children->length - 1);
+	double total_gap = fmin(inner_gap * (children->length - 1),
+		fmax(0, parent->height - MIN_SANE_H * children->length));
+	double child_total_height = parent->height - total_gap;
+	inner_gap = total_gap / (children->length - 1);
 
 	// Resize windows
 	sway_log(SWAY_DEBUG, "Arranging %p vertically", parent);
