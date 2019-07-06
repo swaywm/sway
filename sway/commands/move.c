@@ -235,7 +235,6 @@ static void container_move_to_container(struct sway_container *container,
 	struct sway_workspace *old_workspace = container->workspace;
 
 	container_detach(container);
-	container_remove_gaps(container);
 	container->width = container->height = 0;
 	container->width_fraction = container->height_fraction = 0;
 

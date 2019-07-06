@@ -1173,72 +1173,6 @@ void container_discover_outputs(struct sway_container *con) {
 	}
 }
 
-void container_remove_gaps(struct sway_container *c) {
-	if (c->current_gaps.top == 0 && c->current_gaps.right == 0 &&
-			c->current_gaps.bottom == 0 && c->current_gaps.left == 0) {
-		return;
-	}
-
-	c->width += c->current_gaps.left + c->current_gaps.right;
-	c->height += c->current_gaps.top + c->current_gaps.bottom;
-	c->x -= c->current_gaps.left;
-	c->y -= c->current_gaps.top;
-
-	c->current_gaps.top = 0;
-	c->current_gaps.right = 0;
-	c->current_gaps.bottom = 0;
-	c->current_gaps.left = 0;
-}
-
-void container_add_gaps(struct sway_container *c) {
-	if (c->current_gaps.top > 0 || c->current_gaps.right > 0 ||
-			c->current_gaps.bottom > 0 || c->current_gaps.left > 0) {
-		return;
-	}
-	// Fullscreen global scratchpad containers cannot have gaps
-	struct sway_workspace *ws = c->workspace;
-	if (!ws) {
-		return;
-	}
-	// Linear containers don't have gaps because it'd create double gaps
-	if (!c->view && c->layout != L_TABBED && c->layout != L_STACKED) {
-		return;
-	}
-	// Descendants of tabbed/stacked containers re-use the gaps of the container
-	struct sway_container *temp = c;
-	while (temp) {
-		enum sway_container_layout layout = container_parent_layout(temp);
-		if (layout == L_TABBED || layout == L_STACKED) {
-			return;
-		}
-		temp = temp->parent;
-	}
-	// If smart gaps is on, don't add gaps if there is only one view visible
-	if (config->smart_gaps) {
-		struct sway_view *view = c->view;
-		if (!view) {
-			struct sway_seat *seat =
-				input_manager_get_default_seat();
-			struct sway_container *focus =
-				seat_get_focus_inactive_view(seat, &c->node);
-			view = focus ? focus->view : NULL;
-		}
-		if (view && view_is_only_visible(view)) {
-			return;
-		}
-	}
-
-	c->current_gaps.top = c->y == ws->y ? ws->gaps_inner : 0;
-	c->current_gaps.right = ws->gaps_inner;
-	c->current_gaps.bottom = ws->gaps_inner;
-	c->current_gaps.left = c->x == ws->x ? ws->gaps_inner : 0;
-
-	c->x += c->current_gaps.left;
-	c->y += c->current_gaps.top;
-	c->width -= c->current_gaps.left + c->current_gaps.right;
-	c->height -= c->current_gaps.top + c->current_gaps.bottom;
-}
-
 enum sway_container_layout container_parent_layout(struct sway_container *con) {
 	if (con->parent) {
 		return con->parent->layout;
@@ -1421,7 +1355,6 @@ struct sway_container *container_split(struct sway_container *child,
 	cont->height_fraction = child->height_fraction;
 	cont->x = child->x;
 	cont->y = child->y;
-	cont->current_gaps = child->current_gaps;
 	cont->layout = layout;
 
 	container_replace(child, cont);
