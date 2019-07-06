@@ -1,6 +1,6 @@
 # sway
 
-[English](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) - [Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--) - [中文-简体](https://github.com/swaywm/sway/blob/master/README.zh-CN.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [**Italiano**](https://github.com/swaywm/sway/blob/master/README.it.md#sway--)
+[**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) - [Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--) - [中文-简体](https://github.com/swaywm/sway/blob/master/README.zh-CN.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Italiano](https://github.com/swaywm/sway/blob/master/README.it.md#sway--)
 
 sway è un compositor [Wayland](http://wayland.freedesktop.org/) compatibile con [i3](https://i3wm.org/).
 Leggi le [FAQ](https://github.com/swaywm/sway/wiki). Unisciti al [canale
@@ -47,7 +47,7 @@ Esegui questi comandi:
     ninja -C build
     sudo ninja -C build install
 
-Sui sistemi senza logind, c'è bisogno di installare il binario sway:
+Sui sistemi senza logind, è necessario settare il permesso `setuid` al binario sway:
 
     sudo chmod a+s /usr/local/bin/sway
 
