@@ -52,23 +52,39 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		child->width_fraction /= total_width_fraction;
 	}
 
+	// Calculate gap size
+	double inner_gap = 0;
+	struct sway_container *child = children->items[0];
+	struct sway_workspace *ws = child->workspace;
+	if (ws) {
+		inner_gap = ws->gaps_inner;
+	}
+	// Descendants of tabbed/stacked containers don't have gaps
+	struct sway_container *temp = child;
+	while (temp) {
+		enum sway_container_layout layout = container_parent_layout(temp);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			inner_gap = 0;
+		}
+		temp = temp->parent;
+	}
+	double child_total_width = parent->width - inner_gap * (children->length - 1);
+
 	// Resize windows
 	sway_log(SWAY_DEBUG, "Arranging %p horizontally", parent);
 	double child_x = parent->x;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		container_remove_gaps(child);
 		child->x = child_x;
 		child->y = parent->y;
-		child->width = floor(child->width_fraction * parent->width);
+		child->width = floor(child->width_fraction * child_total_width);
 		child->height = parent->height;
-		child_x += child->width;
+		child_x += child->width + inner_gap;
 
 		// Make last child use remaining width of parent
 		if (i == children->length - 1) {
 			child->width = parent->x + parent->width - child->x;
 		}
-		container_add_gaps(child);
 	}
 }
 
@@ -111,23 +127,39 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 		child->height_fraction /= total_height_fraction;
 	}
 
-	// Resize
+	// Calculate gap size
+	double inner_gap = 0;
+	struct sway_container *child = children->items[0];
+	struct sway_workspace *ws = child->workspace;
+	if (ws) {
+		inner_gap = ws->gaps_inner;
+	}
+	// Descendants of tabbed/stacked containers don't have gaps
+	struct sway_container *temp = child;
+	while (temp) {
+		enum sway_container_layout layout = container_parent_layout(temp);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			inner_gap = 0;
+		}
+		temp = temp->parent;
+	}
+	double child_total_height = parent->height - inner_gap * (children->length - 1);
+
+	// Resize windows
 	sway_log(SWAY_DEBUG, "Arranging %p vertically", parent);
 	double child_y = parent->y;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		container_remove_gaps(child);
 		child->x = parent->x;
 		child->y = child_y;
 		child->width = parent->width;
-		child->height = floor(child->height_fraction * parent->height);
-		child_y += child->height;
+		child->height = floor(child->height_fraction * child_total_height);
+		child_y += child->height + inner_gap;
 
 		// Make last child use remaining height of parent
 		if (i == children->length - 1) {
 			child->height = parent->y + parent->height - child->y;
 		}
-		container_add_gaps(child);
 	}
 }
 
@@ -138,12 +170,10 @@ static void apply_tabbed_layout(list_t *children, struct wlr_box *parent) {
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
 		int parent_offset = child->view ? 0 : container_titlebar_height();
-		container_remove_gaps(child);
 		child->x = parent->x;
 		child->y = parent->y + parent_offset;
 		child->width = parent->width;
 		child->height = parent->height - parent_offset;
-		container_add_gaps(child);
 	}
 }
 
@@ -155,12 +185,10 @@ static void apply_stacked_layout(list_t *children, struct wlr_box *parent) {
 		struct sway_container *child = children->items[i];
 		int parent_offset = child->view ?  0 :
 			container_titlebar_height() * children->length;
-		container_remove_gaps(child);
 		child->x = parent->x;
 		child->y = parent->y + parent_offset;
 		child->width = parent->width;
 		child->height = parent->height - parent_offset;
-		container_add_gaps(child);
 	}
 }
 
@@ -226,7 +254,6 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	struct wlr_box *area = &output->usable_area;
 	sway_log(SWAY_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
-	workspace_remove_gaps(workspace);
 
 	bool first_arrange = workspace->width == 0 && workspace->height == 0;
 	double prev_x = workspace->x;

@@ -700,28 +700,7 @@ void workspace_insert_tiling(struct sway_workspace *workspace,
 	node_set_dirty(&con->node);
 }
 
-void workspace_remove_gaps(struct sway_workspace *ws) {
-	if (ws->current_gaps.top == 0 && ws->current_gaps.right == 0 &&
-			ws->current_gaps.bottom == 0 && ws->current_gaps.left == 0) {
-		return;
-	}
-
-	ws->width += ws->current_gaps.left + ws->current_gaps.right;
-	ws->height += ws->current_gaps.top + ws->current_gaps.bottom;
-	ws->x -= ws->current_gaps.left;
-	ws->y -= ws->current_gaps.top;
-
-	ws->current_gaps.top = 0;
-	ws->current_gaps.right = 0;
-	ws->current_gaps.bottom = 0;
-	ws->current_gaps.left = 0;
-}
-
 void workspace_add_gaps(struct sway_workspace *ws) {
-	if (ws->current_gaps.top > 0 || ws->current_gaps.right > 0 ||
-			ws->current_gaps.bottom > 0 || ws->current_gaps.left > 0) {
-		return;
-	}
 	if (config->smart_gaps) {
 		struct sway_seat *seat = input_manager_get_default_seat();
 		struct sway_container *focus =
@@ -730,20 +709,19 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 			focus = seat_get_focus_inactive_view(seat, &focus->node);
 		}
 		if (focus && focus->view && view_is_only_visible(focus->view)) {
+			ws->current_gaps.top = 0;
+			ws->current_gaps.right = 0;
+			ws->current_gaps.bottom = 0;
+			ws->current_gaps.left = 0;
 			return;
 		}
 	}
 
 	ws->current_gaps = ws->gaps_outer;
-	if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
-		// We have to add inner gaps for this, because children of tabbed and
-		// stacked containers don't apply their own gaps - they assume the
-		// tabbed/stacked container is using gaps.
-		ws->current_gaps.top += ws->gaps_inner;
-		ws->current_gaps.right += ws->gaps_inner;
-		ws->current_gaps.bottom += ws->gaps_inner;
-		ws->current_gaps.left += ws->gaps_inner;
-	}
+	ws->current_gaps.top += ws->gaps_inner;
+	ws->current_gaps.right += ws->gaps_inner;
+	ws->current_gaps.bottom += ws->gaps_inner;
+	ws->current_gaps.left += ws->gaps_inner;
 
 	ws->x += ws->current_gaps.left;
 	ws->y += ws->current_gaps.top;

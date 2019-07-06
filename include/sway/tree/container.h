@@ -116,14 +116,6 @@ struct sway_container {
 	bool border_left;
 	bool border_right;
 
-	// The gaps currently applied to the container.
-	struct {
-		int top;
-		int right;
-		int bottom;
-		int left;
-	} current_gaps;
-
 	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
 	struct sway_container *parent;    // NULL if container in root of workspace
 	list_t *children;                 // struct sway_container
@@ -295,10 +287,6 @@ bool container_is_fullscreen_or_child(struct sway_container *container);
 struct sway_output *container_get_effective_output(struct sway_container *con);
 
 void container_discover_outputs(struct sway_container *con);
-
-void container_remove_gaps(struct sway_container *container);
-
-void container_add_gaps(struct sway_container *container);
 
 enum sway_container_layout container_parent_layout(struct sway_container *con);
 
