@@ -54,21 +54,6 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 	return root->outputs->length ? root->outputs->items[0] : root->noop_output;
 }
 
-static void prevent_invalid_outer_gaps(struct sway_workspace *ws) {
-	if (ws->gaps_outer.top < -ws->gaps_inner) {
-		ws->gaps_outer.top = -ws->gaps_inner;
-	}
-	if (ws->gaps_outer.right < -ws->gaps_inner) {
-		ws->gaps_outer.right = -ws->gaps_inner;
-	}
-	if (ws->gaps_outer.bottom < -ws->gaps_inner) {
-		ws->gaps_outer.bottom = -ws->gaps_inner;
-	}
-	if (ws->gaps_outer.left < -ws->gaps_inner) {
-		ws->gaps_outer.left = -ws->gaps_inner;
-	}
-}
-
 struct sway_workspace *workspace_create(struct sway_output *output,
 		const char *name) {
 	if (output == NULL) {
@@ -111,9 +96,6 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 			if (wsc->gaps_inner != INT_MIN) {
 				ws->gaps_inner = wsc->gaps_inner;
 			}
-			// Since default outer gaps can be smaller than the negation of
-			// workspace specific inner gaps, check outer gaps again
-			prevent_invalid_outer_gaps(ws);
 
 			// Add output priorities
 			for (int i = 0; i < wsc->outputs->length; ++i) {
@@ -718,10 +700,11 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 	}
 
 	ws->current_gaps = ws->gaps_outer;
-	ws->current_gaps.top += ws->gaps_inner;
-	ws->current_gaps.right += ws->gaps_inner;
-	ws->current_gaps.bottom += ws->gaps_inner;
-	ws->current_gaps.left += ws->gaps_inner;
+	// Add inner gaps and make sure we don't turn out negative
+	ws->current_gaps.top = fmax(0, ws->current_gaps.top + ws->gaps_inner);
+	ws->current_gaps.right = fmax(0, ws->current_gaps.right + ws->gaps_inner);
+	ws->current_gaps.bottom = fmax(0, ws->current_gaps.bottom + ws->gaps_inner);
+	ws->current_gaps.left = fmax(0, ws->current_gaps.left + ws->gaps_inner);
 
 	ws->x += ws->current_gaps.left;
 	ws->y += ws->current_gaps.top;
