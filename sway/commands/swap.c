@@ -84,8 +84,7 @@ static void swap_focus(struct sway_container *con1,
 	}
 }
 
-static void container_swap(struct sway_container *con1,
-		struct sway_container *con2) {
+void container_swap(struct sway_container *con1, struct sway_container *con2) {
 	if (!sway_assert(con1 && con2, "Cannot swap with nothing")) {
 		return;
 	}

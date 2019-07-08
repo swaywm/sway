@@ -326,6 +326,8 @@ void container_detach(struct sway_container *child);
 void container_replace(struct sway_container *container,
 		struct sway_container *replacement);
 
+void container_swap(struct sway_container *con1, struct sway_container *con2);
+
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);
 

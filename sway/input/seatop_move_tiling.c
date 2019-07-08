@@ -245,8 +245,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		target_node->sway_workspace : target_node->sway_container->workspace;
 	enum wlr_edges edge = e->target_edge;
 	int after = edge != WLR_EDGE_TOP && edge != WLR_EDGE_LEFT;
+	bool swap = edge == WLR_EDGE_NONE && target_node->type == N_CONTAINER;
 
-	container_detach(con);
+	if (!swap) {
+		container_detach(con);
+	}
+
 
 	// Moving container into empty workspace
 	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
@@ -254,13 +258,17 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	} else if (target_node->type == N_CONTAINER) {
 		// Moving container before/after another
 		struct sway_container *target = target_node->sway_container;
-		enum sway_container_layout layout = container_parent_layout(target);
-		if (edge && !is_parallel(layout, edge)) {
-			enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
-				edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
-			container_split(target, new_layout);
+		if (swap) {
+			container_swap(target_node->sway_container, con);
+		} else {
+			enum sway_container_layout layout = container_parent_layout(target);
+			if (edge && !is_parallel(layout, edge)) {
+				enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
+					edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
+				container_split(target, new_layout);
+			}
+			container_add_sibling(target, con, after);
 		}
-		container_add_sibling(target, con, after);
 	} else {
 		// Target is a workspace which requires splitting
 		enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
