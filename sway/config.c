@@ -17,6 +17,7 @@
 #include <wlr/types/wlr_output.h>
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/input/switch.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
@@ -520,17 +521,18 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	}
 
 	if (is_active) {
+		input_manager_verify_fallback_seat();
+		for (int i = 0; i < config->seat_configs->length; i++) {
+			input_manager_apply_seat_config(config->seat_configs->items[i]);
+		}
+		sway_switch_retrigger_bindings_for_all();
+
 		reset_outputs();
 		spawn_swaybg();
 
 		config->reloading = false;
 		if (config->swaynag_config_errors.client != NULL) {
 			swaynag_show(&config->swaynag_config_errors);
-		}
-
-		input_manager_verify_fallback_seat();
-		for (int i = 0; i < config->seat_configs->length; i++) {
-			input_manager_apply_seat_config(config->seat_configs->items[i]);
 		}
 	}
 

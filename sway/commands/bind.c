@@ -478,6 +478,8 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 			binding->flags |= BINDING_LOCKED;
 		} else if (strcmp("--no-warn", argv[0]) == 0) {
 			warn = false;
+		} else if (strcmp("--reload", argv[0]) == 0) {
+			binding->flags |= BINDING_RELOAD;
 		} else {
 			break;
 		}

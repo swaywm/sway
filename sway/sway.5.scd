@@ -378,7 +378,7 @@ runtime.
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
-*bindswitch* [--locked] [--no-warn] <switch>:<state> <command>
+*bindswitch* [--locked] [--no-warn] [--reload] <switch>:<state> <command>
 	Binds <switch> to execute the sway command _command_ on state changes.
 	Supported switches are _lid_ (laptop lid) and _tablet_ (tablet mode)
 	switches. Valid values for _state_ are _on_, _off_ and _toggle_. These
@@ -390,6 +390,11 @@ runtime.
 	screen locking program is active. If there is a matching binding with
 	and without _--locked_, the one with will be preferred when locked and the
 	one without will be preferred when unlocked.
+
+	If the _--reload_ flag is given, the binding will also be executed when
+	the config is reloaded. _toggle_ bindings will not be executed on reload.
+	The _--locked_ flag will operate as normal so if the config is reloaded
+	while locked and _--locked_ is not given, the binding will not be executed.
 
 	By default, if you overwrite a binding, swaynag will give you a warning. To
 	silence this, use the _--no-warn_ flag.
