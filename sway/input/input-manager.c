@@ -304,15 +304,19 @@ static void input_manager_libinput_reset_touch(
 	uint32_t send_events =
 		libinput_device_config_send_events_get_default_mode(libinput_device);
 	sway_log(SWAY_DEBUG, "libinput_reset_touch(%s) send_events_set_mode(%d)",
-		input_device->identifier, send_events);
+			input_device->identifier, send_events);
 	log_libinput_config_status(libinput_device_config_send_events_set_mode(
-				libinput_device, send_events));
-	float m[6];
-	libinput_device_config_calibration_get_default_matrix(libinput_device, m);
-	sway_log(SWAY_DEBUG, "libinput_reset_touch(%s) calibration_set_matrix(%f %f %f %f %f %f)",
-		input_device->identifier, m[0], m[1], m[2], m[3], m[4], m[5]);
-	log_libinput_config_status(libinput_device_config_calibration_set_matrix(
+			libinput_device, send_events));
+
+	if (libinput_device_config_calibration_has_matrix(libinput_device)) {
+		float m[6];
+		libinput_device_config_calibration_get_default_matrix(libinput_device, m);
+		sway_log(SWAY_DEBUG, "libinput_reset_touch(%s) calibration_set_matrix("
+				"%f %f %f %f %f %f)", input_device->identifier, m[0], m[1],
+				m[2], m[3], m[4], m[5]);
+		log_libinput_config_status(libinput_device_config_calibration_set_matrix(
 				libinput_device, m));
+	}
 }
 
 static void input_manager_libinput_config_pointer(
@@ -434,113 +438,133 @@ static void input_manager_libinput_reset_pointer(
 	struct libinput_device *libinput_device =
 		wlr_libinput_get_device_handle(wlr_device);
 
-	enum libinput_config_accel_profile accel_profile =
-		libinput_device_config_accel_get_default_profile(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) accel_set_profile(%d)",
-			input_device->identifier, accel_profile);
-	log_libinput_config_status(libinput_device_config_accel_set_profile(
-				libinput_device, accel_profile));
-
-	enum libinput_config_click_method click_method =
-		libinput_device_config_click_get_default_method(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) click_set_method(%d)",
-		input_device->identifier, click_method);
-	log_libinput_config_status(libinput_device_config_click_set_method(
-				libinput_device, click_method));
-
-	enum libinput_config_drag_state drag =
-		libinput_device_config_tap_get_default_drag_enabled(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) tap_set_drag_enabled(%d)",
-			input_device->identifier, drag);
-	log_libinput_config_status(libinput_device_config_tap_set_drag_enabled(
-				libinput_device, drag));
-
-	enum libinput_config_drag_lock_state drag_lock =
-		libinput_device_config_tap_get_default_drag_lock_enabled(
-				libinput_device);
-	sway_log(SWAY_DEBUG,
-			"libinput_reset_pointer(%s) tap_set_drag_lock_enabled(%d)",
-			input_device->identifier, drag_lock);
-	log_libinput_config_status(
-			libinput_device_config_tap_set_drag_lock_enabled(
-				libinput_device, drag_lock));
-
-	enum libinput_config_dwt_state dwt =
-		libinput_device_config_dwt_get_default_enabled(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) dwt_set_enabled(%d)",
-		input_device->identifier, dwt);
-	log_libinput_config_status(libinput_device_config_dwt_set_enabled(
-				libinput_device, dwt));
-
-	int left_handed =
-		libinput_device_config_left_handed_get_default(libinput_device);
-	sway_log(SWAY_DEBUG,
-		"libinput_reset_pointer(%s) left_handed_set_enabled(%d)",
-		input_device->identifier, left_handed);
-	log_libinput_config_status(libinput_device_config_left_handed_set(
-				libinput_device, left_handed));
-
-	enum libinput_config_middle_emulation_state middle_emulation =
-		libinput_device_config_middle_emulation_get_default_enabled(
-				libinput_device);
-	sway_log(SWAY_DEBUG,
-		"libinput_reset_pointer(%s) middle_emulation_set_enabled(%d)",
-		input_device->identifier, middle_emulation);
-	log_libinput_config_status(
-			libinput_device_config_middle_emulation_set_enabled(
-				libinput_device, middle_emulation));
-
-	int natural_scroll =
-		libinput_device_config_scroll_get_default_natural_scroll_enabled(
-				libinput_device);
-	sway_log(SWAY_DEBUG,
-		"libinput_reset_pointer(%s) natural_scroll_set_enabled(%d)",
-		input_device->identifier, natural_scroll);
-	log_libinput_config_status(
-			libinput_device_config_scroll_set_natural_scroll_enabled(
-				libinput_device, natural_scroll));
-
-	double pointer_accel =
-		libinput_device_config_accel_get_default_speed(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) accel_set_speed(%f)",
-		input_device->identifier, pointer_accel);
-	log_libinput_config_status(libinput_device_config_accel_set_speed(
-				libinput_device, pointer_accel));
-
-	uint32_t scroll_button =
-		libinput_device_config_scroll_get_default_button(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) scroll_set_button(%d)",
-		input_device->identifier, scroll_button);
-	log_libinput_config_status(libinput_device_config_scroll_set_button(
-				libinput_device, scroll_button));
-
-	enum libinput_config_scroll_method scroll_method =
-		libinput_device_config_scroll_get_default_method(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) scroll_set_method(%d)",
-		input_device->identifier, scroll_method);
-	log_libinput_config_status(libinput_device_config_scroll_set_method(
-				libinput_device, scroll_method));
-
 	uint32_t send_events =
 		libinput_device_config_send_events_get_default_mode(libinput_device);
 	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) send_events_set_mode(%d)",
-		input_device->identifier, send_events);
+			input_device->identifier, send_events);
 	log_libinput_config_status(libinput_device_config_send_events_set_mode(
-				libinput_device, send_events));
+			libinput_device, send_events));
 
-	enum libinput_config_tap_state tap =
-		libinput_device_config_tap_get_default_enabled(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) tap_set_enabled(%d)",
-		input_device->identifier, tap);
-	log_libinput_config_status(libinput_device_config_tap_set_enabled(
+	if (libinput_device_config_tap_get_finger_count(libinput_device) > 0) {
+		enum libinput_config_tap_state tap =
+			libinput_device_config_tap_get_default_enabled(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) tap_set_enabled(%d)",
+				input_device->identifier, tap);
+		log_libinput_config_status(libinput_device_config_tap_set_enabled(
 				libinput_device, tap));
 
-	enum libinput_config_tap_button_map tap_button_map =
-		libinput_device_config_tap_get_button_map(libinput_device);
-	sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) tap_set_button_map(%d)",
-		input_device->identifier, tap_button_map);
-	log_libinput_config_status(libinput_device_config_tap_set_button_map(
+		enum libinput_config_tap_button_map tap_button_map =
+			libinput_device_config_tap_get_button_map(libinput_device);
+		sway_log(SWAY_DEBUG,
+				"libinput_reset_pointer(%s) tap_set_button_map(%d)",
+				input_device->identifier, tap_button_map);
+		log_libinput_config_status(libinput_device_config_tap_set_button_map(
 				libinput_device, tap_button_map));
+
+		enum libinput_config_drag_state drag =
+			libinput_device_config_tap_get_default_drag_enabled(libinput_device);
+		sway_log(SWAY_DEBUG,
+				"libinput_reset_pointer(%s) tap_set_drag_enabled(%d)",
+				input_device->identifier, drag);
+		log_libinput_config_status(libinput_device_config_tap_set_drag_enabled(
+				libinput_device, drag));
+
+		enum libinput_config_drag_lock_state drag_lock =
+			libinput_device_config_tap_get_default_drag_lock_enabled(
+					libinput_device);
+		sway_log(SWAY_DEBUG,
+				"libinput_reset_pointer(%s) tap_set_drag_lock_enabled(%d)",
+				input_device->identifier, drag_lock);
+		log_libinput_config_status(
+				libinput_device_config_tap_set_drag_lock_enabled(
+					libinput_device, drag_lock));
+	}
+
+	if (libinput_device_config_accel_is_available(libinput_device)) {
+		double pointer_accel =
+			libinput_device_config_accel_get_default_speed(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) accel_set_speed(%f)",
+				input_device->identifier, pointer_accel);
+		log_libinput_config_status(libinput_device_config_accel_set_speed(
+				libinput_device, pointer_accel));
+
+		enum libinput_config_accel_profile accel_profile =
+			libinput_device_config_accel_get_default_profile(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) accel_set_profile(%d)",
+				input_device->identifier, accel_profile);
+		log_libinput_config_status(libinput_device_config_accel_set_profile(
+				libinput_device, accel_profile));
+	}
+
+	if (libinput_device_config_scroll_has_natural_scroll(libinput_device)) {
+		int natural_scroll =
+			libinput_device_config_scroll_get_default_natural_scroll_enabled(
+					libinput_device);
+		sway_log(SWAY_DEBUG,
+				"libinput_reset_pointer(%s) natural_scroll_set_enabled(%d)",
+				input_device->identifier, natural_scroll);
+		log_libinput_config_status(
+				libinput_device_config_scroll_set_natural_scroll_enabled(
+					libinput_device, natural_scroll));
+	}
+
+	if (libinput_device_config_left_handed_is_available(libinput_device)) {
+		int left_handed =
+			libinput_device_config_left_handed_get_default(libinput_device);
+		sway_log(SWAY_DEBUG,
+				"libinput_reset_pointer(%s) left_handed_set_enabled(%d)",
+				input_device->identifier, left_handed);
+		log_libinput_config_status(libinput_device_config_left_handed_set(
+				libinput_device, left_handed));
+	}
+
+	uint32_t click = libinput_device_config_click_get_methods(libinput_device);
+	if ((click & ~LIBINPUT_CONFIG_CLICK_METHOD_NONE) != 0) {
+		enum libinput_config_click_method click_method =
+			libinput_device_config_click_get_default_method(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) click_set_method(%d)",
+				input_device->identifier, click_method);
+		log_libinput_config_status(libinput_device_config_click_set_method(
+				libinput_device, click_method));
+	}
+
+	if (libinput_device_config_middle_emulation_is_available(libinput_device)) {
+		enum libinput_config_middle_emulation_state middle_emulation =
+			libinput_device_config_middle_emulation_get_default_enabled(
+					libinput_device);
+		sway_log(SWAY_DEBUG,
+				"libinput_reset_pointer(%s) middle_emulation_set_enabled(%d)",
+				input_device->identifier, middle_emulation);
+		log_libinput_config_status(
+				libinput_device_config_middle_emulation_set_enabled(
+					libinput_device, middle_emulation));
+	}
+
+	uint32_t scroll = libinput_device_config_scroll_get_methods(libinput_device);
+	if ((scroll & ~LIBINPUT_CONFIG_SCROLL_NO_SCROLL) != 0) {
+		enum libinput_config_scroll_method scroll_method =
+			libinput_device_config_scroll_get_default_method(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) scroll_set_method(%d)",
+			input_device->identifier, scroll_method);
+		log_libinput_config_status(libinput_device_config_scroll_set_method(
+			libinput_device, scroll_method));
+
+		uint32_t scroll_button =
+			libinput_device_config_scroll_get_default_button(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) scroll_set_button(%d)",
+				input_device->identifier, scroll_button);
+		log_libinput_config_status(libinput_device_config_scroll_set_button(
+				libinput_device, scroll_button));
+	}
+
+	if (libinput_device_config_dwt_is_available(libinput_device)) {
+		enum libinput_config_dwt_state dwt =
+			libinput_device_config_dwt_get_default_enabled(libinput_device);
+		sway_log(SWAY_DEBUG, "libinput_reset_pointer(%s) dwt_set_enabled(%d)",
+				input_device->identifier, dwt);
+		log_libinput_config_status(libinput_device_config_dwt_set_enabled(
+				libinput_device, dwt));
+	}
 }
 
 static void handle_device_destroy(struct wl_listener *listener, void *data) {
