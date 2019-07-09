@@ -4,16 +4,20 @@
 #include "sway/input/seat.h"
 
 struct sway_switch {
-    struct sway_seat_device *seat_device;
+	struct sway_seat_device *seat_device;
+	enum wlr_switch_state state;
+	enum wlr_switch_type type;
 
-    struct wl_listener switch_toggle;
+	struct wl_listener switch_toggle;
 };
 
 struct sway_switch *sway_switch_create(struct sway_seat *seat,
-        struct sway_seat_device *device);
+		struct sway_seat_device *device);
 
 void sway_switch_configure(struct sway_switch *sway_switch);
 
 void sway_switch_destroy(struct sway_switch *sway_switch);
+
+void sway_switch_retrigger_bindings_for_all(void);
 
 #endif
