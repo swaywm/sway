@@ -2,6 +2,7 @@
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
@@ -27,7 +28,8 @@ static const char expected_syntax[] =
 
 static enum sway_container_layout get_layout_toggle(int argc, char **argv,
 		enum sway_container_layout layout,
-		enum sway_container_layout prev_split_layout) {
+		enum sway_container_layout prev_split_layout,
+		struct sway_output *output) {
 	// "layout toggle"
 	if (argc == 1) {
 		return layout == L_HORIZ ? L_VERT : L_HORIZ;
@@ -66,8 +68,18 @@ static enum sway_container_layout get_layout_toggle(int argc, char **argv,
 			return parsed;
 		}
 		if (strcmp(argv[i], "split") == 0) {
-			return layout == L_HORIZ ? L_VERT :
-				layout == L_VERT ? L_HORIZ : prev_split_layout;
+			if (layout == L_HORIZ) {
+				return L_VERT;
+			} else if (layout == L_VERT) {
+				return L_HORIZ;
+			} else if (prev_split_layout != L_NONE) {
+				return prev_split_layout;
+			} else if (config->default_orientation != L_NONE) {
+				return config->default_orientation;
+			} else if (output->height > output->width) {
+				return L_VERT;
+			}
+			return L_HORIZ;
 		}
 		// invalid layout strings are silently ignored
 	}
@@ -76,7 +88,8 @@ static enum sway_container_layout get_layout_toggle(int argc, char **argv,
 
 static enum sway_container_layout get_layout(int argc, char **argv,
 		enum sway_container_layout layout,
-		enum sway_container_layout prev_split_layout) {
+		enum sway_container_layout prev_split_layout,
+		struct sway_output *output) {
 	// Check if assigned directly
 	enum sway_container_layout parsed = parse_layout_string(argv[0]);
 	if (parsed != L_NONE) {
@@ -88,7 +101,7 @@ static enum sway_container_layout get_layout(int argc, char **argv,
 	}
 
 	if (strcasecmp(argv[0], "toggle") == 0) {
-		return get_layout_toggle(argc, argv, layout, prev_split_layout);
+		return get_layout_toggle(argc, argv, layout, prev_split_layout, output);
 	}
 
 	return L_NONE;
@@ -124,11 +137,13 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if (container) {
 		old_layout = container->layout;
 		new_layout = get_layout(argc, argv,
-				container->layout, container->prev_split_layout);
+				container->layout, container->prev_split_layout,
+				container->workspace->output);
 	} else {
 		old_layout = workspace->layout;
 		new_layout = get_layout(argc, argv,
-				workspace->layout, workspace->prev_split_layout);
+				workspace->layout, workspace->prev_split_layout,
+				workspace->output);
 	}
 	if (new_layout == L_NONE) {
 		return cmd_results_new(CMD_INVALID, expected_syntax);
