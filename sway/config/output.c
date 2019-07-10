@@ -308,9 +308,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_output_layout_get_box(root->output_layout, wlr_output);
 	output->lx = output_box->x;
 	output->ly = output_box->y;
-	wlr_output_transformed_resolution(wlr_output,
-		&output->width, &output->height);
-
+	output->width = output_box->width;
+	output->height = output_box->height;
 
 	if (oc && oc->dpms_state == DPMS_OFF) {
 		sway_log(SWAY_DEBUG, "Turning off screen");
