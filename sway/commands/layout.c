@@ -26,19 +26,37 @@ static const char expected_syntax[] =
 	"'layout toggle [split|all]' or "
 	"'layout toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...'";
 
+static enum sway_container_layout toggle_split_layout(
+		enum sway_container_layout layout,
+		enum sway_container_layout prev_split_layout,
+		struct sway_output *output) {
+	if (layout == L_HORIZ) {
+		return L_VERT;
+	} else if (layout == L_VERT) {
+		return L_HORIZ;
+	} else if (prev_split_layout != L_NONE) {
+		return prev_split_layout;
+	} else if (config->default_orientation != L_NONE) {
+		return config->default_orientation;
+	} else if (output->height > output->width) {
+		return L_VERT;
+	}
+	return L_HORIZ;
+}
+
 static enum sway_container_layout get_layout_toggle(int argc, char **argv,
 		enum sway_container_layout layout,
 		enum sway_container_layout prev_split_layout,
 		struct sway_output *output) {
 	// "layout toggle"
 	if (argc == 1) {
-		return layout == L_HORIZ ? L_VERT : L_HORIZ;
+		return toggle_split_layout(layout, prev_split_layout, output);
 	}
 
 	if (argc == 2) {
 		// "layout toggle split" (same as "layout toggle")
 		if (strcasecmp(argv[1], "split") == 0) {
-			return layout == L_HORIZ ? L_VERT : L_HORIZ;
+			return toggle_split_layout(layout, prev_split_layout, output);
 		}
 		// "layout toggle all"
 		if (strcasecmp(argv[1], "all") == 0) {
@@ -68,18 +86,7 @@ static enum sway_container_layout get_layout_toggle(int argc, char **argv,
 			return parsed;
 		}
 		if (strcmp(argv[i], "split") == 0) {
-			if (layout == L_HORIZ) {
-				return L_VERT;
-			} else if (layout == L_VERT) {
-				return L_HORIZ;
-			} else if (prev_split_layout != L_NONE) {
-				return prev_split_layout;
-			} else if (config->default_orientation != L_NONE) {
-				return config->default_orientation;
-			} else if (output->height > output->width) {
-				return L_VERT;
-			}
-			return L_HORIZ;
+			return toggle_split_layout(layout, prev_split_layout, output);
 		}
 		// invalid layout strings are silently ignored
 	}
