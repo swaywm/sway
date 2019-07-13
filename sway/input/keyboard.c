@@ -534,11 +534,6 @@ static void handle_xkb_context_log(struct xkb_context *context,
 
 struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 		char **error) {
-	struct xkb_rule_names rules = {0};
-	if (ic) {
-		input_config_fill_rule_names(ic, &rules);
-	}
-
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	if (!sway_assert(context, "cannot create XKB context")) {
 		return NULL;
@@ -546,8 +541,46 @@ struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 	xkb_context_set_user_data(context, error);
 	xkb_context_set_log_fn(context, handle_xkb_context_log);
 
-	struct xkb_keymap *keymap =
-		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	struct xkb_keymap *keymap = NULL;
+
+	if (ic && ic->xkb_file) {
+		FILE *keymap_file = fopen(ic->xkb_file, "r");
+		if (!keymap_file) {
+			if (error) {
+				size_t len = snprintf(NULL, 0, "cannot read XKB file %s: %s",
+						ic->xkb_file, strerror(errno)) + 1;
+				*error = malloc(len);
+				if (*error) {
+					snprintf(*error, len, "cannot read XKB file %s: %s",
+							ic->xkb_file, strerror(errno));
+				} else {
+					sway_log_errno(SWAY_ERROR, "cannot read XKB file %s: %s",
+							ic->xkb_file, strerror(errno));
+				}
+			} else {
+				sway_log_errno(SWAY_ERROR, "cannot read XKB file %s: %s",
+						ic->xkb_file, strerror(errno));
+			}
+			goto cleanup;
+		}
+
+		keymap = xkb_keymap_new_from_file(context, keymap_file,
+					XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+		if (!fclose(keymap_file)) {
+			sway_log_errno(SWAY_ERROR, "cannot close XKB file %s: %s",
+					ic->xkb_file, strerror(errno));
+		}
+	} else {
+		struct xkb_rule_names rules = {0};
+		if (ic) {
+			input_config_fill_rule_names(ic, &rules);
+		}
+		keymap = xkb_keymap_new_from_names(context, &rules,
+			XKB_KEYMAP_COMPILE_NO_FLAGS);
+	}
+
+cleanup:
 	xkb_context_set_user_data(context, NULL);
 	xkb_context_unref(context);
 	return keymap;

@@ -39,6 +39,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->repeat_rate = INT_MIN;
 	input->xkb_numlock = INT_MIN;
 	input->xkb_capslock = INT_MIN;
+	input->xkb_file_is_set = false;
 
 	return input;
 }
@@ -94,6 +95,11 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 	if (src->tap_button_map != INT_MIN) {
 		dst->tap_button_map = src->tap_button_map;
+	}
+	if (src->xkb_file_is_set) {
+		free(dst->xkb_file);
+		dst->xkb_file = src->xkb_file ? strdup(src->xkb_file) : NULL;
+		dst->xkb_file_is_set = dst->xkb_file != NULL;
 	}
 	if (src->xkb_layout) {
 		free(dst->xkb_layout);
@@ -284,6 +290,8 @@ struct input_config *store_input_config(struct input_config *ic,
 		ic = current;
 	}
 
+	ic->xkb_file_is_set = ic->xkb_file != NULL;
+
 	if (!current || new_current) {
 		list_add(config_list, ic);
 	}
@@ -307,6 +315,7 @@ void free_input_config(struct input_config *ic) {
 		return;
 	}
 	free(ic->identifier);
+	free(ic->xkb_file);
 	free(ic->xkb_layout);
 	free(ic->xkb_model);
 	free(ic->xkb_options);
