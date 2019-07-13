@@ -44,6 +44,11 @@ on top of the existing device configurations.
 For more information on these xkb configuration options, see
 *xkeyboard-config*(7).
 
+*input* <identifier> xkb_file <file_name>
+	Sets all xkb configurations from a complete .xkb file. This file can be
+	dumped from _xkbcomp $DISPLAY keymap.xkb_. This setting overrides
+	xkb_layout, xkb_model, xkb_options, xkb_rules, and xkb_variant settings.
+
 *input* <identifier> xkb_layout <layout_name>
 	Sets the layout of the keyboard like _us_ or _de_.
 

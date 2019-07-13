@@ -160,6 +160,7 @@ sway_sources = files(
 	'commands/input/tap.c',
 	'commands/input/tap_button_map.c',
 	'commands/input/xkb_capslock.c',
+	'commands/input/xkb_file.c',
 	'commands/input/xkb_layout.c',
 	'commands/input/xkb_model.c',
 	'commands/input/xkb_numlock.c',

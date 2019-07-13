@@ -138,6 +138,9 @@ struct input_config {
 	char *xkb_options;
 	char *xkb_rules;
 	char *xkb_variant;
+	char *xkb_file;
+
+	bool xkb_file_is_set;
 
 	int xkb_numlock;
 	int xkb_capslock;

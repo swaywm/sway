@@ -28,6 +28,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
 	{ "tap_button_map", input_cmd_tap_button_map },
+	{ "xkb_file", input_cmd_xkb_file },
 	{ "xkb_layout", input_cmd_xkb_layout },
 	{ "xkb_model", input_cmd_xkb_model },
 	{ "xkb_options", input_cmd_xkb_options },
@@ -48,8 +49,8 @@ static struct cmd_handler input_config_handlers[] = {
 static void retranslate_keysyms(struct input_config *input_config) {
 	for (int i = 0; i < config->input_configs->length; ++i) {
 		struct input_config *ic = config->input_configs->items[i];
-		if (ic->xkb_layout) {
-			// this is the first config with xkb_layout
+		if (ic->xkb_layout || ic->xkb_file) {
+			// this is the first config with xkb_layout or xkb_file
 			if (ic->identifier == input_config->identifier) {
 				translate_keysyms(ic);
 			}
