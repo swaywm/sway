@@ -650,9 +650,9 @@ The default colors are:
 	Any mark that starts with an underscore will not be drawn even if
 	*show_marks* is yes. The default is _yes_.
 
-*opacity* <value>
-	Set the opacity of the window between 0 (completely transparent) and 1
-	(completely opaque).
+*opacity* [set|plus|minus] <value>
+	Adjusts the opacity of the window between 0 (completely transparent) and
+	1 (completely opaque). If the operation is omitted, _set_ will be used.
 
 *tiling_drag*  enable|disable|toggle
 	Sets whether or not tiling containers can be dragged with the mouse. If

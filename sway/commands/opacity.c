@@ -1,21 +1,13 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/tree/view.h"
 #include "log.h"
 
-static bool parse_opacity(const char *opacity, float *val) {
-	char *err;
-	*val = strtof(opacity, &err);
-	if (*val < 0 || *val > 1 || *err) {
-		return false;
-	}
-	return true;
-}
-
 struct cmd_results *cmd_opacity(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "opacity", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "opacity", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 
@@ -25,15 +17,26 @@ struct cmd_results *cmd_opacity(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "No current container");
 	}
 
-	float opacity = 0.0f;
-
-	if (!parse_opacity(argv[0], &opacity)) {
-		return cmd_results_new(CMD_INVALID,
-				"Invalid value (expected 0..1): %s", argv[0]);
+	char *err;
+	float val = strtof(argc == 1 ? argv[0] : argv[1], &err);
+	if (*err) {
+		return cmd_results_new(CMD_INVALID, "opacity float invalid");
 	}
 
-	con->alpha = opacity;
-	container_damage_whole(con);
+	if (!strcasecmp(argv[0], "plus")) {
+		val = con->alpha + val;
+	} else if (!strcasecmp(argv[0], "minus")) {
+		val = con->alpha - val;
+	} else if (argc > 1 && strcasecmp(argv[0], "set")) {
+		return cmd_results_new(CMD_INVALID,
+				"Expected: set|plus|minus <0..1>: %s", argv[0]);
+	}
 
+	if (val < 0 || val > 1) {
+		return cmd_results_new(CMD_FAILURE, "opacity value out of bounds");
+	}
+
+	con->alpha = val;
+	container_damage_whole(con);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
