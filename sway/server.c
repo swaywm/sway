@@ -66,6 +66,9 @@ bool server_init(struct sway_server *server) {
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
+	server->output_layout_change.notify = handle_output_layout_change;
+	wl_signal_add(&root->output_layout->events.change,
+		&server->output_layout_change);
 
 	wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
 
