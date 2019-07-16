@@ -688,6 +688,13 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	update_output_manager_config(server);
 }
 
+void handle_output_layout_change(struct wl_listener *listener,
+		void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, output_layout_change);
+	update_output_manager_config(server);
+}
+
 void handle_output_manager_apply(struct wl_listener *listener, void *data) {
 	struct sway_server *server =
 		wl_container_of(listener, server, output_manager_apply);
