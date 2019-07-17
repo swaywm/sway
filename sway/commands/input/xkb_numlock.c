@@ -1,8 +1,6 @@
-#include <string.h>
-#include <strings.h>
+#define _POSIX_C_SOURCE 200809L
 #include "sway/config.h"
 #include "sway/commands.h"
-#include "sway/input/input-manager.h"
 #include "util.h"
 
 struct cmd_results *input_cmd_xkb_numlock(int argc, char **argv) {
