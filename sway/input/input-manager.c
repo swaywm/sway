@@ -12,6 +12,7 @@
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "stringop.h"
 #include "list.h"
@@ -584,6 +585,8 @@ static void handle_device_destroy(struct wl_listener *listener, void *data) {
 		seat_remove_device(seat, input_device);
 	}
 
+	ipc_event_input("removed", input_device);
+
 	wl_list_remove(&input_device->link);
 	wl_list_remove(&input_device->device_destroy.link);
 	free(input_device->identifier);
@@ -656,6 +659,8 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 			"device '%s' is not configured on any seats",
 			input_device->identifier);
 	}
+
+	ipc_event_input("added", input_device);
 }
 
 static void handle_inhibit_activate(struct wl_listener *listener, void *data) {

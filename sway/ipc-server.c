@@ -487,6 +487,21 @@ static void ipc_event_tick(const char *payload) {
 	json_object_put(json);
 }
 
+void ipc_event_input(const char *change, struct sway_input_device *device) {
+	if (!ipc_has_event_listeners(IPC_EVENT_INPUT)) {
+		return;
+	}
+	sway_log(SWAY_DEBUG, "Sending input event");
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "change", json_object_new_string(change));
+	json_object_object_add(json, "input", ipc_json_describe_input(device));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_INPUT);
+	json_object_put(json);
+}
+
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
@@ -716,6 +731,8 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 			} else if (strcmp(event_type, "tick") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_TICK);
 				is_tick = true;
+			} else if (strcmp(event_type, "input") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_INPUT);
 			} else {
 				const char msg[] = "{\"success\": false}";
 				ipc_send_reply(client, payload_type, msg, strlen(msg));
