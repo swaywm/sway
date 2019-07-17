@@ -38,6 +38,7 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 	struct sway_input_device *dev;
 	wl_list_for_each(dev, &server.input->devices, link) {
 		if (strcmp(ic->identifier, "*") != 0 &&
+				strcmp(ic->identifier, "type:keyboard") != 0 &&
 				strcmp(ic->identifier, dev->identifier) != 0) {
 			continue;
 		}
