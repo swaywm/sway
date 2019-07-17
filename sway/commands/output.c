@@ -36,7 +36,32 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				"Refusing to configure the no op output");
 	}
 
-	struct output_config *output = new_output_config(argv[0]);
+	struct output_config *output = NULL;
+	if (strcmp(argv[0], "-") == 0 || strcmp(argv[0], "--") == 0) {
+		if (config->reading) {
+			return cmd_results_new(CMD_FAILURE,
+					"Current output alias (%s) cannot be used in the config",
+					argv[0]);
+		}
+		struct sway_output *sway_output = config->handler_context.node ?
+			node_get_output(config->handler_context.node) : NULL;
+		if (!sway_output) {
+			return cmd_results_new(CMD_FAILURE, "Unknown output");
+		}
+		if (sway_output == root->noop_output) {
+			return cmd_results_new(CMD_FAILURE,
+					"Refusing to configure the no op output");
+		}
+		if (strcmp(argv[0], "-") == 0) {
+			output = new_output_config(sway_output->wlr_output->name);
+		} else {
+			char identifier[128];
+			output_get_identifier(identifier, 128, sway_output);
+			output = new_output_config(identifier);
+		}
+	} else {
+		output = new_output_config(argv[0]);
+	}
 	if (!output) {
 		sway_log(SWAY_ERROR, "Failed to allocate output config");
 		return NULL;

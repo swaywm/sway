@@ -11,7 +11,9 @@ You may combine output commands into one, like so:
 	output HDMI-A-1 mode 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
 
 You can get a list of output names with *swaymsg -t get_outputs*. You may also
-match any output by using the output name "\*".
+match any output by using the output name "\*". Additionally, "-" can be used
+to match the focused output by name and "--" can be used to match the focused
+output by its identifier.
 
 Some outputs may have different names when disconnecting and reconnecting. To
 identify these, the name can be substituted for a string consisting of the make,
