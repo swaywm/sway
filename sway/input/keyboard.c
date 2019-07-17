@@ -473,6 +473,11 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 
 	uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_device->keyboard);
 	determine_bar_visibility(modifiers);
+
+	if (wlr_device->keyboard->modifiers.group != keyboard->effective_layout) {
+		keyboard->effective_layout = wlr_device->keyboard->modifiers.group;
+		ipc_event_input("xkb_layout", keyboard->seat_device->input_device);
+	}
 }
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
@@ -603,8 +608,23 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		}
 	}
 
+	bool keymap_changed = false;
+	bool effective_layout_changed = keyboard->effective_layout != 0;
+	if (keyboard->keymap) {
+		char *old_keymap_string = xkb_keymap_get_as_string(keyboard->keymap,
+			XKB_KEYMAP_FORMAT_TEXT_V1);
+		char *new_keymap_string = xkb_keymap_get_as_string(keymap,
+			XKB_KEYMAP_FORMAT_TEXT_V1);
+		keymap_changed = strcmp(old_keymap_string, new_keymap_string);
+		free(old_keymap_string);
+		free(new_keymap_string);
+	} else {
+		keymap_changed = true;
+	}
+
 	xkb_keymap_unref(keyboard->keymap);
 	keyboard->keymap = keymap;
+	keyboard->effective_layout = 0;
 	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
 
 	xkb_mod_mask_t locked_mods = 0;
@@ -654,6 +674,14 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	wl_signal_add(&wlr_device->keyboard->events.modifiers,
 		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
+
+	if (keymap_changed) {
+		ipc_event_input("xkb_keymap",
+			keyboard->seat_device->input_device);
+	} else if (effective_layout_changed) {
+		ipc_event_input("xkb_layout",
+			keyboard->seat_device->input_device);
+	}
 }
 
 void sway_keyboard_destroy(struct sway_keyboard *keyboard) {

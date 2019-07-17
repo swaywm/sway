@@ -52,6 +52,7 @@ struct sway_keyboard {
 	struct sway_seat_device *seat_device;
 
 	struct xkb_keymap *keymap;
+	xkb_layout_index_t effective_layout;
 
 	struct wl_listener keyboard_key;
 	struct wl_listener keyboard_modifiers;
