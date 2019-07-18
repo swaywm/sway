@@ -21,6 +21,9 @@ sway_sources = files(
 	'desktop/xdg_shell.c',
 
 	'input/input-manager.c',
+	'input/cursor.c',
+	'input/keyboard.c',
+	'input/libinput.c',
 	'input/seat.c',
 	'input/seatop_default.c',
 	'input/seatop_down.c',
@@ -28,8 +31,6 @@ sway_sources = files(
 	'input/seatop_move_tiling.c',
 	'input/seatop_resize_floating.c',
 	'input/seatop_resize_tiling.c',
-	'input/cursor.c',
-	'input/keyboard.c',
 	'input/switch.c',
 
 	'config/bar.c',
