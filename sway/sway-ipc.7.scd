@@ -1731,6 +1731,8 @@ The following change types are currently available:
 :  (Keyboards only) The keymap for the keyboard has changed
 |- xkb_layout
 :  (Keyboards only) The effective layout in the keymap has changed
+|- libinput_config
+:  (libinput device only) A libinput config option for the device changed
 
 *Example Event:*
 ```
