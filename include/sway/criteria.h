@@ -40,6 +40,9 @@ struct criteria {
 };
 
 bool criteria_is_empty(struct criteria *criteria);
+bool criteria_is_equal(struct criteria *left, struct criteria *right);
+
+bool criteria_already_exists(struct criteria *criteria);
 
 void criteria_destroy(struct criteria *criteria);
 

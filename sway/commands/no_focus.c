@@ -18,7 +18,16 @@ struct cmd_results *cmd_no_focus(int argc, char **argv) {
 		return error;
 	}
 
+
 	criteria->type = CT_NO_FOCUS;
+
+	// Check if it already exists
+	if (criteria_already_exists(criteria)) {
+		sway_log(SWAY_DEBUG, "no_focus already exists: '%s'", criteria->raw);
+		criteria_destroy(criteria);
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+
 	list_add(config->criteria, criteria);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
