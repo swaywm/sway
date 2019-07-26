@@ -143,7 +143,8 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
  */
 static void get_active_binding(const struct sway_shortcut_state *state,
 		list_t *bindings, struct sway_binding **current_binding,
-		uint32_t modifiers, bool release, bool locked, const char *input) {
+		uint32_t modifiers, bool release, bool locked, const char *input,
+		xkb_layout_index_t group) {
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
 		bool binding_locked = (binding->flags & BINDING_LOCKED) != 0;
@@ -152,6 +153,8 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		if (modifiers ^ binding->modifiers ||
 				release != binding_release ||
 				locked > binding_locked ||
+				(binding->group != XKB_LAYOUT_INVALID &&
+				 binding->group != group) ||
 				(strcmp(binding->input, input) != 0 &&
 				 strcmp(binding->input, "*") != 0)) {
 			continue;
@@ -186,10 +189,14 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 			bool current_locked =
 				((*current_binding)->flags & BINDING_LOCKED) != 0;
 			bool current_input = strcmp((*current_binding)->input, input) == 0;
+			bool current_group_set =
+				(*current_binding)->group != XKB_LAYOUT_INVALID;
 			bool binding_input = strcmp(binding->input, input) == 0;
+			bool binding_group_set = binding->group != XKB_LAYOUT_INVALID;
 
 			if (current_input == binding_input
-					&& current_locked == binding_locked) {
+					&& current_locked == binding_locked
+					&& current_group_set == binding_group_set) {
 				sway_log(SWAY_DEBUG,
 						"Encountered conflicting bindings %d and %d",
 						(*current_binding)->order, binding->order);
@@ -200,14 +207,22 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 				continue; // Prefer the correct input
 			}
 
-			if (current_input == binding_input && current_locked == locked) {
-				continue; // Prefer correct lock state for matching inputs
+			if (current_input == binding_input &&
+				   (*current_binding)->group == group) {
+				continue; // Prefer correct group for matching inputs
+			}
+
+			if (current_input == binding_input &&
+					current_group_set == binding_group_set &&
+					current_locked == locked) {
+				continue; // Prefer correct lock state for matching input+group
 			}
 		}
 
 		*current_binding = binding;
 		if (strcmp((*current_binding)->input, input) == 0 &&
-				(((*current_binding)->flags & BINDING_LOCKED) == locked)) {
+				(((*current_binding)->flags & BINDING_LOCKED) == locked) &&
+				(*current_binding)->group == group) {
 			return; // If a perfect match is found, quit searching
 		}
 	}
@@ -344,13 +359,16 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct sway_binding *binding_released = NULL;
 	get_active_binding(&keyboard->state_keycodes,
 			config->current_mode->keycode_bindings, &binding_released,
-			code_modifiers, true, input_inhibited, device_identifier);
+			code_modifiers, true, input_inhibited, device_identifier,
+			keyboard->effective_layout);
 	get_active_binding(&keyboard->state_keysyms_raw,
 			config->current_mode->keysym_bindings, &binding_released,
-			raw_modifiers, true, input_inhibited, device_identifier);
+			raw_modifiers, true, input_inhibited, device_identifier,
+			keyboard->effective_layout);
 	get_active_binding(&keyboard->state_keysyms_translated,
 			config->current_mode->keysym_bindings, &binding_released,
-			translated_modifiers, true, input_inhibited, device_identifier);
+			translated_modifiers, true, input_inhibited, device_identifier,
+			keyboard->effective_layout);
 
 	// Execute stored release binding once no longer active
 	if (keyboard->held_binding && binding_released != keyboard->held_binding &&
@@ -370,14 +388,16 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	if (event->state == WLR_KEY_PRESSED) {
 		get_active_binding(&keyboard->state_keycodes,
 				config->current_mode->keycode_bindings, &binding,
-				code_modifiers, false, input_inhibited, device_identifier);
+				code_modifiers, false, input_inhibited, device_identifier,
+				keyboard->effective_layout);
 		get_active_binding(&keyboard->state_keysyms_raw,
 				config->current_mode->keysym_bindings, &binding,
-				raw_modifiers, false, input_inhibited, device_identifier);
+				raw_modifiers, false, input_inhibited, device_identifier,
+				keyboard->effective_layout);
 		get_active_binding(&keyboard->state_keysyms_translated,
 				config->current_mode->keysym_bindings, &binding,
 				translated_modifiers, false, input_inhibited,
-				device_identifier);
+				device_identifier, keyboard->effective_layout);
 	}
 
 	// Set up (or clear) keyboard repeat for a pressed binding. Since the

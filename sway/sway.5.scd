@@ -328,14 +328,17 @@ runtime.
 
 		for_window <criteria> move container to output <output>
 
-*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--to-code] [--input-device=<device>] [--no-warn] <key combo> <command>
+*bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
+		[--to-code] [--input-device=<device>] [--no-warn] [Group<1-4>+]<key combo> \
+		<command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
 	released. If _input-device_ is given, the binding will only be executed for
 	that input device and will be executed instead of any binding that is
-	generic to all devices. By default, if you overwrite a binding, swaynag
-	will give you a warning. To silence this, use the _--no-warn_ flag.
+	generic to all devices. If a group number is given, then the binding will
+	only be available for that group. By default, if you overwrite a binding,
+	swaynag will give you a warning. To silence this, use the _--no-warn_ flag.
 
 	Unless the flag _--locked_ is set, the command will not be run when a
 	screen locking program is active. If there is a matching binding with
@@ -356,6 +359,9 @@ runtime.
 	6=scroll left, 7=scroll right, 8=back, 9=forward). For the latter option,
 	you can find the event names using _libinput debug-events_.
 
+	The priority for matching bindings is as follows: input device, group,
+	and locked state.
+
 	_--whole-window_, _--border_, and _--exclude-titlebar_ are mouse-only options
 	which affect the region in which the mouse bindings can be triggered.  By
 	default, mouse bindings are only triggered when over the title bar. With the
@@ -375,7 +381,8 @@ runtime.
 		bindsym Mod1+Shift+f exec firefox
 ```
 
-	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] [--input-device=<device>] [--no-warn] <code> <command>
+	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
+	[--locked] [--input-device=<device>] [--no-warn] [Group<1-4>+]<code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
 *bindswitch* [--locked] [--no-warn] [--reload] <switch>:<state> <command>
