@@ -262,8 +262,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 			area->width, area->height, area->x, area->y);
 
 	bool first_arrange = workspace->width == 0 && workspace->height == 0;
-	double prev_x = workspace->x;
-	double prev_y = workspace->y;
+	double prev_x = workspace->x - workspace->current_gaps.left;
+	double prev_y = workspace->y - workspace->current_gaps.top;
 	workspace->width = area->width;
 	workspace->height = area->height;
 	workspace->x = output->lx + area->x;
