@@ -78,6 +78,10 @@ static bool binding_key_compare(struct sway_binding *binding_a,
 		return false;
 	}
 
+	if (binding_a->group != binding_b->group) {
+		return false;
+	}
+
 	if (binding_a->modifiers ^ binding_b->modifiers) {
 		return false;
 	}
@@ -337,6 +341,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	}
 	binding->input = strdup("*");
 	binding->keys = create_list();
+	binding->group = XKB_LAYOUT_INVALID;
 	binding->modifiers = 0;
 	binding->flags = 0;
 	binding->type = bindcode ? BINDING_KEYCODE : BINDING_KEYSYM;
@@ -387,6 +392,34 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
+		// Check for group
+		if (strncmp(split->items[i], "Group", strlen("Group")) == 0) {
+			if (binding->group != XKB_LAYOUT_INVALID) {
+				free_sway_binding(binding);
+				list_free_items_and_destroy(split);
+				return cmd_results_new(CMD_FAILURE,
+						"Only one group can be specified");
+			}
+			char *end;
+			int group = strtol(split->items[i] + strlen("Group"), &end, 10);
+			if (group < 1 || group > 4 || end[0] != '\0') {
+				free_sway_binding(binding);
+				list_free_items_and_destroy(split);
+				return cmd_results_new(CMD_FAILURE, "Invalid group");
+			}
+			binding->group = group - 1;
+			continue;
+		} else if (strcmp(split->items[i], "Mode_switch") == 0) {
+			// For full i3 compatibility, Mode_switch is an alias for Group2
+			if (binding->group != XKB_LAYOUT_INVALID) {
+				free_sway_binding(binding);
+				list_free_items_and_destroy(split);
+				return cmd_results_new(CMD_FAILURE,
+						"Only one group can be specified");
+			}
+			binding->group = 1;
+		}
+
 		// Check for a modifier key
 		uint32_t mod;
 		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {

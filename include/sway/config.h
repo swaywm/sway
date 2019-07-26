@@ -53,6 +53,7 @@ struct sway_binding {
 	list_t *keys; // sorted in ascending order
 	list_t *syms; // sorted in ascending order; NULL if BINDING_CODE is not set
 	uint32_t modifiers;
+	xkb_layout_index_t group;
 	char *command;
 };
 
