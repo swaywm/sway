@@ -14,7 +14,7 @@
 #include <sys/ioctl.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <wayland-server.h>
+#include <wayland-server-core.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/desktop/transaction.h"
