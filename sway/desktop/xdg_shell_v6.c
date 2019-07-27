@@ -2,7 +2,7 @@
 #include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <wayland-server.h>
+#include <wayland-server-core.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include "log.h"
 #include "sway/decoration.h"

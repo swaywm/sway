@@ -1,7 +1,7 @@
 #define _POSIX_C_SOURCE 199309L
 #include <stdbool.h>
 #include <stdlib.h>
-#include <wayland-server.h>
+#include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/xwayland.h>

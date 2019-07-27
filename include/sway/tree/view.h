@@ -1,6 +1,6 @@
 #ifndef _SWAY_VIEW_H
 #define _SWAY_VIEW_H
-#include <wayland-server.h>
+#include <wayland-server-core.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include "config.h"

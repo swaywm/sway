@@ -13,7 +13,6 @@ project(
 
 add_project_arguments(
 	[
-		'-DWL_HIDE_DEPRECATED',
 		'-DWLR_USE_UNSTABLE',
 
 		'-Wno-unused-parameter',
