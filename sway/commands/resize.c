@@ -160,7 +160,7 @@ void container_resize_tiled(struct sway_container *con,
 	}
 
 	// Apply new dimensions
-	int sibling_amount = prev ? amount / 2 : amount;
+	int sibling_amount = prev ? ceil((double)amount / 2.0) : amount;
 
 	if (is_horizontal(axis)) {
 		if (con->width + amount < MIN_SANE_W) {
@@ -173,13 +173,15 @@ void container_resize_tiled(struct sway_container *con,
 			return;
 		}
 
-		con->width_fraction +=
+		double amount_fraction =
 			((double)amount / con->width) * con->width_fraction;
-		next->width_fraction -=
-			((double)sibling_amount / con->width) * con->width_fraction;
+		double sibling_amount_fraction =
+			prev ? amount_fraction / 2.0 : amount_fraction;
+
+		con->width_fraction += amount_fraction;
+		next->width_fraction -= sibling_amount_fraction;
 		if (prev) {
-			prev->width_fraction -=
-				((double)sibling_amount / con->width) * con->width_fraction;
+			prev->width_fraction -= sibling_amount_fraction;
 		}
 	} else {
 		if (con->height + amount < MIN_SANE_H) {
@@ -192,13 +194,15 @@ void container_resize_tiled(struct sway_container *con,
 			return;
 		}
 
-		con->height_fraction +=
+		double amount_fraction =
 			((double)amount / con->height) * con->height_fraction;
-		next->height_fraction -=
-			((double)sibling_amount / con->height) * con->height_fraction;
+		double sibling_amount_fraction =
+			prev ? amount_fraction / 2.0 : amount_fraction;
+
+		con->height_fraction += amount_fraction;
+		next->height_fraction -= sibling_amount_fraction;
 		if (prev) {
-			prev->height_fraction -=
-				((double)sibling_amount / con->height) * con->height_fraction;
+			prev->height_fraction -= sibling_amount_fraction;
 		}
 	}
 
