@@ -78,9 +78,10 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 	double child_x = parent->x;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
+		child->child_total_width = child_total_width;
 		child->x = child_x;
 		child->y = parent->y;
-		child->width = floor(child->width_fraction * child_total_width);
+		child->width = round(child->width_fraction * child_total_width);
 		child->height = parent->height;
 		child_x += child->width + inner_gap;
 
@@ -156,10 +157,11 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 	double child_y = parent->y;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
+		child->child_total_height = child_total_height;
 		child->x = parent->x;
 		child->y = child_y;
 		child->width = parent->width;
-		child->height = floor(child->height_fraction * child_total_height);
+		child->height = round(child->height_fraction * child_total_height);
 		child_y += child->height + inner_gap;
 
 		// Make last child use remaining height of parent

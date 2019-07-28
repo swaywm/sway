@@ -172,9 +172,19 @@ void container_resize_tiled(struct sway_container *con,
 		if (prev && prev->width - sibling_amount < MIN_SANE_W) {
 			return;
 		}
+		if (con->child_total_width <= 0) {
+			return;
+		}
 
-		double amount_fraction =
-			((double)amount / con->width) * con->width_fraction;
+		// We're going to resize so snap all the width fractions to full pixels
+		// to avoid rounding issues
+		list_t *siblings = container_get_siblings(con);
+		for (int i = 0; i < siblings->length; ++i) {
+			struct sway_container *con = siblings->items[i];
+			con->width_fraction = con->width / con->child_total_width;
+		}
+
+		double amount_fraction = (double)amount / con->child_total_width;
 		double sibling_amount_fraction =
 			prev ? amount_fraction / 2.0 : amount_fraction;
 
@@ -193,9 +203,19 @@ void container_resize_tiled(struct sway_container *con,
 		if (prev && prev->height - sibling_amount < MIN_SANE_H) {
 			return;
 		}
+		if (con->child_total_height <= 0) {
+			return;
+		}
 
-		double amount_fraction =
-			((double)amount / con->height) * con->height_fraction;
+		// We're going to resize so snap all the height fractions to full pixels
+		// to avoid rounding issues
+		list_t *siblings = container_get_siblings(con);
+		for (int i = 0; i < siblings->length; ++i) {
+			struct sway_container *con = siblings->items[i];
+			con->height_fraction = con->height / con->child_total_height;
+		}
+
+		double amount_fraction = (double)amount / con->child_total_height;
 		double sibling_amount_fraction =
 			prev ? amount_fraction / 2.0 : amount_fraction;
 
