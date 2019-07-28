@@ -92,6 +92,11 @@ struct sway_container {
 	double width_fraction;
 	double height_fraction;
 
+	// The share of space of the parent container that all children occupy
+	// Used for doing the resize calculations
+	double child_total_width;
+	double child_total_height;
+
 	// These are in layout coordinates.
 	double content_x, content_y;
 	int content_width, content_height;
