@@ -127,7 +127,7 @@ static bool set_middle_emulation(struct libinput_device *dev,
 		return false;
 	}
 	sway_log(SWAY_DEBUG, "middle_emulation_set_enabled(%d)", mid);
-	log_status(libinput_device_config_left_handed_set(dev, mid));
+	log_status(libinput_device_config_middle_emulation_set_enabled(dev, mid));
 	return true;
 }
 
