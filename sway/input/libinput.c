@@ -15,7 +15,7 @@ static void log_status(enum libinput_config_status status) {
 }
 
 static bool set_send_events(struct libinput_device *device, uint32_t mode) {
-	if ((libinput_device_config_send_events_get_mode(device) & mode) == 0) {
+	if (libinput_device_config_send_events_get_mode(device) == mode) {
 		return false;
 	}
 	sway_log(SWAY_DEBUG, "send_events_set_mode(%d)", mode);
