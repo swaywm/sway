@@ -727,7 +727,7 @@ The default colors are:
 	Specifies that workspace _name_ should be shown on the specified _outputs_.
 	Multiple outputs can be listed and the first available will be used. If the
 	workspace gets placed on an output further down the list and an output that
-	is higher on the list becomes available, the workspace will be move to the
+	is higher on the list becomes available, the workspace will be moved to the
 	higher priority output.
 
 	This command does not affect existing workspaces. To move an existing
