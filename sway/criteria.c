@@ -668,11 +668,6 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 		goto cleanup;
 	}
 
-	if (criteria_is_empty(criteria)) {
-		*error_arg = strdup("Criteria is empty");
-		goto cleanup;
-	}
-
 	++head;
 	int len = head - raw;
 	criteria->raw = calloc(len + 1, 1);
