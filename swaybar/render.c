@@ -327,7 +327,6 @@ static void predict_status_block_pos(cairo_t *cairo,
 		width = block->min_width;
 	}
 
-	double block_width = width;
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
 	if (!output->bar->config->height &&
@@ -338,11 +337,9 @@ static void predict_status_block_pos(cairo_t *cairo,
 	*x -= width;
 	if ((block->border || block->urgent) && block->border_left > 0) {
 		*x -= (block->border_left * output->scale + margin);
-		block_width += block->border_left * output->scale + margin;
 	}
 	if ((block->border || block->urgent) && block->border_right > 0) {
 		*x -= (block->border_right * output->scale + margin);
-		block_width += block->border_right * output->scale + margin;
 	}
 
 	int sep_width, sep_height;
