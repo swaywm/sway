@@ -568,7 +568,7 @@ bool spawn_swaybg(void) {
 		}
 	}
 
-	char **cmd = calloc(1, sizeof(char **) * length);
+	char **cmd = calloc(length, sizeof(char *));
 	if (!cmd) {
 		sway_log(SWAY_ERROR, "Failed to allocate spawn_swaybg command");
 		return false;
