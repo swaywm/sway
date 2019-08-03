@@ -303,7 +303,7 @@ static bool reset_libinput_pointer(struct libinput_device *device,
 	changed |= set_tap(device,
 		libinput_device_config_tap_get_default_enabled(device));
 	changed |= set_tap_button_map(device,
-		libinput_device_config_tap_get_button_map(device));
+		libinput_device_config_tap_get_default_button_map(device));
 	changed |= set_tap_drag(device,
 		libinput_device_config_tap_get_default_drag_enabled(device));
 	changed |= set_tap_drag_lock(device,
@@ -353,7 +353,7 @@ static bool reset_libinput_touch(struct libinput_device *device,
 		libinput_device_config_send_events_get_default_mode(device));
 
 	float matrix[6];
-	libinput_device_config_calibration_get_matrix(device, matrix);
+	libinput_device_config_calibration_get_default_matrix(device, matrix);
 	changed |= set_calibration_matrix(device, matrix);
 
 	return changed;
