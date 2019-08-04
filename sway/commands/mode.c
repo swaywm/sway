@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
 #include <string.h>
-#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/ipc-server.h"
@@ -44,7 +43,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 	// Find mode
 	for (int i = 0; i < config->modes->length; ++i) {
 		struct sway_mode *test = config->modes->items[i];
-		if (strcasecmp(test->name, mode_name) == 0) {
+		if (strcmp(test->name, mode_name) == 0) {
 			mode = test;
 			break;
 		}
