@@ -86,6 +86,19 @@ _swaymsg_ [options...] [message]
 	provided in the form of a valid JSON array. If any of the types are invalid
 	or if an valid JSON array is not provided, this will result in an failure.
 
+# RETURN CODES
+
+*0*
+	Success
+
+*1*
+	swaymsg errors such as invalid syntax, unable to connect to the ipc socket
+	or unable to parse sway's reply
+
+*2*
+	Sway returned an error when processing the command (ex. invalid command,
+	command failed, and invalid subscription request)
+
 # SEE ALSO
 
 *sway*(5) *sway-bar*(5) *sway-input*(5) *sway-output*(5) *sway-ipc*(7)

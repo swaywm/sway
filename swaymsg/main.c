@@ -475,7 +475,7 @@ int main(int argc, char **argv) {
 		ret = 1;
 	} else {
 		if (!success(obj, true)) {
-			ret = 1;
+			ret = 2;
 		}
 		if (!quiet && (type != IPC_SUBSCRIBE  || ret != 0)) {
 			if (raw) {
