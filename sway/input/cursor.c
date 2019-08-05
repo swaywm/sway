@@ -186,7 +186,12 @@ static int hide_notify(void *data) {
 	return 1;
 }
 
-int cursor_get_timeout(struct sway_cursor *cursor){
+int cursor_get_timeout(struct sway_cursor *cursor) {
+	if (cursor->pressed_button_count > 0) {
+		// Do not hide cursor unless all buttons are released
+		return 0;
+	}
+
 	struct seat_config *sc = seat_get_config(cursor->seat);
 	if (!sc) {
 		sc = seat_get_config_by_name("*");
@@ -299,7 +304,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
 	struct wlr_event_pointer_button *event = data;
-	cursor_handle_activity(cursor);
 
 	if (event->state == WLR_BUTTON_PRESSED) {
 		cursor->pressed_button_count++;
@@ -311,6 +315,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 		}
 	}
 
+	cursor_handle_activity(cursor);
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
 	transaction_commit_dirty();
