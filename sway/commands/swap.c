@@ -24,6 +24,7 @@ static void swap_places(struct sway_container *con1,
 	temp->height_fraction = con1->height_fraction;
 	temp->parent = con1->parent;
 	temp->workspace = con1->workspace;
+	bool temp_floating = container_is_floating(con1);
 
 	con1->x = con2->x;
 	con1->y = con2->y;
@@ -43,12 +44,16 @@ static void swap_places(struct sway_container *con1,
 	if (con2->parent) {
 		container_insert_child(con2->parent, con1,
 				container_sibling_index(con2));
+	} else if (container_is_floating(con2)) {
+		workspace_add_floating(con2->workspace, con1);
 	} else {
 		workspace_insert_tiling(con2->workspace, con1,
 				container_sibling_index(con2));
 	}
 	if (temp->parent) {
 		container_insert_child(temp->parent, con2, temp_index);
+	} else if (temp_floating) {
+		workspace_add_floating(temp->workspace, con2);
 	} else {
 		workspace_insert_tiling(temp->workspace, con2, temp_index);
 	}
@@ -99,14 +104,26 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 				"Cannot swap ancestor and descendant")) {
 		return;
 	}
-	if (!sway_assert(!container_is_floating(con1)
-				&& !container_is_floating(con2),
-				"Swapping with floating containers is not supported")) {
-		return;
-	}
 
 	sway_log(SWAY_DEBUG, "Swapping containers %zu and %zu",
 			con1->node.id, con2->node.id);
+
+	bool scratch1 = con1->scratchpad;
+	bool hidden1 = container_is_scratchpad_hidden(con1);
+	bool scratch2 = con2->scratchpad;
+	bool hidden2 = container_is_scratchpad_hidden(con2);
+	if (scratch1) {
+		if (hidden1) {
+			root_scratchpad_show(con1);
+		}
+		root_scratchpad_remove_container(con1);
+	}
+	if (scratch2) {
+		if (hidden2) {
+			root_scratchpad_show(con2);
+		}
+		root_scratchpad_remove_container(con2);
+	}
 
 	enum sway_fullscreen_mode fs1 = con1->fullscreen_mode;
 	enum sway_fullscreen_mode fs2 = con2->fullscreen_mode;
@@ -147,6 +164,19 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 	if (stored_prev_name) {
 		free(seat->prev_workspace_name);
 		seat->prev_workspace_name = stored_prev_name;
+	}
+
+	if (scratch1) {
+		root_scratchpad_add_container(con2, NULL);
+		if (!hidden1) {
+			root_scratchpad_show(con2);
+		}
+	}
+	if (scratch2) {
+		root_scratchpad_add_container(con1, NULL);
+		if (!hidden2) {
+			root_scratchpad_show(con1);
+		}
 	}
 
 	if (fs1) {
@@ -221,9 +251,6 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 			|| container_has_ancestor(other, current)) {
 		error = cmd_results_new(CMD_FAILURE,
 				"Cannot swap ancestor and descendant");
-	} else if (container_is_floating(current) || container_is_floating(other)) {
-		error = cmd_results_new(CMD_FAILURE,
-				"Swapping with floating containers is not supported");
 	}
 
 	free(value);
@@ -237,9 +264,13 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	if (root->fullscreen_global) {
 		arrange_root();
 	} else {
-		arrange_node(node_get_parent(&current->node));
-		if (node_get_parent(&other->node) != node_get_parent(&current->node)) {
-			arrange_node(node_get_parent(&other->node));
+		struct sway_node *current_parent = node_get_parent(&current->node);
+		struct sway_node *other_parent = node_get_parent(&other->node);
+		if (current_parent) {
+			arrange_node(current_parent);
+		}
+		if (other_parent && current_parent != other_parent) {
+			arrange_node(other_parent);
 		}
 	}
 
