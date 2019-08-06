@@ -754,6 +754,13 @@ struct sway_container *workspace_split(struct sway_workspace *workspace,
 	workspace->layout = layout;
 	middle->layout = old_layout;
 
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (seat_get_focus(seat) == &workspace->node) {
+			seat_set_focus(seat, &middle->node);
+		}
+	}
+
 	return middle;
 }
 
