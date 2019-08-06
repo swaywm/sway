@@ -5,9 +5,11 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include "sway/config.h"
+#include "sway/input/cursor.h"
 #include "sway/output.h"
 #include "sway/tree/root.h"
 #include "log.h"
@@ -454,6 +456,12 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 				break;
 			}
 		}
+	}
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		wlr_seat_pointer_clear_focus(seat->wlr_seat);
+		cursor_rebase(seat->cursor);
 	}
 }
 
