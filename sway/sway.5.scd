@@ -559,8 +559,11 @@ The default colors are:
 	to the opposite edge of the container, even if there are other containers
 	in the direction. Default is _yes_.
 
-*font* <font>
-	Sets font for use in title bars in Pango format.
+*font* [pango:]<font>
+	Sets font to use for the title bars. To enable support for pango markup,
+	preface the font name with _pango:_. For example, _monospace 10_ is the
+	default font. To enable support for pango markup, _pango:monospace 10_
+	should be used instead.
 
 *titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels
