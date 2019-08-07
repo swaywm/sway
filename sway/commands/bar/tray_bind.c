@@ -52,6 +52,7 @@ static struct cmd_results *tray_bind(int argc, char **argv, bool code) {
 		}
 	}
 	if (!binding->command) {
+		free(binding);
 		return cmd_results_new(CMD_INVALID, "[Bar %s] Invalid tray command %s",
 				config->current_bar->id, argv[1]);
 	}
