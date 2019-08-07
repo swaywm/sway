@@ -207,6 +207,7 @@ static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 
 	struct icon_theme *theme = calloc(1, sizeof(struct icon_theme));
 	if (!theme) {
+		fclose(theme_file);
 		return NULL;
 	}
 	theme->subdirs = create_list();
