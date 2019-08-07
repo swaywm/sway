@@ -201,13 +201,12 @@ struct output_config *store_output_config(struct output_config *oc) {
 	return oc;
 }
 
-static void set_mode(struct wlr_output *output, int width, int height,
+static bool set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate) {
 	int mhz = (int)(refresh_rate * 1000);
 	if (wl_list_empty(&output->modes)) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
-		wlr_output_set_custom_mode(output, width, height, mhz);
-		return;
+		return wlr_output_set_custom_mode(output, width, height, mhz);
 	}
 
 	struct wlr_output_mode *mode, *best = NULL;
@@ -227,7 +226,7 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	} else {
 		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
 	}
-	wlr_output_set_mode(output, best);
+	return wlr_output_set_mode(output, best);
 }
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
@@ -244,12 +243,11 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 			wlr_output_layout_remove(root->output_layout, wlr_output);
 		}
 		wlr_output_enable(wlr_output, false);
-		return wlr_output_commit(wlr_output);
+		return true;
 	} else if (!output->enabled) {
 		// Output is not enabled. Enable it, output_enable will call us again.
 		if (!oc || oc->dpms_state != DPMS_OFF) {
 			wlr_output_enable(wlr_output, true);
-			wlr_output_commit(wlr_output);
 		}
 		output_enable(output, oc);
 		return true;
@@ -260,14 +258,26 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_output_enable(wlr_output, true);
 	}
 
-	struct wlr_output_mode *preferred_mode =
-		wlr_output_preferred_mode(wlr_output);
+	bool modeset_success;
 	if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
-		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
-	} else if (preferred_mode != NULL) {
-		wlr_output_set_mode(wlr_output, preferred_mode);
+		modeset_success =
+			set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
+	} else if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
+		modeset_success = wlr_output_set_mode(wlr_output, mode);
+	} else {
+		// Output doesn't support modes
+		modeset_success = true;
+	}
+	if (!modeset_success) {
+		// Failed to modeset, maybe the output is missing a CRTC. Leave the
+		// output disabled for now and try again when the output gets the mode
+		// we asked for.
+		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
+		return false;
 	}
 
 	if (oc && oc->scale > 0) {
@@ -285,14 +295,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->transform >= 0) {
 		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
-	}
-
-	if (!wlr_output_commit(wlr_output)) {
-		// Failed to modeset, maybe the output is missing a CRTC. Leave the
-		// output disabled for now and try again when the output gets the mode
-		// we asked for.
-		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
-		return false;
 	}
 
 	// Find position for it
@@ -314,7 +316,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->dpms_state == DPMS_OFF) {
 		sway_log(SWAY_DEBUG, "Turning off screen");
 		wlr_output_enable(wlr_output, false);
-		wlr_output_commit(wlr_output);
 	}
 
 	return true;
@@ -323,12 +324,12 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 static void default_output_config(struct output_config *oc,
 		struct wlr_output *wlr_output) {
 	oc->enabled = 1;
-	struct wlr_output_mode *preferred_mode =
-		wlr_output_preferred_mode(wlr_output);
-	if (preferred_mode != NULL) {
-		oc->width = preferred_mode->width;
-		oc->height = preferred_mode->height;
-		oc->refresh_rate = preferred_mode->refresh;
+	if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
+		oc->width = mode->width;
+		oc->height = mode->height;
+		oc->refresh_rate = mode->refresh;
 	}
 	oc->x = oc->y = -1;
 	oc->scale = 1;
