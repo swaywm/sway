@@ -117,7 +117,6 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	return response;
 error_2:
 	free(response);
-	free(payload);
 error_1:
 	sway_log(SWAY_ERROR, "Unable to allocate memory for IPC response");
 	return NULL;
