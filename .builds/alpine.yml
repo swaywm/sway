@@ -27,7 +27,7 @@ tasks:
       sudo make install PREFIX=/usr
   - wlroots: |
       cd wlroots
-      meson --prefix=/usr build -Drootston=false -Dexamples=false
+      meson --prefix=/usr build -Dexamples=false
       ninja -C build
       sudo ninja -C build install
   - setup: |
