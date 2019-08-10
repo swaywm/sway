@@ -709,7 +709,7 @@ void view_update_size(struct sway_view *view, int width, int height) {
 		con->surface_y = fmax(con->surface_y, con->content_y);
 	}
 	con->surface_width = width;
-	con->surface_width = height;
+	con->surface_height = height;
 }
 
 static const struct sway_view_child_impl subsurface_impl;
