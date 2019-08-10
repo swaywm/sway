@@ -75,7 +75,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	} else if (strcmp(argv[0], "pixel") == 0) {
 		set_border(container, B_PIXEL);
 	} else if (strcmp(argv[0], "csd") == 0) {
-		if (!view || !view->xdg_decoration) {
+		if (!view->xdg_decoration) {
 			return cmd_results_new(CMD_INVALID,
 					"This window doesn't support client side decorations");
 		}
