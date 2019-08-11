@@ -68,7 +68,7 @@ static void apply_exclusive(struct wlr_box *usable_area,
 		},
 	};
 	for (size_t i = 0; i < sizeof(edges) / sizeof(edges[0]); ++i) {
-		if ((anchor & edges[i].anchors) == edges[i].anchors) {
+		if ((anchor & edges[i].anchors) == edges[i].anchors && exclusive + edges[i].margin > 0) {
 			if (edges[i].positive_axis) {
 				*edges[i].positive_axis += exclusive + edges[i].margin;
 			}
