@@ -46,6 +46,11 @@ _swaymsg_ [options...] [message]
 
 	See **sway**(5) for a list of commands.
 
+	Tip: If you are proving a command that contains a leading hyphen (_-_),
+	insert two hyphens (_--_) before the command to signal to swaymsg not to
+	parse anything beyond that point as an option. For example, use
+	_swaymsg -- mark --add test_ instead of _swaymsg mark --add test_
+
 *get\_workspaces*
 	Gets a JSON-encoded list of workspaces and their status.
 
