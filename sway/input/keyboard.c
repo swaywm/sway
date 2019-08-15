@@ -69,8 +69,9 @@ int get_modifier_names(const char **names, uint32_t modifier_masks) {
 /**
  * Remove all key ids associated to a keycode from the list of pressed keys
  */
-static void state_erase_key(struct sway_shortcut_state *state,
+static bool state_erase_key(struct sway_shortcut_state *state,
 		uint32_t keycode) {
+	bool found = false;
 	size_t j = 0;
 	for (size_t i = 0; i < state->npressed; ++i) {
 		if (i > j) {
@@ -79,6 +80,8 @@ static void state_erase_key(struct sway_shortcut_state *state,
 		}
 		if (state->pressed_keycodes[i] != keycode) {
 			++j;
+		} else {
+			found = true;
 		}
 	}
 	while(state->npressed > j) {
@@ -87,6 +90,7 @@ static void state_erase_key(struct sway_shortcut_state *state,
 		state->pressed_keycodes[state->npressed] = 0;
 	}
 	state->current_key = 0;
+	return found;
 }
 
 /**
@@ -117,7 +121,7 @@ static void state_add_key(struct sway_shortcut_state *state,
 /**
  * Update the shortcut model state in response to new input
  */
-static void update_shortcut_state(struct sway_shortcut_state *state,
+static bool update_shortcut_state(struct sway_shortcut_state *state,
 		struct wlr_event_keyboard_key *event, uint32_t new_key,
 		uint32_t raw_modifiers) {
 	bool last_key_was_a_modifier = raw_modifiers != state->last_raw_modifiers;
@@ -133,8 +137,10 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
 		state_add_key(state, event->keycode, new_key);
 		state->last_keycode = event->keycode;
 	} else {
-		state_erase_key(state, event->keycode);
+		return state_erase_key(state, event->keycode);
 	}
+
+	return false;
 }
 
 /**
@@ -430,9 +436,13 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	if (!handled || event->state == WLR_KEY_RELEASED) {
-		wlr_seat_set_keyboard(wlr_seat, wlr_device);
-		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-				event->keycode, event->state);
+		bool pressed_sent = update_shortcut_state(
+				&keyboard->state_pressed_sent, event, (uint32_t)keycode, 0);
+		if (pressed_sent || event->state == WLR_KEY_PRESSED) {
+			wlr_seat_set_keyboard(wlr_seat, wlr_device);
+			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
+					event->keycode, event->state);
+		}
 	}
 
 	transaction_commit_dirty();
