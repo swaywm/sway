@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <linux/input-event-codes.h>
 #include <string.h>
 #include <strings.h>
@@ -85,6 +86,38 @@ static void seat_send_activate(struct sway_node *node, struct sway_seat *seat) {
 	}
 }
 
+static struct sway_keyboard *sway_keyboard_for_wlr_keyboard(
+		struct sway_seat *seat, struct wlr_keyboard *wlr_keyboard) {
+	struct sway_seat_device *seat_device;
+	wl_list_for_each(seat_device, &seat->devices, link) {
+		struct sway_input_device *input_device = seat_device->input_device;
+		if (input_device->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+		if (input_device->wlr_device->keyboard == wlr_keyboard) {
+			return seat_device->keyboard;
+		}
+	}
+	return NULL;
+}
+
+static void seat_keyboard_notify_enter(struct sway_seat *seat,
+		struct wlr_surface *surface) {
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	if (!keyboard) {
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat, surface, NULL, 0, NULL);
+		return;
+	}
+
+	struct sway_keyboard *sway_keyboard =
+		sway_keyboard_for_wlr_keyboard(seat, keyboard);
+	assert(sway_keyboard && "Cannot find sway_keyboard for seat keyboard");
+
+	struct sway_shortcut_state *state = &sway_keyboard->state_pressed_sent;
+	wlr_seat_keyboard_notify_enter(seat->wlr_seat, surface,
+			state->pressed_keycodes, state->npressed, &keyboard->modifiers);
+}
+
 /**
  * If con is a view, set it as active and enable keyboard input.
  * If con is a container, set all child views as active and don't enable
@@ -103,15 +136,8 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 		}
 #endif
-		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
-		if (keyboard) {
-			wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-					view->surface, keyboard->keycodes,
-					keyboard->num_keycodes, &keyboard->modifiers);
-		} else {
-			wlr_seat_keyboard_notify_enter(
-					seat->wlr_seat, view->surface, NULL, 0, NULL);
-		}
+
+		seat_keyboard_notify_enter(seat, view->surface);
 
 		struct wlr_pointer_constraint_v1 *constraint =
 			wlr_pointer_constraints_v1_constraint_for_surface(
@@ -578,8 +604,6 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	if (!seat_device->keyboard) {
 		sway_keyboard_create(seat, seat_device);
 	}
-	struct wlr_keyboard *wlr_keyboard =
-		seat_device->input_device->wlr_device->keyboard;
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device);
@@ -587,9 +611,7 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	if (focus && node_is_view(focus)) {
 		// force notify reenter to pick up the new configuration
 		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-				focus->sway_container->view->surface, wlr_keyboard->keycodes,
-				wlr_keyboard->num_keycodes, &wlr_keyboard->modifiers);
+		seat_keyboard_notify_enter(seat, focus->sway_container->view->surface);
 	}
 }
 
@@ -1049,13 +1071,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 		seat_send_unfocus(focus, seat);
 		seat->has_focus = false;
 	}
-	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
-	if (keyboard) {
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat, surface,
-			keyboard->keycodes, keyboard->num_keycodes, &keyboard->modifiers);
-	} else {
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat, surface, NULL, 0, NULL);
-	}
+	seat_keyboard_notify_enter(seat, surface);
 }
 
 void seat_set_focus_layer(struct sway_seat *seat,
