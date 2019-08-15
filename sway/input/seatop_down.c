@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <float.h>
 #include <wlr/types/wlr_cursor.h>
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -10,6 +11,20 @@ struct seatop_down_event {
 	double ref_lx, ref_ly;         // cursor's x/y at start of op
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 };
+
+static void handle_axis(struct sway_seat *seat,
+		struct wlr_event_pointer_axis *event) {
+	struct sway_input_device *input_device =
+		event->device ? event->device->data : NULL;
+	struct input_config *ic =
+		input_device ? input_device_get_config(input_device) : NULL;
+	float scroll_factor =
+		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
+
+	wlr_seat_pointer_notify_axis(seat->wlr_seat, event->time_msec,
+		event->orientation, scroll_factor * event->delta,
+		round(scroll_factor * event->delta_discrete), event->source);
+}
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
@@ -42,6 +57,7 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 }
 
 static const struct sway_seatop_impl seatop_impl = {
+	.axis = handle_axis,
 	.button = handle_button,
 	.motion = handle_motion,
 	.unref = handle_unref,
