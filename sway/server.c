@@ -167,10 +167,12 @@ void server_fini(struct sway_server *server) {
 
 bool server_start(struct sway_server *server) {
 #if HAVE_XWAYLAND
-	if (config->xwayland) {
-		sway_log(SWAY_DEBUG, "Initializing Xwayland");
+	if (config->xwayland != XWAYLAND_MODE_DISABLED) {
+		sway_log(SWAY_DEBUG, "Initializing Xwayland (lazy=%d)",
+				config->xwayland == XWAYLAND_MODE_LAZY);
 		server->xwayland.wlr_xwayland =
-			wlr_xwayland_create(server->wl_display, server->compositor, true);
+			wlr_xwayland_create(server->wl_display, server->compositor,
+					config->xwayland == XWAYLAND_MODE_LAZY);
 		wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
 			&server->xwayland_surface);
 		server->xwayland_surface.notify = handle_xwayland_surface;
