@@ -85,9 +85,12 @@ The following commands may only be used in the configuration file.
 	It can be disabled by setting the command to a single dash:
 	_swaynag\_command -_
 
-*xwayland* enable|disable
+*xwayland* enable|disable|force
 	Enables or disables Xwayland support, which allows X11 applications to be
-	used.
+	used. _enable_ will lazily load Xwayland so Xwayland will not be launched
+	until the first client attempts to connect. In some cases, such as slower
+	machines, it may be desirable to have Xwayland started immediately by
+	using _force_ instead of _enable_.
 
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).

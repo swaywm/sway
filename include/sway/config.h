@@ -424,6 +424,12 @@ enum alignment {
 	ALIGN_RIGHT
 };
 
+enum xwayland_mode {
+	XWAYLAND_MODE_DISABLED,
+	XWAYLAND_MODE_LAZY,
+	XWAYLAND_MODE_IMMEADIATE
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -464,7 +470,7 @@ struct sway_config {
 	size_t urgent_timeout;
 	enum sway_fowa focus_on_window_activation;
 	enum sway_popup_during_fullscreen popup_during_fullscreen;
-	bool xwayland;
+	enum xwayland_mode xwayland;
 
 	// swaybg
 	char *swaybg_command;
