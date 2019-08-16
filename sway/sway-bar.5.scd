@@ -37,7 +37,9 @@ Sway allows configuring swaybar in the sway configuration file.
 	Executes custom bar command. Default is _swaybar_.
 
 *font* <font>
-	Specifies the font to be used in the bar.
+	Specifies the font to be used in the bar. _font_ should be specified as a
+	pango font description. For more information on pango font descriptions,
+	see https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
 
 *separator_symbol* <symbol>
 	Specifies the separator symbol to separate blocks on the bar.
