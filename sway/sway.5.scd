@@ -563,7 +563,10 @@ The default colors are:
 	Sets font to use for the title bars. To enable support for pango markup,
 	preface the font name with _pango:_. For example, _monospace 10_ is the
 	default font. To enable support for pango markup, _pango:monospace 10_
-	should be used instead.
+	should be used instead. Regardless of whether pango markup is enabled,
+	_font_ should be specified as a pango font description. For more
+	information on pango font descriptions, see
+	https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
 
 *titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels
