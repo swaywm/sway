@@ -22,8 +22,10 @@ static struct cmd_results *parse_single_color(char **color,
 	if ((error = checkarg(argc, cmd_name, EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	if (!*color && !(*color = malloc(10))) {
-		return NULL;
+	if (!*color && !(*color = malloc(10)))  {
+			if (*color == NULL) {
+		        free(color);
+			}
 	}
 	error = add_color(*color, argv[0]);
 	if (error) {
