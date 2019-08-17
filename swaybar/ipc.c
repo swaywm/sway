@@ -175,6 +175,7 @@ static bool ipc_parse_config(
 	}
 	json_object *markup, *mode, *hidden_state, *position, *status_command;
 	json_object *font, *gaps, *bar_height, *wrap_scroll, *workspace_buttons;
+	json_object *workspace_buttons_all_outputs;
 	json_object *strip_workspace_numbers, *strip_workspace_name;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol;
 	json_object *outputs, *bindings, *status_padding, *status_edge_padding;
@@ -187,6 +188,8 @@ static bool ipc_parse_config(
 	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
 	json_object_object_get_ex(bar_config, "wrap_scroll", &wrap_scroll);
 	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
+	json_object_object_get_ex(bar_config, "workspace_buttons_all_outputs",
+		&workspace_buttons_all_outputs);
 	json_object_object_get_ex(bar_config, "strip_workspace_numbers", &strip_workspace_numbers);
 	json_object_object_get_ex(bar_config, "strip_workspace_name", &strip_workspace_name);
 	json_object_object_get_ex(bar_config, "binding_mode_indicator", &binding_mode_indicator);
@@ -228,6 +231,10 @@ static bool ipc_parse_config(
 	}
 	if (workspace_buttons) {
 		config->workspace_buttons = json_object_get_boolean(workspace_buttons);
+	}
+	if (workspace_buttons_all_outputs) {
+		config->workspace_buttons_all_outputs =
+			json_object_get_boolean(workspace_buttons_all_outputs);
 	}
 	if (bar_height) {
 		config->height = json_object_get_int(bar_height);
@@ -383,7 +390,8 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 
 		wl_list_for_each(output, &bar->outputs, link) {
 			const char *ws_output = json_object_get_string(out);
-			if (strcmp(ws_output, output->name) == 0) {
+			if (strcmp(ws_output, output->name) == 0 ||
+					bar->config->workspace_buttons_all_outputs) {
 				struct swaybar_workspace *ws =
 					calloc(1, sizeof(struct swaybar_workspace));
 				ws->num = json_object_get_int(num);

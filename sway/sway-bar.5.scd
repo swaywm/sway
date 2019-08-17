@@ -51,6 +51,10 @@ Sway allows configuring swaybar in the sway configuration file.
 *workspace_buttons* yes|no
 	Enables or disables workspace buttons on the bar. Default is _yes_.
 
+*workspace_buttons_all_outputs* yes|no
+	If set to _yes_ all workspaces are listed in the bar, even the ones that do
+	not belong to the output the bar is on. Default is _no_.
+
 *strip_workspace_name* yes|no
 	If set to _yes_, then workspace names will be omitted from the workspace
 	button and only the custom number will be shown. Default is _no_.

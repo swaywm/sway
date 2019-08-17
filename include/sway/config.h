@@ -265,6 +265,7 @@ struct bar_config {
 	char *font;
 	int height; // -1 not defined
 	bool workspace_buttons;
+	bool workspace_buttons_all_outputs;
 	bool wrap_scroll;
 	char *separator_symbol;
 	bool strip_workspace_numbers;

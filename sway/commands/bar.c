@@ -35,6 +35,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "unbindcode", bar_cmd_unbindcode },
 	{ "unbindsym", bar_cmd_unbindsym },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
+	{ "workspace_buttons_all_outputs", bar_cmd_workspace_buttons_all_outputs },
 	{ "wrap_scroll", bar_cmd_wrap_scroll },
 };
 
