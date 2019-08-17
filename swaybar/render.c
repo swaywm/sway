@@ -536,6 +536,45 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	return output->height;
 }
 
+static uint32_t render_window_title(cairo_t *cairo,
+		struct swaybar_output *output, double x) {
+	const char *title = output->bar->config->title;
+	if (!title) {
+		return 0;
+	}
+
+	struct swaybar_config *config = output->bar->config;
+	int text_width, text_height;
+	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
+			output->scale, output->bar->mode_pango_markup,
+			"%s", title);
+
+	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
+	int ws_horizontal_padding = WS_HORIZONTAL_PADDING * output->scale;
+	int border_width = BORDER_WIDTH * output->scale;
+
+	uint32_t ideal_height = text_height + ws_vertical_padding * 2
+		+ border_width * 2;
+	uint32_t ideal_surface_height = ideal_height / output->scale;
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
+		return ideal_surface_height;
+	}
+	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
+
+	uint32_t height = output->height * output->scale;
+	cairo_set_source_u32(cairo, config->colors.background);
+	cairo_rectangle(cairo, x, 0, width, height);
+	cairo_fill(cairo);
+
+	double text_y = height / 2.0 - text_height / 2.0;
+	cairo_set_source_u32(cairo, config->colors.statusline);
+	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
+	pango_printf(cairo, config->font, output->scale,
+			output->bar->mode_pango_markup, "%s", title);
+	return output->height;
+}
+
 static enum hotspot_event_handling workspace_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
 		int x, int y, uint32_t button, void *data) {
@@ -657,6 +696,11 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaybar_output *output) {
 	}
 	if (config->binding_mode_indicator) {
 		uint32_t h = render_binding_mode_indicator(cairo, output, x);
+		max_height = h > max_height ? h : max_height;
+	}
+
+	if (config->window_title) {
+		uint32_t h = render_window_title(cairo, output, x);
 		max_height = h > max_height ? h : max_height;
 	}
 

@@ -221,6 +221,7 @@ sway_cmd bar_cmd_tray_padding;
 sway_cmd bar_cmd_unbindcode;
 sway_cmd bar_cmd_unbindsym;
 sway_cmd bar_cmd_wrap_scroll;
+sway_cmd bar_cmd_window_title;
 sway_cmd bar_cmd_workspace_buttons;
 
 sway_cmd bar_colors_cmd_active_workspace;

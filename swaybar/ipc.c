@@ -173,6 +173,7 @@ static bool ipc_parse_config(
 		json_object_put(bar_config);
 		return false;
 	}
+	json_object *window_title;
 	json_object *markup, *mode, *hidden_state, *position, *status_command;
 	json_object *font, *gaps, *bar_height, *wrap_scroll, *workspace_buttons;
 	json_object *strip_workspace_numbers, *strip_workspace_name;
@@ -186,6 +187,7 @@ static bool ipc_parse_config(
 	json_object_object_get_ex(bar_config, "gaps", &gaps);
 	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
 	json_object_object_get_ex(bar_config, "wrap_scroll", &wrap_scroll);
+	json_object_object_get_ex(bar_config, "window_title", &window_title);
 	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
 	json_object_object_get_ex(bar_config, "strip_workspace_numbers", &strip_workspace_numbers);
 	json_object_object_get_ex(bar_config, "strip_workspace_name", &strip_workspace_name);
@@ -225,6 +227,9 @@ static bool ipc_parse_config(
 	}
 	if (wrap_scroll) {
 		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
+	}
+	if (window_title) {
+		config->window_title = json_object_get_boolean(window_title);
 	}
 	if (workspace_buttons) {
 		config->workspace_buttons = json_object_get_boolean(workspace_buttons);
@@ -480,7 +485,8 @@ bool ipc_initialize(struct swaybar *bar) {
 	struct swaybar_config *config = bar->config;
 	char subscribe[128]; // suitably large buffer
 	len = snprintf(subscribe, 128,
-			"[ \"barconfig_update\" , \"bar_state_update\" %s %s ]",
+			"[ \"barconfig_update\" , \"bar_state_update\" %s %s %s ]",
+			config->window_title ? ", \"window\"" : "",
 			config->binding_mode_indicator ? ", \"mode\"" : "",
 			config->workspace_buttons ? ", \"workspace\"" : "");
 	free(ipc_single_command(bar->ipc_event_socketfd,
@@ -507,6 +513,49 @@ static bool handle_bar_state_update(struct swaybar *bar, json_object *event) {
 		bar->visible_by_urgency = false;
 	}
 	return determine_bar_visibility(bar, false);
+}
+
+static bool handle_title_update(struct swaybar *bar,
+		json_object *json_window_event) {
+	json_object *json_container;
+	json_object_object_get_ex(json_window_event, "container",
+		&json_container);
+	struct swaybar_config *config = bar->config;
+
+	json_object *json_change;
+	json_object_object_get_ex(json_window_event, "change", &json_change);
+	const char *change = json_object_get_string(json_change);
+	if (strcmp(change, "close") == 0) {
+		json_object *json_id;
+		json_object_object_get_ex(json_container, "id", &json_id);
+		uint64_t app_id = json_object_get_int64(json_id);
+		if (config->window_app_id == app_id) {
+			// The focused window was closed so remove the title
+			config->window_app_id = 0;
+			if (config->title) {
+				free(config->title);
+			}
+			config->title = NULL;
+		}
+		return true;
+	}
+
+	json_object *json_focused;
+	json_object_object_get_ex(json_container, "focused", &json_focused);
+	if (json_object_get_boolean(json_focused)) {
+		json_object *json_name;
+		json_object_object_get_ex(json_container, "name", &json_name);
+		if (config->title) {
+			free(config->title);
+		}
+		config->title = strdup(json_object_get_string(json_name));
+		json_object *json_id;
+		json_object_object_get_ex(json_container, "id", &json_id);
+		config->window_app_id = json_object_get_int64(json_id);
+		return true;
+	}
+
+	return false;
 }
 
 static bool handle_barconfig_update(struct swaybar *bar,
@@ -576,6 +625,9 @@ bool handle_ipc_readable(struct swaybar *bar) {
 
 	bool bar_is_dirty = true;
 	switch (resp->type) {
+	case IPC_EVENT_WINDOW:
+		bar_is_dirty = handle_title_update(bar, result);
+		break;
 	case IPC_EVENT_WORKSPACE:
 		bar_is_dirty = ipc_get_workspaces(bar);
 		break;

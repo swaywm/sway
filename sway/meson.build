@@ -137,6 +137,7 @@ sway_sources = files(
 	'commands/bar/tray_bind.c',
 	'commands/bar/tray_output.c',
 	'commands/bar/tray_padding.c',
+	'commands/bar/window_title.c',
 	'commands/bar/workspace_buttons.c',
 	'commands/bar/wrap_scroll.c',
 

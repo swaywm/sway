@@ -271,6 +271,7 @@ struct bar_config {
 	bool strip_workspace_name;
 	bool binding_mode_indicator;
 	bool verbose;
+	bool window_title;
 	struct side_gaps gaps;
 	int status_padding;
 	int status_edge_padding;

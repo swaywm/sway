@@ -48,6 +48,9 @@ Sway allows configuring swaybar in the sway configuration file.
 	Enables or disables wrapping when scrolling through workspaces with the
 	scroll wheel. Default is _no_.
 
+*window_title* yes|no
+	Enables or disables focused window title on the bar. Default is _no_.
+
 *workspace_buttons* yes|no
 	Enables or disables workspace buttons on the bar. Default is _yes_.
 

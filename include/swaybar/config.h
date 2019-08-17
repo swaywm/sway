@@ -34,10 +34,12 @@ struct swaybar_config {
 	char *mode;
 	char *hidden_state;
 	char *modifier;
+	char *title;
 	bool strip_workspace_numbers;
 	bool strip_workspace_name;
 	bool binding_mode_indicator;
 	bool wrap_scroll;
+	bool window_title;
 	bool workspace_buttons;
 	list_t *bindings;
 	struct wl_list outputs; // config_output::link
@@ -51,6 +53,7 @@ struct swaybar_config {
 		int bottom;
 		int left;
 	} gaps;
+	uint64_t window_app_id;
 
 	struct {
 		uint32_t background;
