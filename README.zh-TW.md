@@ -19,9 +19,9 @@ Patreon page](https://patreon.com/sircmpwn) 貢獻。
 
 Sway 在許多發行版都有提供。請自己嘗試於你的發行版安裝 「sway」這個套件。
 如果無法取得，請查看 [這個 wiki 頁面](https://github.com/swaywm/sway/wiki/Unsupported-packages)
-以取得更多關於如何於你使用的發行板上安裝的資訊。
+以取得更多關於如何於你使用的發行版上安裝的資訊。
 
-如果你想要為你使用的發行板包裝 sway，請到 IRC 頻道或是直接寄封信到 sir@cmpwn.com 來取得一些建議。
+如果你想要為你使用的發行版包裝 sway，請到 IRC 頻道或是直接寄封信到 sir@cmpwn.com 來取得一些建議。
 
 ### 從原始碼編譯
 
