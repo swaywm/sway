@@ -61,4 +61,4 @@ Sway 在啟動不久後就會放棄 root 權限。
 
 ## 執行
 
-在 TTY 執行 `sway`。有些 sway 不支援的 display manager 可能可以運作 (已知 gdm 運作的很好)
+在 TTY 執行 `sway`。有些 display manager 可能可以運作但 sway 不提供支援 (已知 gdm 運作的很好)
