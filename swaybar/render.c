@@ -537,7 +537,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 }
 
 static uint32_t render_window_title(cairo_t *cairo,
-		struct swaybar_output *output, double x) {
+		struct swaybar_output *output, double x, double max_x) {
 	const char *title = output->bar->config->title;
 	if (!title) {
 		return 0;
@@ -561,17 +561,14 @@ static uint32_t render_window_title(cairo_t *cairo,
 		return ideal_surface_height;
 	}
 	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
-
+	uint32_t max_width = fmin(width, max_x - x);
 	uint32_t height = output->height * output->scale;
-	cairo_set_source_u32(cairo, config->colors.background);
-	cairo_rectangle(cairo, x, 0, width, height);
-	cairo_fill(cairo);
 
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, config->colors.statusline);
 	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
-	pango_printf(cairo, config->font, output->scale,
-			output->bar->mode_pango_markup, "%s", title);
+	pango_printf_ellipsized(cairo, config->font, output->scale,
+			output->bar->mode_pango_markup, max_width, "%s", title);
 	return output->height;
 }
 
@@ -686,6 +683,7 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaybar_output *output) {
 		uint32_t h = render_status_line(cairo, output, &x);
 		max_height = h > max_height ? h : max_height;
 	}
+	double max_x = x;
 	x = 0;
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;
@@ -700,7 +698,7 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaybar_output *output) {
 	}
 
 	if (config->window_title) {
-		uint32_t h = render_window_title(cairo, output, x);
+		uint32_t h = render_window_title(cairo, output, x, max_x);
 		max_height = h > max_height ? h : max_height;
 	}
 
