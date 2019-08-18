@@ -132,8 +132,6 @@ uint32_t view_get_window_type(struct sway_view *view) {
 
 const char *view_get_shell(struct sway_view *view) {
 	switch(view->type) {
-	case SWAY_VIEW_XDG_SHELL_V6:
-		return "xdg_shell_v6";
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
 #if HAVE_XWAYLAND
@@ -932,11 +930,6 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		struct wlr_xdg_surface *xdg_surface =
 			wlr_xdg_surface_from_wlr_surface(wlr_surface);
 		return view_from_wlr_xdg_surface(xdg_surface);
-	}
-	if (wlr_surface_is_xdg_surface_v6(wlr_surface)) {
-		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
-			wlr_xdg_surface_v6_from_wlr_surface(wlr_surface);
-		return view_from_wlr_xdg_surface_v6(xdg_surface_v6);
 	}
 #if HAVE_XWAYLAND
 	if (wlr_surface_is_xwayland_surface(wlr_surface)) {

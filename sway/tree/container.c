@@ -6,8 +6,6 @@
 #include <strings.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_xdg_shell_v6.h>
-#include <wlr/types/wlr_xdg_shell.h>
 #include "cairo.h"
 #include "pango.h"
 #include "sway/config.h"
@@ -187,11 +185,6 @@ static struct sway_container *surface_at_view(struct sway_container *con, double
 				view_sx, view_sy, &_sx, &_sy);
 		break;
 #endif
-	case SWAY_VIEW_XDG_SHELL_V6:
-		_surface = wlr_xdg_surface_v6_surface_at(
-				view->wlr_xdg_surface_v6,
-				view_sx, view_sy, &_sx, &_sy);
-		break;
 	case SWAY_VIEW_XDG_SHELL:
 		_surface = wlr_xdg_surface_surface_at(
 				view->wlr_xdg_surface,
@@ -354,19 +347,6 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 				return true;
 			}
 			xdg_surface = xdg_surface->toplevel->parent;
-		}
-		return false;
-	}
-
-	if (wlr_surface_is_xdg_surface_v6(surface)) {
-		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
-			wlr_xdg_surface_v6_from_wlr_surface(surface);
-		while (xdg_surface_v6 &&
-				xdg_surface_v6->role != WLR_XDG_SURFACE_V6_ROLE_NONE) {
-			if (xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
-				return true;
-			}
-			xdg_surface_v6 = xdg_surface_v6->toplevel->parent;
 		}
 		return false;
 	}
