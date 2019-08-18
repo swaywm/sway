@@ -212,7 +212,9 @@ void arrange_layers(struct sway_output *output) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat_set_focus_layer(seat, topmost ? topmost->layer_surface : NULL);
+		if (topmost != NULL) {
+			seat_set_focus_layer(seat, topmost->layer_surface);
+		}
 	}
 }
 
