@@ -120,6 +120,8 @@ static void render_surface_iterator(struct sway_output *output,
 		wlr_output->transform_matrix);
 
 	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
+
+	wlr_presentation_surface_sampled(server.presentation, surface);
 }
 
 static void render_layer(struct sway_output *output,
@@ -267,6 +269,10 @@ static void render_saved_view(struct sway_view *view,
 
 	render_texture(wlr_output, damage, view->saved_buffer->texture,
 			&box, matrix, alpha);
+
+	// FIXME: we should set the surface that this saved buffer originates from
+	// as sampled here.
+	// https://github.com/swaywm/sway/pull/4465#discussion_r321082059
 }
 
 /**
