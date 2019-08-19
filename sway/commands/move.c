@@ -675,10 +675,6 @@ static struct cmd_results *cmd_move_in_direction(
 		return cmd_results_new(CMD_FAILURE,
 				"Cannot move workspaces in a direction");
 	}
-	if (container_is_scratchpad_hidden(container)) {
-		return cmd_results_new(CMD_FAILURE,
-				"Cannot move a hidden scratchpad container");
-	}
 	if (container_is_floating(container)) {
 		if (container->fullscreen_mode) {
 			return cmd_results_new(CMD_FAILURE,
@@ -750,10 +746,6 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Only floating containers "
 				"can be moved to an absolute position");
 	}
-	if (container_is_scratchpad_hidden(container)) {
-		return cmd_results_new(CMD_FAILURE,
-				"Cannot move a hidden scratchpad container");
-	}
 
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID, expected_position_syntax);
@@ -795,6 +787,10 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 			ly = root->y + (root->height - container->height) / 2;
 		} else {
 			struct sway_workspace *ws = container->workspace;
+			if (!ws) {
+				struct sway_seat *seat = config->handler_context.seat;
+				ws = seat_get_focused_workspace(seat);
+			}
 			lx = ws->x + (ws->width - container->width) / 2;
 			ly = ws->y + (ws->height - container->height) / 2;
 		}
@@ -828,8 +824,13 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	}
 
 	if (!absolute) {
-		lx += container->workspace->x;
-		ly += container->workspace->y;
+		struct sway_workspace *ws = container->workspace;
+		if (!ws) {
+			struct sway_seat *seat = config->handler_context.seat;
+			ws = seat_get_focused_workspace(seat);
+		}
+		lx += ws->x;
+		ly += ws->y;
 	}
 	container_floating_move_to(container, lx, ly);
 	return cmd_results_new(CMD_SUCCESS, NULL);
