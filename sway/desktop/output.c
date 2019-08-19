@@ -360,10 +360,11 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 		pixman_region32_copy(&surface_opaque_box, &wlr_surface->opaque_region);
 		pixman_region32_translate(&surface_opaque_box,
 			sway_layer_surface->geo.x, sway_layer_surface->geo.y);
-		bool contains = pixman_region32_contains_rectangle(&surface_opaque_box,
-			&output_box);
+		pixman_region_overlap_t contains =
+			pixman_region32_contains_rectangle(&surface_opaque_box, &output_box);
 		pixman_region32_fini(&surface_opaque_box);
-		if (contains) {
+
+		if (contains == PIXMAN_REGION_IN) {
 			return true;
 		}
 	}
