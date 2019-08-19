@@ -880,6 +880,9 @@ void container_floating_move_to(struct sway_container *con,
 		return;
 	}
 	container_floating_translate(con, lx - con->x, ly - con->y);
+	if (container_is_scratchpad_hidden(con)) {
+		return;
+	}
 	struct sway_workspace *old_workspace = con->workspace;
 	struct sway_output *new_output = container_floating_find_output(con);
 	if (!sway_assert(new_output, "Unable to find any output")) {
