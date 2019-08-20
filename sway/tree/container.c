@@ -1168,6 +1168,10 @@ void container_discover_outputs(struct sway_container *con) {
 			if (con->view) {
 				view_for_each_surface(con->view,
 						surface_send_enter_iterator, output->wlr_output);
+				if (con->view->foreign_toplevel) {
+					wlr_foreign_toplevel_handle_v1_output_enter(
+							con->view->foreign_toplevel, output->wlr_output);
+				}
 			}
 			list_add(con->outputs, output);
 		} else if (!intersects && index != -1) {
@@ -1176,6 +1180,10 @@ void container_discover_outputs(struct sway_container *con) {
 			if (con->view) {
 				view_for_each_surface(con->view,
 					surface_send_leave_iterator, output->wlr_output);
+				if (con->view->foreign_toplevel) {
+					wlr_foreign_toplevel_handle_v1_output_leave(
+							con->view->foreign_toplevel, output->wlr_output);
+				}
 			}
 			list_del(con->outputs, index);
 		}
