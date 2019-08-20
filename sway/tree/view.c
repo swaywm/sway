@@ -21,6 +21,7 @@
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/input/seat.h"
+#include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -299,6 +300,10 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	if (view->impl->set_activated) {
 		view->impl->set_activated(view, activated);
 	}
+	if (view->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_set_activated(
+				view->foreign_toplevel, activated);
+	}
 }
 
 void view_request_activate(struct sway_view *view) {
@@ -558,6 +563,27 @@ static bool should_focus(struct sway_view *view) {
 	return len == 0;
 }
 
+static void handle_foreign_activate_request(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(
+			listener, view, foreign_activate_request);
+	struct wlr_foreign_toplevel_handle_v1_activated_event *event = data;
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (seat->wlr_seat == event->seat) {
+			seat_set_focus_container(seat, view->container);
+			break;
+		}
+	}
+}
+
+static void handle_foreign_close_request(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(
+			listener, view, foreign_close_request);
+	view_close(view);
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			  bool fullscreen, struct wlr_output *fullscreen_output,
 			  bool decoration) {
@@ -585,6 +611,15 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		: seat_get_focus_inactive(seat, &root->node);
 	struct sway_container *target_sibling = node->type == N_CONTAINER ?
 		node->sway_container : NULL;
+
+	view->foreign_toplevel =
+		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
+	view->foreign_activate_request.notify = handle_foreign_activate_request;
+	wl_signal_add(&view->foreign_toplevel->events.request_activate,
+			&view->foreign_activate_request);
+	view->foreign_close_request.notify = handle_foreign_close_request;
+	wl_signal_add(&view->foreign_toplevel->events.request_close,
+			&view->foreign_close_request);
 
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
@@ -648,6 +683,12 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	if (should_focus(view)) {
 		input_manager_set_focus(&view->container->node);
 	}
+
+	const char *app_id = view_get_app_id(view);
+	if (app_id != NULL) {
+		wlr_foreign_toplevel_handle_v1_set_app_id(
+				view->foreign_toplevel, app_id);
+	}
 }
 
 void view_unmap(struct sway_view *view) {
@@ -658,6 +699,11 @@ void view_unmap(struct sway_view *view) {
 	if (view->urgent_timer) {
 		wl_event_source_remove(view->urgent_timer);
 		view->urgent_timer = NULL;
+	}
+
+	if (view->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_destroy(view->foreign_toplevel);
+		view->foreign_toplevel = NULL;
 	}
 
 	struct sway_container *parent = view->container->parent;
@@ -1063,6 +1109,10 @@ void view_update_title(struct sway_view *view, bool force) {
 	container_update_title_textures(view->container);
 
 	ipc_event_window(view->container, "title");
+
+	if (view->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_set_title(view->foreign_toplevel, title);
+	}
 }
 
 bool view_is_visible(struct sway_view *view) {

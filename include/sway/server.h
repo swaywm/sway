@@ -7,6 +7,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
@@ -72,6 +73,8 @@ struct sway_server {
 	struct wlr_output_manager_v1 *output_manager_v1;
 	struct wl_listener output_manager_apply;
 	struct wl_listener output_manager_test;
+
+	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 
 	size_t txn_timeout_ms;
 	list_t *transactions;

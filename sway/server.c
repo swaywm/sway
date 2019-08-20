@@ -132,6 +132,9 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->output_manager_v1->events.test,
 		&server->output_manager_test);
 
+	server->foreign_toplevel_manager =
+		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
+
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
 	wlr_data_control_manager_v1_create(server->wl_display);

@@ -91,6 +91,10 @@ struct sway_view {
 	// when a transaction is applied.
 	struct wlr_box saved_geometry;
 
+	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
+	struct wl_listener foreign_activate_request;
+	struct wl_listener foreign_close_request;
+
 	bool destroying;
 
 	list_t *executed_criteria; // struct criteria *
