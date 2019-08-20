@@ -388,6 +388,8 @@ static bool container_move_in_direction(struct sway_container *container,
 	return false;
 }
 
+static struct cmd_results *cmd_move_to_scratchpad(void);
+
 static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -503,6 +505,11 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		destination = &dest_con->node;
 	} else {
 		return cmd_results_new(CMD_INVALID, expected_syntax);
+	}
+
+	if (destination->type == N_CONTAINER &&
+			container_is_scratchpad_hidden(destination->sway_container)) {
+		return cmd_move_to_scratchpad();
 	}
 
 	if (container->is_sticky && container_is_floating_or_child(container) &&
