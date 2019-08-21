@@ -533,11 +533,6 @@ The default colors are:
 	windows, and right click to resize them. If _inverse_ is specified, left
 	click is used for resizing and right click for moving.
 
-*floating_scroll* up|right|down|left [command]
-	Sets a command to be executed when the mouse wheel is scrolled in the
-	specified direction while holding the floating modifier. Resets the
-	command, when given no arguments.
-
 *focus_follows_mouse* yes|no|always
 	If set to _yes_, moving your mouse over a window will focus that window. If
 	set to _always_, the window under the cursor will always be focused, even
