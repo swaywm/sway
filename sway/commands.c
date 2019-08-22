@@ -284,17 +284,32 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				free_argv(argc, argv);
 				goto cleanup;
 			}
+		} else if (views->length == 0) {
+			list_add(res_list,
+					cmd_results_new(CMD_FAILURE, "No matching node."));
 		} else {
+			struct cmd_results *fail_res = NULL;
 			for (int i = 0; i < views->length; ++i) {
 				struct sway_view *view = views->items[i];
 				set_config_node(&view->container->node);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
-				list_add(res_list, res);
-				if (res->status == CMD_INVALID) {
-					free_argv(argc, argv);
-					goto cleanup;
+				if (res->status == CMD_SUCCESS) {
+					free_cmd_results(res);
+				} else {
+					// last failure will take precedence
+					if (fail_res) {
+						free_cmd_results(fail_res);
+					}
+					fail_res = res;
+					if (res->status == CMD_INVALID) {
+						list_add(res_list, fail_res);
+						free_argv(argc, argv);
+						goto cleanup;
+					}
 				}
 			}
+			list_add(res_list,
+					fail_res ? fail_res : cmd_results_new(CMD_SUCCESS, NULL));
 		}
 		free_argv(argc, argv);
 	} while(head);
