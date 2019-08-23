@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/region.h>
 #include "list.h"
