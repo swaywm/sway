@@ -456,6 +456,9 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
 		y = event->y;
 	}
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_PRESSURE) {
+		wlr_tablet_v2_tablet_tool_notify_pressure(event->tool->tablet_v2_tool, event->pressure);
+	}
 
 	struct input_config *ic = input_device_get_config(input_device);
 	if (ic != NULL && ic->mapped_from_region != NULL) {
