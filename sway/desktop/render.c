@@ -343,8 +343,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
  * otherwise the colors will be incorrect when using opacity.
  *
  * The height is: 1px border, 3px padding, font height, 3px padding, 1px border
- * The left side for L_TABBED is: 1px border, 2px padding, title
- * The left side for other layouts is: 3px padding, title
+ * The left side is: 1px border, 2px padding, title
  */
 static void render_titlebar(struct sway_output *output,
 		pixman_region32_t *output_damage, struct sway_container *con,
@@ -353,12 +352,7 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_texture *marks_texture) {
 	struct wlr_box box;
 	float color[4];
-	struct sway_container_state *state = &con->current;
 	float output_scale = output->wlr_output->scale;
-	enum sway_container_layout layout = container_current_parent_layout(con);
-	list_t *children = container_get_current_siblings(con);
-	bool is_last_child = children->length == 0 ||
-		children->items[children->length - 1] == con;
 	double output_x = output->lx;
 	double output_y = output->ly;
 	int titlebar_border_thickness = config->titlebar_border_thickness;
@@ -377,42 +371,28 @@ static void render_titlebar(struct sway_output *output,
 	render_rect(output, output_damage, &box, color);
 
 	// Single pixel bar below title
-	size_t left_offset = 0, right_offset = 0;
-	bool connects_sides = false;
-	if (layout == L_HORIZ || layout == L_VERT ||
-			(layout == L_STACKED && is_last_child)) {
-		if (con->view) {
-			left_offset = state->border_left * state->border_thickness;
-			right_offset = state->border_right * state->border_thickness;
-			connects_sides = true;
-		}
-	}
-	box.x = x + left_offset;
+	box.x = x;
 	box.y = y + container_titlebar_height() - titlebar_border_thickness;
-	box.width = width - left_offset - right_offset;
+	box.width = width;
 	box.height = titlebar_border_thickness;
 	scale_box(&box, output_scale);
 	render_rect(output, output_damage, &box, color);
 
-	if (layout == L_TABBED) {
-		// Single pixel left edge
-		box.x = x;
-		box.y = y + titlebar_border_thickness;
-		box.width = titlebar_border_thickness;
-		box.height =
-			container_titlebar_height() - titlebar_border_thickness * 2;
-		scale_box(&box, output_scale);
-		render_rect(output, output_damage, &box, color);
+	// Single pixel left edge
+	box.x = x;
+	box.y = y + titlebar_border_thickness;
+	box.width = titlebar_border_thickness;
+	box.height = container_titlebar_height() - titlebar_border_thickness * 2;
+	scale_box(&box, output_scale);
+	render_rect(output, output_damage, &box, color);
 
-		// Single pixel right edge
-		box.x = x + width - titlebar_border_thickness;
-		box.y = y + titlebar_border_thickness;
-		box.width = titlebar_border_thickness;
-		box.height =
-			container_titlebar_height() - titlebar_border_thickness * 2;
-		scale_box(&box, output_scale);
-		render_rect(output, output_damage, &box, color);
-	}
+	// Single pixel right edge
+	box.x = x + width - titlebar_border_thickness;
+	box.y = y + titlebar_border_thickness;
+	box.width = titlebar_border_thickness;
+	box.height = container_titlebar_height() - titlebar_border_thickness * 2;
+	scale_box(&box, output_scale);
+	render_rect(output, output_damage, &box, color);
 
 	int inner_x = x - output_x + titlebar_h_padding;
 	int bg_y = y + titlebar_border_thickness;
@@ -581,10 +561,9 @@ static void render_titlebar(struct sway_output *output,
 	}
 
 	// Padding on left side
-	left_offset = (layout == L_TABBED) * titlebar_border_thickness;
-	box.x = x + left_offset;
+	box.x = x + titlebar_border_thickness;
 	box.y = y + titlebar_border_thickness;
-	box.width = titlebar_h_padding - left_offset;
+	box.width = titlebar_h_padding - titlebar_border_thickness;
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
 		config->font_height;
 	scale_box(&box, output_scale);
@@ -595,10 +574,9 @@ static void render_titlebar(struct sway_output *output,
 	render_rect(output, output_damage, &box, color);
 
 	// Padding on right side
-	right_offset = (layout == L_TABBED) * titlebar_border_thickness;
 	box.x = x + width - titlebar_h_padding;
 	box.y = y + titlebar_border_thickness;
-	box.width = titlebar_h_padding - right_offset;
+	box.width = titlebar_h_padding - titlebar_border_thickness;
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
 		config->font_height;
 	scale_box(&box, output_scale);
@@ -608,24 +586,6 @@ static void render_titlebar(struct sway_output *output,
 		box.x = right_rx;
 	}
 	render_rect(output, output_damage, &box, color);
-
-	if (connects_sides) {
-		// Left pixel in line with bottom bar
-		box.x = x;
-		box.y = y + container_titlebar_height() - titlebar_border_thickness;
-		box.width = state->border_thickness * state->border_left;
-		box.height = titlebar_border_thickness;
-		scale_box(&box, output_scale);
-		render_rect(output, output_damage, &box, color);
-
-		// Right pixel in line with bottom bar
-		box.x = x + width - state->border_thickness * state->border_right;
-		box.y = y + container_titlebar_height() - titlebar_border_thickness;
-		box.width = state->border_thickness * state->border_right;
-		box.height = titlebar_border_thickness;
-		scale_box(&box, output_scale);
-		render_rect(output, output_damage, &box, color);
-	}
 }
 
 /**
