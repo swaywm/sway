@@ -299,10 +299,10 @@ set|plus|minus <amount>
 *title_format* <format>
 	Sets the format of window titles. The following placeholders may be used:
 
-		%title - The title supplied by the window
-		%app_id - The wayland app ID (applicable to wayland windows only)
-		%class - The X11 classname (applicable to xwayland windows only)
-		%instance - The X11 instance (applicable to xwayland windows only)
+		%title - The title supplied by the window ++
+		%app_id - The wayland app ID (applicable to wayland windows only) ++
+		%class - The X11 classname (applicable to xwayland windows only) ++
+		%instance - The X11 instance (applicable to xwayland windows only) ++
 		%shell - The protocol the window is using (typically xwayland or
 			xdg_shell)
 
@@ -804,7 +804,7 @@ Mark all Firefox windows with "Browser":
 [class="Firefox"] mark Browser
 ```
 
-You may like to use swaymsg -t get_tree for finding the values of these 
+You may like to use swaymsg -t get_tree for finding the values of these
 properties in practice for your applications.
 
 The following attributes may be matched with:
