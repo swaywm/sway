@@ -18,7 +18,7 @@ irc.freenode.net).
 ### Из репозиториев
 
 Sway доступен во многих дистрибутивах. Попробуйте установить пакет "sway"
-в вашем. Если он вдруг не доступен, проверьте [эту страницу на wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
+в вашем. Если он вдруг недоступен, проверьте [эту страницу на wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 для более детальной информации о подробностях установки для вашего
 дистрибутива.
 
@@ -49,7 +49,7 @@ _\*Зависимости для сборки_
     ninja -C build
     sudo ninja -C build install
 
-На системах без logind, вам понадобиться добавить suid к файлу программы sway:
+На системах без logind, вам понадобится добавить suid к файлу программы sway:
 
     sudo chmod a+s /usr/local/bin/sway
 
