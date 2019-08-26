@@ -30,8 +30,6 @@ static void do_reload(void *data) {
 
 	ipc_event_workspace(NULL, NULL, "reload");
 
-	load_swaybars();
-
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
 		for (int j = 0; j < bar_ids->length; ++j) {
