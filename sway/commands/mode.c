@@ -67,6 +67,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		return error;
 	}
 	// Set current mode
+	struct sway_mode *stored_mode = config->current_mode;
 	config->current_mode = mode;
 	if (argc == 1) {
 		// trigger IPC mode event
@@ -80,7 +81,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 	// Create binding
 	struct cmd_results *result = config_subcommand(argv + 1, argc - 1,
 			mode_handlers, sizeof(mode_handlers));
-	config->current_mode = config->modes->items[0];
+	config->current_mode = stored_mode;
 
 	return result;
 }
