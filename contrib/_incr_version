@@ -1,6 +1,5 @@
 #!/bin/sh -eu
-old_version="$1"
 new_version="$2"
-sed -i meson.build -e "s/version: '$old_version'/version: '$new_version'/g"
+sed -i meson.build -e "s/^\tversion: '.*'/\tversion: '$new_version'/"
 git add meson.build
 git commit -m "Update version to $new_version"
