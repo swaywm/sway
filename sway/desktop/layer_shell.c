@@ -301,9 +301,11 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
 
-	struct sway_seat *seat = input_manager_current_seat();
-	if (seat->focused_layer == sway_layer->layer_surface) {
-		seat_set_focus_layer(seat, NULL);
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (seat->focused_layer == sway_layer->layer_surface) {
+			seat_set_focus_layer(seat, NULL);
+		}
 	}
 
 	cursor_rebase_all();
