@@ -870,6 +870,9 @@ The following attributes may be matched with:
 	expression. If the value is \_\_focused\_\_, then all the views on the
 	currently focused workspace matches.
 
+*fullscreen*
+	Compares the fullscreen mode of the window. Can be "true" or "false".
+
 # SEE ALSO
 
 *sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)

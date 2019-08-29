@@ -14,6 +14,13 @@ enum criteria_type {
 	CT_NO_FOCUS                = 1 << 4,
 };
 
+enum criteria_tribool_value {
+	TRIBOOL_UNDEFINED = 0,
+	TRIBOOL_TRUE      = 1,
+	TRIBOOL_FALSE     = 2,
+};
+
+
 struct criteria {
 	enum criteria_type type;
 	char *raw; // entire criteria string (for logging)
@@ -37,6 +44,7 @@ struct criteria {
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest
 	pcre *workspace;
+	enum criteria_tribool_value fullscreen;
 };
 
 bool criteria_is_empty(struct criteria *criteria);

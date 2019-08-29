@@ -32,7 +32,8 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->floating
 		&& !criteria->tiling
 		&& !criteria->urgent
-		&& !criteria->workspace;
+		&& !criteria->workspace
+		&& criteria->fullscreen == TRIBOOL_UNDEFINED;
 }
 
 void criteria_destroy(struct criteria *criteria) {
@@ -218,6 +219,14 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
+	if (criteria->fullscreen != TRIBOOL_UNDEFINED) {
+		const bool want_fullscreen = criteria->fullscreen == TRIBOOL_TRUE;
+		const bool is_fullscreen = view->container->fullscreen_mode != FULLSCREEN_NONE;
+		if (want_fullscreen != is_fullscreen) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -324,6 +333,7 @@ enum criteria_token {
 	T_TITLE,
 	T_URGENT,
 	T_WORKSPACE,
+	T_FULLSCREEN,
 
 	T_INVALID,
 };
@@ -359,6 +369,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_TILING;
 	} else if (strcmp(name, "floating") == 0) {
 		return T_FLOATING;
+	} else if (strcmp(name, "fullscreen") == 0) {
+		return T_FULLSCREEN;
 	}
 	return T_INVALID;
 }
@@ -439,6 +451,7 @@ static char *get_focused_prop(enum criteria_token token, bool *autofail) {
 	case T_FLOATING:
 	case T_TILING:
 	case T_URGENT:
+	case T_FULLSCREEN:
 	case T_INVALID:
 		*autofail = false;
 		break;
@@ -543,6 +556,16 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		break;
 	case T_WORKSPACE:
 		generate_regex(&criteria->workspace, effective_value);
+		break;
+	case T_FULLSCREEN:
+		if (strcmp(effective_value, "true") == 0) {
+			criteria->fullscreen = TRIBOOL_TRUE;
+		} else if (strcmp(effective_value, "false") == 0) {
+			criteria->fullscreen = TRIBOOL_FALSE;
+		} else {
+			error =
+				strdup("The value for 'fullscreen' must be 'true' or 'false'");
+		}
 		break;
 	case T_INVALID:
 		break;
