@@ -12,7 +12,7 @@ _swaynag_ [options...]
 
 *-b, --button* <text> <action>
 	Create a button with the text _text_ that executes _action_ when pressed.
-	If the environment variable `TERMINAL` is set, _action_ will be run inside
+	If the environment variable _TERMINAL_ is set, _action_ will be run inside
 	the terminal. Otherwise, it will fallback to running directly. Multiple
 	buttons can be defined by providing the flag multiple times.
 

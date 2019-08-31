@@ -75,14 +75,14 @@ Sway allows configuring swaybar in the sway configuration file.
 *bindcode* [--release] <event-code> <command>
 	Executes _command_ when the mouse button has been pressed (or if _released_
 	is given, when the button has been released). The buttons can be given as
-	an event code, which can be obtaining from `libinput debug-events`. To
+	an event code, which can be obtaining from *libinput debug-events*. To
 	disable the default behavior for a button, use the command _nop_.
 
 *bindsym* [--release] button[1-9]|<event-name> <command>
 	Executes _command_ when the mouse button has been pressed (or if _released_
 	is given, when the button has been released). The buttons can be given as a
-	x11 button number or an event name, which can be obtained from `libinput
-	debug-events`. To disable the default behavior for a button, use the
+	x11 button number or an event name, which can be obtained from *libinput
+	debug-events*. To disable the default behavior for a button, use the
 	command _nop_.
 
 *mode* dock|hide|invisible|overlay
@@ -127,14 +127,14 @@ The following commands configure the tray.
 *tray_bindcode* <event-code>
 ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollUp|nop
 	Executes the action when the mouse button has been pressed. The buttons can
-	be given as an event code, which can be obtained from `libinput debug-events`.
+	be given as an event code, which can be obtained from *libinput debug-events*.
 	To disable the default behavior for a button, use the command _nop_.
 
 *tray_bindsym* button[1-9]|<event-name>
 ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollUp|nop
 	Executes the action when the mouse button has been pressed. The buttons can
 	be given as a x11 button number or an event name, which can be obtained
-	from `libinput debug-events`. Use the command _nop_ to disable the default
+	from *libinput debug-events*. Use the command _nop_ to disable the default
 	action (Activate for button1, ContextMenu for button2 and SecondaryActivate
 	for button3).
 
