@@ -1095,6 +1095,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	} else if (!layer || seat->focused_layer == layer) {
 		return;
 	}
+	assert(layer->mapped);
 	seat_set_focus_surface(seat, layer->surface, true);
 	if (layer->layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
 		seat->focused_layer = layer;
