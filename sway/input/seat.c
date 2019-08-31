@@ -516,6 +516,7 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 static void seat_update_capabilities(struct sway_seat *seat) {
 	uint32_t caps = 0;
+	uint32_t previous_caps = seat->wlr_seat->capabilities;
 	struct sway_seat_device *seat_device;
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		switch (seat_device->input_device->wlr_device->type) {
@@ -545,7 +546,9 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 		wlr_seat_set_capabilities(seat->wlr_seat, caps);
 	} else {
 		wlr_seat_set_capabilities(seat->wlr_seat, caps);
-		cursor_set_image(seat->cursor, "left_ptr", NULL);
+		if ((previous_caps & WL_SEAT_CAPABILITY_POINTER) == 0) {
+			cursor_set_image(seat->cursor, "left_ptr", NULL);
+		}
 	}
 }
 
