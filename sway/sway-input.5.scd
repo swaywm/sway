@@ -52,12 +52,16 @@ For more information on these xkb configuration options, see
 *input* <identifier> xkb_layout <layout_name>
 	Sets the layout of the keyboard like _us_ or _de_.
 
+	Multiple layouts can be specified by separating them with commas.
+
 *input* <identifier> xkb_model <model_name>
 	Sets the model of the keyboard. This has an influence for some extra keys
 	your keyboard might have.
 
 *input* <identifier> xkb_options <options>
 	Sets extra xkb configuration options for the keyboard.
+
+	Multiple options can be specified by separating them with commas.
 
 *input* <identifier> xkb_rules <rules>
 	Sets files of rules to be used for keyboard mapping composition.
