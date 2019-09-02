@@ -400,7 +400,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle clicking a container surface or decorations
-	if (cont) {
+	if (cont && state == WLR_BUTTON_PRESSED) {
 		node = seat_get_focus_inactive(seat, &cont->node);
 		seat_set_focus(seat, node);
 		seat_pointer_notify_button(seat, time_msec, button, state);
