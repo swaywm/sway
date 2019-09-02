@@ -13,7 +13,7 @@ struct cmd_results *cmd_xwayland(int argc, char **argv) {
 #ifdef HAVE_XWAYLAND
 	enum xwayland_mode xwayland;
 	if (strcmp(argv[0], "force") == 0) {
-		xwayland = XWAYLAND_MODE_IMMEADIATE;
+		xwayland = XWAYLAND_MODE_IMMEDIATE;
 	} else if (parse_boolean(argv[0], true)) {
 		xwayland = XWAYLAND_MODE_LAZY;
 	} else {
