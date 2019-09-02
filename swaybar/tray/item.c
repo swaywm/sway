@@ -411,9 +411,15 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		char *icon_name = sni->status[0] == 'N' ?
 			sni->attention_icon_name : sni->icon_name;
 		if (icon_name) {
-			char *icon_path = find_icon(sni->tray->themes, sni->tray->basedirs,
+			list_t *icon_search_paths = create_list();
+			list_cat(icon_search_paths, sni->tray->basedirs);
+			if (sni->icon_theme_path) {
+				list_add(icon_search_paths, sni->icon_theme_path);
+			}
+			char *icon_path = find_icon(sni->tray->themes, icon_search_paths,
 					icon_name, ideal_size, output->bar->config->icon_theme,
 					&sni->min_size, &sni->max_size);
+			list_free(icon_search_paths);
 			if (!icon_path && sni->icon_theme_path) {
 				icon_path = find_icon_in_dir(icon_name, sni->icon_theme_path,
 						&sni->min_size, &sni->max_size);
