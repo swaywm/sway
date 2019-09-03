@@ -210,5 +210,6 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: sway_deps,
 	link_with: [lib_sway_common],
-	install: true
+	install: true,
+	link_args : '-lpthread'
 )
