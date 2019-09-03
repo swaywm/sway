@@ -21,16 +21,19 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 	bool add_output = true;
 	if (strcmp("*", output) == 0) {
 		// remove all previous defined outputs and replace with '*'
-		for (int i = 0; i < outputs->length; ++i) {
-			free(outputs->items[i]);
-			list_del(outputs, i);
+		while (outputs->length) {
+			free(outputs->items[0]);
+			list_del(outputs, 0);
 		}
 	} else {
-		// only add output if not already defined with either the same
-		// name or as '*'
+		// only add output if not already defined, if the list has '*', remove
+		// it, in favor of a manual list
 		for (int i = 0; i < outputs->length; ++i) {
 			const char *find = outputs->items[i];
-			if (strcmp("*", find) == 0 || strcmp(output, find) == 0) {
+			if (strcmp("*", find) == 0) {
+				free(outputs->items[i]);
+				list_del(outputs, i);
+			} else if (strcmp(output, find) == 0) {
 				add_output = false;
 				break;
 			}

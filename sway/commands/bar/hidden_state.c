@@ -23,7 +23,7 @@ static struct cmd_results *bar_set_hidden_state(struct bar_config *bar,
 		return cmd_results_new(CMD_INVALID, "Invalid value %s",	hidden_state);
 	}
 	if (strcmp(old_state, bar->hidden_state) != 0) {
-		if (!config->reading) {
+		if (!config->current_bar) {
 			ipc_event_barconfig_update(bar);
 		}
 		sway_log(SWAY_DEBUG, "Setting hidden_state: '%s' for bar: %s",
@@ -45,6 +45,12 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	if (config->reading && argc > 1) {
 		return cmd_results_new(CMD_INVALID,
 				"Unexpected value %s in config mode", argv[1]);
+	}
+
+	if (config->current_bar && argc == 2 &&
+			strcmp(config->current_bar->id, argv[1]) != 0) {
+		return cmd_results_new(CMD_INVALID, "Conflicting bar ids: %s and %s",
+				config->current_bar->id, argv[1]);
 	}
 
 	const char *state = argv[0];

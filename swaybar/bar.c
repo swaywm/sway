@@ -126,7 +126,7 @@ static void add_layer_surface(struct swaybar_output *output) {
 	}
 }
 
-static void destroy_layer_surface(struct swaybar_output *output) {
+void destroy_layer_surface(struct swaybar_output *output) {
 	if (!output->layer_surface) {
 		return;
 	}
@@ -181,7 +181,7 @@ bool determine_bar_visibility(struct swaybar *bar, bool moving_layer) {
 }
 
 static bool bar_uses_output(struct swaybar_output *output) {
-	if (output->bar->config->all_outputs) {
+	if (wl_list_empty(&output->bar->config->outputs)) {
 		return true;
 	}
 	char *identifier = output->identifier;
@@ -256,20 +256,27 @@ static void xdg_output_handle_done(void *data,
 	struct swaybar_output *output = data;
 	struct swaybar *bar = output->bar;
 
-	assert(output->name != NULL);
-	if (!bar_uses_output(output)) {
-		swaybar_output_free(output);
+	if (!wl_list_empty(&output->link)) {
 		return;
 	}
 
-	if (wl_list_empty(&output->link)) {
+	assert(output->name != NULL);
+	if (!bar_uses_output(output)) {
 		wl_list_remove(&output->link);
-		wl_list_insert(&bar->outputs, &output->link);
+		wl_list_insert(&bar->unused_outputs, &output->link);
+		return;
+	}
 
-		output->surface = wl_compositor_create_surface(bar->compositor);
-		assert(output->surface);
+	wl_list_remove(&output->link);
+	wl_list_insert(&bar->outputs, &output->link);
 
-		determine_bar_visibility(bar, false);
+	output->surface = wl_compositor_create_surface(bar->compositor);
+	assert(output->surface);
+
+	determine_bar_visibility(bar, false);
+
+	if (bar->running && bar->config->workspace_buttons) {
+		ipc_get_workspaces(bar);
 	}
 }
 
@@ -373,6 +380,12 @@ static void handle_global_remove(void *data, struct wl_registry *registry,
 			return;
 		}
 	}
+	wl_list_for_each_safe(output, tmp, &bar->unused_outputs, link) {
+		if (output->wl_name == name) {
+			swaybar_output_free(output);
+			return;
+		}
+	}
 	struct swaybar_seat *seat, *tmp_seat;
 	wl_list_for_each_safe(seat, tmp_seat, &bar->seats, link) {
 		if (seat->wl_name == name) {
@@ -391,6 +404,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	bar->visible = true;
 	bar->config = init_config();
 	wl_list_init(&bar->outputs);
+	wl_list_init(&bar->unused_outputs);
 	wl_list_init(&bar->seats);
 	bar->eventloop = loop_create();
 
@@ -458,7 +472,7 @@ static void ipc_in(int fd, short mask, void *data) {
 	}
 }
 
-static void status_in(int fd, short mask, void *data) {
+void status_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
 	if (mask & (POLLHUP | POLLERR)) {
 		status_error(bar->status, "[error reading from status command]");
@@ -510,6 +524,7 @@ void bar_teardown(struct swaybar *bar) {
 	destroy_tray(bar->tray);
 #endif
 	free_outputs(&bar->outputs);
+	free_outputs(&bar->unused_outputs);
 	free_seats(&bar->seats);
 	if (bar->config) {
 		free_config(bar->config);

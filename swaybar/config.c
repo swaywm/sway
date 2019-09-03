@@ -84,7 +84,7 @@ struct swaybar_config *init_config(void) {
 	return config;
 }
 
-static void free_binding(struct swaybar_binding *binding) {
+void free_binding(struct swaybar_binding *binding) {
 	if (!binding) {
 		return;
 	}
@@ -93,7 +93,7 @@ static void free_binding(struct swaybar_binding *binding) {
 }
 
 #if HAVE_TRAY
-static void free_tray_binding(struct tray_binding *binding) {
+void free_tray_binding(struct tray_binding *binding) {
 	if (!binding) {
 		return;
 	}

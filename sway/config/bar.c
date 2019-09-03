@@ -172,7 +172,6 @@ struct bar_config *default_bar_config(void) {
 	wl_list_init(&bar->tray_bindings);
 #endif
 
-	list_add(config->bars, bar);
 	return bar;
 cleanup:
 	free_bar_config(bar);

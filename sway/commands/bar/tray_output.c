@@ -24,9 +24,21 @@ struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 			free(outputs->items[i]);
 		}
 		outputs->length = 0;
+	} else if (strcmp(argv[0], "*") == 0) {
+		sway_log(SWAY_DEBUG, "Showing tray on all outputs for bar: %s",
+				config->current_bar->id);
+		while (outputs->length) {
+			free(outputs->items[0]);
+			list_del(outputs, 0);
+		}
+		return cmd_results_new(CMD_SUCCESS, NULL);
 	} else {
 		sway_log(SWAY_DEBUG, "Showing tray on output '%s' for bar: %s", argv[0],
 				config->current_bar->id);
+		if (outputs->length == 1 && strcmp(outputs->items[0], "none") == 0) {
+			free(outputs->items[0]);
+			list_del(outputs, 0);
+		}
 	}
 	list_add(outputs, strdup(argv[0]));
 

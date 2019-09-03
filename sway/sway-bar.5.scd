@@ -10,67 +10,16 @@ Sway allows configuring swaybar in the sway configuration file.
 
 # COMMANDS
 
-*status_command* <status command>
-	Executes the bar _status command_ with _sh -c_. Each line of text printed
-	to stdout from this command will be displayed in the status area of the
-	bar. You may also use swaybar's JSON status line protocol. See
-	*swaybar-protocol*(7) for more information on the protocol
-
-	If running this command via IPC, you can disable a running status command by
-	setting the command to a single dash: _swaybar bar bar-0 status\_command -_
-
-*pango_markup* enabled|disabled
-	Enables or disables pango markup for status lines. This has no effect on
-	status lines using the i3bar JSON protocol.
+The following commands may only be used in the configuration file.
 
 *id* <bar_id>
 	Sets the ID of the bar.
 
-*position* top|bottom
-	Sets position of the bar. Default is _bottom_.
-
-*output* <output>
-	Restrict the bar to a certain output, can be specified multiple times. If
-	the output command is omitted, the bar will be displayed on all outputs.
-
 *swaybar_command* <command>
 	Executes custom bar command. Default is _swaybar_.
 
-*font* <font>
-	Specifies the font to be used in the bar. _font_ should be specified as a
-	pango font description. For more information on pango font descriptions,
-	see https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
-
-*separator_symbol* <symbol>
-	Specifies the separator symbol to separate blocks on the bar.
-
-*wrap_scroll* yes|no
-	Enables or disables wrapping when scrolling through workspaces with the
-	scroll wheel. Default is _no_.
-
-*workspace_buttons* yes|no
-	Enables or disables workspace buttons on the bar. Default is _yes_.
-
-*strip_workspace_name* yes|no
-	If set to _yes_, then workspace names will be omitted from the workspace
-	button and only the custom number will be shown. Default is _no_.
-
-*strip_workspace_numbers* yes|no
-	If set to _yes_, then workspace numbers will be omitted from the workspace
-	button and only the custom name will be shown. Default is _no_.
-
-*binding_mode_indicator* yes|no
-	Enable or disable binding mode indicator. Default is _yes_.
-
-*gaps* <all> | <horizontal> <vertical> | <top> <right> <bottom> <left>
-	Sets the gaps from the edge of the screen for the bar. Gaps can either be
-	set all at once, per direction, or per side. Note that only sides that
-	touch an edge of the screen can have gaps. For the side that does not
-	touch an edge of the screen, per-side outer gaps for workspaces may be of
-	use.
-
-*height* <height>
-	Sets the height of the bar. Default height (0) will match the font size.
+The following commands may be used either in the configuration file or at
+runtime.
 
 *bindcode* [--release] <event-code> <command>
 	Executes _command_ when the mouse button has been pressed (or if _released_
@@ -85,7 +34,39 @@ Sway allows configuring swaybar in the sway configuration file.
 	debug-events*. To disable the default behavior for a button, use the
 	command _nop_.
 
-*mode* dock|hide|invisible|overlay
+*binding_mode_indicator* yes|no
+	Enable or disable binding mode indicator. Default is _yes_.
+
+*font* <font>
+	Specifies the font to be used in the bar. _font_ should be specified as a
+	pango font description. For more information on pango font descriptions,
+	see https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
+
+*gaps* <all> | <horizontal> <vertical> | <top> <right> <bottom> <left>
+	Sets the gaps from the edge of the screen for the bar. Gaps can either be
+	set all at once, per direction, or per side. Note that only sides that
+	touch an edge of the screen can have gaps. For the side that does not
+	touch an edge of the screen, per-side outer gaps for workspaces may be of
+	use.
+
+*height* <height>
+	Sets the height of the bar. Default height (0) will match the font size.
+
+*hidden_state* hide|show [<bar-id>]
+	Specifies the behaviour of the bar when it is in _hide_ mode. When the
+	hidden state is _hide_, then it is normally hidden, and only unhidden by
+	pressing the modifier key or in case of urgency hints. When the hidden
+	state is _show_, then it is permanently visible, drawn on top of the
+	currently visible workspace. Default is _hide_.
+
+	For compatibility with i3, _bar hidden_state hide|show [<bar-id>]_ is
+	supported along with the sway only _bar <bar-id> hidden_state hide|show_
+	syntax. When using the i3 syntax, if _bar-id_ is omitted, the hidden_state
+	will be changed for all bars. Attempting to use _bar <bar-id1>
+	hidden_state hide|show <bar-id2>_ will result in an error due to
+	conflicting bar ids.
+
+*mode* dock|hide|invisible|overlay [<bar-id>]
 	Specifies the visibility of the bar. In _dock_ mode, it is permanently
 	visible at one edge of the screen. In _hide_ mode, it is hidden unless the
 	modifier key is pressed, though this behaviour depends on the hidden state.
@@ -93,31 +74,69 @@ Sway allows configuring swaybar in the sway configuration file.
 	permanently visible on top of other windows. (In _overlay_ mode the bar is
 	transparent to input events.) Default is _dock_.
 
-*hidden_state* hide|show
-	Specifies the behaviour of the bar when it is in _hide_ mode. When the
-	hidden state is _hide_, then it is normally hidden, and only unhidden by
-	pressing the modifier key or in case of urgency hints. When the hidden
-	state is _show_, then it is permanently visible, drawn on top of the
-	currently visible workspace. Default is _hide_.
+	For compatibility with i3, _bar mode <mode> [<bar-id>]_ syntax is supported
+	along with the sway only _bar <bar-id> mode <mode>_ syntax. When using the
+	i3 syntax, if _bar-id_ is omitted, the mode will be changed for all bars.
+	Attempting to use _bar <bar-id1> mode <mode> <bar-id2>_ will result in an
+	error due to conflicting bar ids.
 
 *modifier* <Modifier>|none
 	Specifies the modifier key that shows a hidden bar. Default is _Mod4_.
 
-*status_padding* <padding>
-	Sets the vertical padding that is used for the status line. The default is
-	_1_. If _padding_ is _0_, blocks will be able to take up the full height of
-	the bar. This value will be multiplied by the output scale.
+*output* <output>|\*
+	Restrict the bar to a certain output, can be specified multiple times. If
+	the output command is omitted, the bar will be displayed on all outputs. _\*_
+	can be given at any point to reset it back to all outputs.
+
+*pango_markup* enabled|disabled
+	Enables or disables pango markup for status lines. This has no effect on
+	status lines using the i3bar JSON protocol.
+
+*position* top|bottom
+	Sets position of the bar. Default is _bottom_.
+
+*separator_symbol* <symbol>
+	Specifies the separator symbol to separate blocks on the bar.
+
+*status_command* <status command>
+	Executes the bar _status command_ with _sh -c_. Each line of text printed
+	to stdout from this command will be displayed in the status area of the
+	bar. You may also use swaybar's JSON status line protocol. See
+	*swaybar-protocol*(7) for more information on the protocol
+
+	If running this command via IPC, you can disable a running status command by
+	setting the command to a single dash: _swaybar bar bar-0 status\_command -_
 
 *status_edge_padding* <padding>
 	Sets the padding that is used when the status line is at the right edge of
 	the bar. This value will be multiplied by the output scale. The default is
 	_3_.
 
+*status_padding* <padding>
+	Sets the vertical padding that is used for the status line. The default is
+	_1_. If _padding_ is _0_, blocks will be able to take up the full height of
+	the bar. This value will be multiplied by the output scale.
+
+*strip_workspace_name* yes|no
+	If set to _yes_, then workspace names will be omitted from the workspace
+	button and only the custom number will be shown. Default is _no_.
+
+*strip_workspace_numbers* yes|no
+	If set to _yes_, then workspace numbers will be omitted from the workspace
+	button and only the custom name will be shown. Default is _no_.
+
 *unbindcode* [--release] <event-code>
 	Removes the binding with the given <event-code>.
 
 *unbindsym* [--release] button[1-9]|<event-name>
 	Removes the binding with the given <button> or <event-name>.
+
+*wrap_scroll* yes|no
+	Enables or disables wrapping when scrolling through workspaces with the
+	scroll wheel. Default is _no_.
+
+*workspace_buttons* yes|no
+	Enables or disables workspace buttons on the bar. Default is _yes_.
 
 ## TRAY
 
@@ -142,10 +161,11 @@ ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollU
 	Sets the pixel padding of the system tray. This padding will surround the
 	tray on all sides and between each item. The default value for _px_ is 2.
 
-*tray_output* none|<output>
+*tray_output* none|<output>|\*
 	Restrict the tray to a certain output, can be specified multiple times. If
 	omitted, the tray will be displayed on all outputs. Unlike i3bar, swaybar
-	can show icons on any number of bars and outputs without races.
+	can show icons on any number of bars and outputs without races. _\*_ can be
+	given at any point to reset it to display on all outputs.
 
 *icon_theme* <name>
 	Sets the icon theme that sway will look for item icons in. This option has

@@ -1,15 +1,21 @@
 #define _POSIX_C_SOURCE 200809
 #include <limits.h>
+#include <poll.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <json.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
+#include "swaybar/status_line.h"
+#if HAVE_TRAY
+#include "swaybar/tray/tray.h"
+#endif
 #include "config.h"
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
+#include "loop.h"
 #include "util.h"
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
@@ -169,75 +175,58 @@ static bool ipc_parse_config(
 	json_object *success;
 	if (json_object_object_get_ex(bar_config, "success", &success)
 			&& !json_object_get_boolean(success)) {
-		sway_log(SWAY_ERROR, "No bar with that ID. Use 'swaymsg -t get_bar_config to get the available bar configs.");
+		sway_log(SWAY_ERROR, "No bar with that ID. Use 'swaymsg -t "
+				"get_bar_config' to get the available bar configs.");
 		json_object_put(bar_config);
 		return false;
 	}
-	json_object *markup, *mode, *hidden_state, *position, *status_command;
-	json_object *font, *gaps, *bar_height, *wrap_scroll, *workspace_buttons;
-	json_object *strip_workspace_numbers, *strip_workspace_name;
-	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol;
-	json_object *outputs, *bindings, *status_padding, *status_edge_padding;
-	json_object_object_get_ex(bar_config, "mode", &mode);
-	json_object_object_get_ex(bar_config, "hidden_state", &hidden_state);
-	json_object_object_get_ex(bar_config, "position", &position);
-	json_object_object_get_ex(bar_config, "status_command", &status_command);
-	json_object_object_get_ex(bar_config, "font", &font);
-	json_object_object_get_ex(bar_config, "gaps", &gaps);
-	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
-	json_object_object_get_ex(bar_config, "wrap_scroll", &wrap_scroll);
-	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
-	json_object_object_get_ex(bar_config, "strip_workspace_numbers", &strip_workspace_numbers);
-	json_object_object_get_ex(bar_config, "strip_workspace_name", &strip_workspace_name);
-	json_object_object_get_ex(bar_config, "binding_mode_indicator", &binding_mode_indicator);
-	json_object_object_get_ex(bar_config, "verbose", &verbose);
-	json_object_object_get_ex(bar_config, "separator_symbol", &sep_symbol);
-	json_object_object_get_ex(bar_config, "colors", &colors);
-	json_object_object_get_ex(bar_config, "outputs", &outputs);
-	json_object_object_get_ex(bar_config, "pango_markup", &markup);
-	json_object_object_get_ex(bar_config, "bindings", &bindings);
-	json_object_object_get_ex(bar_config, "status_padding", &status_padding);
-	json_object_object_get_ex(bar_config, "status_edge_padding",
-			&status_edge_padding);
-	if (status_command) {
-		free(config->status_command);
-		config->status_command = strdup(json_object_get_string(status_command));
+
+	json_object *bar_height = json_object_object_get(bar_config, "bar_height");
+	if (bar_height) {
+		config->height = json_object_get_int(bar_height);
 	}
-	if (position) {
-		config->position = parse_position(json_object_get_string(position));
+
+	json_object *binding_mode_indicator =
+		json_object_object_get(bar_config, "binding_mode_indicator");
+	if (binding_mode_indicator) {
+		config->binding_mode_indicator =
+			json_object_get_boolean(binding_mode_indicator);
 	}
+
+	json_object *bindings = json_object_object_get(bar_config, "bindings");
+	while (config->bindings->length) {
+		struct swaybar_binding *binding = config->bindings->items[0];
+		list_del(config->bindings, 0);
+		free_binding(binding);
+	}
+	if (bindings) {
+		int length = json_object_array_length(bindings);
+		for (int i = 0; i < length; ++i) {
+			json_object *bindobj = json_object_array_get_idx(bindings, i);
+			struct swaybar_binding *binding =
+				calloc(1, sizeof(struct swaybar_binding));
+			binding->button = json_object_get_int(
+					json_object_object_get(bindobj, "event_code"));
+			binding->command = strdup(json_object_get_string(
+					json_object_object_get(bindobj, "command")));
+			binding->release = json_object_get_boolean(
+					json_object_object_get(bindobj, "release"));
+			list_add(config->bindings, binding);
+		}
+	}
+
+	json_object *colors = json_object_object_get(bar_config, "colors");
+	if (colors) {
+		ipc_parse_colors(config, colors);
+	}
+
+	json_object *font = json_object_object_get(bar_config, "font");
 	if (font) {
 		free(config->font);
 		config->font = parse_font(json_object_get_string(font));
 	}
-	if (sep_symbol) {
-		free(config->sep_symbol);
-		config->sep_symbol = strdup(json_object_get_string(sep_symbol));
-	}
-	if (strip_workspace_numbers) {
-		config->strip_workspace_numbers = json_object_get_boolean(strip_workspace_numbers);
-	}
-	if (strip_workspace_name) {
-		config->strip_workspace_name = json_object_get_boolean(strip_workspace_name);
-	}
-	if (binding_mode_indicator) {
-		config->binding_mode_indicator = json_object_get_boolean(binding_mode_indicator);
-	}
-	if (wrap_scroll) {
-		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
-	}
-	if (workspace_buttons) {
-		config->workspace_buttons = json_object_get_boolean(workspace_buttons);
-	}
-	if (bar_height) {
-		config->height = json_object_get_int(bar_height);
-	}
-	if (status_padding) {
-		config->status_padding = json_object_get_int(status_padding);
-	}
-	if (status_edge_padding) {
-		config->status_edge_padding = json_object_get_int(status_edge_padding);
-	}
+
+	json_object *gaps = json_object_object_get(bar_config, "gaps");
 	if (gaps) {
 		json_object *top = json_object_object_get(gaps, "top");
 		if (top) {
@@ -256,33 +245,21 @@ static bool ipc_parse_config(
 			config->gaps.left = json_object_get_int(left);
 		}
 	}
-	if (markup) {
-		config->pango_markup = json_object_get_boolean(markup);
-	}
-	if (bindings) {
-		int length = json_object_array_length(bindings);
-		for (int i = 0; i < length; ++i) {
-			json_object *bindobj = json_object_array_get_idx(bindings, i);
-			struct swaybar_binding *binding =
-				calloc(1, sizeof(struct swaybar_binding));
-			binding->button = json_object_get_int(
-					json_object_object_get(bindobj, "event_code"));
-			binding->command = strdup(json_object_get_string(
-					json_object_object_get(bindobj, "command")));
-			binding->release = json_object_get_boolean(
-					json_object_object_get(bindobj, "release"));
-			list_add(config->bindings, binding);
-		}
-	}
+
+	json_object *hidden_state =
+		json_object_object_get(bar_config, "hidden_state");
 	if (hidden_state) {
 		free(config->hidden_state);
 		config->hidden_state = strdup(json_object_get_string(hidden_state));
 	}
+
+	json_object *mode = json_object_object_get(bar_config, "mode");
 	if (mode) {
 		free(config->mode);
 		config->mode = strdup(json_object_get_string(mode));
 	}
 
+	json_object *outputs = json_object_object_get(bar_config, "outputs");
 	struct config_output *output, *tmp;
 	wl_list_for_each_safe(output, tmp, &config->outputs, link) {
 		wl_list_remove(&output->link);
@@ -295,40 +272,115 @@ static bool ipc_parse_config(
 			json_object *output = json_object_array_get_idx(outputs, i);
 			const char *name = json_object_get_string(output);
 			if (strcmp("*", name) == 0) {
-				config->all_outputs = true;
+				struct config_output *coutput, *tmp;
+				wl_list_for_each_safe(coutput, tmp, &config->outputs, link) {
+					wl_list_remove(&coutput->link);
+					free(coutput->name);
+					free(coutput);
+				}
 				break;
 			}
 			struct config_output *coutput = calloc(
 					1, sizeof(struct config_output));
 			coutput->name = strdup(name);
-			coutput->index = SIZE_MAX;
 			wl_list_insert(&config->outputs, &coutput->link);
 		}
-	} else {
-		config->all_outputs = true;
 	}
 
-	if (colors) {
-		ipc_parse_colors(config, colors);
+	json_object *pango_markup =
+		json_object_object_get(bar_config, "pango_markup");
+	if (pango_markup) {
+		config->pango_markup = json_object_get_boolean(pango_markup);
 	}
 
+	json_object *position = json_object_object_get(bar_config, "position");
+	if (position) {
+		config->position = parse_position(json_object_get_string(position));
+	}
+
+	json_object *separator_symbol =
+		json_object_object_get(bar_config, "separator_symbol");
+	if (separator_symbol) {
+		free(config->sep_symbol);
+		config->sep_symbol = strdup(json_object_get_string(separator_symbol));
+	}
+
+	json_object *status_command =
+		json_object_object_get(bar_config, "status_command");
+	if (status_command) {
+		const char *command = json_object_get_string(status_command);
+		free(config->status_command);
+		config->status_command = strdup(command);
+	}
+
+	json_object *status_edge_padding =
+		json_object_object_get(bar_config, "status_edge_padding");
+	if (status_edge_padding) {
+		config->status_edge_padding = json_object_get_int(status_edge_padding);
+	}
+
+	json_object *status_padding =
+		json_object_object_get(bar_config, "status_padding");
+	if (status_padding) {
+		config->status_padding = json_object_get_int(status_padding);
+	}
+
+	json_object *strip_workspace_name =
+		json_object_object_get(bar_config, "strip_workspace_name");
+	if (strip_workspace_name) {
+		config->strip_workspace_name =
+			json_object_get_boolean(strip_workspace_name);
+	}
+
+	json_object *strip_workspace_numbers =
+		json_object_object_get(bar_config, "strip_workspace_numbers");
+	if (strip_workspace_numbers) {
+		config->strip_workspace_numbers =
+			json_object_get_boolean(strip_workspace_numbers);
+	}
+
+	json_object *workspace_buttons =
+		json_object_object_get(bar_config, "workspace_buttons");
+	if (workspace_buttons) {
+		config->workspace_buttons = json_object_get_boolean(workspace_buttons);
+	}
+
+	json_object *wrap_scroll = json_object_object_get(bar_config, "wrap_scroll");
+	if (wrap_scroll) {
+		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
+	}
 #if HAVE_TRAY
 	json_object *tray_outputs, *tray_padding, *tray_bindings, *icon_theme;
 
+	if (config->tray_outputs && config->tray_outputs->length) {
+		list_free_items_and_destroy(config->tray_outputs);
+	}
 	if ((json_object_object_get_ex(bar_config, "tray_outputs", &tray_outputs))) {
 		config->tray_outputs = create_list();
 		int length = json_object_array_length(tray_outputs);
 		for (int i = 0; i < length; ++i) {
-			json_object *o = json_object_array_get_idx(tray_outputs, i);
-			list_add(config->tray_outputs, strdup(json_object_get_string(o)));
+			json_object *output= json_object_array_get_idx(tray_outputs, i);
+			const char *name = json_object_get_string(output);
+			if (strcmp(name, "none") == 0) {
+				config->tray_hidden = true;
+				list_free_items_and_destroy(config->tray_outputs);
+				config->tray_outputs = create_list();
+				break;
+			}
+			list_add(config->tray_outputs, strdup(name));
 		}
-		config->tray_hidden = strcmp(config->tray_outputs->items[0], "none") == 0;
 	}
 
 	if ((json_object_object_get_ex(bar_config, "tray_padding", &tray_padding))) {
 		config->tray_padding = json_object_get_int(tray_padding);
 	}
 
+	struct tray_binding *tray_bind = NULL, *tmp_tray_bind = NULL;
+	wl_list_for_each_safe(tray_bind, tmp_tray_bind, &config->tray_bindings,
+			link) {
+		wl_list_remove(&tray_bind->link);
+		free_tray_binding(tray_bind);
+	}
 	if ((json_object_object_get_ex(bar_config, "tray_bindings", &tray_bindings))) {
 		int length = json_object_array_length(tray_bindings);
 		for (int i = 0; i < length; ++i) {
@@ -423,41 +475,6 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 	return determine_bar_visibility(bar, false);
 }
 
-static void ipc_get_outputs(struct swaybar *bar) {
-	uint32_t len = 0;
-	char *res = ipc_single_command(bar->ipc_socketfd,
-			IPC_GET_OUTPUTS, NULL, &len);
-	json_object *outputs = json_tokener_parse(res);
-	for (size_t i = 0; i < json_object_array_length(outputs); ++i) {
-		json_object *output = json_object_array_get_idx(outputs, i);
-		json_object *output_name, *output_active;
-		json_object_object_get_ex(output, "name", &output_name);
-		json_object_object_get_ex(output, "active", &output_active);
-		const char *name = json_object_get_string(output_name);
-		bool active = json_object_get_boolean(output_active);
-		if (!active) {
-			continue;
-		}
-		if (bar->config->all_outputs) {
-			struct config_output *coutput =
-				calloc(1, sizeof(struct config_output));
-			coutput->name = strdup(name);
-			coutput->index = i;
-			wl_list_insert(&bar->config->outputs, &coutput->link);
-		} else {
-			struct config_output *coutput;
-			wl_list_for_each(coutput, &bar->config->outputs, link) {
-				if (strcmp(name, coutput->name) == 0) {
-					coutput->index = i;
-					break;
-				}
-			}
-		}
-	}
-	json_object_put(outputs);
-	free(res);
-}
-
 void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
 	sway_log(SWAY_DEBUG, "Executing binding for button %u (release=%d): `%s`",
 			bind->button, bind->release, bind->command);
@@ -475,7 +492,6 @@ bool ipc_initialize(struct swaybar *bar) {
 		return false;
 	}
 	free(res);
-	ipc_get_outputs(bar);
 
 	struct swaybar_config *config = bar->config;
 	char subscribe[128]; // suitably large buffer
@@ -509,56 +525,87 @@ static bool handle_bar_state_update(struct swaybar *bar, json_object *event) {
 	return determine_bar_visibility(bar, false);
 }
 
-static bool handle_barconfig_update(struct swaybar *bar,
+static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 		json_object *json_config) {
-	json_object *json_id;
-	json_object_object_get_ex(json_config, "id", &json_id);
+	json_object *json_id = json_object_object_get(json_config, "id");
 	const char *id = json_object_get_string(json_id);
 	if (strcmp(id, bar->id) != 0) {
 		return false;
 	}
 
-	struct swaybar_config *config = bar->config;
+	struct swaybar_config *newcfg = init_config();
+	ipc_parse_config(newcfg, payload);
 
-	json_object *json_state;
-	json_object_object_get_ex(json_config, "hidden_state", &json_state);
-	const char *new_state = json_object_get_string(json_state);
-	char *old_state = config->hidden_state;
-	if (strcmp(new_state, old_state) != 0) {
-		sway_log(SWAY_DEBUG, "Changing bar hidden state to %s", new_state);
-		free(old_state);
-		config->hidden_state = strdup(new_state);
-		return determine_bar_visibility(bar, false);
-	}
+	struct swaybar_config *oldcfg = bar->config;
+	bar->config = newcfg;
 
-	free(config->mode);
-	json_object *json_mode;
-	json_object_object_get_ex(json_config, "mode", &json_mode);
-	config->mode = strdup(json_object_get_string(json_mode));
-	sway_log(SWAY_DEBUG, "Changing bar mode to %s", config->mode);
-
-	json_object *gaps;
-	json_object_object_get_ex(json_config, "gaps", &gaps);
-	if (gaps) {
-		json_object *top = json_object_object_get(gaps, "top");
-		if (top) {
-			config->gaps.top = json_object_get_int(top);
+	struct swaybar_output *output, *tmp_output;
+	wl_list_for_each_safe(output, tmp_output, &bar->outputs, link) {
+		bool found = wl_list_empty(&newcfg->outputs);
+		struct config_output *coutput;
+		wl_list_for_each(coutput, &newcfg->outputs, link) {
+			if (strcmp(coutput->name, output->name) == 0 ||
+					strcmp(coutput->name, output->identifier) == 0) {
+				found = true;
+				break;
+			}
 		}
-		json_object *right = json_object_object_get(gaps, "right");
-		if (right) {
-			config->gaps.right = json_object_get_int(right);
-		}
-		json_object *bottom = json_object_object_get(gaps, "bottom");
-		if (bottom) {
-			config->gaps.bottom = json_object_get_int(bottom);
-		}
-		json_object *left = json_object_object_get(gaps, "left");
-		if (left) {
-			config->gaps.left = json_object_get_int(left);
+		if (!found) {
+			destroy_layer_surface(output);
+			wl_list_remove(&output->link);
+			wl_list_insert(&bar->unused_outputs, &output->link);
+		} else if (!oldcfg->font || !newcfg->font ||
+				strcmp(oldcfg->font, newcfg->font) != 0) {
+			output->height = 0;  // force update height
 		}
 	}
+	wl_list_for_each_safe(output, tmp_output, &bar->unused_outputs, link) {
+		bool found = wl_list_empty(&newcfg->outputs);
+		struct config_output *coutput;
+		wl_list_for_each(coutput, &newcfg->outputs, link) {
+			if (strcmp(coutput->name, output->name) == 0 ||
+					strcmp(coutput->name, output->identifier) == 0) {
+				found = true;
+				break;
+			}
+		}
+		if (found) {
+			wl_list_remove(&output->link);
+			wl_list_insert(&bar->outputs, &output->link);
+		}
+	}
 
-	return determine_bar_visibility(bar, true);
+	if (bar->status && (!newcfg->status_command ||
+				strcmp(newcfg->status_command, oldcfg->status_command) != 0)) {
+		status_line_free(bar->status);
+		bar->status = NULL;
+	}
+	if (!bar->status && newcfg->status_command) {
+		bar->status = status_line_init(newcfg->status_command);
+		bar->status->bar = bar;
+		loop_add_fd(bar->eventloop, bar->status->read_fd, POLLIN,
+				status_in, bar);
+	}
+
+#if HAVE_TRAY
+	if (oldcfg->tray_hidden && !newcfg->tray_hidden) {
+		bar->tray = create_tray(bar);
+		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in,
+				bar->tray->bus);
+	} else if (bar->tray && newcfg->tray_hidden) {
+		loop_remove_fd(bar->eventloop, bar->tray->fd);
+		destroy_tray(bar->tray);
+		bar->tray = NULL;
+	}
+#endif
+
+	if (newcfg->workspace_buttons) {
+		ipc_get_workspaces(bar);
+	}
+
+	free_config(oldcfg);
+	determine_bar_visibility(bar, true);
+	return true;
 }
 
 bool handle_ipc_readable(struct swaybar *bar) {
@@ -599,7 +646,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		break;
 	}
 	case IPC_EVENT_BARCONFIG_UPDATE:
-		bar_is_dirty = handle_barconfig_update(bar, result);
+		bar_is_dirty = handle_barconfig_update(bar, resp->payload, result);
 		break;
 	case IPC_EVENT_BAR_STATE_UPDATE:
 		bar_is_dirty = handle_bar_state_update(bar, result);
