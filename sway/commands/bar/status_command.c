@@ -19,10 +19,5 @@ struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
 	} else {
 		free(new_command);
 	}
-
-	if (config->active && !config->validating) {
-		load_swaybar(config->current_bar);
-	}
-
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

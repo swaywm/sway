@@ -4,6 +4,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/ipc-server.h"
 #include "log.h"
 
 // Must be in alphabetical order for bsearch
@@ -56,30 +57,27 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		return error;
 	}
 
-	bool spawn = false;
-	struct bar_config *bar = NULL;
+	char *id = NULL;
 	if (strcmp(argv[0], "id") != 0 && is_subcommand(argv[1])) {
 		for (int i = 0; i < config->bars->length; ++i) {
 			struct bar_config *item = config->bars->items[i];
 			if (strcmp(item->id, argv[0]) == 0) {
 				sway_log(SWAY_DEBUG, "Selecting bar: %s", argv[0]);
-				bar = item;
+				config->current_bar = item;
 				break;
 			}
 		}
-		if (!bar) {
-			spawn = !config->reading;
-			sway_log(SWAY_DEBUG, "Creating bar: %s", argv[0]);
-			bar = default_bar_config();
-			if (!bar) {
-				return cmd_results_new(CMD_FAILURE,
-						"Unable to allocate bar state");
-			}
-
-			bar->id = strdup(argv[0]);
+		if (!config->current_bar) {
+			id = strdup(argv[0]);
 		}
-		config->current_bar = bar;
 		++argv; --argc;
+	} else if (config->reading && !config->current_bar) {
+		int len = snprintf(NULL, 0, "bar-%d", config->bars->length) + 1;
+		id = malloc(len * sizeof(char));
+		if (!id) {
+			return cmd_results_new(CMD_FAILURE, "Unable to allocate bar id");
+		}
+		snprintf(id, len, "bar-%d", config->bars->length);
 	} else if (!config->reading && strcmp(argv[0], "mode") != 0 &&
 			strcmp(argv[0], "hidden_state") != 0) {
 		if (is_subcommand(argv[0])) {
@@ -90,56 +88,49 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 	}
 
-	if (!config->current_bar) {
-		if (config->reading) {
-			// Create new bar with default values
-			struct bar_config *bar = default_bar_config();
-			if (!bar) {
-				return cmd_results_new(CMD_FAILURE,
-						"Unable to allocate bar state");
-			}
-
-			// set bar id
-			int len = snprintf(NULL, 0, "bar-%d", config->bars->length - 1) + 1;
-			bar->id = malloc(len * sizeof(char));
-			if (bar->id) {
-				snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
-			} else {
-				return cmd_results_new(CMD_FAILURE, "Unable to allocate bar ID");
-			}
-
-			// Set current bar
-			config->current_bar = bar;
-			sway_log(SWAY_DEBUG, "Creating bar %s", bar->id);
+	if (id) {
+		sway_log(SWAY_DEBUG, "Creating bar: %s", id);
+		config->current_bar = default_bar_config();
+		if (!config->current_bar) {
+			free(id);
+			return cmd_results_new(CMD_FAILURE, "Unable to allocate bar config");
 		}
+		config->current_bar->id = id;
 	}
 
+	struct cmd_results *res = NULL;
 	if (find_handler(argv[0], bar_config_handlers,
 				sizeof(bar_config_handlers))) {
 		if (config->reading) {
-			return config_subcommand(argv, argc, bar_config_handlers,
+			res = config_subcommand(argv, argc, bar_config_handlers,
 					sizeof(bar_config_handlers));
-		} else if (spawn) {
-			for (int i = config->bars->length - 1; i >= 0; i--) {
-				struct bar_config *bar = config->bars->items[i];
-				if (bar == config->current_bar) {
-					list_del(config->bars, i);
-					free_bar_config(bar);
-					break;
-				}
-			}
+		} else {
+			res = cmd_results_new(CMD_INVALID,
+					"Can only be used in the config file");
 		}
-		return cmd_results_new(CMD_INVALID,
-				"Can only be used in the config file.");
+	} else {
+		res = config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
 	}
 
-	struct cmd_results *res =
-		config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
-	if (!config->reading) {
-		if (spawn) {
+	if (res && res->status != CMD_SUCCESS) {
+		if (id) {
+			free_bar_config(config->current_bar);
+			id = NULL;
+		}
+		return res;
+	}
+
+	if (id) {
+		list_add(config->bars, config->current_bar);
+	}
+
+	if (!config->reading && config->current_bar) {
+		ipc_event_barconfig_update(config->current_bar);
+		if (id) {
 			load_swaybar(config->current_bar);
 		}
 		config->current_bar = NULL;
 	}
+
 	return res;
 }

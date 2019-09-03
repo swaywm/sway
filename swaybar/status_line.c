@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include "log.h"
 #include "loop.h"
@@ -174,6 +176,7 @@ struct status_line *status_line_init(char *cmd) {
 void status_line_free(struct status_line *status) {
 	status_line_close_fds(status);
 	kill(status->pid, SIGTERM);
+	waitpid(status->pid, NULL, 0);
 	if (status->protocol == PROTOCOL_I3BAR) {
 		struct i3bar_block *block, *tmp;
 		wl_list_for_each_safe(block, tmp, &status->blocks, link) {

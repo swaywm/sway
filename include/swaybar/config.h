@@ -16,7 +16,6 @@ struct box_colors {
 struct config_output {
 	struct wl_list link; // swaybar_config::outputs
 	char *name;
-	size_t index;
 };
 
 struct swaybar_binding {
@@ -41,7 +40,6 @@ struct swaybar_config {
 	bool workspace_buttons;
 	list_t *bindings;
 	struct wl_list outputs; // config_output::link
-	bool all_outputs;
 	int height;
 	int status_padding;
 	int status_edge_padding;
@@ -83,10 +81,13 @@ struct tray_binding {
 	char *command;
 	struct wl_list link; // struct tray_binding::link
 };
+
+void free_tray_binding(struct tray_binding *binding);
 #endif
 
 struct swaybar_config *init_config(void);
 void free_config(struct swaybar_config *config);
 uint32_t parse_position(const char *position);
+void free_binding(struct swaybar_binding *binding);
 
 #endif

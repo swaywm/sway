@@ -755,18 +755,6 @@ The default colors are:
 *workspace_layout* default|stacking|tabbed
 	Specifies the initial layout for new workspaces.
 
-# BAR CONTROL
-
-*bar hidden_state* hide|show|toggle [<bar_id>]
-	Sets the hidden state of the bar (see *sway-bar*(5)), either individually,
-	by specifying a bar id, or if none is given, for all bar instances.
-	_toggle_ switches between _hide_ and _show_.
-
-*bar mode* dock|hide|invisible|toggle [<bar_id>]
-	Sets the mode of the bar (see *sway-bar*(5)), either individually,
-	by specifying a bar id, or if none is given, for all bar instances.
-	_toggle_ switches between _dock_ and _hide_.
-
 # CRITERIA
 
 A criteria is a string in the form of, for example:
