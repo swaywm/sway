@@ -58,8 +58,8 @@ static bool edge_is_external(struct sway_container *cont, enum wlr_edges edge) {
 }
 
 static enum wlr_edges find_edge(struct sway_container *cont,
-		struct sway_cursor *cursor) {
-	if (!cont->view) {
+		struct wlr_surface *surface, struct sway_cursor *cursor) {
+	if (!cont->view || cont->view->surface != surface) {
 		return WLR_EDGE_NONE;
 	}
 	if (cont->border == B_NONE || !cont->border_thickness ||
@@ -89,8 +89,8 @@ static enum wlr_edges find_edge(struct sway_container *cont,
  * Edges that can't be resized are edges of the workspace.
  */
 static enum wlr_edges find_resize_edge(struct sway_container *cont,
-		struct sway_cursor *cursor) {
-	enum wlr_edges edge = find_edge(cont, cursor);
+		struct wlr_surface *surface, struct sway_cursor *cursor) {
+	enum wlr_edges edge = find_edge(cont, surface, cursor);
 	if (edge && !container_is_floating(cont) && edge_is_external(cont, edge)) {
 		return WLR_EDGE_NONE;
 	}
@@ -199,7 +199,7 @@ static void cursor_do_rebase(struct sway_cursor *cursor, uint32_t time_msec,
 		}
 	} else if (node && node->type == N_CONTAINER) {
 		// Try a node's resize edge
-		enum wlr_edges edge = find_resize_edge(node->sway_container, cursor);
+		enum wlr_edges edge = find_resize_edge(node->sway_container, surface, cursor);
 		if (edge == WLR_EDGE_NONE) {
 			cursor_set_image(cursor, "left_ptr", NULL);
 		} else if (container_is_floating(node->sway_container)) {
@@ -235,14 +235,15 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	double sx, sy;
 	struct sway_node *node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 	bool is_floating = cont && container_is_floating(cont);
 	bool is_floating_or_child = cont && container_is_floating_or_child(cont);
 	bool is_fullscreen_or_child = cont && container_is_fullscreen_or_child(cont);
-	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
+	enum wlr_edges edge = cont ? find_edge(cont, surface, cursor) : WLR_EDGE_NONE;
 	enum wlr_edges resize_edge = cont && edge ?
-		find_resize_edge(cont, cursor) : WLR_EDGE_NONE;
+		find_resize_edge(cont, surface, cursor) : WLR_EDGE_NONE;
 	bool on_border = edge != WLR_EDGE_NONE;
 	bool on_contents = cont && !on_border && surface;
 	bool on_workspace = node && node->type == N_WORKSPACE;
@@ -505,7 +506,7 @@ static void handle_axis(struct sway_seat *seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
-	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
+	enum wlr_edges edge = cont ? find_edge(cont, surface, cursor) : WLR_EDGE_NONE;
 	bool on_border = edge != WLR_EDGE_NONE;
 	bool on_titlebar = cont && !on_border && !surface;
 	bool on_titlebar_border = cont && on_border &&
