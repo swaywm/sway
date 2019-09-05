@@ -621,10 +621,11 @@ The default colors are:
 
 *mark* --add|--replace [--toggle] <identifier>
 	Marks are arbitrary labels that can be used to identify certain windows and
-	then jump to them at a later time. By default, *mark* sets _identifier_ as
-	the only mark on a window. _--add_ will instead add _identifier_ to the
-	list of current marks. If _--toggle_ is specified mark will remove
-	_identifier_ if it is already marked.
+	then jump to them at a later time. Each _identifier_ can only be set on a
+	single window at a time since they act as a unique identifier. By default,
+	*mark* sets _identifier_ as the only mark on a window. _--add_ will instead
+	add _identifier_ to the list of current marks for that window. If _--toggle_
+	is specified mark will remove _identifier_ if it is already marked.
 
 *mode* <mode>
 	Switches to the specified mode. The default mode _default_.
@@ -796,12 +797,6 @@ Kill all windows with the title "Emacs":
 
 ```
 [class="Emacs"] kill
-```
-
-Mark all Firefox windows with "Browser":
-
-```
-[class="Firefox"] mark Browser
 ```
 
 You may like to use swaymsg -t get_tree for finding the values of these
