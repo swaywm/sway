@@ -905,12 +905,9 @@ static void set_workspace(struct sway_seat *seat,
 
 	if (seat->workspace) {
 		free(seat->prev_workspace_name);
-		seat->prev_workspace_name = malloc(strlen(seat->workspace->name) + 1);
+		seat->prev_workspace_name = strdup(seat->workspace->name);
 		if (!seat->prev_workspace_name) {
 			sway_log(SWAY_ERROR, "Unable to allocate previous workspace name");
-			seat->prev_workspace_name = NULL;
-		} else {
-			strcpy(seat->prev_workspace_name, seat->workspace->name);
 		}
 	}
 
