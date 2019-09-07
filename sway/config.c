@@ -687,8 +687,10 @@ static ssize_t getline_with_cont(char **lineptr, size_t *line_size, FILE *file,
 		nread += next_nread - 2;
 		if ((ssize_t) *line_size < nread + 1) {
 			*line_size = nread + 1;
+			char *old_ptr = *lineptr;
 			*lineptr = realloc(*lineptr, *line_size);
 			if (!*lineptr) {
+				free(old_ptr);
 				nread = -1;
 				break;
 			}

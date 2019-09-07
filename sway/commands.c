@@ -198,9 +198,6 @@ static void set_config_node(struct sway_node *node) {
 
 list_t *execute_command(char *_exec, struct sway_seat *seat,
 		struct sway_container *con) {
-	list_t *res_list = create_list();
-	char *exec = strdup(_exec);
-	char *head = exec;
 	char *cmd;
 	char matched_delim = ';';
 	list_t *views = NULL;
@@ -213,9 +210,16 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		}
 	}
 
+	char *exec = strdup(_exec);
+	char *head = exec;
+	list_t *res_list = create_list();
+
+	if (!res_list || !exec) {
+		return NULL;
+	}
+
 	config->handler_context.seat = seat;
 
-	head = exec;
 	do {
 		for (; isspace(*head); ++head) {}
 		// Extract criteria (valid for this command list only).
