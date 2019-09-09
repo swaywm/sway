@@ -20,7 +20,7 @@ _swaymsg_ [options...] [message]
 	swaymsg will stop monitoring and exit.
 
 *-p, --pretty*
-	Use raw output even when not using a tty.
+	Use pretty output even when not using a tty.
 
 *-q, --quiet*
 	Sends the IPC message but does not print the response from sway.
