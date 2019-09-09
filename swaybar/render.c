@@ -263,7 +263,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 	} else if (strncmp(block->align, "center", 6) == 0) {
 		offset = x_pos + (width - text_width) / 2;
 	}
-	cairo_move_to(cairo, offset, height / 2.0 - text_height / 2.0);
+	double text_y = height / 2.0 - text_height / 2.0;
+	cairo_move_to(cairo, offset, (int)floor(text_y));
 	uint32_t color = block->color ?  *block->color : config->colors.statusline;
 	color = block->urgent ? config->colors.urgent_workspace.text : color;
 	cairo_set_source_u32(cairo, color);
@@ -286,7 +287,8 @@ static uint32_t render_status_block(cairo_t *cairo,
 		}
 		if (config->sep_symbol) {
 			offset = x_pos + (sep_block_width - sep_width) / 2;
-			cairo_move_to(cairo, offset, height / 2.0 - sep_height / 2.0);
+			double sep_y = height / 2.0 - sep_height / 2.0;
+			cairo_move_to(cairo, offset, (int)floor(sep_y));
 			pango_printf(cairo, config->font, output->scale, false,
 					"%s", config->sep_symbol);
 		} else {
