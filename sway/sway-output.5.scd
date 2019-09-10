@@ -78,7 +78,7 @@ must be separated by one space. For example:
 	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If
 	the specified file cannot be accessed or if the image does fill the entire
 	output, a fallback color may be provided to cover the rest of the output.
-	__fallback_color__ should be specified as _#RRGGBB_. Alpha is not supported.
+	_fallback_color_ should be specified as _#RRGGBB_. Alpha is not supported.
 
 *output* <name> background|bg <color> solid_color
 	Sets the background of the given output to the specified color. _color_
