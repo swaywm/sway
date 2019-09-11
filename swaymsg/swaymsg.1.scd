@@ -89,7 +89,7 @@ _swaymsg_ [options...] [message]
 *subscribe*
 	Subscribe to a list of event types. The argument for this type should be
 	provided in the form of a valid JSON array. If any of the types are invalid
-	or if an valid JSON array is not provided, this will result in an failure.
+	or if a valid JSON array is not provided, this will result in a failure.
 
 # RETURN CODES
 
