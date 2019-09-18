@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/region.h>
 #include "list.h"
@@ -20,6 +21,7 @@
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
+#include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
@@ -443,72 +445,224 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 	*y = apply_mapping_from_coord(y1, y2, *y);
 }
 
+static void handle_tablet_tool_position(struct sway_cursor *cursor,
+		struct sway_tablet *tablet,
+		struct wlr_tablet_tool *tool,
+		bool change_x, bool change_y,
+		double x, double y, double dx, double dy,
+		int32_t time_msec) {
+	if (!change_x && !change_y) {
+		return;
+	}
+
+	struct sway_input_device *input_device = tablet->seat_device->input_device;
+	struct input_config *ic = input_device_get_config(input_device);
+	if (ic != NULL && ic->mapped_from_region != NULL) {
+		apply_mapping_from_region(input_device->wlr_device,
+			ic->mapped_from_region, &x, &y);
+	}
+
+	switch (tool->type) {
+	case WLR_TABLET_TOOL_TYPE_MOUSE:
+		wlr_cursor_move(cursor->cursor, input_device->wlr_device, dx, dy);
+		break;
+	default:
+		wlr_cursor_warp_absolute(cursor->cursor, input_device->wlr_device,
+			change_x ? x : NAN, change_y ? y : NAN);
+	}
+
+	double sx, sy;
+	struct wlr_surface *surface = NULL;
+	struct sway_seat *seat = cursor->seat;
+	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
+		&surface, &sx, &sy);
+	struct sway_tablet_tool *sway_tool = tool->data;
+
+	if (!surface || !wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) {
+		wlr_tablet_v2_tablet_tool_notify_proximity_out(sway_tool->tablet_v2_tool);
+		cursor_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
+		return;
+	}
+
+	wlr_tablet_v2_tablet_tool_notify_proximity_in(sway_tool->tablet_v2_tool,
+		tablet->tablet_v2, surface);
+
+	wlr_tablet_v2_tablet_tool_notify_motion(sway_tool->tablet_v2_tool, sx, sy);
+}
+
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_axis *event = data;
-	struct sway_input_device *input_device = event->device->data;
+	struct sway_tablet_tool *sway_tool = event->tool->data;
 
-	double x = NAN, y = NAN;
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
-		x = event->x;
-	}
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
-		y = event->y;
+	if (!sway_tool) {
+		sway_log(SWAY_DEBUG, "tool axis before proximity");
+		return;
 	}
 
-	struct input_config *ic = input_device_get_config(input_device);
-	if (ic != NULL && ic->mapped_from_region != NULL) {
-		apply_mapping_from_region(event->device, ic->mapped_from_region, &x, &y);
+	handle_tablet_tool_position(cursor, sway_tool->tablet, event->tool,
+		event->updated_axes & WLR_TABLET_TOOL_AXIS_X,
+		event->updated_axes & WLR_TABLET_TOOL_AXIS_Y,
+		event->x, event->y, event->dx, event->dy, event->time_msec);
+
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_PRESSURE) {
+		wlr_tablet_v2_tablet_tool_notify_pressure(
+			sway_tool->tablet_v2_tool, event->pressure);
 	}
 
-	double lx, ly;
-	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
-			x, y, &lx, &ly);
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_DISTANCE) {
+		wlr_tablet_v2_tablet_tool_notify_distance(
+			sway_tool->tablet_v2_tool, event->distance);
+	}
 
-	double dx = lx - cursor->cursor->x;
-	double dy = ly - cursor->cursor->y;
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_X) {
+		sway_tool->tilt_x = event->tilt_x;
+	}
 
-	cursor_motion(cursor, event->time_msec, event->device, dx, dy, dx, dy);
-	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-	transaction_commit_dirty();
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_Y) {
+		sway_tool->tilt_y = event->tilt_y;
+	}
+
+	if (event->updated_axes & (WLR_TABLET_TOOL_AXIS_TILT_X | WLR_TABLET_TOOL_AXIS_TILT_Y)) {
+		wlr_tablet_v2_tablet_tool_notify_tilt(
+			sway_tool->tablet_v2_tool,
+			sway_tool->tilt_x, sway_tool->tilt_y);
+	}
+
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_ROTATION) {
+		wlr_tablet_v2_tablet_tool_notify_rotation(
+			sway_tool->tablet_v2_tool, event->rotation);
+	}
+
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_SLIDER) {
+		wlr_tablet_v2_tablet_tool_notify_slider(
+			sway_tool->tablet_v2_tool, event->slider);
+	}
+
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_WHEEL) {
+		wlr_tablet_v2_tablet_tool_notify_wheel(
+			sway_tool->tablet_v2_tool, event->wheel_delta, 0);
+	}
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_tip);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_tip *event = data;
-	dispatch_cursor_button(cursor, event->device, event->time_msec,
-			BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
-				WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
-	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-	transaction_commit_dirty();
+	struct sway_tablet_tool *sway_tool = event->tool->data;
+	struct wlr_tablet_v2_tablet *tablet_v2 = sway_tool->tablet->tablet_v2;
+	struct sway_seat *seat = cursor->seat;
+
+	double sx, sy;
+	struct wlr_surface *surface = NULL;
+	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
+		&surface, &sx, &sy);
+
+	if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+		dispatch_cursor_button(cursor, event->device, event->time_msec,
+				BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
+					WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
+		transaction_commit_dirty();
+		return;
+	}
+
+	if (event->state == WLR_TABLET_TOOL_TIP_DOWN) {
+		wlr_tablet_v2_tablet_tool_notify_down(sway_tool->tablet_v2_tool);
+		wlr_tablet_tool_v2_start_implicit_grab(sway_tool->tablet_v2_tool);
+	} else {
+		wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
+	}
+}
+
+static struct sway_tablet *get_tablet_for_device(struct sway_cursor *cursor,
+		struct wlr_input_device *device) {
+	struct sway_tablet *tablet;
+	wl_list_for_each(tablet, &cursor->tablets, link) {
+		if (tablet->seat_device->input_device->wlr_device == device) {
+			return tablet;
+		}
+	}
+	return NULL;
+}
+
+static void handle_tool_proximity(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_proximity);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
+	struct wlr_event_tablet_tool_proximity *event = data;
+
+	struct wlr_tablet_tool *tool = event->tool;
+	if (!tool->data) {
+		struct sway_tablet *tablet = get_tablet_for_device(cursor, event->device);
+		if (!tablet) {
+			sway_log(SWAY_ERROR, "no tablet for tablet tool");
+			return;
+		}
+		sway_tablet_tool_configure(tablet, tool);
+	}
+
+	struct sway_tablet_tool *sway_tool = tool->data;
+	if (!sway_tool) {
+		sway_log(SWAY_ERROR, "tablet tool not initialized");
+		return;
+	}
+
+	if (event->state == WLR_TABLET_TOOL_PROXIMITY_OUT) {
+		wlr_tablet_v2_tablet_tool_notify_proximity_out(sway_tool->tablet_v2_tool);
+		return;
+	}
+
+	handle_tablet_tool_position(cursor, sway_tool->tablet, event->tool,
+		true, true, event->x, event->y, 0, 0, event->time_msec);
 }
 
 static void handle_tool_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_button);
 	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_button *event = data;
-	// TODO: the user may want to configure which tool buttons are mapped to
-	// which simulated pointer buttons
-	switch (event->state) {
-	case WLR_BUTTON_PRESSED:
-		if (cursor->tool_buttons == 0) {
-			dispatch_cursor_button(cursor, event->device,
-					event->time_msec, BTN_RIGHT, event->state);
-		}
-		cursor->tool_buttons++;
-		break;
-	case WLR_BUTTON_RELEASED:
-		if (cursor->tool_buttons == 1) {
-			dispatch_cursor_button(cursor, event->device,
-					event->time_msec, BTN_RIGHT, event->state);
-		}
-		cursor->tool_buttons--;
-		break;
+	struct sway_tablet_tool *sway_tool = event->tool->data;
+	struct wlr_tablet_v2_tablet *tablet_v2 = sway_tool->tablet->tablet_v2;
+	struct sway_seat *seat = cursor->seat;
+
+	if (!sway_tool) {
+		sway_log(SWAY_DEBUG, "tool button before proximity");
+		return;
 	}
-	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-	transaction_commit_dirty();
+
+	double sx, sy;
+	struct wlr_surface *surface = NULL;
+
+	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
+		&surface, &sx, &sy);
+
+	if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+		// TODO: the user may want to configure which tool buttons are mapped to
+		// which simulated pointer buttons
+		switch (event->state) {
+		case WLR_BUTTON_PRESSED:
+			if (cursor->tool_buttons == 0) {
+				dispatch_cursor_button(cursor, event->device,
+						event->time_msec, BTN_RIGHT, event->state);
+			}
+			cursor->tool_buttons++;
+			break;
+		case WLR_BUTTON_RELEASED:
+			if (cursor->tool_buttons == 1) {
+				dispatch_cursor_button(cursor, event->device,
+						event->time_msec, BTN_RIGHT, event->state);
+			}
+			cursor->tool_buttons--;
+			break;
+		}
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
+		transaction_commit_dirty();
+		return;
+	}
+
+	wlr_tablet_v2_tablet_tool_notify_button(sway_tool->tablet_v2_tool,
+		(enum zwp_tablet_pad_v2_button_state)event->button,
+		(enum zwp_tablet_pad_v2_button_state)event->state);
 }
 
 static void check_constraint_region(struct sway_cursor *cursor) {
@@ -698,15 +852,15 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		&cursor->touch_motion);
 	cursor->touch_motion.notify = handle_touch_motion;
 
-	// TODO: tablet protocol support
-	// Note: We should emulate pointer events for clients that don't support the
-	// tablet protocol when the time comes
 	wl_signal_add(&wlr_cursor->events.tablet_tool_axis,
 		&cursor->tool_axis);
 	cursor->tool_axis.notify = handle_tool_axis;
 
 	wl_signal_add(&wlr_cursor->events.tablet_tool_tip, &cursor->tool_tip);
 	cursor->tool_tip.notify = handle_tool_tip;
+
+	wl_signal_add(&wlr_cursor->events.tablet_tool_proximity, &cursor->tool_proximity);
+	cursor->tool_proximity.notify = handle_tool_proximity;
 
 	wl_signal_add(&wlr_cursor->events.tablet_tool_button, &cursor->tool_button);
 	cursor->tool_button.notify = handle_tool_button;
@@ -716,6 +870,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	cursor->request_set_cursor.notify = handle_request_set_cursor;
 
 	wl_list_init(&cursor->constraint_commit.link);
+	wl_list_init(&cursor->tablets);
+	wl_list_init(&cursor->tablet_pads);
 
 	cursor->cursor = wlr_cursor;
 

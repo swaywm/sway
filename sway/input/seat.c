@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_primary_selection.h>
+#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "config.h"
 #include "list.h"
@@ -18,6 +19,7 @@
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/input/switch.h"
+#include "sway/input/tablet.h"
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -34,6 +36,8 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	}
 
 	sway_keyboard_destroy(seat_device->keyboard);
+	sway_tablet_destroy(seat_device->tablet);
+	sway_tablet_pad_destroy(seat_device->tablet_pad);
 	wlr_cursor_detach_input_device(seat_device->sway_seat->cursor->cursor,
 		seat_device->input_device->wlr_device);
 	wl_list_remove(&seat_device->link);
@@ -118,6 +122,14 @@ static void seat_keyboard_notify_enter(struct sway_seat *seat,
 			state->pressed_keycodes, state->npressed, &keyboard->modifiers);
 }
 
+static void seat_tablet_pads_notify_enter(struct sway_seat *seat,
+		struct wlr_surface *surface) {
+	struct sway_seat_device *seat_device;
+	wl_list_for_each(seat_device, &seat->devices, link) {
+		sway_tablet_pad_notify_enter(seat_device->tablet_pad, surface);
+	}
+}
+
 /**
  * If con is a view, set it as active and enable keyboard input.
  * If con is a container, set all child views as active and don't enable
@@ -138,6 +150,7 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 #endif
 
 		seat_keyboard_notify_enter(seat, view->surface);
+		seat_tablet_pads_notify_enter(seat, view->surface);
 
 		struct wlr_pointer_constraint_v1 *constraint =
 			wlr_pointer_constraints_v1_constraint_for_surface(
@@ -638,12 +651,21 @@ static void seat_configure_touch(struct sway_seat *seat,
 
 static void seat_configure_tablet_tool(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
-	if ((seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER) == 0) {
-		seat_configure_xcursor(seat);
+	if (!sway_device->tablet) {
+		sway_device->tablet = sway_tablet_create(seat, sway_device);
 	}
+	sway_configure_tablet(sway_device->tablet);
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
 	seat_apply_input_config(seat, sway_device);
+}
+
+static void seat_configure_tablet_pad(struct sway_seat *seat,
+		struct sway_seat_device *sway_device) {
+	if (!sway_device->tablet) {
+		sway_device->tablet_pad = sway_tablet_pad_create(seat, sway_device);
+	}
+	sway_configure_tablet_pad(sway_device->tablet_pad);
 }
 
 static struct sway_seat_device *seat_get_device(struct sway_seat *seat,
@@ -682,7 +704,7 @@ void seat_configure_device(struct sway_seat *seat,
 			seat_configure_tablet_tool(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
-			sway_log(SWAY_DEBUG, "TODO: configure tablet pad");
+			seat_configure_tablet_pad(seat, seat_device);
 			break;
 	}
 }
@@ -1079,6 +1101,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 		seat->has_focus = false;
 	}
 	seat_keyboard_notify_enter(seat, surface);
+	seat_tablet_pads_notify_enter(seat, surface);
 }
 
 void seat_set_focus_layer(struct sway_seat *seat,

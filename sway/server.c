@@ -19,6 +19,7 @@
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
@@ -85,6 +86,8 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_shell->events.new_surface,
 		&server->xdg_shell_surface);
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
+
+	server->tablet_v2 = wlr_tablet_v2_create(server->wl_display);
 
 	server->server_decoration_manager =
 		wlr_server_decoration_manager_create(server->wl_display);

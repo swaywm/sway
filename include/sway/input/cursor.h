@@ -21,6 +21,8 @@ struct sway_cursor {
 		struct sway_node *node;
 	} previous;
 	struct wlr_xcursor_manager *xcursor_manager;
+	struct wl_list tablets;
+	struct wl_list tablet_pads;
 
 	const char *image;
 	struct wl_client *image_client;
@@ -42,6 +44,7 @@ struct sway_cursor {
 
 	struct wl_listener tool_axis;
 	struct wl_listener tool_tip;
+	struct wl_listener tool_proximity;
 	struct wl_listener tool_button;
 	uint32_t tool_buttons;
 

@@ -31,6 +31,7 @@ sway_sources = files(
 	'input/seatop_resize_floating.c',
 	'input/seatop_resize_tiling.c',
 	'input/switch.c',
+	'input/tablet.c',
 
 	'config/bar.c',
 	'config/output.c',
