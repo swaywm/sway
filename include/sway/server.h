@@ -44,6 +44,8 @@ struct sway_server {
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener xdg_shell_surface;
 
+	struct wlr_tablet_manager_v2 *tablet_v2;
+
 #if HAVE_XWAYLAND
 	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
