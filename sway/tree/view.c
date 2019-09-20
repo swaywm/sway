@@ -449,6 +449,25 @@ void view_execute_criteria(struct sway_view *view) {
 	list_free(criterias);
 }
 
+static void view_populate_pid(struct sway_view *view) {
+	pid_t pid;
+	switch (view->type) {
+#if HAVE_XWAYLAND
+	case SWAY_VIEW_XWAYLAND:;
+		struct wlr_xwayland_surface *surf =
+			wlr_xwayland_surface_from_wlr_surface(view->surface);
+		pid = surf->pid;
+		break;
+#endif
+	case SWAY_VIEW_XDG_SHELL:;
+		struct wl_client *client =
+			wl_resource_get_client(view->surface->resource);
+		wl_client_get_credentials(client, &pid, NULL, NULL);
+		break;
+	}
+	view->pid = pid;
+}
+
 static struct sway_workspace *select_workspace(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 
@@ -488,24 +507,7 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	}
 
 	// Check if there's a PID mapping
-	pid_t pid;
-#if HAVE_XWAYLAND
-	if (view->type == SWAY_VIEW_XWAYLAND) {
-		struct wlr_xwayland_surface *surf =
-			wlr_xwayland_surface_from_wlr_surface(view->surface);
-		pid = surf->pid;
-	} else {
-		struct wl_client *client =
-			wl_resource_get_client(view->surface->resource);
-		wl_client_get_credentials(client, &pid, NULL, NULL);
-	}
-#else
-	struct wl_client *client =
-		wl_resource_get_client(view->surface->resource);
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-#endif
-	view->pid = pid;
-	ws = root_workspace_for_pid(pid);
+	ws = root_workspace_for_pid(view->pid);
 	if (ws) {
 		return ws;
 	}
@@ -563,6 +565,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		return;
 	}
 	view->surface = wlr_surface;
+	view_populate_pid(view);
 
 	// If there is a request to be opened fullscreen on a specific output, try
 	// to honor that request. Otherwise, fallback to assigns, pid mappings,
