@@ -696,7 +696,7 @@ The default colors are:
 *unbindswitch* <switch>:<state>
 	Removes a binding for when <switch> changes to <state>.
 
-*unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--input-device=<device>] <key combo>
+*unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--to-code] [--input-device=<device>] <key combo>
 	Removes the binding for _key combo_ that was previously bound with the
 	given flags.  If _input-device_ is given, only the binding for that
 	input device will be unbound.
