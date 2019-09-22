@@ -566,6 +566,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 	view->surface = wlr_surface;
 	view_populate_pid(view);
+	view->container = container_create(view);
 
 	// If there is a request to be opened fullscreen on a specific output, try
 	// to honor that request. Otherwise, fallback to assigns, pid mappings,
@@ -592,7 +593,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		ws = seat_get_last_known_workspace(seat);
 	}
 
-	view->container = container_create(view);
 	if (target_sibling) {
 		container_add_sibling(target_sibling, view->container, 1);
 	} else if (ws) {
