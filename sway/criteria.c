@@ -55,6 +55,17 @@ static int regex_cmp(const char *item, const pcre *regex) {
 	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
 }
 
+static char *strict_regex(const char *str) {
+	size_t size = snprintf(NULL, 0, "^%s$", str) + 1;
+	char *reg = malloc(size);
+	if (!*reg) {
+		sway_log(SWAY_ERROR, "Unable to allocate regex for criteria");
+		return NULL;
+	}
+	snprintf(reg, size, "^%s$", str);
+	return reg;
+}
+
 #if HAVE_XWAYLAND
 static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 	if (view->type != SWAY_VIEW_XWAYLAND) {
@@ -376,31 +387,31 @@ static char *get_focused_prop(enum criteria_token token, bool *autofail) {
 	struct sway_container *focus = seat_get_focused_container(seat);
 
 	struct sway_view *view = focus ? focus->view : NULL;
-	const char *value = NULL;
+	char *value = NULL;
 
 	switch (token) {
 	case T_APP_ID:
 		*autofail = true;
 		if (view) {
-			value = view_get_app_id(view);
+			value = strict_regex(view_get_app_id(view));
 		}
 		break;
 	case T_SHELL:
 		*autofail = true;
 		if (view) {
-			value = view_get_shell(view);
+			value = strict_regex(view_get_shell(view));
 		}
 		break;
 	case T_TITLE:
 		*autofail = true;
 		if (view) {
-			value = view_get_title(view);
+			value = strict_regex(view_get_title(view));
 		}
 		break;
 	case T_WORKSPACE:
 		*autofail = true;
 		if (focus && focus->workspace) {
-			value = focus->workspace->name;
+			value = strict_regex(focus->workspace->name);
 		}
 		break;
 	case T_CON_ID:
@@ -417,19 +428,19 @@ static char *get_focused_prop(enum criteria_token token, bool *autofail) {
 	case T_CLASS:
 		*autofail = true;
 		if (view) {
-			value = view_get_class(view);
+			value = strict_regex(view_get_class(view));
 		}
 		break;
 	case T_INSTANCE:
 		*autofail = true;
 		if (view) {
-			value = view_get_instance(view);
+			value = strict_regex(view_get_instance(view));
 		}
 		break;
 	case T_WINDOW_ROLE:
 		*autofail = true;
 		if (view) {
-			value = view_get_window_role(view);
+			value = strict_regex(view_get_window_role(view));
 		}
 		break;
 	case T_WINDOW_TYPE: // These do not support __focused__
@@ -444,7 +455,7 @@ static char *get_focused_prop(enum criteria_token token, bool *autofail) {
 		break;
 	}
 	if (value) {
-		return strdup(value);
+		return value;
 	}
 	return NULL;
 }
