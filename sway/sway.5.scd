@@ -182,6 +182,22 @@ set|plus|minus <amount>
 *layout* toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...
 	Cycles the layout mode of the focused container through a list of layouts.
 
+*max_render_time* off|<msec>
+	Works together with *output max_render_time* to reduce the latency even
+	further by delaying the frame callbacks sent to a surface. When set to
+	a positive number of milliseconds, delays the frame callback in such a
+	way that the surface has the specified number of milliseconds to render
+	and commit new contents before being sampled by the compositor for the
+	next presentation. See *max_render_time* in *sway-output*(5) for
+	further details.
+
+	To set this up for optimal latency:
+	. Set up *output max_render_time*.
+	. Put the target application in _full-screen_ and have it continuously
+	  render something.
+	. Start by setting *max_render_time 1*. If the application drops
+	  frames, increment by *1*.
+
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. If the container,
 	the optional _px_ argument specifies how many pixels to move the container.

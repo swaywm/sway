@@ -72,7 +72,7 @@ struct sway_output *output_get_in_direction(struct sway_output *reference,
 void output_add_workspace(struct sway_output *output,
 		struct sway_workspace *workspace);
 
-typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
+typedef void (*sway_surface_iterator_func_t)(struct sway_output *output, struct sway_view *view,
 	struct wlr_surface *surface, struct wlr_box *box, float rotation,
 	void *user_data);
 

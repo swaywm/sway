@@ -23,6 +23,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
@@ -80,6 +81,7 @@ struct surface_iterator_data {
 	void *user_data;
 
 	struct sway_output *output;
+	struct sway_view *view;
 	double ox, oy;
 	int width, height;
 	float rotation;
@@ -134,7 +136,7 @@ static void output_for_each_surface_iterator(struct wlr_surface *surface,
 		return;
 	}
 
-	data->user_iterator(data->output, surface, &box, data->rotation,
+	data->user_iterator(data->output, data->view, surface, &box, data->rotation,
 		data->user_data);
 }
 
@@ -145,6 +147,7 @@ void output_surface_for_each_surface(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
+		.view = NULL,
 		.ox = ox,
 		.oy = oy,
 		.width = surface->current.width,
@@ -163,6 +166,7 @@ void output_view_for_each_surface(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
+		.view = view,
 		.ox = view->container->surface_x - output->lx
 			- view->geometry.x,
 		.oy = view->container->surface_y - output->ly
@@ -182,6 +186,7 @@ void output_view_for_each_popup(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
+		.view = view,
 		.ox = view->container->surface_x - output->lx
 			- view->geometry.x,
 		.oy = view->container->surface_y - output->ly
@@ -224,6 +229,7 @@ void output_layer_for_each_surface(struct sway_output *output,
 				.user_iterator = iterator,
 				.user_data = user_data,
 				.output = output,
+				.view = NULL,
 				.ox = popup_sx,
 				.oy = popup_sy,
 				.width = surface->current.width,
@@ -291,6 +297,7 @@ static void output_for_each_surface(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
+		.view = NULL,
 	};
 
 	struct sway_workspace *workspace = output_get_active_workspace(output);
@@ -401,18 +408,37 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 	return false;
 }
 
-static void send_frame_done_iterator(struct sway_output *output,
+struct send_frame_done_data {
+	struct timespec when;
+	int msec_until_refresh;
+};
+
+static void send_frame_done_iterator(struct sway_output *output, struct sway_view *view,
 		struct wlr_surface *surface, struct wlr_box *box, float rotation,
-		void *data) {
-	struct timespec *when = data;
-	wlr_surface_send_frame_done(surface, when);
+		void *user_data) {
+	int view_max_render_time = 0;
+	if (view != NULL) {
+		view_max_render_time = view->max_render_time;
+	}
+
+	struct send_frame_done_data *data = user_data;
+
+	int delay = data->msec_until_refresh - output->max_render_time
+			- view_max_render_time;
+
+	if (output->max_render_time == 0 || view_max_render_time == 0 || delay < 1) {
+		wlr_surface_send_frame_done(surface, &data->when);
+	} else {
+		struct sway_surface *sway_surface = surface->data;
+		wl_event_source_timer_update(sway_surface->frame_done_timer, delay);
+	}
 }
 
-static void send_frame_done(struct sway_output *output, struct timespec *when) {
-	output_for_each_surface(output, send_frame_done_iterator, when);
+static void send_frame_done(struct sway_output *output, struct send_frame_done_data *data) {
+	output_for_each_surface(output, send_frame_done_iterator, data);
 }
 
-static void count_surface_iterator(struct sway_output *output,
+static void count_surface_iterator(struct sway_output *output, struct sway_view *view,
 		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
 		void *data) {
 	size_t *n = data;
@@ -533,7 +559,7 @@ int output_repaint_timer_handler(void *data) {
 	return 0;
 }
 
-static void damage_handle_frame(struct wl_listener *listener, void *data) {
+static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_frame);
 	if (!output->enabled || !output->wlr_output->enabled) {
@@ -592,9 +618,10 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	}
 
 	// Send frame done to all visible surfaces
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	send_frame_done(output, &now);
+	struct send_frame_done_data data = {0};
+	clock_gettime(CLOCK_MONOTONIC, &data.when);
+	data.msec_until_refresh = msec_until_refresh;
+	send_frame_done(output, &data);
 }
 
 void output_damage_whole(struct sway_output *output) {
@@ -605,7 +632,7 @@ void output_damage_whole(struct sway_output *output) {
 	}
 }
 
-static void damage_surface_iterator(struct sway_output *output,
+static void damage_surface_iterator(struct sway_output *output, struct sway_view *view,
 		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
 		void *_data) {
 	bool *data = _data;
@@ -811,7 +838,7 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	update_output_manager_config(output->server);
 }
 
-static void send_presented_iterator(struct sway_output *output,
+static void send_presented_iterator(struct sway_output *output, struct sway_view *view,
 		struct wlr_surface *surface, struct wlr_box *box, float rotation,
 		void *data) {
 	struct wlr_presentation_event *event = data;
