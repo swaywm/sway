@@ -131,6 +131,9 @@ must be separated by one space. For example:
 	. Start with *max_render_time 1*. Increment by *1* if you see frame
 	  drops.
 
+	To achieve even lower latency, see the *max_render_time* surface
+	property in *sway*(5).
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)

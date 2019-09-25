@@ -97,7 +97,7 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static void render_surface_iterator(struct sway_output *output,
+static void render_surface_iterator(struct sway_output *output, struct sway_view *view,
 		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
 		void *_data) {
 	struct render_data *data = _data;
@@ -214,11 +214,11 @@ static void render_view_toplevels(struct sway_view *view,
 			render_surface_iterator, &data);
 }
 
-static void render_popup_iterator(struct sway_output *output,
+static void render_popup_iterator(struct sway_output *output, struct sway_view *view,
 		struct wlr_surface *surface, struct wlr_box *box, float rotation,
 		void *data) {
 	// Render this popup's surface
-	render_surface_iterator(output, surface, box, rotation, data);
+	render_surface_iterator(output, view, surface, box, rotation, data);
 
 	// Render this popup's child toplevels
 	output_surface_for_each_surface(output, surface, box->x, box->y,

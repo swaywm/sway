@@ -145,6 +145,7 @@ sway_cmd cmd_kill;
 sway_cmd cmd_layout;
 sway_cmd cmd_log_colors;
 sway_cmd cmd_mark;
+sway_cmd cmd_max_render_time;
 sway_cmd cmd_mode;
 sway_cmd cmd_mouse_warping;
 sway_cmd cmd_move;
