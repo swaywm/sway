@@ -212,6 +212,7 @@ struct output_config {
 	float scale;
 	int32_t transform;
 	enum wl_output_subpixel subpixel;
+	int max_render_time; // In milliseconds
 
 	char *background;
 	char *background_option;

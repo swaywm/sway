@@ -480,19 +480,13 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	return wlr_output_commit(wlr_output);
 }
 
-static void damage_handle_frame(struct wl_listener *listener, void *data) {
-	struct sway_output *output =
-		wl_container_of(listener, output, damage_frame);
-	if (!output->enabled || !output->wlr_output->enabled) {
-		return;
-	}
-
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
+int output_repaint_timer_handler(void *data) {
+	struct sway_output *output = data;
+	output->wlr_output->block_idle_frame = false;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
-		return;
+		return 0;
 	}
 
 	struct sway_container *fullscreen_con = root->fullscreen_global;
@@ -515,7 +509,7 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 		last_scanned_out = scanned_out;
 
 		if (scanned_out) {
-			goto frame_done;
+			return 0;
 		}
 	}
 
@@ -524,17 +518,82 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	pixman_region32_init(&damage);
 	if (!wlr_output_damage_attach_render(output->damage,
 			&needs_frame, &damage)) {
-		return;
+		return 0;
 	}
 
 	if (needs_frame) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+
 		output_render(output, &now, &damage);
 	}
 
 	pixman_region32_fini(&damage);
 
-frame_done:
+	return 0;
+}
+
+static void damage_handle_frame(struct wl_listener *listener, void *data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, damage_frame);
+	if (!output->enabled || !output->wlr_output->enabled) {
+		return;
+	}
+
+	// Compute predicted milliseconds until the next refresh. It's used for
+	// delaying both output rendering and surface frame callbacks.
+	int msec_until_refresh = 0;
+
+	if (output->max_render_time != 0) {
+		struct timespec now;
+		clockid_t presentation_clock
+			= wlr_backend_get_presentation_clock(server.backend);
+		clock_gettime(presentation_clock, &now);
+
+		const long NSEC_IN_SECONDS = 1000000000;
+		struct timespec predicted_refresh = output->last_presentation;
+		predicted_refresh.tv_nsec += output->refresh_nsec % NSEC_IN_SECONDS;
+		predicted_refresh.tv_sec += output->refresh_nsec / NSEC_IN_SECONDS;
+		if (predicted_refresh.tv_nsec >= NSEC_IN_SECONDS) {
+			predicted_refresh.tv_sec += 1;
+			predicted_refresh.tv_nsec -= NSEC_IN_SECONDS;
+		}
+
+		// If the predicted refresh time is before the current time then
+		// there's no point in delaying.
+		//
+		// We only check tv_sec because if the predicted refresh time is less
+		// than a second before the current time, then msec_until_refresh will
+		// end up slightly below zero, which will effectively disable the delay
+		// without potential disasterous negative overflows that could occur if
+		// tv_sec was not checked.
+		if (predicted_refresh.tv_sec >= now.tv_sec) {
+			long nsec_until_refresh
+				= (predicted_refresh.tv_sec - now.tv_sec) * NSEC_IN_SECONDS
+					+ (predicted_refresh.tv_nsec - now.tv_nsec);
+
+			// We want msec_until_refresh to be conservative, that is, floored.
+			// If we have 7.9 msec until refresh, we better compute the delay
+			// as if we had only 7 msec, so that we don't accidentally delay
+			// more than necessary and miss a frame.
+			msec_until_refresh = nsec_until_refresh / 1000000;
+		}
+	}
+
+	int delay = msec_until_refresh - output->max_render_time;
+
+	// If the delay is less than 1 millisecond (which is the least we can wait)
+	// then just render right away.
+	if (delay < 1) {
+		output_repaint_timer_handler(output);
+	} else {
+		output->wlr_output->block_idle_frame = true;
+		wl_event_source_timer_update(output->repaint_timer, delay);
+	}
+
 	// Send frame done to all visible surfaces
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
 	send_frame_done(output, &now);
 }
 
@@ -768,6 +827,9 @@ static void handle_present(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	output->last_presentation = *output_event->when;
+	output->refresh_nsec = output_event->refresh;
+
 	struct wlr_presentation_event event = {
 		.output = output->wlr_output,
 		.tv_sec = (uint64_t)output_event->when->tv_sec,
@@ -805,6 +867,9 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->damage_frame.notify = damage_handle_frame;
 	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
 	output->damage_destroy.notify = damage_handle_destroy;
+
+	output->repaint_timer = wl_event_loop_add_timer(server->wl_event_loop,
+		output_repaint_timer_handler, output);
 
 	struct output_config *oc = find_output_config(output);
 	if (!oc || oc->enabled) {

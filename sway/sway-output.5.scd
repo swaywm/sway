@@ -107,6 +107,30 @@ must be separated by one space. For example:
 	Enables or disables the specified output via DPMS. To turn an output off
 	(ie. blank the screen but keep workspaces as-is), one can set DPMS to off.
 
+*output* <name> max_render_time off|<msec>
+	When set to a positive number of milliseconds, enables delaying output
+	rendering to reduce latency. The rendering is delayed in such a way as
+	to leave the specified number of milliseconds before the next
+	presentation for rendering.
+
+	The output rendering normally takes place immediately after a
+	presentation (vblank, buffer flip, etc.) and the frame callbacks are
+	sent to surfaces immediately after the rendering to give surfaces the
+	most time to draw their next frame. This results in slightly below 2
+	frames of latency between the surface rendering and committing new
+	contents, and the contents being shown on screen, on average. When the
+	output rendering is delayed, the frame callbacks are sent immediately
+	after presentation, and the surfaces have a small timespan (1 /
+	(refresh rate) - max_render_time) to render and commit new contents to
+	be shown on the next presentation, resulting in below 1 frame of
+	latency.
+
+	To set this up for optimal latency:
+	. Launch some _full-screen_ application that renders continuously, like
+	  *glxgears*.
+	. Start with *max_render_time 1*. Increment by *1* if you see frame
+	  drops.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)

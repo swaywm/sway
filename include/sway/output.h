@@ -51,6 +51,11 @@ struct sway_output {
 	struct {
 		struct wl_signal destroy;
 	} events;
+
+	struct timespec last_presentation;
+	uint32_t refresh_nsec;
+	int max_render_time; // In milliseconds
+	struct wl_event_source *repaint_timer;
 };
 
 struct sway_output *output_create(struct wlr_output *wlr_output);
@@ -70,6 +75,8 @@ void output_add_workspace(struct sway_output *output,
 typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
 	struct wlr_surface *surface, struct wlr_box *box, float rotation,
 	void *user_data);
+
+int output_repaint_timer_handler(void *data);
 
 void output_damage_whole(struct sway_output *output);
 
