@@ -224,6 +224,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 				* ((double)output->height / parent_box.height);
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
+
+	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
 }
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
