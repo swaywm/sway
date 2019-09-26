@@ -412,6 +412,72 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 	output_for_each_surface(output, send_frame_done_iterator, when);
 }
 
+static void count_surface_iterator(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
+		void *data) {
+	size_t *n = data;
+	(*n)++;
+}
+
+static bool scan_out_fullscreen_view(struct sway_output *output,
+		struct sway_view *view) {
+	struct wlr_output *wlr_output = output->wlr_output;
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (!sway_assert(workspace, "Expected an active workspace")) {
+		return false;
+	}
+
+	if (view->saved_buffer) {
+		return false;
+	}
+
+	for (int i = 0; i < workspace->current.floating->length; ++i) {
+		struct sway_container *floater =
+			workspace->current.floating->items[i];
+		if (container_is_transient_for(floater, view->container)) {
+			return false;
+		}
+	}
+
+#if HAVE_XWAYLAND
+	if (!wl_list_empty(&root->xwayland_unmanaged)) {
+		return false;
+	}
+#endif
+
+	if (!wl_list_empty(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY])) {
+		return false;
+	}
+	if (!wl_list_empty(&root->drag_icons)) {
+		return false;
+	}
+
+	struct wlr_surface *surface = view->surface;
+	if (surface == NULL) {
+		return false;
+	}
+	size_t n_surfaces = 0;
+	output_view_for_each_surface(output, view,
+		count_surface_iterator, &n_surfaces);
+	if (n_surfaces != 1) {
+		return false;
+	}
+
+	if (surface->buffer == NULL) {
+		return false;
+	}
+
+	if ((float)surface->current.scale != wlr_output->scale ||
+			surface->current.transform != wlr_output->transform) {
+		return false;
+	}
+
+	if (!wlr_output_attach_buffer(wlr_output, surface->buffer)) {
+		return false;
+	}
+	return wlr_output_commit(wlr_output);
+}
+
 static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_frame);
@@ -421,6 +487,35 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (workspace == NULL) {
+		return;
+	}
+
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+
+	if (fullscreen_con && fullscreen_con->view) {
+		// Try to scan-out the fullscreen view
+		static bool last_scanned_out = false;
+		bool scanned_out =
+			scan_out_fullscreen_view(output, fullscreen_con->view);
+
+		if (scanned_out && !last_scanned_out) {
+			sway_log(SWAY_DEBUG, "Scanning out fullscreen view");
+		}
+		if (last_scanned_out && !scanned_out) {
+			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out");
+		}
+		last_scanned_out = scanned_out;
+
+		if (scanned_out) {
+			goto frame_done;
+		}
+	}
 
 	bool needs_frame;
 	pixman_region32_t damage;
@@ -436,6 +531,7 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 
 	pixman_region32_fini(&damage);
 
+frame_done:
 	// Send frame done to all visible surfaces
 	send_frame_done(output, &now);
 }
