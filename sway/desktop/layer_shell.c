@@ -373,10 +373,8 @@ static void popup_damage(struct sway_layer_popup *layer_popup, bool whole) {
 	while (true) {
 		if (layer_popup->parent_type == LAYER_PARENT_POPUP) {
 			layer_popup = layer_popup->parent_popup;
-			ox += layer_popup->wlr_popup->base->geometry.x +
-				layer_popup->wlr_popup->geometry.x;
-			oy += layer_popup->wlr_popup->base->geometry.y +
-				layer_popup->wlr_popup->geometry.y;
+			ox += layer_popup->wlr_popup->geometry.x;
+			oy += layer_popup->wlr_popup->geometry.y;
 		} else {
 			layer = layer_popup->parent_layer;
 			ox += layer->geo.x;
