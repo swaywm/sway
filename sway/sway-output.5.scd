@@ -8,7 +8,7 @@ sway-output - output configuration commands for sway
 
 You may combine output commands into one, like so:
 
-	output HDMI-A-1 mode 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
+	output HDMI-A-1 mode 1920x1080 pos 1920 0 bg ~/wallpaper.png stretch
 
 You can get a list of output names with *swaymsg -t get_outputs*. You may also
 match any output by using the output name "\*". Additionally, "-" can be used
@@ -20,7 +20,7 @@ identify these, the name can be substituted for a string consisting of the make,
 model and serial which you can get from *swaymsg -t get_outputs*. Each value
 must be separated by one space. For example:
 
-	output "Some Company ABC123 0x00000000" pos 1920,0
+	output "Some Company ABC123 0x00000000" pos 1920 0
 
 # COMMANDS
 
