@@ -31,7 +31,8 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->floating
 		&& !criteria->tiling
 		&& !criteria->urgent
-		&& !criteria->workspace;
+		&& !criteria->workspace
+		&& !criteria->pid;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -370,6 +371,12 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
+	if (criteria->pid) {
+		if (criteria->pid != view->pid) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -458,6 +465,7 @@ enum criteria_token {
 	T_TITLE,
 	T_URGENT,
 	T_WORKSPACE,
+	T_PID,
 
 	T_INVALID,
 };
@@ -493,6 +501,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_TILING;
 	} else if (strcmp(name, "floating") == 0) {
 		return T_FLOATING;
+	} else if (strcmp(name, "pid") == 0) {
+		return T_PID;
 	}
 	return T_INVALID;
 }
@@ -586,6 +596,12 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		break;
 	case T_WORKSPACE:
 		pattern_create(&criteria->workspace, value);
+		break;
+	case T_PID:
+		criteria->pid = strtoul(value, &endptr, 10);
+		if (*endptr != 0) {
+			error = strdup("The value for 'pid' should be numeric");
+		}
 		break;
 	case T_INVALID:
 		break;

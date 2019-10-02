@@ -850,6 +850,9 @@ The following attributes may be matched with:
 	value is \_\_focused\_\_, then the window instance must be the same as that
 	of the currently focused window.
 
+*pid*
+	Compare value against the window's process ID. Must be numeric.
+
 *shell*
 	Compare value against the window shell, such as "xdg_shell" or "xwayland".
 	Can be a regular expression. If value is \_\_focused\_\_, then the shell

@@ -46,6 +46,7 @@ struct criteria {
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest
 	struct pattern *workspace;
+	pid_t pid;
 };
 
 bool criteria_is_empty(struct criteria *criteria);
