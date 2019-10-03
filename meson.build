@@ -60,7 +60,7 @@ git            = find_program('git', native: true, required: false)
 wlroots_version = ['>=0.7.0', '<0.8.0']
 wlroots_proj = subproject(
 	'wlroots',
-	default_options: ['rootston=false', 'examples=false'],
+	default_options: ['examples=false'],
 	required: false,
 	version: wlroots_version,
 )
