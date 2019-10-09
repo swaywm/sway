@@ -16,6 +16,7 @@ sway_sources = files(
 	'desktop/layer_shell.c',
 	'desktop/output.c',
 	'desktop/render.c',
+	'desktop/surface.c',
 	'desktop/transaction.c',
 	'desktop/xdg_shell.c',
 
