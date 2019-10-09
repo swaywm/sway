@@ -628,7 +628,7 @@ The default colors are:
 	is specified mark will remove _identifier_ if it is already marked.
 
 *mode* <mode>
-	Switches to the specified mode. The default mode _default_.
+	Switches to the specified mode. The default mode is _default_.
 
 *mode* [--pango_markup] <mode> <mode-subcommands...>
 	The only valid _mode-subcommands..._ are *bindsym*, *bindcode*,
