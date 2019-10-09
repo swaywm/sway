@@ -1,0 +1,113 @@
+#!/bin/sh
+
+## Grimshot: a helper for screenshots within sway
+## Requirements:
+##  - `grim`: screenshot utility for wayland
+##  - `slurp`: to select an area
+##  - `swaymsg`: to read properties of current window
+##  - `wl-copy`: clipboard utility
+##  - `jq`: json uliity to parse swaymsg output
+##  - `notify-send`: to show notifications
+##  - `mktemp`: to create a temporary file
+## Those are needed to be installed, if unsure, run `grimshot check`
+##
+## Examples:
+## `grimshot copy win` - to copy current window
+## `grimshot save area` - to select area and save it to default file (Pictures/Grimshot-$datetime.png)
+## `grimshot save screen ~/screenshot.png` - to save screenshot under ~/screenshot.png
+## `grimshot` - usage
+## `grimshot check` - verify if tools are installed
+
+ACTION=${1:-usage}
+SUBJECT=${2:-screen}
+FILE=${3:-$(xdg-user-dir PICTURES)/$(date +'Grimshot %Y-%m-%d %H-%M-%S.png')}
+if [ "$ACTION" = "usage" ] ; then
+  echo "Usage:"
+  echo "  grimshot copy|save win|screen|area [FILE]"
+  echo "Troubleshoot:"
+  echo "  grimshot check"
+  exit
+fi
+
+notify() {
+  notify-send -t 3000 -a grimshot "$@"
+}
+notifyOk() {
+  TITLE=${2:-"Screenshot"}
+  MESSAGE=${1:-"OK"}
+  notify "$TITLE" "$MESSAGE"
+}
+notifyError() {
+  TITLE=${2:-"Screenshot"}
+  MESSAGE=${1:-"Error taking screenshot with grim"}
+  notify -u critical "$TITLE" "$MESSAGE"
+}
+
+die() {
+  MSG=${1:-Bye}
+  notifyError "Error: $MSG"
+  exit 2
+}
+
+check() {
+  COMMAND=$1
+  command -v "$COMMAND" > /dev/null 2>&1
+  if [ $? ]; then
+    RESULT="OK"
+  else
+    RESULT="NOT FOUND"
+  fi
+  echo "   $COMMAND: $RESULT"
+}
+
+takeScreenshot() {
+  FILE=$1
+  GEOM=$2
+  if [ -z "$GEOM" ]; then
+    grim "$FILE" || die "Unable to invoke grim"
+  else
+    grim -g "$GEOM" "$FILE" || die "Unable to invoke grim"
+  fi
+}
+
+if [ "$ACTION" = "check" ] ; then
+  echo "Checking if required tools are installed. If something is missing, install it to your system and make it available in PATH..."
+  check grim
+  check slurp
+  check swaymsg
+  check wl-copy
+  check jq
+  check notify-send
+  check mktemp
+  exit
+elif [ "$SUBJECT" = "area" ] ; then
+  GEOM=$(slurp -d)
+  WHAT="Area"
+elif [ "$SUBJECT" = "win" ] ; then
+  FOCUSED=$(swaymsg -t get_tree | jq -r 'recurse(.nodes[]?, .floating_nodes[]?) | select(.focused)')
+  GEOM=$(echo "$FOCUSED" | jq -r '.rect | "\(.x),\(.y) \(.width)x\(.height)"')
+  APP_ID=$(echo "$FOCUSED" | jq -r '.app_id')
+  WHAT="$APP_ID window"
+elif [ "$SUBJECT" = "screen" ] ; then
+  GEOM=""
+  WHAT="Screen"
+else
+  die "Unknown subject to take a screen shot from" "$SUBJECT"
+fi
+
+if [ "$ACTION" = "copy" ] ; then
+  TMP=$(mktemp) || die "Unable to create temp file: is mktemp installed?"
+  takeScreenshot "$TMP" "$GEOM"
+  wl-copy --type image/png < "$TMP"  || die "Clipboard error"
+  rm "$TMP"
+  notifyOk "$WHAT copied to buffer"
+else
+  takeScreenshot "$FILE" "$GEOM"
+  if [ $? ]; then
+    TITLE="Screenshot of $SUBJECT"
+    MESSAGE=$(basename "$FILE")
+    notifyOk "$MESSAGE" "$TITLE"
+  else
+    notifyError "Error taking screenshot with grim"
+  fi
+fi
