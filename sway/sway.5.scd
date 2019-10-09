@@ -675,7 +675,7 @@ The default colors are:
 
 *tiling_drag*  enable|disable|toggle
 	Sets whether or not tiling containers can be dragged with the mouse. If
-	enabled (default), the _floating_mod_ can be used to drag tiling, as well
+	_enabled_ (default), the _floating_mod_ can be used to drag tiling, as well
 	as floating, containers. Using the left mouse button on title bars without
 	the _floating_mod_ will also allow the container to be dragged. _toggle_
 	should not be used in the config file.
