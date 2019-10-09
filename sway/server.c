@@ -59,6 +59,10 @@ bool server_init(struct sway_server *server) {
 	wlr_renderer_init_wl_display(renderer, server->wl_display);
 
 	server->compositor = wlr_compositor_create(server->wl_display, renderer);
+	server->compositor_new_surface.notify = handle_compositor_new_surface;
+	wl_signal_add(&server->compositor->events.new_surface,
+		&server->compositor_new_surface);
+
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
