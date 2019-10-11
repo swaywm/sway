@@ -16,8 +16,7 @@
 #include "config.h"
 
 bool criteria_is_empty(struct criteria *criteria) {
-	return !criteria->autofail
-		&& !criteria->title
+	return !criteria->title
 		&& !criteria->shell
 		&& !criteria->app_id
 		&& !criteria->con_mark
@@ -35,16 +34,64 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->workspace;
 }
 
+// The error pointer is used for parsing functions, and saves having to pass it
+// as an argument in several places.
+char *error = NULL;
+
+// Returns error string on failure or NULL otherwise.
+static bool generate_regex(pcre **regex, char *value) {
+	const char *reg_err;
+	int offset;
+
+	*regex = pcre_compile(value, PCRE_UTF8 | PCRE_UCP, &reg_err, &offset, NULL);
+
+	if (!*regex) {
+		const char *fmt = "Regex compilation for '%s' failed: %s";
+		int len = strlen(fmt) + strlen(value) + strlen(reg_err) - 3;
+		error = malloc(len);
+		snprintf(error, len, fmt, value, reg_err);
+		return false;
+	}
+
+	return true;
+}
+
+static bool pattern_create(struct pattern **pattern, char *value) {
+	*pattern = calloc(1, sizeof(struct pattern));
+	if (!*pattern) {
+		sway_log(SWAY_ERROR, "Failed to allocate pattern");
+	}
+
+	if (strcmp(value, "__focused__") == 0) {
+		(*pattern)->match_type = PATTERN_FOCUSED;
+	} else {
+		(*pattern)->match_type = PATTERN_PCRE;
+		if (!generate_regex(&(*pattern)->regex, value)) {
+			return false;
+		};
+	}
+	return true;
+}
+
+static void pattern_destroy(struct pattern *pattern) {
+	if (pattern) {
+		if (pattern->regex) {
+			pcre_free(pattern->regex);
+		}
+		free(pattern);
+	}
+}
+
 void criteria_destroy(struct criteria *criteria) {
-	pcre_free(criteria->title);
-	pcre_free(criteria->shell);
-	pcre_free(criteria->app_id);
+	pattern_destroy(criteria->title);
+	pattern_destroy(criteria->shell);
+	pattern_destroy(criteria->app_id);
 #if HAVE_XWAYLAND
-	pcre_free(criteria->class);
-	pcre_free(criteria->instance);
-	pcre_free(criteria->window_role);
+	pattern_destroy(criteria->class);
+	pattern_destroy(criteria->instance);
+	pattern_destroy(criteria->window_role);
 #endif
-	pcre_free(criteria->con_mark);
+	pattern_destroy(criteria->con_mark);
 	free(criteria->workspace);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -99,28 +146,67 @@ static void find_urgent_iterator(struct sway_container *con, void *data) {
 
 static bool criteria_matches_view(struct criteria *criteria,
 		struct sway_view *view) {
-	if (criteria->autofail) {
-		return false;
-	}
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_view *focused = focus ? focus->view : NULL;
 
 	if (criteria->title) {
 		const char *title = view_get_title(view);
-		if (!title || regex_cmp(title, criteria->title) != 0) {
+		if (!title) {
 			return false;
+		}
+
+		switch (criteria->title->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && strcmp(title, view_get_title(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(title, criteria->title->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
 	if (criteria->shell) {
 		const char *shell = view_get_shell(view);
-		if (!shell || regex_cmp(shell, criteria->shell) != 0) {
+		if (!shell) {
 			return false;
+		}
+
+		switch (criteria->shell->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && strcmp(shell, view_get_shell(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(shell, criteria->shell->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
 	if (criteria->app_id) {
 		const char *app_id = view_get_app_id(view);
-		if (!app_id || regex_cmp(app_id, criteria->app_id) != 0) {
+		if (!app_id) {
 			return false;
+		}
+
+		switch (criteria->app_id->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && strcmp(app_id, view_get_app_id(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(app_id, criteria->app_id->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
@@ -128,7 +214,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 		bool exists = false;
 		struct sway_container *con = view->container;
 		for (int i = 0; i < con->marks->length; ++i) {
-			if (regex_cmp(con->marks->items[i], criteria->con_mark) == 0) {
+			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) == 0) {
 				exists = true;
 				break;
 			}
@@ -154,22 +240,61 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 	if (criteria->class) {
 		const char *class = view_get_class(view);
-		if (!class || regex_cmp(class, criteria->class) != 0) {
+		if (!class) {
 			return false;
+		}
+
+		switch (criteria->class->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && strcmp(class, view_get_class(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(class, criteria->class->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
 	if (criteria->instance) {
 		const char *instance = view_get_instance(view);
-		if (!instance || regex_cmp(instance, criteria->instance) != 0) {
+		if (!instance) {
 			return false;
+		}
+
+		switch (criteria->instance->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && strcmp(instance, view_get_instance(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(instance, criteria->instance->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
 	if (criteria->window_role) {
-		const char *role = view_get_window_role(view);
-		if (!role || regex_cmp(role, criteria->window_role) != 0) {
+		const char *window_role = view_get_window_role(view);
+		if (!window_role) {
 			return false;
+		}
+
+		switch (criteria->window_role->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && strcmp(window_role, view_get_window_role(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(window_role, criteria->window_role->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
@@ -213,8 +338,22 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 	if (criteria->workspace) {
 		struct sway_workspace *ws = view->container->workspace;
-		if (!ws || regex_cmp(ws->name, criteria->workspace) != 0) {
+		if (!ws) {
 			return false;
+		}
+
+		switch (criteria->workspace->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused &&
+					strcmp(ws->name, focused->container->workspace->name)) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE:
+			if (regex_cmp(ws->name, criteria->workspace->regex) != 0) {
+				return false;
+			}
+			break;
 		}
 	}
 
@@ -256,28 +395,6 @@ list_t *criteria_get_views(struct criteria *criteria) {
 	};
 	root_for_each_container(criteria_get_views_iterator, &data);
 	return matches;
-}
-
-// The error pointer is used for parsing functions, and saves having to pass it
-// as an argument in several places.
-char *error = NULL;
-
-// Returns error string on failure or NULL otherwise.
-static bool generate_regex(pcre **regex, char *value) {
-	const char *reg_err;
-	int offset;
-
-	*regex = pcre_compile(value, PCRE_UTF8 | PCRE_UCP, &reg_err, &offset, NULL);
-
-	if (!*regex) {
-		const char *fmt = "Regex compilation for '%s' failed: %s";
-		int len = strlen(fmt) + strlen(value) + strlen(reg_err) - 3;
-		error = malloc(len);
-		snprintf(error, len, fmt, value, reg_err);
-		return false;
-	}
-
-	return true;
 }
 
 #if HAVE_XWAYLAND
@@ -363,92 +480,6 @@ static enum criteria_token token_from_name(char *name) {
 	return T_INVALID;
 }
 
-/**
- * Get a property of the focused view.
- *
- * Note that we are taking the focused view at the time of criteria parsing, not
- * at the time of execution. This is because __focused__ only makes sense when
- * using criteria via IPC. Using __focused__ in config is not useful because
- * criteria is only executed once per view.
- */
-static char *get_focused_prop(enum criteria_token token, bool *autofail) {
-	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_container *focus = seat_get_focused_container(seat);
-
-	struct sway_view *view = focus ? focus->view : NULL;
-	const char *value = NULL;
-
-	switch (token) {
-	case T_APP_ID:
-		*autofail = true;
-		if (view) {
-			value = view_get_app_id(view);
-		}
-		break;
-	case T_SHELL:
-		*autofail = true;
-		if (view) {
-			value = view_get_shell(view);
-		}
-		break;
-	case T_TITLE:
-		*autofail = true;
-		if (view) {
-			value = view_get_title(view);
-		}
-		break;
-	case T_WORKSPACE:
-		*autofail = true;
-		if (focus && focus->workspace) {
-			value = focus->workspace->name;
-		}
-		break;
-	case T_CON_ID:
-		*autofail = true;
-		if (view && view->container) {
-			size_t id = view->container->node.id;
-			size_t id_size = snprintf(NULL, 0, "%zu", id) + 1;
-			char *id_str = malloc(id_size);
-			snprintf(id_str, id_size, "%zu", id);
-			value = id_str;
-		}
-		break;
-#if HAVE_XWAYLAND
-	case T_CLASS:
-		*autofail = true;
-		if (view) {
-			value = view_get_class(view);
-		}
-		break;
-	case T_INSTANCE:
-		*autofail = true;
-		if (view) {
-			value = view_get_instance(view);
-		}
-		break;
-	case T_WINDOW_ROLE:
-		*autofail = true;
-		if (view) {
-			value = view_get_window_role(view);
-		}
-		break;
-	case T_WINDOW_TYPE: // These do not support __focused__
-	case T_ID:
-#endif
-	case T_CON_MARK:
-	case T_FLOATING:
-	case T_TILING:
-	case T_URGENT:
-	case T_INVALID:
-		*autofail = false;
-		break;
-	}
-	if (value) {
-		return strdup(value);
-	}
-	return NULL;
-}
-
 static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	enum criteria_token token = token_from_name(name);
 	if (token == T_INVALID) {
@@ -459,20 +490,8 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		return false;
 	}
 
-	char *effective_value = NULL;
-	if (value && strcmp(value, "__focused__") == 0) {
-		bool autofail = false;
-		effective_value = get_focused_prop(token, &autofail);
-		if (!effective_value && autofail) {
-			criteria->autofail = true;
-			return true;
-		}
-	} else if (value) {
-		effective_value = strdup(value);
-	}
-
 	// Require value, unless token is floating or tiled
-	if (!effective_value && token != T_FLOATING && token != T_TILING) {
+	if (!value && token != T_FLOATING && token != T_TILING) {
 		const char *fmt = "Token '%s' requires a value";
 		int len = strlen(fmt) + strlen(name) - 1;
 		error = malloc(len);
@@ -483,41 +502,48 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	char *endptr = NULL;
 	switch (token) {
 	case T_TITLE:
-		generate_regex(&criteria->title, effective_value);
+		pattern_create(&criteria->title, value);
 		break;
 	case T_SHELL:
-		generate_regex(&criteria->shell, effective_value);
+		pattern_create(&criteria->shell, value);
 		break;
 	case T_APP_ID:
-		generate_regex(&criteria->app_id, effective_value);
+		pattern_create(&criteria->app_id, value);
 		break;
 	case T_CON_ID:
-		criteria->con_id = strtoul(effective_value, &endptr, 10);
-		if (*endptr != 0) {
-			error = strdup("The value for 'con_id' should be '__focused__' or numeric");
+		if (strcmp(value, "__focused__") == 0) {
+			struct sway_seat *seat = input_manager_current_seat();
+			struct sway_container *focus = seat_get_focused_container(seat);
+			struct sway_view *view = focus ? focus->view : NULL;
+			criteria->con_id = view ? view->container->node.id : 0;
+		} else {
+			criteria->con_id = strtoul(value, &endptr, 10);
+			if (*endptr != 0) {
+				error = strdup("The value for 'con_id' should be '__focused__' or numeric");
+			}
 		}
 		break;
 	case T_CON_MARK:
-		generate_regex(&criteria->con_mark, effective_value);
+		pattern_create(&criteria->con_mark, value);
 		break;
 #if HAVE_XWAYLAND
 	case T_CLASS:
-		generate_regex(&criteria->class, effective_value);
+		pattern_create(&criteria->class, value);
 		break;
 	case T_ID:
-		criteria->id = strtoul(effective_value, &endptr, 10);
+		criteria->id = strtoul(value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'id' should be numeric");
 		}
 		break;
 	case T_INSTANCE:
-		generate_regex(&criteria->instance, effective_value);
+		pattern_create(&criteria->instance, value);
 		break;
 	case T_WINDOW_ROLE:
-		generate_regex(&criteria->window_role, effective_value);
+		pattern_create(&criteria->window_role, value);
 		break;
 	case T_WINDOW_TYPE:
-		criteria->window_type = parse_window_type(effective_value);
+		criteria->window_type = parse_window_type(value);
 		break;
 #endif
 	case T_FLOATING:
@@ -527,13 +553,13 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		criteria->tiling = true;
 		break;
 	case T_URGENT:
-		if (strcmp(effective_value, "latest") == 0 ||
-				strcmp(effective_value, "newest") == 0 ||
-				strcmp(effective_value, "last") == 0 ||
-				strcmp(effective_value, "recent") == 0) {
+		if (strcmp(value, "latest") == 0 ||
+				strcmp(value, "newest") == 0 ||
+				strcmp(value, "last") == 0 ||
+				strcmp(value, "recent") == 0) {
 			criteria->urgent = 'l';
-		} else if (strcmp(effective_value, "oldest") == 0 ||
-				strcmp(effective_value, "first") == 0) {
+		} else if (strcmp(value, "oldest") == 0 ||
+				strcmp(value, "first") == 0) {
 			criteria->urgent = 'o';
 		} else {
 			error =
@@ -542,12 +568,11 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		}
 		break;
 	case T_WORKSPACE:
-		generate_regex(&criteria->workspace, effective_value);
+		pattern_create(&criteria->workspace, value);
 		break;
 	case T_INVALID:
 		break;
 	}
-	free(effective_value);
 
 	if (error) {
 		return false;

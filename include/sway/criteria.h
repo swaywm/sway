@@ -14,29 +14,38 @@ enum criteria_type {
 	CT_NO_FOCUS                = 1 << 4,
 };
 
+enum pattern_type {
+	PATTERN_PCRE,
+	PATTERN_FOCUSED,
+};
+
+struct pattern {
+	enum pattern_type match_type;
+	pcre *regex;
+};
+
 struct criteria {
 	enum criteria_type type;
 	char *raw; // entire criteria string (for logging)
 	char *cmdlist;
 	char *target; // workspace or output name for `assign` criteria
 
-	bool autofail; // __focused__ while no focus or n/a for focused view
-	pcre *title;
-	pcre *shell;
-	pcre *app_id;
-	pcre *con_mark;
+	struct pattern *title;
+	struct pattern *shell;
+	struct pattern *app_id;
+	struct pattern *con_mark;
 	uint32_t con_id; // internal ID
 #if HAVE_XWAYLAND
-	pcre *class;
+	struct pattern *class;
 	uint32_t id; // X11 window ID
-	pcre *instance;
-	pcre *window_role;
+	struct pattern *instance;
+	struct pattern *window_role;
 	enum atom_name window_type;
 #endif
 	bool floating;
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest
-	pcre *workspace;
+	struct pattern *workspace;
 };
 
 bool criteria_is_empty(struct criteria *criteria);
