@@ -12,7 +12,7 @@ sway 개발을 도우고 싶으시다면, [SirCmpwn의 Patreon 페이지](https:
 
 ## 설치
 
-### 패키지로 설치
+### 패키지를 통한 설치
 
 Sway는 많은 배포판에서 이용할 수 있습니다. "sway" 패키지를 설치해 보세요.
 만약 없다면, [위키 페이지](https://github.com/swaywm/sway/wiki/Unsupported-packages)를 확인하세요.
