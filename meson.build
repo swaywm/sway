@@ -54,7 +54,6 @@ elogind        = dependency('libelogind', version: '>=239', required: false)
 xcb            = dependency('xcb', required: get_option('xwayland'))
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
-git            = find_program('git', native: true, required: false)
 
 # Try first to find wlroots as a subproject, then as a system dependency
 wlroots_version = ['>=0.8.1', '<0.9.0']
@@ -130,11 +129,16 @@ endif
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
 
 version = '"@0@"'.format(meson.project_version())
+git = find_program('git', native: true, required: false)
 if git.found()
-	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags'])
-	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD'])
-	if git_commit_hash.returncode() == 0 and git_branch.returncode() == 0
-		version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash.stdout().strip(), git_branch.stdout().strip())
+	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'])
+	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'])
+	if git_commit.returncode() == 0 and git_branch.returncode() == 0
+		version = '"@0@-@1@ (" __DATE__ ", branch \'@2@\')"'.format(
+			meson.project_version(),
+			git_commit.stdout().strip(),
+			git_branch.stdout().strip(),
+		)
 	endif
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
