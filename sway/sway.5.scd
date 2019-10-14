@@ -85,6 +85,9 @@ The following commands may only be used in the configuration file.
 	It can be disabled by setting the command to a single dash:
 	_swaynag\_command -_
 
+*workspace_layout* default|stacking|tabbed
+	Specifies the initial layout for new workspaces.
+
 *xwayland* enable|disable|force
 	Enables or disables Xwayland support, which allows X11 applications to be
 	used. _enable_ will lazily load Xwayland so Xwayland will not be launched
@@ -752,9 +755,6 @@ The default colors are:
 	prior workspace. For example, if you are currently on workspace 1,
 	switch to workspace 2, then invoke the "workspace 2" command again, you
 	will be returned to workspace 1. Default is _no_.
-
-*workspace_layout* default|stacking|tabbed
-	Specifies the initial layout for new workspaces.
 
 # CRITERIA
 
