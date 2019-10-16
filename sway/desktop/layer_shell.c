@@ -487,7 +487,9 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface_v1 *layer_surface = data;
 	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
 			"size %dx%d margin %d,%d,%d,%d",
-		layer_surface->namespace, layer_surface->layer, layer_surface->layer,
+		layer_surface->namespace,
+		layer_surface->client_pending.layer,
+		layer_surface->client_pending.layer,
 		layer_surface->client_pending.desired_width,
 		layer_surface->client_pending.desired_height,
 		layer_surface->client_pending.margin.top,
@@ -544,7 +546,8 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_layer->output_destroy.notify = handle_output_destroy;
 	wl_signal_add(&output->events.destroy, &sway_layer->output_destroy);
 
-	wl_list_insert(&output->layers[layer_surface->layer], &sway_layer->link);
+	wl_list_insert(&output->layers[layer_surface->client_pending.layer],
+			&sway_layer->link);
 
 	// Temporarily set the layer's current state to client_pending
 	// So that we can easily arrange it
