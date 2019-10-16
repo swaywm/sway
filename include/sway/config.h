@@ -409,7 +409,8 @@ enum focus_follows_mouse_mode {
 enum focus_wrapping_mode {
 	WRAP_NO,
 	WRAP_YES,
-	WRAP_FORCE
+	WRAP_FORCE,
+	WRAP_WORKSPACE
 };
 
 enum mouse_warping_mode {

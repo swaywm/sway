@@ -551,14 +551,16 @@ The default colors are:
 	If set to _smart_, the window will become focused only if it is already
 	visible, otherwise the urgent state will be set. Default is _smart_.
 
-*focus_wrapping* yes|no|force
+*focus_wrapping* yes|no|force|workspace
 	This option determines what to do when attempting to focus over the edge
 	of a container. If set to _no_, the focused container will retain focus,
 	if there are no other containers in the direction. If set to _yes_, focus
 	will be wrapped to the opposite edge of the container, if there are no
 	other containers in the direction. If set to _force_, focus will be wrapped
 	to the opposite edge of the container, even if there are other containers
-	in the direction. Default is _yes_.
+	in the direction. If set to _workspace_, focus will wrap like in the _yes_
+	case and additionally wrap when moving outside of workspaces boundaries.
+	Default is _yes_.
 
 *font* [pango:]<font>
 	Sets font to use for the title bars. To enable support for pango markup,
