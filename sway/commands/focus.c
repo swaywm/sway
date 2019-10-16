@@ -160,7 +160,8 @@ static struct sway_node *node_get_in_direction_tiling(
 	// Check a different output
 	struct sway_output *output = container->workspace->output;
 	struct sway_output *new_output = output_get_in_direction(output, dir);
-	if (new_output) {
+	if ((config->focus_wrapping != WRAP_WORKSPACE ||
+				container->node.type == N_WORKSPACE) && new_output) {
 		return get_node_in_output_direction(new_output, dir);
 	}
 
