@@ -401,6 +401,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		// This window used not to have the override redirect flag and has it
 		// now. Switch to unmanaged.
 		handle_destroy(&xwayland_view->destroy, view);
+		xsurface->data = NULL;
 		struct sway_xwayland_unmanaged *unmanaged = create_unmanaged(xsurface);
 		unmanaged_handle_map(&unmanaged->map, xsurface);
 		return;
