@@ -290,6 +290,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			desktop_damage_view(view);
 			view_update_size(view, new_geo.width, new_geo.height);
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+			wlr_xdg_toplevel_set_size(xdg_surface, new_geo.width, new_geo.height);
 			desktop_damage_view(view);
 			transaction_commit_dirty();
 		} else {
