@@ -574,7 +574,7 @@ static void handle_set_hints(struct wl_listener *listener, void *data) {
 
 struct sway_view *view_from_wlr_xwayland_surface(
 		struct wlr_xwayland_surface *xsurface) {
-	return xsurface->data;
+	return &((struct sway_xwayland_view*)xsurface->data)->view;
 }
 
 void handle_xwayland_surface(struct wl_listener *listener, void *data) {
