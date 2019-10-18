@@ -179,6 +179,7 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 
 		seat_keyboard_notify_enter(seat, view->surface);
 		seat_tablet_pads_notify_enter(seat, view->surface);
+		sway_input_method_relay_set_focus(&seat->im_relay, view->surface);
 
 		struct wlr_pointer_constraint_v1 *constraint =
 			wlr_pointer_constraints_v1_constraint_for_surface(
@@ -561,6 +562,8 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 	wl_list_init(&seat->keyboard_groups);
 	wl_list_init(&seat->keyboard_shortcuts_inhibitors);
+
+	sway_input_method_relay_init(seat, &seat->im_relay);
 
 	wl_list_insert(&server.input->seats, &seat->link);
 
@@ -1015,6 +1018,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 			view_close_popups(last_focus->sway_container->view);
 		}
 		seat_send_unfocus(last_focus, seat);
+		sway_input_method_relay_set_focus(&seat->im_relay, NULL);
 		seat->has_focus = false;
 		return;
 	}

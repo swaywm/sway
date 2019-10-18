@@ -7,12 +7,14 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_text_input_v3.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include "config.h"
 #include "list.h"
@@ -76,6 +78,8 @@ struct sway_server {
 
 	struct wlr_output_power_manager_v1 *output_power_manager_v1;
 	struct wl_listener output_power_manager_set_mode;
+	struct wlr_input_method_manager_v2 *input_method;
+	struct wlr_text_input_manager_v3 *text_input;
 
 	size_t txn_timeout_ms;
 	list_t *transactions;

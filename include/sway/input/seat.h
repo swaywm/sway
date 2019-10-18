@@ -7,6 +7,7 @@
 #include <wlr/util/edges.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/text_input.h"
 
 struct sway_seat;
 
@@ -85,6 +86,8 @@ struct sway_seat {
 	uint32_t idle_inhibit_sources, idle_wake_sources;
 
 	list_t *deferred_bindings; // struct sway_binding
+
+	struct sway_input_method_relay im_relay;
 
 	struct wl_listener focus_destroy;
 	struct wl_listener new_node;
