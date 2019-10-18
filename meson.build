@@ -93,66 +93,66 @@ conf_data.set10('HAVE_TRAY', have_tray)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
-  scdoc_prog = find_program(scdoc.get_pkgconfig_variable('scdoc'), native: true)
-  sh = find_program('sh', native: true)
-  mandir = get_option('mandir')
-  man_files = {
-    'sway': [
-      'sway.1.scd',
-      'sway.5.scd',
-      'sway-bar.5.scd',
-      'sway-input.5.scd',
-      'sway-ipc.7.scd',
-      'sway-output.5.scd'
-    ],
-    'swaybar': [
-      'swaybar-protocol.7.scd'
-    ],
-    'swaymgs': [
-      'swaymsg.1.scd'
-    ],
-    'swaynag': [
-      'swaynag.1.scd',
-      'swaynag.5.scd'
-    ]
-  }
-  locales = ['en']
+	scdoc_prog = find_program(scdoc.get_pkgconfig_variable('scdoc'), native: true)
+	sh = find_program('sh', native: true)
+	mandir = get_option('mandir')
+	man_files = {
+		'sway': [
+			'sway.1.scd',
+			'sway.5.scd',
+			'sway-bar.5.scd',
+			'sway-input.5.scd',
+			'sway-ipc.7.scd',
+			'sway-output.5.scd'
+		],
+		'swaybar': [
+			'swaybar-protocol.7.scd'
+		],
+		'swaymgs': [
+			'swaymsg.1.scd'
+		],
+		'swaynag': [
+			'swaynag.1.scd',
+			'swaynag.5.scd'
+		]
+	}
+	locales = ['en']
 
-  foreach proj, sources: man_files
-    foreach locale: locales
-      if locale == 'en'
-        docdir = mandir
-        projdir = join_paths(meson.source_root(), proj, 'doc')
-        outdir = join_paths(meson.build_root(), 'doc')
-      else
-        docdir = join_paths(mandir, locale)
-        projdir = join_paths(meson.source_root(), proj, 'doc', locale)
-        outdir = join_paths(meson.build_root(), 'doc', locale)
-      endif
+	foreach proj, sources: man_files
+		foreach locale: locales
+			if locale == 'en'
+				docdir = mandir
+				projdir = join_paths(meson.source_root(), proj, 'doc')
+				outdir = join_paths(meson.build_root(), 'doc')
+			else
+				docdir = join_paths(mandir, locale)
+				projdir = join_paths(meson.source_root(), proj, 'doc', locale)
+				outdir = join_paths(meson.build_root(), 'doc', locale)
+			endif
 
-      # Checks if locale dir exists before proceeding with scdoc compilation
-      if run_command('[', '-d', projdir, ']').returncode() == 0
-        if run_command('[', '-d', outdir, ']').returncode() != 0
-          if run_command('mkdir', outdir).returncode() != 0
-            warning('Failed to create directory at: @0@'.format(outdir))
-          endif
-        endif
+			# Checks if locale dir exists before proceeding with scdoc compilation
+			if run_command('[', '-d', projdir, ']').returncode() == 0
+				if run_command('[', '-d', outdir, ']').returncode() != 0
+					if run_command('mkdir', outdir).returncode() != 0
+						warning('Failed to create directory at: @0@'.format(outdir))
+					endif
+				endif
 
-        foreach filename: sources
-          input = join_paths(projdir, filename)
-          if run_command('[', '-e', input, ']').returncode() == 0
-            topic = input.split('.')[-3].split('/')[-1]
-            section = input.split('.')[-2]
-            output = '@0@/@1@.@2@'.format(outdir, topic, section)
-            cmd = '@0@ < @1@ > @2@'.format(scdoc_prog.path(), input, output)
-            if run_command(sh, '-c', cmd).returncode() == 0
-              install_data(output, install_dir: docdir)
-            endif
-          endif
-        endforeach
-      endif
-    endforeach
-  endforeach
+				foreach filename: sources
+					input = join_paths(projdir, filename)
+					if run_command('[', '-e', input, ']').returncode() == 0
+						topic = input.split('.')[-3].split('/')[-1]
+						section = input.split('.')[-2]
+						output = '@0@/@1@.@2@'.format(outdir, topic, section)
+						cmd = '@0@ < @1@ > @2@'.format(scdoc_prog.path(), input, output)
+						if run_command(sh, '-c', cmd).returncode() == 0
+							install_data(output, install_dir: docdir)
+						endif
+					endif
+				endforeach
+			endif
+		endforeach
+	endforeach
 endif
 
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
