@@ -39,8 +39,10 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->swaybar_command);
 	free(bar->font);
 	free(bar->separator_symbol);
-	for (int i = 0; i < bar->bindings->length; i++) {
-		free_bar_binding(bar->bindings->items[i]);
+	if (bar->bindings) {
+		for (int i = 0; i < bar->bindings->length; i++) {
+			free_bar_binding(bar->bindings->items[i]);
+		}
 	}
 	list_free(bar->bindings);
 	list_free_items_and_destroy(bar->outputs);
