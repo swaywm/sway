@@ -414,6 +414,9 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
 
+	if (!sway_assert(container, "Expected container to be non null")) {
+		return cmd_results_new(CMD_FAILURE, "");
+	}
 	struct sway_node *next_focus = NULL;
 	if (container_is_floating(container)) {
 		next_focus = node_get_in_direction_floating(container, seat, direction);
