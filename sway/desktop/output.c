@@ -508,6 +508,10 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 
 int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
+	if (output->wlr_output == NULL) {
+		return 0;
+	}
+
 	output->wlr_output->block_idle_frame = false;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
