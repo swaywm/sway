@@ -3,6 +3,7 @@
 #include <libinput.h>
 #include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
+#include <wlr/types/wlr_virtual_pointer_v1.h>
 #include "sway/server.h"
 #include "sway/config.h"
 #include "list.h"
@@ -20,11 +21,13 @@ struct sway_input_manager {
 
 	struct wlr_input_inhibit_manager *inhibit;
 	struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard;
+	struct wlr_virtual_pointer_manager_v1 *virtual_pointer;
 
 	struct wl_listener new_input;
 	struct wl_listener inhibit_activate;
 	struct wl_listener inhibit_deactivate;
 	struct wl_listener virtual_keyboard_new;
+	struct wl_listener virtual_pointer_new;
 };
 
 struct sway_input_manager *input_manager_create(struct sway_server *server);
