@@ -856,7 +856,7 @@ void handle_output_manager_apply(struct wl_listener *listener, void *data) {
 			struct wlr_output_mode *mode = config_head->state.mode;
 			oc->width = mode->width;
 			oc->height = mode->height;
-			oc->refresh_rate = mode->refresh;
+			oc->refresh_rate = mode->refresh / 1000.f;
 		} else {
 			oc->width = config_head->state.custom_mode.width;
 			oc->height = config_head->state.custom_mode.height;

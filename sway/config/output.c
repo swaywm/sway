@@ -260,7 +260,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	bool modeset_success;
 	if (oc && oc->width > 0 && oc->height > 0) {
-		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
+		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
 		modeset_success =
 			set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
@@ -329,7 +329,7 @@ static void default_output_config(struct output_config *oc,
 			wl_container_of(wlr_output->modes.prev, mode, link);
 		oc->width = mode->width;
 		oc->height = mode->height;
-		oc->refresh_rate = mode->refresh;
+		oc->refresh_rate = mode->refresh / 1000.f;
 	}
 	oc->x = oc->y = -1;
 	oc->scale = 1;
