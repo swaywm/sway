@@ -6,6 +6,7 @@
 #include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
+#include <wlr/types/wlr_virtual_pointer_v1.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/libinput.h"
@@ -310,6 +311,36 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	seat_add_device(seat, input_device);
 }
 
+void handle_virtual_pointer(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input_manager =
+		wl_container_of(listener, input_manager, virtual_pointer_new);
+	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
+	struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
+	struct wlr_input_device *device = &pointer->input_device;
+
+	/* TODO: Consider suggested seat when creating the pointer */
+	struct sway_seat *seat = input_manager_get_default_seat();
+
+	struct sway_input_device *input_device =
+		calloc(1, sizeof(struct sway_input_device));
+	if (!sway_assert(input_device, "could not allocate input device")) {
+		return;
+	}
+	device->data = input_device;
+
+	input_device->wlr_device = device;
+	input_device->identifier = input_device_get_identifier(device);
+	wl_list_insert(&input_manager->devices, &input_device->link);
+
+	sway_log(SWAY_DEBUG, "adding virtual pointer: '%s'",
+		input_device->identifier);
+
+	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
+	input_device->device_destroy.notify = handle_device_destroy;
+
+	seat_add_device(seat, input_device);
+}
+
 struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	struct sway_input_manager *input =
 		calloc(1, sizeof(struct sway_input_manager));
@@ -328,6 +359,13 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	wl_signal_add(&input->virtual_keyboard->events.new_virtual_keyboard,
 		&input->virtual_keyboard_new);
 	input->virtual_keyboard_new.notify = handle_virtual_keyboard;
+
+	input->virtual_pointer = wlr_virtual_pointer_manager_v1_create(
+		server->wl_display
+	);
+	wl_signal_add(&input->virtual_pointer->events.new_virtual_pointer,
+		&input->virtual_pointer_new);
+	input->virtual_pointer_new.notify = handle_virtual_pointer;
 
 	input->inhibit = wlr_input_inhibit_manager_create(server->wl_display);
 	input->inhibit_activate.notify = handle_inhibit_activate;
