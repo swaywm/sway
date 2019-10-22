@@ -435,7 +435,7 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 		int min_error = INT_MAX;
 		for (int i = 0; i < pixmaps->length; ++i) {
 			struct swaybar_pixmap *p = pixmaps->items[i];
-			int e = abs(target_size - pixmap->size);
+			int e = abs(target_size - p->size);
 			if (e < min_error) {
 				pixmap = p;
 				min_error = e;
