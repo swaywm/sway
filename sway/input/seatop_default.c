@@ -59,7 +59,7 @@ static bool edge_is_external(struct sway_container *cont, enum wlr_edges edge) {
 
 static enum wlr_edges find_edge(struct sway_container *cont,
 		struct wlr_surface *surface, struct sway_cursor *cursor) {
-	if (!cont->view || cont->view->surface != surface) {
+	if (!cont->view || (surface && cont->view->surface != surface)) {
 		return WLR_EDGE_NONE;
 	}
 	if (cont->border == B_NONE || !cont->border_thickness ||
