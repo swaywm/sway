@@ -22,6 +22,7 @@ struct sway_layer_surface {
 	struct wl_listener new_popup;
 
 	struct wlr_box geo;
+	enum zwlr_layer_shell_v1_layer layer;
 };
 
 struct sway_layer_popup {
