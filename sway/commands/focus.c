@@ -93,9 +93,12 @@ static struct sway_node *get_node_in_output_direction(
 
 static struct sway_node *node_get_in_direction_tiling(
 		struct sway_container *container, struct sway_seat *seat,
-		enum wlr_direction dir) {
+		enum wlr_direction dir, int force_wrap) {
 	struct sway_container *wrap_candidate = NULL;
 	struct sway_container *current = container;
+	enum focus_wrapping_mode focus_wrapping = config->focus_wrapping;
+	if (force_wrap)
+		focus_wrapping = WRAP_FORCE;
 	while (current) {
 		if (current->fullscreen_mode == FULLSCREEN_WORKSPACE) {
 			// Fullscreen container with a direction - go straight to outputs
@@ -133,14 +136,14 @@ static struct sway_node *node_get_in_direction_tiling(
 		if (can_move) {
 			if (desired < 0 || desired >= siblings->length) {
 				int len = siblings->length;
-				if (config->focus_wrapping != WRAP_NO && !wrap_candidate
+				if (focus_wrapping != WRAP_NO && !wrap_candidate
 						&& len > 1) {
 					if (desired < 0) {
 						wrap_candidate = siblings->items[len-1];
 					} else {
 						wrap_candidate = siblings->items[0];
 					}
-					if (config->focus_wrapping == WRAP_FORCE) {
+					if (focus_wrapping == WRAP_FORCE) {
 						struct sway_container *c = seat_get_focus_inactive_view(
 								seat, &wrap_candidate->node);
 						return &c->node;
@@ -354,6 +357,10 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 			"or 'focus output <direction|name>'");
 	}
 
+	int force_wrap = 0;
+	if (argc > 1 && strcasecmp(argv[1], "wrap") == 0)
+		force_wrap = 1;
+
 	if (node->type == N_WORKSPACE) {
 		// Jump to the next output
 		struct sway_output *new_output =
@@ -373,7 +380,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	if (container_is_floating(container)) {
 		next_focus = node_get_in_direction_floating(container, seat, direction);
 	} else {
-		next_focus = node_get_in_direction_tiling(container, seat, direction);
+		next_focus = node_get_in_direction_tiling(container, seat, direction, force_wrap);
 	}
 	if (next_focus) {
 		seat_set_focus(seat, next_focus);
