@@ -14,6 +14,42 @@
 #include "stringop.h"
 #include "util.h"
 
+static bool get_direction_from_next_prev(struct sway_container *container,
+		struct sway_seat *seat, const char *name, enum wlr_direction *out) {
+	enum sway_container_layout parent_layout = container_parent_layout(container);
+	if (strcasecmp(name, "prev") == 0) {
+		switch (parent_layout) {
+		case L_HORIZ:
+		case L_TABBED:
+			*out = WLR_DIRECTION_LEFT;
+			break;
+		case L_VERT:
+		case L_STACKED:
+			*out = WLR_DIRECTION_UP;
+			break;
+		default:
+			return false;
+		}
+	} else if (strcasecmp(name, "next") == 0) {
+		switch (parent_layout) {
+		case L_HORIZ:
+		case L_TABBED:
+			*out = WLR_DIRECTION_RIGHT;
+			break;
+		case L_VERT:
+		case L_STACKED:
+			*out = WLR_DIRECTION_DOWN;
+			break;
+		default:
+			return false;
+		}
+	} else {
+		return false;
+	}
+	 
+	return true;
+}
+
 static bool parse_direction(const char *name,
 		enum wlr_direction *out) {
 	if (strcasecmp(name, "left") == 0) {
@@ -93,7 +129,7 @@ static struct sway_node *get_node_in_output_direction(
 
 static struct sway_node *node_get_in_direction_tiling(
 		struct sway_container *container, struct sway_seat *seat,
-		enum wlr_direction dir) {
+		enum wlr_direction dir, bool descend) {
 	struct sway_container *wrap_candidate = NULL;
 	struct sway_container *current = container;
 	while (current) {
@@ -148,9 +184,13 @@ static struct sway_node *node_get_in_direction_tiling(
 				}
 			} else {
 				struct sway_container *desired_con = siblings->items[desired];
-				struct sway_container *c = seat_get_focus_inactive_view(
-						seat, &desired_con->node);
-				return &c->node;
+				if (!descend) {
+					return &desired_con->node;
+				} else {
+					struct sway_container *c = seat_get_focus_inactive_view(
+							seat, &desired_con->node);
+					return &c->node;
+				}
 			}
 		}
 
@@ -348,10 +388,15 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	}
 
 	enum wlr_direction direction = 0;
+	bool descend = true;
 	if (!parse_direction(argv[0], &direction)) {
-		return cmd_results_new(CMD_INVALID,
-			"Expected 'focus <direction|parent|child|mode_toggle|floating|tiling>' "
-			"or 'focus output <direction|name>'");
+		if (!get_direction_from_next_prev(container, seat, argv[0], &direction)) {
+			return cmd_results_new(CMD_INVALID,
+				"Expected 'focus <direction|next|prev|parent|child|mode_toggle|floating|tiling>' "
+				"or 'focus output <direction|name>'");
+		} else if (argc == 2 && strcasecmp(argv[1], "sibling") == 0) {
+			descend = false;
+		}
 	}
 
 	if (node->type == N_WORKSPACE) {
@@ -373,7 +418,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	if (container_is_floating(container)) {
 		next_focus = node_get_in_direction_floating(container, seat, direction);
 	} else {
-		next_focus = node_get_in_direction_tiling(container, seat, direction);
+		next_focus = node_get_in_direction_tiling(container, seat, direction, descend);
 	}
 	if (next_focus) {
 		seat_set_focus(seat, next_focus);
