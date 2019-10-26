@@ -249,8 +249,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		if (!oc || oc->dpms_state != DPMS_OFF) {
 			wlr_output_enable(wlr_output, true);
 		}
-		output_enable(output, oc);
-		return true;
+		return output_enable(output, oc);
 	}
 
 	if (oc && oc->dpms_state == DPMS_ON) {

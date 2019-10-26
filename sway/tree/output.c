@@ -60,7 +60,7 @@ static void restore_workspaces(struct sway_output *output) {
 		struct sway_workspace *ws = root->noop_output->workspaces->items[0];
 		workspace_detach(ws);
 		output_add_workspace(output, ws);
-		
+
 		// If the floater was made floating while on the NOOP output, its width
 		// and height will be zero and it should be reinitialized as a floating
 		// container to get the appropriate size and location. Additionally, if
@@ -104,9 +104,9 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	return output;
 }
 
-void output_enable(struct sway_output *output, struct output_config *oc) {
+bool output_enable(struct sway_output *output, struct output_config *oc) {
 	if (!sway_assert(!output->enabled, "output is already enabled")) {
-		return;
+		return false;
 	}
 	struct wlr_output *wlr_output = output->wlr_output;
 	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
@@ -117,7 +117,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	output->enabled = true;
 	if (!apply_output_config(oc, output)) {
 		output->enabled = false;
-		return;
+		return false;
 	}
 
 	output->configured = true;
@@ -155,6 +155,8 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 
 	arrange_layers(output);
 	arrange_root();
+
+	return true;
 }
 
 static void evacuate_sticky(struct sway_workspace *old_ws,
