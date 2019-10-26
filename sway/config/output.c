@@ -278,6 +278,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
 		return false;
 	}
+	output->current_mode = wlr_output->current_mode;
 
 	if (oc && oc->scale > 0) {
 		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
