@@ -42,6 +42,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->enabled = -1;
 	oc->width = oc->height = -1;
 	oc->refresh_rate = -1;
+	oc->custom_mode = -1;
 	oc->x = oc->y = -1;
 	oc->scale = -1;
 	oc->transform = -1;
@@ -73,6 +74,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->refresh_rate != -1) {
 		dst->refresh_rate = src->refresh_rate;
+	}
+	if (src->custom_mode != -1) {
+		dst->custom_mode = src->custom_mode;
 	}
 	if (src->transform != -1) {
 		dst->transform = src->transform;
@@ -202,11 +206,13 @@ struct output_config *store_output_config(struct output_config *oc) {
 }
 
 static bool set_mode(struct wlr_output *output, int width, int height,
-		float refresh_rate) {
+		float refresh_rate, bool custom) {
 	int mhz = (int)(refresh_rate * 1000);
-	if (wl_list_empty(&output->modes)) {
+
+	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
-		return wlr_output_set_custom_mode(output, width, height, mhz);
+		return wlr_output_set_custom_mode(output, width, height,
+			refresh_rate > 0 ? mhz : 0);
 	}
 
 	struct wlr_output_mode *mode, *best = NULL;
@@ -261,8 +267,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
-		modeset_success =
-			set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
+		modeset_success = set_mode(wlr_output, oc->width, oc->height,
+			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
 			wl_container_of(wlr_output->modes.prev, mode, link);

@@ -12,6 +12,14 @@ struct cmd_results *output_cmd_mode(int argc, char **argv) {
 
 	struct output_config *output = config->handler_context.output_config;
 
+	if (strcmp(argv[0], "--custom") == 0) {
+		argv++;
+		argc--;
+		output->custom_mode = 1;
+	} else {
+		output->custom_mode = 0;
+	}
+
 	char *end;
 	output->width = strtol(*argv, &end, 10);
 	if (*end) {
