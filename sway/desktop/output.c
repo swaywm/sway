@@ -662,6 +662,7 @@ static void update_output_manager_config(struct sway_server *server) {
 			root->output_layout, output->wlr_output);
 		// We mark the output enabled even if it is switched off by DPMS
 		config_head->state.enabled = output->enabled;
+		config_head->state.mode = output->current_mode;
 		if (output_box) {
 			config_head->state.x = output_box->x;
 			config_head->state.y = output_box->y;

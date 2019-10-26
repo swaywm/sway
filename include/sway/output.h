@@ -32,6 +32,8 @@ struct sway_output {
 	int lx, ly; // layout coords
 	int width, height; // transformed buffer size
 	enum wl_output_subpixel detected_subpixel;
+	// last applied mode when the output is DPMS'ed
+	struct wlr_output_mode *current_mode;
 
 	bool enabled, configured;
 	list_t *workspaces;

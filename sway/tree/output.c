@@ -269,6 +269,7 @@ void output_disable(struct sway_output *output) {
 
 	output->enabled = false;
 	output->configured = false;
+	output->current_mode = NULL;
 
 	arrange_root();
 }
