@@ -198,6 +198,7 @@ struct output_config {
 	int enabled;
 	int width, height;
 	float refresh_rate;
+	int custom_mode;
 	int x, y;
 	float scale;
 	int32_t transform;

@@ -24,11 +24,15 @@ must be separated by one space. For example:
 
 # COMMANDS
 
-*output* <name> mode|resolution|res <WIDTHxHEIGHT>[@<RATE>[Hz]]
+*output* <name> mode|resolution|res [--custom] <WIDTHxHEIGHT>[@<RATE>[Hz]]
 	Configures the specified output to use the given mode. Modes are a
 	combination of width and height (in pixels) and a refresh rate that your
 	display can be configured to use. For a list of available modes for each
 	output, use *swaymsg -t get_outputs*.
+
+	To set a custom mode not listed in the list of available modes, use
+	*--custom*. You should probably only use this if you know what you're
+	doing.
 
 	Examples:
 
