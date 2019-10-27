@@ -10,6 +10,7 @@
 #include "log.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
+#include "sway/util.h"
 #include "util.h"
 
 static void handle_swaynag_client_destroy(struct wl_listener *listener,
@@ -19,6 +20,40 @@ static void handle_swaynag_client_destroy(struct wl_listener *listener,
 	wl_list_remove(&swaynag->client_destroy.link);
 	wl_list_init(&swaynag->client_destroy.link);
 	swaynag->client = NULL;
+}
+
+static struct wl_client *swaynag_spawn_detailed(char *cmd[], struct swaynag_instance *swaynag) {
+	if (pipe(swaynag->fd) != 0) {
+		sway_log(SWAY_ERROR, "Failed to create pipe for swaynag");
+		return NULL;
+	}
+
+	if (!set_cloexec(swaynag->fd[1], true)) {
+		goto failed;
+	}
+
+	posix_spawn_file_actions_t fa;
+	posix_spawn_file_actions_init(&fa);
+	posix_spawn_file_actions_adddup2(&fa, swaynag->fd[0], STDIN_FILENO);
+	posix_spawn_file_actions_addclose(&fa, swaynag->fd[0]);
+
+	struct wl_client *client = spawn_wl_client_fa(cmd, server.wl_display, &fa);
+
+	posix_spawn_file_actions_destroy(&fa);
+
+	if (client == NULL) {
+		goto failed;
+	}
+
+	close_warn(swaynag->fd[0]);
+
+	return client;
+
+failed:
+	close_warn(swaynag->fd[0]);
+	close_warn(swaynag->fd[1]);
+
+	return NULL;
 }
 
 bool swaynag_spawn(const char *swaynag_command,
@@ -31,99 +66,28 @@ bool swaynag_spawn(const char *swaynag_command,
 		return true;
 	}
 
+	size_t length = strlen(swaynag_command) + strlen(swaynag->args) + 2;
+	char *swaynag_cmd = malloc(length);
+	snprintf(swaynag_cmd, length, "%s %s", swaynag_command, swaynag->args);
+	char *cmd[] = {"/bin/sh", "-c", swaynag_cmd, NULL};
+
 	if (swaynag->detailed) {
-		if (pipe(swaynag->fd) != 0) {
-			sway_log(SWAY_ERROR, "Failed to create pipe for swaynag");
-			return false;
-		}
-		if (!set_cloexec(swaynag->fd[1], true)) {
-			goto failed;
-		}
+		swaynag->client = swaynag_spawn_detailed(cmd, swaynag);
+	} else {
+		swaynag->client = spawn_wl_client(cmd, server.wl_display);
 	}
 
-	int sockets[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
-		sway_log_errno(SWAY_ERROR, "socketpair failed");
-		goto failed;
-	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
-		goto failed;
-	}
+	free(swaynag_cmd);
 
-	swaynag->client = wl_client_create(server.wl_display, sockets[0]);
 	if (swaynag->client == NULL) {
-		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
-		goto failed;
+		sway_log(SWAY_ERROR, "Failed to spawn process for swaynag");
+		return false;
 	}
 
 	swaynag->client_destroy.notify = handle_swaynag_client_destroy;
 	wl_client_add_destroy_listener(swaynag->client, &swaynag->client_destroy);
 
-	pid_t pid = fork();
-	if (pid < 0) {
-		sway_log(SWAY_ERROR, "Failed to create fork for swaynag");
-		goto failed;
-	} else if (pid == 0) {
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			if (swaynag->detailed) {
-				close(swaynag->fd[1]);
-				dup2(swaynag->fd[0], STDIN_FILENO);
-				close(swaynag->fd[0]);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-					"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			size_t length = strlen(swaynag_command) + strlen(swaynag->args) + 2;
-			char *cmd = malloc(length);
-			snprintf(cmd, length, "%s %s", swaynag_command, swaynag->args);
-			execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-			sway_log_errno(SWAY_ERROR, "execl failed");
-			_exit(EXIT_FAILURE);
-		}
-		_exit(EXIT_SUCCESS);
-	}
-
-	if (swaynag->detailed) {
-		if (close(swaynag->fd[0]) != 0) {
-			sway_log_errno(SWAY_ERROR, "close failed");
-			return false;
-		}
-	}
-
-	if (close(sockets[1]) != 0) {
-		sway_log_errno(SWAY_ERROR, "close failed");
-		return false;
-	}
-
-	if (waitpid(pid, NULL, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
-		return false;
-	}
-
 	return true;
-
-failed:
-	if (swaynag->detailed) {
-		if (close(swaynag->fd[0]) != 0) {
-			sway_log_errno(SWAY_ERROR, "close failed");
-			return false;
-		}
-		if (close(swaynag->fd[1]) != 0) {
-			sway_log_errno(SWAY_ERROR, "close failed");
-		}
-	}
-	return false;
 }
 
 void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,

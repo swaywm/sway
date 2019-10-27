@@ -13,6 +13,7 @@
 #include "sway/config.h"
 #include "sway/input/keyboard.h"
 #include "sway/output.h"
+#include "sway/util.h"
 #include "config.h"
 #include "list.h"
 #include "log.h"
@@ -186,79 +187,25 @@ static void handle_swaybar_client_destroy(struct wl_listener *listener,
 	bar->client = NULL;
 }
 
-static void invoke_swaybar(struct bar_config *bar) {
-	int sockets[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
-		sway_log_errno(SWAY_ERROR, "socketpair failed");
-		return;
-	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
-		return;
-	}
-
-	bar->client = wl_client_create(server.wl_display, sockets[0]);
-	if (bar->client == NULL) {
-		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
-		return;
-	}
-
-	bar->client_destroy.notify = handle_swaybar_client_destroy;
-	wl_client_add_destroy_listener(bar->client, &bar->client_destroy);
-
-	pid_t pid = fork();
-	if (pid < 0) {
-		sway_log(SWAY_ERROR, "Failed to create fork for swaybar");
-		return;
-	} else if (pid == 0) {
-		// Remove the SIGUSR1 handler that wlroots adds for xwayland
-		sigset_t set;
-		sigemptyset(&set);
-		sigprocmask(SIG_SETMASK, &set, NULL);
-
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-					"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			// run custom swaybar
-			char *const cmd[] = {
-					bar->swaybar_command ? bar->swaybar_command : "swaybar",
-					"-b", bar->id, NULL};
-			execvp(cmd[0], cmd);
-			_exit(EXIT_FAILURE);
-		}
-		_exit(EXIT_SUCCESS);
-	}
-
-	if (close(sockets[1]) != 0) {
-		sway_log_errno(SWAY_ERROR, "close failed");
-		return;
-	}
-
-	if (waitpid(pid, NULL, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
-		return;
-	}
-
-	sway_log(SWAY_DEBUG, "Spawned swaybar %s", bar->id);
-	return;
-}
-
 void load_swaybar(struct bar_config *bar) {
 	if (bar->client != NULL) {
 		wl_client_destroy(bar->client);
 	}
 	sway_log(SWAY_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
-	invoke_swaybar(bar);
+
+	char *const cmd[] = {
+			bar->swaybar_command ? bar->swaybar_command : "swaybar",
+			"-b", bar->id, NULL};
+	bar->client = spawn_wl_client(cmd, server.wl_display);
+
+	if (bar->client == NULL) {
+		sway_log(SWAY_ERROR, "Failed to spawn swaybar %s", bar->id);
+		return;
+	}
+
+	sway_log(SWAY_DEBUG, "Spawned swaybar %s", bar->id);
+	bar->client_destroy.notify = handle_swaybar_client_destroy;
+	wl_client_add_destroy_listener(bar->client, &bar->client_destroy);
 }
 
 void load_swaybars(void) {
