@@ -11,19 +11,7 @@
 #include <wayland-client.h>
 #include "config.h"
 #include "pool-buffer.h"
-
-static bool set_cloexec(int fd) {
-	long flags = fcntl(fd, F_GETFD);
-	if (flags == -1) {
-		return false;
-	}
-
-	if (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1) {
-		return false;
-	}
-
-	return true;
-}
+#include "util.h"
 
 static int create_pool_file(size_t size, char **name) {
 	static const char template[] = "sway-client-XXXXXX";
@@ -46,7 +34,7 @@ static int create_pool_file(size_t size, char **name) {
 		return -1;
 	}
 
-	if (!set_cloexec(fd)) {
+	if (!sway_set_cloexec(fd, true)) {
 		close(fd);
 		return -1;
 	}

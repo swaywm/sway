@@ -77,7 +77,7 @@ const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel) 
 	return NULL;
 }
 
-bool set_cloexec(int fd, bool cloexec) {
+bool sway_set_cloexec(int fd, bool cloexec) {
 	int flags = fcntl(fd, F_GETFD);
 	if (flags == -1) {
 		sway_log_errno(SWAY_ERROR, "fcntl failed");

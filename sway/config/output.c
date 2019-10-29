@@ -505,7 +505,7 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "socketpair failed");
 		return false;
 	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
+	if (!sway_set_cloexec(sockets[0], true) || !sway_set_cloexec(sockets[1], true)) {
 		return false;
 	}
 
@@ -529,7 +529,7 @@ static bool _spawn_swaybg(char **command) {
 			sway_log_errno(SWAY_ERROR, "fork failed");
 			_exit(EXIT_FAILURE);
 		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
+			if (!sway_set_cloexec(sockets[1], false)) {
 				_exit(EXIT_FAILURE);
 			}
 

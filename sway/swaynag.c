@@ -36,7 +36,7 @@ bool swaynag_spawn(const char *swaynag_command,
 			sway_log(SWAY_ERROR, "Failed to create pipe for swaynag");
 			return false;
 		}
-		if (!set_cloexec(swaynag->fd[1], true)) {
+		if (!sway_set_cloexec(swaynag->fd[1], true)) {
 			goto failed;
 		}
 	}
@@ -46,7 +46,7 @@ bool swaynag_spawn(const char *swaynag_command,
 		sway_log_errno(SWAY_ERROR, "socketpair failed");
 		goto failed;
 	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
+	if (!sway_set_cloexec(sockets[0], true) || !sway_set_cloexec(sockets[1], true)) {
 		goto failed;
 	}
 
@@ -69,7 +69,7 @@ bool swaynag_spawn(const char *swaynag_command,
 			sway_log_errno(SWAY_ERROR, "fork failed");
 			_exit(EXIT_FAILURE);
 		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
+			if (!sway_set_cloexec(sockets[1], false)) {
 				_exit(EXIT_FAILURE);
 			}
 

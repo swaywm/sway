@@ -192,7 +192,7 @@ static void invoke_swaybar(struct bar_config *bar) {
 		sway_log_errno(SWAY_ERROR, "socketpair failed");
 		return;
 	}
-	if (!set_cloexec(sockets[0], true) || !set_cloexec(sockets[1], true)) {
+	if (!sway_set_cloexec(sockets[0], true) || !sway_set_cloexec(sockets[1], true)) {
 		return;
 	}
 
@@ -220,7 +220,7 @@ static void invoke_swaybar(struct bar_config *bar) {
 			sway_log_errno(SWAY_ERROR, "fork failed");
 			_exit(EXIT_FAILURE);
 		} else if (pid == 0) {
-			if (!set_cloexec(sockets[1], false)) {
+			if (!sway_set_cloexec(sockets[1], false)) {
 				_exit(EXIT_FAILURE);
 			}
 
