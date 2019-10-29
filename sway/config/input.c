@@ -138,6 +138,13 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		free(dst->mapped_to_output);
 		dst->mapped_to_output = strdup(src->mapped_to_output);
 	}
+	if (src->mapped_to_region) {
+		free(dst->mapped_to_region);
+		dst->mapped_to_region =
+			malloc(sizeof(struct wlr_box));
+		memcpy(dst->mapped_to_region, src->mapped_to_region,
+			sizeof(struct wlr_box));
+	}
 	if (src->calibration_matrix.configured) {
 		dst->calibration_matrix.configured = src->calibration_matrix.configured;
 		memcpy(dst->calibration_matrix.matrix, src->calibration_matrix.matrix,
@@ -323,6 +330,7 @@ void free_input_config(struct input_config *ic) {
 	free(ic->xkb_variant);
 	free(ic->mapped_from_region);
 	free(ic->mapped_to_output);
+	free(ic->mapped_to_region);
 	free(ic);
 }
 

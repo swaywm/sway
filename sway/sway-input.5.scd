@@ -88,7 +88,7 @@ The following commands may only be used in the configuration file.
 	Maps inputs from this device to the specified output. Only meaningful if the
 	device is a pointer, touch, or drawing tablet device.
 
-*input* <identifier> map_to_region <WxH@X,Y>
+*input* <identifier> map_to_region <X> <Y> <width> <height>
 	Maps inputs from this device to the specified region of the global output
 	layout. Only meaningful if the device is a pointer, touch, or drawing tablet
 	device.

@@ -150,6 +150,7 @@ sway_sources = files(
 	'commands/input/left_handed.c',
 	'commands/input/map_from_region.c',
 	'commands/input/map_to_output.c',
+	'commands/input/map_to_region.c',
 	'commands/input/middle_emulation.c',
 	'commands/input/natural_scroll.c',
 	'commands/input/pointer_accel.c',
