@@ -18,6 +18,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "left_handed", input_cmd_left_handed },
 	{ "map_from_region", input_cmd_map_from_region },
 	{ "map_to_output", input_cmd_map_to_output },
+	{ "map_to_region", input_cmd_map_to_region },
 	{ "middle_emulation", input_cmd_middle_emulation },
 	{ "natural_scroll", input_cmd_natural_scroll },
 	{ "pointer_accel", input_cmd_pointer_accel },

@@ -148,6 +148,7 @@ struct input_config {
 
 	struct input_config_mapped_from_region *mapped_from_region;
 	char *mapped_to_output;
+	struct wlr_box *mapped_to_region;
 
 	bool capturable;
 	struct wlr_box region;
