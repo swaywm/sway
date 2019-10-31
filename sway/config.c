@@ -677,7 +677,7 @@ static ssize_t getline_with_cont(char **lineptr, size_t *line_size, FILE *file,
 	size_t next_line_size = 0;
 	ssize_t nread = getline(lineptr, line_size, file);
 	*nlines = nread == -1 ? 0 : 1;
-	while (nread >= 2 && strcmp(&(*lineptr)[nread - 2], "\\\n") == 0) {
+	while (nread >= 2 && strcmp(&(*lineptr)[nread - 2], "\\\n") == 0 && (*lineptr)[0] != '#') {
 		ssize_t next_nread = getline(&next_line, &next_line_size, file);
 		if (next_nread == -1) {
 			break;
