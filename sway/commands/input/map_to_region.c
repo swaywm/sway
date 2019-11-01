@@ -15,9 +15,7 @@ struct cmd_results *input_cmd_map_to_region(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "No input device defined");
 	}
 
-	// This is used to clear the current output mapping.
-	ic->mapped_to_output = strdup("");
-
+	ic->mapped_to = MAPPED_TO_REGION;
 	ic->mapped_to_region = calloc(1, sizeof(struct wlr_box));
 
 	const char *errstr;

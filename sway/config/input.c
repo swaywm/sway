@@ -134,6 +134,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		memcpy(dst->mapped_from_region, src->mapped_from_region,
 			sizeof(struct input_config_mapped_from_region));
 	}
+	if (src->mapped_to) {
+		dst->mapped_to = src->mapped_to;
+	}
 	if (src->mapped_to_output) {
 		free(dst->mapped_to_output);
 		dst->mapped_to_output = strdup(src->mapped_to_output);

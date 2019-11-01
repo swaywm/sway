@@ -108,6 +108,12 @@ struct calibration_matrix {
 	float matrix[6];
 };
 
+enum input_config_mapped_to {
+	MAPPED_TO_DEFAULT,
+	MAPPED_TO_OUTPUT,
+	MAPPED_TO_REGION
+};
+
 /**
  * options for input devices
  */
@@ -147,6 +153,8 @@ struct input_config {
 	int xkb_capslock;
 
 	struct input_config_mapped_from_region *mapped_from_region;
+
+	enum input_config_mapped_to mapped_to;
 	char *mapped_to_output;
 	struct wlr_box *mapped_to_region;
 

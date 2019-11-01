@@ -575,62 +575,57 @@ static void seat_reset_input_config(struct sway_seat *seat,
 
 static void seat_apply_input_config(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
-	const char *mapped_to_output = NULL;
-	struct wlr_box *mapped_to_region = NULL;
-
-	struct input_config *ic = input_device_get_config(
-			sway_device->input_device);
-	if (ic != NULL) {
-		sway_log(SWAY_DEBUG, "Applying input config to %s",
-			sway_device->input_device->identifier);
-
-		// We use an empty string as a marker to clear the mapped_to_output
-		// property, because a NULL set in a handler_context isn't preserved.
-		if (ic->mapped_to_output != NULL && ic->mapped_to_output[0] == '\0') {
-			free(ic->mapped_to_output);
-			ic->mapped_to_output = NULL;
-			wlr_cursor_map_input_to_output(seat->cursor->cursor,
-				sway_device->input_device->wlr_device, NULL);
-		}
-
-		mapped_to_output = ic->mapped_to_output;
-		if (mapped_to_output != NULL) {
-			// Output has just been set, clear region setting.
-			free(ic->mapped_to_region);
-			ic->mapped_to_region = NULL;
-			wlr_cursor_map_input_to_region(seat->cursor->cursor,
-				sway_device->input_device->wlr_device, NULL);
-		}
-
-		mapped_to_region = ic->mapped_to_region;
+	struct input_config *ic =
+		input_device_get_config(sway_device->input_device);
+	if (ic == NULL) {
+		return;
 	}
 
-	if (mapped_to_output == NULL && mapped_to_region == NULL) {
+	sway_log(SWAY_DEBUG, "Applying input config to %s",
+		sway_device->input_device->identifier);
+
+	const char *mapped_to_output = ic->mapped_to_output;
+	struct wlr_box *mapped_to_region = ic->mapped_to_region;
+
+	switch (ic->mapped_to) {
+	case MAPPED_TO_DEFAULT:
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
-	}
-
-	if (mapped_to_output != NULL) {
+		if (mapped_to_output == NULL) {
+			return;
+		}
+		/* fallthrough */
+	case MAPPED_TO_OUTPUT:
 		sway_log(SWAY_DEBUG, "Mapping input device %s to output %s",
 			sway_device->input_device->identifier, mapped_to_output);
 		if (strcmp("*", mapped_to_output) == 0) {
 			wlr_cursor_map_input_to_output(seat->cursor->cursor,
 				sway_device->input_device->wlr_device, NULL);
+			wlr_cursor_map_input_to_region(seat->cursor->cursor,
+				sway_device->input_device->wlr_device, NULL);
 			sway_log(SWAY_DEBUG, "Reset output mapping");
 			return;
 		}
 		struct sway_output *output = output_by_name_or_id(mapped_to_output);
-		if (output) {
-			wlr_cursor_map_input_to_output(seat->cursor->cursor,
-				sway_device->input_device->wlr_device, output->wlr_output);
-			sway_log(SWAY_DEBUG, "Mapped to output %s", output->wlr_output->name);
+		if (!output) {
+			return;
 		}
-	} else if (mapped_to_region != NULL) {
+		wlr_cursor_map_input_to_output(seat->cursor->cursor,
+			sway_device->input_device->wlr_device, output->wlr_output);
+		wlr_cursor_map_input_to_region(seat->cursor->cursor,
+			sway_device->input_device->wlr_device, NULL);
+		sway_log(SWAY_DEBUG,
+			"Mapped to output %s", output->wlr_output->name);
+		return;
+	case MAPPED_TO_REGION:
 		sway_log(SWAY_DEBUG, "Mapping input device %s to %d,%d %dx%d",
 			sway_device->input_device->identifier,
 			mapped_to_region->x, mapped_to_region->y,
 			mapped_to_region->width, mapped_to_region->height);
+		wlr_cursor_map_input_to_output(seat->cursor->cursor,
+			sway_device->input_device->wlr_device, NULL);
 		wlr_cursor_map_input_to_region(seat->cursor->cursor,
 			sway_device->input_device->wlr_device, mapped_to_region);
+		return;
 	}
 }
 
