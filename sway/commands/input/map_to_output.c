@@ -16,6 +16,7 @@ struct cmd_results *input_cmd_map_to_output(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "No input device defined.");
 	}
 
+	ic->mapped_to = MAPPED_TO_OUTPUT;
 	ic->mapped_to_output = strdup(argv[0]);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
