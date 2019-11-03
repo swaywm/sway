@@ -47,7 +47,7 @@ struct sway_seat *input_manager_get_seat(const char *seat_name, bool create) {
 char *input_device_get_identifier(struct wlr_input_device *device) {
 	int vendor = device->vendor;
 	int product = device->product;
-	char *name = strdup(device->name);
+	char *name = strdup(device->name ? device->name : "");
 	strip_whitespace(name);
 
 	char *p = name;
