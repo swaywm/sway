@@ -18,6 +18,7 @@ static struct cmd_handler seat_handlers[] = {
 	{ "attach", seat_cmd_attach },
 	{ "fallback", seat_cmd_fallback },
 	{ "hide_cursor", seat_cmd_hide_cursor },
+	{ "keyboard_grouping", seat_cmd_keyboard_grouping },
 	{ "pointer_constraint", seat_cmd_pointer_constraint },
 	{ "xcursor_theme", seat_cmd_xcursor_theme },
 };

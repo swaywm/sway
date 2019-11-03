@@ -102,6 +102,14 @@ static struct sway_keyboard *sway_keyboard_for_wlr_keyboard(
 			return seat_device->keyboard;
 		}
 	}
+	struct sway_keyboard_group *group;
+	wl_list_for_each(group, &seat->keyboard_groups, link) {
+		struct sway_input_device *input_device =
+			group->seat_device->input_device;
+		if (input_device->wlr_device->keyboard == wlr_keyboard) {
+			return group->seat_device->keyboard;
+		}
+	}
 	return NULL;
 }
 
@@ -519,6 +527,7 @@ struct sway_seat *seat_create(const char *seat_name) {
 		handle_request_set_primary_selection;
 
 	wl_list_init(&seat->devices);
+	wl_list_init(&seat->keyboard_groups);
 
 	wl_list_insert(&server.input->seats, &seat->link);
 

@@ -167,6 +167,12 @@ enum seat_config_allow_constrain {
 	CONSTRAIN_DISABLE
 };
 
+enum seat_keyboard_grouping {
+	KEYBOARD_GROUP_DEFAULT,  // the default is currently keymap
+	KEYBOARD_GROUP_NONE,
+	KEYBOARD_GROUP_KEYMAP
+};
+
 /**
  * Options for multiseat and other misc device configurations
  */
@@ -176,6 +182,7 @@ struct seat_config {
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
 	enum seat_config_allow_constrain allow_constrain;
+	enum seat_keyboard_grouping keyboard_grouping;
 	struct {
 		char *name;
 		int size;

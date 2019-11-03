@@ -67,6 +67,14 @@ struct sway_keyboard {
 	struct sway_binding *repeat_binding;
 };
 
+struct sway_keyboard_group {
+	struct wlr_keyboard_group *wlr_group;
+	struct sway_seat_device *seat_device;
+	struct wl_listener keyboard_key;
+	struct wl_listener keyboard_modifiers;
+	struct wl_list link; // sway_seat::keyboard_groups
+};
+
 struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 		char **error);
 

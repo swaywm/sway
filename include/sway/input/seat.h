@@ -90,6 +90,7 @@ struct sway_seat {
 	struct wl_listener request_set_primary_selection;
 
 	struct wl_list devices; // sway_seat_device::link
+	struct wl_list keyboard_groups; // sway_keyboard_group::link
 
 	struct wl_list link; // input_manager::seats
 };
