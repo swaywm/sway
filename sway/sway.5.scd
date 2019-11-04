@@ -603,8 +603,10 @@ The default colors are:
 
 *hide_edge_borders* [--i3] none|vertical|horizontal|both|smart|smart_no_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_. The
-	_--i3_ option enables i3-compatible behavior to hide the title bar on tabbed
-	and stacked containers with one child.
+	_--i3_ option enables i3-compatible behavior to hide the title bar on
+	tabbed and stacked containers with one child. The _smart_|_smart_no_gaps_
+	options are equivalent to setting _smart_borders_ smart|no_gaps and
+	_hide_edge_borders_ none.
 
 *input* <input_device> <input-subcommands...>
 	For details on input subcommands, see *sway-input*(5).
@@ -621,9 +623,9 @@ The default colors are:
 
 *smart_borders* on|no_gaps|off
 	If smart_borders are _on_, borders will only be enabled if the workspace
-	has more than one visible child (identical to _hide_edge_borders_ smart).
-	If smart_borders is set to _no_gaps_, borders will only be enabled if the
-	workspace has more than one visible child and gaps equal to zero.
+	has more than one visible child. If smart_borders is set to _no_gaps_,
+	borders will only be enabled if the workspace has more than one visible
+	child and gaps equal to zero.
 
 *smart_gaps* on|off
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more

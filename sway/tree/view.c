@@ -215,8 +215,8 @@ void view_autoconfigure(struct sway_view *view) {
 
 	if (!container_is_floating(con) && ws) {
 
-		bool smart = config->hide_edge_borders == E_SMART ||
-			(config->hide_edge_borders == E_SMART_NO_GAPS &&
+		bool smart = config->hide_edge_borders_smart == ESMART_ON ||
+			(config->hide_edge_borders_smart == ESMART_NO_GAPS &&
 			!gaps_to_edge(view));
 		bool hide_smart = smart && view_is_only_visible(view);
 
