@@ -333,8 +333,12 @@ enum edge_border_types {
 	E_VERTICAL,     /**< hide vertical edge borders */
 	E_HORIZONTAL,   /**< hide horizontal edge borders */
 	E_BOTH,		/**< hide vertical and horizontal edge borders */
-	E_SMART, /**< hide both if precisely one window is present in workspace */
-	E_SMART_NO_GAPS, /**< hide both if one window and gaps to edge is zero */
+};
+
+enum edge_border_smart_types {
+	ESMART_OFF,
+	ESMART_ON, /**< hide edges if precisely one window is present in workspace */
+	ESMART_NO_GAPS, /**< hide edges if one window and gaps to edge is zero */
 };
 
 enum sway_popup_during_fullscreen {
@@ -509,7 +513,7 @@ struct sway_config {
 	int border_thickness;
 	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
-	enum edge_border_types saved_edge_borders;
+	enum edge_border_smart_types hide_edge_borders_smart;
 	bool hide_lone_tab;
 
 	// border colors

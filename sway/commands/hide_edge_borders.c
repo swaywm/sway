@@ -32,14 +32,15 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 	} else if (strcmp(argv[0], "both") == 0) {
 		config->hide_edge_borders = E_BOTH;
 	} else if (strcmp(argv[0], "smart") == 0) {
-		config->hide_edge_borders = E_SMART;
+		config->hide_edge_borders = E_NONE;
+		config->hide_edge_borders_smart = ESMART_ON;
 	} else if (strcmp(argv[0], "smart_no_gaps") == 0) {
-		config->hide_edge_borders = E_SMART_NO_GAPS;
+		config->hide_edge_borders = E_NONE;
+		config->hide_edge_borders_smart = ESMART_NO_GAPS;
 	} else {
 		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
 	config->hide_lone_tab = hide_lone_tab;
-	config->saved_edge_borders = config->hide_edge_borders;
 
 	arrange_root();
 

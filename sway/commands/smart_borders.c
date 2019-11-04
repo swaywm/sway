@@ -10,14 +10,12 @@ struct cmd_results *cmd_smart_borders(int argc, char **argv) {
 		return error;
 	}
 
-	enum edge_border_types saved = config->hide_edge_borders;
 	if (strcmp(argv[0], "no_gaps") == 0) {
-		config->hide_edge_borders = E_SMART_NO_GAPS;
+		config->hide_edge_borders_smart = ESMART_NO_GAPS;
 	} else {
-		config->hide_edge_borders = parse_boolean(argv[0], true) ?
-			E_SMART : config->saved_edge_borders;
+		config->hide_edge_borders_smart = parse_boolean(argv[0], true) ?
+			ESMART_ON : ESMART_OFF;
 	}
-	config->saved_edge_borders = saved;
 
 	arrange_root();
 
