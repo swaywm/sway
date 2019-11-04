@@ -16,7 +16,11 @@
 
 static bool get_direction_from_next_prev(struct sway_container *container,
 		struct sway_seat *seat, const char *name, enum wlr_direction *out) {
-	enum sway_container_layout parent_layout = container_parent_layout(container);
+	enum sway_container_layout parent_layout = L_NONE;
+	if (container) {
+		parent_layout = container_parent_layout(container);
+	}
+
 	if (strcasecmp(name, "prev") == 0) {
 		switch (parent_layout) {
 		case L_HORIZ:
@@ -27,6 +31,8 @@ static bool get_direction_from_next_prev(struct sway_container *container,
 		case L_STACKED:
 			*out = WLR_DIRECTION_UP;
 			break;
+		case L_NONE:
+			return true;
 		default:
 			return false;
 		}
@@ -40,6 +46,8 @@ static bool get_direction_from_next_prev(struct sway_container *container,
 		case L_STACKED:
 			*out = WLR_DIRECTION_DOWN;
 			break;
+		case L_NONE:
+			return true;
 		default:
 			return false;
 		}
@@ -397,6 +405,10 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		} else if (argc == 2 && strcasecmp(argv[1], "sibling") == 0) {
 			descend = false;
 		}
+	}
+
+	if (!direction) {
+		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
 
 	if (node->type == N_WORKSPACE) {
