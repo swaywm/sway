@@ -227,8 +227,8 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 	}
 	if (!best) {
 		sway_log(SWAY_ERROR, "Configured mode for %s not available", output->name);
-		sway_log(SWAY_INFO, "Picking default mode instead");
-		best = wl_container_of(output->modes.prev, mode, link);
+		sway_log(SWAY_INFO, "Picking preferred mode instead");
+		best = wlr_output_preferred_mode(output);
 	} else {
 		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
 	}
@@ -270,8 +270,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		modeset_success = set_mode(wlr_output, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode =
-			wl_container_of(wlr_output->modes.prev, mode, link);
+		struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
 		modeset_success = wlr_output_set_mode(wlr_output, mode);
 	} else {
 		// Output doesn't support modes
@@ -330,9 +329,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 static void default_output_config(struct output_config *oc,
 		struct wlr_output *wlr_output) {
 	oc->enabled = 1;
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode =
-			wl_container_of(wlr_output->modes.prev, mode, link);
+	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
+	if (mode != NULL) {
 		oc->width = mode->width;
 		oc->height = mode->height;
 		oc->refresh_rate = mode->refresh / 1000.f;
