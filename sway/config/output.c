@@ -269,7 +269,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 			oc->height, oc->refresh_rate);
 		modeset_success = set_mode(wlr_output, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
-	} else if (!wl_list_empty(&wlr_output->modes)) {
+	} else if (!wl_list_empty(&wlr_output->modes) && !wlr_output->current_mode) {
 		struct wlr_output_mode *mode =
 			wl_container_of(wlr_output->modes.prev, mode, link);
 		modeset_success = wlr_output_set_mode(wlr_output, mode);
