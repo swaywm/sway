@@ -295,21 +295,6 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		return;
 	}
 
-#if HAVE_XWAYLAND
-	// Handle clicking on xwayland unmanaged view
-	if (surface && wlr_surface_is_xwayland_surface(surface)) {
-		struct wlr_xwayland_surface *xsurface =
-			wlr_xwayland_surface_from_wlr_surface(surface);
-		if (wlr_xwayland_or_surface_wants_focus(xsurface)) {
-			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
-			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
-			seat_set_focus_surface(seat, xsurface->surface, false);
-		}
-		seat_pointer_notify_button(seat, time_msec, button, state);
-		return;
-	}
-#endif
-
 	// Handle tiling resize via border
 	if (cont && resize_edge && button == BTN_LEFT &&
 			state == WLR_BUTTON_PRESSED && !is_floating) {
@@ -425,6 +410,22 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
+
+#if HAVE_XWAYLAND
+	// Handle clicking on xwayland unmanaged view
+	if (surface && wlr_surface_is_xwayland_surface(surface)) {
+		struct wlr_xwayland_surface *xsurface =
+			wlr_xwayland_surface_from_wlr_surface(surface);
+		if (xsurface->override_redirect &&
+				wlr_xwayland_or_surface_wants_focus(xsurface)) {
+			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
+			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+			seat_set_focus_surface(seat, xsurface->surface, false);
+			seat_pointer_notify_button(seat, time_msec, button, state);
+			return;
+		}
+	}
+#endif
 
 	seat_pointer_notify_button(seat, time_msec, button, state);
 }
