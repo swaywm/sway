@@ -222,7 +222,7 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 				best = mode;
 				break;
 			}
-			best = mode;
+			best = mode->refresh > best->refresh ? mode : best;
 		}
 	}
 	if (!best) {
