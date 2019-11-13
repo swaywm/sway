@@ -1,9 +1,11 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <GLES2/gl2.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <time.h>
 #include <wayland-server-core.h>
+#include <wlr/render/gles2.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_buffer.h>
@@ -70,6 +72,28 @@ static void scissor_output(struct wlr_output *wlr_output,
 	wlr_renderer_scissor(renderer, &box);
 }
 
+static void set_scale_filter(struct wlr_output *wlr_output,
+		struct wlr_texture *texture, enum scale_filter_mode scale_filter) {
+	if (!wlr_texture_is_gles2(texture)) {
+		return;
+	}
+
+	struct wlr_gles2_texture_attribs attribs;
+	wlr_gles2_texture_get_attribs(texture, &attribs);
+
+	switch (scale_filter) {
+	case SCALE_FILTER_LINEAR:
+		glTexParameteri(attribs.target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		break;
+	case SCALE_FILTER_NEAREST:
+		glTexParameteri(attribs.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		break;
+	case SCALE_FILTER_DEFAULT:
+	case SCALE_FILTER_SMART:
+		assert(false); // unreachable
+	}
+}
+
 static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
 		const struct wlr_box *box, const float matrix[static 9], float alpha) {
@@ -119,6 +143,7 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
+	set_scale_filter(wlr_output, texture, output->scale_filter);
 	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
@@ -268,6 +293,7 @@ static void render_saved_view(struct sway_view *view,
 	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
 		wlr_output->transform_matrix);
 
+	set_scale_filter(wlr_output, view->saved_buffer->texture, output->scale_filter);
 	render_texture(wlr_output, damage, view->saved_buffer->texture,
 			&box, matrix, alpha);
 
