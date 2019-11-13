@@ -204,6 +204,13 @@ enum config_dpms {
 	DPMS_OFF
 };
 
+enum scale_filter_mode {
+	SCALE_FILTER_DEFAULT, // the default is currently smart
+	SCALE_FILTER_LINEAR,
+	SCALE_FILTER_NEAREST,
+	SCALE_FILTER_SMART
+};
+
 /**
  * Size and position configuration for a particular output.
  *
@@ -217,6 +224,7 @@ struct output_config {
 	int custom_mode;
 	int x, y;
 	float scale;
+	enum scale_filter_mode scale_filter;
 	int32_t transform;
 	enum wl_output_subpixel subpixel;
 	int max_render_time; // In milliseconds
@@ -654,6 +662,8 @@ int output_name_cmp(const void *item, const void *data);
 
 void output_get_identifier(char *identifier, size_t len,
 	struct sway_output *output);
+
+const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filter);
 
 struct output_config *new_output_config(const char *name);
 

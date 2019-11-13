@@ -70,6 +70,14 @@ must be separated by one space. For example:
 	applications to taste. HiDPI isn't supported with Xwayland clients (windows
 	will blur).
 
+*output* <name> scale_filter linear|nearest|smart
+	Indicates how to scale application buffers that are rendered at a scale
+	lower than the output's configured scale, such as lo-dpi applications on
+	hi-dpi screens. Linear is smoother and blurrier, nearest (also known as
+	nearest neighbor) is sharper and blockier. Setting "smart" will apply
+	nearest scaling when the output has an integer scale factor, otherwise
+	linear. The default is "smart".
+
 *output* <name> subpixel rgb|bgr|vrgb|vbgr|none
 	Manually sets the subpixel hinting for the specified output. This value is
 	usually auto-detected, but some displays may misreport their subpixel

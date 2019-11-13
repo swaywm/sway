@@ -29,6 +29,21 @@ void output_get_identifier(char *identifier, size_t len,
 		wlr_output->serial);
 }
 
+const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filter) {
+	switch (scale_filter) {
+	case SCALE_FILTER_DEFAULT:
+		return "smart";
+	case SCALE_FILTER_LINEAR:
+		return "linear";
+	case SCALE_FILTER_NEAREST:
+		return "nearest";
+	case SCALE_FILTER_SMART:
+		return "smart";
+	}
+	sway_assert(false, "Unknown value for scale_filter.");
+	return NULL;
+}
+
 struct output_config *new_output_config(const char *name) {
 	struct output_config *oc = calloc(1, sizeof(struct output_config));
 	if (oc == NULL) {
@@ -45,6 +60,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->custom_mode = -1;
 	oc->x = oc->y = -1;
 	oc->scale = -1;
+	oc->scale_filter = SCALE_FILTER_DEFAULT;
 	oc->transform = -1;
 	oc->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
 	oc->max_render_time = -1;
@@ -69,6 +85,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->scale != -1) {
 		dst->scale = src->scale;
+	}
+	if (src->scale_filter != SCALE_FILTER_DEFAULT) {
+		dst->scale_filter = src->scale_filter;
 	}
 	if (src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
 		dst->subpixel = src->subpixel;
@@ -297,6 +316,24 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->scale > 0) {
 		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
+
+		enum scale_filter_mode scale_filter_old = output->scale_filter;
+		switch (oc->scale_filter) {
+			case SCALE_FILTER_DEFAULT:
+			case SCALE_FILTER_SMART:
+				output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
+					SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
+				break;
+			case SCALE_FILTER_LINEAR:
+			case SCALE_FILTER_NEAREST:
+				output->scale_filter = oc->scale_filter;
+				break;
+		}
+		if (scale_filter_old != output->scale_filter) {
+			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
+				sway_output_scale_filter_to_string(output->scale_filter));
+			output_damage_whole(output);
+		}
 	}
 
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
@@ -352,6 +389,7 @@ static void default_output_config(struct output_config *oc,
 	}
 	oc->x = oc->y = -1;
 	oc->scale = 1;
+	oc->scale_filter = SCALE_FILTER_DEFAULT;
 	struct sway_output *output = wlr_output->data;
 	oc->subpixel = output->detected_subpixel;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;

@@ -189,11 +189,13 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "focused", &focused);
 	json_object_object_get_ex(o, "active", &active);
 	json_object_object_get_ex(o, "current_workspace", &ws);
-	json_object *make, *model, *serial, *scale, *subpixel, *transform, *max_render_time;
+	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
+		*transform, *max_render_time;
 	json_object_object_get_ex(o, "make", &make);
 	json_object_object_get_ex(o, "model", &model);
 	json_object_object_get_ex(o, "serial", &serial);
 	json_object_object_get_ex(o, "scale", &scale);
+	json_object_object_get_ex(o, "scale_filter", &scale_filter);
 	json_object_object_get_ex(o, "subpixel_hinting", &subpixel);
 	json_object_object_get_ex(o, "transform", &transform);
 	json_object_object_get_ex(o, "max_render_time", &max_render_time);
@@ -214,6 +216,7 @@ static void pretty_print_output(json_object *o) {
 			"  Current mode: %dx%d @ %f Hz\n"
 			"  Position: %d,%d\n"
 			"  Scale factor: %f\n"
+			"  Scale filter: %s\n"
 			"  Subpixel hinting: %s\n"
 			"  Transform: %s\n"
 			"  Workspace: %s\n"
@@ -228,6 +231,7 @@ static void pretty_print_output(json_object *o) {
 			(float)json_object_get_int(refresh) / 1000,
 			json_object_get_int(x), json_object_get_int(y),
 			json_object_get_double(scale),
+			json_object_get_string(scale_filter),
 			json_object_get_string(subpixel),
 			json_object_get_string(transform),
 			json_object_get_string(ws)
