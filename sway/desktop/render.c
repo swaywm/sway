@@ -121,7 +121,8 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 
 	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
 
-	wlr_presentation_surface_sampled(server.presentation, surface);
+	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
+		wlr_output);
 }
 
 static void render_layer(struct sway_output *output,
