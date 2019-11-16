@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
+#include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
@@ -293,7 +294,18 @@ static void destroy(struct sway_view *view) {
 	free(xwayland_view);
 }
 
+static void get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height) {
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	struct wlr_xwayland_surface_size_hints *size_hints = surface->size_hints;
+	*min_width = size_hints->min_width > 0 ? size_hints->min_width : DBL_MIN;
+	*max_width = size_hints->max_width > 0 ? size_hints->max_width : DBL_MAX;
+	*min_height = size_hints->min_height > 0 ? size_hints->min_height : DBL_MIN;
+	*max_height = size_hints->max_height > 0 ? size_hints->max_height : DBL_MAX;
+}
+
 static const struct sway_view_impl view_impl = {
+	.get_constraints = get_constraints,
 	.get_string_prop = get_string_prop,
 	.get_int_prop = get_int_prop,
 	.configure = configure,
