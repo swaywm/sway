@@ -498,7 +498,8 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	wlr_presentation_surface_sampled(server.presentation, surface);
+	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
+		wlr_output);
 
 	if (!wlr_output_attach_buffer(wlr_output, surface->buffer)) {
 		return false;
@@ -842,14 +843,6 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	update_output_manager_config(output->server);
 }
 
-static void send_presented_iterator(struct sway_output *output, struct sway_view *view,
-		struct wlr_surface *surface, struct wlr_box *box, float rotation,
-		void *data) {
-	struct wlr_presentation_event *event = data;
-	wlr_presentation_send_surface_presented(server.presentation,
-		surface, event);
-}
-
 static void handle_present(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, present);
 	struct wlr_output_event_present *output_event = data;
@@ -860,16 +853,6 @@ static void handle_present(struct wl_listener *listener, void *data) {
 
 	output->last_presentation = *output_event->when;
 	output->refresh_nsec = output_event->refresh;
-
-	struct wlr_presentation_event event = {
-		.output = output->wlr_output,
-		.tv_sec = (uint64_t)output_event->when->tv_sec,
-		.tv_nsec = (uint32_t)output_event->when->tv_nsec,
-		.refresh = (uint32_t)output_event->refresh,
-		.seq = (uint64_t)output_event->seq,
-		.flags = output_event->flags,
-	};
-	output_for_each_surface(output, send_presented_iterator, &event);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
