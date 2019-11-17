@@ -134,6 +134,12 @@ must be separated by one space. For example:
 	To achieve even lower latency, see the *max_render_time* surface
 	property in *sway*(5).
 
+	Note that this property has an effect only on backends which report the
+	presentation timestamp and the predicted output refresh rate—the DRM
+	and the Wayland backends. Furthermore, under the Wayland backend the
+	optimal max_render_time value may vary based on the parent compositor
+	rendering timings.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)
