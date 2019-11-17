@@ -51,8 +51,7 @@ die() {
 
 check() {
   COMMAND=$1
-  command -v "$COMMAND" > /dev/null 2>&1
-  if [ $? ]; then
+  if command -v "$COMMAND" > /dev/null 2>&1; then
     RESULT="OK"
   else
     RESULT="NOT FOUND"
@@ -102,8 +101,7 @@ if [ "$ACTION" = "copy" ] ; then
   rm "$TMP"
   notifyOk "$WHAT copied to buffer"
 else
-  takeScreenshot "$FILE" "$GEOM"
-  if [ $? ]; then
+  if takeScreenshot "$FILE" "$GEOM"; then
     TITLE="Screenshot of $SUBJECT"
     MESSAGE=$(basename "$FILE")
     notifyOk "$MESSAGE" "$TITLE"
