@@ -4,7 +4,6 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#include <wordexp.h>
 #include <errno.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -79,26 +78,15 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "Missing background file");
 		}
 
-		wordexp_t p = {0};
 		char *src = join_args(argv, j);
-		while (strstr(src, "  ")) {
-			src = realloc(src, strlen(src) + 2);
-			char *ptr = strstr(src, "  ") + 1;
-			memmove(ptr + 1, ptr, strlen(ptr) + 1);
-			*ptr = '\\';
-		}
-		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
+		if (!expand_path(&src)) {
 			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID,
 				"Invalid syntax (%s)", src);
 			free(src);
-			wordfree(&p);
 			return cmd_res;
 		}
-		free(src);
-		src = join_args(p.we_wordv, p.we_wordc);
-		wordfree(&p);
 		if (!src) {
-			sway_log(SWAY_ERROR, "Failed to duplicate string");
+			sway_log(SWAY_ERROR, "Failed to allocate expanded path");
 			return cmd_results_new(CMD_FAILURE, "Unable to allocate resource");
 		}
 

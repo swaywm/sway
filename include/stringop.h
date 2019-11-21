@@ -1,6 +1,7 @@
 #ifndef _SWAY_STRINGOP_H
 #define _SWAY_STRINGOP_H
 
+#include <stdbool.h>
 #include "list.h"
 
 void strip_whitespace(char *str);
@@ -25,5 +26,8 @@ char *join_args(char **argv, int argc);
 
 // Split string into 2 by delim, handle quotes
 char *argsep(char **stringp, const char *delim, char *matched_delim);
+
+// Expand a path using shell replacements such as $HOME and ~
+bool expand_path(char **path);
 
 #endif

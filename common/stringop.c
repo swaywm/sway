@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <wordexp.h>
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
@@ -308,4 +309,22 @@ char *argsep(char **stringp, const char *delim, char *matched) {
 		}
 	}
 	return start;
+}
+
+bool expand_path(char **path) {
+	wordexp_t p = {0};
+	while (strstr(*path, "  ")) {
+		*path = realloc(*path, strlen(*path) + 2);
+		char *ptr = strstr(*path, "  ") + 1;
+		memmove(ptr + 1, ptr, strlen(ptr) + 1);
+		*ptr = '\\';
+	}
+	if (wordexp(*path, &p, 0) != 0 || p.we_wordv[0] == NULL) {
+		wordfree(&p);
+		return false;
+	}
+	free(*path);
+	*path = join_args(p.we_wordv, p.we_wordc);
+	wordfree(&p);
+	return true;
 }
