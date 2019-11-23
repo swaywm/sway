@@ -96,7 +96,7 @@ char **split_args(const char *start, int *argc) {
 	bool in_token = false;
 	bool in_string = false;
 	bool in_char = false;
-	bool in_brackets = false; // brackets are used for critera
+	bool in_brackets = false; // brackets are used for criteria
 	bool escaped = false;
 	const char *end = start;
 	if (start) {

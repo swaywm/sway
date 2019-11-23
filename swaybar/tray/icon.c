@@ -188,7 +188,7 @@ static int entry_handler(char *group, char *key, char *value,
  * This is a Freedesktop Desktop Entry parser (essentially INI)
  * It calls entry_handler for every entry
  * and group_handler between every group (as well as at both ends)
- * Handlers return whether an error occured, which stops parsing
+ * Handlers return whether an error occurred, which stops parsing
  */
 static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 	// look for index.theme file
