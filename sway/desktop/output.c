@@ -596,7 +596,7 @@ static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
 		// We only check tv_sec because if the predicted refresh time is less
 		// than a second before the current time, then msec_until_refresh will
 		// end up slightly below zero, which will effectively disable the delay
-		// without potential disasterous negative overflows that could occur if
+		// without potential disastrous negative overflows that could occur if
 		// tv_sec was not checked.
 		if (predicted_refresh.tv_sec >= now.tv_sec) {
 			long nsec_until_refresh
