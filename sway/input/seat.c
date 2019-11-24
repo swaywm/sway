@@ -494,6 +494,8 @@ struct sway_seat *seat_create(const char *seat_name) {
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
 
+	wl_list_init(&seat->devices);
+
 	root_for_each_workspace(collect_focus_workspace_iter, seat);
 	root_for_each_container(collect_focus_container_iter, seat);
 
@@ -526,7 +528,6 @@ struct sway_seat *seat_create(const char *seat_name) {
 	seat->request_set_primary_selection.notify =
 		handle_request_set_primary_selection;
 
-	wl_list_init(&seat->devices);
 	wl_list_init(&seat->keyboard_groups);
 
 	wl_list_insert(&server.input->seats, &seat->link);
