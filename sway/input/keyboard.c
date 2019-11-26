@@ -918,7 +918,9 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (!keyboard) {
 		return;
 	}
-	sway_keyboard_group_remove(keyboard);
+	if (keyboard->seat_device->input_device->wlr_device->keyboard->group) {
+		sway_keyboard_group_remove(keyboard);
+	}
 	if (keyboard->keymap) {
 		xkb_keymap_unref(keyboard->keymap);
 	}
