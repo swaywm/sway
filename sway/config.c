@@ -447,15 +447,17 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 				old_config->xwayland ? "enabled" : "disabled");
 		config->xwayland = old_config->xwayland;
 
-		if (old_config->swaybg_client != NULL) {
-			wl_client_destroy(old_config->swaybg_client);
-		}
+		if (!config->validating) {
+			if (old_config->swaybg_client != NULL) {
+				wl_client_destroy(old_config->swaybg_client);
+			}
 
-		if (old_config->swaynag_config_errors.client != NULL) {
-			wl_client_destroy(old_config->swaynag_config_errors.client);
-		}
+			if (old_config->swaynag_config_errors.client != NULL) {
+				wl_client_destroy(old_config->swaynag_config_errors.client);
+			}
 
-		input_manager_reset_all_inputs();
+			input_manager_reset_all_inputs();
+		}
 	}
 
 	config->current_config_path = path;
@@ -520,8 +522,13 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		return success;
 	}
 
-	if (is_active) {
+	if (is_active && !validating) {
 		input_manager_verify_fallback_seat();
+
+		for (int i = 0; i < config->input_configs->length; i++) {
+			input_manager_apply_input_config(config->input_configs->items[i]);
+		}
+
 		for (int i = 0; i < config->seat_configs->length; i++) {
 			input_manager_apply_seat_config(config->seat_configs->items[i]);
 		}
