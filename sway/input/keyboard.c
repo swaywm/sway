@@ -675,9 +675,7 @@ static void sway_keyboard_group_remove(struct sway_keyboard *keyboard) {
 		struct sway_keyboard_group *sway_group = wlr_group->data;
 		wlr_group->data = NULL;
 		wl_list_remove(&sway_group->link);
-		wl_list_remove(&sway_group->keyboard_key.link);
-		wl_list_remove(&sway_group->keyboard_modifiers.link);
-		free(sway_group->seat_device->keyboard);
+		sway_keyboard_destroy(sway_group->seat_device->keyboard);
 		free(sway_group->seat_device->input_device);
 		free(sway_group->seat_device);
 		free(sway_group);
@@ -920,6 +918,11 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	}
 	if (keyboard->seat_device->input_device->wlr_device->keyboard->group) {
 		sway_keyboard_group_remove(keyboard);
+	}
+	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
+	struct sway_input_device *device = keyboard->seat_device->input_device;
+	if (wlr_seat_get_keyboard(wlr_seat) == device->wlr_device->keyboard) {
+		wlr_seat_set_keyboard(wlr_seat, NULL);
 	}
 	if (keyboard->keymap) {
 		xkb_keymap_unref(keyboard->keymap);
