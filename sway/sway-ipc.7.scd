@@ -343,7 +343,7 @@ node and will have the following properties:
 |- focus
 :  array
 :  Array of child node IDs in the current focus order
-|- node
+|- nodes
 :  array
 :  The tiling children nodes for the node
 |- floating_nodes
