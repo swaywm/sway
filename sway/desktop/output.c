@@ -513,7 +513,7 @@ int output_repaint_timer_handler(void *data) {
 		return 0;
 	}
 
-	output->wlr_output->block_idle_frame = false;
+	output->wlr_output->frame_pending = false;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
@@ -618,7 +618,7 @@ static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
 	if (delay < 1) {
 		output_repaint_timer_handler(output);
 	} else {
-		output->wlr_output->block_idle_frame = true;
+		output->wlr_output->frame_pending = true;
 		wl_event_source_timer_update(output->repaint_timer, delay);
 	}
 
