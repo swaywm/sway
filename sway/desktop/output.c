@@ -426,7 +426,7 @@ static void send_frame_done_iterator(struct sway_output *output, struct sway_vie
 	int delay = data->msec_until_refresh - output->max_render_time
 			- view_max_render_time;
 
-	if ((output->max_render_time == 0 && view_max_render_time == 0) || delay < 1) {
+	if (output->max_render_time == 0 || view_max_render_time == 0 || delay < 1) {
 		wlr_surface_send_frame_done(surface, &data->when);
 	} else {
 		struct sway_surface *sway_surface = surface->data;
