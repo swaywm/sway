@@ -57,6 +57,7 @@ struct sway_output {
 	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
 	struct wl_event_source *repaint_timer;
+	bool surface_needs_frame;
 };
 
 struct sway_output *output_create(struct wlr_output *wlr_output);
