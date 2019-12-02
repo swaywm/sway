@@ -1368,10 +1368,10 @@ available:
 |- 0x80000007
 :  tick
 :  Sent when an ipc client sends a _SEND\_TICK_ message
-|- 0x80000020
+|- 0x80000014
 :  bar_state_update
 :  Send when the visibility of a bar should change due to a modifier
-|- 0x80000021
+|- 0x80000015
 :  input
 :  Sent when something related to input devices changes
 
@@ -1681,7 +1681,7 @@ event is a single object with the following properties:
 }
 ```
 
-## 0x80000020. BAR_STATE_UPDATE
+## 0x80000014. BAR_STATE_UPDATE
 
 Sent when the visibility of a bar changes due to a modifier being pressed. The
 event is a single object with the following properties:
@@ -1705,7 +1705,7 @@ event is a single object with the following properties:
 }
 ```
 
-## 0x80000021. INPUT
+## 0x80000015. INPUT
 
 Sent when something related to the input devices changes. The event is a single
 object with the following properties:
