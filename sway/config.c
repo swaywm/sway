@@ -529,6 +529,11 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 			input_manager_apply_input_config(config->input_configs->items[i]);
 		}
 
+		for (int i = 0; i < config->input_type_configs->length; i++) {
+			input_manager_apply_input_config(
+					config->input_type_configs->items[i]);
+		}
+
 		for (int i = 0; i < config->seat_configs->length; i++) {
 			input_manager_apply_seat_config(config->seat_configs->items[i]);
 		}
