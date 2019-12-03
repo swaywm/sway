@@ -156,13 +156,23 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 		wlr_output);
 }
 
-static void render_layer(struct sway_output *output,
+static void render_layer_toplevel(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *layer_surfaces) {
 	struct render_data data = {
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_layer_for_each_surface(output, layer_surfaces,
+	output_layer_for_each_surface_toplevel(output, layer_surfaces,
+		render_surface_iterator, &data);
+}
+
+static void render_layer_popups(struct sway_output *output,
+		pixman_region32_t *damage, struct wl_list *layer_surfaces) {
+	struct render_data data = {
+		.damage = damage,
+		.alpha = 1.0f,
+	};
+	output_layer_for_each_surface_popup(output, layer_surfaces,
 		render_surface_iterator, &data);
 }
 
@@ -1041,9 +1051,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 			wlr_renderer_clear(renderer, clear_color);
 		}
 
-		render_layer(output, damage,
+		render_layer_toplevel(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-		render_layer(output, damage,
+		render_layer_toplevel(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 		render_workspace(output, damage, workspace, workspace->current.focused);
@@ -1051,7 +1061,14 @@ void output_render(struct sway_output *output, struct timespec *when,
 #if HAVE_XWAYLAND
 		render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif
-		render_layer(output, damage,
+		render_layer_toplevel(output, damage,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+
+		render_layer_popups(output, damage,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+		render_layer_popups(output, damage,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+		render_layer_popups(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
 
@@ -1064,7 +1081,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 	}
 
 render_overlay:
-	render_layer(output, damage,
+	render_layer_toplevel(output, damage,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	render_layer_popups(output, damage,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_drag_icons(output, damage, &root->drag_icons);
 
