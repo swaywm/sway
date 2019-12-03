@@ -243,6 +243,61 @@ void output_layer_for_each_surface(struct sway_output *output,
 	}
 }
 
+void output_layer_for_each_surface_toplevel(struct sway_output *output,
+		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
+		void *user_data) {
+	struct sway_layer_surface *layer_surface;
+	wl_list_for_each(layer_surface, layer_surfaces, link) {
+		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
+			layer_surface->layer_surface;
+		output_surface_for_each_surface(output, wlr_layer_surface_v1->surface,
+			layer_surface->geo.x, layer_surface->geo.y, iterator,
+			user_data);
+	}
+}
+
+
+void output_layer_for_each_surface_popup(struct sway_output *output,
+		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
+		void *user_data) {
+	struct sway_layer_surface *layer_surface;
+	wl_list_for_each(layer_surface, layer_surfaces, link) {
+		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
+			layer_surface->layer_surface;
+
+		struct wlr_xdg_popup *state;
+		wl_list_for_each(state, &wlr_layer_surface_v1->popups, link) {
+			struct wlr_xdg_surface *popup = state->base;
+			if (!popup->configured) {
+				continue;
+			}
+
+			double popup_sx, popup_sy;
+			popup_sx = layer_surface->geo.x +
+				popup->popup->geometry.x - popup->geometry.x;
+			popup_sy = layer_surface->geo.y +
+				popup->popup->geometry.y - popup->geometry.y;
+
+			struct wlr_surface *surface = popup->surface;
+
+			struct surface_iterator_data data = {
+				.user_iterator = iterator,
+				.user_data = user_data,
+				.output = output,
+				.view = NULL,
+				.ox = popup_sx,
+				.oy = popup_sy,
+				.width = surface->current.width,
+				.height = surface->current.height,
+				.rotation = 0,
+			};
+
+			wlr_xdg_surface_for_each_surface(
+					popup, output_for_each_surface_iterator, &data);
+		}
+	}
+}
+
 #if HAVE_XWAYLAND
 void output_unmanaged_for_each_surface(struct sway_output *output,
 		struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
