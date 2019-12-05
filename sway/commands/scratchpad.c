@@ -28,7 +28,7 @@ static void scratchpad_toggle_auto(void) {
 
 	// Check if the currently focused window is a scratchpad window and should
 	// be hidden again.
-	if (focus && focus->scratchpad) {
+	if (focus && focus->scratchpad && focus->workspace) {
 		sway_log(SWAY_DEBUG, "Focus is a scratchpad window - hiding %s",
 				focus->title);
 		root_scratchpad_hide(focus);
