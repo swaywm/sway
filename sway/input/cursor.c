@@ -840,6 +840,12 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 
 	wl_event_source_remove(cursor->hide_source);
 
+	wl_list_remove(&cursor->pinch_begin.link);
+	wl_list_remove(&cursor->pinch_update.link);
+	wl_list_remove(&cursor->pinch_end.link);
+	wl_list_remove(&cursor->swipe_begin.link);
+	wl_list_remove(&cursor->swipe_update.link);
+	wl_list_remove(&cursor->swipe_end.link);
 	wl_list_remove(&cursor->motion.link);
 	wl_list_remove(&cursor->motion_absolute.link);
 	wl_list_remove(&cursor->button.link);
