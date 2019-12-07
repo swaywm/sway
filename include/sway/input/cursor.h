@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
+#include <wlr/types/wlr_pointer_gestures_v1.h>
 #include <wlr/types/wlr_surface.h>
 #include "sway/input/seat.h"
 
@@ -31,6 +32,14 @@ struct sway_cursor {
 
 	struct wlr_pointer_constraint_v1 *active_constraint;
 	pixman_region32_t confine; // invalid if active_constraint == NULL
+
+	struct wlr_pointer_gestures_v1 *pointer_gestures;
+	struct wl_listener pinch_begin;
+	struct wl_listener pinch_update;
+	struct wl_listener pinch_end;
+	struct wl_listener swipe_begin;
+	struct wl_listener swipe_update;
+	struct wl_listener swipe_end;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;
