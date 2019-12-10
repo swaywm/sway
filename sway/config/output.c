@@ -263,6 +263,49 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 	return wlr_output_set_mode(output, best);
 }
 
+/* Some manufacturers hardcode the aspect-ratio of the output in the physical
+ * size field. */
+static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
+	return (output->phys_width == 1600 && output->phys_height == 900) ||
+		(output->phys_width == 1600 && output->phys_height == 1000) ||
+		(output->phys_width == 160 && output->phys_height == 90) ||
+		(output->phys_width == 160 && output->phys_height == 100) ||
+		(output->phys_width == 16 && output->phys_height == 9) ||
+		(output->phys_width == 16 && output->phys_height == 10);
+}
+
+// The minimum DPI at which we turn on a scale of 2
+#define HIDPI_DPI_LIMIT (2 * 96)
+// The minimum screen height at which we turn on a scale of 2
+#define HIDPI_MIN_HEIGHT 1200
+// 1 inch = 25.4 mm
+#define MM_PER_INCH 25.4
+
+static int compute_default_scale(struct wlr_output *output) {
+	int width, height;
+	wlr_output_transformed_resolution(output, &width, &height);
+	if (height < HIDPI_MIN_HEIGHT) {
+		return 1;
+	}
+
+	if (output->phys_width == 0 || output->phys_height == 0) {
+		return 1;
+	}
+
+	if (phys_size_is_aspect_ratio(output)) {
+		return 1;
+	}
+
+	double dpi_x = (double) width / (output->phys_width / MM_PER_INCH);
+	double dpi_y = (double) height / (output->phys_height / MM_PER_INCH);
+	sway_log(SWAY_DEBUG, "Output DPI: %fx%f", dpi_x, dpi_y);
+	if (dpi_x <= HIDPI_DPI_LIMIT || dpi_y <= HIDPI_DPI_LIMIT) {
+		return 1;
+	}
+
+	return 2;
+}
+
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (output == root->noop_output) {
 		return false;
@@ -313,9 +356,16 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 	output->current_mode = wlr_output->current_mode;
 
+	float scale;
 	if (oc && oc->scale > 0) {
-		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
-		wlr_output_set_scale(wlr_output, oc->scale);
+		scale = oc->scale;
+	} else {
+		scale = compute_default_scale(wlr_output);
+		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
+	}
+	if (scale != wlr_output->scale) {
+		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, scale);
+		wlr_output_set_scale(wlr_output, scale);
 
 		enum scale_filter_mode scale_filter_old = output->scale_filter;
 		switch (oc->scale_filter) {
@@ -388,7 +438,7 @@ static void default_output_config(struct output_config *oc,
 		oc->refresh_rate = mode->refresh / 1000.f;
 	}
 	oc->x = oc->y = -1;
-	oc->scale = 1;
+	oc->scale = 0; // auto
 	oc->scale_filter = SCALE_FILTER_DEFAULT;
 	struct sway_output *output = wlr_output->data;
 	oc->subpixel = output->detected_subpixel;
