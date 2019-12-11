@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/edges.h>
+#include "sway/config.h"
 #include "sway/input/input-manager.h"
 
 struct sway_seat;
@@ -79,6 +80,8 @@ struct sway_seat {
 	void *seatop_data;
 
 	uint32_t last_button_serial;
+
+	uint32_t idle_inhibit_sources, idle_wake_sources;
 
 	list_t *deferred_bindings; // struct sway_binding
 
@@ -195,6 +198,9 @@ void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
 struct seat_config *seat_get_config(struct sway_seat *seat);
 
 struct seat_config *seat_get_config_by_name(const char *name);
+
+void seat_idle_notify_activity(struct sway_seat *seat,
+		enum sway_input_idle_source source);
 
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 

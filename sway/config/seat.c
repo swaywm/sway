@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include "sway/config.h"
@@ -16,6 +17,8 @@ struct seat_config *new_seat_config(const char* name) {
 		free(seat);
 		return NULL;
 	}
+
+	seat->idle_inhibit_sources = seat->idle_wake_sources = UINT32_MAX;
 
 	seat->fallback = -1;
 	seat->attachments = create_list();
@@ -159,6 +162,14 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 		free(dest->xcursor_theme.name);
 		dest->xcursor_theme.name = strdup(source->xcursor_theme.name);
 		dest->xcursor_theme.size = source->xcursor_theme.size;
+	}
+
+	if (source->idle_inhibit_sources != UINT32_MAX) {
+		dest->idle_inhibit_sources = source->idle_inhibit_sources;
+	}
+
+	if (source->idle_wake_sources != UINT32_MAX) {
+		dest->idle_wake_sources = source->idle_wake_sources;
 	}
 }
 
