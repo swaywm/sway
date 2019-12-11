@@ -301,6 +301,15 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 }
 
 static void unmap(struct sway_layer_surface *sway_layer) {
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (seat->focused_layer == sway_layer->layer_surface) {
+			seat_set_focus_layer(seat, NULL);
+		}
+	}
+
+	cursor_rebase_all();
+
 	struct wlr_output *wlr_output = sway_layer->layer_surface->output;
 	if (wlr_output == NULL) {
 		return;
@@ -311,15 +320,6 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 	}
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
-
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		if (seat->focused_layer == sway_layer->layer_surface) {
-			seat_set_focus_layer(seat, NULL);
-		}
-	}
-
-	cursor_rebase_all();
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
