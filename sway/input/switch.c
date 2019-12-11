@@ -70,8 +70,8 @@ static void handle_switch_toggle(struct wl_listener *listener, void *data) {
 	struct sway_switch *sway_switch =
 			wl_container_of(listener, sway_switch, switch_toggle);
 	struct wlr_event_switch_toggle *event = data;
-	struct wlr_seat* wlr_seat = sway_switch->seat_device->sway_seat->wlr_seat;
-	wlr_idle_notify_activity(server.idle, wlr_seat);
+	struct sway_seat *seat = sway_switch->seat_device->sway_seat;
+	seat_idle_notify_activity(seat, IDLE_SOURCE_SWITCH);
 
 	struct wlr_input_device *wlr_device =
 		sway_switch->seat_device->input_device->wlr_device;

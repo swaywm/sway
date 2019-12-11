@@ -182,6 +182,15 @@ enum seat_keyboard_grouping {
 	KEYBOARD_GROUP_KEYMAP
 };
 
+enum sway_input_idle_source {
+	IDLE_SOURCE_KEYBOARD = 1 << 0,
+	IDLE_SOURCE_POINTER = 1 << 1,
+	IDLE_SOURCE_TOUCH = 1 << 2,
+	IDLE_SOURCE_TABLET_PAD = 1 << 3,
+	IDLE_SOURCE_TABLET_TOOL = 1 << 4,
+	IDLE_SOURCE_SWITCH = 1 << 5,
+};
+
 /**
  * Options for multiseat and other misc device configurations
  */
@@ -192,6 +201,7 @@ struct seat_config {
 	int hide_cursor_timeout;
 	enum seat_config_allow_constrain allow_constrain;
 	enum seat_keyboard_grouping keyboard_grouping;
+	uint32_t idle_inhibit_sources, idle_wake_sources;
 	struct {
 		char *name;
 		int size;

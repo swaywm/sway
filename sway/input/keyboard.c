@@ -326,7 +326,7 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		keyboard->seat_device->input_device->wlr_device;
 	char *device_identifier = input_device_get_identifier(wlr_device);
 	bool exact_identifier = wlr_device->keyboard->group != NULL;
-	wlr_idle_notify_activity(server.idle, wlr_seat);
+	seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
 	bool input_inhibited = seat->exclusive_client != NULL;
 
 	// Identify new keycode, raw keysym(s), and translated keysym(s)

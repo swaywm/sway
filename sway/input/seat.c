@@ -6,6 +6,7 @@
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_tablet_v2.h>
@@ -69,6 +70,25 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 	wl_list_remove(&seat_node->destroy.link);
 	wl_list_remove(&seat_node->link);
 	free(seat_node);
+}
+
+void seat_idle_notify_activity(struct sway_seat *seat,
+		enum sway_input_idle_source source) {
+	uint32_t mask = seat->idle_inhibit_sources;
+	struct wlr_idle_timeout *timeout;
+	int ntimers = 0, nidle = 0;
+	wl_list_for_each(timeout, &server.idle->idle_timers, link) {
+		++ntimers;
+		if (timeout->idle_state) {
+			++nidle;
+		}
+	}
+	if (nidle == ntimers) {
+		mask = seat->idle_wake_sources;
+	}
+	if ((source & mask) > 0) {
+		wlr_idle_notify_activity(server.idle, seat->wlr_seat);
+	}
 }
 
 /**
@@ -490,6 +510,14 @@ struct sway_seat *seat_create(const char *seat_name) {
 		free(seat);
 		return NULL;
 	}
+
+	seat->idle_inhibit_sources = seat->idle_wake_sources =
+		IDLE_SOURCE_KEYBOARD |
+		IDLE_SOURCE_POINTER |
+		IDLE_SOURCE_TOUCH |
+		IDLE_SOURCE_TABLET_PAD |
+		IDLE_SOURCE_TABLET_TOOL |
+		IDLE_SOURCE_SWITCH;
 
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
@@ -1324,6 +1352,9 @@ void seat_apply_config(struct sway_seat *seat,
 	if (!seat_config) {
 		return;
 	}
+
+	seat->idle_inhibit_sources = seat_config->idle_inhibit_sources;
+	seat->idle_wake_sources = seat_config->idle_wake_sources;
 
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_configure_device(seat, seat_device->input_device);

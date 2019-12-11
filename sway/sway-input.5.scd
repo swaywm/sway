@@ -218,6 +218,18 @@ correct seat.
 	disables hiding the cursor. The minimal timeout is 100 and any value less
 	than that (aside from 0), will be increased to 100.
 
+*seat* <name> idle_inhibit <sources...>
+	Sets the set of input event sources which can prevent the seat from
+	becoming idle, as a space separated list of source names. Valid names are
+	"keyboard", "pointer", "touchpad", "touch", "tablet_pad", "tablet_tool",
+	and "switch". The default behavior is to prevent idle on any event.
+
+*seat* <name> idle_wake <sources...>
+	Sets the set of input event sources which can wake the seat from
+	its idle state, as a space separated list of source names. Valid names are
+	"keyboard", "pointer", "touchpad", "touch", "tablet pad", "tablet tool",
+	and "switch". The default behavior is to wake from idle on any event.
+
 *seat* <name> keyboard_grouping none|keymap
 	Set how the keyboards in the seat are grouped together. Currently, there
 	are two options. _none_ will disable all keyboard grouping. This will make
