@@ -131,6 +131,7 @@ void root_scratchpad_show(struct sway_container *con) {
 	// Show the container
 	if (old_ws) {
 		container_detach(con);
+		workspace_consider_destroy(old_ws);
 	}
 	workspace_add_floating(new_ws, con);
 
