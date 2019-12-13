@@ -675,6 +675,8 @@ static void sway_keyboard_group_remove(struct sway_keyboard *keyboard) {
 		struct sway_keyboard_group *sway_group = wlr_group->data;
 		wlr_group->data = NULL;
 		wl_list_remove(&sway_group->link);
+		wl_list_remove(&sway_group->keyboard_key.link);
+		wl_list_remove(&sway_group->keyboard_modifiers.link);
 		sway_keyboard_destroy(sway_group->seat_device->keyboard);
 		free(sway_group->seat_device->input_device);
 		free(sway_group->seat_device);
