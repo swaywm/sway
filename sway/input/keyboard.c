@@ -659,6 +659,10 @@ static bool keymaps_match(struct xkb_keymap *km1, struct xkb_keymap *km2) {
 	return result;
 }
 
+static void destroy_empty_wlr_keyboard_group(void *data) {
+	wlr_keyboard_group_destroy(data);
+}
+
 static void sway_keyboard_group_remove(struct sway_keyboard *keyboard) {
 	struct sway_input_device *device = keyboard->seat_device->input_device;
 	struct wlr_keyboard *wlr_keyboard = device->wlr_device->keyboard;
@@ -681,7 +685,11 @@ static void sway_keyboard_group_remove(struct sway_keyboard *keyboard) {
 		free(sway_group->seat_device->input_device);
 		free(sway_group->seat_device);
 		free(sway_group);
-		wlr_keyboard_group_destroy(wlr_group);
+
+		// To prevent use-after-free conditions when handling key events, defer
+		// freeing the wlr_keyboard_group until idle
+		wl_event_loop_add_idle(server.wl_event_loop,
+				destroy_empty_wlr_keyboard_group, wlr_group);
 	}
 }
 
