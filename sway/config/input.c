@@ -249,6 +249,17 @@ static void merge_type_on_existing(struct input_config *type_wildcard) {
 	}
 }
 
+static const char *set_input_type(struct input_config *ic) {
+	struct sway_input_device *input_device;
+	wl_list_for_each(input_device, &server.input->devices, link) {
+		if (strcmp(input_device->identifier, ic->identifier) == 0) {
+			ic->input_type = input_device_get_type(input_device);
+			break;
+		}
+	}
+	return ic->input_type;
+}
+
 struct input_config *store_input_config(struct input_config *ic,
 		char **error) {
 	bool wildcard = strcmp(ic->identifier, "*") == 0;
@@ -270,6 +281,19 @@ struct input_config *store_input_config(struct input_config *ic,
 	int i = list_seq_find(config_list, input_identifier_cmp, ic->identifier);
 	if (i >= 0) {
 		current = config_list->items[i];
+	}
+
+	if (!current && !wildcard && !type && set_input_type(ic)) {
+		for (i = 0; i < config->input_type_configs->length; i++) {
+			struct input_config *tc = config->input_type_configs->items[i];
+			if (strcmp(ic->input_type, tc->identifier + 5) == 0) {
+				current = new_input_config(ic->identifier);
+				current->input_type = ic->input_type;
+				merge_input_config(current, tc);
+				new_current = true;
+				break;
+			}
+		}
 	}
 
 	i = list_seq_find(config->input_configs, input_identifier_cmp, "*");
