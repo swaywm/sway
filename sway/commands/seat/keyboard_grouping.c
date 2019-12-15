@@ -15,11 +15,11 @@ struct cmd_results *seat_cmd_keyboard_grouping(int argc, char **argv) {
 	struct seat_config *seat_config = config->handler_context.seat_config;
 	if (strcmp(argv[0], "none") == 0) {
 		seat_config->keyboard_grouping = KEYBOARD_GROUP_NONE;
-	} else if (strcmp(argv[0], "keymap") == 0) {
-		seat_config->keyboard_grouping = KEYBOARD_GROUP_KEYMAP;
+	} else if (strcmp(argv[0], "smart") == 0) {
+		seat_config->keyboard_grouping = KEYBOARD_GROUP_SMART;
 	} else {
 		return cmd_results_new(CMD_INVALID,
-				"Expected syntax `keyboard_grouping none|keymap`");
+				"Expected syntax `keyboard_grouping none|smart`");
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

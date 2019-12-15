@@ -177,9 +177,9 @@ enum seat_config_allow_constrain {
 };
 
 enum seat_keyboard_grouping {
-	KEYBOARD_GROUP_DEFAULT,  // the default is currently keymap
+	KEYBOARD_GROUP_DEFAULT,  // the default is currently smart
 	KEYBOARD_GROUP_NONE,
-	KEYBOARD_GROUP_KEYMAP
+	KEYBOARD_GROUP_SMART  // keymap and repeat info
 };
 
 enum sway_input_idle_source {

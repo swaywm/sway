@@ -230,15 +230,15 @@ correct seat.
 	"keyboard", "pointer", "touchpad", "touch", "tablet pad", "tablet tool",
 	and "switch". The default behavior is to wake from idle on any event.
 
-*seat* <name> keyboard_grouping none|keymap
+*seat* <name> keyboard_grouping none|smart
 	Set how the keyboards in the seat are grouped together. Currently, there
 	are two options. _none_ will disable all keyboard grouping. This will make
-	it so each keyboard device has its own isolated state. _keymap_ will
-	group the keyboards in the seat by their keymap. This is useful for when
-	the keyboard appears as multiple separate input devices. In this mode,
-	the effective layout and repeat info are also synced between the keyboards
-	in the group. The default is _keymap_. To restore the behavior of older
-	versions of sway, use _none_.
+	it so each keyboard device has its own isolated state. _smart_ will
+	group the keyboards in the seat by their keymap and repeat info. This is
+	useful for when the keyboard appears as multiple separate input devices.
+	In this mode, the effective layout is synced between the keyboards in the
+	group. The default is _smart_. To restore the behavior of older versions
+	of sway, use _none_.
 
 *seat* <name> pointer_constraint enable|disable|escape
 	Enables or disables the ability for clients to capture the cursor (enabled
