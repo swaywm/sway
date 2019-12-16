@@ -149,6 +149,12 @@ void root_scratchpad_show(struct sway_container *con) {
 	seat_set_focus(seat, seat_get_focus_inactive(seat, &con->node));
 }
 
+static void disable_fullscreen(struct sway_container *con, void *data) {
+	if (con->fullscreen_mode != FULLSCREEN_NONE) {
+		container_fullscreen_disable(con);
+	}
+}
+
 void root_scratchpad_hide(struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
@@ -160,9 +166,8 @@ void root_scratchpad_hide(struct sway_container *con) {
 		return;
 	}
 
-	if (con->fullscreen_mode != FULLSCREEN_NONE) {
-		container_fullscreen_disable(con);
-	}
+	disable_fullscreen(con, NULL);
+	container_for_each_child(con, disable_fullscreen, NULL);
 	container_detach(con);
 	arrange_workspace(ws);
 	if (&con->node == focus || node_has_ancestor(focus, &con->node)) {
