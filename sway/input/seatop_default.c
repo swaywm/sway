@@ -339,10 +339,11 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && (mod_pressed || on_titlebar)) {
+			seat_set_focus_container(seat,
+					seat_get_focus_inactive_view(seat, &cont->node));
 			while (cont->parent) {
 				cont = cont->parent;
 			}
-			seat_set_focus_container(seat, cont);
 			seatop_begin_move_floating(seat, cont);
 			return;
 		}
