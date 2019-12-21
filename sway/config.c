@@ -657,7 +657,8 @@ void run_deferred_commands(void) {
 				sway_log(SWAY_ERROR, "Error on line '%s': %s",
 						line, res->error);
 			}
-			free_cmd_results(res);
+			free_cmd_results(*res);
+			free(res);
 		}
 		list_del(config->cmd_queue, 0);
 		list_free(res_list);
@@ -820,7 +821,7 @@ bool read_config(FILE *file, struct sway_config *config,
 		}
 		config->current_config_line_number = line_number;
 		config->current_config_line = line;
-		struct cmd_results *res;
+		struct cmd_results res;
 		char *new_block = NULL;
 		if (block && strcmp(block, "<commands>") == 0) {
 			// Special case
@@ -828,15 +829,15 @@ bool read_config(FILE *file, struct sway_config *config,
 		} else {
 			res = config_command(expanded, &new_block);
 		}
-		switch(res->status) {
+		switch(res.status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
 			sway_log(SWAY_ERROR, "Error on line %i '%s': %s (%s)", line_number,
-				line, res->error, config->current_config_path);
+				line, res.error, config->current_config_path);
 			if (!config->validating) {
 				swaynag_log(config->swaynag_command, swaynag,
 					"Error on line %i (%s) '%s': %s", line_number,
-					config->current_config_path, line, res->error);
+					config->current_config_path, line, res.error);
 			}
 			success = false;
 			break;

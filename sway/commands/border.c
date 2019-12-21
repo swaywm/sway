@@ -56,9 +56,9 @@ static void border_toggle(struct sway_container *con) {
 	}
 }
 
-struct cmd_results *cmd_border(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "border", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_border(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "border", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 

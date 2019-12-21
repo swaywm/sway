@@ -3,7 +3,7 @@
 #include "log.h"
 #include "util.h"
 
-struct cmd_results *cmd_force_focus_wrapping(int argc, char **argv) {
+struct cmd_results cmd_force_focus_wrapping(int argc, char **argv) {
 	sway_log(SWAY_INFO, "Warning: force_focus_wrapping is deprecated. "
 		"Use focus_wrapping instead.");
 	if (config->reading) {
@@ -11,9 +11,8 @@ struct cmd_results *cmd_force_focus_wrapping(int argc, char **argv) {
 			"Use focus_wrapping instead.");
 	}
 
-	struct cmd_results *error =
-		checkarg(argc, "force_focus_wrapping", EXPECTED_EQUAL_TO, 1);
-	if (error) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "force_focus_wrapping", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

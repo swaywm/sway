@@ -16,8 +16,9 @@
 #include "stringop.h"
 #include "log.h"
 
-// Returns error object, or NULL if check succeeds.
-struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
+// Returns true and sets error object, or false if check succeeds.
+bool checkarg(struct cmd_results *error, int argc, const char *name,
+		enum expected_args type, int val) {
 	const char *error_name = NULL;
 	switch (type) {
 	case EXPECTED_AT_LEAST:
@@ -35,11 +36,13 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 			error_name = "";
 		}
 	}
-	return error_name ?
-		cmd_results_new(CMD_INVALID, "Invalid %s command "
-				"(expected %s%d argument%s, got %d)",
-				name, error_name, val, val != 1 ? "s" : "", argc)
-		: NULL;
+	if (error_name) {
+		*error = cmd_results_new(CMD_INVALID, "Invalid %s command "
+			"(expected %s%d argument%s, got %d)", name, error_name,
+			val, val != 1 ? "s" : "", argc);
+		return true;
+	}
+	return false;
 }
 
 /* Keep alphabetized */
@@ -230,8 +233,15 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				char *error = NULL;
 				struct criteria *criteria = criteria_parse(head, &error);
 				if (!criteria) {
-					list_add(res_list,
-							cmd_results_new(CMD_INVALID, "%s", error));
+					struct cmd_results *res = malloc(sizeof(struct cmd_results));
+					if (!res) {
+						sway_log(SWAY_ERROR,
+							"Failed to allocate command results");
+						free(error);
+						goto cleanup;
+					}
+					*res = cmd_results_new(CMD_INVALID, "%s", error);
+					list_add(res_list, res);
 					free(error);
 					goto cleanup;
 				}
@@ -265,10 +275,18 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				}
 			}
 		}
+		struct cmd_results *res = malloc(sizeof(struct cmd_results));
+		if (!res) {
+			sway_log(SWAY_ERROR, "Failed to allocate command results");
+			free_argv(argc, argv);
+			goto cleanup;
+		}
+
 		struct cmd_handler *handler = find_core_handler(argv[0]);
 		if (!handler) {
-			list_add(res_list, cmd_results_new(CMD_INVALID,
-					"Unknown/invalid command '%s'", argv[0]));
+			*res = cmd_results_new(CMD_INVALID,
+				"Unknown/invalid command '%s'", argv[0]);
+			list_add(res_list, res);
 			free_argv(argc, argv);
 			goto cleanup;
 		}
@@ -283,38 +301,38 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			struct sway_node *node = con ? &con->node :
 					seat_get_focus_inactive(seat, &root->node);
 			set_config_node(node);
-			struct cmd_results *res = handler->handle(argc-1, argv+1);
+			*res = handler->handle(argc-1, argv+1);
 			list_add(res_list, res);
 			if (res->status == CMD_INVALID) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
 		} else if (views->length == 0) {
-			list_add(res_list,
-					cmd_results_new(CMD_FAILURE, "No matching node."));
+			*res = cmd_results_new(CMD_FAILURE, "No matching node.");
+			list_add(res_list, res);
 		} else {
-			struct cmd_results *fail_res = NULL;
+			struct cmd_results fail_res = cmd_results_new(CMD_SUCCESS, NULL);
 			for (int i = 0; i < views->length; ++i) {
 				struct sway_view *view = views->items[i];
 				set_config_node(&view->container->node);
-				struct cmd_results *res = handler->handle(argc-1, argv+1);
-				if (res->status == CMD_SUCCESS) {
-					free_cmd_results(res);
+				struct cmd_results hres = handler->handle(argc-1, argv+1);
+				if (hres.status == CMD_SUCCESS) {
+					free_cmd_results(hres);
 				} else {
 					// last failure will take precedence
-					if (fail_res) {
-						free_cmd_results(fail_res);
-					}
-					fail_res = res;
-					if (res->status == CMD_INVALID) {
-						list_add(res_list, fail_res);
+					free_cmd_results(fail_res);
+					fail_res = hres;
+					if (hres.status == CMD_INVALID) {
+						*res = fail_res;
+						list_add(res_list, res);
 						free_argv(argc, argv);
 						goto cleanup;
 					}
 				}
 			}
-			list_add(res_list,
-					fail_res ? fail_res : cmd_results_new(CMD_SUCCESS, NULL));
+
+			*res = fail_res;
+			list_add(res_list, res);
 		}
 		free_argv(argc, argv);
 	} while(head);
@@ -331,8 +349,8 @@ cleanup:
 //	  be chained together)
 // 4) execute_command handles all state internally while config_command has
 // some state handled outside (notably the block mode, in read_config)
-struct cmd_results *config_command(char *exec, char **new_block) {
-	struct cmd_results *results = NULL;
+struct cmd_results config_command(char *exec, char **new_block) {
+	struct cmd_results results;
 	int argc;
 	char **argv = split_args(exec, &argc);
 
@@ -417,7 +435,7 @@ cleanup:
 	return results;
 }
 
-struct cmd_results *config_subcommand(char **argv, int argc,
+struct cmd_results config_subcommand(char **argv, int argc,
 		struct cmd_handler *handlers, size_t handlers_size) {
 	char *command = join_args(argv, argc);
 	sway_log(SWAY_DEBUG, "Subcommand: %s", command);
@@ -436,8 +454,8 @@ struct cmd_results *config_subcommand(char **argv, int argc,
 			"The command '%s' is shimmed, but unimplemented", argv[0]);
 }
 
-struct cmd_results *config_commands_command(char *exec) {
-	struct cmd_results *results = NULL;
+struct cmd_results config_commands_command(char *exec) {
+	struct cmd_results results;
 	int argc;
 	char **argv = split_args(exec, &argc);
 	if (!argc) {
@@ -517,14 +535,10 @@ cleanup:
 	return results;
 }
 
-struct cmd_results *cmd_results_new(enum cmd_status status,
+struct cmd_results cmd_results_new(enum cmd_status status,
 		const char *format, ...) {
-	struct cmd_results *results = malloc(sizeof(struct cmd_results));
-	if (!results) {
-		sway_log(SWAY_ERROR, "Unable to allocate command results");
-		return NULL;
-	}
-	results->status = status;
+	struct cmd_results results;
+	results.status = status;
 	if (format) {
 		char *error = malloc(256);
 		va_list args;
@@ -533,18 +547,15 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 			vsnprintf(error, 256, format, args);
 		}
 		va_end(args);
-		results->error = error;
+		results.error = error;
 	} else {
-		results->error = NULL;
+		results.error = NULL;
 	}
 	return results;
 }
 
-void free_cmd_results(struct cmd_results *results) {
-	if (results->error) {
-		free(results->error);
-	}
-	free(results);
+void free_cmd_results(struct cmd_results results) {
+	free(results.error);
 }
 
 char *cmd_results_to_json(list_t *res_list) {
@@ -573,7 +584,7 @@ char *cmd_results_to_json(list_t *res_list) {
  *
  * return error object, or NULL if color is valid.
  */
-struct cmd_results *add_color(char *buffer, const char *color) {
+struct cmd_results add_color(char *buffer, const char *color) {
 	int len = strlen(color);
 	if (len != 7 && len != 9) {
 		return cmd_results_new(CMD_INVALID,
@@ -596,5 +607,5 @@ struct cmd_results *add_color(char *buffer, const char *color) {
 		buffer[8] = 'f';
 	}
 	buffer[9] = '\0';
-	return NULL;
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

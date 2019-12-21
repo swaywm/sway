@@ -13,12 +13,12 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *cmd_exec_always(int argc, char **argv) {
-	struct cmd_results *error = NULL;
+struct cmd_results cmd_exec_always(int argc, char **argv) {
+	struct cmd_results error;
 	if (!config->active || config->validating) {
 		return cmd_results_new(CMD_DEFER, NULL);
 	}
-	if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
+	if (checkarg(&error, argc, argv[-1], EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 
@@ -26,7 +26,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
 		sway_log(SWAY_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		--argc; ++argv;
-		if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
+		if (checkarg(&error, argc, argv[-1], EXPECTED_AT_LEAST, 1)) {
 			return error;
 		}
 	}

@@ -208,9 +208,9 @@ static bool test_mark(struct sway_container *container, void *mark) {
 	return false;
 }
 
-struct cmd_results *cmd_swap(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "swap", EXPECTED_AT_LEAST, 4))) {
+struct cmd_results cmd_swap(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "swap", EXPECTED_AT_LEAST, 4)) {
 		return error;
 	}
 	if (!root->outputs->length) {
@@ -242,22 +242,21 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	}
 
 	if (!other) {
-		error = cmd_results_new(CMD_FAILURE,
+		struct cmd_results res = cmd_results_new(CMD_FAILURE,
 				"Failed to find %s '%s'", argv[2], value);
+		free(value);
+		return res;
 	} else if (!current) {
-		error = cmd_results_new(CMD_FAILURE,
+		free(value);
+		return cmd_results_new(CMD_FAILURE,
 				"Can only swap with containers and views");
 	} else if (container_has_ancestor(current, other)
 			|| container_has_ancestor(other, current)) {
-		error = cmd_results_new(CMD_FAILURE,
+		free(value);
+		return cmd_results_new(CMD_FAILURE,
 				"Cannot swap ancestor and descendant");
 	}
-
 	free(value);
-
-	if (error) {
-		return error;
-	}
 
 	container_swap(current, other);
 

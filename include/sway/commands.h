@@ -6,7 +6,7 @@
 
 struct sway_container;
 
-typedef struct cmd_results *sway_cmd(int argc, char **argv);
+typedef struct cmd_results sway_cmd(int argc, char **argv);
 
 struct cmd_handler {
 	char *command;
@@ -43,7 +43,7 @@ enum expected_args {
 	EXPECTED_EQUAL_TO
 };
 
-struct cmd_results *checkarg(int argc, const char *name,
+bool checkarg(struct cmd_results *error, int argc, const char *name,
 		enum expected_args type, int val);
 
 struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
@@ -63,24 +63,24 @@ list_t *execute_command(char *command,  struct sway_seat *seat,
  *
  * Do not use this under normal conditions.
  */
-struct cmd_results *config_command(char *command, char **new_block);
+struct cmd_results config_command(char *command, char **new_block);
 /**
  * Parse and handle a sub command
  */
-struct cmd_results *config_subcommand(char **argv, int argc,
+struct cmd_results config_subcommand(char **argv, int argc,
 		struct cmd_handler *handlers, size_t handlers_size);
 /*
  * Parses a command policy rule.
  */
-struct cmd_results *config_commands_command(char *exec);
+struct cmd_results config_commands_command(char *exec);
 /**
- * Allocates a cmd_results object.
+ * Fills in and returns a cmd_results object.
  */
-struct cmd_results *cmd_results_new(enum cmd_status status, const char *error, ...);
+struct cmd_results cmd_results_new(enum cmd_status status, const char *error, ...);
 /**
- * Frees a cmd_results object.
+ * Frees the contents of a cmd_results object.
  */
-void free_cmd_results(struct cmd_results *results);
+void free_cmd_results(struct cmd_results results);
 /**
  * Serializes a list of cmd_results to a JSON string.
  *
@@ -88,7 +88,7 @@ void free_cmd_results(struct cmd_results *results);
  */
 char *cmd_results_to_json(list_t *res_list);
 
-struct cmd_results *add_color(char *buffer, const char *color);
+struct cmd_results add_color(char *buffer, const char *color);
 
 /**
  * TODO: Move this function and its dependent functions to container.c.

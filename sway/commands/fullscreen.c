@@ -9,9 +9,9 @@
 #include "util.h"
 
 // fullscreen [enable|disable|toggle] [global]
-struct cmd_results *cmd_fullscreen(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "fullscreen", EXPECTED_AT_MOST, 2))) {
+struct cmd_results cmd_fullscreen(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "fullscreen", EXPECTED_AT_MOST, 2)) {
 		return error;
 	}
 	if (!root->outputs->length) {

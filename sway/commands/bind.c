@@ -116,7 +116,7 @@ static int key_qsort_cmp(const void *keyp_a, const void *keyp_b) {
  * the value of *type if the initial type guess was incorrect and if this
  * was the first identified key.
  */
-static struct cmd_results *identify_key(const char* name, bool first_key,
+static struct cmd_results identify_key(const char* name, bool first_key,
 		uint32_t* key_val, enum binding_input_type* type) {
 	if (*type == BINDING_MOUSECODE) {
 		// check for mouse bindcodes
@@ -124,7 +124,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		uint32_t button = get_mouse_bindcode(name, &message);
 		if (!button) {
 			if (message) {
-				struct cmd_results *error =
+				struct cmd_results error =
 					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
@@ -140,7 +140,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		uint32_t button = get_mouse_bindsym(name, &message);
 		if (!button) {
 			if (message) {
-				struct cmd_results *error =
+				struct cmd_results error =
 					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
@@ -158,7 +158,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 			if (button) {
 				*type = BINDING_MOUSECODE;
 				*key_val = button;
-				return NULL;
+				return cmd_results_new(CMD_SUCCESS, NULL);
 			}
 		}
 
@@ -179,14 +179,14 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 			char *message = NULL;
 			uint32_t button = get_mouse_bindsym(name, &message);
 			if (message) {
-				struct cmd_results *error =
+				struct cmd_results error =
 					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
 			} else if (button) {
 				*type = BINDING_MOUSESYM;
 				*key_val = button;
-				return NULL;
+				return cmd_results_new(CMD_SUCCESS, NULL);
 			}
 		}
 
@@ -202,10 +202,10 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		}
 		*key_val = keysym;
 	}
-	return NULL;
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *switch_binding_add(
+static struct cmd_results switch_binding_add(
 		struct sway_switch_binding *binding, const char *bindtype,
 		const char *switchcombo, bool warn) {
 	list_t *mode_bindings = config->current_mode->switch_bindings;
@@ -237,7 +237,7 @@ static struct cmd_results *switch_binding_add(
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *switch_binding_remove(
+static struct cmd_results switch_binding_remove(
 		struct sway_switch_binding *binding, const char *bindtype,
 		const char *switchcombo) {
 	list_t *mode_bindings = config->current_mode->switch_bindings;
@@ -276,7 +276,7 @@ static struct sway_binding *binding_upsert(struct sway_binding *binding,
 	return NULL;
 }
 
-static struct cmd_results *binding_add(struct sway_binding *binding,
+static struct cmd_results binding_add(struct sway_binding *binding,
 		list_t *mode_bindings, const char *bindtype,
 		const char *keycombo, bool warn) {
 	struct sway_binding *config_binding = binding_upsert(binding, mode_bindings);
@@ -300,7 +300,7 @@ static struct cmd_results *binding_add(struct sway_binding *binding,
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *binding_remove(struct sway_binding *binding,
+static struct cmd_results binding_remove(struct sway_binding *binding,
 		list_t *mode_bindings, const char *bindtype,
 		const char *keycombo) {
 	for (int i = 0; i < mode_bindings->length; ++i) {
@@ -319,7 +319,7 @@ static struct cmd_results *binding_remove(struct sway_binding *binding,
 			"for the given flags", keycombo);
 }
 
-static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
+static struct cmd_results cmd_bindsym_or_bindcode(int argc, char **argv,
 		bool bindcode, bool unbind) {
 	const char *bindtype;
 	int minargs = 2;
@@ -330,8 +330,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		bindtype = bindcode ? "bindcode": "bindsym";
 	}
 
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, minargs))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, bindtype, EXPECTED_AT_LEAST, minargs)) {
 		return error;
 	}
 
@@ -431,7 +431,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		uint32_t key_val = 0;
 		error = identify_key(split->items[i], binding->keys->length == 0,
 				     &key_val, &binding->type);
-		if (error) {
+		if (error.status != CMD_SUCCESS) {
 			free_sway_binding(binding);
 			list_free(split);
 			return error;
@@ -485,7 +485,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	return binding_add(binding, mode_bindings, bindtype, argv[0], warn);
 }
 
-struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
+struct cmd_results cmd_bind_or_unbind_switch(int argc, char **argv,
 		bool unbind) {
 	int minargs = 2;
 	char *bindtype = "bindswitch";
@@ -494,8 +494,8 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		bindtype = "unbindswitch";
 	}
 
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, minargs))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, bindtype, EXPECTED_AT_LEAST, minargs)) {
 		return error;
 	}
 	struct sway_switch_binding *binding = calloc(1, sizeof(struct sway_switch_binding));
@@ -566,27 +566,27 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 	return switch_binding_add(binding, bindtype, argv[0], warn);
 }
 
-struct cmd_results *cmd_bindsym(int argc, char **argv) {
+struct cmd_results cmd_bindsym(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, false, false);
 }
 
-struct cmd_results *cmd_bindcode(int argc, char **argv) {
+struct cmd_results cmd_bindcode(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, true, false);
 }
 
-struct cmd_results *cmd_unbindsym(int argc, char **argv) {
+struct cmd_results cmd_unbindsym(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, false, true);
 }
 
-struct cmd_results *cmd_unbindcode(int argc, char **argv) {
+struct cmd_results cmd_unbindcode(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, true, true);
 }
 
-struct cmd_results *cmd_bindswitch(int argc, char **argv) {
+struct cmd_results cmd_bindswitch(int argc, char **argv) {
 	return cmd_bind_or_unbind_switch(argc, argv, false);
 }
 
-struct cmd_results *cmd_unbindswitch(int argc, char **argv) {
+struct cmd_results cmd_unbindswitch(int argc, char **argv) {
 	return cmd_bind_or_unbind_switch(argc, argv, true);
 }
 
@@ -630,7 +630,8 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 				binding->command, results->error);
 			success = false;
 		}
-		free_cmd_results(results);
+		free_cmd_results(*results);
+		free(results);
 	}
 	list_free(res_list);
 	if (success) {

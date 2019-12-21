@@ -6,10 +6,10 @@
 #include "list.h"
 #include "log.h"
 
-struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
+struct cmd_results bar_cmd_tray_output(int argc, char **argv) {
 #if HAVE_TRAY
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "tray_output", EXPECTED_EQUAL_TO, 1))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "tray_output", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

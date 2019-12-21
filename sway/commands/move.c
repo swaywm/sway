@@ -388,13 +388,13 @@ static bool container_move_in_direction(struct sway_container *container,
 	return false;
 }
 
-static struct cmd_results *cmd_move_to_scratchpad(void);
+static struct cmd_results cmd_move_to_scratchpad(void);
 
-static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
+static struct cmd_results cmd_move_container(bool no_auto_back_and_forth,
 		int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "move container/window",
-				EXPECTED_AT_LEAST, 2))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "move container/window",
+				EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 
@@ -629,9 +629,9 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 	ipc_event_workspace(NULL, workspace, "move");
 }
 
-static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "move workspace", EXPECTED_AT_LEAST, 1))) {
+static struct cmd_results cmd_move_workspace(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "move workspace", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 
@@ -666,7 +666,7 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *cmd_move_in_direction(
+static struct cmd_results cmd_move_in_direction(
 		enum wlr_direction direction, int argc, char **argv) {
 	int move_amt = 10;
 	if (argc) {
@@ -747,7 +747,7 @@ static const char expected_position_syntax[] =
 	"'move [absolute] position center' or "
 	"'move position cursor|mouse|pointer'";
 
-static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
+static struct cmd_results cmd_move_to_position(int argc, char **argv) {
 	struct sway_container *container = config->handler_context.container;
 	if (!container || !container_is_floating(container)) {
 		return cmd_results_new(CMD_FAILURE, "Only floating containers "
@@ -843,7 +843,7 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *cmd_move_to_scratchpad(void) {
+static struct cmd_results cmd_move_to_scratchpad(void) {
 	struct sway_node *node = config->handler_context.node;
 	struct sway_container *con = config->handler_context.container;
 	struct sway_workspace *ws = config->handler_context.workspace;
@@ -885,9 +885,9 @@ static const char expected_full_syntax[] = "Expected "
 	" or 'move [window|container] [to] [absolute] position center'"
 	" or 'move [window|container] [to] position mouse|cursor|pointer'";
 
-struct cmd_results *cmd_move(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_move(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	if (!root->outputs->length) {

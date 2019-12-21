@@ -2,9 +2,9 @@
 #include <strings.h>
 #include "sway/commands.h"
 
-struct cmd_results *cmd_workspace_layout(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "workspace_layout", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_workspace_layout(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "workspace_layout", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (strcasecmp(argv[0], "default") == 0) {

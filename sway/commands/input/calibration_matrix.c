@@ -8,9 +8,9 @@
 #include "stringop.h"
 #include "util.h"
 
-struct cmd_results *input_cmd_calibration_matrix(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "calibration_matrix", EXPECTED_EQUAL_TO, 6))) {
+struct cmd_results input_cmd_calibration_matrix(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "calibration_matrix", EXPECTED_EQUAL_TO, 6)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

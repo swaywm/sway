@@ -11,9 +11,9 @@
 #include "list.h"
 #include "util.h"
 
-struct cmd_results *cmd_floating(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_floating(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "floating", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (!root->outputs->length) {

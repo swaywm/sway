@@ -6,9 +6,9 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *cmd_title_format(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "title_format", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_title_format(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "title_format", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;

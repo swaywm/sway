@@ -4,7 +4,7 @@
 #include "log.h"
 #include "sway/output.h"
 
-struct cmd_results *output_cmd_transform(int argc, char **argv) {
+struct cmd_results output_cmd_transform(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
@@ -38,7 +38,8 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	if (argc > 1 &&
 			(strcmp(argv[1], "clockwise") == 0 || strcmp(argv[1], "anticlockwise") == 0)) {
 		if (!sway_assert(output->name != NULL, "Output config name not set")) {
-			return NULL;
+			return cmd_results_new(CMD_INVALID,
+				"Output config name not set");
 		}
 		if (strcmp(output->name, "*") == 0) {
 			return cmd_results_new(CMD_INVALID,
@@ -58,5 +59,5 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 		config->handler_context.leftovers.argc -= 1;
 	}
 	output->transform = transform;
-	return NULL;
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

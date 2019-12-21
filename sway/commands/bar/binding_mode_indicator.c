@@ -4,10 +4,10 @@
 #include "log.h"
 #include "util.h"
 
-struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc,
-			"binding_mode_indicator", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_binding_mode_indicator(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc,
+			"binding_mode_indicator", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	config->current_bar->binding_mode_indicator =

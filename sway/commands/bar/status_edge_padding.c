@@ -3,9 +3,9 @@
 #include "sway/commands.h"
 #include "log.h"
 
-struct cmd_results *bar_cmd_status_edge_padding(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "status_edge_padding", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_status_edge_padding(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "status_edge_padding", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	char *end;

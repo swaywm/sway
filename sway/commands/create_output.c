@@ -29,7 +29,7 @@ static void create_output(struct wlr_backend *backend, void *data) {
 /**
  * This command is intended for developer use only.
  */
-struct cmd_results *cmd_create_output(int argc, char **argv) {
+struct cmd_results cmd_create_output(int argc, char **argv) {
 	sway_assert(wlr_backend_is_multi(server.backend),
 			"Expected a multi backend");
 

@@ -53,10 +53,10 @@ static bool parse_color_float(char *hexstring, float dest[static 4]) {
 	return true;
 }
 
-static struct cmd_results *handle_command(int argc, char **argv,
+static struct cmd_results handle_command(int argc, char **argv,
 		struct border_colors *class, char *cmd_name) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, cmd_name, EXPECTED_EQUAL_TO, 5))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, cmd_name, EXPECTED_EQUAL_TO, 5)) {
 		return error;
 	}
 
@@ -97,23 +97,23 @@ static struct cmd_results *handle_command(int argc, char **argv,
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-struct cmd_results *cmd_client_focused(int argc, char **argv) {
+struct cmd_results cmd_client_focused(int argc, char **argv) {
 	return handle_command(argc, argv, &config->border_colors.focused, "client.focused");
 }
 
-struct cmd_results *cmd_client_focused_inactive(int argc, char **argv) {
+struct cmd_results cmd_client_focused_inactive(int argc, char **argv) {
 	return handle_command(argc, argv, &config->border_colors.focused_inactive, "client.focused_inactive");
 }
 
-struct cmd_results *cmd_client_unfocused(int argc, char **argv) {
+struct cmd_results cmd_client_unfocused(int argc, char **argv) {
 	return handle_command(argc, argv, &config->border_colors.unfocused, "client.unfocused");
 }
 
-struct cmd_results *cmd_client_urgent(int argc, char **argv) {
+struct cmd_results cmd_client_urgent(int argc, char **argv) {
 	return handle_command(argc, argv, &config->border_colors.urgent, "client.urgent");
 }
 
-struct cmd_results *cmd_client_noop(int argc, char **argv) {
+struct cmd_results cmd_client_noop(int argc, char **argv) {
 	sway_log(SWAY_INFO, "Warning: %s is ignored by sway", argv[-1]);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

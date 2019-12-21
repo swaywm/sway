@@ -13,9 +13,9 @@
 // mark --add --toggle foo       Toggle current mark and persist other marks
 // mark --replace --toggle foo   Toggle current mark and remove other marks
 
-struct cmd_results *cmd_mark(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "mark", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_mark(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "mark", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;

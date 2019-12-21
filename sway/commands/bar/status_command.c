@@ -3,9 +3,9 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "status_command", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results bar_cmd_status_command(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "status_command", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	free(config->current_bar->status_command);

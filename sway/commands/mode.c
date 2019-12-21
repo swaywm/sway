@@ -19,9 +19,9 @@ static struct cmd_handler mode_handlers[] = {
 	{ "unbindsym", cmd_unbindsym },
 };
 
-struct cmd_results *cmd_mode(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "mode", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_mode(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "mode", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 
@@ -79,7 +79,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 	}
 
 	// Create binding
-	struct cmd_results *result = config_subcommand(argv + 1, argc - 1,
+	struct cmd_results result = config_subcommand(argv + 1, argc - 1,
 			mode_handlers, sizeof(mode_handlers));
 	config->current_mode = stored_mode;
 

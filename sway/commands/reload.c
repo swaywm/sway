@@ -49,9 +49,9 @@ static void do_reload(void *data) {
 	arrange_root();
 }
 
-struct cmd_results *cmd_reload(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0))) {
+struct cmd_results cmd_reload(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "reload", EXPECTED_EQUAL_TO, 0)) {
 		return error;
 	}
 

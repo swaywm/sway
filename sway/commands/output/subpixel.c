@@ -4,7 +4,7 @@
 #include "sway/config.h"
 #include "sway/output.h"
 
-struct cmd_results *output_cmd_subpixel(int argc, char **argv) {
+struct cmd_results output_cmd_subpixel(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
@@ -32,5 +32,5 @@ struct cmd_results *output_cmd_subpixel(int argc, char **argv) {
 	config->handler_context.leftovers.argv = argv + 1;
 
 	oc->subpixel = subpixel;
-	return NULL;
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

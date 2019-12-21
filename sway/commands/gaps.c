@@ -45,9 +45,9 @@ static void prevent_invalid_outer_gaps(void) {
 // gaps inner|outer|horizontal|vertical|top|right|bottom|left <px>
 static const char expected_defaults[] =
 	"'gaps inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
-static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
-	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 2);
-	if (error) {
+static struct cmd_results gaps_set_defaults(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "gaps", EXPECTED_EQUAL_TO, 2)) {
 		return error;
 	}
 
@@ -136,9 +136,9 @@ static void configure_gaps(struct sway_workspace *ws, void *_data) {
 // set|plus|minus <px>
 static const char expected_runtime[] = "'gaps inner|outer|horizontal|vertical|"
 	"top|right|bottom|left current|all set|plus|minus <px>'";
-static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
-	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 4);
-	if (error) {
+static struct cmd_results gaps_set_runtime(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "gaps", EXPECTED_EQUAL_TO, 4)) {
 		return error;
 	}
 	if (!root->outputs->length) {
@@ -203,9 +203,9 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 // gaps inner|outer|<dir>|<side> current|all set|plus|minus <px> - runtime only
 // <dir> = horizontal|vertical
 // <side> = top|right|bottom|left
-struct cmd_results *cmd_gaps(int argc, char **argv) {
-	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2);
-	if (error) {
+struct cmd_results cmd_gaps(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "gaps", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 

@@ -3,7 +3,7 @@
 #include "sway/config.h"
 #include "sway/tree/view.h"
 
-struct cmd_results *cmd_max_render_time(int argc, char **argv) {
+struct cmd_results cmd_max_render_time(int argc, char **argv) {
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID, "Missing max render time argument.");
 	}

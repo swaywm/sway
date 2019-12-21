@@ -5,9 +5,9 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 
-struct cmd_results *cmd_inhibit_idle(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "inhibit_idle", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_inhibit_idle(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "inhibit_idle", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

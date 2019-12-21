@@ -24,9 +24,9 @@ void free_sway_variable(struct sway_variable *var) {
 	free(var);
 }
 
-struct cmd_results *cmd_set(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "set", EXPECTED_AT_LEAST, 2))) {
+struct cmd_results cmd_set(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "set", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 

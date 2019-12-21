@@ -5,9 +5,9 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 
-struct cmd_results *input_cmd_map_to_region(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "map_to_region", EXPECTED_EQUAL_TO, 4))) {
+struct cmd_results input_cmd_map_to_region(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "map_to_region", EXPECTED_EQUAL_TO, 4)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

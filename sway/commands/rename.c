@@ -15,9 +15,9 @@ static const char expected_syntax[] =
 	"Expected 'rename workspace <old_name> to <new_name>' or "
 	"'rename workspace to <new_name>'";
 
-struct cmd_results *cmd_rename(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "rename", EXPECTED_AT_LEAST, 3))) {
+struct cmd_results cmd_rename(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "rename", EXPECTED_AT_LEAST, 3)) {
 		return error;
 	}
 	if (!root->outputs->length) {

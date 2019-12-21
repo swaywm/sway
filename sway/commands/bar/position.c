@@ -4,9 +4,9 @@
 #include "sway/commands.h"
 #include "log.h"
 
-struct cmd_results *bar_cmd_position(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "position", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_position(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "position", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	char *valid[] = { "top", "bottom" };

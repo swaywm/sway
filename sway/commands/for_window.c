@@ -5,9 +5,9 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *cmd_for_window(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "for_window", EXPECTED_AT_LEAST, 2))) {
+struct cmd_results cmd_for_window(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "for_window", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 

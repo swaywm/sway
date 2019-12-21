@@ -4,9 +4,9 @@
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 
-struct cmd_results *input_cmd_tap_button_map(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "tap_button_map", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results input_cmd_tap_button_map(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "tap_button_map", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

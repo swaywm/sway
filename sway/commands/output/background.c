@@ -29,7 +29,7 @@ static bool validate_color(const char *color) {
 	return *ptr == '\0';
 }
 
-struct cmd_results *output_cmd_background(int argc, char **argv) {
+struct cmd_results output_cmd_background(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
@@ -80,7 +80,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 		char *src = join_args(argv, j);
 		if (!expand_path(&src)) {
-			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID,
+			struct cmd_results cmd_res = cmd_results_new(CMD_INVALID,
 				"Invalid syntax (%s)", src);
 			free(src);
 			return cmd_res;
@@ -150,5 +150,5 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 	config->handler_context.leftovers.argc = argc;
 	config->handler_context.leftovers.argv = argv;
-	return NULL;
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }

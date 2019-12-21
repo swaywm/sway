@@ -51,9 +51,9 @@ static bool is_subcommand(char *name) {
 		find_handler(name, bar_config_handlers, sizeof(bar_config_handlers));
 }
 
-struct cmd_results *cmd_bar(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bar", EXPECTED_AT_LEAST, 2))) {
+struct cmd_results cmd_bar(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "bar", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 
@@ -98,7 +98,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		config->current_bar->id = id;
 	}
 
-	struct cmd_results *res = NULL;
+	struct cmd_results res;
 	if (find_handler(argv[0], bar_config_handlers,
 				sizeof(bar_config_handlers))) {
 		if (config->reading) {
@@ -112,7 +112,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		res = config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
 	}
 
-	if (res && res->status != CMD_SUCCESS) {
+	if (res.status != CMD_SUCCESS) {
 		if (id) {
 			free_bar_config(config->current_bar);
 			id = NULL;

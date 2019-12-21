@@ -3,9 +3,9 @@
 #include "sway/config.h"
 #include "stringop.h"
 
-struct cmd_results *seat_cmd_keyboard_grouping(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "keyboard_grouping", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results seat_cmd_keyboard_grouping(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "keyboard_grouping", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {

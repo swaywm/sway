@@ -38,9 +38,9 @@ static uint32_t parse_sources(int argc, char **argv) {
 	return sources;
 }
 
-struct cmd_results *seat_cmd_idle_inhibit(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "idle_inhibit", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results seat_cmd_idle_inhibit(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "idle_inhibit", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {
@@ -55,9 +55,9 @@ struct cmd_results *seat_cmd_idle_inhibit(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-struct cmd_results *seat_cmd_idle_wake(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "idle_wake", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results seat_cmd_idle_wake(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "idle_wake", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {

@@ -258,7 +258,7 @@ static struct sway_node *node_get_in_direction_floating(
 	return closest_con ? &closest_con->node : NULL;
 }
 
-static struct cmd_results *focus_mode(struct sway_workspace *ws,
+static struct cmd_results focus_mode(struct sway_workspace *ws,
 		struct sway_seat *seat, bool floating) {
 	struct sway_container *new_focus = NULL;
 	if (floating) {
@@ -277,7 +277,7 @@ static struct cmd_results *focus_mode(struct sway_workspace *ws,
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *focus_output(struct sway_seat *seat,
+static struct cmd_results focus_output(struct sway_seat *seat,
 		int argc, char **argv) {
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID,
@@ -322,7 +322,7 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *focus_parent(void) {
+static struct cmd_results focus_parent(void) {
 	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_container *con = config->handler_context.container;
 	if (!con || con->fullscreen_mode) {
@@ -336,7 +336,7 @@ static struct cmd_results *focus_parent(void) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *focus_child(void) {
+static struct cmd_results focus_child(void) {
 	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_node *node = config->handler_context.node;
 	struct sway_node *focus = seat_get_active_tiling_child(seat, node);
@@ -347,7 +347,7 @@ static struct cmd_results *focus_child(void) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-struct cmd_results *cmd_focus(int argc, char **argv) {
+struct cmd_results cmd_focus(int argc, char **argv) {
 	if (config->reading || !config->active) {
 		return cmd_results_new(CMD_DEFER, NULL);
 	}

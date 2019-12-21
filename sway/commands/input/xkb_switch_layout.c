@@ -13,9 +13,9 @@ static void switch_layout(struct wlr_keyboard *kbd, xkb_layout_index_t idx) {
 		kbd->modifiers.latched, kbd->modifiers.locked, idx);
 }
 
-struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "xkb_switch_layout", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results input_cmd_xkb_switch_layout(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "xkb_switch_layout", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

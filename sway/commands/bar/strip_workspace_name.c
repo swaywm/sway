@@ -4,10 +4,10 @@
 #include "log.h"
 #include "util.h"
 
-struct cmd_results *bar_cmd_strip_workspace_name(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc,
-				"strip_workspace_name", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_strip_workspace_name(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc,
+				"strip_workspace_name", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

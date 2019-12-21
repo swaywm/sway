@@ -3,9 +3,9 @@
 #include "sway/commands.h"
 #include "log.h"
 
-struct cmd_results *bar_cmd_id(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "id", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_id(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "id", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

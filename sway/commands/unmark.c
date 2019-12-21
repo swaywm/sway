@@ -18,7 +18,7 @@ static void remove_all_marks_iterator(struct sway_container *con, void *data) {
 // [criteria] unmark       Remove all marks from matched view
 // [criteria] unmark foo   Remove single mark from matched view
 
-struct cmd_results *cmd_unmark(int argc, char **argv) {
+struct cmd_results cmd_unmark(int argc, char **argv) {
 	// Determine the container
 	struct sway_container *con = NULL;
 	if (config->handler_context.using_criteria) {

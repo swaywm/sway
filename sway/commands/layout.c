@@ -114,9 +114,9 @@ static enum sway_container_layout get_layout(int argc, char **argv,
 	return L_NONE;
 }
 
-struct cmd_results *cmd_layout(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "layout", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_layout(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "layout", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	if (!root->outputs->length) {

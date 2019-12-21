@@ -89,9 +89,9 @@ static void scratchpad_toggle_container(struct sway_container *con) {
 	ipc_event_window(con, "move");
 }
 
-struct cmd_results *cmd_scratchpad(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_scratchpad(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (strcmp(argv[0], "show") != 0) {

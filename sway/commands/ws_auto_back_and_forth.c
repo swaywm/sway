@@ -3,9 +3,9 @@
 #include "sway/commands.h"
 #include "util.h"
 
-struct cmd_results *cmd_ws_auto_back_and_forth(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "workspace_auto_back_and_forth", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_ws_auto_back_and_forth(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "workspace_auto_back_and_forth", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	config->auto_back_and_forth = 

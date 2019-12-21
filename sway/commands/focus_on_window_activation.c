@@ -1,9 +1,9 @@
 #include "sway/commands.h"
 
-struct cmd_results *cmd_focus_on_window_activation(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "focus_on_window_activation",
-					EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_focus_on_window_activation(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "focus_on_window_activation",
+					EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

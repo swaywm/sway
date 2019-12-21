@@ -44,9 +44,9 @@ static struct cmd_handler input_config_handlers[] = {
 	{ "xkb_numlock", input_cmd_xkb_numlock },
 };
 
-struct cmd_results *cmd_input(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 2))) {
+struct cmd_results cmd_input(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "input", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 
@@ -57,7 +57,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Couldn't allocate config");
 	}
 
-	struct cmd_results *res;
+	struct cmd_results res;
 
 	if (find_handler(argv[1], input_config_handlers,
 			sizeof(input_config_handlers))) {
@@ -73,16 +73,14 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			input_handlers, sizeof(input_handlers));
 	}
 
-	if ((!res || res->status == CMD_SUCCESS) &&
+	if (res.status == CMD_SUCCESS &&
 			strcmp(argv[1], "xkb_switch_layout") != 0) {
 		char *error = NULL;
 		struct input_config *ic =
 			store_input_config(config->handler_context.input_config, &error);
 		if (!ic) {
 			free_input_config(config->handler_context.input_config);
-			if (res) {
-				free_cmd_results(res);
-			}
+			free_cmd_results(res);
 			res = cmd_results_new(CMD_FAILURE, "Failed to compile keymap: %s",
 					error ? error : "(details unavailable)");
 			free(error);

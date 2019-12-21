@@ -3,9 +3,9 @@
 #include "sway/commands.h"
 #include "log.h"
 
-struct cmd_results *bar_cmd_separator_symbol(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "separator_symbol", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_separator_symbol(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "separator_symbol", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	free(config->current_bar->separator_symbol);

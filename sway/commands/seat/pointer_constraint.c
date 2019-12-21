@@ -12,9 +12,9 @@ enum operation {
 };
 
 // pointer_constraint [enable|disable|escape]
-struct cmd_results *seat_cmd_pointer_constraint(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "pointer_constraint", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results seat_cmd_pointer_constraint(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "pointer_constraint", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {

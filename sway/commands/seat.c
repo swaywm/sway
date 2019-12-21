@@ -25,18 +25,18 @@ static struct cmd_handler seat_handlers[] = {
 	{ "xcursor_theme", seat_cmd_xcursor_theme },
 };
 
-static struct cmd_results *action_handlers(int argc, char **argv) {
-	struct cmd_results *res = config_subcommand(argv, argc,
+static struct cmd_results action_handlers(int argc, char **argv) {
+	struct cmd_results res = config_subcommand(argv, argc,
 			seat_action_handlers, sizeof(seat_action_handlers));
 	free_seat_config(config->handler_context.seat_config);
 	config->handler_context.seat_config = NULL;
 	return res;
 }
 
-static struct cmd_results *config_handlers(int argc, char **argv) {
-	struct cmd_results *res = config_subcommand(argv, argc,
+static struct cmd_results config_handlers(int argc, char **argv) {
+	struct cmd_results res = config_subcommand(argv, argc,
 			seat_handlers, sizeof(seat_handlers));
-	if (res && res->status != CMD_SUCCESS) {
+	if (res.status != CMD_SUCCESS) {
 		free_seat_config(config->handler_context.seat_config);
 	} else {
 		struct seat_config *sc =
@@ -49,9 +49,9 @@ static struct cmd_results *config_handlers(int argc, char **argv) {
 	return res;
 }
 
-struct cmd_results *cmd_seat(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "seat", EXPECTED_AT_LEAST, 2))) {
+struct cmd_results cmd_seat(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "seat", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 
@@ -69,12 +69,12 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Couldn't allocate config");
 	}
 
-	struct cmd_results *res = NULL;
+	struct cmd_results res;
 	if (find_handler(argv[1], seat_action_handlers,
 				sizeof(seat_action_handlers))) {
 		res = action_handlers(argc - 1, argv + 1);
 	} else {
 		res = config_handlers(argc - 1, argv + 1);
 	}
-	return res ? res : cmd_results_new(CMD_SUCCESS, NULL);
+	return res;
 }

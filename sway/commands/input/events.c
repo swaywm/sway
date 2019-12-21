@@ -105,9 +105,9 @@ static void toggle_wildcard_send_events(int argc, char **argv) {
 	}
 }
 
-struct cmd_results *input_cmd_events(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "events", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results input_cmd_events(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "events", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

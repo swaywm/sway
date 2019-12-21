@@ -3,10 +3,10 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 
-struct cmd_results *seat_cmd_xcursor_theme(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "xcursor_theme", EXPECTED_AT_LEAST, 1)) ||
-		(error = checkarg(argc, "xcursor_theme", EXPECTED_AT_MOST, 2))) {
+struct cmd_results seat_cmd_xcursor_theme(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "xcursor_theme", EXPECTED_AT_LEAST, 1) ||
+		checkarg(&error, argc, "xcursor_theme", EXPECTED_AT_MOST, 2)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {

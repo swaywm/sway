@@ -441,7 +441,8 @@ void view_execute_criteria(struct sway_view *view) {
 				criteria->cmdlist, NULL, view->container);
 		while (res_list->length) {
 			struct cmd_results *res = res_list->items[0];
-			free_cmd_results(res);
+			free_cmd_results(*res);
+			free(res);
 			list_del(res_list, 0);
 		}
 		list_free(res_list);

@@ -4,7 +4,7 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *cmd_exec(int argc, char **argv) {
+struct cmd_results cmd_exec(int argc, char **argv) {
 	if (!config->active) return cmd_results_new(CMD_DEFER, NULL);
 	if (config->reloading) {
 		char *args = join_args(argv, argc);

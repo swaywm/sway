@@ -12,7 +12,7 @@ static void close_container_iterator(struct sway_container *con, void *data) {
 	}
 }
 
-struct cmd_results *cmd_kill(int argc, char **argv) {
+struct cmd_results cmd_kill(int argc, char **argv) {
 	if (!root->outputs->length) {
 		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");

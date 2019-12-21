@@ -56,13 +56,13 @@ static void prevent_invalid_outer_gaps(struct workspace_config *wsc) {
 	}
 }
 
-static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
+static struct cmd_results cmd_workspace_gaps(int argc, char **argv,
 		int gaps_location) {
 	const char expected[] = "Expected 'workspace <name> gaps "
 		"inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO,
-					gaps_location + 3))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "workspace", EXPECTED_EQUAL_TO,
+					gaps_location + 3)) {
 		return error;
 	}
 	char *ws_name = join_args(argv, argc - 3);
@@ -119,9 +119,9 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 	return error;
 }
 
-struct cmd_results *cmd_workspace(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_workspace(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 
@@ -141,8 +141,8 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 	}
 	if (output_location >= 0) {
-		if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST,
-						output_location + 2))) {
+		if (checkarg(&error, argc, "workspace", EXPECTED_AT_LEAST,
+						output_location + 2)) {
 			return error;
 		}
 		char *ws_name = join_args(argv, output_location);
@@ -156,9 +156,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			list_add(wsc->outputs, strdup(argv[i]));
 		}
 	} else if (gaps_location >= 0) {
-		if ((error = cmd_workspace_gaps(argc, argv, gaps_location))) {
-			return error;
-		}
+		return cmd_workspace_gaps(argc, argv, gaps_location);
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, NULL);
@@ -175,7 +173,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		bool no_auto_back_and_forth = false;
 		while (strcasecmp(argv[0], "--no-auto-back-and-forth") == 0) {
 			no_auto_back_and_forth = true;
-			if ((error = checkarg(--argc, "workspace", EXPECTED_AT_LEAST, 1))) {
+			if (checkarg(&error, --argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 				return error;
 			}
 			++argv;

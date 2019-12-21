@@ -9,7 +9,7 @@
 #include "sway/input/seat.h"
 #include "log.h"
 
-static struct cmd_results *do_split(int layout) {
+static struct cmd_results do_split(int layout) {
 	struct sway_container *con = config->handler_context.container;
 	struct sway_workspace *ws = config->handler_context.workspace;
 	if (con) {
@@ -36,9 +36,9 @@ static struct cmd_results *do_split(int layout) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-struct cmd_results *cmd_split(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "split", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_split(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "split", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (!root->outputs->length) {
@@ -66,25 +66,25 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-struct cmd_results *cmd_splitv(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "splitv", EXPECTED_EQUAL_TO, 0))) {
+struct cmd_results cmd_splitv(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "splitv", EXPECTED_EQUAL_TO, 0)) {
 		return error;
 	}
 	return do_split(L_VERT);
 }
 
-struct cmd_results *cmd_splith(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "splitv", EXPECTED_EQUAL_TO, 0))) {
+struct cmd_results cmd_splith(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "splitv", EXPECTED_EQUAL_TO, 0)) {
 		return error;
 	}
 	return do_split(L_HORIZ);
 }
 
-struct cmd_results *cmd_splitt(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "splitv", EXPECTED_EQUAL_TO, 0))) {
+struct cmd_results cmd_splitt(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "splitv", EXPECTED_EQUAL_TO, 0)) {
 		return error;
 	}
 

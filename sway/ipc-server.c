@@ -637,10 +637,10 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		int length = strlen(json);
 		ipc_send_reply(client, payload_type, json, (uint32_t)length);
 		free(json);
-		while (res_list->length) {
-			struct cmd_results *results = res_list->items[0];
-			free_cmd_results(results);
-			list_del(res_list, 0);
+		for (int i = 0; i < res_list->length; ++i) {
+			struct cmd_results *res = res_list->items[i];
+			free_cmd_results(*res);
+			free(res);
 		}
 		list_free(res_list);
 		goto exit_cleanup;

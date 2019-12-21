@@ -25,9 +25,9 @@ static struct cmd_handler output_handlers[] = {
 	{ "transform", output_cmd_transform },
 };
 
-struct cmd_results *cmd_output(int argc, char **argv) {
-	struct cmd_results *error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1);
-	if (error != NULL) {
+struct cmd_results cmd_output(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 
@@ -66,7 +66,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 	if (!output) {
 		sway_log(SWAY_ERROR, "Failed to allocate output config");
-		return NULL;
+		return cmd_results_new(CMD_FAILURE, "Failed to allocate output config");
 	}
 	argc--; argv++;
 
@@ -84,7 +84,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				"Invalid output subcommand: %s.", *argv);
 		}
 
-		if (error != NULL) {
+		if (error.status != CMD_SUCCESS) {
 			goto fail;
 		}
 

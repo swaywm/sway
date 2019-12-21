@@ -6,7 +6,7 @@
 #include "sway/ipc-server.h"
 #include "log.h"
 
-static struct cmd_results *bar_set_hidden_state(struct bar_config *bar,
+static struct cmd_results bar_set_hidden_state(struct bar_config *bar,
 		const char *hidden_state) {
 	char *old_state = bar->hidden_state;
 	if (strcasecmp("toggle", hidden_state) == 0 && !config->reading) {
@@ -31,15 +31,15 @@ static struct cmd_results *bar_set_hidden_state(struct bar_config *bar,
 	}
 	// free old mode
 	free(old_state);
-	return NULL;
+	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "hidden_state", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results bar_cmd_hidden_state(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "hidden_state", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
-	if ((error = checkarg(argc, "hidden_state", EXPECTED_AT_MOST, 2))) {
+	if (checkarg(&error, argc, "hidden_state", EXPECTED_AT_MOST, 2)) {
 		return error;
 	}
 	if (config->reading && argc > 1) {
@@ -55,20 +55,22 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 
 	const char *state = argv[0];
 	if (config->reading) {
-		error = bar_set_hidden_state(config->current_bar, state);
+		return bar_set_hidden_state(config->current_bar, state);
 	} else {
 		const char *id = argc == 2 ? argv[1] : NULL;
 		for (int i = 0; i < config->bars->length; ++i) {
 			struct bar_config *bar = config->bars->items[i];
 			if (id) {
 				if (strcmp(id, bar->id) == 0) {
-					error = bar_set_hidden_state(bar, state);
-					break;
+					return bar_set_hidden_state(bar, state);
 				}
-			} else if ((error = bar_set_hidden_state(bar, state))) {
-				break;
+			} else {
+				error = bar_set_hidden_state(bar, state);
+				if (error.status != CMD_SUCCESS) {
+					return error;
+				}
 			}
 		}
+		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
-	return error ? error : cmd_results_new(CMD_SUCCESS, NULL);
 }

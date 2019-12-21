@@ -4,9 +4,9 @@
 #include "sway/server.h"
 #include "util.h"
 
-struct cmd_results *cmd_xwayland(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "xwayland", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_xwayland(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "xwayland", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

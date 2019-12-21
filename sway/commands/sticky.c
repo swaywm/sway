@@ -12,9 +12,9 @@
 #include "log.h"
 #include "util.h"
 
-struct cmd_results *cmd_sticky(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "sticky", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_sticky(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "sticky", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;

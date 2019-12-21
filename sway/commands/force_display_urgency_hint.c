@@ -1,10 +1,10 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 
-struct cmd_results *cmd_force_display_urgency_hint(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "force_display_urgency_hint",
-					EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_force_display_urgency_hint(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "force_display_urgency_hint",
+					EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 

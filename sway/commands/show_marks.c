@@ -14,9 +14,9 @@ static void rebuild_marks_iterator(struct sway_container *con, void *data) {
 	container_update_marks_textures(con);
 }
 
-struct cmd_results *cmd_show_marks(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "show_marks", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_show_marks(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "show_marks", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 

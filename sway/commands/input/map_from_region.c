@@ -33,9 +33,9 @@ static bool parse_coords(const char *str, double *x, double *y, bool *mm) {
 	return true;
 }
 
-struct cmd_results *input_cmd_map_from_region(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "map_from_region", EXPECTED_EQUAL_TO, 2))) {
+struct cmd_results input_cmd_map_from_region(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "map_from_region", EXPECTED_EQUAL_TO, 2)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

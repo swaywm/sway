@@ -4,9 +4,9 @@
 #include "sway/config.h"
 #include "stringop.h"
 
-struct cmd_results *seat_cmd_attach(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "attach", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results seat_cmd_attach(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "attach", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {

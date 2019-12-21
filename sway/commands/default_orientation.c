@@ -2,9 +2,9 @@
 #include <strings.h>
 #include "sway/commands.h"
 
-struct cmd_results *cmd_default_orientation(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "default_orientation", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results cmd_default_orientation(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "default_orientation", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (strcasecmp(argv[0], "horizontal") == 0) {

@@ -6,9 +6,9 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *input_cmd_xkb_file(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "xkb_file", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results input_cmd_xkb_file(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "xkb_file", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

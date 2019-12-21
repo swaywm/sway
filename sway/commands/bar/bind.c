@@ -9,7 +9,7 @@
 #include "log.h"
 #include "stringop.h"
 
-static struct cmd_results *binding_add(struct bar_binding *binding,
+static struct cmd_results binding_add(struct bar_binding *binding,
 		list_t *mode_bindings) {
 	const char *name = get_mouse_button_name(binding->button);
 	bool overwritten = false;
@@ -35,7 +35,7 @@ static struct cmd_results *binding_add(struct bar_binding *binding,
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *binding_remove(struct bar_binding *binding,
+static struct cmd_results binding_remove(struct bar_binding *binding,
 		list_t *mode_bindings) {
 	const char *name = get_mouse_button_name(binding->button);
 	for (int i = 0; i < mode_bindings->length; i++) {
@@ -52,7 +52,7 @@ static struct cmd_results *binding_remove(struct bar_binding *binding,
 		}
 	}
 
-	struct cmd_results *error = cmd_results_new(CMD_FAILURE, "Could not "
+	struct cmd_results error = cmd_results_new(CMD_FAILURE, "Could not "
 			"find binding for [bar %s]" " Button %u (%s)%s",
 			config->current_bar->id, binding->button, name,
 			binding->release ? " - release" : "");
@@ -60,7 +60,7 @@ static struct cmd_results *binding_remove(struct bar_binding *binding,
 	return error;
 }
 
-static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code,
+static struct cmd_results bar_cmd_bind(int argc, char **argv, bool code,
 		bool unbind) {
 	int minargs = 2;
 	const char *command;
@@ -71,8 +71,8 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code,
 		command = code ? "bar bindcode" : "bar bindsym";
 	}
 
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, command, EXPECTED_AT_LEAST, minargs))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, command, EXPECTED_AT_LEAST, minargs)) {
 		return error;
 	}
 
@@ -112,18 +112,18 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code,
 	return binding_add(binding, bindings);
 }
 
-struct cmd_results *bar_cmd_bindcode(int argc, char **argv) {
+struct cmd_results bar_cmd_bindcode(int argc, char **argv) {
 	return bar_cmd_bind(argc, argv, true, false);
 }
 
-struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
+struct cmd_results bar_cmd_bindsym(int argc, char **argv) {
 	return bar_cmd_bind(argc, argv, false, false);
 }
 
-struct cmd_results *bar_cmd_unbindcode(int argc, char **argv) {
+struct cmd_results bar_cmd_unbindcode(int argc, char **argv) {
 	return bar_cmd_bind(argc, argv, true, true);
 }
 
-struct cmd_results *bar_cmd_unbindsym(int argc, char **argv) {
+struct cmd_results bar_cmd_unbindsym(int argc, char **argv) {
 	return bar_cmd_bind(argc, argv, false, true);
 }

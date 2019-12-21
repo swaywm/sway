@@ -5,12 +5,12 @@
 #include "sway/ipc-server.h"
 #include "log.h"
 
-struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results bar_cmd_gaps(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "gaps", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
-	if ((error = checkarg(argc, "gaps", EXPECTED_AT_MOST, 4))) {
+	if (checkarg(&error, argc, "gaps", EXPECTED_AT_MOST, 4)) {
 		return error;
 	}
 

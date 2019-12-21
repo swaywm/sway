@@ -2,9 +2,9 @@
 #include "sway/commands.h"
 #include "util.h"
 
-struct cmd_results *seat_cmd_fallback(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "fallback", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results seat_cmd_fallback(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "fallback", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	if (!config->handler_context.seat_config) {

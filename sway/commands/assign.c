@@ -7,9 +7,9 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *cmd_assign(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "assign", EXPECTED_AT_LEAST, 2))) {
+struct cmd_results cmd_assign(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "assign", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 

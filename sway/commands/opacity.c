@@ -5,9 +5,9 @@
 #include "sway/tree/view.h"
 #include "log.h"
 
-struct cmd_results *cmd_opacity(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "opacity", EXPECTED_AT_LEAST, 1))) {
+struct cmd_results cmd_opacity(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "opacity", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 

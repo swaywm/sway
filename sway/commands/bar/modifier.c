@@ -4,9 +4,9 @@
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "modifier", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results bar_cmd_modifier(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "modifier", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 

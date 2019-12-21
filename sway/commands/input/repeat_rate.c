@@ -4,9 +4,9 @@
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 
-struct cmd_results *input_cmd_repeat_rate(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "repeat_rate", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results input_cmd_repeat_rate(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "repeat_rate", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

@@ -3,9 +3,9 @@
 #include "sway/commands.h"
 #include "log.h"
 
-struct cmd_results *input_cmd_xkb_rules(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "xkb_rules", EXPECTED_EQUAL_TO, 1))) {
+struct cmd_results input_cmd_xkb_rules(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "xkb_rules", EXPECTED_EQUAL_TO, 1)) {
 		return error;
 	}
 	struct input_config *ic = config->handler_context.input_config;

@@ -216,7 +216,7 @@ void container_resize_tiled(struct sway_container *con,
 /**
  * Implement `resize <grow|shrink>` for a floating container.
  */
-static struct cmd_results *resize_adjust_floating(uint32_t axis,
+static struct cmd_results resize_adjust_floating(uint32_t axis,
 		struct resize_amount *amount) {
 	struct sway_container *con = config->handler_context.container;
 	int grow_width = 0, grow_height = 0;
@@ -273,7 +273,7 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 /**
  * Implement `resize <grow|shrink>` for a tiled container.
  */
-static struct cmd_results *resize_adjust_tiled(uint32_t axis,
+static struct cmd_results resize_adjust_tiled(uint32_t axis,
 		struct resize_amount *amount) {
 	struct sway_container *current = config->handler_context.container;
 
@@ -303,7 +303,7 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 /**
  * Implement `resize set` for a tiled container.
  */
-static struct cmd_results *resize_set_tiled(struct sway_container *con,
+static struct cmd_results resize_set_tiled(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
 	if (width->amount) {
 		if (width->unit == RESIZE_UNIT_PPT ||
@@ -353,7 +353,7 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 /**
  * Implement `resize set` for a floating container.
  */
-static struct cmd_results *resize_set_floating(struct sway_container *con,
+static struct cmd_results resize_set_floating(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
 	int min_width, max_width, min_height, max_height, grow_width = 0, grow_height = 0;
 	floating_calculate_constraints(&min_width, &max_width,
@@ -424,9 +424,9 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
  *     : height <height> [px|ppt]
  *     : [width] <width> [px|ppt] [height] <height> [px|ppt]
  */
-static struct cmd_results *cmd_resize_set(int argc, char **argv) {
-	struct cmd_results *error;
-	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 1))) {
+static struct cmd_results cmd_resize_set(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "resize", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 	const char usage[] = "Expected 'resize set [width] <width> [px|ppt]' or "
@@ -484,7 +484,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
  * args: <direction> <amount> <unit>
  * args: <direction> <amount> <unit> or <amount> <other_unit>
  */
-static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
+static struct cmd_results cmd_resize_adjust(int argc, char **argv,
 		int multiplier) {
 	const char usage[] = "Expected 'resize grow|shrink <direction> "
 		"[<amount> px|ppt [or <amount> px|ppt]]'";
@@ -566,7 +566,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	}
 }
 
-struct cmd_results *cmd_resize(int argc, char **argv) {
+struct cmd_results cmd_resize(int argc, char **argv) {
 	if (!root->outputs->length) {
 		return cmd_results_new(CMD_INVALID,
 				"Can't run this command while there's no outputs connected.");
@@ -576,8 +576,8 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize nothing");
 	}
 
-	struct cmd_results *error;
-	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "resize", EXPECTED_AT_LEAST, 2)) {
 		return error;
 	}
 

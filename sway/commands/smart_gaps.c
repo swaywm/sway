@@ -8,10 +8,9 @@
 #include "stringop.h"
 #include "util.h"
 
-struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
-	struct cmd_results *error = checkarg(argc, "smart_gaps", EXPECTED_AT_LEAST, 1);
-
-	if (error) {
+struct cmd_results cmd_smart_gaps(int argc, char **argv) {
+	struct cmd_results error;
+	if (checkarg(&error, argc, "smart_gaps", EXPECTED_AT_LEAST, 1)) {
 		return error;
 	}
 
