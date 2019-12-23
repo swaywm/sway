@@ -171,15 +171,14 @@ void workspace_consider_destroy(struct sway_workspace *ws) {
 	workspace_begin_destroy(ws);
 }
 
-static bool workspace_valid_on_output(const char *output_name,
+static bool workspace_valid_on_output(struct sway_output *output,
 		const char *ws_name) {
 	struct workspace_config *wsc = workspace_find_config(ws_name);
 	char identifier[128];
-	struct sway_output *output = output_by_name_or_id(output_name);
 	if (!output) {
 		return false;
 	}
-	output_name = output->wlr_output->name;
+	char *output_name = output->wlr_output->name;
 	output_get_identifier(identifier, sizeof(identifier), output);
 
 	if (!wsc) {
@@ -198,7 +197,7 @@ static bool workspace_valid_on_output(const char *output_name,
 }
 
 static void workspace_name_from_binding(const struct sway_binding * binding,
-		const char* output_name, int *min_order, char **earliest_name) {
+		struct sway_output* output, int *min_order, char **earliest_name) {
 	char *cmdlist = strdup(binding->command);
 	char *dup = cmdlist;
 	char *name = NULL;
@@ -245,7 +244,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 			sway_log(SWAY_DEBUG, "Isolated name from workspace number: '%s'", _target);
 
 			// Make sure the workspace number doesn't already exist
-			if (isdigit(_target[0]) && workspace_by_number(_target)) {
+			if (isdigit(_target[0]) && workspace_by_number(output, _target)) {
 				free(_target);
 				free(dup);
 				return;
@@ -253,7 +252,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 		}
 
 		// Make sure that the workspace doesn't already exist
-		if (workspace_by_name(_target)) {
+		if (workspace_by_name(output, _target)) {
 			free(_target);
 			free(dup);
 			return;
@@ -261,7 +260,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 
 		// make sure that the workspace can appear on the given
 		// output
-		if (!workspace_valid_on_output(output_name, _target)) {
+		if (!workspace_valid_on_output(output, _target)) {
 			free(_target);
 			free(dup);
 			return;
@@ -279,7 +278,8 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 	free(dup);
 }
 
-char *workspace_next_name(const char *output_name) {
+char *workspace_next_name(struct sway_output* output) {
+	char *output_name = output->wlr_output->name;
 	sway_log(SWAY_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
 	// Scan for available workspace names by looking through output-workspace
@@ -287,27 +287,22 @@ char *workspace_next_name(const char *output_name) {
 	struct sway_mode *mode = config->current_mode;
 
 	char identifier[128];
-	struct sway_output *output = output_by_name_or_id(output_name);
-	if (!output) {
-		return NULL;
-	}
-	output_name = output->wlr_output->name;
 	output_get_identifier(identifier, sizeof(identifier), output);
 
 	int order = INT_MAX;
 	char *target = NULL;
 	for (int i = 0; i < mode->keysym_bindings->length; ++i) {
 		workspace_name_from_binding(mode->keysym_bindings->items[i],
-				output_name, &order, &target);
+				output, &order, &target);
 	}
 	for (int i = 0; i < mode->keycode_bindings->length; ++i) {
 		workspace_name_from_binding(mode->keycode_bindings->items[i],
-				output_name, &order, &target);
+				output, &order, &target);
 	}
 	for (int i = 0; i < config->workspace_configs->length; ++i) {
 		// Unlike with bindings, this does not guarantee order
 		const struct workspace_config *wsc = config->workspace_configs->items[i];
-		if (workspace_by_name(wsc->workspace)) {
+		if (workspace_by_name(output, wsc->workspace)) {
 			continue;
 		}
 		bool found = false;
@@ -333,7 +328,7 @@ char *workspace_next_name(const char *output_name) {
 	unsigned int ws_num = 1;
 	do {
 		snprintf(name, sizeof(name), "%u", ws_num++);
-	} while (workspace_by_number(name));
+	} while (workspace_by_number(output, name));
 	return strdup(name);
 }
 
@@ -348,7 +343,12 @@ static bool _workspace_by_number(struct sway_workspace *ws, void *data) {
 	return !isdigit(*ws_name);
 }
 
-struct sway_workspace *workspace_by_number(const char* name) {
+struct sway_workspace *workspace_by_number(struct sway_output *output,
+		const char* name) {
+	if (config->workspace_namespace == WORKSPACE_NAMESPACE_OUTPUT) {
+		return output_find_workspace(output, _workspace_by_number,
+				(void*)name);
+	}
 	return root_find_workspace(_workspace_by_number, (void *) name);
 }
 
@@ -356,7 +356,8 @@ static bool _workspace_by_name(struct sway_workspace *ws, void *data) {
 	return strcasecmp(ws->name, data) == 0;
 }
 
-struct sway_workspace *workspace_by_name(const char *name) {
+struct sway_workspace *workspace_by_name(struct sway_output *output,
+		const char *name) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *current = seat_get_focused_workspace(seat);
 
@@ -375,9 +376,23 @@ struct sway_workspace *workspace_by_name(const char *name) {
 		if (!seat->prev_workspace_name) {
 			return NULL;
 		}
+		if (config->workspace_namespace == WORKSPACE_NAMESPACE_OUTPUT) {
+			if (output == NULL) {
+				return NULL;
+			}
+			return output_find_workspace(output, _workspace_by_name,
+					(void*)seat->prev_workspace_name);
+		}
 		return root_find_workspace(_workspace_by_name,
 				(void*)seat->prev_workspace_name);
 	} else {
+		if (config->workspace_namespace == WORKSPACE_NAMESPACE_OUTPUT) {
+			if (output == NULL) {
+				return NULL;
+			}
+			return output_find_workspace(output, _workspace_by_name,
+					(void*)name);
+		}
 		return root_find_workspace(_workspace_by_name, (void*)name);
 	}
 }
@@ -401,7 +416,7 @@ static struct sway_workspace *workspace_output_prev_next_impl(
 	if (!workspace_is_empty(workspace) && create &&
 			(index + dir < 0 || index + dir == output->workspaces->length)) {
 		struct sway_output *output = workspace->output;
-		char *next = workspace_next_name(output->wlr_output->name);
+		char *next = workspace_next_name(output);
 		workspace_create(output, next);
 		free(next);
 	}
@@ -467,10 +482,10 @@ bool workspace_switch(struct sway_workspace *workspace,
 	if (!no_auto_back_and_forth && config->auto_back_and_forth && active_ws
 			&& active_ws == workspace && seat->prev_workspace_name) {
 		struct sway_workspace *new_ws =
-			workspace_by_name(seat->prev_workspace_name);
+			workspace_by_name(NULL, seat->prev_workspace_name);
 		workspace = new_ws ?
 			new_ws :
-			workspace_create(NULL, seat->prev_workspace_name);
+			workspace_create(active_ws->output, seat->prev_workspace_name);
 	}
 
 	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",

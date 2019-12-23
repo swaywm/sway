@@ -105,6 +105,7 @@ static struct cmd_handler config_handlers[] = {
 	{ "swaybg_command", cmd_swaybg_command },
 	{ "swaynag_command", cmd_swaynag_command },
 	{ "workspace_layout", cmd_workspace_layout },
+	{ "workspace_namespace", cmd_workspace_namespace },
 	{ "xwayland", cmd_xwayland },
 };
 

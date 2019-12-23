@@ -58,14 +58,14 @@ void workspace_begin_destroy(struct sway_workspace *workspace);
 
 void workspace_consider_destroy(struct sway_workspace *ws);
 
-char *workspace_next_name(const char *output_name);
+char *workspace_next_name(struct sway_output *output);
 
 bool workspace_switch(struct sway_workspace *workspace,
 		bool no_auto_back_and_forth);
 
-struct sway_workspace *workspace_by_number(const char* name);
+struct sway_workspace *workspace_by_number(struct sway_output *output, const char* name);
 
-struct sway_workspace *workspace_by_name(const char*);
+struct sway_workspace *workspace_by_name(struct sway_output *output, const char* name);
 
 struct sway_workspace *workspace_output_next(
 		struct sway_workspace *current, bool create);

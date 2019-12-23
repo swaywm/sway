@@ -198,15 +198,15 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				return cmd_results_new(CMD_INVALID,
 						"Invalid workspace number '%s'", argv[1]);
 			}
-			if (!(ws = workspace_by_number(argv[1]))) {
+			if (!(ws = workspace_by_number(current->output, argv[1]))) {
 				char *name = join_args(argv + 1, argc - 1);
-				ws = workspace_create(NULL, name);
+				ws = workspace_create(current->output, name);
 				free(name);
 			}
 		} else if (strcasecmp(argv[0], "next") == 0 ||
 				strcasecmp(argv[0], "prev") == 0 ||
 				strcasecmp(argv[0], "current") == 0) {
-			ws = workspace_by_name(argv[0]);
+			ws = workspace_by_name(current->output, argv[0]);
 		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
 			ws = workspace_output_next(current, create);
 		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
@@ -216,13 +216,13 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				return cmd_results_new(CMD_INVALID,
 						"There is no previous workspace");
 			}
-			if (!(ws = workspace_by_name(argv[0]))) {
-				ws = workspace_create(NULL, seat->prev_workspace_name);
+			if (!(ws = workspace_by_name(current->output, argv[0]))) {
+				ws = workspace_create(current->output, seat->prev_workspace_name);
 			}
 		} else {
 			char *name = join_args(argv, argc);
-			if (!(ws = workspace_by_name(name))) {
-				ws = workspace_create(NULL, name);
+			if (!(ws = workspace_by_name(current->output, name))) {
+				ws = workspace_create(current->output, name);
 			}
 			free(name);
 		}

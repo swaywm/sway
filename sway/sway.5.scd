@@ -88,6 +88,9 @@ The following commands may only be used in the configuration file.
 *workspace_layout* default|stacking|tabbed
 	Specifies the initial layout for new workspaces.
 
+*workspace_namespace* default|global|output
+	Specifies the workspace namespacing.
+
 *xwayland* enable|disable|force
 	Enables or disables Xwayland support, which allows X11 applications to be
 	used. _enable_ will lazily load Xwayland so Xwayland will not be launched

@@ -252,7 +252,7 @@ struct sway_workspace *root_workspace_for_pid(pid_t pid) {
 found:
 
 	if (pw && pw->workspace) {
-		ws = workspace_by_name(pw->workspace);
+		ws = workspace_by_name(pw->output, pw->workspace);
 
 		if (!ws) {
 			sway_log(SWAY_DEBUG,

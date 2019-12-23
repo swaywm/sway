@@ -31,6 +31,12 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	int argn = 1;
 	struct sway_workspace *workspace = NULL;
 
+	struct sway_seat *seat = config->handler_context.seat;
+	struct sway_workspace *current = seat_get_focused_workspace(seat);
+	if (!current) {
+		return cmd_results_new(CMD_FAILURE, "No workspace available");
+	}
+
 	if (strcasecmp(argv[1], "to") == 0) {
 		// 'rename workspace to new_name'
 		workspace = config->handler_context.workspace;
@@ -40,7 +46,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID,
 					"Invalid workspace number '%s'", argv[2]);
 		}
-		workspace = workspace_by_number(argv[2]);
+		workspace = workspace_by_number(current->output, argv[2]);
 		while (argn < argc && strcasecmp(argv[argn], "to") != 0) {
 			++argn;
 		}
@@ -51,7 +57,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 			++end;
 		}
 		char *old_name = join_args(argv + argn, end - argn);
-		workspace = workspace_by_name(old_name);
+		workspace = workspace_by_name(current->output, old_name);
 		free(old_name);
 		argn = end;
 	}
@@ -79,7 +85,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID,
 				"Cannot use special workspace name '%s'", argv[argn]);
 	}
-	struct sway_workspace *tmp_workspace = workspace_by_name(new_name);
+	struct sway_workspace *tmp_workspace = workspace_by_name(current->output, new_name);
 	if (tmp_workspace) {
 		free(new_name);
 		if (tmp_workspace == workspace) {

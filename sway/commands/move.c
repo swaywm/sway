@@ -430,9 +430,9 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 				strcasecmp(argv[1], "next_on_output") == 0 ||
 				strcasecmp(argv[1], "prev_on_output") == 0 ||
 				strcasecmp(argv[1], "current") == 0) {
-			ws = workspace_by_name(argv[1]);
+			ws = workspace_by_name(old_output, argv[1]);
 		} else if (strcasecmp(argv[1], "back_and_forth") == 0) {
-			if (!(ws = workspace_by_name(argv[1]))) {
+			if (!(ws = workspace_by_name(old_output, argv[1]))) {
 				if (seat->prev_workspace_name) {
 					ws_name = strdup(seat->prev_workspace_name);
 				} else {
@@ -451,10 +451,10 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 							"Invalid workspace number '%s'", argv[2]);
 				}
 				ws_name = join_args(argv + 2, argc - 2);
-				ws = workspace_by_number(ws_name);
+				ws = workspace_by_number(old_output, ws_name);
 			} else {
 				ws_name = join_args(argv + 1, argc - 1);
-				ws = workspace_by_name(ws_name);
+				ws = workspace_by_name(old_output, ws_name);
 			}
 
 			if (!no_auto_back_and_forth && config->auto_back_and_forth &&
@@ -465,7 +465,7 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 					// if target workspace is the current one
 					free(ws_name);
 					ws_name = strdup(seat->prev_workspace_name);
-					ws = workspace_by_name(ws_name);
+					ws = workspace_by_name(old_output, ws_name);
 				}
 			}
 		}
@@ -483,7 +483,7 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 							"on the same output");
 				}
 			}
-			ws = workspace_create(NULL, ws_name);
+			ws = workspace_create(old_output, ws_name);
 		}
 		free(ws_name);
 		struct sway_container *dst = seat_get_focus_inactive_tiling(seat, ws);
@@ -614,7 +614,7 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 	// on the old output
 	struct sway_seat *seat = config->handler_context.seat;
 	if (old_output->workspaces->length == 0) {
-		char *ws_name = workspace_next_name(old_output->wlr_output->name);
+		char *ws_name = workspace_next_name(old_output);
 		struct sway_workspace *ws = workspace_create(old_output, ws_name);
 		free(ws_name);
 		seat_set_raw_focus(seat, &ws->node);
@@ -657,6 +657,11 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	if (!new_output) {
 		return cmd_results_new(CMD_FAILURE,
 			"Can't find output with name/direction '%s'", argv[0]);
+	}
+	if (config->workspace_namespace == WORKSPACE_NAMESPACE_OUTPUT &&
+			workspace_by_name(new_output, workspace->name) != NULL) {
+		free(workspace->name);
+		workspace->name = workspace_next_name(new_output);
 	}
 	workspace_move_to_output(workspace, new_output);
 

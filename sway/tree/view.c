@@ -470,6 +470,11 @@ static void view_populate_pid(struct sway_view *view) {
 
 static struct sway_workspace *select_workspace(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_workspace *current = seat_get_focused_workspace(seat);
+	if (!sway_assert(current != NULL, "no workspace is focused")) {
+		return NULL;
+	}
+	struct sway_output *output = current->output;
 
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
@@ -486,16 +491,16 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 		} else {
 			// CT_ASSIGN_WORKSPACE(_NUMBER)
 			ws = criteria->type == CT_ASSIGN_WORKSPACE_NUMBER ?
-				workspace_by_number(criteria->target) :
-				workspace_by_name(criteria->target);
+				workspace_by_number(output, criteria->target) :
+				workspace_by_name(output, criteria->target);
 
 			if (!ws) {
 				if (strcasecmp(criteria->target, "back_and_forth") == 0) {
 					if (seat->prev_workspace_name) {
-						ws = workspace_create(NULL, seat->prev_workspace_name);
+						ws = workspace_create(output, seat->prev_workspace_name);
 					}
 				} else {
-					ws = workspace_create(NULL, criteria->target);
+					ws = workspace_create(output, criteria->target);
 				}
 			}
 			break;
