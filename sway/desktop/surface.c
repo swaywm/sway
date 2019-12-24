@@ -11,7 +11,9 @@ void handle_destroy(struct wl_listener *listener, void *data) {
 	surface->wlr_surface->data = NULL;
 	wl_list_remove(&surface->destroy.link);
 
-	wl_event_source_remove(surface->frame_done_timer);
+	if (surface->frame_done_timer) {
+		wl_event_source_remove(surface->frame_done_timer);
+	}
 
 	free(surface);
 }
@@ -38,4 +40,7 @@ void handle_compositor_new_surface(struct wl_listener *listener, void *data) {
 
 	surface->frame_done_timer = wl_event_loop_add_timer(server.wl_event_loop,
 		surface_frame_done_timer_handler, surface);
+	if (!surface->frame_done_timer) {
+		wl_resource_post_no_memory(wlr_surface->resource);
+	}
 }
