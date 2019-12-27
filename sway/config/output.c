@@ -366,7 +366,9 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (scale != wlr_output->scale) {
 		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, scale);
 		wlr_output_set_scale(wlr_output, scale);
+	}
 
+	if (oc) {
 		enum scale_filter_mode scale_filter_old = output->scale_filter;
 		switch (oc->scale_filter) {
 			case SCALE_FILTER_DEFAULT:
