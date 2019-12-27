@@ -560,8 +560,12 @@ int output_repaint_timer_handler(void *data) {
 		clock_gettime(CLOCK_MONOTONIC, &now);
 
 		output_render(output, &now, &damage);
-	} else if (surface_needs_frame) {
-		wlr_output_schedule_frame(output->wlr_output);
+	} else {
+		wlr_output_rollback(output->wlr_output);
+
+		if (surface_needs_frame) {
+			wlr_output_schedule_frame(output->wlr_output);
+		}
 	}
 
 	pixman_region32_fini(&damage);

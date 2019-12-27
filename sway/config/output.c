@@ -231,14 +231,15 @@ struct output_config *store_output_config(struct output_config *oc) {
 	return oc;
 }
 
-static bool set_mode(struct wlr_output *output, int width, int height,
+static void set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate, bool custom) {
 	int mhz = (int)(refresh_rate * 1000);
 
 	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
-		return wlr_output_set_custom_mode(output, width, height,
+		wlr_output_set_custom_mode(output, width, height,
 			refresh_rate > 0 ? mhz : 0);
+		return;
 	}
 
 	struct wlr_output_mode *mode, *best = NULL;
@@ -260,7 +261,7 @@ static bool set_mode(struct wlr_output *output, int width, int height,
 	} else {
 		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
 	}
-	return wlr_output_set_mode(output, best);
+	wlr_output_set_mode(output, best);
 }
 
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
@@ -315,46 +316,38 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	if (oc && !oc->enabled) {
 		// Output is configured to be disabled
+		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
 		if (output->enabled) {
 			output_disable(output);
 			wlr_output_layout_remove(root->output_layout, wlr_output);
 		}
 		wlr_output_enable(wlr_output, false);
-		return true;
+		return wlr_output_commit(wlr_output);
 	} else if (!output->enabled) {
 		// Output is not enabled. Enable it, output_enable will call us again.
 		if (!oc || oc->dpms_state != DPMS_OFF) {
+			sway_log(SWAY_DEBUG, "Enabling output %s", oc->name);
 			wlr_output_enable(wlr_output, true);
+			wlr_output_commit(wlr_output);
 		}
 		return output_enable(output, oc);
 	}
 
-	if (oc && oc->dpms_state == DPMS_ON) {
-		sway_log(SWAY_DEBUG, "Turning on screen");
+	if (!oc || oc->dpms_state != DPMS_OFF) {
+		sway_log(SWAY_DEBUG, "Turning on output %s", oc->name);
 		wlr_output_enable(wlr_output, true);
-	}
 
-	bool modeset_success;
-	if (oc && oc->width > 0 && oc->height > 0) {
-		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)", oc->name, oc->width,
-			oc->height, oc->refresh_rate);
-		modeset_success = set_mode(wlr_output, oc->width, oc->height,
-			oc->refresh_rate, oc->custom_mode == 1);
-	} else if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-		modeset_success = wlr_output_set_mode(wlr_output, mode);
-	} else {
-		// Output doesn't support modes
-		modeset_success = true;
+		if (oc && oc->width > 0 && oc->height > 0) {
+			sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)", oc->name, oc->width,
+				oc->height, oc->refresh_rate);
+			set_mode(wlr_output, oc->width, oc->height,
+				oc->refresh_rate, oc->custom_mode == 1);
+		} else if (!wl_list_empty(&wlr_output->modes)) {
+			struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
+			wlr_output_set_mode(wlr_output, mode);
+		}
+		output->current_mode = wlr_output->pending.mode;
 	}
-	if (!modeset_success) {
-		// Failed to modeset, maybe the output is missing a CRTC. Leave the
-		// output disabled for now and try again when the output gets the mode
-		// we asked for.
-		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
-		return false;
-	}
-	output->current_mode = wlr_output->current_mode;
 
 	float scale;
 	if (oc && oc->scale > 0) {
@@ -400,6 +393,15 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_output_set_transform(wlr_output, oc->transform);
 	}
 
+	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
+	if (!wlr_output_commit(wlr_output)) {
+		// Failed to modeset, maybe the output is missing a CRTC. Leave the
+		// output disabled for now and try again when the output gets the mode
+		// we asked for.
+		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
+		return false;
+	}
+
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
 		sway_log(SWAY_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
@@ -417,8 +419,9 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	output->height = output_box->height;
 
 	if (oc && oc->dpms_state == DPMS_OFF) {
-		sway_log(SWAY_DEBUG, "Turning off screen");
+		sway_log(SWAY_DEBUG, "Turning off output %s", oc->name);
 		wlr_output_enable(wlr_output, false);
+		wlr_output_commit(wlr_output);
 	}
 
 	if (oc && oc->max_render_time >= 0) {
