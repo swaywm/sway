@@ -215,6 +215,9 @@ void arrange_layers(struct sway_output *output) {
 	wl_list_for_each(seat, &server.input->seats, link) {
 		if (topmost != NULL) {
 			seat_set_focus_layer(seat, topmost->layer_surface);
+		} else if (seat->focused_layer &&
+				!seat->focused_layer->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, NULL);
 		}
 	}
 }
