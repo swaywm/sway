@@ -9,7 +9,8 @@ struct i3bar_block {
 	int ref_count;
 	char *full_text, *short_text, *align, *min_width_str;
 	bool urgent;
-	uint32_t *color;
+	uint32_t color;
+	bool color_set;
 	int min_width;
 	char *name, *instance;
 	bool separator;
