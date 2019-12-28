@@ -85,6 +85,7 @@ properties (only _full_text_ is required):
 |- border_top
 :  integer
 :  The height in pixels of the top border. The default is 1
+|- border_bottom
 :  integer
 :  The height in pixels of the bottom border. The default is 1
 |- border_left
