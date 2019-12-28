@@ -31,6 +31,13 @@ bool parse_color(const char *color, uint32_t *result) {
 	return true;
 }
 
+void color_to_rgba(float dest[static 4], uint32_t color) {
+	dest[0] = ((color >> 24) & 0xff) / 255.0;
+	dest[1] = ((color >> 16) & 0xff) / 255.0;
+	dest[2] = ((color >> 8) & 0xff) / 255.0;
+	dest[3] = (color & 0xff) / 255.0;
+}
+
 bool parse_boolean(const char *boolean, bool current) {
 	if (strcasecmp(boolean, "1") == 0
 			|| strcasecmp(boolean, "yes") == 0

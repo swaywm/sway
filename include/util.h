@@ -17,6 +17,8 @@ int wrap(int i, int max);
  */
 bool parse_color(const char *color, uint32_t *result);
 
+void color_to_rgba(float dest[static 4], uint32_t color);
+
 /**
  * Given a string that represents a boolean, return the boolean value. This
  * function also takes in the current boolean value to support toggling. If
