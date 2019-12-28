@@ -88,8 +88,6 @@ void free_cmd_results(struct cmd_results *results);
  */
 char *cmd_results_to_json(list_t *res_list);
 
-struct cmd_results *add_color(char *buffer, const char *color);
-
 /**
  * TODO: Move this function and its dependent functions to container.c.
  */

@@ -1,5 +1,7 @@
 #include <string.h>
 #include "sway/commands.h"
+#include "log.h"
+#include "util.h"
 
 // Must be in alphabetical order for bsearch
 static struct cmd_handler bar_colors_handlers[] = {
@@ -16,38 +18,53 @@ static struct cmd_handler bar_colors_handlers[] = {
 	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
 };
 
+static char *hex_to_rgba_hex(const char *hex) {
+	uint32_t color;
+	if (!parse_color(hex, &color)) {
+		return NULL;
+	}
+	char *rgba = malloc(10);
+	snprintf(rgba, 10, "#%08x", color);
+	return rgba;
+}
+
 static struct cmd_results *parse_single_color(char **color,
 		const char *cmd_name, int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, cmd_name, EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	if (!*color && !(*color = malloc(10))) {
-		return NULL;
+
+	char *rgba = hex_to_rgba_hex(argv[0]);
+	if (!*rgba) {
+		return cmd_results_new(CMD_INVALID, "Invalid color: %s", argv[0]);
 	}
-	error = add_color(*color, argv[0]);
-	if (error) {
-		return error;
-	}
+
+	free(*color);
+	*color = rgba;
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
 static struct cmd_results *parse_three_colors(char ***colors,
 		const char *cmd_name, int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (argc != 3) {
-		return cmd_results_new(CMD_INVALID,
-				"Command '%s' requires exactly three color values", cmd_name);
+	if ((error = checkarg(argc, cmd_name, EXPECTED_EQUAL_TO, 3))) {
+		return error;
 	}
-	for (size_t i = 0; i < 3; i++) {
-		if (!*colors[i] && !(*(colors[i]) = malloc(10))) {
-			return NULL;
-		}
-		error = add_color(*(colors[i]), argv[i]);
-		if (error) {
-			return error;
+
+	char *rgba[3] = {0};
+	for (int i = 0; i < 3; i++) {
+		rgba[i] = hex_to_rgba_hex(argv[i]);
+		if (!rgba[i]) {
+			return cmd_results_new(CMD_INVALID, "Invalid color: %s", argv[i]);
 		}
 	}
+
+	for (int i = 0; i < 3; i++) {
+		free(*colors[i]);
+		*colors[i] = rgba[i];
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
