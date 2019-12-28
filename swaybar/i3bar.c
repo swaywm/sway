@@ -24,7 +24,6 @@ void i3bar_block_unref(struct i3bar_block *block) {
 		free(block->min_width_str);
 		free(block->name);
 		free(block->instance);
-		free(block->color);
 		free(block);
 	}
 }
@@ -70,8 +69,11 @@ static void i3bar_parse_json(struct status_line *status,
 		block->short_text = short_text ?
 			strdup(json_object_get_string(short_text)) : NULL;
 		if (color) {
-			block->color = malloc(sizeof(uint32_t));
-			*block->color = parse_color(json_object_get_string(color));
+			const char *hexstring = json_object_get_string(color);
+			block->color_set = parse_color(hexstring, &block->color);
+			if (!block->color_set) {
+				sway_log(SWAY_ERROR, "Invalid block color: %s", hexstring);
+			}
 		}
 		if (min_width) {
 			json_type type = json_object_get_type(min_width);
@@ -98,10 +100,14 @@ static void i3bar_parse_json(struct status_line *status,
 		block->separator_block_width = separator_block_width ?
 			json_object_get_int(separator_block_width) : 9;
 		// Airblader features
-		block->background = background ?
-			parse_color(json_object_get_string(background)) : 0;
-		block->border = border ? 
-			parse_color(json_object_get_string(border)) : 0;
+		const char *hex = background ? json_object_get_string(background) : NULL;
+		if (hex && !parse_color(hex, &block->background)) {
+			sway_log(SWAY_ERROR, "Ignoring invalid block background: %s", hex);
+		}
+		hex = border ? json_object_get_string(border) : NULL;
+		if (hex && !parse_color(hex, &block->border)) {
+			sway_log(SWAY_ERROR, "Ignoring invalid block border: %s", hex);
+		}
 		block->border_top = border_top ? json_object_get_int(border_top) : 1;
 		block->border_bottom = border_bottom ?
 			json_object_get_int(border_bottom) : 1;

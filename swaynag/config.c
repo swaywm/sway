@@ -221,28 +221,28 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
 			return -1;
 		case TO_COLOR_BACKGROUND: // Background color
-			if (type) {
-				type->background = parse_color(optarg);
+			if (type && !parse_color(optarg, &type->background)) {
+				fprintf(stderr, "Invalid background color: %s", optarg);
 			}
 			break;
 		case TO_COLOR_BORDER: // Border color
-			if (type) {
-				type->border = parse_color(optarg);
+			if (type && !parse_color(optarg, &type->border)) {
+				fprintf(stderr, "Invalid border color: %s", optarg);
 			}
 			break;
 		case TO_COLOR_BORDER_BOTTOM: // Bottom border color
-			if (type) {
-				type->border_bottom = parse_color(optarg);
+			if (type && !parse_color(optarg, &type->border_bottom)) {
+				fprintf(stderr, "Invalid border bottom color: %s", optarg);
 			}
 			break;
 		case TO_COLOR_BUTTON:  // Button background color
-			if (type) {
-				type->button_background = parse_color(optarg);
+			if (type && !parse_color(optarg, &type->button_background)) {
+				fprintf(stderr, "Invalid button background color: %s", optarg);
 			}
 			break;
 		case TO_COLOR_TEXT:  // Text color
-			if (type) {
-				type->text = parse_color(optarg);
+			if (type && !parse_color(optarg, &type->text)) {
+				fprintf(stderr, "Invalid text color: %s", optarg);
 			}
 			break;
 		case TO_THICK_BAR_BORDER:  // Bottom border thickness

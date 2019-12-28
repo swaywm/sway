@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <ctype.h>
 #include <float.h>
 #include <fcntl.h>
 #include <math.h>
@@ -13,21 +14,21 @@ int wrap(int i, int max) {
 	return ((i % max) + max) % max;
 }
 
-uint32_t parse_color(const char *color) {
+bool parse_color(const char *color, uint32_t *result) {
 	if (color[0] == '#') {
 		++color;
 	}
-
 	int len = strlen(color);
-	if (len != 6 && len != 8) {
-		sway_log(SWAY_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
-		return 0xFFFFFFFF;
+	if ((len != 6 && len != 8) || !isxdigit(color[0]) || !isxdigit(color[1])) {
+		return false;
 	}
-	uint32_t res = (uint32_t)strtoul(color, NULL, 16);
-	if (strlen(color) == 6) {
-		res = (res << 8) | 0xFF;
+	char *ptr;
+	uint32_t parsed = strtoul(color, &ptr, 16);
+	if (*ptr != '\0') {
+		return false;
 	}
-	return res;
+	*result = len == 6 ? ((parsed << 8) | 0xFF) : parsed;
+	return true;
 }
 
 bool parse_boolean(const char *boolean, bool current) {

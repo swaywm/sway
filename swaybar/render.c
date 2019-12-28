@@ -265,7 +265,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 	}
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_move_to(cairo, offset, (int)floor(text_y));
-	uint32_t color = block->color ?  *block->color : config->colors.statusline;
+	uint32_t color = block->color_set ? block->color : config->colors.statusline;
 	color = block->urgent ? config->colors.urgent_workspace.text : color;
 	cairo_set_source_u32(cairo, color);
 	pango_printf(cairo, config->font, output->scale,
