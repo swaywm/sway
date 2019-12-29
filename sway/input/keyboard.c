@@ -359,6 +359,12 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 				code_modifiers);
 	}
 
+	// A keyboard was added to/removed from the group, just update the status
+	if (event->group_update) {
+		assert(wlr_keyboard_group_from_wlr_keyboard(wlr_device->keyboard));
+		return;
+	}
+
 	bool handled = false;
 	// Identify active release binding
 	struct sway_binding *binding_released = NULL;
