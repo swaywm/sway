@@ -442,15 +442,16 @@ runtime.
 		bindswitch lid:toggle exec echo "Lid moved"
 ```
 
-*client.<class>* <border> <background> <text> <indicator> <child_border>
-	Configures the color of window borders and title bars. All 5 colors are
-	required, with the exception of *client.background*, which requires exactly
-	one. Colors may be specified in hex, either as _#RRGGBB_ or _#RRGGBBAA_.
+*client.background* <color>
+	This command is ignored and is only present for i3 compatibility.
+
+*client.<class>* <border> <background> <text> [<indicator> [<child_border>]]
+	Configures the color of window borders and title bars. The first three
+	colors are required. When omitted _indicator_ will use a sane default and
+	_child_border_ will use the color set for _background_. Colors may be
+	specified in hex, either as _#RRGGBB_ or _#RRGGBBAA_.
 
 	The available classes are:
-
-	*client.background*
-		Ignored (present for i3 compatibility).
 
 	*client.focused*
 		The window that has focus.

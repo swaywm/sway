@@ -10,30 +10,34 @@ static void rebuild_textures_iterator(struct sway_container *con, void *data) {
 	container_update_title_textures(con);
 }
 
-static struct cmd_results *handle_command(int argc, char **argv,
-		struct border_colors *class, char *cmd_name) {
+static struct cmd_results *handle_command(int argc, char **argv, char *cmd_name,
+		struct border_colors *class, const char *default_indicator) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, cmd_name, EXPECTED_EQUAL_TO, 5))) {
+	if ((error = checkarg(argc, cmd_name, EXPECTED_AT_LEAST, 3)) ||
+			(error = checkarg(argc, cmd_name, EXPECTED_AT_MOST, 5))) {
 		return error;
 	}
 
 	struct border_colors colors = {0};
+	const char *ind_hex = argc > 3 ? argv[3] : default_indicator;
+	const char *child_hex = argc > 4 ? argv[4] : argv[1];  // def to background
 
 	struct {
 		const char *name;
+		const char *hex;
 		float *rgba[4];
 	} properties[] = {
-		{ "border", colors.border },
-		{ "background", colors.background },
-		{ "text", colors.text },
-		{ "indicator", colors.indicator },
-		{ "child_border", colors.child_border }
+		{ "border", argv[0], colors.border },
+		{ "background", argv[1], colors.background },
+		{ "text", argv[2], colors.text },
+		{ "indicator", ind_hex, colors.indicator },
+		{ "child_border", child_hex, colors.child_border }
 	};
 	for (size_t i = 0; i < sizeof(properties) / sizeof(properties[0]); i++) {
 		uint32_t color;
-		if (!parse_color(argv[i], &color)) {
-			return cmd_results_new(CMD_INVALID,
-					"Invalid %s color %s", properties[i].name, argv[i]);
+		if (!parse_color(properties[i].hex, &color)) {
+			return cmd_results_new(CMD_INVALID, "Invalid %s color %s",
+					properties[i].name, properties[i].hex);
 		}
 		color_to_rgba(*properties[i].rgba, color);
 	}
@@ -53,19 +57,23 @@ static struct cmd_results *handle_command(int argc, char **argv,
 }
 
 struct cmd_results *cmd_client_focused(int argc, char **argv) {
-	return handle_command(argc, argv, &config->border_colors.focused, "client.focused");
+	return handle_command(argc, argv, "client.focused",
+			&config->border_colors.focused, "#2e9ef4ff");
 }
 
 struct cmd_results *cmd_client_focused_inactive(int argc, char **argv) {
-	return handle_command(argc, argv, &config->border_colors.focused_inactive, "client.focused_inactive");
+	return handle_command(argc, argv, "client.focused_inactive",
+			&config->border_colors.focused_inactive, "#484e50ff");
 }
 
 struct cmd_results *cmd_client_unfocused(int argc, char **argv) {
-	return handle_command(argc, argv, &config->border_colors.unfocused, "client.unfocused");
+	return handle_command(argc, argv, "client.unfocused",
+			&config->border_colors.unfocused, "#292d2eff");
 }
 
 struct cmd_results *cmd_client_urgent(int argc, char **argv) {
-	return handle_command(argc, argv, &config->border_colors.urgent, "client.urgent");
+	return handle_command(argc, argv, "client.urgent",
+			&config->border_colors.urgent, "#900000ff");
 }
 
 struct cmd_results *cmd_client_noop(int argc, char **argv) {
