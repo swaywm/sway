@@ -334,7 +334,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	if (!oc || oc->dpms_state != DPMS_OFF) {
-		sway_log(SWAY_DEBUG, "Turning on output %s", oc->name);
+		sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 		wlr_output_enable(wlr_output, true);
 
 		if (oc && oc->width > 0 && oc->height > 0) {
