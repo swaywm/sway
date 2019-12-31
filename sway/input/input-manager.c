@@ -70,7 +70,8 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 
 	char *p = name;
 	for (; *p; ++p) {
-		if (*p == ' ') {
+		// There are in fact input devices with unprintable characters in its name
+		if (*p == ' ' || !isprint(*p)) {
 			*p = '_';
 		}
 	}
