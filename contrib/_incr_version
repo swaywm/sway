@@ -1,7 +1,7 @@
 #!/bin/sh -eu
 old_version="$1"
 new_version="$2"
-sed -i meson.build -e "s/version: '$old_version'/version: '$new_version'/g"
+sed -i meson.build -e "s/^	version: .*#release_version/	version: '$new_version', #release_version/g"
 
 printf "Minimum wlroots version? "
 read wlr_version_min
