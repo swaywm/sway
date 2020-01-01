@@ -45,6 +45,18 @@ struct sway_seat *input_manager_get_seat(const char *seat_name, bool create) {
 	return create ? seat_create(seat_name) : NULL;
 }
 
+struct sway_seat *input_manager_sway_seat_from_wlr_seat(struct wlr_seat *wlr_seat) {
+	struct sway_seat *seat = NULL;
+
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (seat->wlr_seat == wlr_seat) {
+			return seat;
+		}
+	}
+
+	return NULL;
+}
+
 char *input_device_get_identifier(struct wlr_input_device *device) {
 	int vendor = device->vendor;
 	int product = device->product;
@@ -288,9 +300,11 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
 	struct wlr_input_device *device = &keyboard->input_device;
 
-	struct sway_seat *seat = input_manager_get_default_seat();
+	// TODO: Amend protocol to allow NULL seat
+	struct sway_seat *seat = keyboard->seat ?
+		input_manager_sway_seat_from_wlr_seat(keyboard->seat) :
+		input_manager_get_default_seat();
 
-	// TODO: The user might want this on a different seat
 	struct sway_input_device *input_device =
 		calloc(1, sizeof(struct sway_input_device));
 	if (!sway_assert(input_device, "could not allocate input device")) {
@@ -318,8 +332,9 @@ void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
 	struct wlr_input_device *device = &pointer->input_device;
 
-	/* TODO: Consider suggested seat when creating the pointer */
-	struct sway_seat *seat = input_manager_get_default_seat();
+	struct sway_seat *seat = event->suggested_seat ?
+		input_manager_sway_seat_from_wlr_seat(event->suggested_seat) :
+		input_manager_get_default_seat();
 
 	struct sway_input_device *input_device =
 		calloc(1, sizeof(struct sway_input_device));
