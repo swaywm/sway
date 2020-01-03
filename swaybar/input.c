@@ -405,15 +405,14 @@ static const struct wl_touch_listener touch_listener = {
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		enum wl_seat_capability caps) {
 	struct swaybar_seat *seat = data;
-	if (seat->pointer.pointer != NULL) {
+
+	bool have_pointer = caps & WL_SEAT_CAPABILITY_POINTER;
+	bool have_touch = caps & WL_SEAT_CAPABILITY_TOUCH;
+
+	if (!have_pointer && seat->pointer.pointer != NULL) {
 		wl_pointer_release(seat->pointer.pointer);
 		seat->pointer.pointer = NULL;
-	}
-	if (seat->touch.touch != NULL) {
-		wl_touch_release(seat->touch.touch);
-		seat->touch.touch = NULL;
-	}
-	if ((caps & WL_SEAT_CAPABILITY_POINTER)) {
+	} else if (have_pointer && seat->pointer.pointer == NULL) {
 		seat->pointer.pointer = wl_seat_get_pointer(wl_seat);
 		if (seat->bar->running && !seat->pointer.cursor_surface) {
 			seat->pointer.cursor_surface =
@@ -422,7 +421,10 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		}
 		wl_pointer_add_listener(seat->pointer.pointer, &pointer_listener, seat);
 	}
-	if ((caps & WL_SEAT_CAPABILITY_TOUCH)) {
+	if (!have_touch && seat->touch.touch != NULL) {
+		wl_touch_release(seat->touch.touch);
+		seat->touch.touch = NULL;
+	} else if (have_touch && seat->touch.touch == NULL) {
 		seat->touch.touch = wl_seat_get_touch(wl_seat);
 		wl_touch_add_listener(seat->touch.touch, &touch_listener, seat);
 	}
