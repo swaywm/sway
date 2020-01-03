@@ -27,6 +27,14 @@ struct swaynag_pointer {
 	int y;
 };
 
+struct swaynag_seat {
+	struct wl_seat *wl_seat;
+	uint32_t wl_name;
+	struct swaynag *swaynag;
+	struct swaynag_pointer pointer;
+	struct wl_list link;
+};
+
 struct swaynag_output {
 	char *name;
 	struct wl_output *wl_output;
@@ -72,9 +80,9 @@ struct swaynag {
 	struct wl_compositor *compositor;
 	struct wl_seat *seat;
 	struct wl_shm *shm;
-	struct swaynag_pointer pointer;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
 	struct wl_list outputs;  // swaynag_output::link
+	struct wl_list seats;  // swaynag_seat::link
 	struct swaynag_output *output;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zwlr_layer_surface_v1 *layer_surface;

@@ -124,10 +124,11 @@ static struct wl_surface_listener surface_listener = {
 	.leave = nop,
 };
 
-static void update_cursor(struct swaynag *swaynag) {
-	struct swaynag_pointer *pointer = &swaynag->pointer;
-	if (swaynag->pointer.cursor_theme) {
-		wl_cursor_theme_destroy(swaynag->pointer.cursor_theme);
+static void update_cursor(struct swaynag_seat *seat) {
+	struct swaynag_pointer *pointer = &seat->pointer;
+	struct swaynag *swaynag = seat->swaynag;
+	if (pointer->cursor_theme) {
+		wl_cursor_theme_destroy(pointer->cursor_theme);
 	}
 	const char *cursor_theme = getenv("XCURSOR_THEME");
 	unsigned cursor_size = 24;
@@ -158,32 +159,42 @@ static void update_cursor(struct swaynag *swaynag) {
 	wl_surface_commit(pointer->cursor_surface);
 }
 
+void update_all_cursors(struct swaynag *swaynag) {
+	struct swaynag_seat *seat;
+	wl_list_for_each(seat, &swaynag->seats, link) {
+		if (seat->pointer.pointer) {
+			update_cursor(seat);
+		}
+	}
+}
+
 static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
-	struct swaynag *swaynag = data;
-	struct swaynag_pointer *pointer = &swaynag->pointer;
+	struct swaynag_seat *seat = data;
+	struct swaynag_pointer *pointer = &seat->pointer;
 	pointer->serial = serial;
-	update_cursor(swaynag);
+	update_cursor(seat);
 }
 
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
-	struct swaynag *swaynag = data;
-	swaynag->pointer.x = wl_fixed_to_int(surface_x);
-	swaynag->pointer.y = wl_fixed_to_int(surface_y);
+	struct swaynag_seat *seat = data;
+	seat->pointer.x = wl_fixed_to_int(surface_x);
+	seat->pointer.y = wl_fixed_to_int(surface_y);
 }
 
 static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
-	struct swaynag *swaynag = data;
+	struct swaynag_seat *seat = data;
+	struct swaynag *swaynag = seat->swaynag;
 
 	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
 		return;
 	}
 
-	double x = swaynag->pointer.x * swaynag->scale;
-	double y = swaynag->pointer.y * swaynag->scale;
+	double x = seat->pointer.x * swaynag->scale;
+	double y = seat->pointer.y * swaynag->scale;
 	for (int i = 0; i < swaynag->buttons->length; i++) {
 		struct swaynag_button *nagbutton = swaynag->buttons->items[i];
 		if (x >= nagbutton->x
@@ -225,12 +236,13 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 
 static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, uint32_t axis, wl_fixed_t value) {
-	struct swaynag *swaynag = data;
+	struct swaynag_seat *seat = data;
+	struct swaynag *swaynag = seat->swaynag;
 	if (!swaynag->details.visible
-			|| swaynag->pointer.x < swaynag->details.x
-			|| swaynag->pointer.y < swaynag->details.y
-			|| swaynag->pointer.x >= swaynag->details.x + swaynag->details.width
-			|| swaynag->pointer.y >= swaynag->details.y + swaynag->details.height
+			|| seat->pointer.x < swaynag->details.x
+			|| seat->pointer.y < swaynag->details.y
+			|| seat->pointer.x >= swaynag->details.x + swaynag->details.width
+			|| seat->pointer.y >= swaynag->details.y + swaynag->details.height
 			|| swaynag->details.total_lines == swaynag->details.visible_lines) {
 		return;
 	}
@@ -260,15 +272,15 @@ static struct wl_pointer_listener pointer_listener = {
 
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		enum wl_seat_capability caps) {
-	struct swaynag *swaynag = data;
+	struct swaynag_seat *seat = data;
 	bool cap_pointer = caps & WL_SEAT_CAPABILITY_POINTER;
-	if (cap_pointer && !swaynag->pointer.pointer) {
-		swaynag->pointer.pointer = wl_seat_get_pointer(wl_seat);
-		wl_pointer_add_listener(swaynag->pointer.pointer, &pointer_listener,
-				swaynag);
-	} else if (!cap_pointer && swaynag->pointer.pointer) {
-		wl_pointer_destroy(swaynag->pointer.pointer);
-		swaynag->pointer.pointer = NULL;
+	if (cap_pointer && !seat->pointer.pointer) {
+		seat->pointer.pointer = wl_seat_get_pointer(wl_seat);
+		wl_pointer_add_listener(seat->pointer.pointer,
+				&pointer_listener, seat);
+	} else if (!cap_pointer && seat->pointer.pointer) {
+		wl_pointer_destroy(seat->pointer.pointer);
+		seat->pointer.pointer = NULL;
 	}
 }
 
@@ -283,7 +295,7 @@ static void output_scale(void *data, struct wl_output *output,
 	swaynag_output->scale = factor;
 	if (swaynag_output->swaynag->output == swaynag_output) {
 		swaynag_output->swaynag->scale = swaynag_output->scale;
-		update_cursor(swaynag_output->swaynag);
+		update_all_cursors(swaynag_output->swaynag);
 		render_frame(swaynag_output->swaynag);
 	}
 }
@@ -325,8 +337,20 @@ static void handle_global(void *data, struct wl_registry *registry,
 		swaynag->compositor = wl_registry_bind(registry, name,
 				&wl_compositor_interface, 4);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
-		swaynag->seat = wl_registry_bind(registry, name, &wl_seat_interface, 1);
-		wl_seat_add_listener(swaynag->seat, &seat_listener, swaynag);
+		struct swaynag_seat *seat =
+			calloc(1, sizeof(struct swaynag_seat));
+		if (!seat) {
+			return;
+		}
+
+		seat->swaynag = swaynag;
+		seat->wl_name = name;
+		seat->wl_seat =
+			wl_registry_bind(registry, name, &wl_seat_interface, 1);
+
+		wl_seat_add_listener(seat->wl_seat, &seat_listener, seat);
+
+		wl_list_insert(&swaynag->seats, &seat->link);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		swaynag->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
@@ -360,11 +384,30 @@ static void handle_global(void *data, struct wl_registry *registry,
 	}
 }
 
+void swaynag_seat_destroy(struct swaynag_seat *seat) {
+	if (seat->pointer.cursor_theme) {
+		wl_cursor_theme_destroy(seat->pointer.cursor_theme);
+	}
+	if (seat->pointer.pointer) {
+		wl_pointer_destroy(seat->pointer.pointer);
+	}
+	wl_seat_destroy(seat->wl_seat);
+	wl_list_remove(&seat->link);
+	free(seat);
+}
+
 static void handle_global_remove(void *data, struct wl_registry *registry,
 		uint32_t name) {
 	struct swaynag *swaynag = data;
 	if (swaynag->output->wl_name == name) {
 		swaynag->run_display = false;
+	}
+
+	struct swaynag_seat *seat, *tmpseat;
+	wl_list_for_each_safe(seat, tmpseat, &swaynag->seats, link) {
+		if (seat->wl_name == name) {
+			swaynag_seat_destroy(seat);
+		}
 	}
 }
 
@@ -372,6 +415,18 @@ static const struct wl_registry_listener registry_listener = {
 	.global = handle_global,
 	.global_remove = handle_global_remove,
 };
+
+void swaynag_setup_cursors(struct swaynag *swaynag) {
+	struct swaynag_seat *seat;
+
+	wl_list_for_each(seat, &swaynag->seats, link) {
+		struct swaynag_pointer *p = &seat->pointer;
+
+		p->cursor_surface =
+			wl_compositor_create_surface(swaynag->compositor);
+		assert(p->cursor_surface);
+	}
+}
 
 void swaynag_setup(struct swaynag *swaynag) {
 	swaynag->display = wl_display_connect(NULL);
@@ -383,6 +438,7 @@ void swaynag_setup(struct swaynag *swaynag) {
 
 	swaynag->scale = 1;
 	wl_list_init(&swaynag->outputs);
+	wl_list_init(&swaynag->seats);
 
 	struct wl_registry *registry = wl_display_get_registry(swaynag->display);
 	wl_registry_add_listener(registry, &registry_listener, swaynag);
@@ -399,9 +455,7 @@ void swaynag_setup(struct swaynag *swaynag) {
 		exit(EXIT_FAILURE);
 	}
 
-	struct swaynag_pointer *pointer = &swaynag->pointer;
-	pointer->cursor_surface = wl_compositor_create_surface(swaynag->compositor);
-	assert(pointer->cursor_surface);
+	swaynag_setup_cursors(swaynag);
 
 	swaynag->surface = wl_compositor_create_surface(swaynag->compositor);
 	assert(swaynag->surface);
@@ -460,8 +514,9 @@ void swaynag_destroy(struct swaynag *swaynag) {
 		wl_surface_destroy(swaynag->surface);
 	}
 
-	if (swaynag->pointer.cursor_theme) {
-		wl_cursor_theme_destroy(swaynag->pointer.cursor_theme);
+	struct swaynag_seat *seat, *tmpseat;
+	wl_list_for_each_safe(seat, tmpseat, &swaynag->seats, link) {
+		swaynag_seat_destroy(seat);
 	}
 
 	if (&swaynag->buffers[0]) {
