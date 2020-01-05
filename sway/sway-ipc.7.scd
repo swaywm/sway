@@ -315,6 +315,9 @@ node and will have the following properties:
 :  string
 :  The node's layout. It can either be _splith_, _splitv_, _stacked_,
    _tabbed_, or _output_
+|- orientation
+:  string
+:  The node's orientation. It can be _vertical_, _horizontal_, or _none_
 |- percent
 :  float
 :  The percentage of the node's parent that it takes up or _null_ for the root
@@ -337,6 +340,9 @@ node and will have the following properties:
 :  boolean
 :  Whether the node or any of its descendants has the urgent hint set. Note:
    This may not exist when compiled without _xwayland_ support
+|- sticky
+:  boolean
+:  Whether the node is sticky (shows on all workspaces)
 |- focused
 :  boolean
 :  Whether the node is currently focused by the default seat (_seat0_)
@@ -353,6 +359,10 @@ node and will have the following properties:
 :  string
 :  (Only workspaces) A string representation of the layout of the workspace
    that can be used as an aid in submitting reproduction steps for bug reports
+|- fullscreen_mode
+:  integer
+:  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means 
+   full workspace, and 2 means global fullscreen
 |- app_id
 :  string
 :  (Only views) For an xdg-shell view, the name of the application, if set.
@@ -360,6 +370,9 @@ node and will have the following properties:
 |- pid
 :  integer
 :  (Only views) The PID of the application that owns the view
+|- visible
+:  boolean
+:  (Only views) Whether the node is visible
 |- window
 :  integer
 :  (Only xwayland views) The X11 window ID for the xwayland view
@@ -387,6 +400,7 @@ node and will have the following properties:
 	"border": "none",
 	"current_border_width": 0,
 	"layout": "splith",
+	"orientation": "horizontal",
 	"percent": null,
 	"window_rect": {
 		"x": 0,
@@ -410,6 +424,7 @@ node and will have the following properties:
 	"urgent": false,
 	"floating_nodes": [
 	],
+	"sticky": false,
 	"type": "root",
 	"nodes": [
 		{
@@ -428,6 +443,7 @@ node and will have the following properties:
 			"border": "none",
 			"current_border_width": 0,
 			"layout": "output",
+			"orientation": "horizontal",
 			"percent": null,
 			"window_rect": {
 				"x": 0,
@@ -451,6 +467,7 @@ node and will have the following properties:
 			"urgent": false,
 			"floating_nodes": [
 			],
+			"sticky": false,
 			"type": "output",
 			"nodes": [
 				{
@@ -468,6 +485,7 @@ node and will have the following properties:
 					"border": "none",
 					"current_border_width": 0,
 					"layout": "splith",
+					"orientation": "horizontal",
 					"percent": null,
 					"window_rect": {
 						"x": 0,
@@ -491,6 +509,7 @@ node and will have the following properties:
 					"urgent": false,
 					"floating_nodes": [
 					],
+					"sticky": false,
 					"type": "workspace"
 				}
 			]
@@ -511,6 +530,7 @@ node and will have the following properties:
 			"border": "none",
 			"current_border_width": 0,
 			"layout": "output",
+			"orientation": "none",
 			"percent": 1.0,
 			"window_rect": {
 				"x": 0,
@@ -534,6 +554,7 @@ node and will have the following properties:
 			"urgent": false,
 			"floating_nodes": [
 			],
+			"sticky": false,
 			"type": "output",
 			"active": true,
 			"primary": false,
@@ -573,6 +594,7 @@ node and will have the following properties:
 					"border": "none",
 					"current_border_width": 0,
 					"layout": "splith",
+					"orientation": "horizontal",
 					"percent": null,
 					"window_rect": {
 						"x": 0,
@@ -596,6 +618,7 @@ node and will have the following properties:
 					"urgent": false,
 					"floating_nodes": [
 					],
+					"sticky": false,
 					"num": 1,
 					"output": "eDP-1",
 					"type": "workspace",
@@ -616,6 +639,7 @@ node and will have the following properties:
 							"border": "normal",
 							"current_border_width": 2,
 							"layout": "none",
+							"orientation": "none",
 							"percent": 0.5,
 							"window_rect": {
 								"x": 2,
@@ -639,9 +663,12 @@ node and will have the following properties:
 							"urgent": false,
 							"floating_nodes": [
 							],
+							"sticky": false,
 							"type": "con",
+							"fullscreen_mode": 0,
 							"pid": 23959,
 							"app_id": null,
+							"visible": true,
 							"window_properties": {
 								"class": "URxvt",
 								"instance": "urxvt",
@@ -666,6 +693,7 @@ node and will have the following properties:
 							"border": "normal",
 							"current_border_width": 2,
 							"layout": "none",
+							"orientation": "none",
 							"percent": 0.5,
 							"window_rect": {
 								"x": 2,
@@ -689,9 +717,12 @@ node and will have the following properties:
 							"urgent": false,
 							"floating_nodes": [
 							],
+							"sticky": false,
 							"type": "con",
+							"fullscreen_mode": 0,
 							"pid": 25370,
 							"app_id": "termite",
+							"visible": true,
 							"nodes": [
 							]
 						}
