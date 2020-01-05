@@ -107,7 +107,7 @@ The following commands may only be used in the configuration file.
 	Sets the pointer acceleration profile for the specified input device.
 
 *input* <identifier> calibration_matrix <6 space-separated floating point values>
-	Sets the calibtration matrix.
+	Sets the calibration matrix.
 
 *input* <identifier> click_method none|button_areas|clickfinger
 	Changes the click method for the specified device.
