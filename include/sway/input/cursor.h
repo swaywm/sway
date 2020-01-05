@@ -58,6 +58,7 @@ struct sway_cursor {
 	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;
+	struct wl_listener image_surface_destroy;
 
 	struct wl_listener constraint_commit;
 
