@@ -798,6 +798,17 @@ static void handle_image_surface_destroy(struct wl_listener *listener,
 	cursor_rebase(cursor);
 }
 
+static void set_image_surface(struct sway_cursor *cursor,
+		struct wlr_surface *surface) {
+	wl_list_remove(&cursor->image_surface_destroy.link);
+	cursor->image_surface = surface;
+	if (surface) {
+		wl_signal_add(&surface->events.destroy, &cursor->image_surface_destroy);
+	} else {
+		wl_list_init(&cursor->image_surface_destroy.link);
+	}
+}
+
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
 		struct wl_client *client) {
 	if (!(cursor->seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER)) {
@@ -805,10 +816,8 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	}
 
 	const char *current_image = cursor->image;
+	set_image_surface(cursor, NULL);
 	cursor->image = image;
-	wl_list_remove(&cursor->image_surface_destroy.link);
-	cursor->image_surface = NULL;
-	wl_list_init(&cursor->image_surface_destroy.link);
 	cursor->hotspot_x = cursor->hotspot_y = 0;
 	cursor->image_client = client;
 
@@ -831,11 +840,8 @@ void cursor_set_image_surface(struct sway_cursor *cursor,
 		return;
 	}
 
+	set_image_surface(cursor, surface);
 	cursor->image = NULL;
-	wl_list_remove(&cursor->image_surface_destroy.link);
-	cursor->image_surface = surface;
-	wl_signal_add(&cursor->image_surface->events.destroy,
-			&cursor->image_surface_destroy);
 	cursor->hotspot_x = hotspot_x;
 	cursor->hotspot_y = hotspot_y;
 	cursor->image_client = client;
