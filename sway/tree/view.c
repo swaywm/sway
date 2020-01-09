@@ -503,6 +503,7 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	}
 	list_free(criterias);
 	if (ws) {
+		root_remove_workspace_pid(view->pid);
 		return ws;
 	}
 
