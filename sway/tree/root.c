@@ -225,6 +225,13 @@ static pid_t get_parent_pid(pid_t child) {
 	return -1;
 }
 
+static void pid_workspace_destroy(struct pid_workspace *pw) {
+	wl_list_remove(&pw->output_destroy.link);
+	wl_list_remove(&pw->link);
+	free(pw->workspace);
+	free(pw);
+}
+
 struct sway_workspace *root_workspace_for_pid(pid_t pid) {
 	if (!pid_workspaces.prev && !pid_workspaces.next) {
 		wl_list_init(&pid_workspaces);
@@ -261,10 +268,7 @@ found:
 			ws = workspace_create(pw->output, pw->workspace);
 		}
 
-		wl_list_remove(&pw->output_destroy.link);
-		wl_list_remove(&pw->link);
-		free(pw->workspace);
-		free(pw);
+		pid_workspace_destroy(pw);
 	}
 
 	return ws;
@@ -303,10 +307,7 @@ void root_record_workspace_pid(pid_t pid) {
 	struct pid_workspace *old, *_old;
 	wl_list_for_each_safe(old, _old, &pid_workspaces, link) {
 		if (now.tv_sec - old->time_added.tv_sec >= timeout) {
-			wl_list_remove(&old->output_destroy.link);
-			wl_list_remove(&old->link);
-			free(old->workspace);
-			free(old);
+			pid_workspace_destroy(old);
 		}
 	}
 
@@ -318,6 +319,20 @@ void root_record_workspace_pid(pid_t pid) {
 	pw->output_destroy.notify = pw_handle_output_destroy;
 	wl_signal_add(&output->wlr_output->events.destroy, &pw->output_destroy);
 	wl_list_insert(&pid_workspaces, &pw->link);
+}
+
+void root_remove_workspace_pid(pid_t pid) {
+	if (!pid_workspaces.prev || !pid_workspaces.next) {
+		return;
+	}
+
+	struct pid_workspace *pw, *tmp;
+	wl_list_for_each_safe(pw, tmp, &pid_workspaces, link) {
+		if (pid == pw->pid) {
+			pid_workspace_destroy(pw);
+			return;
+		}
+	}
 }
 
 void root_for_each_workspace(void (*f)(struct sway_workspace *ws, void *data),
