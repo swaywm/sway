@@ -72,6 +72,8 @@ struct sway_workspace *root_workspace_for_pid(pid_t pid);
 
 void root_record_workspace_pid(pid_t pid);
 
+void root_remove_workspace_pid(pid_t pid);
+
 void root_for_each_workspace(void (*f)(struct sway_workspace *ws, void *data),
 		void *data);
 
