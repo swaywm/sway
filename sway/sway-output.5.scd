@@ -65,8 +65,8 @@ must be separated by one space. For example:
 	recommended, but fractional values are also supported. If a fractional
 	value are specified, be warned that it is not possible to faithfully
 	represent the contents of your windows - they will be rendered at the next
-	highest integral scale factor and downscaled. You may be better served by
-	setting an integral scale factor and adjusting the font size of your
+	highest integer scale factor and downscaled. You may be better served by
+	setting an integer scale factor and adjusting the font size of your
 	applications to taste. HiDPI isn't supported with Xwayland clients (windows
 	will blur).
 
