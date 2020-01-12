@@ -57,6 +57,7 @@ static void handle_im_commit(struct wl_listener *listener, void *data) {
 
 static void text_input_set_pending_focused_surface(
 		struct sway_text_input *text_input, struct wlr_surface *surface) {
+	wl_list_remove(&text_input->pending_focused_surface_destroy.link);
 	text_input->pending_focused_surface = surface;
 	wl_signal_add(&surface->events.destroy,
 		&text_input->pending_focused_surface_destroy);
