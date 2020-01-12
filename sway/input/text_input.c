@@ -174,6 +174,8 @@ static void handle_pending_focused_surface_destroy(struct wl_listener *listener,
 	struct wlr_surface *surface = data;
 	assert(text_input->pending_focused_surface == surface);
 	text_input->pending_focused_surface = NULL;
+	wl_list_remove(&text_input->pending_focused_surface_destroy.link);
+	wl_list_init(&text_input->pending_focused_surface_destroy.link);
 }
 
 struct sway_text_input *sway_text_input_create(
