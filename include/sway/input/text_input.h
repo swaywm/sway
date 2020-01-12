@@ -25,10 +25,6 @@ struct sway_input_method_relay {
 	struct wlr_input_method_v2 *input_method; // doesn't have to be present
 
 	struct wl_listener text_input_new;
-	struct wl_listener text_input_enable;
-	struct wl_listener text_input_commit;
-	struct wl_listener text_input_disable;
-	struct wl_listener text_input_destroy;
 
 	struct wl_listener input_method_new;
 	struct wl_listener input_method_commit;
@@ -47,6 +43,11 @@ struct sway_text_input {
 	struct wl_list link;
 
 	struct wl_listener pending_focused_surface_destroy;
+
+	struct wl_listener text_input_enable;
+	struct wl_listener text_input_commit;
+	struct wl_listener text_input_disable;
+	struct wl_listener text_input_destroy;
 };
 
 void sway_input_method_relay_init(struct sway_seat *seat,
