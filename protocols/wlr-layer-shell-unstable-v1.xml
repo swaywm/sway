@@ -140,7 +140,7 @@
         how they should interact with surfaces that do. If set to zero, the
         surface indicates that it would like to be moved to avoid occluding
         surfaces with a positive excluzive zone. If set to -1, the surface
-        indicates that it would not like to be moved to accomodate for other
+        indicates that it would not like to be moved to accommodate for other
         surfaces, and the compositor should extend it all the way to the edges
         it is anchored to.
 
