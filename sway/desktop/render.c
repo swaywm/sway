@@ -81,6 +81,8 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 	struct wlr_gles2_texture_attribs attribs;
 	wlr_gles2_texture_get_attribs(texture, &attribs);
 
+	glBindTexture(attribs.target, attribs.tex);
+
 	switch (scale_filter) {
 	case SCALE_FILTER_LINEAR:
 		glTexParameteri(attribs.target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -99,6 +101,10 @@ static void render_texture(struct wlr_output *wlr_output,
 		const struct wlr_box *box, const float matrix[static 9], float alpha) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
+	struct sway_output *output = wlr_output->data;
+
+	struct wlr_gles2_texture_attribs attribs;
+	wlr_gles2_texture_get_attribs(texture, &attribs);
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
@@ -114,6 +120,7 @@ static void render_texture(struct wlr_output *wlr_output,
 	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
 	for (int i = 0; i < nrects; ++i) {
 		scissor_output(wlr_output, &rects[i]);
+		set_scale_filter(wlr_output, texture, output->scale_filter);
 		wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
 	}
 
@@ -143,7 +150,6 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
-	set_scale_filter(wlr_output, texture, output->scale_filter);
 	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
@@ -293,7 +299,6 @@ static void render_saved_view(struct sway_view *view,
 	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
 		wlr_output->transform_matrix);
 
-	set_scale_filter(wlr_output, view->saved_buffer->texture, output->scale_filter);
 	render_texture(wlr_output, damage, view->saved_buffer->texture,
 			&box, matrix, alpha);
 
