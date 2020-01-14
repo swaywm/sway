@@ -958,6 +958,11 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 			focus_ws = seat_get_focused_workspace(seat);
 			if (focus_ws == con->workspace) {
 				seat_set_focus_container(seat, con);
+			} else {
+				struct sway_node *focus =
+					seat_get_focus_inactive(seat, &root->node);
+				seat_set_raw_focus(seat, &con->node);
+				seat_set_raw_focus(seat, focus);
 			}
 		}
 	}
