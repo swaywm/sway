@@ -132,6 +132,11 @@ void root_scratchpad_show(struct sway_container *con) {
 	if (old_ws) {
 		container_detach(con);
 		workspace_consider_destroy(old_ws);
+	} else {
+		// Act on the ancestor of scratchpad hidden split containers
+		while (con->parent) {
+			con = con->parent;
+		}
 	}
 	workspace_add_floating(new_ws, con);
 
