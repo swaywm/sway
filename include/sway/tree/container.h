@@ -357,4 +357,6 @@ void container_raise_floating(struct sway_container *con);
 
 bool container_is_scratchpad_hidden(struct sway_container *con);
 
+bool container_is_scratchpad_hidden_or_child(struct sway_container *con);
+
 #endif

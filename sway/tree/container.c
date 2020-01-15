@@ -1527,3 +1527,10 @@ void container_raise_floating(struct sway_container *con) {
 bool container_is_scratchpad_hidden(struct sway_container *con) {
 	return con->scratchpad && !con->workspace;
 }
+
+bool container_is_scratchpad_hidden_or_child(struct sway_container *con) {
+	while (con->parent) {
+		con = con->parent;
+	}
+	return con->scratchpad && !con->workspace;
+}
