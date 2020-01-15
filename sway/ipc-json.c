@@ -163,7 +163,7 @@ static void ipc_json_describe_output(struct sway_output *output,
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "active", json_object_new_boolean(true));
 	json_object_object_add(object, "dpms",
-			json_object_new_boolean(output->wlr_output->enabled));
+			json_object_new_boolean(wlr_output->enabled));
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "layout", json_object_new_string("output"));
 	json_object_object_add(object, "orientation",
