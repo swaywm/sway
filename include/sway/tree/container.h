@@ -41,8 +41,8 @@ enum wlr_direction;
 struct sway_container_state {
 	// Container properties
 	enum sway_container_layout layout;
-	int x, y;
-	int width, height;
+	double x, y;
+	double width, height;
 
 	enum sway_fullscreen_mode fullscreen_mode;
 
@@ -60,8 +60,8 @@ struct sway_container_state {
 	bool border_left;
 	bool border_right;
 
-	int content_x, content_y;
-	int content_width, content_height;
+	double content_x, content_y;
+	double content_width, content_height;
 };
 
 struct sway_container {
@@ -83,10 +83,10 @@ struct sway_container {
 	// For C_ROOT, this has no meaning
 	// For other types, this is the position in layout coordinates
 	// Includes borders
-	int x, y;
-	int width, height;
-	int saved_x, saved_y;
-	int saved_width, saved_height;
+	double x, y;
+	double width, height;
+	double saved_x, saved_y;
+	double saved_width, saved_height;
 
 	// The share of the space of parent container this container occupies
 	double width_fraction;
@@ -98,14 +98,14 @@ struct sway_container {
 	double child_total_height;
 
 	// These are in layout coordinates.
-	int content_x, content_y;
+	double content_x, content_y;
 	int content_width, content_height;
 
 	// In most cases this is the same as the content x and y, but if the view
 	// refuses to resize to the content dimensions then it can be smaller.
 	// These are in layout coordinates.
-	int surface_x, surface_y;
-	int surface_width, surface_height;
+	double surface_x, surface_y;
+	double surface_width, surface_height;
 
 	enum sway_fullscreen_mode fullscreen_mode;
 
