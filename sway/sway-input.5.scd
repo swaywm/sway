@@ -35,11 +35,11 @@ on top of the existing device configurations.
 
 ## KEYBOARD CONFIGURATION
 
-*input* <identifier> repeat_delay <n>
-	Sets the delay before repeating a held-down key, in milliseconds.
+*input* <identifier> repeat_delay <milliseconds>
+	Sets the amount of time a key must be held before it starts repeating.
 
-*input* <identifier> repeat_rate <n>
-	Sets the key repeat rate in number of keypresses per second.
+*input* <identifier> repeat_rate <characters per second>
+	Sets the frequency of key repeats once the repeat_delay has passed.
 
 For more information on these xkb configuration options, see
 *xkeyboard-config*(7).
@@ -144,12 +144,6 @@ The following commands may only be used in the configuration file.
 
 *input* <identifier> pointer_accel [<-1|1>]
 	Changes the pointer acceleration for the specified input device.
-
-*input* <identifier> repeat_delay <milliseconds>
-	Sets the amount of time a key must be held before it starts repeating.
-
-*input* <identifier> repeat_rate <characters per second>
-	Sets the frequency of key repeats once the repeat_delay has passed.
 
 *input* <identifier> scroll_button disable|button[1-3,8,9]|<event-code-or-name>
 	Sets the button used for scroll_method on_button_down. The button can
