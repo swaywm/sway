@@ -356,8 +356,8 @@ runtime.
 		for_window <criteria> move container to output <output>
 
 *bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
-		[--to-code] [--input-device=<device>] [--no-warn] [Group<1-4>+]<key combo> \
-		<command>
+[--to-code] [--input-device=<device>] [--no-warn] [Group<1-4>+]<key combo> \
+<command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
@@ -409,7 +409,7 @@ runtime.
 ```
 
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
-	[--locked] [--input-device=<device>] [--no-warn] [Group<1-4>+]<code> <command>
+[--locked] [--input-device=<device>] [--no-warn] [Group<1-4>+]<code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
 *bindswitch* [--locked] [--no-warn] [--reload] <switch>:<state> <command>
@@ -725,12 +725,14 @@ The default colors are:
 *unbindswitch* <switch>:<state>
 	Removes a binding for when <switch> changes to <state>.
 
-*unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--input-device=<device>] <key combo>
+*unbindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
+[--to-code] [--input-device=<device>] <key combo>
 	Removes the binding for _key combo_ that was previously bound with the
 	given flags.  If _input-device_ is given, only the binding for that
 	input device will be unbound.
 
-	*unbindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] [input-device=<device>] <code>
+	*unbindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
+[--locked] [input-device=<device>] <code>
 	is also available for unbinding with key/button codes instead of key/button names.
 
 *unmark* [<identifier>]
