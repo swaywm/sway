@@ -248,10 +248,11 @@ static void container_move_to_container(struct sway_container *container,
 		ipc_event_window(container, "move");
 	}
 
-	workspace_focus_fullscreen(destination->workspace);
+	if (destination->workspace) {
+		workspace_focus_fullscreen(destination->workspace);
+		workspace_detect_urgent(destination->workspace);
+	}
 
-	// Update workspace urgent state
-	workspace_detect_urgent(destination->workspace);
 	if (old_workspace && old_workspace != destination->workspace) {
 		workspace_detect_urgent(old_workspace);
 	}
@@ -519,8 +520,10 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	}
 
 	struct sway_output *new_output = node_get_output(destination);
-	struct sway_workspace *new_output_last_ws = old_output == new_output ?
-		NULL : output_get_active_workspace(new_output);
+	struct sway_workspace *new_output_last_ws = NULL;
+	if (new_output && old_output != new_output) {
+		new_output_last_ws = output_get_active_workspace(new_output);
+	}
 
 	// save focus, in case it needs to be restored
 	struct sway_node *focus = seat_get_focus(seat);
@@ -551,12 +554,14 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	}
 
 	// restore focus on destination output back to its last active workspace
-	struct sway_workspace *new_workspace =
-		output_get_active_workspace(new_output);
-	if (!sway_assert(new_workspace, "Expected output to have a workspace")) {
+	struct sway_workspace *new_workspace = new_output ?
+		output_get_active_workspace(new_output) : NULL;
+	if (new_output &&
+			!sway_assert(new_workspace, "Expected output to have a workspace")) {
 		return cmd_results_new(CMD_FAILURE,
 				"Expected output to have a workspace");
 	}
+
 	if (new_output_last_ws && new_output_last_ws != new_workspace) {
 		struct sway_node *new_output_last_focus =
 			seat_get_focus_inactive(seat, &new_output_last_ws->node);
