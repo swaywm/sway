@@ -76,7 +76,7 @@ struct cmd_results *cmd_splitv(int argc, char **argv) {
 
 struct cmd_results *cmd_splith(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "splitv", EXPECTED_EQUAL_TO, 0))) {
+	if ((error = checkarg(argc, "splith", EXPECTED_EQUAL_TO, 0))) {
 		return error;
 	}
 	return do_split(L_HORIZ);
@@ -84,7 +84,7 @@ struct cmd_results *cmd_splith(int argc, char **argv) {
 
 struct cmd_results *cmd_splitt(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "splitv", EXPECTED_EQUAL_TO, 0))) {
+	if ((error = checkarg(argc, "splitt", EXPECTED_EQUAL_TO, 0))) {
 		return error;
 	}
 
