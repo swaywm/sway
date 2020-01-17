@@ -901,6 +901,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	} else {
 		wlr_output_enable(output->wlr_output, false);
 	}
+	free_output_config(oc);
 
 	transaction_commit_dirty();
 
