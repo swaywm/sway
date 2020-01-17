@@ -328,7 +328,10 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		if (!oc || oc->dpms_state != DPMS_OFF) {
 			sway_log(SWAY_DEBUG, "Enabling output %s", oc->name);
 			wlr_output_enable(wlr_output, true);
-			wlr_output_commit(wlr_output);
+			if (!wlr_output_commit(wlr_output)) {
+				sway_log(SWAY_ERROR, "Failed to enable output %s", oc->name);
+				return false;
+			}
 		}
 		return output_enable(output, oc);
 	}
@@ -421,7 +424,10 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->dpms_state == DPMS_OFF) {
 		sway_log(SWAY_DEBUG, "Turning off output %s", oc->name);
 		wlr_output_enable(wlr_output, false);
-		wlr_output_commit(wlr_output);
+		if (!wlr_output_commit(wlr_output)) {
+			sway_log(SWAY_ERROR, "Failed to turn off output %s", oc->name);
+			return false;
+		}
 	}
 
 	if (oc && oc->max_render_time >= 0) {
