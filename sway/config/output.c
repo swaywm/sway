@@ -550,8 +550,8 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	// will be applied during normal "new output" event from wlroots.
 	bool wildcard = strcmp(oc->name, "*") == 0;
 	char id[128];
-	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root->all_outputs, link) {
+	struct sway_output *sway_output, *tmp;
+	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
 		char *name = sway_output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), sway_output);
 		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
