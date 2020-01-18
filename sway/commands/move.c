@@ -921,19 +921,13 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		--argc; ++argv;
 	}
 
-	if (strcasecmp(argv[0], "window") == 0 ||
-			strcasecmp(argv[0], "container") == 0) {
-		--argc;
-		if (argc > 0) {
-			++argv;
-		}
+	if (argc > 0 && (strcasecmp(argv[0], "window") == 0 ||
+			strcasecmp(argv[0], "container") == 0)) {
+		--argc; ++argv;
 	}
 
-	if (strcasecmp(argv[0], "to") == 0) {
-		--argc;
-		if (argc > 0) {
-			++argv;
-		}
+	if (argc > 0 && strcasecmp(argv[0], "to") == 0) {
+		--argc;	++argv;
 	}
 
 	if (!argc) {
