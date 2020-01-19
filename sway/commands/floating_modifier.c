@@ -9,6 +9,11 @@ struct cmd_results *cmd_floating_modifier(int argc, char **argv) {
 		return error;
 	}
 
+	if (strcasecmp(argv[0], "none") == 0) {
+		config->floating_mod = 0;
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+
 	uint32_t mod = get_modifier_mask_by_name(argv[0]);
 	if (!mod) {
 		return cmd_results_new(CMD_INVALID, "Invalid modifier");
