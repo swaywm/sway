@@ -558,8 +558,9 @@ The default colors are:
 
 *floating_modifier* <modifier> [normal|inverse]
 	When the _modifier_ key is held down, you may hold left click to move
-	windows, and right click to resize them. If _inverse_ is specified, left
-	click is used for resizing and right click for moving.
+	windows, and right click to resize them. Setting _modifier_ to _none_
+	disables this feature. If _inverse_ is specified, left click is used for
+	resizing and right click for moving.
 
 *focus_follows_mouse* yes|no|always
 	If set to _yes_, moving your mouse over a window will focus that window. If
