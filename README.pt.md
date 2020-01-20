@@ -1,13 +1,12 @@
 # sway
 
-[**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) - [Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--) - [中文-简体](https://github.com/swaywm/sway/blob/master/README.zh-CN.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Nederlands](https://github.com/swaywm/sway/blob/master/README.nl.md#sway--) - [Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--) - [中文-繁體](https://github.com/swaywm/sway/blob/master/README.zh-TW.md#sway--) - [Português]()
-
-sway is an [i3](https://i3wm.org/)-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
-Leia o [FAQ](https://github.com/swaywm/sway/wiki). Junte-se ao [canal
+O sway é um compositor do [Wayland](http://wayland.freedesktop.org/) compatível com o [i3](https://i3wm.org/).
+<!-- sway is an [i3](https://i3wm.org/)-compatible [Wayland](http://wayland.freedesktop.org/) compositor. -->
+Leia o [FAQ](https://github.com/swaywm/sway/wiki). Junte-se ao [canal do    
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway em
 irc.freenode.net).
 
-Se você gostaria de apoiar o desenvolvimento do sway, por favor contribua na [página do patreon de
+Se você gostaria de apoiar o desenvolvimento do sway, por favor, contribua na [página do patreon de
 SirCmpwn](https://patreon.com/sircmpwn).
 
 ## Assinatura das versões
@@ -45,10 +44,11 @@ Instale as dependências:
 * pango
 * cairo
 * gdk-pixbuf2 (optional: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (Opcional: man pages) \*
 * git \*
 
-_\*Compile-time dep_
+_\*Dependência de tempo de compilação_
+<!-- _\*Compile-time dep_ -->
 
 Rode esses comandos:
 <!-- Run these commands: -->
@@ -57,12 +57,12 @@ Rode esses comandos:
     ninja -C build
     sudo ninja -C build install
 
-Em sistemas sem logind, você precisa executar o binário do sway:
+Em sistemas sem logind, você precisa preparar o binário do sway:
 <!-- On systems without logind, you need to suid the sway binary: -->
 
     sudo chmod a+s /usr/local/bin/sway
 
-O sway perderá as privilégios de de root logo após o startup.
+O sway perderá as privilégios de de root logo após o início do sistema.
 <!-- Sway will drop root permissions shortly after startup. -->
 
 ## Configuração
