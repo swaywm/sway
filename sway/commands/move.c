@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
+#include <math.h>
 #include <stdbool.h>
 #include <string.h>
 #include <strings.h>
@@ -753,6 +754,39 @@ static struct cmd_results *cmd_move_in_direction(
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
+static struct cmd_results *cmd_move_to_position_pointer(
+		struct sway_container *container) {
+	struct sway_seat *seat = config->handler_context.seat;
+	if (!seat->cursor) {
+		return cmd_results_new(CMD_FAILURE, "No cursor device");
+	}
+	struct wlr_cursor *cursor = seat->cursor->cursor;
+	/* Determine where to put the window. */
+	double lx = cursor->x - container->width / 2;
+	double ly = cursor->y - container->height / 2;
+
+	/* Correct target coordinates to be in bounds (on screen). */
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct wlr_box box;
+		output_get_box(root->outputs->items[i], &box);
+		if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
+			lx = fmax(lx, box.x);
+			ly = fmax(ly, box.y);
+			if (lx + container->width > box.x + box.width) {
+				lx = box.x + box.width - container->width;
+			}
+			if (ly + container->height > box.y + box.height) {
+				ly = box.y + box.height - container->height;
+			}
+			break;
+		}
+	}
+
+	/* Actually move the container. */
+	container_floating_move_to(container, lx, ly);
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
 static const char expected_position_syntax[] =
 	"Expected 'move [absolute] position <x> [px] <y> [px]' or "
 	"'move [absolute] position center' or "
@@ -790,14 +824,7 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		if (absolute) {
 			return cmd_results_new(CMD_INVALID, expected_position_syntax);
 		}
-		struct sway_seat *seat = config->handler_context.seat;
-		if (!seat->cursor) {
-			return cmd_results_new(CMD_FAILURE, "No cursor device");
-		}
-		double lx = seat->cursor->cursor->x - container->width / 2;
-		double ly = seat->cursor->cursor->y - container->height / 2;
-		container_floating_move_to(container, lx, ly);
-		return cmd_results_new(CMD_SUCCESS, NULL);
+		return cmd_move_to_position_pointer(container);
 	} else if (strcmp(argv[0], "center") == 0) {
 		double lx, ly;
 		if (absolute) {
