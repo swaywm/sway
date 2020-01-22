@@ -1,7 +1,7 @@
 project(
 	'sway',
 	'c',
-	version: '1.3-rc1', #release_version
+	version: '1.4', #release_version
 	license: 'MIT',
 	meson_version: '>=0.48.0',
 	default_options: [
@@ -60,7 +60,7 @@ math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 
 # Try first to find wlroots as a subproject, then as a system dependency
-wlroots_version = ['>=0.9.0', '<0.10.0']
+wlroots_version = ['>=0.10.0', '<0.11.0']
 wlroots_proj = subproject(
 	'wlroots',
 	default_options: ['examples=false'],
