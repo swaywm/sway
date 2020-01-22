@@ -204,7 +204,7 @@ configure_file(
 	configuration: config,
 	input: 'config.in',
 	output: '@BASENAME@',
-	install_dir: sysconfdir + '/sway'
+	install_dir: join_paths(sysconfdir, 'sway')
 )
 
 if is_freebsd
@@ -212,20 +212,20 @@ if is_freebsd
 		configuration: config,
 		input: 'security.d/10-freebsd.in',
 		output: '@BASENAME@',
-		install_dir: sysconfdir + '/sway/security.d'
+		install_dir: join_paths(sysconfdir, 'sway', 'security.d')
 	)
 else
 	configure_file(
 		configuration: config,
 		input: 'security.d/00-defaults.in',
 		output: '@BASENAME@',
-		install_dir: sysconfdir + '/sway/security.d'
+		install_dir: join_paths(sysconfdir, 'sway', 'security.d')
 	)
 endif
 
 install_data(
 	'sway.desktop',
-	install_dir: datadir + '/wayland-sessions'
+	install_dir: join_paths(datadir, 'wayland-sessions')
 )
 
 if get_option('default-wallpaper')
@@ -239,7 +239,7 @@ if get_option('default-wallpaper')
 		'assets/Sway_Wallpaper_Blue_2048x1536.png',
 		'assets/Sway_Wallpaper_Blue_2048x1536_Portrait.png',
 	)
-	wallpaper_install_dir = datadir + '/backgrounds/sway'
+	wallpaper_install_dir = join_paths(datadir, 'backgrounds', 'sway')
 
 	install_data(wallpaper_files, install_dir: wallpaper_install_dir)
 endif
@@ -249,7 +249,7 @@ if get_option('zsh-completions')
 		'completions/zsh/_sway',
 		'completions/zsh/_swaymsg',
 	)
-	zsh_install_dir = datadir + '/zsh/site-functions'
+	zsh_install_dir = join_paths(datadir, 'zsh', 'site-functions')
 
 	install_data(zsh_files, install_dir: zsh_install_dir)
 endif
@@ -260,7 +260,7 @@ if get_option('bash-completions')
 		'completions/bash/swaybar',
 		'completions/bash/swaymsg',
 	)
-	bash_install_dir = datadir + '/bash-completion/completions'
+	bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
 
 	install_data(bash_files, install_dir: bash_install_dir)
 endif
@@ -271,7 +271,7 @@ if get_option('fish-completions')
 		'completions/fish/swaymsg.fish',
 		'completions/fish/swaynag.fish',
 	)
-	fish_install_dir = datadir + '/fish/completions'
+	fish_install_dir = join_paths(datadir, 'fish', 'completions')
 
 	install_data(fish_files, install_dir: fish_install_dir)
 endif
