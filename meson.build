@@ -54,6 +54,8 @@ libinput       = dependency('libinput', version: '>=1.6.0')
 systemd        = dependency('libsystemd', version: '>=239', required: false)
 elogind        = dependency('libelogind', version: '>=239', required: false)
 xcb            = dependency('xcb', required: get_option('xwayland'))
+bash_comp      = dependency('bash-completion', required: false)
+fish_comp      = dependency('fish', required: false)
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 
@@ -260,7 +262,11 @@ if get_option('bash-completions')
 		'completions/bash/swaybar',
 		'completions/bash/swaymsg',
 	)
-	bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
+	if bash_comp.found()
+		bash_install_dir = bash_comp.get_pkgconfig_variable('completionsdir')
+	else
+		bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
+	endif
 
 	install_data(bash_files, install_dir: bash_install_dir)
 endif
@@ -271,7 +277,11 @@ if get_option('fish-completions')
 		'completions/fish/swaymsg.fish',
 		'completions/fish/swaynag.fish',
 	)
-	fish_install_dir = join_paths(datadir, 'fish', 'completions')
+	if fish_comp.found()
+		fish_install_dir = fish_comp.get_pkgconfig_variable('completionsdir')
+	else
+		fish_install_dir = join_paths(datadir, 'fish', 'completions')
+	endif
 
 	install_data(fish_files, install_dir: fish_install_dir)
 endif
