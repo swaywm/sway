@@ -280,7 +280,7 @@ if get_option('fish-completions')
 	if fish_comp.found()
 		fish_install_dir = fish_comp.get_pkgconfig_variable('completionsdir')
 	else
-		fish_install_dir = join_paths(datadir, 'fish', 'completions')
+		fish_install_dir = join_paths(datadir, 'fish', 'vendor_completions.d')
 	endif
 
 	install_data(fish_files, install_dir: fish_install_dir)
