@@ -760,19 +760,18 @@ static struct cmd_results *cmd_move_to_position_pointer(
 	double ly = cursor->y - container->height / 2;
 
 	/* Correct target coordinates to be in bounds (on screen). */
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct wlr_box box;
-		output_get_box(root->outputs->items[i], &box);
-		if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
-			lx = fmax(lx, box.x);
-			ly = fmax(ly, box.y);
-			if (lx + container->width > box.x + box.width) {
-				lx = box.x + box.width - container->width;
-			}
-			if (ly + container->height > box.y + box.height) {
-				ly = box.y + box.height - container->height;
-			}
-			break;
+	struct wlr_output *output = wlr_output_layout_output_at(
+			root->output_layout, cursor->x, cursor->y);
+	if (output) {
+		struct wlr_box *box =
+				wlr_output_layout_get_box(root->output_layout, output);
+		lx = fmax(lx, box->x);
+		ly = fmax(ly, box->y);
+		if (lx + container->width > box->x + box->width) {
+			lx = box->x + box->width - container->width;
+		}
+		if (ly + container->height > box->y + box->height) {
+			ly = box->y + box->height - container->height;
 		}
 	}
 
