@@ -355,6 +355,10 @@ node and will have the following properties:
 |- floating_nodes
 :  array
 :  The floating children nodes for the node
+|- max_render_time
+:  integer
+:  Number of milliseconds a surface has to render and commit new contents before
+   being sampled by the compositor for the next presentation. "off" means none.
 |- representation
 :  string
 :  (Only workspaces) A string representation of the layout of the workspace
