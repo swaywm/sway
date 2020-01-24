@@ -343,6 +343,9 @@ node and will have the following properties:
 |- sticky
 :  boolean
 :  Whether the node is sticky (shows on all workspaces)
+|- marks
+:  array
+:  List of marks assigned to the node
 |- focused
 :  boolean
 :  Whether the node is currently focused by the default seat (_seat0_)
