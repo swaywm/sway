@@ -78,7 +78,7 @@ struct sway_server {
 	list_t *dirty_nodes;
 };
 
-struct sway_server server;
+extern struct sway_server server;
 
 struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
@@ -92,7 +92,7 @@ struct sway_debug {
 	} damage;
 };
 
-struct sway_debug debug;
+extern struct sway_debug debug;
 
 /* Prepares an unprivileged server_init by performing all privileged operations in advance */
 bool server_privileged_prepare(struct sway_server *server);

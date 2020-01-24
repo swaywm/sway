@@ -27,6 +27,7 @@
 static bool terminate_request = false;
 static int exit_value = 0;
 struct sway_server server = {0};
+struct sway_debug debug = {0};
 
 void sway_terminate(int exit_code) {
 	if (!server.wl_display) {
