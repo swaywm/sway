@@ -48,7 +48,7 @@ enum binding_flags {
 };
 
 /**
- * A key binding and an associated command.
+ * A key (or mouse) binding and an associated command.
  */
 struct sway_binding {
 	enum binding_input_type type;
@@ -59,14 +59,6 @@ struct sway_binding {
 	list_t *syms; // sorted in ascending order; NULL if BINDING_CODE is not set
 	uint32_t modifiers;
 	xkb_layout_index_t group;
-	char *command;
-};
-
-/**
- * A mouse binding and an associated command.
- */
-struct sway_mouse_binding {
-	uint32_t button;
 	char *command;
 };
 
