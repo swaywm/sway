@@ -144,6 +144,35 @@ static void find_urgent_iterator(struct sway_container *con, void *data) {
 	list_add(urgent_views, con->view);
 }
 
+static bool has_container_criteria(struct criteria *criteria) {
+	return criteria->con_mark || criteria->con_id;
+}
+
+static bool criteria_matches_container(struct criteria *criteria,
+		struct sway_container *container) {
+	if (criteria->con_mark) {
+		bool exists = false;
+		struct sway_container *con = container;
+		for (int i = 0; i < con->marks->length; ++i) {
+			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) == 0) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) {
+			return false;
+		}
+	}
+
+	if (criteria->con_id) { // Internal ID
+		if (container->node.id != criteria->con_id) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static bool criteria_matches_view(struct criteria *criteria,
 		struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
@@ -210,24 +239,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
-	if (criteria->con_mark) {
-		bool exists = false;
-		struct sway_container *con = view->container;
-		for (int i = 0; i < con->marks->length; ++i) {
-			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) == 0) {
-				exists = true;
-				break;
-			}
-		}
-		if (!exists) {
-			return false;
-		}
-	}
-
-	if (criteria->con_id) { // Internal ID
-		if (!view->container || view->container->node.id != criteria->con_id) {
-			return false;
-		}
+	if (!criteria_matches_container(criteria, view->container)) {
+		return false;
 	}
 
 #if HAVE_XWAYLAND
@@ -377,23 +390,27 @@ struct match_data {
 	list_t *matches;
 };
 
-static void criteria_get_views_iterator(struct sway_container *container,
+static void criteria_get_containers_iterator(struct sway_container *container,
 		void *data) {
 	struct match_data *match_data = data;
 	if (container->view) {
 		if (criteria_matches_view(match_data->criteria, container->view)) {
-			list_add(match_data->matches, container->view);
+			list_add(match_data->matches, container);
+		}
+	} else if (has_container_criteria(match_data->criteria)) {
+		if (criteria_matches_container(match_data->criteria, container)) {
+			list_add(match_data->matches, container);
 		}
 	}
 }
 
-list_t *criteria_get_views(struct criteria *criteria) {
+list_t *criteria_get_containers(struct criteria *criteria) {
 	list_t *matches = create_list();
 	struct match_data data = {
 		.criteria = criteria,
 		.matches = matches,
 	};
-	root_for_each_container(criteria_get_views_iterator, &data);
+	root_for_each_container(criteria_get_containers_iterator, &data);
 	return matches;
 }
 

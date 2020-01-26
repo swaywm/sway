@@ -201,7 +201,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		struct sway_container *con) {
 	char *cmd;
 	char matched_delim = ';';
-	list_t *views = NULL;
+	list_t *containers = NULL;
 
 	if (seat == NULL) {
 		// passing a NULL seat means we just pick the default seat
@@ -235,8 +235,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 					free(error);
 					goto cleanup;
 				}
-				list_free(views);
-				views = criteria_get_views(criteria);
+				list_free(containers);
+				containers = criteria_get_containers(criteria);
 				head += strlen(criteria->raw);
 				criteria_destroy(criteria);
 				config->handler_context.using_criteria = true;
@@ -289,14 +289,14 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-		} else if (views->length == 0) {
+		} else if (containers->length == 0) {
 			list_add(res_list,
 					cmd_results_new(CMD_FAILURE, "No matching node."));
 		} else {
 			struct cmd_results *fail_res = NULL;
-			for (int i = 0; i < views->length; ++i) {
-				struct sway_view *view = views->items[i];
-				set_config_node(&view->container->node);
+			for (int i = 0; i < containers->length; ++i) {
+				struct sway_container *container = containers->items[i];
+				set_config_node(&container->node);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status == CMD_SUCCESS) {
 					free_cmd_results(res);
@@ -320,7 +320,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 	} while(head);
 cleanup:
 	free(exec);
-	list_free(views);
+	list_free(containers);
 	return res_list;
 }
 
