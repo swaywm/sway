@@ -132,6 +132,13 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->output_manager_v1->events.test,
 		&server->output_manager_test);
 
+	server->output_power_manager_v1 =
+		wlr_output_power_manager_v1_create(server->wl_display);
+	server->output_power_manager_set_mode.notify =
+		handle_output_power_manager_set_mode;
+	wl_signal_add(&server->output_power_manager_v1->events.set_mode,
+		&server->output_power_manager_set_mode);
+
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
 	wlr_data_control_manager_v1_create(server->wl_display);
