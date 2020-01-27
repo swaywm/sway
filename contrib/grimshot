@@ -23,7 +23,7 @@ SUBJECT=${2:-screen}
 FILE=${3:-$(xdg-user-dir PICTURES)/$(date +'Grimshot %Y-%m-%d %H-%M-%S.png')}
 if [ "$ACTION" = "usage" ] ; then
   echo "Usage:"
-  echo "  grimshot copy|save win|screen|area [FILE]"
+  echo "  grimshot copy|save win|screen|focused_screen|area [FILE]"
   echo "Troubleshoot:"
   echo "  grimshot check"
   exit
@@ -62,7 +62,10 @@ check() {
 takeScreenshot() {
   FILE=$1
   GEOM=$2
-  if [ -z "$GEOM" ]; then
+  SCREEN=$3
+  if [ ! -z "$SCREEN" ]; then
+    grim -o "$SCREEN" "$FILE" || die "Unable to invoke grim"
+  elif [ -z "$GEOM" ]; then
     grim "$FILE" || die "Unable to invoke grim"
   else
     grim -g "$GEOM" "$FILE" || die "Unable to invoke grim"
@@ -90,18 +93,22 @@ elif [ "$SUBJECT" = "win" ] ; then
 elif [ "$SUBJECT" = "screen" ] ; then
   GEOM=""
   WHAT="Screen"
+elif [ "$SUBJECT" = "focused_screen" ] ; then
+  GEOM=""
+  SCREEN=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused)' | jq -r '.name')
+  WHAT="Focused screen $SCREEN"
 else
   die "Unknown subject to take a screen shot from" "$SUBJECT"
 fi
 
 if [ "$ACTION" = "copy" ] ; then
   TMP=$(mktemp) || die "Unable to create temp file: is mktemp installed?"
-  takeScreenshot "$TMP" "$GEOM"
+  takeScreenshot "$TMP" "$GEOM" "$SCREEN"
   wl-copy --type image/png < "$TMP"  || die "Clipboard error"
   rm "$TMP"
   notifyOk "$WHAT copied to buffer"
 else
-  if takeScreenshot "$FILE" "$GEOM"; then
+  if takeScreenshot "$FILE" "$GEOM" "$SCREEN"; then
     TITLE="Screenshot of $SUBJECT"
     MESSAGE=$(basename "$FILE")
     notifyOk "$MESSAGE" "$TITLE"
