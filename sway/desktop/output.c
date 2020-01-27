@@ -977,3 +977,21 @@ void handle_output_manager_test(struct wl_listener *listener, void *data) {
 	wlr_output_configuration_v1_send_succeeded(config);
 	wlr_output_configuration_v1_destroy(config);
 }
+
+void handle_output_power_manager_set_mode(struct wl_listener *listener,
+		void *data) {
+	struct wlr_output_power_v1_set_mode_event *event = data;
+	struct sway_output *output = event->output->data;
+
+	struct output_config *oc = new_output_config(output->wlr_output->name);
+	switch (event->mode) {
+	case ZWLR_OUTPUT_POWER_V1_MODE_OFF:
+		oc->dpms_state = DPMS_OFF;
+		break;
+	case ZWLR_OUTPUT_POWER_V1_MODE_ON:
+		oc->dpms_state = DPMS_ON;
+		break;
+	}
+	oc = store_output_config(oc);
+	apply_output_config(oc, output);
+}
