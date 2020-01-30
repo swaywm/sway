@@ -421,7 +421,8 @@ void ipc_event_binding(struct sway_binding *binding) {
 	json_object *symbols = json_object_new_array();
 	json_object *symbol = NULL;
 
-	if (binding->type == BINDING_KEYCODE) { // bindcode: populate input_codes
+	switch (binding->type) {
+	case BINDING_KEYCODE:; // bindcode: populate input_codes
 		uint32_t keycode;
 		for (int i = 0; i < binding->keys->length; ++i) {
 			keycode = *(uint32_t *)binding->keys->items[i];
@@ -430,7 +431,11 @@ void ipc_event_binding(struct sway_binding *binding) {
 				input_code = keycode;
 			}
 		}
-	} else { // bindsym/mouse: populate symbols
+		break;
+
+	case BINDING_KEYSYM:
+	case BINDING_MOUSESYM:
+	case BINDING_MOUSECODE:; // bindsym/mouse: populate symbols
 		uint32_t keysym;
 		char buffer[64];
 		for (int i = 0; i < binding->keys->length; ++i) {
@@ -451,6 +456,14 @@ void ipc_event_binding(struct sway_binding *binding) {
 				json_object_array_add(symbols, str);
 			}
 		}
+		break;
+
+	default:
+		sway_log(SWAY_DEBUG, "Unsupported ipc binding event");
+		json_object_put(input_codes);
+		json_object_put(symbols);
+		json_object_put(json_binding);
+		return; // do not send any event
 	}
 
 	json_object_object_add(json_binding, "input_codes", input_codes);
