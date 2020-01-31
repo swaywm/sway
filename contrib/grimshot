@@ -6,7 +6,7 @@
 ##  - `slurp`: to select an area
 ##  - `swaymsg`: to read properties of current window
 ##  - `wl-copy`: clipboard utility
-##  - `jq`: json uliity to parse swaymsg output
+##  - `jq`: json utility to parse swaymsg output
 ##  - `notify-send`: to show notifications
 ##  - `mktemp`: to create a temporary file
 ## Those are needed to be installed, if unsure, run `grimshot check`
