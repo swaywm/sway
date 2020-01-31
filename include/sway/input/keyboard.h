@@ -8,7 +8,7 @@
 /**
  * Get modifier mask from modifier name.
  *
- * Returns the modifer mask or 0 if the name isn't found.
+ * Returns the modifier mask or 0 if the name isn't found.
  */
 uint32_t get_modifier_mask_by_name(const char *name);
 

@@ -21,7 +21,7 @@ struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 		int amount = strtol(argv[i], &end, 10);
 		if (strlen(end) && strcasecmp(end, "px") != 0) {
 			return cmd_results_new(CMD_INVALID,
-					"Expected 'bar [<bar-id>] gaps <all> | <horizonal> "
+					"Expected 'bar [<bar-id>] gaps <all> | <horizontal> "
 					"<vertical> | <top> <right> <bottom> <left>'");
 		}
 
