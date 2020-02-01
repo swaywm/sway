@@ -267,8 +267,8 @@ bool i3bar_handle_readable(struct status_line *status) {
 }
 
 enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
-		struct i3bar_block *block, int x, int y, int rx, int ry, int w, int h,
-		uint32_t button) {
+		struct i3bar_block *block, double x, double y, double rx, double ry,
+		double w, double h, int scale, uint32_t button) {
 	sway_log(SWAY_DEBUG, "block %s clicked", block->name);
 	if (!block->name || !status->click_events) {
 		return HOTSPOT_PROCESS;
@@ -285,12 +285,22 @@ enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 	json_object_object_add(event_json, "button",
 			json_object_new_int(event_to_x11_button(button)));
 	json_object_object_add(event_json, "event", json_object_new_int(button));
-	json_object_object_add(event_json, "x", json_object_new_int(x));
-	json_object_object_add(event_json, "y", json_object_new_int(y));
-	json_object_object_add(event_json, "relative_x", json_object_new_int(rx));
-	json_object_object_add(event_json, "relative_y", json_object_new_int(ry));
-	json_object_object_add(event_json, "width", json_object_new_int(w));
-	json_object_object_add(event_json, "height", json_object_new_int(h));
+	if (status->float_event_coords) {
+		json_object_object_add(event_json, "x", json_object_new_double(x));
+		json_object_object_add(event_json, "y", json_object_new_double(y));
+		json_object_object_add(event_json, "relative_x", json_object_new_double(rx));
+		json_object_object_add(event_json, "relative_y", json_object_new_double(ry));
+		json_object_object_add(event_json, "width", json_object_new_double(w));
+		json_object_object_add(event_json, "height", json_object_new_double(h));
+	} else {
+		json_object_object_add(event_json, "x", json_object_new_int(x));
+		json_object_object_add(event_json, "y", json_object_new_int(y));
+		json_object_object_add(event_json, "relative_x", json_object_new_int(rx));
+		json_object_object_add(event_json, "relative_y", json_object_new_int(ry));
+		json_object_object_add(event_json, "width", json_object_new_int(w));
+		json_object_object_add(event_json, "height", json_object_new_int(h));
+	}
+	json_object_object_add(event_json, "scale", json_object_new_int(scale));
 	if (dprintf(status->write_fd, "%s%s\n", status->clicked ? "," : "",
 				json_object_to_json_string(event_json)) < 0) {
 		status_error(status, "[failed to write click event]");

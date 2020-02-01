@@ -138,21 +138,23 @@ static bool check_bindings(struct swaybar *bar, uint32_t button,
 	return false;
 }
 
-static void process_hotspots(struct swaybar_output *output,
+static bool process_hotspots(struct swaybar_output *output,
 		double x, double y, uint32_t button) {
-	x *= output->scale;
-	y *= output->scale;
+	double px = x * output->scale;
+	double py = y * output->scale;
 	struct swaybar_hotspot *hotspot;
 	wl_list_for_each(hotspot, &output->hotspots, link) {
-		if (x >= hotspot->x && y >= hotspot->y
-				&& x < hotspot->x + hotspot->width
-				&& y < hotspot->y + hotspot->height) {
-			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
-					x / output->scale, y / output->scale, button, hotspot->data)) {
-				return;
+		if (px >= hotspot->x && py >= hotspot->y
+				&& px < hotspot->x + hotspot->width
+				&& py < hotspot->y + hotspot->height) {
+			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot, x, y,
+					button, hotspot->data)) {
+				return true;
 			}
 		}
 	}
+
+	return false;
 }
 
 static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
@@ -229,19 +231,8 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	struct swaybar_hotspot *hotspot;
-	wl_list_for_each(hotspot, &output->hotspots, link) {
-		double x = pointer->x * output->scale;
-		double y = pointer->y * output->scale;
-		if (x >= hotspot->x
-				&& y >= hotspot->y
-				&& x < hotspot->x + hotspot->width
-				&& y < hotspot->y + hotspot->height) {
-			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
-					pointer->x, pointer->y, button, hotspot->data)) {
-				return;
-			}
-		}
+	if (process_hotspots(output, pointer->x, pointer->y, button)) {
+		return;
 	}
 
 	struct swaybar_config *config = seat->bar->config;

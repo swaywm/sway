@@ -85,6 +85,13 @@ bool status_handle_readable(struct status_line *status) {
 				}
 			}
 
+			json_object *float_event_coords;
+			if (json_object_object_get_ex(header, "float_event_coords", &float_event_coords)
+					&& json_object_get_boolean(float_event_coords)) {
+				sway_log(SWAY_DEBUG, "Enabling floating-point coordinates.");
+				status->float_event_coords = true;
+			}
+
 			json_object *signal;
 			if (json_object_object_get_ex(header, "stop_signal", &signal)) {
 				status->stop_signal = json_object_get_int(signal);
