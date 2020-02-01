@@ -121,8 +121,8 @@ static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaybar_seat *seat = data;
-	seat->pointer.x = wl_fixed_to_int(surface_x);
-	seat->pointer.y = wl_fixed_to_int(surface_y);
+	seat->pointer.x = wl_fixed_to_double(surface_x);
+	seat->pointer.y = wl_fixed_to_double(surface_y);
 }
 
 static bool check_bindings(struct swaybar *bar, uint32_t button,
