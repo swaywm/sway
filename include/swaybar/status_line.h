@@ -28,6 +28,7 @@ struct status_line {
 	int cont_signal;
 
 	bool click_events;
+	bool float_event_coords;
 	bool clicked;
 	char *buffer;
 	size_t buffer_size;

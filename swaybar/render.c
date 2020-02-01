@@ -131,11 +131,15 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color,
 
 static enum hotspot_event_handling block_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
-		int x, int y, uint32_t button, void *data) {
+		double x, double y, uint32_t button, void *data) {
 	struct i3bar_block *block = data;
 	struct status_line *status = output->bar->status;
-	return i3bar_block_send_click(status, block, x, y, x - hotspot->x,
-			y - hotspot->y, hotspot->width, hotspot->height, button);
+	return i3bar_block_send_click(status, block, x, y,
+			x - (double)hotspot->x / output->scale,
+			y - (double)hotspot->y / output->scale,
+			(double)hotspot->width / output->scale,
+			(double)hotspot->height / output->scale,
+			output->scale, button);
 }
 
 static void i3bar_block_unref_callback(void *data) {
@@ -540,7 +544,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 
 static enum hotspot_event_handling workspace_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
-		int x, int y, uint32_t button, void *data) {
+		double x, double y, uint32_t button, void *data) {
 	if (button != BTN_LEFT) {
 		return HOTSPOT_PROCESS;
 	}

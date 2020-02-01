@@ -377,7 +377,7 @@ static int cmp_sni_id(const void *item, const void *cmp_to) {
 
 static enum hotspot_event_handling icon_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
-		int x, int y, uint32_t button, void *data) {
+		double x, double y, uint32_t button, void *data) {
 	sway_log(SWAY_DEBUG, "Clicked on %s", (char *)data);
 
 	struct swaybar_tray *tray = output->bar->tray;
