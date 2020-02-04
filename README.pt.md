@@ -62,5 +62,5 @@ Execute `man 5 sway` para se informar sobre a configuração.
 
 ## Execução
 
-Execute o comando `sway` de um TTY. Alguns gerenciadores de diplay(ou gerenciadores de login) podem funcionar mas alguns não são suportaods
+Execute o comando `sway` de um TTY. Alguns gerenciadores de display (ou gerenciadores de login) podem funcionar mas alguns não são suportaods
 pelo sway (o gdm é conhecido por funcionar bem).
