@@ -7,10 +7,12 @@
 #include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
+#include <wlr/types/wlr_cursor.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/libinput.h"
 #include "sway/input/seat.h"
+#include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "stringop.h"
@@ -354,6 +356,11 @@ void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 	input_device->device_destroy.notify = handle_device_destroy;
 
 	seat_add_device(seat, input_device);
+
+	if (event->suggested_output) {
+		wlr_cursor_map_input_to_output(seat->cursor->cursor, device,
+			event->suggested_output);
+	}
 }
 
 struct sway_input_manager *input_manager_create(struct sway_server *server) {
