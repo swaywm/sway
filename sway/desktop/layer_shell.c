@@ -222,7 +222,7 @@ void arrange_layers(struct sway_output *output) {
 	}
 }
 
-static struct sway_layer_surface *find_any_layer_by_client(
+static struct sway_layer_surface *find_mapped_layer_by_client(
 		struct wl_client *client, struct wlr_output *ignore_output) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
@@ -234,7 +234,8 @@ static struct sway_layer_surface *find_any_layer_by_client(
 		wl_list_for_each(lsurface,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
 			struct wl_resource *resource = lsurface->layer_surface->resource;
-			if (wl_resource_get_client(resource) == client) {
+			if (wl_resource_get_client(resource) == client
+					&& lsurface->layer_surface->mapped) {
 				return lsurface;
 			}
 		}
@@ -258,7 +259,7 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 
 	if (set_focus) {
 		struct sway_layer_surface *layer =
-			find_any_layer_by_client(client, sway_layer->layer_surface->output);
+			find_mapped_layer_by_client(client, sway_layer->layer_surface->output);
 		if (layer) {
 			seat_set_focus_layer(seat, layer->layer_surface);
 		}
