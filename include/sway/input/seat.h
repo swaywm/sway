@@ -124,6 +124,7 @@ struct sway_seat {
 	struct wl_listener start_drag;
 	struct wl_listener request_set_selection;
 	struct wl_listener request_set_primary_selection;
+	struct wl_listener destroy;
 
 	struct wl_list devices; // sway_seat_device::link
 	struct wl_list keyboard_groups; // sway_keyboard_group::link
