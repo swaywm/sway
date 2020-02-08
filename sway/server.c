@@ -112,7 +112,8 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.session_lock.manager->global ||
 		global == server.input->keyboard_shortcuts_inhibit->global ||
 		global == server.input->virtual_keyboard->global ||
-		global == server.input->virtual_pointer->global;
+		global == server.input->virtual_pointer->global ||
+		global == server.input->transient_seat_manager->global;
 }
 
 static bool filter_global(const struct wl_client *client,

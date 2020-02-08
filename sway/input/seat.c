@@ -67,6 +67,12 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 }
 
 void seat_destroy(struct sway_seat *seat) {
+	wlr_seat_destroy(seat->wlr_seat);
+}
+
+static void handle_seat_destroy(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, destroy);
+
 	if (seat == config->handler_context.seat) {
 		config->handler_context.seat = input_manager_get_default_seat();
 	}
@@ -87,7 +93,7 @@ void seat_destroy(struct sway_seat *seat) {
 	wl_list_remove(&seat->request_set_selection.link);
 	wl_list_remove(&seat->request_set_primary_selection.link);
 	wl_list_remove(&seat->link);
-	wlr_seat_destroy(seat->wlr_seat);
+	wl_list_remove(&seat->destroy.link);
 	for (int i = 0; i < seat->deferred_bindings->length; i++) {
 		free_sway_binding(seat->deferred_bindings->items[i]);
 	}
@@ -533,6 +539,9 @@ struct sway_seat *seat_create(const char *seat_name) {
 		free(seat);
 		return NULL;
 	}
+
+	seat->destroy.notify = handle_seat_destroy;
+	wl_signal_add(&seat->wlr_seat->events.destroy, &seat->destroy);
 
 	seat->idle_inhibit_sources = seat->idle_wake_sources =
 		IDLE_SOURCE_KEYBOARD |
