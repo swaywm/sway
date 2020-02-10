@@ -99,10 +99,10 @@ must be separated by one space. For example:
 *output* <name> transform <transform> [clockwise|anticlockwise]
 	Sets the background transform to the given value. Can be one of "90", "180",
 	"270" for rotation; or "flipped", "flipped-90", "flipped-180", "flipped-270"
-	to apply a rotation and flip, or "normal" to apply no transform. If a single
-	output is chosen and a rotation direction is specified (_clockwise_ or
-	_anticlockwise_) then the transform is added or subtracted from the current
-	transform.
+	to apply a rotation and flip, or "normal" to apply no transform. The
+	rotation is performed clockwise. If a single output is chosen and a
+	rotation direction is specified (_clockwise_ or _anticlockwise_) then the
+	transform is added or subtracted from the current transform.
 
 *output* <name> disable|enable
 	Enables or disables the specified output (all outputs are enabled by
