@@ -4,6 +4,22 @@
 #include "log.h"
 #include "sway/output.h"
 
+static enum wl_output_transform invert_rotation_direction(
+		enum wl_output_transform t) {
+	switch (t) {
+	case WL_OUTPUT_TRANSFORM_90:
+		return WL_OUTPUT_TRANSFORM_270;
+	case WL_OUTPUT_TRANSFORM_270:
+		return WL_OUTPUT_TRANSFORM_90;
+	case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+		return WL_OUTPUT_TRANSFORM_FLIPPED_270;
+	case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+		return WL_OUTPUT_TRANSFORM_FLIPPED_90;
+	default:
+		return t;
+	}
+}
+
 struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
@@ -11,6 +27,7 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID, "Missing transform argument.");
 	}
+
 	enum wl_output_transform transform;
 	if (strcmp(*argv, "normal") == 0 ||
 			strcmp(*argv, "0") == 0) {
@@ -32,6 +49,7 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	} else {
 		return cmd_results_new(CMD_INVALID, "Invalid output transform.");
 	}
+
 	struct output_config *output = config->handler_context.output_config;
 	config->handler_context.leftovers.argc = argc - 1;
 	config->handler_context.leftovers.argv = argv + 1;
@@ -50,13 +68,14 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 				"Cannot apply relative transform to unknown output %s", output->name);
 		}
 		if (strcmp(argv[1], "anticlockwise") == 0) {
-			transform = wlr_output_transform_invert(transform);
+			transform = invert_rotation_direction(transform);
 		}
 		struct wlr_output *w_output = s_output->wlr_output;
 		transform = wlr_output_transform_compose(w_output->transform, transform);
 		config->handler_context.leftovers.argv += 1;
 		config->handler_context.leftovers.argc -= 1;
 	}
+
 	output->transform = transform;
 	return NULL;
 }
