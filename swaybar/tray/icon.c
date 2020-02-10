@@ -89,7 +89,10 @@ static bool validate_icon_theme(struct icon_theme *theme) {
 static bool group_handler(char *old_group, char *new_group,
 		struct icon_theme *theme) {
 	if (!old_group) { // first group must be "Icon Theme"
-		return strcmp(new_group, "Icon Theme");
+		if (!new_group) {
+			return true;
+		}
+		return strcmp(new_group, "Icon Theme") != 0;
 	}
 
 	if (strcmp(old_group, "Icon Theme") == 0) {
