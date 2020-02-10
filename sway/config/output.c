@@ -283,8 +283,28 @@ static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
 #define MM_PER_INCH 25.4
 
 static int compute_default_scale(struct wlr_output *output) {
-	int width, height;
-	wlr_output_transformed_resolution(output, &width, &height);
+	struct wlr_box box = { .width = output->width, .height = output->height };
+	if (output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+		switch (output->pending.mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			box.width = output->pending.mode->width;
+			box.height = output->pending.mode->height;
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			box.width = output->pending.custom_mode.width;
+			box.height = output->pending.custom_mode.height;
+			break;
+		}
+	}
+	enum wl_output_transform transform = output->transform;
+	if (output->pending.committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		transform = output->pending.transform;
+	}
+	wlr_box_transform(&box, &box, transform, box.width, box.height);
+
+	int width = box.width;
+	int height = box.height;
+
 	if (height < HIDPI_MIN_HEIGHT) {
 		return 1;
 	}
@@ -349,18 +369,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		output->current_mode = wlr_output->pending.mode;
 	}
 
-	float scale;
-	if (oc && oc->scale > 0) {
-		scale = oc->scale;
-	} else {
-		scale = compute_default_scale(wlr_output);
-		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
-	}
-	if (scale != wlr_output->scale) {
-		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, scale);
-		wlr_output_set_scale(wlr_output, scale);
-	}
-
 	if (oc) {
 		enum scale_filter_mode scale_filter_old = output->scale_filter;
 		switch (oc->scale_filter) {
@@ -391,6 +399,20 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->transform >= 0) {
 		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
+	}
+
+	// Apply the scale last before the commit, because the scale auto-detection
+	// reads the pending output size
+	float scale;
+	if (oc && oc->scale > 0) {
+		scale = oc->scale;
+	} else {
+		scale = compute_default_scale(wlr_output);
+		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
+	}
+	if (scale != wlr_output->scale) {
+		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, scale);
+		wlr_output_set_scale(wlr_output, scale);
 	}
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
