@@ -186,12 +186,17 @@ static void log_kernel(void) {
 
 static bool drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
-		if (setuid(getuid()) != 0 || setgid(getgid()) != 0) {
-			sway_log(SWAY_ERROR, "Unable to drop root, refusing to start");
+		// Set the gid and uid in the correct order.
+		if (setgid(getgid()) != 0) {
+			sway_log(SWAY_ERROR, "Unable to drop root group, refusing to start");
+			return false;
+		}
+		if (setuid(getuid()) != 0) {
+			sway_log(SWAY_ERROR, "Unable to drop root user, refusing to start");
 			return false;
 		}
 	}
-	if (setuid(0) != -1) {
+	if (setgid(0) != -1 || setuid(0) != -1) {
 		sway_log(SWAY_ERROR, "Unable to drop root (we shouldn't be able to "
 			"restore it after setuid), refusing to start");
 		return false;
