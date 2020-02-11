@@ -896,11 +896,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		output_repaint_timer_handler, output);
 
 	struct output_config *oc = find_output_config(output);
-	if (!oc || oc->enabled) {
-		output_enable(output, oc);
-	} else {
-		wlr_output_enable(output->wlr_output, false);
-	}
+	apply_output_config(oc, output);
 	free_output_config(oc);
 
 	transaction_commit_dirty();
