@@ -101,7 +101,7 @@ struct sway_output *all_output_by_name_or_id(const char *name_or_id);
 
 void output_sort_workspaces(struct sway_output *output);
 
-bool output_enable(struct sway_output *output, struct output_config *oc);
+void output_enable(struct sway_output *output);
 
 void output_disable(struct sway_output *output);
 
