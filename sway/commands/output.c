@@ -103,7 +103,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	// If reloading, the output configs will be applied after reading the
 	// entire config and before the deferred commands so that an auto generated
 	// workspace name is not given to re-enabled outputs.
-	if (!config->reloading) {
+	if (!config->reloading && !config->validating) {
 		apply_output_config_to_outputs(output);
 		if (background) {
 			spawn_swaybg();

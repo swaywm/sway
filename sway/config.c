@@ -404,7 +404,7 @@ static bool load_config(const char *path, struct sway_config *config,
 		sway_log(SWAY_ERROR, "Error(s) loading config!");
 	}
 
-	return true;
+	return config->active || !config->validating || config_load_success;
 }
 
 bool load_main_config(const char *file, bool is_active, bool validating) {
