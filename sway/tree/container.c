@@ -208,7 +208,8 @@ static struct sway_container *container_at_tabbed(struct sway_node *parent,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	struct wlr_box box;
 	node_get_box(parent, &box);
-	if (ly < box.y || ly > box.y + box.height) {
+	if (lx < box.x || lx > box.x + box.width ||
+			ly < box.y || ly > box.y + box.height) {
 		return NULL;
 	}
 	struct sway_seat *seat = input_manager_current_seat();
@@ -242,7 +243,8 @@ static struct sway_container *container_at_stacked(struct sway_node *parent,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	struct wlr_box box;
 	node_get_box(parent, &box);
-	if (ly < box.y || ly > box.y + box.height) {
+	if (lx < box.x || lx > box.x + box.width ||
+			ly < box.y || ly > box.y + box.height) {
 		return NULL;
 	}
 	struct sway_seat *seat = input_manager_current_seat();
