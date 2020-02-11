@@ -343,14 +343,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		}
 		wlr_output_enable(wlr_output, false);
 		return wlr_output_commit(wlr_output);
-	} else if (!output->enabled) {
-		// Output is not enabled. Enable it, output_enable will call us again.
-		if (!oc || oc->dpms_state != DPMS_OFF) {
-			sway_log(SWAY_DEBUG, "Enabling output %s", oc->name);
-			wlr_output_enable(wlr_output, true);
-			wlr_output_commit(wlr_output);
-		}
-		return output_enable(output, oc);
 	}
 
 	if (!oc || oc->dpms_state != DPMS_OFF) {
@@ -439,6 +431,10 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	output->ly = output_box->y;
 	output->width = output_box->width;
 	output->height = output_box->height;
+
+	if ((!oc || oc->enabled) && !output->enabled) {
+		output_enable(output);
+	}
 
 	if (oc && oc->dpms_state == DPMS_OFF) {
 		sway_log(SWAY_DEBUG, "Turning off output %s", oc->name);

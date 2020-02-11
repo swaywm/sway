@@ -105,9 +105,9 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	return output;
 }
 
-bool output_enable(struct sway_output *output, struct output_config *oc) {
+void output_enable(struct sway_output *output) {
 	if (!sway_assert(!output->enabled, "output is already enabled")) {
-		return false;
+		return;
 	}
 	struct wlr_output *wlr_output = output->wlr_output;
 	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
@@ -116,11 +116,6 @@ bool output_enable(struct sway_output *output, struct output_config *oc) {
 	}
 
 	output->enabled = true;
-	if (!apply_output_config(oc, output)) {
-		output->enabled = false;
-		return false;
-	}
-
 	output->configured = true;
 	list_add(root->outputs, output);
 
@@ -156,8 +151,6 @@ bool output_enable(struct sway_output *output, struct output_config *oc) {
 
 	arrange_layers(output);
 	arrange_root();
-
-	return true;
 }
 
 static void evacuate_sticky(struct sway_workspace *old_ws,
