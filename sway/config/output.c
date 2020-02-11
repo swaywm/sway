@@ -361,26 +361,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		output->current_mode = wlr_output->pending.mode;
 	}
 
-	if (oc) {
-		enum scale_filter_mode scale_filter_old = output->scale_filter;
-		switch (oc->scale_filter) {
-			case SCALE_FILTER_DEFAULT:
-			case SCALE_FILTER_SMART:
-				output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
-					SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
-				break;
-			case SCALE_FILTER_LINEAR:
-			case SCALE_FILTER_NEAREST:
-				output->scale_filter = oc->scale_filter;
-				break;
-		}
-		if (scale_filter_old != output->scale_filter) {
-			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
-				sway_output_scale_filter_to_string(output->scale_filter));
-			output_damage_whole(output);
-		}
-	}
-
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
 		sway_log(SWAY_DEBUG, "Set %s subpixel to %s", oc->name,
 			sway_wl_output_subpixel_to_string(oc->subpixel));
@@ -414,6 +394,26 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		// we asked for.
 		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
 		return false;
+	}
+
+	if (oc) {
+		enum scale_filter_mode scale_filter_old = output->scale_filter;
+		switch (oc->scale_filter) {
+			case SCALE_FILTER_DEFAULT:
+			case SCALE_FILTER_SMART:
+				output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
+					SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
+				break;
+			case SCALE_FILTER_LINEAR:
+			case SCALE_FILTER_NEAREST:
+				output->scale_filter = oc->scale_filter;
+				break;
+		}
+		if (scale_filter_old != output->scale_filter) {
+			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
+				sway_output_scale_filter_to_string(output->scale_filter));
+			output_damage_whole(output);
+		}
 	}
 
 	// Find position for it
