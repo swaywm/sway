@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
 	if (debug) {
 		sway_log_init(SWAY_DEBUG, sway_terminate);
 		wlr_log_init(WLR_DEBUG, NULL);
-	} else if (verbose || validate) {
+	} else if (verbose) {
 		sway_log_init(SWAY_INFO, sway_terminate);
 		wlr_log_init(WLR_INFO, NULL);
 	} else {
