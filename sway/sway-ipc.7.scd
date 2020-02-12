@@ -382,7 +382,7 @@ node and will have the following properties:
 |- window_properties
 :  object
 :  (Only xwayland views) An object containing the _title_, _class_, _instance_,
-   _window\_role_, and _transient\_for_ for the view
+   _window\_role_, _window\_type_, and _transient\_for_ for the view
 
 
 *Example Reply:*

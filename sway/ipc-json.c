@@ -85,6 +85,35 @@ static const char *ipc_json_output_transform_description(enum wl_output_transfor
 	return NULL;
 }
 
+#if HAVE_XWAYLAND
+static const char *ipc_json_xwindow_type_description(enum atom_name window_type) {
+	switch (window_type) {
+	case NET_WM_WINDOW_TYPE_NORMAL:
+		return "normal";
+	case NET_WM_WINDOW_TYPE_DIALOG:
+		return "dialog";
+	case NET_WM_WINDOW_TYPE_UTILITY:
+		return "utility";
+	case NET_WM_WINDOW_TYPE_TOOLBAR:
+		return "toolbar";
+	case NET_WM_WINDOW_TYPE_SPLASH:
+		return "splash";
+	case NET_WM_WINDOW_TYPE_MENU:
+		return "menu";
+	case NET_WM_WINDOW_TYPE_DROPDOWN_MENU:
+		return "dropdown_menu";
+	case NET_WM_WINDOW_TYPE_POPUP_MENU:
+		return "popup_menu";
+	case NET_WM_WINDOW_TYPE_TOOLTIP:
+		return "tooltip";
+	case NET_WM_WINDOW_TYPE_NOTIFICATION:
+		return "notification";
+	default:
+		return "unknown";
+	}
+}
+#endif
+
 json_object *ipc_json_get_version(void) {
 	int major = 0, minor = 0, patch = 0;
 	json_object *version = json_object_new_object();
@@ -450,6 +479,13 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 		const char *role = view_get_window_role(c->view);
 		if (role) {
 			json_object_object_add(window_props, "window_role", json_object_new_string(role));
+		}
+
+		uint32_t window_type = view_get_window_type(c->view);
+		if (window_type) {
+			json_object_object_add(window_props, "window_type",
+				json_object_new_string(
+					ipc_json_xwindow_type_description(window_type)));
 		}
 
 		json_object_object_add(object, "window_properties", window_props);
