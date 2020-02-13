@@ -383,7 +383,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
 	}
 	if (scale != wlr_output->scale) {
-		sway_log(SWAY_DEBUG, "Set %s scale to %f", oc->name, scale);
+		sway_log(SWAY_DEBUG, "Set %s scale to %f", wlr_output->name, scale);
 		wlr_output_set_scale(wlr_output, scale);
 	}
 
