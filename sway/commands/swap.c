@@ -202,8 +202,8 @@ static bool test_id(struct sway_container *container, void *data) {
 
 static bool test_mark(struct sway_container *container, void *mark) {
 	if (container->marks->length) {
-		return !list_seq_find(container->marks,
-				(int (*)(const void *, const void *))strcmp, mark);
+		return list_seq_find(container->marks,
+				(int (*)(const void *, const void *))strcmp, mark) != -1;
 	}
 	return false;
 }
