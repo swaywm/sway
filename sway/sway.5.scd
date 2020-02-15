@@ -374,6 +374,14 @@ runtime.
 	and one has both _--input-device_ and _--locked_ and the other has neither,
 	the former will be preferred even when unlocked.
 
+	Unless the flag _--inhibited_ is set, the command will not be run when
+	a keyboard shortcuts inhibitor is active for the currently focused
+	window. Such inhibitors are usually requested by remote desktop and
+	virtualization software to enable the user to send keyboard shortcuts
+	to the remote or virtual session. The _--inhibited_ flag allows to
+	define bindings which will be exempt from pass-through to such
+	software. The same preference logic as for _--locked_ applies.
+
 	Bindings to keysyms are layout-dependent. This can be changed with the
 	_--to-code_ flag. In this case, the keysyms will be translated into the
 	corresponding keycodes in the first configured layout.

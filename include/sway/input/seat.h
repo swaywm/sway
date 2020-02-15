@@ -1,6 +1,7 @@
 #ifndef _SWAY_INPUT_SEAT_H
 #define _SWAY_INPUT_SEAT_H
 
+#include <wlr/types/wlr_keyboard_shortcuts_inhibit_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/edges.h>
@@ -94,6 +95,8 @@ struct sway_seat {
 
 	struct wl_list devices; // sway_seat_device::link
 	struct wl_list keyboard_groups; // sway_keyboard_group::link
+	struct wl_list keyboard_shortcuts_inhibitors;
+				// sway_keyboard_shortcuts_inhibitor::link
 
 	struct wl_list link; // input_manager::seats
 };
@@ -102,6 +105,14 @@ struct sway_pointer_constraint {
 	struct wlr_pointer_constraint_v1 *constraint;
 
 	struct wl_listener destroy;
+};
+
+struct sway_keyboard_shortcuts_inhibitor {
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor;
+
+	struct wl_listener destroy;
+
+	struct wl_list link; // sway_seat::keyboard_shortcuts_inhibitors
 };
 
 struct sway_seat *seat_create(const char *seat_name);
@@ -268,5 +279,12 @@ void seatop_render(struct sway_seat *seat, struct sway_output *output,
 		pixman_region32_t *damage);
 
 bool seatop_allows_set_cursor(struct sway_seat *seat);
+
+/**
+ * Returns the keyboard shortcuts inhibitor that applies to the currently
+ * focused surface of a seat or NULL if none exists.
+ */
+struct sway_keyboard_shortcuts_inhibitor *
+keyboard_shortcuts_inhibitor_get_for_focused_surface(const struct sway_seat *seat);
 
 #endif

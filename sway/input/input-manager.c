@@ -296,6 +296,46 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 	}
 }
 
+static void handle_keyboard_shortcuts_inhibitor_destroy(
+		struct wl_listener *listener, void *data) {
+	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+		wl_container_of(listener, sway_inhibitor, destroy);
+
+	sway_log(SWAY_DEBUG, "Removing keyboard shortcuts inhibitor");
+
+	// sway_seat::keyboard_shortcuts_inhibitors
+	wl_list_remove(&sway_inhibitor->link);
+	wl_list_remove(&sway_inhibitor->destroy.link);
+	free(sway_inhibitor);
+}
+
+static void handle_keyboard_shortcuts_inhibit_new_inhibitor(
+		struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input_manager =
+		wl_container_of(listener, input_manager,
+				keyboard_shortcuts_inhibit_new_inhibitor);
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor = data;
+
+	sway_log(SWAY_DEBUG, "Adding keyboard shortcuts inhibitor");
+
+	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+		calloc(1, sizeof(struct sway_keyboard_shortcuts_inhibitor));
+	if (!sway_assert(sway_inhibitor, "could not allocate keyboard "
+				"shortcuts inhibitor")) {
+		return;
+	}
+	sway_inhibitor->inhibitor = inhibitor;
+
+	sway_inhibitor->destroy.notify = handle_keyboard_shortcuts_inhibitor_destroy;
+	wl_signal_add(&inhibitor->events.destroy, &sway_inhibitor->destroy);
+
+	// attach inhibitor to the seat it applies to
+	struct sway_seat *seat = inhibitor->seat->data;
+	wl_list_insert(&seat->keyboard_shortcuts_inhibitors, &sway_inhibitor->link);
+
+	wlr_keyboard_shortcuts_inhibitor_v1_activate(inhibitor);
+}
+
 void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input_manager =
 		wl_container_of(listener, input_manager, virtual_keyboard_new);
@@ -396,6 +436,13 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	input->inhibit_deactivate.notify = handle_inhibit_deactivate;
 	wl_signal_add(&input->inhibit->events.deactivate,
 			&input->inhibit_deactivate);
+
+	input->keyboard_shortcuts_inhibit =
+		wlr_keyboard_shortcuts_inhibit_v1_create(server->wl_display);
+	input->keyboard_shortcuts_inhibit_new_inhibitor.notify =
+		handle_keyboard_shortcuts_inhibit_new_inhibitor;
+	wl_signal_add(&input->keyboard_shortcuts_inhibit->events.new_inhibitor,
+			&input->keyboard_shortcuts_inhibit_new_inhibitor);
 
 	return input;
 }
