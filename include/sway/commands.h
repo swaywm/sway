@@ -288,6 +288,7 @@ sway_cmd seat_cmd_idle_inhibit;
 sway_cmd seat_cmd_idle_wake;
 sway_cmd seat_cmd_keyboard_grouping;
 sway_cmd seat_cmd_pointer_constraint;
+sway_cmd seat_cmd_shortcuts_inhibitor;
 sway_cmd seat_cmd_xcursor_theme;
 
 sway_cmd cmd_ipc_cmd;
