@@ -72,7 +72,8 @@ static bool binding_key_compare(struct sway_binding *binding_a,
 	}
 
 	uint32_t conflict_generating_flags = BINDING_RELEASE | BINDING_BORDER
-			| BINDING_CONTENTS | BINDING_TITLEBAR | BINDING_LOCKED;
+			| BINDING_CONTENTS | BINDING_TITLEBAR | BINDING_LOCKED
+			| BINDING_INHIBITED;
 	if ((binding_a->flags & conflict_generating_flags) !=
 			(binding_b->flags & conflict_generating_flags)) {
 		return false;
@@ -354,6 +355,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			binding->flags |= BINDING_RELEASE;
 		} else if (strcmp("--locked", argv[0]) == 0) {
 			binding->flags |= BINDING_LOCKED;
+		} else if (strcmp("--inhibited", argv[0]) == 0) {
+			binding->flags |= BINDING_INHIBITED;
 		} else if (strcmp("--whole-window", argv[0]) == 0) {
 			binding->flags |= BINDING_BORDER | BINDING_CONTENTS | BINDING_TITLEBAR;
 		} else if (strcmp("--border", argv[0]) == 0) {

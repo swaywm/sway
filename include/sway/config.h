@@ -40,6 +40,7 @@ enum binding_flags {
 	BINDING_TITLEBAR=16, // mouse only; trigger on container titlebar
 	BINDING_CODE=32,     // keyboard only; convert keysyms into keycodes
 	BINDING_RELOAD=64,   // switch only; (re)trigger binding on reload
+	BINDING_INHIBITED=128,	// keyboard only: ignore shortcut inhibitor
 };
 
 /**

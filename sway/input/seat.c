@@ -557,6 +557,7 @@ struct sway_seat *seat_create(const char *seat_name) {
 		handle_request_set_primary_selection;
 
 	wl_list_init(&seat->keyboard_groups);
+	wl_list_init(&seat->keyboard_shortcuts_inhibitors);
 
 	wl_list_insert(&server.input->seats, &seat->link);
 
@@ -1472,4 +1473,19 @@ void seatop_render(struct sway_seat *seat, struct sway_output *output,
 
 bool seatop_allows_set_cursor(struct sway_seat *seat) {
 	return seat->seatop_impl->allow_set_cursor;
+}
+
+struct sway_keyboard_shortcuts_inhibitor *
+keyboard_shortcuts_inhibitor_get_for_focused_surface(
+		const struct sway_seat *seat) {
+	struct wlr_surface *focused_surface =
+		seat->wlr_seat->keyboard_state.focused_surface;
+	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor = NULL;
+	wl_list_for_each(sway_inhibitor, &seat->keyboard_shortcuts_inhibitors, link) {
+		if (sway_inhibitor->inhibitor->surface == focused_surface) {
+			return sway_inhibitor;
+		}
+	}
+
+	return NULL;
 }
