@@ -94,6 +94,7 @@ sway_sources = files(
 	'commands/seat/idle.c',
 	'commands/seat/keyboard_grouping.c',
 	'commands/seat/pointer_constraint.c',
+	'commands/seat/shortcuts_inhibitor.c',
 	'commands/seat/xcursor_theme.c',
 	'commands/set.c',
 	'commands/show_marks.c',

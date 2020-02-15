@@ -30,6 +30,7 @@ struct seat_config *new_seat_config(const char* name) {
 	}
 	seat->hide_cursor_timeout = -1;
 	seat->allow_constrain = CONSTRAIN_DEFAULT;
+	seat->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
 	seat->keyboard_grouping = KEYBOARD_GROUP_DEFAULT;
 	seat->xcursor_theme.name = NULL;
 	seat->xcursor_theme.size = 24;
@@ -152,6 +153,10 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 
 	if (source->allow_constrain != CONSTRAIN_DEFAULT) {
 		dest->allow_constrain = source->allow_constrain;
+	}
+
+	if (source->shortcuts_inhibit != SHORTCUTS_INHIBIT_DEFAULT) {
+		dest->shortcuts_inhibit = source->shortcuts_inhibit;
 	}
 
 	if (source->keyboard_grouping != KEYBOARD_GROUP_DEFAULT) {

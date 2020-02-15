@@ -243,6 +243,25 @@ correct seat.
 	by default) for the seat. This is primarily useful for video games. The
 	"escape" command can be used at runtime to escape from a captured client.
 
+*seat* <name> shortcuts_inhibitor enable|disable|activate|deactivate|toggle
+	Enables or disables the ability of clients to inhibit keyboard
+	shortcuts for the seat. This is primarily useful for virtualization and
+	remote desktop software. Subcommands _enable_ and _disable_ affect
+	whether future inhibitors are honoured by default, i.e. activated
+	automatically, the default being _enable_. When used at runtime,
+	_disable_ also disables any currently active inhibitors. _activate_,
+	_deactivate_ and _toggle_ are only useable at runtime and change the
+	state of a potentially existing inhibitor on the currently focused
+	window. This can be used with the current seat alias (_-_) to affect
+	only the currently focused window of the current seat. Subcommand
+	_deactivate_ is particularly useful in an _--inhibited_ *bindsym* to
+	escape a state where shortcuts are inhibited and the client becomes
+	uncooperative. It is worth noting that whether disabled or deactivated
+	inhibitors are removed is entirely up to the client. Depending on the
+	client it may therefore be possible to (re-)activate them later. Any
+	visual indication that an inhibitor is present is currently left to the
+	client as well.
+
 *seat* <name> xcursor_theme <theme> [<size>]
 	Override the system default XCursor theme. The default seat's
 	(_seat0_) theme is also used as the default cursor theme in

@@ -22,6 +22,7 @@ static struct cmd_handler seat_handlers[] = {
 	{ "idle_wake", seat_cmd_idle_wake },
 	{ "keyboard_grouping", seat_cmd_keyboard_grouping },
 	{ "pointer_constraint", seat_cmd_pointer_constraint },
+	{ "shortcuts_inhibitor", seat_cmd_shortcuts_inhibitor },
 	{ "xcursor_theme", seat_cmd_xcursor_theme },
 };
 
