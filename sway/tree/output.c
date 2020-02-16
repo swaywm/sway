@@ -102,20 +102,19 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
 
-	return output;
-}
-
-void output_enable(struct sway_output *output) {
-	if (!sway_assert(!output->enabled, "output is already enabled")) {
-		return;
-	}
-	struct wlr_output *wlr_output = output->wlr_output;
 	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
 	for (size_t i = 0; i < len; ++i) {
 		wl_list_init(&output->layers[i]);
 	}
 
-	output->enabled = true;
+	return output;
+}
+
+void output_configure(struct sway_output *output) {
+	if (!sway_assert(!output->configured, "output is already configured")) {
+		return;
+	}
+	struct wlr_output *wlr_output = output->wlr_output;
 	output->configured = true;
 	list_add(root->outputs, output);
 
