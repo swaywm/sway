@@ -345,6 +345,9 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		return wlr_output_commit(wlr_output);
 	}
 
+	bool was_enabled = output->enabled;
+	output->enabled = true;
+
 	if (!oc || oc->dpms_state != DPMS_OFF) {
 		sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 		wlr_output_enable(wlr_output, true);
@@ -393,6 +396,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		// output disabled for now and try again when the output gets the mode
 		// we asked for.
 		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
+		output->enabled = was_enabled;
 		return false;
 	}
 
@@ -432,8 +436,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	output->width = output_box->width;
 	output->height = output_box->height;
 
-	if ((!oc || oc->enabled) && !output->enabled) {
-		output_enable(output);
+	if ((!oc || oc->enabled) && !output->configured) {
+		output_configure(output);
 	}
 
 	if (oc && oc->dpms_state == DPMS_OFF) {
