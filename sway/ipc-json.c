@@ -86,31 +86,38 @@ static const char *ipc_json_output_transform_description(enum wl_output_transfor
 }
 
 #if HAVE_XWAYLAND
-static const char *ipc_json_xwindow_type_description(enum atom_name window_type) {
-	switch (window_type) {
-	case NET_WM_WINDOW_TYPE_NORMAL:
-		return "normal";
-	case NET_WM_WINDOW_TYPE_DIALOG:
-		return "dialog";
-	case NET_WM_WINDOW_TYPE_UTILITY:
-		return "utility";
-	case NET_WM_WINDOW_TYPE_TOOLBAR:
-		return "toolbar";
-	case NET_WM_WINDOW_TYPE_SPLASH:
-		return "splash";
-	case NET_WM_WINDOW_TYPE_MENU:
-		return "menu";
-	case NET_WM_WINDOW_TYPE_DROPDOWN_MENU:
-		return "dropdown_menu";
-	case NET_WM_WINDOW_TYPE_POPUP_MENU:
-		return "popup_menu";
-	case NET_WM_WINDOW_TYPE_TOOLTIP:
-		return "tooltip";
-	case NET_WM_WINDOW_TYPE_NOTIFICATION:
-		return "notification";
-	default:
-		return "unknown";
+static const char *ipc_json_xwindow_type_description(struct sway_view *view) {
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	struct sway_xwayland *xwayland = &server.xwayland;
+
+	for (size_t i = 0; i < surface->window_type_len; ++i) {
+		xcb_atom_t type = surface->window_type[i];
+		if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_NORMAL]) {
+			return "normal";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_DIALOG]) {
+			return "dialog";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_UTILITY]) {
+			return "utility";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_TOOLBAR]) {
+			return "toolbar";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_SPLASH]) {
+			return "splash";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_MENU]) {
+			return "menu";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_DROPDOWN_MENU]) {
+			return "dropdown_menu";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_POPUP_MENU]) {
+			return "popup_menu";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_TOOLTIP]) {
+			return "tooltip";
+		} else if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_NOTIFICATION]) {
+			return "notification";
+		} else {
+			return "unknown";
+		}
 	}
+
+	return "unknown";
 }
 #endif
 
@@ -485,7 +492,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 		if (window_type) {
 			json_object_object_add(window_props, "window_type",
 				json_object_new_string(
-					ipc_json_xwindow_type_description(window_type)));
+					ipc_json_xwindow_type_description(c->view)));
 		}
 
 		json_object_object_add(object, "window_properties", window_props);
