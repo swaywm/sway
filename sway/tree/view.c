@@ -896,8 +896,10 @@ void view_child_init(struct sway_view_child *child,
 	wl_signal_add(&view->events.unmap, &child->view_unmap);
 	child->view_unmap.notify = view_child_handle_view_unmap;
 
-	struct sway_output *output = child->view->container->workspace->output;
-	wlr_surface_send_enter(child->surface, output->wlr_output);
+	struct sway_workspace *workspace = child->view->container->workspace;
+	if (workspace) {
+		wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+	}
 
 	view_init_subsurfaces(child->view, surface);
 }
