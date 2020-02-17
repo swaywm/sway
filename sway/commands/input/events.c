@@ -74,34 +74,36 @@ static void toggle_select_send_events_for_device(struct input_config *ic,
 	ic->send_events = mode_for_name(argv[index % argc]);
 }
 
-static void toggle_send_events(struct input_config *ic, int argc, char **argv) {
-	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &server.input->devices, link) {
-		if (strcmp(input_device->identifier, ic->identifier) == 0) {
-			if (argc) {
-				toggle_select_send_events_for_device(ic, input_device,
-						argc, argv);
-			} else {
-				toggle_supported_send_events_for_device(ic, input_device);
+static void toggle_send_events(int argc, char **argv) {
+	struct input_config *ic = config->handler_context.input_config;
+	bool wildcard = strcmp(ic->identifier, "*") == 0;
+	const char *type = strncmp(ic->identifier, "type:", strlen("type:")) == 0
+		? ic->identifier + strlen("type:") : NULL;
+	struct sway_input_device *device = NULL;
+	wl_list_for_each(device, &server.input->devices, link) {
+		if (wildcard || type) {
+			ic = new_input_config(device->identifier);
+			if (!ic) {
+				continue;
 			}
+			if (type && strcmp(input_device_get_type(device), type) != 0) {
+				continue;
+			}
+		} else if (strcmp(ic->identifier, device->identifier) != 0) {
+			continue;
+		}
+
+		if (argc) {
+			toggle_select_send_events_for_device(ic, device, argc, argv);
+		} else {
+			toggle_supported_send_events_for_device(ic, device);
+		}
+
+		if (wildcard || type) {
+			store_input_config(ic, NULL);
+		} else {
 			return;
 		}
-	}
-}
-
-static void toggle_wildcard_send_events(int argc, char **argv) {
-	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &server.input->devices, link) {
-		struct input_config *ic = new_input_config(input_device->identifier);
-		if (!ic) {
-			break;
-		}
-		if (argc) {
-			toggle_select_send_events_for_device(ic, input_device, argc, argv);
-		} else {
-			toggle_supported_send_events_for_device(ic, input_device);
-		}
-		store_input_config(ic, NULL);
 	}
 }
 
@@ -132,15 +134,16 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 						"Invalid toggle mode %s", argv[i]);
 			}
 		}
-		if (strcmp(ic->identifier, "*") == 0) {
-			// Update the device input configs and then reset the wildcard
+
+		toggle_send_events(argc - 1, argv + 1);
+
+		if (strcmp(ic->identifier, "*") == 0 ||
+				strncmp(ic->identifier, "type:", strlen("type:")) == 0) {
+			// Update the device input configs and then reset the type/wildcard
 			// config send events mode so that is does not override the device
 			// ones. The device ones will be applied when attempting to apply
-			// the wildcard config
-			toggle_wildcard_send_events(argc - 1, argv + 1);
+			// the type/wildcard config
 			ic->send_events = INT_MIN;
-		} else {
-			toggle_send_events(ic, argc - 1, argv + 1);
 		}
 	} else {
 		return cmd_results_new(CMD_INVALID,
