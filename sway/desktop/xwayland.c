@@ -178,7 +178,10 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 		}
 		return 0;
 	case VIEW_PROP_WINDOW_TYPE:
-		return *view->wlr_xwayland_surface->window_type;
+		if (view->wlr_xwayland_surface->window_type_len == 0) {
+			return 0;
+		}
+		return view->wlr_xwayland_surface->window_type[0];
 	default:
 		return 0;
 	}
