@@ -528,8 +528,10 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 		ipc_get_workspaces(bar);
 	}
 
+	bool moving_layer = strcmp(oldcfg->mode, newcfg->mode) != 0;
+
 	free_config(oldcfg);
-	determine_bar_visibility(bar, true);
+	determine_bar_visibility(bar, moving_layer);
 	return true;
 }
 
