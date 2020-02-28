@@ -80,7 +80,7 @@ struct sway_view {
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
 
-	struct wlr_buffer *saved_buffer;
+	struct wlr_client_buffer *saved_buffer;
 	int saved_buffer_width, saved_buffer_height;
 
 	// The geometry for whatever the client is committing, regardless of

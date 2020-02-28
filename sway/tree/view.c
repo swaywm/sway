@@ -1154,7 +1154,7 @@ void view_remove_saved_buffer(struct sway_view *view) {
 	if (!sway_assert(view->saved_buffer, "Expected a saved buffer")) {
 		return;
 	}
-	wlr_buffer_unref(view->saved_buffer);
+	wlr_buffer_unref(&view->saved_buffer->base);
 	view->saved_buffer = NULL;
 }
 
@@ -1163,7 +1163,8 @@ void view_save_buffer(struct sway_view *view) {
 		view_remove_saved_buffer(view);
 	}
 	if (view->surface && wlr_surface_has_buffer(view->surface)) {
-		view->saved_buffer = wlr_buffer_ref(view->surface->buffer);
+		wlr_buffer_ref(&view->surface->buffer->base);
+		view->saved_buffer = view->surface->buffer;
 		view->saved_buffer_width = view->surface->current.width;
 		view->saved_buffer_height = view->surface->current.height;
 	}
