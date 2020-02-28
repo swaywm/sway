@@ -501,7 +501,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
 
-	if (!wlr_output_attach_buffer(wlr_output, surface->buffer)) {
+	if (!wlr_output_attach_buffer(wlr_output, &surface->buffer->base)) {
 		return false;
 	}
 	return wlr_output_commit(wlr_output);
