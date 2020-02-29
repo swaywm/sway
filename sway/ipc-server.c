@@ -923,7 +923,8 @@ bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_typ
 	}
 
 	if (client->write_buffer_size > 4e6) { // 4 MB
-		sway_log(SWAY_ERROR, "Client write buffer too big, disconnecting client");
+		sway_log(SWAY_ERROR, "Client write buffer too big (%zu), disconnecting client",
+				client->write_buffer_size);
 		ipc_client_disconnect(client);
 		return false;
 	}
