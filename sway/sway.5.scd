@@ -745,9 +745,19 @@ The default colors are:
 	state. Using _allow_ or _deny_ controls the window's ability to set itself
 	as urgent. By default, windows are allowed to set their own urgency.
 
-*workspace* [--no-auto-back-and-forth] [number] <name>
-	Switches to the specified workspace. The string "number" is optional and is
-	used to sort workspaces.
+*workspace* [--no-auto-back-and-forth] [number] <[num:]name>
+	Switches to the specified workspace. The _num:_ portion of the name is
+	optional and will be used for ordering. If _num:_ is not given and
+	_name_ is a number, then it will be also be used for ordering.
+
+	If the _no-auto-back-and-forth_ option is given, then this command will
+	not perform a back-and-forth operation when the workspace is already
+	focused and _workspace_auto_back_and_forth_ is enabled.
+
+	If the _number_ keyword is specified and a workspace with the number
+	already exists, then the workspace with the number will be used. If a
+	workspace with the number does not exist, a new workspace will be created
+	with the name _name_.
 
 *workspace* prev|next
 	Switches to the next workspace on the current output or on the next output
