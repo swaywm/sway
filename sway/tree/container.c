@@ -367,7 +367,7 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 	// Focused view's popups
 	if (focus && focus->view) {
 		c = surface_at_view(focus, lx, ly, surface, sx, sy);
-		if (c && surface_is_popup(*surface)) {
+		if (c && (is_floating || surface_is_popup(*surface))) {
 			return c;
 		}
 		*surface = NULL;
