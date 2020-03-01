@@ -307,22 +307,8 @@ static void render_saved_view(struct sway_view *view,
 	// https://github.com/swaywm/sway/pull/4465#discussion_r321082059
 }
 
-/**
- * Render a view's surface and left/bottom/right borders.
- */
-static void render_view(struct sway_output *output, pixman_region32_t *damage,
+static void render_view_border(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
-	struct sway_view *view = con->view;
-	if (view->saved_buffer) {
-		render_saved_view(view, output, damage, view->container->alpha);
-	} else if (view->surface) {
-		render_view_toplevels(view, output, damage, view->container->alpha);
-	}
-
-	if (con->current.border == B_NONE || con->current.border == B_CSD) {
-		return;
-	}
-
 	struct wlr_box box;
 	float output_scale = output->wlr_output->scale;
 	float color[4];
@@ -371,6 +357,25 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		box.height = state->border_thickness;
 		scale_box(&box, output_scale);
 		render_rect(output, damage, &box, color);
+	}
+}
+
+/**
+ * Render a view's surface and left/bottom/right borders.
+ */
+static void render_view(struct sway_output *output, pixman_region32_t *damage,
+		struct sway_container *con, struct border_colors *colors) {
+	// Draw border first, so that if subsurfaces overlap the border is drawn under it
+	if (con->current.border != B_NONE && con->current.border != B_CSD) {
+		render_view_border(output, damage, con, colors);
+	}
+
+	struct sway_view *view = con->view;
+
+	if (view->saved_buffer) {
+		render_saved_view(view, output, damage, view->container->alpha);
+	} else if (view->surface) {
+		render_view_toplevels(view, output, damage, view->container->alpha);
 	}
 }
 
