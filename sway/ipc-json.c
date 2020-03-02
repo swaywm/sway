@@ -196,6 +196,9 @@ static json_object *ipc_json_create_node(int id, char *name,
 	json_object_object_add(object, "geometry", ipc_json_create_empty_rect());
 	json_object_object_add(object, "window", NULL);
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
+	json_object_object_add(object, "marks", json_object_new_array());
+	json_object_object_add(object, "fullscreen_mode", json_object_new_int(0));
+	json_object_object_add(object, "nodes", json_object_new_array());
 	json_object_object_add(object, "floating_nodes", json_object_new_array());
 	json_object_object_add(object, "sticky", json_object_new_boolean(false));
 
@@ -346,6 +349,7 @@ static json_object *ipc_json_describe_scratchpad_output(void) {
 
 	json_object *workspace = ipc_json_create_node(i3_scratch_id,
 				"__i3_scratch", false, workspace_focus, &box);
+	json_object_object_add(workspace, "fullscreen_mode", json_object_new_int(1));
 	json_object_object_add(workspace, "type",
 			json_object_new_string("workspace"));
 
@@ -383,6 +387,7 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
 
 	json_object_object_add(object, "num", json_object_new_int(num));
+	json_object_object_add(object, "fullscreen_mode", json_object_new_int(1));
 	json_object_object_add(object, "output", workspace->output ?
 			json_object_new_string(workspace->output->wlr_output->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
