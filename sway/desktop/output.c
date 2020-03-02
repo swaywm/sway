@@ -507,7 +507,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	return wlr_output_commit(wlr_output);
 }
 
-int output_repaint_timer_handler(void *data) {
+static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 	if (output->wlr_output == NULL) {
 		return 0;

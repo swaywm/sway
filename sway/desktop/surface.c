@@ -5,7 +5,7 @@
 #include "sway/server.h"
 #include "sway/surface.h"
 
-void handle_destroy(struct wl_listener *listener, void *data) {
+static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_surface *surface = wl_container_of(listener, surface, destroy);
 
 	surface->wlr_surface->data = NULL;
