@@ -78,8 +78,6 @@ typedef void (*sway_surface_iterator_func_t)(struct sway_output *output, struct 
 	struct wlr_surface *surface, struct wlr_box *box, float rotation,
 	void *user_data);
 
-int output_repaint_timer_handler(void *data);
-
 void output_damage_whole(struct sway_output *output);
 
 void output_damage_surface(struct sway_output *output, double ox, double oy,
