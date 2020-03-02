@@ -175,6 +175,7 @@ sway_sources = files(
 	'commands/input/xkb_switch_layout.c',
 	'commands/input/xkb_variant.c',
 
+	'commands/output/adaptive_sync.c',
 	'commands/output/background.c',
 	'commands/output/disable.c',
 	'commands/output/dpms.c',

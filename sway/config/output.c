@@ -64,6 +64,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->transform = -1;
 	oc->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
 	oc->max_render_time = -1;
+	oc->adaptive_sync = -1;
 	return oc;
 }
 
@@ -103,6 +104,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->max_render_time != -1) {
 		dst->max_render_time = src->max_render_time;
+	}
+	if (src->adaptive_sync != -1) {
+		dst->adaptive_sync = src->adaptive_sync;
 	}
 	if (src->background) {
 		free(dst->background);
@@ -388,6 +392,10 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (scale != wlr_output->scale) {
 		sway_log(SWAY_DEBUG, "Set %s scale to %f", wlr_output->name, scale);
 		wlr_output_set_scale(wlr_output, scale);
+	}
+
+	if (oc && oc->adaptive_sync != -1) {
+		wlr_output_enable_adaptive_sync(wlr_output, oc->adaptive_sync == 1);
 	}
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
