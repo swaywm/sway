@@ -266,6 +266,7 @@ sway_cmd input_cmd_xkb_rules;
 sway_cmd input_cmd_xkb_switch_layout;
 sway_cmd input_cmd_xkb_variant;
 
+sway_cmd output_cmd_adaptive_sync;
 sway_cmd output_cmd_background;
 sway_cmd output_cmd_disable;
 sway_cmd output_cmd_dpms;

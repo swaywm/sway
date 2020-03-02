@@ -148,6 +148,15 @@ must be separated by one space. For example:
 	optimal max_render_time value may vary based on the parent compositor
 	rendering timings.
 
+*output* <name> adaptive_sync on|off
+	Enables or disables adaptive synchronization (often referred to as Variable
+	Refresh Rate, or by the vendor-specific names FreeSync/G-Sync).
+
+	Adaptive sync allows clients to submit frames a little to late without
+	having to wait a whole refresh period to display it on screen. Enabling
+	adaptive sync can improve latency, but can cause flickering on some
+	hardware.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)
