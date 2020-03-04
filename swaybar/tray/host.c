@@ -65,9 +65,9 @@ static int handle_sni_unregistered(sd_bus_message *msg, void *data,
 static int get_registered_snis_callback(sd_bus_message *msg, void *data,
 		sd_bus_error *error) {
 	if (sd_bus_message_is_method_error(msg, NULL)) {
-		sd_bus_error err = *sd_bus_message_get_error(msg);
-		sway_log(SWAY_ERROR, "Failed to get registered SNIs: %s", err.message);
-		return -sd_bus_error_get_errno(&err);
+		const sd_bus_error *err = sd_bus_message_get_error(msg);
+		sway_log(SWAY_ERROR, "Failed to get registered SNIs: %s", err->message);
+		return -sd_bus_error_get_errno(err);
 	}
 
 	int ret = sd_bus_message_enter_container(msg, 'v', NULL);
@@ -87,9 +87,11 @@ static int get_registered_snis_callback(sd_bus_message *msg, void *data,
 		struct swaybar_tray *tray = data;
 		for (char **id = ids; *id; ++id) {
 			add_sni(tray, *id);
+			free(*id);
 		}
 	}
 
+	free(ids);
 	return ret;
 }
 

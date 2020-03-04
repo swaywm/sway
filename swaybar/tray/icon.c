@@ -412,7 +412,7 @@ static char *find_icon_in_subdir(char *name, char *basedir, char *theme,
 #endif
 		"png",
 #if HAVE_GDK_PIXBUF
-		"xpm"
+		"xpm" // deprecated
 #endif
 	};
 
@@ -508,21 +508,13 @@ static char *find_icon_with_theme(list_t *basedirs, list_t *themes, char *name,
 	return icon;
 }
 
-char *find_icon_in_dir(char *name, char *dir, int *min_size, int *max_size) {
-	char *icon = find_icon_in_subdir(name, dir, "", "");
-	if (icon) {
-		*min_size = 1;
-		*max_size = 512;
-	}
-	return icon;
-
-}
-
 static char *find_fallback_icon(list_t *basedirs, char *name, int *min_size,
 		int *max_size) {
 	for (int i = 0; i < basedirs->length; ++i) {
-		char *icon = find_icon_in_dir(name, basedirs->items[i], min_size, max_size);
+		char *icon = find_icon_in_subdir(name, basedirs->items[i], "", "");
 		if (icon) {
+			*min_size = 1;
+			*max_size = 512;
 			return icon;
 		}
 	}
@@ -537,7 +529,7 @@ char *find_icon(list_t *themes, list_t *basedirs, char *name, int size,
 		icon = find_icon_with_theme(basedirs, themes, name, size, theme,
 				min_size, max_size);
 	}
-	if (!icon) {
+	if (!icon && !(theme && strcmp(theme, "Hicolor") == 0)) {
 		icon = find_icon_with_theme(basedirs, themes, name, size, "Hicolor",
 				min_size, max_size);
 	}
