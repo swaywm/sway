@@ -388,6 +388,9 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 		struct wlr_surface *wlr_surface = wlr_layer_surface_v1->surface;
 		struct sway_layer_surface *sway_layer_surface =
 			layer_from_wlr_layer_surface_v1(wlr_layer_surface_v1);
+		if (sway_layer_surface == NULL) {
+			continue;
+		}
 		pixman_box32_t output_box = {
 			.x2 = output->width,
 			.y2 = output->height,
