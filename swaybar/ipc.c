@@ -40,7 +40,7 @@ void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 		command[d++] = ws[i];
 	}
 
-	ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size);
+	free(ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size));
 	free(command);
 }
 

@@ -438,6 +438,9 @@ void swaybar_seat_free(struct swaybar_seat *seat) {
 	if (seat->pointer.pointer != NULL) {
 		wl_pointer_release(seat->pointer.pointer);
 	}
+	if (seat->pointer.cursor_theme != NULL) {
+		wl_cursor_theme_destroy(seat->pointer.cursor_theme);
+	}
 	if (seat->pointer.cursor_surface != NULL) {
 		wl_surface_destroy(seat->pointer.cursor_surface);
 	}
