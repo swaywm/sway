@@ -681,8 +681,10 @@ static void damage_surface_iterator(struct sway_output *output, struct sway_view
 		wlr_output_damage_add_box(output->damage, &box);
 	}
 
-	output->surface_needs_frame = true;
-	wlr_output_schedule_frame(output->wlr_output);
+	if (!wl_list_empty(&surface->current.frame_callback_list)) {
+		output->surface_needs_frame = true;
+		wlr_output_schedule_frame(output->wlr_output);
+	}
 }
 
 void output_damage_surface(struct sway_output *output, double ox, double oy,
