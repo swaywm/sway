@@ -515,9 +515,6 @@ static int output_repaint_timer_handler(void *data) {
 
 	output->wlr_output->frame_pending = false;
 
-	bool surface_needs_frame = output->surface_needs_frame;
-	output->surface_needs_frame = false;
-
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
 		return 0;
@@ -562,10 +559,6 @@ static int output_repaint_timer_handler(void *data) {
 		output_render(output, &now, &damage);
 	} else {
 		wlr_output_rollback(output->wlr_output);
-
-		if (surface_needs_frame) {
-			wlr_output_schedule_frame(output->wlr_output);
-		}
 	}
 
 	pixman_region32_fini(&damage);
@@ -682,7 +675,6 @@ static void damage_surface_iterator(struct sway_output *output, struct sway_view
 	}
 
 	if (!wl_list_empty(&surface->current.frame_callback_list)) {
-		output->surface_needs_frame = true;
 		wlr_output_schedule_frame(output->wlr_output);
 	}
 }
