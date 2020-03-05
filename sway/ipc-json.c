@@ -85,6 +85,19 @@ static const char *ipc_json_output_transform_description(enum wl_output_transfor
 	return NULL;
 }
 
+static const char *ipc_json_output_adaptive_sync_status_description(
+		enum wlr_output_adaptive_sync_status status) {
+	switch (status) {
+	case WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED:
+		return "disabled";
+	case WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED:
+		return "enabled";
+	case WLR_OUTPUT_ADAPTIVE_SYNC_UNKNOWN:
+		return "unknown";
+	}
+	return NULL;
+}
+
 #if HAVE_XWAYLAND
 static const char *ipc_json_xwindow_type_description(struct sway_view *view) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
@@ -219,6 +232,11 @@ static void ipc_json_describe_output(struct sway_output *output,
 	json_object_object_add(object, "transform",
 		json_object_new_string(
 			ipc_json_output_transform_description(wlr_output->transform)));
+	const char *adaptive_sync_status =
+		ipc_json_output_adaptive_sync_status_description(
+			wlr_output->adaptive_sync_status);
+	json_object_object_add(object, "adaptive_sync_status",
+		json_object_new_string(adaptive_sync_status));
 
 	struct sway_workspace *ws = output_get_active_workspace(output);
 	if (!sway_assert(ws, "Expected output to have a workspace")) {
