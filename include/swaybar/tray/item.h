@@ -14,6 +14,15 @@ struct swaybar_pixmap {
 	unsigned char pixels[];
 };
 
+struct swaybar_sni_slot {
+	struct wl_list link; // swaybar_sni::slots
+	struct swaybar_sni *sni;
+	const char *prop;
+	const char *type;
+	void *dest;
+	sd_bus_slot *slot;
+};
+
 struct swaybar_sni {
 	// icon properties
 	struct swaybar_tray *tray;
@@ -37,9 +46,7 @@ struct swaybar_sni {
 	char *menu;
 	char *icon_theme_path; // non-standard KDE property
 
-	sd_bus_slot *new_icon_slot;
-	sd_bus_slot *new_attention_icon_slot;
-	sd_bus_slot *new_status_slot;
+	struct wl_list slots; // swaybar_sni_slot::link
 };
 
 struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray);
