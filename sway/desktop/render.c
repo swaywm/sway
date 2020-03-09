@@ -667,6 +667,48 @@ struct parent_data {
 static void render_container(struct sway_output *output,
 	pixman_region32_t *damage, struct sway_container *con, bool parent_focused);
 
+static void render_containers_linear_child(struct sway_container *child, 
+		struct sway_output *output, pixman_region32_t *damage, 
+		struct parent_data *parent) {
+	if (child->view) {
+		struct sway_view *view = child->view;
+		struct border_colors *colors;
+		struct wlr_texture *title_texture;
+		struct wlr_texture *marks_texture;
+		struct sway_container_state *state = &child->current;
+
+		if (view_is_urgent(view)) {
+			colors = &config->border_colors.urgent;
+			title_texture = child->title_urgent;
+			marks_texture = child->marks_urgent;
+		} else if (state->focused || parent->focused) {
+			colors = &config->border_colors.focused;
+			title_texture = child->title_focused;
+			marks_texture = child->marks_focused;
+		} else if (child == parent->active_child) {
+			colors = &config->border_colors.focused_inactive;
+			title_texture = child->title_focused_inactive;
+			marks_texture = child->marks_focused_inactive;
+		} else {
+			colors = &config->border_colors.unfocused;
+			title_texture = child->title_unfocused;
+			marks_texture = child->marks_unfocused;
+		}
+
+		if (state->border == B_NORMAL) {
+			render_titlebar(output, damage, child, state->x,
+					state->y, state->width, colors,
+					title_texture, marks_texture);
+		} else if (state->border == B_PIXEL) {
+			render_top_border(output, damage, child, colors);
+		}
+		render_view(output, damage, child, colors);
+	} else {
+		render_container(output, damage, child,
+				parent->focused || child->current.focused);
+	}
+}
+
 /**
  * Render a container's children using a L_HORIZ or L_VERT layout.
  *
@@ -675,47 +717,16 @@ static void render_container(struct sway_output *output,
  */
 static void render_containers_linear(struct sway_output *output,
 		pixman_region32_t *damage, struct parent_data *parent) {
+	struct sway_container *active = parent->active_child;
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
-
-		if (child->view) {
-			struct sway_view *view = child->view;
-			struct border_colors *colors;
-			struct wlr_texture *title_texture;
-			struct wlr_texture *marks_texture;
-			struct sway_container_state *state = &child->current;
-
-			if (view_is_urgent(view)) {
-				colors = &config->border_colors.urgent;
-				title_texture = child->title_urgent;
-				marks_texture = child->marks_urgent;
-			} else if (state->focused || parent->focused) {
-				colors = &config->border_colors.focused;
-				title_texture = child->title_focused;
-				marks_texture = child->marks_focused;
-			} else if (child == parent->active_child) {
-				colors = &config->border_colors.focused_inactive;
-				title_texture = child->title_focused_inactive;
-				marks_texture = child->marks_focused_inactive;
-			} else {
-				colors = &config->border_colors.unfocused;
-				title_texture = child->title_unfocused;
-				marks_texture = child->marks_unfocused;
-			}
-
-			if (state->border == B_NORMAL) {
-				render_titlebar(output, damage, child, state->x,
-						state->y, state->width, colors,
-						title_texture, marks_texture);
-			} else if (state->border == B_PIXEL) {
-				render_top_border(output, damage, child, colors);
-			}
-			render_view(output, damage, child, colors);
-		} else {
-			render_container(output, damage, child,
-					parent->focused || child->current.focused);
+		if (child != active) {
+			render_containers_linear_child(child, output, damage, parent);
 		}
 	}
+	// Render the active child last, to make sure any subsurfaces for that container
+	// are rendered on top
+	render_containers_linear_child(active, output, damage, parent);
 }
 
 /**
