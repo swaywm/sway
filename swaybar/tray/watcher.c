@@ -182,7 +182,13 @@ struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus) {
 
 	ret = sd_bus_request_name(bus, watcher->interface, 0);
 	if (ret < 0) {
-		sway_log(SWAY_ERROR, "Failed to acquire service name: %s", strerror(-ret));
+		if (-ret == EEXIST) {
+			sway_log(SWAY_DEBUG, "Failed to acquire service name '%s':"
+					"another tray is already running", watcher->interface);
+		} else {
+			sway_log(SWAY_ERROR, "Failed to acquire service name '%s': %s",
+					watcher->interface, strerror(-ret));
+		}
 		goto error;
 	}
 

@@ -108,16 +108,9 @@ error:
 	return ret;
 }
 
-struct get_property_data {
-	struct swaybar_sni *sni;
-	const char *prop;
-	const char *type;
-	void *dest;
-};
-
 static int get_property_callback(sd_bus_message *msg, void *data,
 		sd_bus_error *error) {
-	struct get_property_data *d = data;
+	struct swaybar_sni_slot *d = data;
 	struct swaybar_sni *sni = d->sni;
 	const char *prop = d->prop;
 	const char *type = d->type;
@@ -168,22 +161,26 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 		set_sni_dirty(sni);
 	}
 cleanup:
+	wl_list_remove(&d->link);
 	free(data);
 	return ret;
 }
 
 static void sni_get_property_async(struct swaybar_sni *sni, const char *prop,
 		const char *type, void *dest) {
-	struct get_property_data *data = malloc(sizeof(struct get_property_data));
+	struct swaybar_sni_slot *data = calloc(1, sizeof(struct swaybar_sni_slot));
 	data->sni = sni;
 	data->prop = prop;
 	data->type = type;
 	data->dest = dest;
-	int ret = sd_bus_call_method_async(sni->tray->bus, NULL, sni->service,
+	int ret = sd_bus_call_method_async(sni->tray->bus, &data->slot, sni->service,
 			sni->path, "org.freedesktop.DBus.Properties", "Get",
 			get_property_callback, data, "ss", sni->interface, prop);
-	if (ret < 0) {
+	if (ret >= 0) {
+		wl_list_insert(&sni->slots, &data->link);
+	} else {
 		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+		free(data);
 	}
 }
 
@@ -254,13 +251,17 @@ static int handle_new_status(sd_bus_message *msg, void *data, sd_bus_error *erro
 	return ret;
 }
 
-static void sni_match_signal(struct swaybar_sni *sni, sd_bus_slot **slot,
-		char *signal, sd_bus_message_handler_t callback) {
-	int ret = sd_bus_match_signal(sni->tray->bus, slot, sni->service, sni->path,
-			sni->interface, signal, callback, sni);
-	if (ret < 0) {
-		sway_log(SWAY_ERROR, "Failed to subscribe to signal %s: %s", signal,
-				strerror(-ret));
+static void sni_match_signal_async(struct swaybar_sni *sni, char *signal,
+		sd_bus_message_handler_t callback) {
+	struct swaybar_sni_slot *slot = calloc(1, sizeof(struct swaybar_sni_slot));
+	int ret = sd_bus_match_signal_async(sni->tray->bus, &slot->slot,
+			sni->service, sni->path, sni->interface, signal, callback, NULL, sni);
+	if (ret >= 0) {
+		wl_list_insert(&sni->slots, &slot->link);
+	} else {
+		sway_log(SWAY_ERROR, "%s failed to subscribe to signal %s: %s",
+				sni->service, signal, strerror(-ret));
+		free(slot);
 	}
 }
 
@@ -270,6 +271,7 @@ struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray) {
 		return NULL;
 	}
 	sni->tray = tray;
+	wl_list_init(&sni->slots);
 	sni->watcher_id = strdup(id);
 	char *path_ptr = strchr(id, '/');
 	if (!path_ptr) {
@@ -293,10 +295,9 @@ struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray) {
 	sni_get_property_async(sni, "ItemIsMenu", "b", &sni->item_is_menu);
 	sni_get_property_async(sni, "Menu", "o", &sni->menu);
 
-	sni_match_signal(sni, &sni->new_icon_slot, "NewIcon", handle_new_icon);
-	sni_match_signal(sni, &sni->new_attention_icon_slot, "NewAttentionIcon",
-			handle_new_attention_icon);
-	sni_match_signal(sni, &sni->new_status_slot, "NewStatus", handle_new_status);
+	sni_match_signal_async(sni, "NewIcon", handle_new_icon);
+	sni_match_signal_async(sni, "NewAttentionIcon", handle_new_attention_icon);
+	sni_match_signal_async(sni, "NewStatus", handle_new_status);
 
 	return sni;
 }
@@ -307,11 +308,6 @@ void destroy_sni(struct swaybar_sni *sni) {
 	}
 
 	cairo_surface_destroy(sni->icon);
-
-	sd_bus_slot_unref(sni->new_icon_slot);
-	sd_bus_slot_unref(sni->new_attention_icon_slot);
-	sd_bus_slot_unref(sni->new_status_slot);
-
 	free(sni->watcher_id);
 	free(sni->service);
 	free(sni->path);
@@ -322,6 +318,13 @@ void destroy_sni(struct swaybar_sni *sni) {
 	list_free_items_and_destroy(sni->attention_icon_pixmap);
 	free(sni->menu);
 	free(sni->icon_theme_path);
+
+	struct swaybar_sni_slot *slot, *slot_tmp;
+	wl_list_for_each_safe(slot, slot_tmp, &sni->slots, link) {
+		sd_bus_slot_unref(slot->slot);
+		free(slot);
+	}
+
 	free(sni);
 }
 
