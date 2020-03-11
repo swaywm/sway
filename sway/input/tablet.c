@@ -56,8 +56,10 @@ void sway_configure_tablet(struct sway_tablet *tablet) {
 		seat_configure_xcursor(seat);
 	}
 
-	tablet->tablet_v2 =
-		wlr_tablet_create(server.tablet_v2, seat->wlr_seat, device);
+	if (!tablet->tablet_v2) {
+		tablet->tablet_v2 =
+			wlr_tablet_create(server.tablet_v2, seat->wlr_seat, device);
+	}
 
 	/* Search for a sibling tablet pad */
 	if (!wlr_input_device_is_libinput(device)) {
@@ -238,8 +240,10 @@ void sway_configure_tablet_pad(struct sway_tablet_pad *tablet_pad) {
 		tablet_pad->seat_device->input_device->wlr_device;
 	struct sway_seat *seat = tablet_pad->seat_device->sway_seat;
 
-	tablet_pad->tablet_v2_pad =
-		wlr_tablet_pad_create(server.tablet_v2, seat->wlr_seat, device);
+	if (!tablet_pad->tablet_v2_pad) {
+		tablet_pad->tablet_v2_pad =
+			wlr_tablet_pad_create(server.tablet_v2, seat->wlr_seat, device);
+	}
 
 	wl_list_remove(&tablet_pad->attach.link);
 	tablet_pad->attach.notify = handle_tablet_pad_attach;
