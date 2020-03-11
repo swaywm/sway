@@ -71,7 +71,7 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &server.input->seats, link) {
 			error = handle_command(seat->cursor, argc, argv);
-			if ((error && error->status != CMD_SUCCESS)) {
+			if (error && error->status != CMD_SUCCESS) {
 				break;
 			}
 		}
