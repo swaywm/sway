@@ -384,8 +384,19 @@ static json_object *ipc_json_describe_scratchpad_output(void) {
 
 static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 		json_object *object) {
-	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
-
+	int num;
+	if (isdigit(workspace->name[0])) {
+		errno = 0;
+		char *endptr = NULL;
+		long long parsed_num = strtoll(workspace->name, &endptr, 10);
+		if (errno != 0 || parsed_num > INT32_MAX || parsed_num < 0 || endptr == workspace->name) {
+			num = -1;
+		} else {
+			num = (int) parsed_num;
+		}
+	} else {
+		num = -1;
+	}
 	json_object_object_add(object, "num", json_object_new_int(num));
 	json_object_object_add(object, "fullscreen_mode", json_object_new_int(1));
 	json_object_object_add(object, "output", workspace->output ?
