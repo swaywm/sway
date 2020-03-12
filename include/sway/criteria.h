@@ -24,6 +24,14 @@ struct pattern {
 	pcre *regex;
 };
 
+enum criteria_keyboard_shortcuts_inhibitor {
+	// implicit: C_KEYBOARD_SHORTCUTS_INHIBITOR_UNSPEC = 0,
+	C_KEYBOARD_SHORTCUTS_INHIBITOR_PRESENT = 1,
+	C_KEYBOARD_SHORTCUTS_INHIBITOR_ABSENT,
+	C_KEYBOARD_SHORTCUTS_INHIBITOR_ACTIVE,
+	C_KEYBOARD_SHORTCUTS_INHIBITOR_INACTIVE,
+};
+
 struct criteria {
 	enum criteria_type type;
 	char *raw; // entire criteria string (for logging)
@@ -47,6 +55,7 @@ struct criteria {
 	char urgent; // 'l' for latest or 'o' for oldest
 	struct pattern *workspace;
 	pid_t pid;
+	enum criteria_keyboard_shortcuts_inhibitor keyboard_shortcuts_inhibitor;
 };
 
 bool criteria_is_empty(struct criteria *criteria);

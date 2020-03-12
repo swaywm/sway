@@ -32,7 +32,8 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->tiling
 		&& !criteria->urgent
 		&& !criteria->workspace
-		&& !criteria->pid;
+		&& !criteria->pid
+		&& !criteria->keyboard_shortcuts_inhibitor;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -377,6 +378,44 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
+	if (criteria->keyboard_shortcuts_inhibitor) {
+		bool present = false;
+		bool active = false;
+
+		if (view->surface) {
+			const struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+				keyboard_shortcuts_inhibitor_get_for_surface(
+						seat, view->surface);
+			if (sway_inhibitor) {
+				present = true;
+				active = sway_inhibitor->inhibitor->active;
+			}
+		}
+
+		switch (criteria->keyboard_shortcuts_inhibitor) {
+		case C_KEYBOARD_SHORTCUTS_INHIBITOR_PRESENT:
+			if (!present) {
+				return false;
+			}
+			break;
+		case C_KEYBOARD_SHORTCUTS_INHIBITOR_ABSENT:
+			if (present) {
+				return false;
+			}
+			break;
+		case C_KEYBOARD_SHORTCUTS_INHIBITOR_ACTIVE:
+			if (!present || !active) {
+				return false;
+			}
+			break;
+		case C_KEYBOARD_SHORTCUTS_INHIBITOR_INACTIVE:
+			if (!present || active) {
+				return false;
+			}
+			break;
+		}
+	}
+
 	return true;
 }
 
@@ -466,6 +505,7 @@ enum criteria_token {
 	T_URGENT,
 	T_WORKSPACE,
 	T_PID,
+	T_KEYBOARD_SHORTCUTS_INHIBITOR,
 
 	T_INVALID,
 };
@@ -503,6 +543,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_FLOATING;
 	} else if (strcmp(name, "pid") == 0) {
 		return T_PID;
+	} else if (strcmp(name, "shortcuts_inhibitor") == 0) {
+		return T_KEYBOARD_SHORTCUTS_INHIBITOR;
 	}
 	return T_INVALID;
 }
@@ -601,6 +643,25 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		criteria->pid = strtoul(value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'pid' should be numeric");
+		}
+		break;
+	case T_KEYBOARD_SHORTCUTS_INHIBITOR:
+		if (strcmp(value, "present") == 0) {
+			criteria->keyboard_shortcuts_inhibitor =
+				C_KEYBOARD_SHORTCUTS_INHIBITOR_PRESENT;
+		} else if (strcmp(value, "absent") == 0) {
+			criteria->keyboard_shortcuts_inhibitor =
+				C_KEYBOARD_SHORTCUTS_INHIBITOR_ABSENT;
+		} else if (strcmp(value, "active") == 0) {
+			criteria->keyboard_shortcuts_inhibitor =
+				C_KEYBOARD_SHORTCUTS_INHIBITOR_ACTIVE;
+		} else if (strcmp(value, "inactive") == 0) {
+			criteria->keyboard_shortcuts_inhibitor =
+				C_KEYBOARD_SHORTCUTS_INHIBITOR_INACTIVE;
+		} else {
+			error = strdup("The value for 'shortcuts_inhibitor' "
+					"must be 'present', 'absent', "
+					"'active' or 'inactive'");
 		}
 		break;
 	case T_INVALID:

@@ -902,6 +902,14 @@ The following attributes may be matched with:
 	Can be a regular expression. If value is \_\_focused\_\_, then the shell
 	must be the same as that of the currently focused window.
 
+*shortcuts_inhibitor*
+	Matches the state of keyboard shortcuts inhibitors on windows. Values
+	can be "present", "absent", "active" or "inactive" and will match
+	windows where an inhibitor is present, absent, active or inactive,
+	respectively. Note that currently any existing inhibitor (present) will
+	either be active or inactive, so criteria can overlap and revert each
+	others changes depdending on their order in the config file.
+
 *tiling*
 	Matches tiling windows.
 
