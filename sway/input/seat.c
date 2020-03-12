@@ -1499,16 +1499,22 @@ bool seatop_allows_set_cursor(struct sway_seat *seat) {
 }
 
 struct sway_keyboard_shortcuts_inhibitor *
-keyboard_shortcuts_inhibitor_get_for_focused_surface(
-		const struct sway_seat *seat) {
-	struct wlr_surface *focused_surface =
-		seat->wlr_seat->keyboard_state.focused_surface;
+keyboard_shortcuts_inhibitor_get_for_surface(
+		const struct sway_seat *seat,
+		const struct wlr_surface *surface) {
 	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor = NULL;
 	wl_list_for_each(sway_inhibitor, &seat->keyboard_shortcuts_inhibitors, link) {
-		if (sway_inhibitor->inhibitor->surface == focused_surface) {
+		if (sway_inhibitor->inhibitor->surface == surface) {
 			return sway_inhibitor;
 		}
 	}
 
 	return NULL;
+}
+
+struct sway_keyboard_shortcuts_inhibitor *
+keyboard_shortcuts_inhibitor_get_for_focused_surface(
+		const struct sway_seat *seat) {
+	return keyboard_shortcuts_inhibitor_get_for_surface(seat,
+		seat->wlr_seat->keyboard_state.focused_surface);
 }

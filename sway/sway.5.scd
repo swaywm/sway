@@ -296,6 +296,17 @@ set|plus|minus <amount>
 	Shows a window from the scratchpad. Repeatedly using this command will
 	cycle through the windows in the scratchpad.
 
+*shortcuts inhibitor* enable|disable
+	Enables or disables the ability of clients to inhibit keyboard
+	shortcuts for a view. This is primarily useful for virtualization and
+	remote desktop software. It affects either the currently focused view
+	or a set of views selected by criteria. Subcommand _disable_
+	additionally deactivates any active inhibitors for the given view(s).
+	Criteria are particularly useful with the *for_window* command to
+	configure a class of views differently from the per-seat defaults
+	established by the *seat* subcommand of the same name. See
+	*sway-input*(5) for more ways to affect inhibitors.
+
 *split* vertical|v|horizontal|h|toggle|t
 	Splits the current container, vertically or horizontally. When _toggle_ is
 	specified, the current container is split opposite to the parent

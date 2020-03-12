@@ -295,6 +295,14 @@ void seatop_render(struct sway_seat *seat, struct sway_output *output,
 bool seatop_allows_set_cursor(struct sway_seat *seat);
 
 /**
+ * Returns the keyboard shortcuts inhibitor that applies to the given surface
+ * or NULL if none exists.
+ */
+struct sway_keyboard_shortcuts_inhibitor *
+keyboard_shortcuts_inhibitor_get_for_surface(const struct sway_seat *seat,
+		const struct wlr_surface *surface);
+
+/**
  * Returns the keyboard shortcuts inhibitor that applies to the currently
  * focused surface of a seat or NULL if none exists.
  */
