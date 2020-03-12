@@ -40,7 +40,7 @@ Install dependencies:
 * cairo
 * gdk-pixbuf2 (optional: system tray)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
-* git \*
+* git (optional: version info) \*
 
 _\*Compile-time dep_
 
