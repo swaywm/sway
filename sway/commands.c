@@ -127,6 +127,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "rename", cmd_rename },
 	{ "resize", cmd_resize },
 	{ "scratchpad", cmd_scratchpad },
+	{ "shortcuts_inhibitor", cmd_shortcuts_inhibitor },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitt", cmd_splitt },

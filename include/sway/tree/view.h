@@ -110,6 +110,8 @@ struct sway_view {
 	struct wl_listener surface_new_subsurface;
 
 	int max_render_time; // In milliseconds
+
+	enum seat_config_shortcuts_inhibit shortcuts_inhibit;
 };
 
 struct sway_xdg_shell_view {

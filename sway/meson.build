@@ -99,6 +99,7 @@ sway_sources = files(
 	'commands/seat/xcursor_theme.c',
 	'commands/set.c',
 	'commands/show_marks.c',
+	'commands/shortcuts_inhibitor.c',
 	'commands/smart_borders.c',
 	'commands/smart_gaps.c',
 	'commands/split.c',

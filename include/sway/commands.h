@@ -164,6 +164,7 @@ sway_cmd cmd_resize;
 sway_cmd cmd_scratchpad;
 sway_cmd cmd_seamless_mouse;
 sway_cmd cmd_set;
+sway_cmd cmd_shortcuts_inhibitor;
 sway_cmd cmd_show_marks;
 sway_cmd cmd_smart_borders;
 sway_cmd cmd_smart_gaps;
