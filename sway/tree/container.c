@@ -513,8 +513,16 @@ void container_calculate_title_height(struct sway_container *container) {
 	cairo_t *cairo = cairo_create(NULL);
 	int height;
 	int baseline;
-	get_text_size(cairo, config->font, NULL, &height, &baseline, 1,
+	/* Calculate height using regular ASCII characters and allow larger glyphs to
+	 * "leak" into the margins. This avoids distracting height changes if switching
+	 * between containers that have differently sized text.
+	 * Larger characters might get cut off, but affected users can work around it by
+	 * increasing the title margins */
+	get_text_size(cairo, config->font, NULL, &height, NULL, 1,
+			config->pango_markup, "%s", "ASCII Baseline");
+	get_text_size(cairo, config->font, NULL, NULL, &baseline, 1,
 			config->pango_markup, "%s", container->formatted_title);
+
 	cairo_destroy(cairo);
 	container->title_height = height;
 	container->title_baseline = baseline;
