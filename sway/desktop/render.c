@@ -468,7 +468,7 @@ static void render_titlebar(struct sway_output *output,
 	int ob_inner_width = scale_length(inner_width, inner_x, output_scale);
 	int ob_bg_height = scale_length(
 			(titlebar_v_padding - titlebar_border_thickness) * 2 +
-			config->font_height, bg_y, output_scale);
+			config->titlebar_max_text_height, bg_y, output_scale);
 
 	// Marks
 	int ob_marks_x = 0; // output-buffer-local
@@ -479,11 +479,11 @@ static void render_titlebar(struct sway_output *output,
 			&texture_box.width, &texture_box.height);
 		ob_marks_width = texture_box.width;
 
-		// The marks texture might be shorter than the config->font_height, in
+		// The marks texture might be shorter than config->titlebar_max_text_height, in
 		// which case we need to pad it as evenly as possible above and below.
 		int ob_padding_total = ob_bg_height - texture_box.height;
 		int ob_padding_above = floor(ob_padding_total / 2.0);
-		int ob_padding_below = ceil(ob_padding_total / 2.0);
+		int ob_padding_below = ob_padding_total - ob_padding_above;
 
 		// Render texture. If the title is on the right, the marks will be on
 		// the left. Otherwise, they will be on the right.
@@ -532,13 +532,11 @@ static void render_titlebar(struct sway_output *output,
 			&texture_box.width, &texture_box.height);
 		ob_title_width = texture_box.width;
 
-		// The title texture might be shorter than the config->font_height,
+		// The title texture might be shorter than config->titlebar_max_text_height,
 		// in which case we need to pad it above and below.
-		int ob_padding_above = round((config->font_baseline -
-					con->title_baseline + titlebar_v_padding -
-					titlebar_border_thickness) * output_scale);
-		int ob_padding_below = ob_bg_height - ob_padding_above -
-			texture_box.height;
+		int ob_padding_total = fmax(0, (ob_bg_height - con->title_height));
+		int ob_padding_above = floor(ob_padding_total / 2.0);
+		int ob_padding_below = ob_padding_total - ob_padding_above;
 
 		// Render texture
 		if (texture_box.width > ob_inner_width - ob_marks_width) {
@@ -630,7 +628,7 @@ static void render_titlebar(struct sway_output *output,
 	box.y = y + titlebar_border_thickness;
 	box.width = titlebar_h_padding - titlebar_border_thickness;
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
-		config->font_height;
+		config->titlebar_max_text_height;
 	scale_box(&box, output_scale);
 	int left_x = ob_left_x + round(output_x * output_scale);
 	if (box.x + box.width < left_x) {
@@ -643,7 +641,7 @@ static void render_titlebar(struct sway_output *output,
 	box.y = y + titlebar_border_thickness;
 	box.width = titlebar_h_padding - titlebar_border_thickness;
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
-		config->font_height;
+		config->titlebar_max_text_height;
 	scale_box(&box, output_scale);
 	int right_rx = ob_right_x + ob_right_width + round(output_x * output_scale);
 	if (right_rx < box.x) {

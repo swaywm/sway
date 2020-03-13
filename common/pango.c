@@ -82,6 +82,40 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	return layout;
 }
 
+void get_text_physical_size(cairo_t *cairo, const char *font, int* ascent, int* descent,
+		int* ink_size, bool markup, const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	// Add one since vsnprintf excludes null terminator.
+	int length = vsnprintf(NULL, 0, fmt, args) + 1;
+	va_end(args);
+
+	char *buf = malloc(length);
+	if (buf == NULL) {
+		sway_log(SWAY_ERROR, "Failed to allocate memory");
+		return;
+	}
+	va_start(args, fmt);
+	vsnprintf(buf, length, fmt, args);
+	va_end(args);
+
+	PangoLayout *layout = get_pango_layout(cairo, font, buf, 1, markup);
+	pango_cairo_update_layout(cairo, layout);
+	PangoRectangle ir, lr;
+	pango_layout_get_pixel_extents(layout, &ir, &lr);
+	if (ascent) {
+		*ascent = PANGO_ASCENT(ir);
+	}
+	if (descent) {
+		*descent = PANGO_DESCENT(ir);
+	}
+	if (ink_size) {
+		*ink_size = ir.height;
+	}
+	g_object_unref(layout);
+	free(buf);
+}
+
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 		int *baseline, double scale, bool markup, const char *fmt, ...) {
 	va_list args;

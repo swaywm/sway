@@ -33,6 +33,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	c->layout = L_NONE;
 	c->view = view;
 	c->alpha = 1.0f;
+	c->title_ascent = 0;
 
 	if (!view) {
 		c->children = create_list();
@@ -497,7 +498,7 @@ static void update_title_texture(struct sway_container *con,
 	PangoContext *pango = pango_cairo_create_context(cairo);
 	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
 			class->text[2], class->text[3]);
-	cairo_move_to(cairo, 0, 0);
+	cairo_move_to(cairo, 0, con->title_ascent);
 
 	pango_printf(cairo, config->font, scale, config->pango_markup,
 			"%s", con->formatted_title);
@@ -532,13 +533,14 @@ void container_calculate_title_height(struct sway_container *container) {
 		return;
 	}
 	cairo_t *cairo = cairo_create(NULL);
-	int height;
-	int baseline;
-	get_text_size(cairo, config->font, NULL, &height, &baseline, 1,
-			config->pango_markup, "%s", container->formatted_title);
+	int ink_size, ascent;
+	get_text_physical_size(cairo, config->font, &ascent, NULL,
+			&ink_size, config->pango_markup, "%s",
+			container->formatted_title);
+
 	cairo_destroy(cairo);
-	container->title_height = height;
-	container->title_baseline = baseline;
+	container->title_height = ink_size;
+	container->title_ascent = ascent;
 }
 
 /**
@@ -617,7 +619,7 @@ void container_update_representation(struct sway_container *con) {
 }
 
 size_t container_titlebar_height(void) {
-	return config->font_height + config->titlebar_v_padding * 2;
+	return config->titlebar_max_text_height + config->titlebar_v_padding * 2;
 }
 
 void floating_calculate_constraints(int *min_width, int *max_width,

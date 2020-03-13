@@ -111,6 +111,7 @@ sway_sources = files(
 	'commands/title_align.c',
 	'commands/title_format.c',
 	'commands/titlebar_border_thickness.c',
+	'commands/titlebar_max_text_height.c',
 	'commands/titlebar_padding.c',
 	'commands/unmark.c',
 	'commands/urgent.c',

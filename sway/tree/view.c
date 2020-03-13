@@ -1214,7 +1214,6 @@ void view_update_title(struct sway_view *view, bool force) {
 		view->container->formatted_title = NULL;
 	}
 	container_calculate_title_height(view->container);
-	config_update_font_height(false);
 
 	// Update title after the global font height is updated
 	container_update_title_textures(view->container);
