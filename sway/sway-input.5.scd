@@ -13,6 +13,14 @@ in place of _\<identifier\>_ in the commands below. In addition, the settings
 can be applied to a type of device, by using _type:\<input_type\>_ in place
 of _\<identifier\>_.
 
+In the configuration file, settings with a more specific selector take
+precedence over more general ones: _\<identifier\>_ \> _type:\<input_type\>_ \>
+_\*_.  When executing input commands, however, the settings are applied to all
+matching input devices!  This means that _type:\<input_type\>_ can override
+previously set _\<identifier\>_ settings, even though in a configuration file
+they would take precedence.  Similarly _\*_ can override both _\<identifier\>_
+and _type:\<input_type\>_ settings, if applied later.
+
 Tip: If the configuration settings do not appear to be taking effect, you could
 try using _\*_ instead of _\<identifier\>_. If it works with the wildcard, try
 using a different identifier from *swaymsg -t get_inputs* until you find the
