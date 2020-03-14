@@ -113,6 +113,11 @@ bool status_handle_readable(struct status_line *status) {
 
 		sway_log(SWAY_DEBUG, "Using text protocol.");
 		status->protocol = PROTOCOL_TEXT;
+		char *last_newline = strrchr(status->buffer, '\n');
+		if (last_newline != NULL) {
+			status->buffer_index = strlen(last_newline + 1);
+			memmove(status->buffer, last_newline + 1, status->buffer_index + 1);
+		}
 		status->text = status->buffer;
 		// intentional fall-through
 	case PROTOCOL_TEXT:
