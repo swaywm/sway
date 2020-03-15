@@ -145,7 +145,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 					cmd_results_new(CMD_INVALID, message);
 				free(message);
 				return error;
-			} else if (!button) {
+			} else {
 				return cmd_results_new(CMD_INVALID, "Unknown button %s", name);
 			}
 		}
