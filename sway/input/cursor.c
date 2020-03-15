@@ -1059,11 +1059,11 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 	const char *event = libevdev_event_code_get_name(EV_KEY, code);
 	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
 		size_t len = snprintf(NULL, 0, "Event code %d (%s) is not a button",
-				code, event) + 1;
+				code, event ? event : "(null)") + 1;
 		*error = malloc(len);
 		if (*error) {
 			snprintf(*error, len, "Event code %d (%s) is not a button",
-					code, event);
+					code, event ? event : "(null)");
 		}
 		return 0;
 	}
