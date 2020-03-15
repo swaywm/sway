@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_linux_explicit_synchronization_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
@@ -148,6 +149,7 @@ bool server_init(struct sway_server *server) {
 	wlr_data_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
+	wlr_linux_explicit_synchronization_v1_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
