@@ -619,16 +619,16 @@ static void handle_tool_proximity(struct wl_listener *listener, void *data) {
 
 static void handle_tool_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_button);
+	struct sway_seat *seat = cursor->seat;
 	seat_idle_notify_activity(cursor->seat, IDLE_SOURCE_TABLET_TOOL);
+
 	struct wlr_event_tablet_tool_button *event = data;
 	struct sway_tablet_tool *sway_tool = event->tool->data;
-	struct wlr_tablet_v2_tablet *tablet_v2 = sway_tool->tablet->tablet_v2;
-	struct sway_seat *seat = cursor->seat;
-
 	if (!sway_tool) {
 		sway_log(SWAY_DEBUG, "tool button before proximity");
 		return;
 	}
+	struct wlr_tablet_v2_tablet *tablet_v2 = sway_tool->tablet->tablet_v2;
 
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
