@@ -343,4 +343,7 @@ void view_save_buffer(struct sway_view *view);
 
 bool view_is_transient_for(struct sway_view *child, struct sway_view *ancestor);
 
+void view_schedule_criteria_execution_from_wlr_surface(
+		struct wlr_surface *wlr_surface);
+
 #endif

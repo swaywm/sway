@@ -2,6 +2,7 @@
 #include "sway/commands.h"
 #include "sway/input/seat.h"
 #include "sway/input/input-manager.h"
+#include "sway/tree/view.h"
 #include "util.h"
 
 static struct cmd_results *handle_action(struct seat_config *sc,
@@ -12,8 +13,17 @@ static struct cmd_results *handle_action(struct seat_config *sc,
 
 		wl_list_for_each(sway_inhibitor,
 				&seat->keyboard_shortcuts_inhibitors, link) {
-			wlr_keyboard_shortcuts_inhibitor_v1_deactivate(
-					sway_inhibitor->inhibitor);
+			struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor =
+				sway_inhibitor->inhibitor;
+			wlr_keyboard_shortcuts_inhibitor_v1_deactivate(inhibitor);
+
+			// execute criteria on the affected view after
+			// inhibitor changed state
+			struct sway_view *view =
+				view_from_wlr_surface(inhibitor->surface);
+			if (view) {
+				view_execute_criteria(view);
+			}
 		}
 
 		sway_log(SWAY_DEBUG, "Deactivated all keyboard shortcuts inhibitors");
@@ -46,6 +56,11 @@ static struct cmd_results *handle_action(struct seat_config *sc,
 
 		sway_log(SWAY_DEBUG, "%sctivated keyboard shortcuts inhibitor",
 				inhibit ? "A" : "Dea");
+
+		struct sway_view *view = view_from_wlr_surface(inhibitor->surface);
+		if (view) {
+			view_execute_criteria(view);
+		}
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

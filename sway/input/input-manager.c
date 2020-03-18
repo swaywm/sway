@@ -304,6 +304,11 @@ static void handle_keyboard_shortcuts_inhibitor_destroy(
 
 	sway_log(SWAY_DEBUG, "Removing keyboard shortcuts inhibitor");
 
+	// avoid use-after free of view by scheduling deferred execution of
+	// criteria
+	view_schedule_criteria_execution_from_wlr_surface(
+			sway_inhibitor->inhibitor->surface);
+
 	// sway_seat::keyboard_shortcuts_inhibitors
 	wl_list_remove(&sway_inhibitor->link);
 	wl_list_remove(&sway_inhibitor->destroy.link);
@@ -353,6 +358,10 @@ static void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 	}
 
 	if (inhibit == SHORTCUTS_INHIBIT_DISABLE) {
+		if (view) {
+			view_execute_criteria(view);
+		}
+
 		/**
 		 * Here we deny to honour the inhibitor by never sending the
 		 * activate signal. We can not, however, destroy the inhibitor
@@ -368,6 +377,10 @@ static void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 	}
 
 	wlr_keyboard_shortcuts_inhibitor_v1_activate(inhibitor);
+
+	if (view) {
+		view_execute_criteria(view);
+	}
 }
 
 void handle_virtual_keyboard(struct wl_listener *listener, void *data) {

@@ -33,12 +33,20 @@ struct cmd_results *cmd_shortcuts_inhibitor(int argc, char **argv) {
 				continue;
 			}
 
-			wlr_keyboard_shortcuts_inhibitor_v1_deactivate(
-					sway_inhibitor->inhibitor);
+			struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor =
+				sway_inhibitor->inhibitor;
+			wlr_keyboard_shortcuts_inhibitor_v1_deactivate(inhibitor);
 			sway_log(SWAY_DEBUG, "Deactivated keyboard shortcuts "
 					"inhibitor for seat %s on view",
 					seat->wlr_seat->name);
 
+			// execute criteria on the affected view after
+			// inhibitor changed state
+			struct sway_view *view =
+				view_from_wlr_surface(inhibitor->surface);
+			if (view) {
+				view_execute_criteria(view);
+			}
 		}
 	} else {
 		return cmd_results_new(CMD_INVALID,

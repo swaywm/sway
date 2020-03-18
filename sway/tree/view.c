@@ -1176,3 +1176,45 @@ bool view_is_transient_for(struct sway_view *child,
 	return child->impl->is_transient_for &&
 		child->impl->is_transient_for(child, ancestor);
 }
+
+struct view_surface_iterator_context {
+	struct sway_view *view;
+	struct wlr_surface *wlr_surface;
+};
+
+static void view_criteria_execution_surface_iterator(
+		struct wlr_surface *surface, int sx, int sy, void *data) {
+	struct view_surface_iterator_context *context = data;
+
+	if (surface != context->wlr_surface) {
+		return;
+	}
+
+	view_execute_criteria(context->view);
+}
+
+static void view_criteria_execution_container_iterator(
+		struct sway_container *container, void *data) {
+	if (container->view) {
+		struct view_surface_iterator_context context = {
+			.view = container->view,
+			.wlr_surface = data,
+		};
+
+		view_for_each_surface(container->view,
+				view_criteria_execution_surface_iterator,
+				&context);
+	}
+}
+
+static void view_execute_criteria_from_wlr_surface(void *data) {
+	// here we intentionally go looking for a surface matching our argument
+	// because that surface might have since been freed
+	root_for_each_container(view_criteria_execution_container_iterator, data);
+}
+
+void view_schedule_criteria_execution_from_wlr_surface(
+		struct wlr_surface *wlr_surface) {
+	wl_event_loop_add_idle(server.wl_event_loop,
+			view_execute_criteria_from_wlr_surface, wlr_surface);
+}

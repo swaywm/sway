@@ -266,9 +266,10 @@ correct seat.
 	escape a state where shortcuts are inhibited and the client becomes
 	uncooperative. It is worth noting that whether disabled or deactivated
 	inhibitors are removed is entirely up to the client. Depending on the
-	client it may therefore be possible to (re-)activate them later. Any
-	visual indication that an inhibitor is present is currently left to the
-	client as well.
+	client it may therefore be possible to (re-)activate them later.
+	Note that visual indication of inhibitor presence and state beyond what
+	the client may provide can be implemented using criteria with match
+	_shortcuts_inhibitor_.
 
 *seat* <name> xcursor_theme <theme> [<size>]
 	Override the system default XCursor theme. The default seat's
