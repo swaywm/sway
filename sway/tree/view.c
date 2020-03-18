@@ -414,29 +414,22 @@ static void view_handle_surface_new_subsurface(struct wl_listener *listener,
 	view_subsurface_create(view, subsurface);
 }
 
-static bool view_has_executed_criteria(struct sway_view *view,
-		struct criteria *criteria) {
-	for (int i = 0; i < view->executed_criteria->length; ++i) {
-		struct criteria *item = view->executed_criteria->items[i];
-		if (item == criteria) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void view_execute_criteria(struct sway_view *view) {
-	list_t *criterias = criteria_for_view(view, CT_COMMAND);
-	for (int i = 0; i < criterias->length; i++) {
-		struct criteria *criteria = criterias->items[i];
+	// replacing list of executed criteria removes those that do no longer
+	// match the view, opening them up for re-execution once they match
+	// again
+	list_t *previously_executed = view->executed_criteria;
+	view->executed_criteria = criteria_for_view(view, CT_COMMAND);
+	for (int i = 0; i < view->executed_criteria->length; i++) {
+		struct criteria *criteria = view->executed_criteria->items[i];
 		sway_log(SWAY_DEBUG, "Checking criteria %s", criteria->raw);
-		if (view_has_executed_criteria(view, criteria)) {
+		if (list_find(previously_executed, criteria) >= 0) {
 			sway_log(SWAY_DEBUG, "Criteria already executed");
 			continue;
 		}
+
 		sway_log(SWAY_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
-		list_add(view->executed_criteria, criteria);
 		list_t *res_list = execute_command(
 				criteria->cmdlist, NULL, view->container);
 		while (res_list->length) {
@@ -446,7 +439,7 @@ void view_execute_criteria(struct sway_view *view) {
 		}
 		list_free(res_list);
 	}
-	list_free(criterias);
+	list_free(previously_executed);
 }
 
 static void view_populate_pid(struct sway_view *view) {

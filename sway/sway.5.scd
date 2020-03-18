@@ -841,6 +841,14 @@ Kill all windows with the title "Emacs":
 [class="Emacs"] kill
 ```
 
+Criteria are applied on state changes of a view. These currently are mapping
+(i.e. opening of a window), adding or removing marks and setting title, app_id,
+class, role or window type.
+
+Criteria will be executed once when first applied or when the view changes its
+attributes to match. They will be re-executed only after the view did not match
+a least once.
+
 You may like to use swaymsg -t get_tree for finding the values of these
 properties in practice for your applications.
 
