@@ -25,13 +25,16 @@ static void apply_exclusive(struct wlr_box *usable_area,
 		return;
 	}
 	struct {
-		uint32_t anchors;
+		uint32_t singular_anchor;
+		uint32_t anchor_triplet;
 		int *positive_axis;
 		int *negative_axis;
 		int margin;
 	} edges[] = {
+		// Top
 		{
-			.anchors =
+			.singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
+			.anchor_triplet =
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
@@ -39,8 +42,10 @@ static void apply_exclusive(struct wlr_box *usable_area,
 			.negative_axis = &usable_area->height,
 			.margin = margin_top,
 		},
+		// Bottom
 		{
-			.anchors =
+			.singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+			.anchor_triplet =
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
@@ -48,8 +53,10 @@ static void apply_exclusive(struct wlr_box *usable_area,
 			.negative_axis = &usable_area->height,
 			.margin = margin_bottom,
 		},
+		// Left
 		{
-			.anchors =
+			.singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT,
+			.anchor_triplet =
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
@@ -57,8 +64,10 @@ static void apply_exclusive(struct wlr_box *usable_area,
 			.negative_axis = &usable_area->width,
 			.margin = margin_left,
 		},
+		// Right
 		{
-			.anchors =
+			.singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+			.anchor_triplet =
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
@@ -68,13 +77,15 @@ static void apply_exclusive(struct wlr_box *usable_area,
 		},
 	};
 	for (size_t i = 0; i < sizeof(edges) / sizeof(edges[0]); ++i) {
-		if ((anchor & edges[i].anchors) == edges[i].anchors && exclusive + edges[i].margin > 0) {
+		if ((anchor  == edges[i].singular_anchor || anchor == edges[i].anchor_triplet)
+				&& exclusive + edges[i].margin > 0) {
 			if (edges[i].positive_axis) {
 				*edges[i].positive_axis += exclusive + edges[i].margin;
 			}
 			if (edges[i].negative_axis) {
 				*edges[i].negative_axis -= exclusive + edges[i].margin;
 			}
+			break;
 		}
 	}
 }
