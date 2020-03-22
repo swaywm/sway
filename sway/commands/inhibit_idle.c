@@ -47,5 +47,7 @@ struct cmd_results *cmd_inhibit_idle(int argc, char **argv) {
 		sway_idle_inhibit_v1_user_inhibitor_register(con->view, mode);
 	}
 
+	view_execute_criteria(con->view);
+
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

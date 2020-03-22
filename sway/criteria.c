@@ -5,6 +5,7 @@
 #include <strings.h>
 #include <pcre.h>
 #include "sway/criteria.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/tree/container.h"
 #include "sway/config.h"
 #include "sway/tree/root.h"
@@ -32,7 +33,8 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->tiling
 		&& !criteria->urgent
 		&& !criteria->workspace
-		&& !criteria->pid;
+		&& !criteria->pid
+		&& !criteria->idle_inhibitor;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -377,6 +379,61 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
+	if (criteria->idle_inhibitor) {
+		struct sway_idle_inhibitor_v1 *sway_inhibitor =
+			sway_idle_inhibit_v1_inhibitor_for_view(view);
+		switch (criteria->idle_inhibitor) {
+		case C_IDLE_INHIBITOR_NONE:
+			if (sway_inhibitor) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_APPLICATION:
+			if (!sway_inhibitor || sway_inhibitor->mode !=
+					INHIBIT_IDLE_APPLICATION) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_USER:
+			if (!sway_inhibitor || sway_inhibitor->mode ==
+					INHIBIT_IDLE_APPLICATION) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_FOCUS:
+			if (!sway_inhibitor || sway_inhibitor->mode !=
+					INHIBIT_IDLE_FOCUS) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_FULLSCREEN:
+			if (!sway_inhibitor || sway_inhibitor->mode !=
+					INHIBIT_IDLE_FULLSCREEN) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_OPEN:
+			if (!sway_inhibitor || sway_inhibitor->mode !=
+					INHIBIT_IDLE_OPEN) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_VISIBLE:
+			if (!sway_inhibitor || sway_inhibitor->mode !=
+					INHIBIT_IDLE_VISIBLE) {
+				return false;
+			}
+			break;
+		case C_IDLE_INHIBITOR_ACTIVE:
+			if (!sway_inhibitor ||
+					!sway_idle_inhibit_v1_inhibitor_check_active(
+						sway_inhibitor)) {
+				return false;
+			}
+			break;
+		}
+	}
+
 	return true;
 }
 
@@ -466,6 +523,7 @@ enum criteria_token {
 	T_URGENT,
 	T_WORKSPACE,
 	T_PID,
+	T_IDLE_INHIBITOR,
 
 	T_INVALID,
 };
@@ -503,6 +561,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_FLOATING;
 	} else if (strcmp(name, "pid") == 0) {
 		return T_PID;
+	} else if (strcmp(name, "idle_inhibitor") == 0) {
+		return T_IDLE_INHIBITOR;
 	}
 	return T_INVALID;
 }
@@ -601,6 +661,30 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		criteria->pid = strtoul(value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'pid' should be numeric");
+		}
+		break;
+	case T_IDLE_INHIBITOR:
+		if (strcmp(value, "none") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_NONE;
+		} else if (strcmp(value, "application") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_APPLICATION;
+		} else if (strcmp(value, "user") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_USER;
+		} else if (strcmp(value, "focus") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_FOCUS;
+		} else if (strcmp(value, "fullscreen ") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_FULLSCREEN;
+		} else if (strcmp(value, "open") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_OPEN;
+		} else if (strcmp(value, "visible") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_VISIBLE;
+		} else if (strcmp(value, "active") == 0) {
+			criteria->idle_inhibitor = C_IDLE_INHIBITOR_ACTIVE;
+		} else {
+			error = strdup("The value for 'idle_inhibitor' must be "
+					"'none', 'application', 'user', 'focus', "
+					"'fullscreen', 'open', 'visible' or "
+					"'active'");
 		}
 		break;
 	case T_INVALID:

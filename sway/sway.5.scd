@@ -870,6 +870,14 @@ The following attributes may be matched with:
 *id*
 	Compare value against the X11 window ID. Must be numeric.
 
+*idle_inhibitor*
+	Matches the state of idle inhibitors on windows. Values can be "none",
+	"application", "user", "focus", "fullscreen", "open", "none", "visible"
+	and "active" and will match windows where no, an application or a user
+	inhibitor is present with the "focus" to "visible" keywords describing
+	the type of user inhibtor to match more closely. "active" matches any
+	inhibitor that is currently preventing idle regardless of type.
+
 *instance*
 	Compare value against the window instance. Can be a regular expression. If
 	value is \_\_focused\_\_, then the window instance must be the same as that

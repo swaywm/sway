@@ -1175,3 +1175,23 @@ bool view_is_transient_for(struct sway_view *child,
 	return child->impl->is_transient_for &&
 		child->impl->is_transient_for(child, ancestor);
 }
+
+static void view_criteria_execution_view_iterator(
+		struct sway_container *container, void *data) {
+	struct sway_view *view = data;
+
+	if (container->view == view) {
+		view_execute_criteria(container->view);
+	}
+}
+
+static void view_execute_criteria_from_view(void *data) {
+	// here we intentionally go looking for a view matching our argument
+	// because that view might have been freed since
+	root_for_each_container(view_criteria_execution_view_iterator, data);
+}
+
+void view_schedule_criteria_execution_from_view(struct sway_view *view) {
+	wl_event_loop_add_idle(server.wl_event_loop,
+			view_execute_criteria_from_view, view);
+}

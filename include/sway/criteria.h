@@ -24,6 +24,18 @@ struct pattern {
 	pcre *regex;
 };
 
+enum criteria_idle_inhibitor {
+	// implicit: C_IDLE_INHIBITOR_UNSPEC = 0,
+	C_IDLE_INHIBITOR_NONE = 1,
+	C_IDLE_INHIBITOR_APPLICATION,
+	C_IDLE_INHIBITOR_USER,
+	C_IDLE_INHIBITOR_FOCUS,
+	C_IDLE_INHIBITOR_FULLSCREEN,
+	C_IDLE_INHIBITOR_OPEN,
+	C_IDLE_INHIBITOR_VISIBLE,
+	C_IDLE_INHIBITOR_ACTIVE,
+};
+
 struct criteria {
 	enum criteria_type type;
 	char *raw; // entire criteria string (for logging)
@@ -47,6 +59,7 @@ struct criteria {
 	char urgent; // 'l' for latest or 'o' for oldest
 	struct pattern *workspace;
 	pid_t pid;
+	enum criteria_idle_inhibitor idle_inhibitor;
 };
 
 bool criteria_is_empty(struct criteria *criteria);

@@ -19,6 +19,10 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_idle_inhibitor_v1 *inhibitor =
 		wl_container_of(listener, inhibitor, destroy);
 	sway_log(SWAY_DEBUG, "Sway idle inhibitor destroyed");
+
+	// avoid use-after free of view by scheduling deferred execution of
+	// criteria
+	view_schedule_criteria_execution_from_view(inhibitor->view);
 	destroy_inhibitor(inhibitor);
 }
 
@@ -42,6 +46,7 @@ void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data) {
 	inhibitor->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_inhibitor->events.destroy, &inhibitor->destroy);
 
+	view_execute_criteria(inhibitor->view);
 	sway_idle_inhibit_v1_check_active(manager);
 }
 
@@ -64,15 +69,24 @@ void sway_idle_inhibit_v1_user_inhibitor_register(struct sway_view *view,
 	sway_idle_inhibit_v1_check_active(inhibitor->manager);
 }
 
-struct sway_idle_inhibitor_v1 *sway_idle_inhibit_v1_user_inhibitor_for_view(
+struct sway_idle_inhibitor_v1 *sway_idle_inhibit_v1_inhibitor_for_view(
 		struct sway_view *view) {
 	struct sway_idle_inhibitor_v1 *inhibitor;
 	wl_list_for_each(inhibitor, &server.idle_inhibit_manager_v1->inhibitors,
 			link) {
-		if (inhibitor->view == view &&
-				inhibitor->mode != INHIBIT_IDLE_APPLICATION) {
+		if (inhibitor->view == view) {
 			return inhibitor;
 		}
+	}
+	return NULL;
+}
+
+struct sway_idle_inhibitor_v1 *sway_idle_inhibit_v1_user_inhibitor_for_view(
+		struct sway_view *view) {
+	struct sway_idle_inhibitor_v1 *inhibitor =
+		sway_idle_inhibit_v1_inhibitor_for_view(view);
+	if (inhibitor && inhibitor->mode != INHIBIT_IDLE_APPLICATION) {
+		return inhibitor;
 	}
 	return NULL;
 }
@@ -89,7 +103,7 @@ void sway_idle_inhibit_v1_user_inhibitor_destroy(
 	destroy_inhibitor(inhibitor);
 }
 
-static bool check_active(struct sway_idle_inhibitor_v1 *inhibitor) {
+bool sway_idle_inhibit_v1_inhibitor_check_active(struct sway_idle_inhibitor_v1 *inhibitor) {
 	switch (inhibitor->mode) {
 	case INHIBIT_IDLE_APPLICATION:
 		// If there is no view associated with the inhibitor, assume visible
@@ -122,7 +136,7 @@ void sway_idle_inhibit_v1_check_active(
 	struct sway_idle_inhibitor_v1 *inhibitor;
 	bool inhibited = false;
 	wl_list_for_each(inhibitor, &manager->inhibitors, link) {
-		if ((inhibited = check_active(inhibitor))) {
+		if ((inhibited = sway_idle_inhibit_v1_inhibitor_check_active(inhibitor))) {
 			break;
 		}
 	}
