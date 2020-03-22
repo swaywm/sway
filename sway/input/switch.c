@@ -1,8 +1,10 @@
+#define _POSIX_C_SOURCE 200809L
 #include "sway/config.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/switch.h"
 #include <wlr/types/wlr_idle.h>
 #include "log.h"
+#include <string.h>
 
 struct sway_switch *sway_switch_create(struct sway_seat *seat,
 		struct sway_seat_device *device) {
@@ -56,7 +58,7 @@ static void execute_binding(struct sway_switch *sway_switch) {
 			calloc(1, sizeof(struct sway_binding));
 		dummy_binding->type = BINDING_SWITCH;
 		dummy_binding->flags = matched_binding->flags;
-		dummy_binding->command = matched_binding->command;
+		dummy_binding->command = strdup(matched_binding->command);
 
 		seat_execute_command(seat, dummy_binding);
 		free(dummy_binding);
