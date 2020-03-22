@@ -606,7 +606,7 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 			return;
 		}
 		memcpy(deferred, binding, sizeof(struct sway_binding));
-		deferred->command = strdup(binding->command);
+		deferred->command = binding->command ? strdup(binding->command) : NULL;
 		list_add(seat->deferred_bindings, deferred);
 		return;
 	}
