@@ -4,7 +4,6 @@
 #include "sway/input/switch.h"
 #include <wlr/types/wlr_idle.h>
 #include "log.h"
-#include <string.h>
 
 struct sway_switch *sway_switch_create(struct sway_seat *seat,
 		struct sway_seat_device *device) {
