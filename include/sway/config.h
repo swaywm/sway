@@ -41,6 +41,7 @@ enum binding_flags {
 	BINDING_CODE=32,     // keyboard only; convert keysyms into keycodes
 	BINDING_RELOAD=64,   // switch only; (re)trigger binding on reload
 	BINDING_INHIBITED=128,	// keyboard only: ignore shortcut inhibitor
+	BINDING_NOREPEAT=256, // keyboard only; do not trigger when repeating a held key
 };
 
 /**
