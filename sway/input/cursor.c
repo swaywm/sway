@@ -368,6 +368,12 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 				event->touch_id, sx, sy);
 		cursor_hide(cursor);
 	}
+
+	//move cursor so focus follows touch
+	float delta_x = lx - cursor->cursor->x;
+	float delta_y = ly - cursor->cursor->y;
+	cursor_motion(cursor, 0, event->device, delta_x,
+		      delta_y, delta_x, delta_y);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
