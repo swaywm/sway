@@ -431,7 +431,8 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 
 	// Set up (or clear) keyboard repeat for a pressed binding. Since the
 	// binding may remove the keyboard, the timer needs to be updated first
-	if (binding && wlr_device->keyboard->repeat_info.delay > 0) {
+	if (binding && !(binding->flags & BINDING_NOREPEAT) &&
+			wlr_device->keyboard->repeat_info.delay > 0) {
 		keyboard->repeat_binding = binding;
 		if (wl_event_source_timer_update(keyboard->key_repeat_source,
 				wlr_device->keyboard->repeat_info.delay) < 0) {

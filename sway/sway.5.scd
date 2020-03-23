@@ -356,7 +356,7 @@ runtime.
 		for_window <criteria> move container to output <output>
 
 *bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
-[--to-code] [--input-device=<device>] [--no-warn] [Group<1-4>+]<key combo> \
+[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [Group<1-4>+]<key combo> \
 <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
@@ -381,6 +381,10 @@ runtime.
 	to the remote or virtual session. The _--inhibited_ flag allows to
 	define bindings which will be exempt from pass-through to such
 	software. The same preference logic as for _--locked_ applies.
+
+	Unless the flag _--no-repeat_ is set, the command will be run
+	repeatedly when the key is held, according to the repeat
+	settings specified in the input configuration.
 
 	Bindings to keysyms are layout-dependent. This can be changed with the
 	_--to-code_ flag. In this case, the keysyms will be translated into the
