@@ -60,6 +60,9 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 		int gaps_location) {
 	const char expected[] = "Expected 'workspace <name> gaps "
 		"inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
+	if (gaps_location == 0) {
+		return cmd_results_new(CMD_INVALID, expected);
+	}
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO,
 					gaps_location + 3))) {
