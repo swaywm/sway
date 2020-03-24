@@ -141,8 +141,8 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 	}
 	if (output_location == 0) {
-		return cmd_results_new(CMD_INVALID, "Expected 'workspace "
-				"<name> output <output>'");
+		return cmd_results_new(CMD_INVALID,
+			"Expected 'workspace <name> output <output>'");
 	} else if (output_location > 0) {
 		if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST,
 						output_location + 2))) {
