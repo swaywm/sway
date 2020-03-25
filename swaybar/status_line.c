@@ -113,19 +113,26 @@ bool status_handle_readable(struct status_line *status) {
 
 		sway_log(SWAY_DEBUG, "Using text protocol.");
 		status->protocol = PROTOCOL_TEXT;
-		char *last_newline = strrchr(status->buffer, '\n');
-		if (last_newline != NULL) {
-			status->buffer_index = strlen(last_newline + 1);
-			memmove(status->buffer, last_newline + 1, status->buffer_index + 1);
-		}
 		status->text = status->buffer;
 		// intentional fall-through
 	case PROTOCOL_TEXT:
 		errno = 0;
 		while (true) {
-			if (status->buffer[read_bytes - 1] == '\n') {
-				status->buffer[read_bytes - 1] = '\0';
+			bool trailing_newline = true;
+			while (trailing_newline == true) {
+				if (status->buffer[read_bytes - 1] == '\n') {
+					status->buffer[read_bytes - 1] = '\0';
+					read_bytes--;
+				} else {
+					trailing_newline = false;
+				}
 			}
+			char *last_newline = strrchr(status->buffer, '\n');
+			if (last_newline != NULL) {
+				status->buffer_index = strlen(last_newline + 1);
+				memmove(status->buffer, last_newline + 1, status->buffer_index + 1);
+			}
+
 			read_bytes = getline(&status->buffer,
 					&status->buffer_size, status->read);
 			if (errno == EAGAIN) {
