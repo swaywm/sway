@@ -289,7 +289,10 @@ static struct sway_container *container_at_linear(struct sway_node *parent,
 
 static struct sway_container *floating_container_at(double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	for (int i = 0; i < root->outputs->length; ++i) {
+	// For outputs with floating containers that overhang the output bounds,
+	// those at the end of the output list appear on top of floating
+	// containers from other outputs, so iterate the list in reverse.
+	for (int i = root->outputs->length - 1; i >= 0; --i) {
 		struct sway_output *output = root->outputs->items[i];
 		for (int j = 0; j < output->workspaces->length; ++j) {
 			struct sway_workspace *ws = output->workspaces->items[j];
