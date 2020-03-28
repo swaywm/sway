@@ -352,7 +352,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
-	node_at_coords(seat, lx, ly, &surface, &sx, &sy);
+	struct sway_node *focused_node = node_at_coords(seat, lx, ly, &surface, &sx, &sy);
 
 	seat->touch_id = event->touch_id;
 	seat->touch_x = lx;
@@ -369,11 +369,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 		cursor_hide(cursor);
 	}
 
-	//move cursor so focus follows touch
-	float delta_x = lx - cursor->cursor->x;
-	float delta_y = ly - cursor->cursor->y;
-	cursor_motion(cursor, 0, event->device, delta_x,
-		      delta_y, delta_x, delta_y);
+	seat_set_focus(seat, focused_node);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
