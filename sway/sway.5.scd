@@ -25,7 +25,7 @@ block. For example:
 
 ```
 output eDP-1 {
-	background ~/wallpaper.png
+	background ~/wallpaper.png fill
 	resolution 1920x1080
 }
 ```
@@ -33,7 +33,7 @@ output eDP-1 {
 is identical to
 
 ```
-output eDP-1 background ~/wallpaper.png
+output eDP-1 background ~/wallpaper.png fill
 output eDP-1 resolution 1920x1080
 ```
 
