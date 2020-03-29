@@ -444,7 +444,11 @@ void swaynag_setup(struct swaynag *swaynag) {
 	assert(swaynag->compositor && swaynag->layer_shell && swaynag->shm);
 
 	while (swaynag->querying_outputs > 0) {
-		wl_display_roundtrip(swaynag->display);
+		if (wl_display_roundtrip(swaynag->display) < 0) {
+			sway_log(SWAY_ERROR, "Error during outputs init.");
+			swaynag_destroy(swaynag);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (!swaynag->output && swaynag->type->output) {
