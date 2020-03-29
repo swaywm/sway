@@ -27,6 +27,8 @@ int main(int argc, char **argv) {
 
 	memset(&swaynag, 0, sizeof(swaynag));
 	swaynag.buttons = create_list();
+	wl_list_init(&swaynag.outputs);
+	wl_list_init(&swaynag.seats);
 
 	struct swaynag_button *button_close =
 		calloc(sizeof(struct swaynag_button), 1);
