@@ -264,6 +264,9 @@ if get_option('bash-completions')
 	)
 	if bash_comp.found()
 		bash_install_dir = bash_comp.get_pkgconfig_variable('completionsdir')
+		if not bash_install_dir.startswith(prefix)
+			bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
+		endif
 	else
 		bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
 	endif
@@ -279,6 +282,9 @@ if get_option('fish-completions')
 	)
 	if fish_comp.found()
 		fish_install_dir = fish_comp.get_pkgconfig_variable('completionsdir')
+		if not fish_install_dir.startswith(prefix)
+			fish_install_dir = join_paths(datadir, 'fish', 'vendor_completions.d')
+		endif
 	else
 		fish_install_dir = join_paths(datadir, 'fish', 'vendor_completions.d')
 	endif
