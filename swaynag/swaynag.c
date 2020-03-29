@@ -437,8 +437,6 @@ void swaynag_setup(struct swaynag *swaynag) {
 	}
 
 	swaynag->scale = 1;
-	wl_list_init(&swaynag->outputs);
-	wl_list_init(&swaynag->seats);
 
 	struct wl_registry *registry = wl_display_get_registry(swaynag->display);
 	wl_registry_add_listener(registry, &registry_listener, swaynag);
