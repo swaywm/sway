@@ -263,7 +263,10 @@ if get_option('bash-completions')
 		'completions/bash/swaymsg',
 	)
 	if bash_comp.found()
-		bash_install_dir = bash_comp.get_pkgconfig_variable('completionsdir')
+		bash_install_dir = bash_comp.get_pkgconfig_variable(
+			'completionsdir',
+			define_variable: ['datadir', datadir]
+		)
 	else
 		bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
 	endif
@@ -278,7 +281,10 @@ if get_option('fish-completions')
 		'completions/fish/swaynag.fish',
 	)
 	if fish_comp.found()
-		fish_install_dir = fish_comp.get_pkgconfig_variable('completionsdir')
+		fish_install_dir = fish_comp.get_pkgconfig_variable(
+			'completionsdir',
+			define_variable: ['datadir', datadir]
+		)
 	else
 		fish_install_dir = join_paths(datadir, 'fish', 'vendor_completions.d')
 	endif
