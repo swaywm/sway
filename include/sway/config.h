@@ -33,15 +33,15 @@ enum binding_input_type {
 };
 
 enum binding_flags {
-	BINDING_RELEASE=1,
-	BINDING_LOCKED=2,    // keyboard only
-	BINDING_BORDER=4,    // mouse only; trigger on container border
-	BINDING_CONTENTS=8,  // mouse only; trigger on container contents
-	BINDING_TITLEBAR=16, // mouse only; trigger on container titlebar
-	BINDING_CODE=32,     // keyboard only; convert keysyms into keycodes
-	BINDING_RELOAD=64,   // switch only; (re)trigger binding on reload
-	BINDING_INHIBITED=128,	// keyboard only: ignore shortcut inhibitor
-	BINDING_NOREPEAT=256, // keyboard only; do not trigger when repeating a held key
+	BINDING_RELEASE = 1 << 0,
+	BINDING_LOCKED = 1 << 1, // keyboard only
+	BINDING_BORDER = 1 << 2, // mouse only; trigger on container border
+	BINDING_CONTENTS = 1 << 3, // mouse only; trigger on container contents
+	BINDING_TITLEBAR = 1 << 4, // mouse only; trigger on container titlebar
+	BINDING_CODE = 1 << 5, // keyboard only; convert keysyms into keycodes
+	BINDING_RELOAD = 1 << 6, // switch only; (re)trigger binding on reload
+	BINDING_INHIBITED = 1 << 7, // keyboard only: ignore shortcut inhibitor
+	BINDING_NOREPEAT = 1 << 8, // keyboard only; do not trigger when repeating a held key
 };
 
 /**
@@ -113,7 +113,7 @@ struct calibration_matrix {
 enum input_config_mapped_to {
 	MAPPED_TO_DEFAULT,
 	MAPPED_TO_OUTPUT,
-	MAPPED_TO_REGION
+	MAPPED_TO_REGION,
 };
 
 /**
@@ -173,21 +173,21 @@ struct seat_attachment_config {
 };
 
 enum seat_config_allow_constrain {
-	CONSTRAIN_DEFAULT,  // the default is currently enabled
+	CONSTRAIN_DEFAULT, // the default is currently enabled
 	CONSTRAIN_ENABLE,
-	CONSTRAIN_DISABLE
+	CONSTRAIN_DISABLE,
 };
 
 enum seat_config_shortcuts_inhibit {
-	SHORTCUTS_INHIBIT_DEFAULT,  // the default is currently enabled
+	SHORTCUTS_INHIBIT_DEFAULT, // the default is currently enabled
 	SHORTCUTS_INHIBIT_ENABLE,
-	SHORTCUTS_INHIBIT_DISABLE
+	SHORTCUTS_INHIBIT_DISABLE,
 };
 
 enum seat_keyboard_grouping {
-	KEYBOARD_GROUP_DEFAULT,  // the default is currently smart
+	KEYBOARD_GROUP_DEFAULT, // the default is currently smart
 	KEYBOARD_GROUP_NONE,
-	KEYBOARD_GROUP_SMART  // keymap and repeat info
+	KEYBOARD_GROUP_SMART, // keymap and repeat info
 };
 
 enum sway_input_idle_source {
@@ -220,14 +220,14 @@ struct seat_config {
 enum config_dpms {
 	DPMS_IGNORE,
 	DPMS_ON,
-	DPMS_OFF
+	DPMS_OFF,
 };
 
 enum scale_filter_mode {
 	SCALE_FILTER_DEFAULT, // the default is currently smart
 	SCALE_FILTER_LINEAR,
 	SCALE_FILTER_NEAREST,
-	SCALE_FILTER_SMART
+	SCALE_FILTER_SMART,
 };
 
 /**
@@ -375,10 +375,10 @@ struct border_colors {
 };
 
 enum edge_border_types {
-	E_NONE,         /**< Don't hide edge borders */
-	E_VERTICAL,     /**< hide vertical edge borders */
-	E_HORIZONTAL,   /**< hide horizontal edge borders */
-	E_BOTH,		/**< hide vertical and horizontal edge borders */
+	E_NONE, /**< Don't hide edge borders */
+	E_VERTICAL, /**< hide vertical edge borders */
+	E_HORIZONTAL, /**< hide horizontal edge borders */
+	E_BOTH, /**< hide vertical and horizontal edge borders */
 };
 
 enum edge_border_smart_types {
@@ -394,10 +394,10 @@ enum sway_popup_during_fullscreen {
 };
 
 enum command_context {
-	CONTEXT_CONFIG = 1,
-	CONTEXT_BINDING = 2,
-	CONTEXT_IPC = 4,
-	CONTEXT_CRITERIA = 8,
+	CONTEXT_CONFIG = 1 << 0,
+	CONTEXT_BINDING = 1 << 1,
+	CONTEXT_IPC = 1 << 2,
+	CONTEXT_CRITERIA = 1 << 3,
 	CONTEXT_ALL = 0xFFFFFFFF,
 };
 
@@ -407,13 +407,13 @@ struct command_policy {
 };
 
 enum secure_feature {
-	FEATURE_LOCK = 1,
-	FEATURE_PANEL = 2,
-	FEATURE_BACKGROUND = 4,
-	FEATURE_SCREENSHOT = 8,
-	FEATURE_FULLSCREEN = 16,
-	FEATURE_KEYBOARD = 32,
-	FEATURE_MOUSE = 64,
+	FEATURE_LOCK = 1 << 0,
+	FEATURE_PANEL = 1 << 1,
+	FEATURE_BACKGROUND = 1 << 2,
+	FEATURE_SCREENSHOT = 1 << 3,
+	FEATURE_FULLSCREEN = 1 << 4,
+	FEATURE_KEYBOARD = 1 << 5,
+	FEATURE_MOUSE = 1 << 6,
 };
 
 struct feature_policy {
@@ -422,25 +422,31 @@ struct feature_policy {
 };
 
 enum ipc_feature {
-	IPC_FEATURE_COMMAND = 1,
-	IPC_FEATURE_GET_WORKSPACES = 2,
-	IPC_FEATURE_GET_OUTPUTS = 4,
-	IPC_FEATURE_GET_TREE = 8,
-	IPC_FEATURE_GET_MARKS = 16,
-	IPC_FEATURE_GET_BAR_CONFIG = 32,
-	IPC_FEATURE_GET_VERSION = 64,
-	IPC_FEATURE_GET_INPUTS = 128,
-	IPC_FEATURE_EVENT_WORKSPACE = 256,
-	IPC_FEATURE_EVENT_OUTPUT = 512,
-	IPC_FEATURE_EVENT_MODE = 1024,
-	IPC_FEATURE_EVENT_WINDOW = 2048,
-	IPC_FEATURE_EVENT_BINDING = 4096,
-	IPC_FEATURE_EVENT_INPUT = 8192,
-	IPC_FEATURE_GET_SEATS = 16384,
+	IPC_FEATURE_COMMAND = 1 << 0,
+	IPC_FEATURE_GET_WORKSPACES = 1 << 1,
+	IPC_FEATURE_GET_OUTPUTS = 1 << 2,
+	IPC_FEATURE_GET_TREE = 1 << 3,
+	IPC_FEATURE_GET_MARKS = 1 << 4,
+	IPC_FEATURE_GET_BAR_CONFIG = 1 << 5,
+	IPC_FEATURE_GET_VERSION = 1 << 6,
+	IPC_FEATURE_GET_INPUTS = 1 << 7,
+	IPC_FEATURE_EVENT_WORKSPACE = 1 << 8,
+	IPC_FEATURE_EVENT_OUTPUT = 1 << 9,
+	IPC_FEATURE_EVENT_MODE = 1 << 10,
+	IPC_FEATURE_EVENT_WINDOW = 1 << 11,
+	IPC_FEATURE_EVENT_BINDING = 1 << 12,
+	IPC_FEATURE_EVENT_INPUT = 1 << 13,
+	IPC_FEATURE_GET_SEATS = 1 << 14,
 
-	IPC_FEATURE_ALL_COMMANDS =
-		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 16384,
-	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192,
+	IPC_FEATURE_ALL_COMMANDS = IPC_FEATURE_COMMAND |
+		IPC_FEATURE_GET_WORKSPACES | IPC_FEATURE_GET_OUTPUTS |
+		IPC_FEATURE_GET_TREE | IPC_FEATURE_GET_MARKS |
+		IPC_FEATURE_GET_BAR_CONFIG | IPC_FEATURE_GET_VERSION |
+		IPC_FEATURE_GET_INPUTS | IPC_FEATURE_GET_SEATS,
+	IPC_FEATURE_ALL_EVENTS = IPC_FEATURE_EVENT_WORKSPACE |
+		IPC_FEATURE_EVENT_OUTPUT | IPC_FEATURE_EVENT_MODE |
+		IPC_FEATURE_EVENT_WINDOW | IPC_FEATURE_EVENT_BINDING |
+		IPC_FEATURE_EVENT_INPUT,
 
 	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
 };
@@ -453,32 +459,32 @@ struct ipc_policy {
 enum focus_follows_mouse_mode {
 	FOLLOWS_NO,
 	FOLLOWS_YES,
-	FOLLOWS_ALWAYS
+	FOLLOWS_ALWAYS,
 };
 
 enum focus_wrapping_mode {
 	WRAP_NO,
 	WRAP_YES,
 	WRAP_FORCE,
-	WRAP_WORKSPACE
+	WRAP_WORKSPACE,
 };
 
 enum mouse_warping_mode {
 	WARP_NO,
 	WARP_OUTPUT,
-	WARP_CONTAINER
+	WARP_CONTAINER,
 };
 
 enum alignment {
 	ALIGN_LEFT,
 	ALIGN_CENTER,
-	ALIGN_RIGHT
+	ALIGN_RIGHT,
 };
 
 enum xwayland_mode {
 	XWAYLAND_MODE_DISABLED,
 	XWAYLAND_MODE_LAZY,
-	XWAYLAND_MODE_IMMEDIATE
+	XWAYLAND_MODE_IMMEDIATE,
 };
 
 /**
