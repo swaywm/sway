@@ -359,7 +359,7 @@ runtime.
 [--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [Group<1-4>+]<key combo> \
 <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
-	may use XKB key names here (*xev*(1) is a good tool for discovering these).
+	may use XKB key names here (*wev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
 	released. If _input-device_ is given, the binding will only be executed for
 	that input device and will be executed instead of any binding that is
