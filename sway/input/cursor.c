@@ -364,9 +364,9 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 
 	// TODO: fall back to cursor simulation if client has not bound to touch
 	if (seat_is_input_allowed(seat, surface)) {
+		cursor_hide(cursor);
 		wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
 				event->touch_id, sx, sy);
-		cursor_hide(cursor);
 	}
 
 	seat_set_focus(seat, focused_node);
