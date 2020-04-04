@@ -59,15 +59,13 @@ static void text_input_set_pending_focused_surface(
 		struct sway_text_input *text_input, struct wlr_surface *surface) {
 	wl_list_remove(&text_input->pending_focused_surface_destroy.link);
 	text_input->pending_focused_surface = surface;
-	wl_signal_add(&surface->events.destroy,
-		&text_input->pending_focused_surface_destroy);
-}
 
-static void text_input_clear_pending_focused_surface(
-		struct sway_text_input *text_input) {
-	wl_list_remove(&text_input->pending_focused_surface_destroy.link);
-	wl_list_init(&text_input->pending_focused_surface_destroy.link);
-	text_input->pending_focused_surface = NULL;
+	if (surface) {
+		wl_signal_add(&surface->events.destroy,
+			&text_input->pending_focused_surface_destroy);
+	} else {
+		wl_list_init(&text_input->pending_focused_surface_destroy.link);
+	}
 }
 
 static void handle_im_destroy(struct wl_listener *listener, void *data) {
@@ -157,13 +155,12 @@ static void handle_text_input_destroy(struct wl_listener *listener,
 	if (text_input->input->current_enabled) {
 		relay_disable_text_input(text_input->relay, text_input);
 	}
-	text_input_clear_pending_focused_surface(text_input);
+	text_input_set_pending_focused_surface(text_input, NULL);
 	wl_list_remove(&text_input->text_input_commit.link);
 	wl_list_remove(&text_input->text_input_destroy.link);
 	wl_list_remove(&text_input->text_input_disable.link);
 	wl_list_remove(&text_input->text_input_enable.link);
 	wl_list_remove(&text_input->link);
-	text_input->input = NULL;
 	free(text_input);
 }
 
@@ -187,6 +184,8 @@ struct sway_text_input *sway_text_input_create(
 	}
 	input->input = text_input;
 	input->relay = relay;
+
+	wl_list_insert(&relay->text_inputs, &input->link);
 
 	input->text_input_enable.notify = handle_text_input_enable;
 	wl_signal_add(&text_input->events.enable, &input->text_input_enable);
@@ -215,12 +214,7 @@ static void relay_handle_text_input(struct wl_listener *listener,
 		return;
 	}
 
-	struct sway_text_input *text_input = sway_text_input_create(relay,
-		wlr_text_input);
-	if (!text_input) {
-		return;
-	}
-	wl_list_insert(&relay->text_inputs, &text_input->link);
+	sway_text_input_create(relay, wlr_text_input);
 }
 
 static void relay_handle_input_method(struct wl_listener *listener,
@@ -250,7 +244,7 @@ static void relay_handle_input_method(struct wl_listener *listener,
 	if (text_input) {
 		wlr_text_input_v3_send_enter(text_input->input,
 			text_input->pending_focused_surface);
-		text_input_clear_pending_focused_surface(text_input);
+		text_input_set_pending_focused_surface(text_input, NULL);
 	}
 }
 
@@ -276,7 +270,7 @@ void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 		if (text_input->pending_focused_surface) {
 			assert(text_input->input->focused_surface == NULL);
 			if (surface != text_input->pending_focused_surface) {
-				text_input_clear_pending_focused_surface(text_input);
+				text_input_set_pending_focused_surface(text_input, NULL);
 			}
 		} else if (text_input->input->focused_surface) {
 			assert(text_input->pending_focused_surface == NULL);
