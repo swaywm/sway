@@ -12,6 +12,7 @@ packages:
   - meson
   - pango-dev
   - pixman-dev
+  - scdoc
   - wayland-dev
   - wayland-protocols
   - xcb-util-image-dev
@@ -19,12 +20,7 @@ packages:
 sources:
   - https://github.com/swaywm/sway
   - https://github.com/swaywm/wlroots
-  - https://git.sr.ht/~sircmpwn/scdoc
 tasks:
-  - scdoc: |
-      cd scdoc
-      make PREFIX=/usr
-      sudo make install PREFIX=/usr
   - wlroots: |
       cd wlroots
       meson --prefix=/usr build -Dexamples=false
