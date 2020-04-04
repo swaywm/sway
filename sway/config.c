@@ -309,7 +309,7 @@ static void config_defaults(struct sway_config *config) {
 
 	color_to_rgba(config->border_colors.unfocused.border, 0x333333FF);
 	color_to_rgba(config->border_colors.unfocused.background, 0x222222FF);
-	color_to_rgba(config->border_colors.unfocused.text, 0x88888888);
+	color_to_rgba(config->border_colors.unfocused.text, 0x888888FF);
 	color_to_rgba(config->border_colors.unfocused.indicator, 0x292D2EFF);
 	color_to_rgba(config->border_colors.unfocused.child_border, 0x222222FF);
 
