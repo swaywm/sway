@@ -26,21 +26,6 @@ sources:
 - https://github.com/swaywm/sway
 - https://github.com/swaywm/wlroots
 tasks:
-- fixup_epoll: |
-    cat << 'EOF' | sudo tee /usr/local/libdata/pkgconfig/epoll-shim.pc
-    prefix=/usr/local
-    exec_prefix=\$\{\$prefix\}
-    libdir=${prefix}/lib
-    sharedlibdir=${prefix}/lib
-    includedir=${prefix}/include/libepoll-shim
-    Name: epoll-shim
-    Description: epoll shim implemented using kevent
-    Version: 0
-    Requires:
-    Libs: -L${libdir} -L${sharedlibdir} -lepoll-shim
-    Libs.private: -pthread -lrt
-    Cflags: -I${includedir}
-    EOF
 - setup: |
     cd sway
     mkdir subprojects
