@@ -742,6 +742,10 @@ static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 		return;
 	}
 	output_disable(output);
+
+	wl_list_remove(&output->damage_destroy.link);
+	wl_list_remove(&output->damage_frame.link);
+
 	transaction_commit_dirty();
 }
 
@@ -785,8 +789,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->transform.link);
 	wl_list_remove(&output->scale.link);
 	wl_list_remove(&output->present.link);
-	wl_list_remove(&output->damage_destroy.link);
-	wl_list_remove(&output->damage_frame.link);
 
 	transaction_commit_dirty();
 
