@@ -906,10 +906,9 @@ void handle_output_layout_change(struct wl_listener *listener,
 	update_output_manager_config(server);
 }
 
-void handle_output_manager_apply(struct wl_listener *listener, void *data) {
-	struct sway_server *server =
-		wl_container_of(listener, server, output_manager_apply);
-	struct wlr_output_configuration_v1 *config = data;
+static void output_manager_apply(struct sway_server *server,
+		struct wlr_output_configuration_v1 *config, bool test_only) {
+	// TODO: perform atomic tests on the whole backend atomically
 
 	struct wlr_output_configuration_head_v1 *config_head;
 	// First disable outputs we need to disable
@@ -923,8 +922,12 @@ void handle_output_manager_apply(struct wl_listener *listener, void *data) {
 		struct output_config *oc = new_output_config(output->wlr_output->name);
 		oc->enabled = false;
 
-		oc = store_output_config(oc);
-		ok &= apply_output_config(oc, output);
+		if (test_only) {
+			ok &= test_output_config(oc, output);
+		} else {
+			oc = store_output_config(oc);
+			ok &= apply_output_config(oc, output);
+		}
 	}
 
 	// Then enable outputs that need to
@@ -951,8 +954,12 @@ void handle_output_manager_apply(struct wl_listener *listener, void *data) {
 		oc->transform = config_head->state.transform;
 		oc->scale = config_head->state.scale;
 
-		oc = store_output_config(oc);
-		ok &= apply_output_config(oc, output);
+		if (test_only) {
+			ok &= test_output_config(oc, output);
+		} else {
+			oc = store_output_config(oc);
+			ok &= apply_output_config(oc, output);
+		}
 	}
 
 	if (ok) {
@@ -962,15 +969,25 @@ void handle_output_manager_apply(struct wl_listener *listener, void *data) {
 	}
 	wlr_output_configuration_v1_destroy(config);
 
-	update_output_manager_config(server);
+	if (!test_only) {
+		update_output_manager_config(server);
+	}
+}
+
+void handle_output_manager_apply(struct wl_listener *listener, void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, output_manager_apply);
+	struct wlr_output_configuration_v1 *config = data;
+
+	output_manager_apply(server, config, false);
 }
 
 void handle_output_manager_test(struct wl_listener *listener, void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, output_manager_test);
 	struct wlr_output_configuration_v1 *config = data;
 
-	// TODO: implement test-only mode
-	wlr_output_configuration_v1_send_succeeded(config);
-	wlr_output_configuration_v1_destroy(config);
+	output_manager_apply(server, config, true);
 }
 
 void handle_output_power_manager_set_mode(struct wl_listener *listener,
