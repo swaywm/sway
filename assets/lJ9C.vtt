@@ -1,0 +1,250 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:01.000
+Hi my name is Drew,
+
+2
+00:00:01.000 --> 00:00:02.000
+and I am the maintainer of Sway,
+
+3
+00:00:02.000 --> 00:00:05.000
+a tiling Wayland compositor.
+
+4
+00:00:05.000 --> 00:00:08.000
+Sway is compatible with the i3 window manager.
+
+5
+00:00:08.000 --> 00:00:10.000
+It uses the same configuration syntax
+
+6
+00:00:10.000 --> 00:00:13.000
+and supports most software that is designed for i3.
+
+7
+00:00:13.000 --> 00:00:16.000
+The difference is that sway uses Wayland instead of Xorg.
+
+8
+00:00:16.000 --> 00:00:18.000
+Wayland is the next generation
+
+9
+00:00:18.000 --> 00:00:19.000
+of display servers
+
+10
+00:00:19.000 --> 00:00:21.000
+for Linux and related operating systems.
+
+11
+00:00:21.000 --> 00:00:23.000
+It is more efficient, more secure
+
+12
+00:00:23.000 --> 00:00:25.000
+and easier for developers to work with.
+
+13
+00:00:25.000 --> 00:00:27.000
+Let's take a quick tour
+
+14
+00:00:27.000 --> 00:00:28.000
+of some of the features of sway.
+
+15
+00:00:28.000 --> 00:00:30.000
+If you are familiar with i3,
+
+16
+00:00:30.000 --> 00:00:31.000
+some of this might not be new to you.
+
+17
+00:00:31.000 --> 00:00:33.000
+I'll start by opening my web browser.
+
+18
+00:00:33.000 --> 00:00:36.000
+[sound of clicking keyboard]
+
+19
+00:00:37.000 --> 00:00:38.000
+Sway will arrange it,
+
+20
+00:00:38.000 --> 00:00:40.000
+to use all of the available space.
+
+21
+00:00:40.000 --> 00:00:42.000
+If I open more windows,
+
+22
+00:00:43.000 --> 00:00:46.000
+Sway will rearrange things accordingly.
+
+23
+00:00:46.000 --> 00:00:48.000
+I can move between these with the keyboard.
+
+24
+00:00:49.000 --> 00:00:51.000
+I can ask Sway to arrange them vertically,
+
+25
+00:00:51.000 --> 00:00:52.000
+horizontally,
+
+26
+00:00:53.000 --> 00:00:54.000
+tabbed,
+
+27
+00:00:55.000 --> 00:00:56.000
+or stacked.
+
+28
+00:00:56.000 --> 00:01:00.000
+[sound of clicking keyboard]
+
+29
+00:01:01.000 --> 00:01:04.000
+I can change their sizes with the keyboard too.
+
+30
+00:01:04.000 --> 00:01:07.000
+[sound of clicking keyboard]
+
+31
+00:01:08.000 --> 00:01:09.000
+I can also split windows
+
+32
+00:01:09.000 --> 00:01:11.000
+into containers of several windows.
+
+33
+00:01:11.000 --> 00:01:18.000
+[sound of clicking keyboard]
+
+34
+00:01:18.000 --> 00:01:20.000
+So far I haven't touched the mouse.
+
+35
+00:01:20.000 --> 00:01:21.000
+If I wanted to, though,
+
+36
+00:01:21.000 --> 00:01:23.000
+I can use it to manipulate these windows.
+
+37
+00:01:23.000 --> 00:01:33.000
+[various background noises]
+
+38
+00:01:33.000 --> 00:01:34.000
+It is also possible to take windows
+
+39
+00:01:34.000 --> 00:01:36.000
+outside the tiling area
+
+40
+00:01:36.000 --> 00:01:39.000
+and manipulate them entirely with the mouse.
+
+41
+00:01:39.000 --> 00:01:42.000
+[various background noises and some keyboard clicks]
+
+42
+00:01:42.000 --> 00:01:43.000
+Sway also includes features
+
+43
+00:01:43.000 --> 00:01:46.000
+you may recognize from prominent i3 forks,
+
+44
+00:01:46.000 --> 00:01:47.000
+such as gaps.
+
+45
+00:01:47.000 --> 00:02:06.000
+[sound of clicking keyboard]
+
+46
+00:02:06.000 --> 00:02:09.000
+Also included are compatible equivalents
+
+47
+00:02:09.000 --> 00:02:10.000
+from important i3 programs
+
+48
+00:02:10.000 --> 00:02:11.000
+like swaybar,
+
+49
+00:02:11.000 --> 00:02:15.000
+[sound of clicking keyboard]
+
+50
+00:02:15.000 --> 00:02:16.000
+swaylock,
+
+51
+00:02:16.000 --> 00:02:19.000
+[sound of clicking keyboard]
+
+52
+00:02:19.000 --> 00:02:21.000
+and swaymsg,
+
+53
+00:02:22.000 --> 00:02:24.000
+as well as some programs unique to sway
+
+54
+00:02:24.000 --> 00:02:25.000
+such as swaygrab.
+
+55
+00:02:25.000 --> 00:02:19.000
+[sound of clicking keyboard]
+
+56
+00:02:27.000 --> 00:02:28.000
+We only scratched the surface
+
+57
+00:02:27.000 --> 00:02:29.000
+of what Sway could do.
+
+58
+00:02:29.000 --> 00:02:31.000
+We have lots of great docs
+
+59
+00:02:31.000 --> 00:02:32.000
+that will help you learn more.
+
+60
+00:02:34.000 --> 00:02:36.000
+Today Sway supports almost all
+
+61
+00:02:36.000 --> 00:02:37.000
+of i3s features.
+
+62
+00:02:36.000 --> 00:02:38.000
+Give it a shot!
+
