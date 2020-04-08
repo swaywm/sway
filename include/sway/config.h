@@ -691,6 +691,8 @@ void merge_output_config(struct output_config *dst, struct output_config *src);
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output);
 
+bool test_output_config(struct output_config *oc, struct sway_output *output);
+
 struct output_config *store_output_config(struct output_config *oc);
 
 struct output_config *find_output_config(struct sway_output *output);

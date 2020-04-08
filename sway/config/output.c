@@ -331,34 +331,27 @@ static int compute_default_scale(struct wlr_output *output) {
 	return 2;
 }
 
-bool apply_output_config(struct output_config *oc, struct sway_output *output) {
+static void queue_output_config(struct output_config *oc,
+		struct sway_output *output) {
 	if (output == root->noop_output) {
-		return false;
+		return;
 	}
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (oc && !oc->enabled) {
-		// Output is configured to be disabled
-		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
-		if (output->enabled) {
-			output_disable(output);
-			wlr_output_layout_remove(root->output_layout, wlr_output);
-		}
+	if (oc && (!oc->enabled || oc->dpms_state == DPMS_OFF)) {
+		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
 		wlr_output_enable(wlr_output, false);
-		return wlr_output_commit(wlr_output);
+		return;
 	}
 
-	bool was_enabled = output->enabled;
-	output->enabled = true;
-
-	if (!oc || oc->dpms_state != DPMS_OFF) {
+	if (!oc) {
 		sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 		wlr_output_enable(wlr_output, true);
 
 		if (oc && oc->width > 0 && oc->height > 0) {
-			sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)", oc->name, oc->width,
-				oc->height, oc->refresh_rate);
+			sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
+				wlr_output->name, oc->width, oc->height, oc->refresh_rate);
 			set_mode(wlr_output, oc->width, oc->height,
 				oc->refresh_rate, oc->custom_mode == 1);
 		} else if (!wl_list_empty(&wlr_output->modes)) {
@@ -372,7 +365,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Set %s subpixel to %s", oc->name,
 			sway_wl_output_subpixel_to_string(oc->subpixel));
 		wlr_output_set_subpixel(wlr_output, oc->subpixel);
-		output_damage_whole(output);
 	}
 
 	if (oc && oc->transform >= 0) {
@@ -395,17 +387,49 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	if (oc && oc->adaptive_sync != -1) {
+		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
+			oc->adaptive_sync);
 		wlr_output_enable_adaptive_sync(wlr_output, oc->adaptive_sync == 1);
+	}
+}
+
+bool apply_output_config(struct output_config *oc, struct sway_output *output) {
+	if (output == root->noop_output) {
+		return false;
+	}
+
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	bool was_enabled = output->enabled;
+	if (oc && !oc->enabled) {
+		// Output is configured to be disabled
+		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
+		if (output->enabled) {
+			output_disable(output);
+			wlr_output_layout_remove(root->output_layout, wlr_output);
+		}
+	} else {
+		output->enabled = true;
+	}
+
+	queue_output_config(oc, output);
+
+	if (!oc || oc->dpms_state != DPMS_OFF) {
+		output->current_mode = wlr_output->pending.mode;
 	}
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
 	if (!wlr_output_commit(wlr_output)) {
-		// Failed to modeset, maybe the output is missing a CRTC. Leave the
-		// output disabled for now and try again when the output gets the mode
-		// we asked for.
-		sway_log(SWAY_ERROR, "Failed to modeset output %s", wlr_output->name);
+		// Failed to commit output changes, maybe the output is missing a CRTC.
+		// Leave the output disabled for now and try again when the output gets
+		// the mode we asked for.
+		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
 		output->enabled = was_enabled;
 		return false;
+	}
+
+	if (config->reloading) {
+		output_damage_whole(output);
 	}
 
 	if (oc) {
@@ -424,7 +448,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		if (scale_filter_old != output->scale_filter) {
 			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
 				sway_output_scale_filter_to_string(output->scale_filter));
-			output_damage_whole(output);
 		}
 	}
 
@@ -448,12 +471,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		output_configure(output);
 	}
 
-	if (oc && oc->dpms_state == DPMS_OFF) {
-		sway_log(SWAY_DEBUG, "Turning off output %s", oc->name);
-		wlr_output_enable(wlr_output, false);
-		wlr_output_commit(wlr_output);
-	}
-
 	if (oc && oc->max_render_time >= 0) {
 		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
 			oc->name, oc->max_render_time);
@@ -461,6 +478,17 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	return true;
+}
+
+bool test_output_config(struct output_config *oc, struct sway_output *output) {
+	if (output == root->noop_output) {
+		return false;
+	}
+
+	queue_output_config(oc, output);
+	bool ok = wlr_output_test(output->wlr_output);
+	wlr_output_rollback(output->wlr_output);
+	return ok;
 }
 
 static void default_output_config(struct output_config *oc,
