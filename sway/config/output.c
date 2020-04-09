@@ -425,6 +425,10 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		return false;
 	}
 
+	if (oc && !oc->enabled) {
+		return true;
+	}
+
 	if (config->reloading) {
 		output_damage_whole(output);
 	}
@@ -464,7 +468,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	output->width = output_box->width;
 	output->height = output_box->height;
 
-	if ((!oc || oc->enabled) && !output->configured) {
+	if (!output->configured) {
 		output_configure(output);
 	}
 
