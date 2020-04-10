@@ -374,6 +374,7 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	}
 	device->data = input_device;
 
+	input_device->is_virtual = true;
 	input_device->wlr_device = device;
 	input_device->identifier = input_device_get_identifier(device);
 	wl_list_insert(&input_manager->devices, &input_device->link);
@@ -405,6 +406,7 @@ void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 	}
 	device->data = input_device;
 
+	input_device->is_virtual = true;
 	input_device->wlr_device = device;
 	input_device->identifier = input_device_get_identifier(device);
 	wl_list_insert(&input_manager->devices, &input_device->link);
