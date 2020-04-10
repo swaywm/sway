@@ -14,6 +14,7 @@ struct sway_input_device {
 	struct wlr_input_device *wlr_device;
 	struct wl_list link;
 	struct wl_listener device_destroy;
+	bool is_virtual;
 };
 
 struct sway_input_manager {
