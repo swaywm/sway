@@ -280,7 +280,10 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle clicking an empty workspace
 	if (node && node->type == N_WORKSPACE) {
-		seat_set_focus(seat, node);
+		if (state == WLR_BUTTON_PRESSED) {
+			seat_set_focus(seat, node);
+		}
+		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
 
