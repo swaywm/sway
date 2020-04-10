@@ -755,6 +755,12 @@ static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 	struct wlr_keyboard *wlr_keyboard = device->wlr_device->keyboard;
 	struct sway_seat *seat = keyboard->seat_device->sway_seat;
 	struct seat_config *sc = seat_get_config(seat);
+
+	if (device->is_virtual) {
+		// Virtual devices should not be grouped
+		return;
+	}
+
 	if (!sc) {
 		sc = seat_get_config_by_name("*");
 	}
