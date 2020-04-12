@@ -84,22 +84,22 @@ The following environment variables are set by sway:
 
 _DISPLAY_
 	If compiled with Xwayland support and Xwayland is not disabled by the
-	config, this will be set to the name of the X display used for Xwayland
+	config, this will be set to the name of the X display used for Xwayland.
 
 _I3SOCK_
-	For compatibility with i3, specifies the path to the sway IPC socket
+	For compatibility with i3, specifies the path to the sway IPC socket.
 
 _SWAYSOCK_
-	Specifies the path to the sway IPC socket
+	Specifies the path to the sway IPC socket.
 
 _WAYLAND_DISPLAY_
-	Specifies the name of the Wayland display that sway is running on
+	Specifies the name of the Wayland display that sway is running on.
 
 _XCURSOR_SIZE_
-	Specifies the configured cursor size
+	Specifies the configured cursor size.
 
 _XCURSOR_THEME_
-	Specifies the configured cursor theme
+	Specifies the configured cursor theme.
 
 # AUTHORS
 
