@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
+#include <wlr/backend/headless.h>
+#include <wlr/backend/multi.h>
 #include <wlr/backend/noop.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/wlr_renderer.h>
@@ -41,7 +43,6 @@ bool server_privileged_prepare(struct sway_server *server) {
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
-	server->noop_backend = wlr_noop_backend_create(server->wl_display);
 
 	if (!server->backend) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
@@ -153,8 +154,14 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
+	server->noop_backend = wlr_noop_backend_create(server->wl_display);
+
 	struct wlr_output *wlr_output = wlr_noop_add_output(server->noop_backend);
 	root->noop_output = output_create(wlr_output);
+
+	server->headless_backend =
+		wlr_headless_backend_create_with_renderer(server->wl_display, renderer);
+	wlr_multi_backend_add(server->backend, server->headless_backend);
 
 	// This may have been set already via -Dtxn-timeout
 	if (!server->txn_timeout_ms) {
