@@ -912,8 +912,10 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		wlr_xcursor_manager_destroy(seat->cursor->xcursor_manager);
 		seat->cursor->xcursor_manager =
 			wlr_xcursor_manager_create(cursor_theme, cursor_size);
-		sway_assert(seat->cursor->xcursor_manager,
-					"Cannot create XCursor manager for theme");
+		if (!seat->cursor->xcursor_manager) {
+			sway_log(SWAY_ERROR,
+				"Cannot create XCursor manager for theme '%s'", cursor_theme);
+		}
 	}
 
 	for (int i = 0; i < root->outputs->length; ++i) {
@@ -922,11 +924,11 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		bool result =
 			wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
 				output->scale);
-
-		sway_assert(!result,
-			"Cannot load xcursor theme for output '%s' with scale %f",
-			// TODO: Fractional scaling
-			output->name, (double)output->scale);
+		if (!result) {
+			sway_log(SWAY_ERROR,
+				"Cannot load xcursor theme for output '%s' with scale %f",
+				output->name, output->scale);
+		}
 	}
 
 	cursor_set_image(seat->cursor, "left_ptr", NULL);
