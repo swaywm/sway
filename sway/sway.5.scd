@@ -54,6 +54,9 @@ which you may only select one. *[...]* is used for optional arguments, and
 
 # COMMANDS
 
+This section only lists general commands. For input and output commands, refer
+to *sway-input*(5) and *sway-output*(5).
+
 The following commands may only be used in the configuration file.
 
 *bar* [<bar-id>] <bar-subcommands...>
