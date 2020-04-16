@@ -219,6 +219,7 @@ static void cursor_do_rebase(struct sway_cursor *cursor, uint32_t time_msec,
 	}
 
 	if (surface == NULL) {
+		wlr_seat_pointer_notify_enter(wlr_seat, NULL, 0, 0);
 		wlr_seat_pointer_clear_focus(wlr_seat);
 	}
 }
