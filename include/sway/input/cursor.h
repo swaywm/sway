@@ -50,6 +50,8 @@ struct sway_cursor {
 	struct wl_listener touch_down;
 	struct wl_listener touch_up;
 	struct wl_listener touch_motion;
+	bool simulating_pointer_from_touch;
+	int32_t pointer_touch_id;
 
 	struct wl_listener tool_axis;
 	struct wl_listener tool_tip;

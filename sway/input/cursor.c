@@ -405,7 +405,6 @@ static void handle_pointer_frame(struct wl_listener *listener, void *data) {
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
-	cursor_handle_activity(cursor, IDLE_SOURCE_TOUCH);
 	struct wlr_event_touch_down *event = data;
 
 	struct sway_seat *seat = cursor->seat;
@@ -422,35 +421,58 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
-	if (!surface) {
-		return;
-	}
+	if (surface && wlr_surface_accepts_touch(wlr_seat, surface)) {
+		if (seat_is_input_allowed(seat, surface)) {
+			cursor_hide(cursor);
+			cursor_handle_activity(cursor, IDLE_SOURCE_TOUCH);
+			wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
+					event->touch_id, sx, sy);
 
-	// TODO: fall back to cursor simulation if client has not bound to touch
-	if (seat_is_input_allowed(seat, surface)) {
-		cursor_hide(cursor);
-		wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
-				event->touch_id, sx, sy);
-	}
-
-	if (focused_node) {
-		seat_set_focus(seat, focused_node);
+			if (focused_node) {
+			    seat_set_focus(seat, focused_node);
+			}
+		}
+	} else if (!cursor->simulating_pointer_from_touch &&
+			(!surface || seat_is_input_allowed(seat, surface))) {
+		// Fallback to cursor simulation.
+		// The pointer_touch_id state is needed, so drags are not aborted when over
+		// a surface supporting touch and multi touch events don't interfere.
+		cursor->simulating_pointer_from_touch = true;
+		cursor->pointer_touch_id = seat->touch_id;
+		double dx, dy;
+		dx = lx - cursor->cursor->x;
+		dy = ly - cursor->cursor->y;
+		pointer_motion(cursor, event->time_msec, event->device, dx, dy, dx, dy);
+		dispatch_cursor_button(cursor, event->device, event->time_msec,
+				BTN_LEFT, WLR_BUTTON_PRESSED);
+		wlr_seat_pointer_notify_frame(wlr_seat);
+		transaction_commit_dirty();
 	}
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_up);
-	cursor_handle_activity(cursor, IDLE_SOURCE_TOUCH);
 	struct wlr_event_touch_up *event = data;
-	struct wlr_seat *seat = cursor->seat->wlr_seat;
-	// TODO: fall back to cursor simulation if client has not bound to touch
-	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
+	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
+
+	if (cursor->simulating_pointer_from_touch) {
+		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
+			cursor->simulating_pointer_from_touch = false;
+			cursor_handle_activity(cursor, IDLE_SOURCE_POINTER);
+			dispatch_cursor_button(cursor, event->device, event->time_msec,
+					BTN_LEFT, WLR_BUTTON_RELEASED);
+			wlr_seat_pointer_notify_frame(wlr_seat);
+			transaction_commit_dirty();
+		}
+	} else {
+		cursor_handle_activity(cursor, IDLE_SOURCE_TOUCH);
+		wlr_seat_touch_notify_up(wlr_seat, event->time_msec, event->touch_id);
+	}
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
-	cursor_handle_activity(cursor, IDLE_SOURCE_TOUCH);
 	struct wlr_event_touch_motion *event = data;
 
 	struct sway_seat *seat = cursor->seat;
@@ -475,12 +497,16 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	if (!surface) {
-		return;
-	}
-
-	// TODO: fall back to cursor simulation if client has not bound to touch
-	if (seat_is_input_allowed(cursor->seat, surface)) {
+	if (cursor->simulating_pointer_from_touch) {
+		if (seat->touch_id == cursor->pointer_touch_id) {
+			double dx, dy;
+			dx = lx - cursor->cursor->x;
+			dy = ly - cursor->cursor->y;
+			pointer_motion(cursor, event->time_msec, event->device, dx, dy, dx, dy);
+			transaction_commit_dirty();
+		}
+	} else if (surface) {
+		cursor_handle_activity(cursor, IDLE_SOURCE_TOUCH);
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
 			event->touch_id, sx, sy);
 	}
