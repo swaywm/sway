@@ -603,6 +603,13 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		&surface, &sx, &sy);
 
 	if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+		// If we started holding the tool tip down on a surface that accepts tablet
+		// v2, we should notify that surface if it gets released over a surface that
+		// doesn't support v2.
+		if (event->state == WLR_TABLET_TOOL_TIP_UP) {
+			wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
+		}
+
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
 				BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
 					WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
