@@ -524,6 +524,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	if (!surface || !wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(sway_tool->tablet_v2_tool);
 		cursor_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
+		transaction_commit_dirty();
 		return;
 	}
 
