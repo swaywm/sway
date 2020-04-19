@@ -23,6 +23,7 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_output_power_management_v1.h>
 #include "config.h"
 #include "list.h"
 #include "log.h"
