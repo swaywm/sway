@@ -698,8 +698,13 @@ void render_frame(struct swaybar_output *output) {
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	cairo_font_options_t *fo = cairo_font_options_create();
 	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
-	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
-	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(output->subpixel));
+	if (output->subpixel == WL_OUTPUT_SUBPIXEL_NONE) {
+		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
+	} else {
+		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
+		cairo_font_options_set_subpixel_order(fo,
+			to_cairo_subpixel_order(output->subpixel));
+	}
 	cairo_set_font_options(cairo, fo);
 	cairo_font_options_destroy(fo);
 	cairo_save(cairo);

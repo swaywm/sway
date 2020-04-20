@@ -459,8 +459,13 @@ static void update_title_texture(struct sway_container *con,
 	cairo_set_antialias(c, CAIRO_ANTIALIAS_BEST);
 	cairo_font_options_t *fo = cairo_font_options_create();
 	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
-	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
-	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(output->wlr_output->subpixel));
+	if (output->wlr_output->subpixel == WL_OUTPUT_SUBPIXEL_NONE) {
+		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
+	} else {
+		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
+		cairo_font_options_set_subpixel_order(fo,
+			to_cairo_subpixel_order(output->wlr_output->subpixel));
+	}
 	cairo_set_font_options(c, fo);
 	get_text_size(c, config->font, &width, NULL, NULL, scale,
 			config->pango_markup, "%s", con->formatted_title);
