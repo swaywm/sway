@@ -745,7 +745,7 @@ The default colors are:
 	input device will be unbound.
 
 	*unbindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
-[--locked] [input-device=<device>] <code>
+[--locked] [--input-device=<device>] <code>
 	is also available for unbinding with key/button codes instead of key/button names.
 
 *unmark* [<identifier>]
