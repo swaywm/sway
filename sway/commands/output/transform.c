@@ -59,6 +59,10 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 	config->handler_context.leftovers.argv = argv + 1;
 	if (argc > 1 &&
 			(strcmp(argv[1], "clockwise") == 0 || strcmp(argv[1], "anticlockwise") == 0)) {
+		if (config->reloading) {
+			return cmd_results_new(CMD_INVALID,
+				"Relative transforms cannot be used in the configuration file");
+		}
 		if (!sway_assert(output->name != NULL, "Output config name not set")) {
 			return NULL;
 		}
