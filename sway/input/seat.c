@@ -652,6 +652,8 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		}
 		struct sway_output *output = output_by_name_or_id(mapped_to_output);
 		if (!output) {
+			sway_log(SWAY_DEBUG, "Requested output %s for device %s isn't present",
+				mapped_to_output, sway_device->input_device->identifier);
 			return;
 		}
 		wlr_cursor_map_input_to_output(seat->cursor->cursor,
@@ -701,7 +703,7 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 }
 
 static void seat_configure_switch(struct sway_seat *seat,
-        struct sway_seat_device *seat_device) {
+		struct sway_seat_device *seat_device) {
 	if (!seat_device->switch_device) {
 		sway_switch_create(seat, seat_device);
 	}
