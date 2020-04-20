@@ -1368,7 +1368,7 @@ void seat_apply_config(struct sway_seat *seat,
 		seat_configure_device(seat, seat_device->input_device);
 	}
 
-	cursor_handle_activity(seat->cursor);
+	cursor_handle_activity(seat->cursor, IDLE_SOURCE_POINTER);
 }
 
 struct seat_config *seat_get_config(struct sway_seat *seat) {
