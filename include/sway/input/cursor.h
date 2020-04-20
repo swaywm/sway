@@ -85,7 +85,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
 void cursor_rebase(struct sway_cursor *cursor);
 void cursor_rebase_all(void);
 
-void cursor_handle_activity(struct sway_cursor *cursor);
+void cursor_handle_activity(struct sway_cursor *cursor,
+	enum sway_input_idle_source idle_source);
 void cursor_unhide(struct sway_cursor *cursor);
 int cursor_get_timeout(struct sway_cursor *cursor);
 
