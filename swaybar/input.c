@@ -211,18 +211,17 @@ static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
 
 	if (new) {
 		ipc_send_workspace_command(bar, new->name);
+
+		// Since we're asking Sway to switch to 'new', it should become visible.
+		// Marking it visible right now allows calling workspace_next in a loop.
+		new->visible = true;
+		active->visible = false;
 	}
 }
 
-static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
-		uint32_t time, uint32_t axis, wl_fixed_t value) {
-	struct swaybar_seat *seat = data;
-	struct swaybar_pointer *pointer = &seat->pointer;
-	struct swaybar_output *output = pointer->current;
-	if (!sway_assert(output, "axis with no active output")) {
-		return;
-	}
-
+static void process_discrete_scroll(struct swaybar_seat *seat,
+		struct swaybar_output *output, struct swaybar_pointer *pointer,
+		uint32_t axis, wl_fixed_t value) {
 	// If there is a button press binding, execute it, skip default behavior,
 	// and check button release bindings
 	uint32_t button = wl_axis_to_button(axis, value);
@@ -252,8 +251,72 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 }
 
+static void process_continuous_scroll(struct swaybar_seat *seat,
+		struct swaybar_output *output, struct swaybar_pointer *pointer,
+		uint32_t axis) {
+	while (abs(seat->axis[axis].value) > SWAY_CONTINUOUS_SCROLL_THRESHOLD) {
+		if (seat->axis[axis].value > 0) {
+			process_discrete_scroll(seat, output, pointer, axis,
+				SWAY_CONTINUOUS_SCROLL_THRESHOLD);
+			seat->axis[axis].value -= SWAY_CONTINUOUS_SCROLL_THRESHOLD;
+		} else {
+			process_discrete_scroll(seat, output, pointer, axis,
+				-SWAY_CONTINUOUS_SCROLL_THRESHOLD);
+			seat->axis[axis].value += SWAY_CONTINUOUS_SCROLL_THRESHOLD;
+		}
+	}
+}
+
+static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
+		uint32_t time, uint32_t axis, wl_fixed_t value) {
+	struct swaybar_seat *seat = data;
+	struct swaybar_pointer *pointer = &seat->pointer;
+	struct swaybar_output *output = pointer->current;
+	if (!sway_assert(output, "axis with no active output")) {
+		return;
+	}
+
+	if (!sway_assert(axis < 2, "axis out of range")) {
+		return;
+	}
+
+	// If there's a while since the last scroll event,
+	// set 'value' to zero as if to reset the "virtual scroll wheel"
+	if (seat->axis[axis].discrete_steps == 0 &&
+			time - seat->axis[axis].update_time > SWAY_CONTINUOUS_SCROLL_TIMEOUT) {
+		seat->axis[axis].value = 0;
+	}
+
+	seat->axis[axis].value += value;
+	seat->axis[axis].update_time = time;
+}
+
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
-	// Who cares
+	struct swaybar_seat *seat = data;
+	struct swaybar_pointer *pointer = &seat->pointer;
+	struct swaybar_output *output = pointer->current;
+
+	if (output == NULL) {
+		return;
+	}
+
+	for (uint32_t axis = 0; axis < 2; ++axis) {
+		if (seat->axis[axis].discrete_steps) {
+			for (uint32_t step = 0; step < seat->axis[axis].discrete_steps; ++step) {
+				// Honestly, it would probabyl make sense to pass in
+				// 'seat->axis[axis].value / seat->axis[axi].discrete_steps' here,
+				// but it's only used to check whether it's positive or negative
+				// so I don't think it's worth the risk of rounding errors.
+				process_discrete_scroll(seat, output, pointer, axis,
+					seat->axis[axis].value);
+			}
+
+			seat->axis[axis].value = 0;
+			seat->axis[axis].discrete_steps = 0;
+		} else {
+			process_continuous_scroll(seat, output, pointer, axis);
+		}
+	}
 }
 
 static void wl_pointer_axis_source(void *data, struct wl_pointer *wl_pointer,
@@ -268,7 +331,12 @@ static void wl_pointer_axis_stop(void *data, struct wl_pointer *wl_pointer,
 
 static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
 		uint32_t axis, int32_t discrete) {
-	// Who cares
+	struct swaybar_seat *seat = data;
+	if (!sway_assert(axis < 2, "axis out of range")) {
+		return;
+	}
+
+	seat->axis[axis].discrete_steps += abs(discrete);
 }
 
 static struct wl_pointer_listener pointer_listener = {
