@@ -340,7 +340,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 		}
 		seat->bar = bar;
 		seat->wl_name = name;
-		seat->wl_seat = wl_registry_bind(registry, name, &wl_seat_interface, 3);
+		seat->wl_seat = wl_registry_bind(registry, name, &wl_seat_interface, 5);
 		wl_seat_add_listener(seat->wl_seat, &seat_listener, seat);
 		wl_list_insert(&bar->seats, &seat->link);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {

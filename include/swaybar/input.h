@@ -2,12 +2,16 @@
 #define _SWAYBAR_INPUT_H
 
 #include <wayland-client.h>
+#include <stdbool.h>
 #include "list.h"
 
 #define SWAY_SCROLL_UP KEY_MAX + 1
 #define SWAY_SCROLL_DOWN KEY_MAX + 2
 #define SWAY_SCROLL_LEFT KEY_MAX + 3
 #define SWAY_SCROLL_RIGHT KEY_MAX + 4
+
+#define SWAY_CONTINUOUS_SCROLL_TIMEOUT 1000
+#define SWAY_CONTINUOUS_SCROLL_THRESHOLD 10000
 
 struct swaybar;
 struct swaybar_output;
@@ -50,6 +54,12 @@ struct swaybar_hotspot {
 	void *data;
 };
 
+struct swaybar_scroll_axis {
+	wl_fixed_t value;
+	uint32_t discrete_steps;
+	uint32_t update_time;
+};
+
 struct swaybar_seat {
 	struct swaybar *bar;
 	uint32_t wl_name;
@@ -57,6 +67,7 @@ struct swaybar_seat {
 	struct swaybar_pointer pointer;
 	struct swaybar_touch touch;
 	struct wl_list link; // swaybar_seat:link
+	struct swaybar_scroll_axis axis[2];
 };
 
 extern const struct wl_seat_listener seat_listener;
