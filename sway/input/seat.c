@@ -1452,6 +1452,12 @@ void seatop_motion(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
+void seatop_touch_down(struct sway_seat *seat, uint32_t time_msec) {
+	if (seat->seatop_impl->touch_down) {
+		seat->seatop_impl->touch_down(seat, time_msec);
+	}
+}
+
 void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event) {
 	if (seat->seatop_impl->axis) {
 		seat->seatop_impl->axis(seat, event);

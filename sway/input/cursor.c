@@ -398,6 +398,8 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
+	seatop_touch_down(seat, event->time_msec);
+
 	if (!surface) {
 		return;
 	}
