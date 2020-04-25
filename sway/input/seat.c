@@ -1462,6 +1462,16 @@ void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event) {
 	}
 }
 
+void seatop_tablet_tool_motion(struct sway_seat *seat,
+		struct sway_tablet *tablet, struct sway_tablet_tool *tool,
+		uint32_t time_msec, double dx, double dy) {
+	if (seat->seatop_impl->tablet_tool_motion) {
+		seat->seatop_impl->tablet_tool_motion(seat, tablet, tool, time_msec, dx, dy);
+	} else {
+		seatop_motion(seat, time_msec, dx, dy);
+	}
+}
+
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	if (seat->seatop_impl->rebase) {
 		seat->seatop_impl->rebase(seat, time_msec);

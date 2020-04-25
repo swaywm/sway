@@ -2,9 +2,11 @@
 #include <float.h>
 #include <libevdev/libevdev.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
+#include "sway/input/tablet.h"
 #include "sway/tree/view.h"
 #include "log.h"
 #if HAVE_XWAYLAND
@@ -472,6 +474,42 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
 	e->previous_node = node;
 }
 
+static void handle_tablet_tool_motion(struct sway_seat *seat,
+		struct sway_tablet *tablet, struct sway_tablet_tool *tool,
+		uint32_t time_msec, double dx, double dy) {
+	struct seatop_default_event *e = seat->seatop_data;
+	struct sway_cursor *cursor = seat->cursor;
+
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	struct sway_node *node = node_at_coords(seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
+	if (node && config->focus_follows_mouse != FOLLOWS_NO) {
+		check_focus_follows_mouse(seat, e, node);
+	}
+
+	if (surface) {
+		if (seat_is_input_allowed(seat, surface)) {
+			wlr_tablet_v2_tablet_tool_notify_proximity_in(tool->tablet_v2_tool,
+				tablet->tablet_v2, surface);
+			wlr_tablet_v2_tablet_tool_notify_motion(tool->tablet_v2_tool, sx, sy);
+		}
+	} else {
+		cursor_update_image(cursor, node);
+		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
+	}
+
+	struct sway_drag_icon *drag_icon;
+	wl_list_for_each(drag_icon, &root->drag_icons, link) {
+		if (drag_icon->seat == seat) {
+			drag_icon_update_position(drag_icon);
+		}
+	}
+
+	e->previous_node = node;
+}
+
 /*--------------------------------\
  * Functions used by handle_axis  /
  *------------------------------*/
@@ -612,6 +650,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
 	.motion = handle_motion,
 	.axis = handle_axis,
+	.tablet_tool_motion = handle_tablet_tool_motion,
 	.rebase = handle_rebase,
 	.allow_set_cursor = true,
 };
