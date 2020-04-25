@@ -388,17 +388,6 @@ static void queue_output_config(struct output_config *oc,
 			oc->adaptive_sync);
 		wlr_output_enable_adaptive_sync(wlr_output, oc->adaptive_sync == 1);
 	}
-
-	// Reconfigure all devices, since input config may have been applied before
-	// this output came online, and some config items (like map_to_output) are
-	// dependent on an output being present.
-	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &server.input->devices, link) {
-		struct sway_seat *seat = NULL;
-		wl_list_for_each(seat, &server.input->seats, link) {
-			seat_configure_device(seat, input_device);
-		}
-	}
 }
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
@@ -487,6 +476,17 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
 			oc->name, oc->max_render_time);
 		output->max_render_time = oc->max_render_time;
+	}
+
+	// Reconfigure all devices, since input config may have been applied before
+	// this output came online, and some config items (like map_to_output) are
+	// dependent on an output being present.
+	struct sway_input_device *input_device = NULL;
+	wl_list_for_each(input_device, &server.input->devices, link) {
+		struct sway_seat *seat = NULL;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			seat_configure_device(seat, input_device);
+		}
 	}
 
 	return true;
