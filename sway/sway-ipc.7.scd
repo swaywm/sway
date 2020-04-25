@@ -376,6 +376,9 @@ node and will have the following properties:
 |- visible
 :  boolean
 :  (Only views) Whether the node is visible
+|- shell
+:  string
+:  (Only views) The shell of the view, such as _xdg\_shell_ or _xwayland_
 |- window
 :  integer
 :  (Only xwayland views) The X11 window ID for the xwayland view
@@ -672,6 +675,7 @@ node and will have the following properties:
 							"pid": 23959,
 							"app_id": null,
 							"visible": true,
+							"shell": "xwayland",
 							"window_properties": {
 								"class": "URxvt",
 								"instance": "urxvt",
@@ -726,6 +730,7 @@ node and will have the following properties:
 							"pid": 25370,
 							"app_id": "termite",
 							"visible": true,
+							"shell": "xdg_shell",
 							"nodes": [
 							]
 						}
