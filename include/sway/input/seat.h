@@ -220,6 +220,9 @@ bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
 
+enum wlr_edges find_resize_edge(struct sway_container *cont,
+		struct wlr_surface *surface, struct sway_cursor *cursor);
+
 void seatop_begin_default(struct sway_seat *seat);
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,

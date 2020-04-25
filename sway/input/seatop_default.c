@@ -91,7 +91,7 @@ static enum wlr_edges find_edge(struct sway_container *cont,
  * If the cursor is over a _resizable_ edge, return the edge.
  * Edges that can't be resized are edges of the workspace.
  */
-static enum wlr_edges find_resize_edge(struct sway_container *cont,
+enum wlr_edges find_resize_edge(struct sway_container *cont,
 		struct wlr_surface *surface, struct sway_cursor *cursor) {
 	enum wlr_edges edge = find_edge(cont, surface, cursor);
 	if (edge && !container_is_floating(cont) && edge_is_external(cont, edge)) {
@@ -190,38 +190,6 @@ static void state_add_button(struct seatop_default_event *e, uint32_t button) {
 	}
 	e->pressed_buttons[i] = button;
 	e->pressed_button_count++;
-}
-
-static void cursor_do_rebase(struct sway_cursor *cursor, uint32_t time_msec,
-		struct sway_node *node, struct wlr_surface *surface,
-		double sx, double sy) {
-	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
-	if (surface) {
-		if (seat_is_input_allowed(cursor->seat, surface)) {
-			wlr_seat_pointer_notify_enter(wlr_seat, surface, sx, sy);
-		}
-	} else if (node && node->type == N_CONTAINER) {
-		// Try a node's resize edge
-		enum wlr_edges edge = find_resize_edge(node->sway_container, surface, cursor);
-		if (edge == WLR_EDGE_NONE) {
-			cursor_set_image(cursor, "left_ptr", NULL);
-		} else if (container_is_floating(node->sway_container)) {
-			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
-		} else {
-			if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-				cursor_set_image(cursor, "col-resize", NULL);
-			} else {
-				cursor_set_image(cursor, "row-resize", NULL);
-			}
-		}
-	} else {
-		cursor_set_image(cursor, "left_ptr", NULL);
-	}
-
-	if (surface == NULL) {
-		wlr_seat_pointer_notify_enter(wlr_seat, NULL, 0, 0);
-		wlr_seat_pointer_clear_focus(wlr_seat);
-	}
 }
 
 /*----------------------------------\
@@ -483,9 +451,15 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
 		check_focus_follows_mouse(seat, e, node);
 	}
 
-	cursor_do_rebase(cursor, time_msec, node, surface, sx, sy);
-	if (surface && seat_is_input_allowed(cursor->seat, surface)) {
-		wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
+	if (surface) {
+		if (seat_is_input_allowed(seat, surface)) {
+			wlr_seat_pointer_notify_enter(seat->wlr_seat, surface, sx, sy);
+			wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
+		}
+	} else {
+		cursor_update_image(cursor, node);
+		wlr_seat_pointer_notify_enter(seat->wlr_seat, NULL, 0, 0);
+		wlr_seat_pointer_clear_focus(seat->wlr_seat);
 	}
 
 	struct sway_drag_icon *drag_icon;
@@ -622,7 +596,16 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	double sx = 0.0, sy = 0.0;
 	e->previous_node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-	cursor_do_rebase(cursor, time_msec, e->previous_node, surface, sx, sy);
+
+	if (surface) {
+		if (seat_is_input_allowed(seat, surface)) {
+			wlr_seat_pointer_notify_enter(seat->wlr_seat, surface, sx, sy);
+		}
+	} else {
+		cursor_update_image(cursor, e->previous_node);
+		wlr_seat_pointer_notify_enter(seat->wlr_seat, NULL, 0, 0);
+		wlr_seat_pointer_clear_focus(seat->wlr_seat);
+	}
 }
 
 static const struct sway_seatop_impl seatop_impl = {

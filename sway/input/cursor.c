@@ -212,6 +212,27 @@ void cursor_rebase_all(void) {
 	}
 }
 
+void cursor_update_image(struct sway_cursor *cursor,
+		struct sway_node *node) {
+	if (node && node->type == N_CONTAINER) {
+		// Try a node's resize edge
+		enum wlr_edges edge = find_resize_edge(node->sway_container, NULL, cursor);
+		if (edge == WLR_EDGE_NONE) {
+			cursor_set_image(cursor, "left_ptr", NULL);
+		} else if (container_is_floating(node->sway_container)) {
+			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
+		} else {
+			if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
+				cursor_set_image(cursor, "col-resize", NULL);
+			} else {
+				cursor_set_image(cursor, "row-resize", NULL);
+			}
+		}
+	} else {
+		cursor_set_image(cursor, "left_ptr", NULL);
+	}
+}
+
 static void cursor_hide(struct sway_cursor *cursor) {
 	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	cursor->hidden = true;
