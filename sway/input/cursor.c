@@ -541,25 +541,17 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
 	struct sway_seat *seat = cursor->seat;
-	struct sway_node *focused_node = node_at_coords(seat, cursor->cursor->x,
-		cursor->cursor->y, &surface, &sx, &sy);
+	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	struct sway_tablet_tool *sway_tool = tool->data;
 
-	if (!surface || !wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) {
+	if (surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) {
+		seatop_tablet_tool_motion(seat, tablet, sway_tool, time_msec, dx, dy);
+	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(sway_tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
-		transaction_commit_dirty();
-		return;
 	}
 
-	wlr_tablet_v2_tablet_tool_notify_proximity_in(sway_tool->tablet_v2_tool,
-		tablet->tablet_v2, surface);
-
-	if (focused_node && config->focus_follows_mouse != FOLLOWS_NO) {
-		seat_set_focus(seat, focused_node);
-	}
-
-	wlr_tablet_v2_tablet_tool_notify_motion(sway_tool->tablet_v2_tool, sx, sy);
+	transaction_commit_dirty();
 }
 
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
