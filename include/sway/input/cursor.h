@@ -55,6 +55,7 @@ struct sway_cursor {
 	struct wl_listener tool_tip;
 	struct wl_listener tool_proximity;
 	struct wl_listener tool_button;
+	bool simulated_tool_tip_down;
 	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;

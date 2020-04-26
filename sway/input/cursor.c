@@ -618,8 +618,9 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 			wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
 		}
 
+		cursor->simulated_tool_tip_down = event->state == WLR_TABLET_TOOL_TIP_DOWN;
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
-				BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
+				BTN_LEFT, cursor->simulated_tool_tip_down ?
 					WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 		transaction_commit_dirty();
@@ -630,6 +631,12 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		wlr_tablet_v2_tablet_tool_notify_down(sway_tool->tablet_v2_tool);
 		wlr_tablet_tool_v2_start_implicit_grab(sway_tool->tablet_v2_tool);
 	} else {
+		if (cursor->simulated_tool_tip_down) {
+			dispatch_cursor_button(cursor, event->device, event->time_msec, BTN_LEFT,
+					WLR_BUTTON_RELEASED);
+			cursor->simulated_tool_tip_down = false;
+		}
+
 		wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
 	}
 }
