@@ -106,8 +106,7 @@ static void handle_tablet_tool_set_cursor(struct wl_listener *listener, void *da
 	}
 
 	struct wl_client *focused_client = NULL;
-	struct wlr_surface *focused_surface =
-		cursor->seat->wlr_seat->pointer_state.focused_surface;
+	struct wlr_surface *focused_surface = tool->tablet_v2_tool->focused_surface;
 	if (focused_surface != NULL) {
 		focused_client = wl_resource_get_client(focused_surface->resource);
 	}
