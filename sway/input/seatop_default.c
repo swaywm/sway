@@ -615,7 +615,6 @@ static void handle_axis(struct sway_seat *seat,
  * ----------------------------------*/
 
 static void handle_touch_down(struct sway_seat *seat, uint32_t time_msec) {
-	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
 	// Determine what's under the cursor
