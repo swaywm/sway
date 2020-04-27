@@ -98,7 +98,8 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 
 static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
-		const struct wlr_box *box, const float matrix[static 9], float alpha) {
+		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
+		const float matrix[static 9], float alpha) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 	struct sway_output *output = wlr_output->data;
@@ -108,8 +109,8 @@ static void render_texture(struct wlr_output *wlr_output,
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
-	pixman_region32_union_rect(&damage, &damage, box->x, box->y,
-		box->width, box->height);
+	pixman_region32_union_rect(&damage, &damage, dst_box->x, dst_box->y,
+		dst_box->width, dst_box->height);
 	pixman_region32_intersect(&damage, &damage, output_damage);
 	bool damaged = pixman_region32_not_empty(&damage);
 	if (!damaged) {
@@ -121,7 +122,11 @@ static void render_texture(struct wlr_output *wlr_output,
 	for (int i = 0; i < nrects; ++i) {
 		scissor_output(wlr_output, &rects[i]);
 		set_scale_filter(wlr_output, texture, output->scale_filter);
-		wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
+		if (src_box != NULL) {
+			wlr_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha);
+		} else {
+			wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
+		}
 	}
 
 damage_finish:
@@ -141,16 +146,20 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 		return;
 	}
 
-	struct wlr_box box = *_box;
-	scale_box(&box, wlr_output->scale);
+	struct wlr_fbox src_box;
+	wlr_surface_get_buffer_source_box(surface, &src_box);
+
+	struct wlr_box dst_box = *_box;
+	scale_box(&dst_box, wlr_output->scale);
 
 	float matrix[9];
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current.transform);
-	wlr_matrix_project_box(matrix, &box, transform, rotation,
+	wlr_matrix_project_box(matrix, &dst_box, transform, rotation,
 		wlr_output->transform_matrix);
 
-	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
+	render_texture(wlr_output, output_damage, texture,
+		&src_box, &dst_box, matrix, alpha);
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
@@ -317,7 +326,7 @@ static void render_saved_view(struct sway_view *view,
 			wlr_output->transform_matrix);
 
 		render_texture(wlr_output, damage, saved_buf->buffer->texture,
-				&box, matrix, alpha);
+			&saved_buf->source_box, &box, matrix, alpha);
 	}
 
 	// FIXME: we should set the surface that this saved buffer originates from
@@ -497,7 +506,7 @@ static void render_titlebar(struct sway_output *output,
 			texture_box.width = ob_inner_width;
 		}
 		render_texture(output->wlr_output, output_damage, marks_texture,
-			&texture_box, matrix, con->alpha);
+			NULL, &texture_box, matrix, con->alpha);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
@@ -565,7 +574,7 @@ static void render_titlebar(struct sway_output *output,
 		}
 
 		render_texture(output->wlr_output, output_damage, title_texture,
-			&texture_box, matrix, con->alpha);
+			NULL, &texture_box, matrix, con->alpha);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);

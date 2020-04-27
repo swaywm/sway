@@ -22,6 +22,7 @@
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_tablet_v2.h>
+#include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
@@ -146,6 +147,7 @@ bool server_init(struct sway_server *server) {
 	wlr_screencopy_manager_v1_create(server->wl_display);
 	wlr_data_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
+	wlr_viewporter_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
