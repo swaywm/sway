@@ -60,6 +60,7 @@ struct sway_saved_buffer {
 	int x, y;
 	int width, height;
 	enum wl_output_transform transform;
+	struct wlr_fbox source_box;
 	struct wl_list link; // sway_view::saved_buffers
 };
 
