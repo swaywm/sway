@@ -1,3 +1,5 @@
+If you want to ask a question, please check out the wiki. If you don't find an answer there, ask on IRC (#sway on irc.freenode.net). The issue tracker may not be used for questions.
+
 If you are using the Nvidia proprietary driver for any reason, you have two choices:
 
 1. Uninstall it and use nouveau instead
