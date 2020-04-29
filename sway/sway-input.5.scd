@@ -233,7 +233,7 @@ correct seat.
 *seat* <name> idle_wake <sources...>
 	Sets the set of input event sources which can wake the seat from
 	its idle state, as a space separated list of source names. Valid names are
-	"keyboard", "pointer", "touchpad", "touch", "tablet pad", "tablet tool",
+	"keyboard", "pointer", "touchpad", "touch", "tablet_pad", "tablet_tool",
 	and "switch". The default behavior is to wake from idle on any event.
 
 *seat* <name> keyboard_grouping none|smart
