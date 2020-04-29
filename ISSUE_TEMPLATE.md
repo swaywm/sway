@@ -21,7 +21,7 @@ If this doesn't work, use:
 
 * Sway Version:
 
-Obtain a debug log like so:
+Obtain a debug log by running the following command from a TTY:
 
     sway -d 2> ~/sway.log
 
