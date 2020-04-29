@@ -88,7 +88,7 @@ must be separated by one space. For example:
 *output* <name> background|bg <file> <mode> [<fallback_color>]
 	Sets the wallpaper for the given output to the specified file, using the
 	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If
-	the specified file cannot be accessed or if the image does fill the entire
+	the specified file cannot be accessed or if the image does not fill the entire
 	output, a fallback color may be provided to cover the rest of the output.
 	_fallback_color_ should be specified as _#RRGGBB_. Alpha is not supported.
 
