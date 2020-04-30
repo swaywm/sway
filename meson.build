@@ -3,7 +3,7 @@ project(
 	'c',
 	version: '1.4', #release_version
 	license: 'MIT',
-	meson_version: '>=0.48.0',
+	meson_version: '>=0.53.0',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -292,18 +292,14 @@ if get_option('fish-completions')
 	install_data(fish_files, install_dir: fish_install_dir)
 endif
 
-status = [
-	'',
-	'Features:',
-	'xwayland: @0@'.format(have_xwayland),
-	'gdk-pixbuf: @0@'.format(gdk_pixbuf.found()),
-	'systemd: @0@'.format(systemd.found()),
-	'elogind: @0@'.format(elogind.found()),
-	'tray: @0@'.format(have_tray),
-	'man-pages: @0@'.format(scdoc.found()),
-	'',
-]
-message('\n'.join(status))
+summary({
+	'xwayland': have_xwayland,
+	'gdk-pixbuf': gdk_pixbuf.found(),
+	'systemd': systemd.found(),
+	'elogind': elogind.found(),
+	'tray': have_tray,
+	'man-pages': scdoc.found(),
+}, bool_yn: true)
 
 if not systemd.found() and not elogind.found()
 	warning('The sway binary must be setuid when compiled without (e)logind')
