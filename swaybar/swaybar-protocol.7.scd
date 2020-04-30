@@ -8,7 +8,7 @@ swaybar-protocol - JSON status line protocol for swaybar
 
 swaybar defines the following JSON protocol to specify what information is
 displayed in the status line on the right side of swaybar. The protocol
-compromises a header, that is a JSON object, followed by an infinite JSON
+comprises a header, that is a JSON object, followed by an infinite JSON
 array that represents the information to display. All communication is done by
 writing the status line to standard output and reading events from standard
 input.
