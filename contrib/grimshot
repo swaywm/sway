@@ -28,7 +28,7 @@ getTargetDirectory() {
 
 ACTION=${1:-usage}
 SUBJECT=${2:-screen}
-FILE=${3:-$(getTargetDirectory)/$(date +'Grimshot %Y-%m-%d %H-%M-%S.png')}
+FILE=${3:-$(getTargetDirectory)/$(date -Ins).png}
 
 if [ "$ACTION" = "usage" ] ; then
   echo "Usage:"
