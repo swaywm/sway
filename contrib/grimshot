@@ -19,9 +19,17 @@
 ## `grimshot` - usage
 ## `grimshot check` - verify if tools are installed
 
+getTargetDirectory() {
+  test -f ${XDG_CONFIG_HOME:-~/.config}/user-dirs.dirs && \
+    source ${XDG_CONFIG_HOME:-~/.config}/user-dirs.dirs
+
+  echo ${XDG_SCREENSHOTS_DIR:-${XDG_PICTURES_DIR:-$HOME}}
+}
+
 ACTION=${1:-usage}
 SUBJECT=${2:-screen}
-FILE=${3:-$(xdg-user-dir PICTURES)/$(date +'Grimshot %Y-%m-%d %H-%M-%S.png')}
+FILE=${3:-$(getTargetDirectory)/$(date +'Grimshot %Y-%m-%d %H-%M-%S.png')}
+
 if [ "$ACTION" = "usage" ] ; then
   echo "Usage:"
   echo "  grimshot copy|save win|screen|output|area [FILE]"
