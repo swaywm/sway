@@ -32,7 +32,7 @@ FILE=${3:-$(getTargetDirectory)/$(date -Ins).png}
 
 if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" ]; then
   echo "Usage:"
-  echo "  grimshot (copy|save) [win|screen|output|area] [FILE]"
+  echo "  grimshot (copy|save) [active|screen|output|area|window] [FILE]"
   echo "  grimshot check"
   echo "  grimshot usage"
   echo ""
@@ -43,10 +43,11 @@ if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" 
   echo "  usage: Show this message and exit."
   echo ""
   echo "Targets:"
-  echo "  win: Currently active window."
+  echo "  active: Currently active window."
   echo "  screen: All visible outputs."
   echo "  output: Currently active output."
   echo "  region: Manually select a region."
+  echo "  window: Manually select a window."
   exit
 fi
 
@@ -106,7 +107,7 @@ if [ "$ACTION" = "check" ] ; then
 elif [ "$SUBJECT" = "area" ] ; then
   GEOM=$(slurp -d)
   WHAT="Area"
-elif [ "$SUBJECT" = "win" ] ; then
+elif [ "$SUBJECT" = "active" ] ; then
   FOCUSED=$(swaymsg -t get_tree | jq -r 'recurse(.nodes[]?, .floating_nodes[]?) | select(.focused)')
   GEOM=$(echo "$FOCUSED" | jq -r '.rect | "\(.x),\(.y) \(.width)x\(.height)"')
   APP_ID=$(echo "$FOCUSED" | jq -r '.app_id')
@@ -118,6 +119,9 @@ elif [ "$SUBJECT" = "output" ] ; then
   GEOM=""
   OUTPUT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused)' | jq -r '.name')
   WHAT="$OUTPUT"
+elif [ "$SUBJECT" = "window" ] ; then
+  GEOM=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp)
+  WHAT="Window"
 else
   die "Unknown subject to take a screen shot from" "$SUBJECT"
 fi
