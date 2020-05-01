@@ -8,7 +8,6 @@
 ##  - `wl-copy`: clipboard utility
 ##  - `jq`: json utility to parse swaymsg output
 ##  - `notify-send`: to show notifications
-##  - `mktemp`: to create a temporary file
 ## Those are needed to be installed, if unsure, run `grimshot check`
 ##
 ## See `man 1 grimshot` or `grimshot usage` for further details.
@@ -109,7 +108,6 @@ if [ "$ACTION" = "check" ] ; then
   check wl-copy
   check jq
   check notify-send
-  check mktemp
   exit
 elif [ "$SUBJECT" = "area" ] ; then
   GEOM=$(slurp -d)
@@ -134,10 +132,7 @@ else
 fi
 
 if [ "$ACTION" = "copy" ] ; then
-  TMP=$(mktemp) || die "Unable to create temp file: is mktemp installed?"
-  takeScreenshot "$TMP" "$GEOM" "$OUTPUT"
-  wl-copy --type image/png < "$TMP"  || die "Clipboard error"
-  rm "$TMP"
+  takeScreenshot - "$GEOM" "$OUTPUT" | wl-copy --type image/png || die "Clipboard error"
   notifyOk "$WHAT copied to buffer"
 else
   if takeScreenshot "$FILE" "$GEOM" "$OUTPUT"; then
