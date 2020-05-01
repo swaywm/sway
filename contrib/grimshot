@@ -11,13 +11,7 @@
 ##  - `mktemp`: to create a temporary file
 ## Those are needed to be installed, if unsure, run `grimshot check`
 ##
-## Examples:
-## `grimshot copy win` - to copy current window
-## `grimshot save area` - to select area and save it to default file (Pictures/Grimshot-$datetime.png)
-## `grimshot save screen ~/screenshot.png` - to save screenshot under ~/screenshot.png
-## `grimshot save output ~/screenshot.png` - to save screenshot under ~/screenshot.png
-## `grimshot` - usage
-## `grimshot check` - verify if tools are installed
+## See `man 1 grimshot` or `grimshot usage` for further details.
 
 getTargetDirectory() {
   test -f ${XDG_CONFIG_HOME:-~/.config}/user-dirs.dirs && \
