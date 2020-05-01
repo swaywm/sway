@@ -117,22 +117,17 @@ must be separated by one space. For example:
 	(ie. blank the screen but keep workspaces as-is), one can set DPMS to off.
 
 *output* <name> max_render_time off|<msec>
-	When set to a positive number of milliseconds, enables delaying output
-	rendering to reduce latency. The rendering is delayed in such a way as
-	to leave the specified number of milliseconds before the next
-	presentation for rendering.
+	Controls when sway composites the output, as a positive number of
+	milliseconds before the next display refresh. A smaller number leads to
+	fresher composited frames and lower perceived input latency, but if set too
+	low, sway may not finish compositing in time for display refresh, leading to
+	delayed frames.
 
-	The output rendering normally takes place immediately after a
-	presentation (vblank, buffer flip, etc.) and the frame callbacks are
-	sent to surfaces immediately after the rendering to give surfaces the
-	most time to draw their next frame. This results in slightly below 2
-	frames of latency between the surface rendering and committing new
-	contents, and the contents being shown on screen, on average. When the
-	output rendering is delayed, the frame callbacks are sent immediately
-	after presentation, and the surfaces have a small timespan (1 /
-	(refresh rate) - max_render_time) to render and commit new contents to
-	be shown on the next presentation, resulting in below 1 frame of
-	latency.
+	When set to off, sway composites immediately after display refresh,
+	maximizing time available for compositing.
+
+	To adjust when applications are instructed to render, see *max_render_time*
+	in *sway*(5).
 
 	To set this up for optimal latency:
 	. Launch some _full-screen_ application that renders continuously, like
@@ -140,14 +135,8 @@ must be separated by one space. For example:
 	. Start with *max_render_time 1*. Increment by *1* if you see frame
 	  drops.
 
-	To achieve even lower latency, see the *max_render_time* surface
-	property in *sway*(5).
-
-	Note that this property has an effect only on backends which report the
-	presentation timestamp and the predicted output refresh rate—the DRM
-	and the Wayland backends. Furthermore, under the Wayland backend the
-	optimal max_render_time value may vary based on the parent compositor
-	rendering timings.
+	This setting only has an effect on Wayland and DRM backends, as support for
+	presentation timestamps and predicted output refresh rate is required.
 
 *output* <name> adaptive_sync on|off
 	Enables or disables adaptive synchronization (often referred to as Variable
