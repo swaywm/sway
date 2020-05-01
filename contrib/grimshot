@@ -30,11 +30,23 @@ ACTION=${1:-usage}
 SUBJECT=${2:-screen}
 FILE=${3:-$(getTargetDirectory)/$(date -Ins).png}
 
-if [ "$ACTION" = "usage" ] ; then
+if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" ]; then
   echo "Usage:"
-  echo "  grimshot copy|save win|screen|output|area [FILE]"
-  echo "Troubleshoot:"
+  echo "  grimshot (copy|save) [win|screen|output|area] [FILE]"
   echo "  grimshot check"
+  echo "  grimshot usage"
+  echo ""
+  echo "Commands:"
+  echo "  copy: Copy the screenshot data into the clipboard."
+  echo "  save: Save the screenshot to a regular file."
+  echo "  check: Verify if required tools are installed and exit."
+  echo "  usage: Show this message and exit."
+  echo ""
+  echo "Targets:"
+  echo "  win: Currently active window."
+  echo "  screen: All visible outputs."
+  echo "  output: Currently active output."
+  echo "  region: Manually select a region."
   exit
 fi
 
