@@ -17,6 +17,7 @@ struct sway_seatop_impl {
 			enum wlr_button_state state);
 	void (*motion)(struct sway_seat *seat, uint32_t time_msec,
 			double dx, double dy);
+	void (*touch_down)(struct sway_seat *seat, uint32_t time_msec);
 	void (*axis)(struct sway_seat *seat, struct wlr_event_pointer_axis *event);
 	void (*rebase)(struct sway_seat *seat, uint32_t time_msec);
 	void (*end)(struct sway_seat *seat);
@@ -257,6 +258,8 @@ void seatop_button(struct sway_seat *seat, uint32_t time_msec,
  */
 void seatop_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy);
+
+void seatop_touch_down(struct sway_seat *seat, uint32_t time_msec);
 
 void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event);
 

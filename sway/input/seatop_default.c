@@ -611,6 +611,34 @@ static void handle_axis(struct sway_seat *seat,
 	}
 }
 
+/*-------------------------------------\
+ * Functions used by handle_touch_down /
+ * ----------------------------------*/
+
+static void handle_touch_down(struct sway_seat *seat, uint32_t time_msec) {
+	struct sway_cursor *cursor = seat->cursor;
+
+	// Determine what's under the cursor
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	struct sway_node *node = node_at_coords(
+			seat, seat->touch_x, seat->touch_y, &surface, &sx, &sy);
+
+	struct sway_container *cont =
+			node && node->type == N_CONTAINER ? node->sway_container : NULL;
+	enum wlr_edges edge =
+			cont ? find_edge(cont, surface, cursor) : WLR_EDGE_NONE;
+	bool on_border = edge != WLR_EDGE_NONE;
+	bool on_titlebar = cont && !on_border && !surface;
+
+	if (on_titlebar) {
+		sway_log(SWAY_ERROR, "Touch Event on Titlebar");
+		node = seat_get_focus_inactive(seat, &cont->node);
+		seat_set_focus(seat, node);
+		return;
+	}
+}
+
 /*----------------------------------\
  * Functions used by handle_rebase  /
  *--------------------------------*/
@@ -628,6 +656,7 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
 	.motion = handle_motion,
+	.touch_down = handle_touch_down,
 	.axis = handle_axis,
 	.rebase = handle_rebase,
 	.allow_set_cursor = true,
