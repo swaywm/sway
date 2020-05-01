@@ -186,20 +186,28 @@ set|plus|minus <amount>
 	Cycles the layout mode of the focused container through a list of layouts.
 
 *max_render_time* off|<msec>
-	Works together with *output max_render_time* to reduce the latency even
-	further by delaying the frame callbacks sent to a surface. When set to
-	a positive number of milliseconds, delays the frame callback in such a
-	way that the surface has the specified number of milliseconds to render
-	and commit new contents before being sampled by the compositor for the
-	next presentation. See *max_render_time* in *sway-output*(5) for
-	further details.
+	Controls when the relevant application is told to render this window, as a
+	positive number of milliseconds before the next time sway composites the
+	output. A smaller number leads to fresher rendered frames being composited
+	by sway and lower perceived input latency, but if set too low, the
+	application may not finish rendering before sway composites the output,
+	leading to delayed frames.
+
+	When set to off, the relevant application is told to render this window
+	immediately after display refresh. How much time is left for rendering
+	before sway composites the output at that point depends on the output
+	*max_render_time* setting.
 
 	To set this up for optimal latency:
-	. Set up *output max_render_time*.
+	. Set up *output max_render_time* (see *sway-output*(5)).
 	. Put the target application in _full-screen_ and have it continuously
 	  render something.
 	. Start by setting *max_render_time 1*. If the application drops
 	  frames, increment by *1*.
+
+	This setting only has an effect if a per-output *max_render_time* is in
+	effect on the output the window is currently on. See *sway-output*(5) for
+	further details.
 
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. If the container,
