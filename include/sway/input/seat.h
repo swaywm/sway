@@ -111,6 +111,7 @@ struct sway_seat {
 struct sway_pointer_constraint {
 	struct wlr_pointer_constraint_v1 *constraint;
 
+	struct wl_listener set_region;
 	struct wl_listener destroy;
 };
 
