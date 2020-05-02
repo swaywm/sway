@@ -76,7 +76,6 @@ static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
 	struct sway_container_state *state = &con->current;
 	width += state->border_thickness * 2;
 	height += config->titlebar_border_thickness * 2;
-	height += container_titlebar_height();
 	height += config->titlebar_v_padding;
 
 	// Recalculate these, in case we hit a min/max limit
