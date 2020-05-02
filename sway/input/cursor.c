@@ -739,8 +739,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_tablet_v2_tablet_tool_notify_button(sway_tool->tablet_v2_tool,
-		(enum zwp_tablet_pad_v2_button_state)event->button,
-		(enum zwp_tablet_pad_v2_button_state)event->state);
+		event->button, (enum zwp_tablet_pad_v2_button_state)event->state);
 }
 
 static void check_constraint_region(struct sway_cursor *cursor) {
