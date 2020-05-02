@@ -321,7 +321,7 @@ static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	wlr_cursor_move(cursor->cursor, device, dx, dy);
 
-	seatop_motion(cursor->seat, time_msec, dx, dy);
+	seatop_pointer_motion(cursor->seat, time_msec, dx, dy);
 }
 
 static void handle_pointer_motion_relative(
@@ -383,7 +383,7 @@ static void handle_pointer_button(struct wl_listener *listener, void *data) {
 
 void dispatch_cursor_axis(struct sway_cursor *cursor,
 		struct wlr_event_pointer_axis *event) {
-	seatop_axis(cursor->seat, event);
+	seatop_pointer_axis(cursor->seat, event);
 }
 
 static void handle_pointer_axis(struct wl_listener *listener, void *data) {

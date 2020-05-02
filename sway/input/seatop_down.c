@@ -12,7 +12,7 @@ struct seatop_down_event {
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 };
 
-static void handle_axis(struct sway_seat *seat,
+static void handle_pointer_axis(struct sway_seat *seat,
 		struct wlr_event_pointer_axis *event) {
 	struct sway_input_device *input_device =
 		event->device ? event->device->data : NULL;
@@ -36,7 +36,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
-static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy) {
 	struct seatop_down_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
@@ -57,9 +57,9 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 }
 
 static const struct sway_seatop_impl seatop_impl = {
-	.axis = handle_axis,
 	.button = handle_button,
-	.motion = handle_motion,
+	.pointer_motion = handle_pointer_motion,
+	.pointer_axis = handle_pointer_axis,
 	.unref = handle_unref,
 	.allow_set_cursor = true,
 };

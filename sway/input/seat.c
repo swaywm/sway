@@ -1449,16 +1449,17 @@ void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
-void seatop_motion(struct sway_seat *seat, uint32_t time_msec,
+void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy) {
-	if (seat->seatop_impl->motion) {
-		seat->seatop_impl->motion(seat, time_msec, dx, dy);
+	if (seat->seatop_impl->pointer_motion) {
+		seat->seatop_impl->pointer_motion(seat, time_msec, dx, dy);
 	}
 }
 
-void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event) {
-	if (seat->seatop_impl->axis) {
-		seat->seatop_impl->axis(seat, event);
+void seatop_pointer_axis(struct sway_seat *seat,
+		struct wlr_event_pointer_axis *event) {
+	if (seat->seatop_impl->pointer_axis) {
+		seat->seatop_impl->pointer_axis(seat, event);
 	}
 }
 
@@ -1468,7 +1469,7 @@ void seatop_tablet_tool_motion(struct sway_seat *seat,
 	if (seat->seatop_impl->tablet_tool_motion) {
 		seat->seatop_impl->tablet_tool_motion(seat, tablet, tool, time_msec, dx, dy);
 	} else {
-		seatop_motion(seat, time_msec, dx, dy);
+		seatop_pointer_motion(seat, time_msec, dx, dy);
 	}
 }
 

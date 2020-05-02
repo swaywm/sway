@@ -16,9 +16,10 @@ struct sway_seatop_impl {
 	void (*button)(struct sway_seat *seat, uint32_t time_msec,
 			struct wlr_input_device *device, uint32_t button,
 			enum wlr_button_state state);
-	void (*motion)(struct sway_seat *seat, uint32_t time_msec,
+	void (*pointer_motion)(struct sway_seat *seat, uint32_t time_msec,
 			double dx, double dy);
-	void (*axis)(struct sway_seat *seat, struct wlr_event_pointer_axis *event);
+	void (*pointer_axis)(struct sway_seat *seat,
+			struct wlr_event_pointer_axis *event);
 	void (*rebase)(struct sway_seat *seat, uint32_t time_msec);
 	void (*tablet_tool_motion)(struct sway_seat *seat, struct sway_tablet *tablet,
 			struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy);
@@ -261,14 +262,15 @@ void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 /**
  * dx and dy are distances relative to previous position.
  */
-void seatop_motion(struct sway_seat *seat, uint32_t time_msec,
+void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy);
+
+void seatop_pointer_axis(struct sway_seat *seat,
+		struct wlr_event_pointer_axis *event);
 
 void seatop_tablet_tool_motion(struct sway_seat *seat,
 		struct sway_tablet *tablet, struct sway_tablet_tool *tool,
 		uint32_t time_msec, double dx, double dy);
-
-void seatop_axis(struct sway_seat *seat, struct wlr_event_pointer_axis *event);
 
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec);
 

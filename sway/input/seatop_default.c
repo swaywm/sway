@@ -405,9 +405,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	seat_pointer_notify_button(seat, time_msec, button, state);
 }
 
-/*----------------------------------\
- * Functions used by handle_motion  /
- *--------------------------------*/
+/*------------------------------------------\
+ * Functions used by handle_pointer_motion  /
+ *----------------------------------------*/
 
 static void check_focus_follows_mouse(struct sway_seat *seat,
 		struct seatop_default_event *e, struct sway_node *hovered_node) {
@@ -439,7 +439,7 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 	}
 }
 
-static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy) {
 	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
@@ -510,9 +510,9 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	e->previous_node = node;
 }
 
-/*--------------------------------\
- * Functions used by handle_axis  /
- *------------------------------*/
+/*----------------------------------------\
+ * Functions used by handle_pointer_axis  /
+ *--------------------------------------*/
 
 static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
 	switch (event->orientation) {
@@ -526,7 +526,7 @@ static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
 	}
 }
 
-static void handle_axis(struct sway_seat *seat,
+static void handle_pointer_axis(struct sway_seat *seat,
 		struct wlr_event_pointer_axis *event) {
 	struct sway_input_device *input_device =
 		event->device ? event->device->data : NULL;
@@ -648,8 +648,8 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 
 static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
-	.motion = handle_motion,
-	.axis = handle_axis,
+	.pointer_motion = handle_pointer_motion,
+	.pointer_axis = handle_pointer_axis,
 	.tablet_tool_motion = handle_tablet_tool_motion,
 	.rebase = handle_rebase,
 	.allow_set_cursor = true,
