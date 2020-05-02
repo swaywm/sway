@@ -292,16 +292,19 @@ void cursor_unhide(struct sway_cursor *cursor) {
 static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		struct wlr_input_device *device, double dx, double dy,
 		double dx_unaccel, double dy_unaccel) {
-	cursor_handle_activity(cursor, IDLE_SOURCE_POINTER);
+	if (device->type == WLR_INPUT_DEVICE_POINTER) {
+		cursor_handle_activity(cursor, IDLE_SOURCE_POINTER);
+	}
 
 	wlr_relative_pointer_manager_v1_send_relative_motion(
 		server.relative_pointer_manager,
 		cursor->seat->wlr_seat, (uint64_t)time_msec * 1000,
 		dx, dy, dx_unaccel, dy_unaccel);
 
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-	if (cursor->active_constraint) {
+	// Only apply pointer constraints to real pointer input.
+	if (cursor->active_constraint && device->type == WLR_INPUT_DEVICE_POINTER) {
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
 		node_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
