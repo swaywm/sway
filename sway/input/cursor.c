@@ -268,7 +268,7 @@ void cursor_handle_activity(struct sway_cursor *cursor,
 			cursor->hide_source, cursor_get_timeout(cursor));
 
 	seat_idle_notify_activity(cursor->seat, idle_source);
-	if (cursor->hidden) {
+	if (cursor->hidden && idle_source != IDLE_SOURCE_TOUCH) {
 		cursor_unhide(cursor);
 	}
 }
