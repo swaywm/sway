@@ -206,7 +206,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	desktop_damage_box(&e->drop_box);
 }
 
-static void handle_motion(struct sway_seat *seat, uint32_t time_msec,
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (e->threshold_reached) {
@@ -250,7 +250,6 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	if (!swap) {
 		container_detach(con);
 	}
-
 
 	// Moving container into empty workspace
 	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
@@ -315,7 +314,7 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 
 static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
-	.motion = handle_motion,
+	.pointer_motion = handle_pointer_motion,
 	.unref = handle_unref,
 	.render = handle_render,
 };
