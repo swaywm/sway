@@ -774,7 +774,9 @@ static void check_constraint_region(struct sway_cursor *cursor) {
 	struct wlr_pointer_constraint_v1 *constraint = cursor->active_constraint;
 	pixman_region32_t *region = &constraint->region;
 	struct sway_view *view = view_from_wlr_surface(constraint->surface);
-	if (view) {
+	if (cursor->active_confine_requires_warp && view) {
+		cursor->active_confine_requires_warp = false;
+
 		struct sway_container *con = view->container;
 
 		double sx = cursor->cursor->x - con->content_x + view->geometry.x;
@@ -811,6 +813,13 @@ static void handle_constraint_commit(struct wl_listener *listener,
 	assert(constraint->surface == data);
 
 	check_constraint_region(cursor);
+}
+
+static void handle_pointer_constraint_set_region(struct wl_listener *listener,
+		void *data) {
+	struct sway_cursor *cursor =
+		wl_container_of(listener, cursor, constraint_commit);
+	cursor->active_confine_requires_warp = true;
 }
 
 static void handle_request_pointer_set_cursor(struct wl_listener *listener,
@@ -1224,6 +1233,7 @@ void handle_constraint_destroy(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = constraint->seat->data;
 	struct sway_cursor *cursor = seat->cursor;
 
+	wl_list_remove(&sway_constraint->set_region.link);
 	wl_list_remove(&sway_constraint->destroy.link);
 
 	if (cursor->active_constraint == constraint) {
@@ -1246,6 +1256,9 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data) {
 	struct sway_pointer_constraint *sway_constraint =
 		calloc(1, sizeof(struct sway_pointer_constraint));
 	sway_constraint->constraint = constraint;
+
+	sway_constraint->set_region.notify = handle_pointer_constraint_set_region;
+	wl_signal_add(&constraint->events.set_region, &sway_constraint->set_region);
 
 	sway_constraint->destroy.notify = handle_constraint_destroy;
 	wl_signal_add(&constraint->events.destroy, &sway_constraint->destroy);
@@ -1289,6 +1302,8 @@ void sway_cursor_constrain(struct sway_cursor *cursor,
 		wl_list_init(&cursor->constraint_commit.link);
 		return;
 	}
+
+	cursor->active_confine_requires_warp = true;
 
 	// FIXME: Big hack, stolen from wlr_pointer_constraints_v1.c:121.
 	// This is necessary because the focus may be set before the surface
