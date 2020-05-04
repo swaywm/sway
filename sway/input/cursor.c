@@ -572,7 +572,19 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	struct sway_seat *seat = cursor->seat;
 	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
-	if (surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) {
+	// The logic for whether we should send a tablet event or an emulated pointer
+	// event is tricky. It comes down to:
+	// * If we began a drag on a non-tablet surface (simulated_tool_tip_down),
+	//   then we should continue sending emulated pointer events regardless of
+	//   whether the surface currently under us accepts tablet or not.
+	// * Otherwise, if we are over a surface that accepts tablet, then we should
+	//   send tablet events.
+	// * If we began a drag over a tablet surface, we should continue sending
+	//   tablet events until the drag is released, even if we are now over a
+	//   non-tablet surface.
+	if (!cursor->simulated_tool_tip_down &&
+			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
+				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
 		seatop_tablet_tool_motion(seat, tool, time_msec, dx, dy);
 	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
@@ -680,6 +692,8 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 
 		wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
 	}
+
+	seatop_tablet_tool_tip(seat, sway_tool, event->time_msec, event->state);
 }
 
 static struct sway_tablet *get_tablet_for_device(struct sway_cursor *cursor,
