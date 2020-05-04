@@ -198,6 +198,25 @@ static void state_add_button(struct seatop_default_event *e, uint32_t button) {
  * Functions used by handle_button  /
  *--------------------------------*/
 
+static void handle_tablet_tool_tip(struct sway_seat *seat,
+		struct sway_tablet_tool *tool, uint32_t time_msec,
+		enum wlr_tablet_tool_tip_state state) {
+	if (state != WLR_TABLET_TOOL_TIP_DOWN) {
+		return;
+	}
+
+	struct sway_cursor *cursor = seat->cursor;
+
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	struct sway_node *node = node_at_coords(seat,
+		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
+	if (surface && node && node->type == N_CONTAINER) {
+		seatop_begin_down(seat, node->sway_container, time_msec, sx, sy);
+	}
+}
+
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
 		enum wlr_button_state state) {
@@ -649,6 +668,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
 	.pointer_motion = handle_pointer_motion,
 	.pointer_axis = handle_pointer_axis,
+	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
 	.rebase = handle_rebase,
 	.allow_set_cursor = true,

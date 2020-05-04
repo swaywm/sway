@@ -1471,6 +1471,14 @@ void seatop_pointer_axis(struct sway_seat *seat,
 	}
 }
 
+void seatop_tablet_tool_tip(struct sway_seat *seat,
+		struct sway_tablet_tool *tool, uint32_t time_msec,
+		enum wlr_tablet_tool_tip_state state) {
+	if (seat->seatop_impl->tablet_tool_tip) {
+		seat->seatop_impl->tablet_tool_tip(seat, tool, time_msec, state);
+	}
+}
+
 void seatop_tablet_tool_motion(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
 	if (seat->seatop_impl->tablet_tool_motion) {
