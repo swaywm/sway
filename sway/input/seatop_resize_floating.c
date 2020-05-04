@@ -7,6 +7,7 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/container.h"
 
 struct seatop_resize_floating_event {
 	struct sway_container *con;
@@ -55,29 +56,37 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		grow_height = e->ref_height * max_multiplier;
 	}
 
+	struct sway_container_state *state = &con->current;
+	double border_width = 0.0;
+	if (con->current.border == B_NORMAL || con->current.border == B_PIXEL) {
+		border_width = state->border_thickness * 2;
+	}
+	double border_height = 0.0;
+	if (con->current.border == B_NORMAL) {
+		border_height += container_titlebar_height();
+		border_height += state->border_thickness;
+	} else if (con->current.border == B_PIXEL) {
+		border_height += state->border_thickness * 2;
+	}
+
 	// Determine new width/height, and accommodate for floating min/max values
 	double width = e->ref_width + grow_width;
 	double height = e->ref_height + grow_height;
 	int min_width, max_width, min_height, max_height;
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
-	width = fmax(min_width, fmin(width, max_width));
-	height = fmax(min_height, fmin(height, max_height));
+	width = fmax(min_width + border_width, fmin(width, max_width));
+	height = fmax(min_height + border_height, fmin(height, max_height));
 
 	// Apply the view's min/max size
 	if (con->view) {
 		double view_min_width, view_max_width, view_min_height, view_max_height;
 		view_get_constraints(con->view, &view_min_width, &view_max_width,
 				&view_min_height, &view_max_height);
-		width = fmax(view_min_width, fmin(width, view_max_width));
-		height = fmax(view_min_height, fmin(height, view_max_height));
-	}
+		width = fmax(view_min_width + border_width, fmin(width, view_max_width));
+		height = fmax(view_min_height + border_height, fmin(height, view_max_height));
 
-	struct sway_container_state *state = &con->current;
-	width += state->border_thickness * 2;
-	height += config->titlebar_border_thickness * 2;
-	height += container_titlebar_height();
-	height += config->titlebar_v_padding;
+	}
 
 	// Recalculate these, in case we hit a min/max limit
 	grow_width = width - e->ref_width;
