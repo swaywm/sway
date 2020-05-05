@@ -232,6 +232,8 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
 
+bool view_inhibit_idle(struct sway_view *view);
+
 /**
  * Whether or not the view is the only visible view in its tree. If the view
  * is tiling, there may be floating views. If the view is floating, there may

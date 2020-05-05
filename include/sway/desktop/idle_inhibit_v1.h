@@ -29,6 +29,9 @@ struct sway_idle_inhibitor_v1 {
 	struct wl_listener destroy;
 };
 
+bool sway_idle_inhibit_v1_is_active(
+	struct sway_idle_inhibitor_v1 *inhibitor);
+
 void sway_idle_inhibit_v1_check_active(
 	struct sway_idle_inhibit_manager_v1 *manager);
 
@@ -36,6 +39,9 @@ void sway_idle_inhibit_v1_user_inhibitor_register(struct sway_view *view,
 		enum sway_idle_inhibit_mode mode);
 
 struct sway_idle_inhibitor_v1 *sway_idle_inhibit_v1_user_inhibitor_for_view(
+		struct sway_view *view);
+
+struct sway_idle_inhibitor_v1 *sway_idle_inhibit_v1_application_inhibitor_for_view(
 		struct sway_view *view);
 
 void sway_idle_inhibit_v1_user_inhibitor_destroy(
