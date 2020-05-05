@@ -17,6 +17,7 @@
 #include "sway/commands.h"
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
@@ -161,6 +162,29 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 		return view->impl->configure(view, lx, ly, width, height);
 	}
 	return 0;
+}
+
+bool view_inhibit_idle(struct sway_view *view) {
+	struct sway_idle_inhibitor_v1 *user_inhibitor =
+		sway_idle_inhibit_v1_user_inhibitor_for_view(view);
+
+	struct sway_idle_inhibitor_v1 *application_inhibitor =
+		sway_idle_inhibit_v1_application_inhibitor_for_view(view);
+
+	if (!user_inhibitor && !application_inhibitor) {
+		return false;
+	}
+
+	if (!user_inhibitor) {
+		return sway_idle_inhibit_v1_is_active(application_inhibitor);
+	}
+
+	if (!application_inhibitor) {
+		return sway_idle_inhibit_v1_is_active(user_inhibitor);
+	}
+
+	return sway_idle_inhibit_v1_is_active(user_inhibitor)
+		|| sway_idle_inhibit_v1_is_active(application_inhibitor);
 }
 
 bool view_is_only_visible(struct sway_view *view) {

@@ -379,6 +379,14 @@ node and will have the following properties:
 |- shell
 :  string
 :  (Only views) The shell of the view, such as _xdg\_shell_ or _xwayland_
+|- inhibit_idle
+:  boolean
+:  (Only views) Whether the view is inhibiting the idle state
+|- idle_inhibitors
+:  object
+:  (Only views) An object containing the state of the _application_ and _user_ idle inhibitors.
+    _application_ can be _enabled_ or _none_.
+    _user_ can be _focus_, _fullscreen_, _open_, _visible_ or _none_.
 |- window
 :  integer
 :  (Only xwayland views) The X11 window ID for the xwayland view
@@ -676,6 +684,11 @@ node and will have the following properties:
 							"app_id": null,
 							"visible": true,
 							"shell": "xwayland",
+							"inhibit_idle": true,
+							"idle_inhibitors": {
+								"application": "none",
+								"user": "visible",
+							},
 							"window_properties": {
 								"class": "URxvt",
 								"instance": "urxvt",
@@ -731,6 +744,11 @@ node and will have the following properties:
 							"app_id": "termite",
 							"visible": true,
 							"shell": "xdg_shell",
+							"inhibit_idle": false,
+							"idle_inhibitors": {
+								"application": "none",
+								"user": "fullscreen",
+							},
 							"nodes": [
 							]
 						}
