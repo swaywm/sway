@@ -475,8 +475,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 }
 
 static void handle_tablet_tool_motion(struct sway_seat *seat,
-		struct sway_tablet *tablet, struct sway_tablet_tool *tool,
-		uint32_t time_msec, double dx, double dy) {
+		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
 	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
@@ -492,7 +491,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	if (surface) {
 		if (seat_is_input_allowed(seat, surface)) {
 			wlr_tablet_v2_tablet_tool_notify_proximity_in(tool->tablet_v2_tool,
-				tablet->tablet_v2, surface);
+				tool->tablet->tablet_v2, surface);
 			wlr_tablet_v2_tablet_tool_notify_motion(tool->tablet_v2_tool, sx, sy);
 		}
 	} else {

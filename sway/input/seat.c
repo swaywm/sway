@@ -1464,10 +1464,9 @@ void seatop_pointer_axis(struct sway_seat *seat,
 }
 
 void seatop_tablet_tool_motion(struct sway_seat *seat,
-		struct sway_tablet *tablet, struct sway_tablet_tool *tool,
-		uint32_t time_msec, double dx, double dy) {
+		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
 	if (seat->seatop_impl->tablet_tool_motion) {
-		seat->seatop_impl->tablet_tool_motion(seat, tablet, tool, time_msec, dx, dy);
+		seat->seatop_impl->tablet_tool_motion(seat, tool, time_msec, dx, dy);
 	} else {
 		seatop_pointer_motion(seat, time_msec, dx, dy);
 	}
