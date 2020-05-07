@@ -511,8 +511,7 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 }
 
 static void handle_tablet_tool_position(struct sway_cursor *cursor,
-		struct sway_tablet *tablet,
-		struct wlr_tablet_tool *tool,
+		struct sway_tablet_tool *tool,
 		bool change_x, bool change_y,
 		double x, double y, double dx, double dy,
 		int32_t time_msec) {
@@ -522,6 +521,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 		return;
 	}
 
+	struct sway_tablet *tablet = tool->tablet;
 	struct sway_input_device *input_device = tablet->seat_device->input_device;
 	struct input_config *ic = input_device_get_config(input_device);
 	if (ic != NULL && ic->mapped_from_region != NULL) {
@@ -529,7 +529,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 			ic->mapped_from_region, &x, &y);
 	}
 
-	switch (tool->type) {
+	switch (tool->tablet_v2_tool->wlr_tool->type) {
 	case WLR_TABLET_TOOL_TYPE_MOUSE:
 		wlr_cursor_move(cursor->cursor, input_device->wlr_device, dx, dy);
 		break;
@@ -542,12 +542,11 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	struct wlr_surface *surface = NULL;
 	struct sway_seat *seat = cursor->seat;
 	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-	struct sway_tablet_tool *sway_tool = tool->data;
 
 	if (surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) {
-		seatop_tablet_tool_motion(seat, tablet, sway_tool, time_msec, dx, dy);
+		seatop_tablet_tool_motion(seat, tool, time_msec, dx, dy);
 	} else {
-		wlr_tablet_v2_tablet_tool_notify_proximity_out(sway_tool->tablet_v2_tool);
+		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
 	}
 
@@ -565,7 +564,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	handle_tablet_tool_position(cursor, sway_tool->tablet, event->tool,
+	handle_tablet_tool_position(cursor, sway_tool,
 		event->updated_axes & WLR_TABLET_TOOL_AXIS_X,
 		event->updated_axes & WLR_TABLET_TOOL_AXIS_Y,
 		event->x, event->y, event->dx, event->dy, event->time_msec);
@@ -691,8 +690,8 @@ static void handle_tool_proximity(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	handle_tablet_tool_position(cursor, sway_tool->tablet, event->tool,
-		true, true, event->x, event->y, 0, 0, event->time_msec);
+	handle_tablet_tool_position(cursor, sway_tool, true, true, event->x, event->y,
+		0, 0, event->time_msec);
 }
 
 static void handle_tool_button(struct wl_listener *listener, void *data) {
