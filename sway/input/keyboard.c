@@ -5,6 +5,7 @@
 #include <wlr/backend/session.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include "sway/commands.h"
@@ -674,15 +675,6 @@ cleanup:
 	return keymap;
 }
 
-static bool keymaps_match(struct xkb_keymap *km1, struct xkb_keymap *km2) {
-	char *km1_str = xkb_keymap_get_as_string(km1, XKB_KEYMAP_FORMAT_TEXT_V1);
-	char *km2_str = xkb_keymap_get_as_string(km2, XKB_KEYMAP_FORMAT_TEXT_V1);
-	bool result = strcmp(km1_str, km2_str) == 0;
-	free(km1_str);
-	free(km2_str);
-	return result;
-}
-
 static bool repeat_info_match(struct sway_keyboard *a, struct wlr_keyboard *b) {
 	return a->repeat_rate == b->repeat_info.rate &&
 		a->repeat_delay == b->repeat_info.delay;
@@ -742,7 +734,7 @@ static void sway_keyboard_group_remove_invalid(struct sway_keyboard *keyboard) {
 	case KEYBOARD_GROUP_DEFAULT: /* fallthrough */
 	case KEYBOARD_GROUP_SMART:;
 		struct wlr_keyboard_group *group = wlr_keyboard->group;
-		if (!keymaps_match(keyboard->keymap, group->keyboard.keymap) ||
+		if (!wlr_keyboard_keymaps_match(keyboard->keymap, group->keyboard.keymap) ||
 				!repeat_info_match(keyboard, &group->keyboard)) {
 			sway_keyboard_group_remove(keyboard);
 		}
@@ -779,7 +771,8 @@ static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 		case KEYBOARD_GROUP_DEFAULT: /* fallthrough */
 		case KEYBOARD_GROUP_SMART:;
 			struct wlr_keyboard_group *wlr_group = group->wlr_group;
-			if (keymaps_match(keyboard->keymap, wlr_group->keyboard.keymap) &&
+			if (wlr_keyboard_keymaps_match(keyboard->keymap,
+						wlr_group->keyboard.keymap) &&
 					repeat_info_match(keyboard, &wlr_group->keyboard)) {
 				sway_log(SWAY_DEBUG, "Adding keyboard %s to group %p",
 						device->identifier, wlr_group);
@@ -871,8 +864,8 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		}
 	}
 
-	bool keymap_changed =
-		keyboard->keymap ? !keymaps_match(keyboard->keymap, keymap) : true;
+	bool keymap_changed = keyboard->keymap ?
+		!wlr_keyboard_keymaps_match(keyboard->keymap, keymap) : true;
 	bool effective_layout_changed = keyboard->effective_layout != 0;
 
 	int repeat_rate = 25;
@@ -909,14 +902,14 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 			xkb_mod_index_t mod_index = xkb_map_mod_get_index(keymap,
 					XKB_MOD_NAME_NUM);
 			if (mod_index != XKB_MOD_INVALID) {
-			       locked_mods |= (uint32_t)1 << mod_index;
+				locked_mods |= (uint32_t)1 << mod_index;
 			}
 		}
 		if (input_config && input_config->xkb_capslock > 0) {
 			xkb_mod_index_t mod_index = xkb_map_mod_get_index(keymap,
 					XKB_MOD_NAME_CAPS);
 			if (mod_index != XKB_MOD_INVALID) {
-			       locked_mods |= (uint32_t)1 << mod_index;
+				locked_mods |= (uint32_t)1 << mod_index;
 			}
 		}
 		if (locked_mods) {
