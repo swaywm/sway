@@ -31,14 +31,14 @@ A recommended usage pattern is to just bind this to Super+P via sway:
 ```
 # Screenshots:
 # Cmd+P: Current window
-# Cmd+Shift+p: Select region
+# Cmd+Shift+p: Select area
 # Cmd+Alt+p Current output
 # Cmd+Ctrl+p Select a window
 
-bindsym Mod4+p       exec grimshot active
-bindsym Mod4+Shift+p exec grimshot region
-bindsym Mod4+Mod1+p  exec grimshot output
-bindsym Mod4+Ctrl+p  exec grimshot window
+bindsym Mod4+p       exec grimshot save active
+bindsym Mod4+Shift+p exec grimshot save area
+bindsym Mod4+Mod1+p  exec grimshot save output
+bindsym Mod4+Ctrl+p  exec grimshot save window
 ```
 
 # TARGETS
@@ -51,7 +51,7 @@ _active_
 _screen_
 	Captures the entire screen. This includes all visible outputs.
 
-_region_
+_area_
 	Allows manually selecting a rectangular region, and captures that.
 
 _window_
