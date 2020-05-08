@@ -46,7 +46,7 @@ if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" 
   echo "  active: Currently active window."
   echo "  screen: All visible outputs."
   echo "  output: Currently active output."
-  echo "  region: Manually select a region."
+  echo "  area: Manually select a region."
   echo "  window: Manually select a window."
   exit
 fi
