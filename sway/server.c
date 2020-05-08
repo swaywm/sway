@@ -203,7 +203,8 @@ bool server_start(struct sway_server *server) {
 			&server->xwayland_ready);
 		server->xwayland_ready.notify = handle_xwayland_ready;
 
-		setenv("DISPLAY", server->xwayland.wlr_xwayland->display_name, true);
+		setenv("DISPLAY",
+			wlr_xwayland_display_name(server->xwayland.wlr_xwayland), true);
 
 		/* xcursor configured by the default seat */
 	}
