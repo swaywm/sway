@@ -4,15 +4,17 @@
 #include <string.h>
 #include <math.h>
 #include <wlr/backend/libinput.h>
+#include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
-#include <wlr/types/wlr_cursor.h>
 #include "sway/config.h"
+#include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/keyboard.h"
 #include "sway/input/libinput.h"
 #include "sway/input/seat.h"
-#include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "stringop.h"
@@ -538,6 +540,18 @@ void input_manager_reset_all_inputs() {
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &server.input->devices, link) {
 		input_manager_reset_input(input_device);
+	}
+
+	// If there is at least one keyboard using the default keymap, repeat delay,
+	// and repeat rate, then it is possible that there is a keyboard group that
+	// needs to be reset. This will disarm the keyboards as well as exit and
+	// re-enter any focus views.
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		struct sway_keyboard_group *group;
+		wl_list_for_each(group, &seat->keyboard_groups, link) {
+			seat_reset_device(seat, group->seat_device->input_device);
+		}
 	}
 }
 
