@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_tablet_v2.h>
@@ -691,7 +692,12 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	if (!seat_device->keyboard) {
 		sway_keyboard_create(seat, seat_device);
 	}
-	sway_keyboard_configure(seat_device->keyboard);
+	if (!wlr_keyboard_group_from_wlr_keyboard(
+				seat_device->input_device->wlr_device->keyboard)) {
+		// Do not configure keyboard group keyboards. They will be configured
+		// based on the keyboards in the group.
+		sway_keyboard_configure(seat_device->keyboard);
+	}
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device);
 	struct sway_node *focus = seat_get_focus(seat);
@@ -743,6 +749,13 @@ static struct sway_seat_device *seat_get_device(struct sway_seat *seat,
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		if (seat_device->input_device == input_device) {
 			return seat_device;
+		}
+	}
+
+	struct sway_keyboard_group *group = NULL;
+	wl_list_for_each(group, &seat->keyboard_groups, link) {
+		if (group->seat_device->input_device == input_device) {
+			return group->seat_device;
 		}
 	}
 
