@@ -209,22 +209,6 @@ configure_file(
 	install_dir: join_paths(sysconfdir, 'sway')
 )
 
-if is_freebsd
-	configure_file(
-		configuration: config,
-		input: 'security.d/10-freebsd.in',
-		output: '@BASENAME@',
-		install_dir: join_paths(sysconfdir, 'sway', 'security.d')
-	)
-else
-	configure_file(
-		configuration: config,
-		input: 'security.d/00-defaults.in',
-		output: '@BASENAME@',
-		install_dir: join_paths(sysconfdir, 'sway', 'security.d')
-	)
-endif
-
 install_data(
 	'sway.desktop',
 	install_dir: join_paths(datadir, 'wayland-sessions')
