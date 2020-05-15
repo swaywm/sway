@@ -39,7 +39,7 @@ _swaymsg()
     --raw
     --socket
     --type
-    --verbose
+    --version
   )
 
   case $prev in
