@@ -587,7 +587,7 @@ static void handle_set_hints(struct wl_listener *listener, void *data) {
 		return;
 	}
 	if (!xsurface->hints_urgency && view->urgent_timer) {
-		// The view is is in the timeout period. We'll ignore the request to
+		// The view is in the timeout period. We'll ignore the request to
 		// unset urgency so that the view remains urgent until the timer clears
 		// it.
 		return;

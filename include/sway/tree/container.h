@@ -167,7 +167,7 @@ struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
 /**
- * Find a container at the given coordinates. Returns the the surface and
+ * Find a container at the given coordinates. Returns the surface and
  * surface-local coordinates of the given layout coordinates if the container
  * is a view and the view contains a surface at those coordinates.
  */
