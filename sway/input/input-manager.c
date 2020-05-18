@@ -558,13 +558,12 @@ void input_manager_reset_all_inputs() {
 
 	// If there is at least one keyboard using the default keymap, repeat delay,
 	// and repeat rate, then it is possible that there is a keyboard group that
-	// needs to be reset. This will disarm the keyboards as well as exit and
-	// re-enter any focus views.
+	// need their keyboard disarmed.
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		struct sway_keyboard_group *group;
 		wl_list_for_each(group, &seat->keyboard_groups, link) {
-			seat_reset_device(seat, group->seat_device->input_device);
+			sway_keyboard_disarm_key_repeat(group->seat_device->keyboard);
 		}
 	}
 }

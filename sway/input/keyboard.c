@@ -853,6 +853,12 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 
+	if (!sway_assert(!wlr_keyboard_group_from_wlr_keyboard(wlr_device->keyboard),
+				"sway_keyboard_configure should not be called with a "
+				"keyboard group's keyboard")) {
+		return;
+	}
+
 	struct xkb_keymap *keymap = sway_keyboard_compile_keymap(input_config, NULL);
 	if (!keymap) {
 		sway_log(SWAY_ERROR, "Failed to compile keymap. Attempting defaults");
