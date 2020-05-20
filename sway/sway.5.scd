@@ -179,8 +179,8 @@ set|plus|minus <amount>
 *layout* toggle [split|all]
 	Cycles the layout mode of the focused container though a preset list of
 	layouts. If no argument is given, then it cycles through stacking, tabbed
-	and the last split layout. If "split" is given, then it cycles through
-	splith and splitv. If "all" is given, then it cycles through every layout.
+	and the last split layout. If _split_ is given, then it cycles through
+	splith and splitv. If _all_ is given, then it cycles through every layout.
 
 *layout* toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...
 	Cycles the layout mode of the focused container through a list of layouts.
@@ -230,7 +230,7 @@ set|plus|minus <amount>
 	Moves the focused container to the specified mark.
 
 *move* [--no-auto-back-and-forth] [container|window] [to] workspace [number] <name>
-	Moves the focused container to the specified workspace. The string "number"
+	Moves the focused container to the specified workspace. The string _number_
 	is optional and is used to match a workspace with the same number, even if
 	it has a different name.
 
@@ -826,7 +826,7 @@ The default colors are:
 *workspace_auto_back_and_forth* yes|no
 	When _yes_, repeating a workspace switch command will switch back to the
 	prior workspace. For example, if you are currently on workspace 1,
-	switch to workspace 2, then invoke the "workspace 2" command again, you
+	switch to workspace 2, then invoke the *workspace 2* command again, you
 	will be returned to workspace 1. Default is _no_.
 
 # CRITERIA
@@ -911,8 +911,8 @@ The following attributes may be matched with:
 	currently focused window.
 
 *urgent*
-	Compares the urgent state of the window. Can be "first", "last", "latest",
-	"newest", "oldest" or "recent".
+	Compares the urgent state of the window. Can be _first_, _last_, _latest_,
+	_newest_, _oldest_ or _recent_.
 
 *window_role*
 	Compare against the window role (WM_WINDOW_ROLE). Can be a regular
