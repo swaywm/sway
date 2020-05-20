@@ -360,7 +360,7 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 
 		wl_list_for_each(output, &bar->outputs, link) {
 			const char *ws_output = json_object_get_string(out);
-			if (strcmp(ws_output, output->name) == 0) {
+			if (ws_output != NULL && strcmp(ws_output, output->name) == 0) {
 				struct swaybar_workspace *ws =
 					calloc(1, sizeof(struct swaybar_workspace));
 				ws->num = json_object_get_int(num);
