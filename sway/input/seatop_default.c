@@ -637,6 +637,7 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	if (surface) {
 		if (seat_is_input_allowed(seat, surface)) {
 			wlr_seat_pointer_notify_enter(seat->wlr_seat, surface, sx, sy);
+			wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
 		}
 	} else {
 		cursor_update_image(cursor, e->previous_node);
