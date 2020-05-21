@@ -645,7 +645,7 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		wlr_seat_pointer_clear_focus(seat->wlr_seat);
+		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 		cursor_rebase(seat->cursor);
 	}
 }

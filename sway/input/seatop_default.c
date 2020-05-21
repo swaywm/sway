@@ -460,8 +460,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		}
 	} else {
 		cursor_update_image(cursor, node);
-		wlr_seat_pointer_notify_enter(seat->wlr_seat, NULL, 0, 0);
-		wlr_seat_pointer_clear_focus(seat->wlr_seat);
+		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 	}
 
 	struct sway_drag_icon *drag_icon;
@@ -640,8 +639,7 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 		}
 	} else {
 		cursor_update_image(cursor, e->previous_node);
-		wlr_seat_pointer_notify_enter(seat->wlr_seat, NULL, 0, 0);
-		wlr_seat_pointer_clear_focus(seat->wlr_seat);
+		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 	}
 }
 

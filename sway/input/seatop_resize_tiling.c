@@ -106,5 +106,5 @@ void seatop_begin_resize_tiling(struct sway_seat *seat,
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
 
-	wlr_seat_pointer_clear_focus(seat->wlr_seat);
+	wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 }

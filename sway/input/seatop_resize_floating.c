@@ -175,5 +175,5 @@ void seatop_begin_resize_floating(struct sway_seat *seat,
 	const char *image = edge == WLR_EDGE_NONE ?
 		"se-resize" : wlr_xcursor_get_resize_name(edge);
 	cursor_set_image(seat->cursor, image, NULL);
-	wlr_seat_pointer_clear_focus(seat->wlr_seat);
+	wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 }
