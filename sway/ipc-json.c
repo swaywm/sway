@@ -471,14 +471,6 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	bool visible = view_is_visible(c->view);
 	json_object_object_add(object, "visible", json_object_new_boolean(visible));
 
-	json_object *marks = json_object_new_array();
-	list_t *con_marks = c->marks;
-	for (int i = 0; i < con_marks->length; ++i) {
-		json_object_array_add(marks, json_object_new_string(con_marks->items[i]));
-	}
-
-	json_object_object_add(object, "marks", marks);
-
 	struct wlr_box window_box = {
 		c->content_x - c->x,
 		(c->current.border == B_PIXEL) ? c->current.border_thickness : 0,
@@ -581,6 +573,14 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	struct wlr_box deco_box = {0, 0, 0, 0};
 	get_deco_rect(c, &deco_box);
 	json_object_object_add(object, "deco_rect", ipc_json_create_rect(&deco_box));
+
+	json_object *marks = json_object_new_array();
+	list_t *con_marks = c->marks;
+	for (int i = 0; i < con_marks->length; ++i) {
+		json_object_array_add(marks, json_object_new_string(con_marks->items[i]));
+	}
+
+	json_object_object_add(object, "marks", marks);
 
 	if (c->view) {
 		ipc_json_describe_view(c, object);
