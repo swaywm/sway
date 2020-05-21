@@ -807,6 +807,8 @@ static void check_constraint_region(struct sway_cursor *cursor) {
 				wlr_cursor_warp_closest(cursor->cursor, NULL,
 					sx + con->content_x - view->geometry.x,
 					sy + con->content_y - view->geometry.y);
+
+				cursor_rebase(cursor);
 			}
 		}
 	}
