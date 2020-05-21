@@ -401,61 +401,6 @@ enum command_context {
 	CONTEXT_ALL = 0xFFFFFFFF,
 };
 
-struct command_policy {
-	char *command;
-	uint32_t context;
-};
-
-enum secure_feature {
-	FEATURE_LOCK = 1 << 0,
-	FEATURE_PANEL = 1 << 1,
-	FEATURE_BACKGROUND = 1 << 2,
-	FEATURE_SCREENSHOT = 1 << 3,
-	FEATURE_FULLSCREEN = 1 << 4,
-	FEATURE_KEYBOARD = 1 << 5,
-	FEATURE_MOUSE = 1 << 6,
-};
-
-struct feature_policy {
-	char *program;
-	uint32_t features;
-};
-
-enum ipc_feature {
-	IPC_FEATURE_COMMAND = 1 << 0,
-	IPC_FEATURE_GET_WORKSPACES = 1 << 1,
-	IPC_FEATURE_GET_OUTPUTS = 1 << 2,
-	IPC_FEATURE_GET_TREE = 1 << 3,
-	IPC_FEATURE_GET_MARKS = 1 << 4,
-	IPC_FEATURE_GET_BAR_CONFIG = 1 << 5,
-	IPC_FEATURE_GET_VERSION = 1 << 6,
-	IPC_FEATURE_GET_INPUTS = 1 << 7,
-	IPC_FEATURE_EVENT_WORKSPACE = 1 << 8,
-	IPC_FEATURE_EVENT_OUTPUT = 1 << 9,
-	IPC_FEATURE_EVENT_MODE = 1 << 10,
-	IPC_FEATURE_EVENT_WINDOW = 1 << 11,
-	IPC_FEATURE_EVENT_BINDING = 1 << 12,
-	IPC_FEATURE_EVENT_INPUT = 1 << 13,
-	IPC_FEATURE_GET_SEATS = 1 << 14,
-
-	IPC_FEATURE_ALL_COMMANDS = IPC_FEATURE_COMMAND |
-		IPC_FEATURE_GET_WORKSPACES | IPC_FEATURE_GET_OUTPUTS |
-		IPC_FEATURE_GET_TREE | IPC_FEATURE_GET_MARKS |
-		IPC_FEATURE_GET_BAR_CONFIG | IPC_FEATURE_GET_VERSION |
-		IPC_FEATURE_GET_INPUTS | IPC_FEATURE_GET_SEATS,
-	IPC_FEATURE_ALL_EVENTS = IPC_FEATURE_EVENT_WORKSPACE |
-		IPC_FEATURE_EVENT_OUTPUT | IPC_FEATURE_EVENT_MODE |
-		IPC_FEATURE_EVENT_WINDOW | IPC_FEATURE_EVENT_BINDING |
-		IPC_FEATURE_EVENT_INPUT,
-
-	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
-};
-
-struct ipc_policy {
-	char *program;
-	uint32_t features;
-};
-
 enum focus_follows_mouse_mode {
 	FOLLOWS_NO,
 	FOLLOWS_YES,
@@ -583,11 +528,6 @@ struct sway_config {
 	int32_t floating_maximum_height;
 	int32_t floating_minimum_width;
 	int32_t floating_minimum_height;
-
-	// Security
-	list_t *command_policies;
-	list_t *feature_policies;
-	list_t *ipc_policies;
 
 	// The keysym to keycode translation
 	struct xkb_state *keysym_translation_state;

@@ -9,7 +9,6 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
-#include "sway/security.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/tree/view.h"
@@ -488,28 +487,6 @@ struct cmd_results *config_commands_command(char *exec) {
 		}
 		context |= context_names[j].context;
 	}
-
-	struct command_policy *policy = NULL;
-	for (int i = 0; i < config->command_policies->length; ++i) {
-		struct command_policy *p = config->command_policies->items[i];
-		if (strcmp(p->command, cmd) == 0) {
-			policy = p;
-			break;
-		}
-	}
-	if (!policy) {
-		policy = alloc_command_policy(cmd);
-		if (!sway_assert(policy, "Unable to allocate security policy")) {
-			results = cmd_results_new(CMD_INVALID,
-					"Unable to allocate memory");
-			goto cleanup;
-		}
-		list_add(config->command_policies, policy);
-	}
-	policy->context = context;
-
-	sway_log(SWAY_INFO, "Set command policy for %s to %d",
-			policy->command, policy->context);
 
 	results = cmd_results_new(CMD_SUCCESS, NULL);
 

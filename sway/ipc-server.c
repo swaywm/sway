@@ -47,7 +47,6 @@ struct ipc_client {
 	struct wl_event_source *writable_event_source;
 	struct sway_server *server;
 	int fd;
-	uint32_t security_policy;
 	enum ipc_command_type subscribed_events;
 	size_t write_buffer_len;
 	size_t write_buffer_size;
