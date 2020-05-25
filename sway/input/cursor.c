@@ -831,8 +831,12 @@ static void handle_constraint_commit(struct wl_listener *listener,
 
 static void handle_pointer_constraint_set_region(struct wl_listener *listener,
 		void *data) {
-	struct sway_cursor *cursor =
-		wl_container_of(listener, cursor, constraint_commit);
+	struct sway_pointer_constraint *sway_constraint =
+		wl_container_of(listener, sway_constraint, set_region);
+	struct wlr_pointer_constraint_v1 *constraint = data;
+	struct sway_seat *seat = constraint->seat->data;
+	struct sway_cursor *cursor = seat->cursor;
+
 	cursor->active_confine_requires_warp = true;
 }
 
