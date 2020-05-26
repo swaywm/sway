@@ -833,9 +833,7 @@ static void handle_pointer_constraint_set_region(struct wl_listener *listener,
 		void *data) {
 	struct sway_pointer_constraint *sway_constraint =
 		wl_container_of(listener, sway_constraint, set_region);
-	struct wlr_pointer_constraint_v1 *constraint = data;
-	struct sway_seat *seat = constraint->seat->data;
-	struct sway_cursor *cursor = seat->cursor;
+	struct sway_cursor *cursor = sway_constraint->cursor;
 
 	cursor->active_confine_requires_warp = true;
 }
@@ -1248,8 +1246,7 @@ void handle_constraint_destroy(struct wl_listener *listener, void *data) {
 	struct sway_pointer_constraint *sway_constraint =
 		wl_container_of(listener, sway_constraint, destroy);
 	struct wlr_pointer_constraint_v1 *constraint = data;
-	struct sway_seat *seat = constraint->seat->data;
-	struct sway_cursor *cursor = seat->cursor;
+	struct sway_cursor *cursor = sway_constraint->cursor;
 
 	wl_list_remove(&sway_constraint->set_region.link);
 	wl_list_remove(&sway_constraint->destroy.link);
@@ -1273,6 +1270,7 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data) {
 
 	struct sway_pointer_constraint *sway_constraint =
 		calloc(1, sizeof(struct sway_pointer_constraint));
+	sway_constraint->cursor = seat->cursor;
 	sway_constraint->constraint = constraint;
 
 	sway_constraint->set_region.notify = handle_pointer_constraint_set_region;
