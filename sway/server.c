@@ -196,16 +196,20 @@ bool server_start(struct sway_server *server) {
 		server->xwayland.wlr_xwayland =
 			wlr_xwayland_create(server->wl_display, server->compositor,
 					config->xwayland == XWAYLAND_MODE_LAZY);
-		wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
-			&server->xwayland_surface);
-		server->xwayland_surface.notify = handle_xwayland_surface;
-		wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
-			&server->xwayland_ready);
-		server->xwayland_ready.notify = handle_xwayland_ready;
+		if (!server->xwayland.wlr_xwayland) {
+			sway_log(SWAY_ERROR, "Failed to start Xwayland");
+		} else {
+			wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
+				&server->xwayland_surface);
+			server->xwayland_surface.notify = handle_xwayland_surface;
+			wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
+				&server->xwayland_ready);
+			server->xwayland_ready.notify = handle_xwayland_ready;
 
-		setenv("DISPLAY", server->xwayland.wlr_xwayland->display_name, true);
+			setenv("DISPLAY", server->xwayland.wlr_xwayland->display_name, true);
 
-		/* xcursor configured by the default seat */
+			/* xcursor configured by the default seat */
+		}
 	}
 #endif
 
