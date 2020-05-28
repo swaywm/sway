@@ -68,19 +68,24 @@ static const char *ipc_json_output_transform_description(enum wl_output_transfor
 	case WL_OUTPUT_TRANSFORM_NORMAL:
 		return "normal";
 	case WL_OUTPUT_TRANSFORM_90:
-		return "90";
+		// Sway uses clockwise transforms, while WL_OUTPUT_TRANSFORM_* describes
+		// anti-clockwise transforms.
+		return "270";
 	case WL_OUTPUT_TRANSFORM_180:
 		return "180";
 	case WL_OUTPUT_TRANSFORM_270:
-		return "270";
+		// Transform also inverted here.
+		return "90";
 	case WL_OUTPUT_TRANSFORM_FLIPPED:
 		return "flipped";
 	case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-		return "flipped-90";
+		// Inverted.
+		return "flipped-270";
 	case WL_OUTPUT_TRANSFORM_FLIPPED_180:
 		return "flipped-180";
 	case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-		return "flipped-270";
+		// Inverted.
+		return "flipped-90";
 	}
 	return NULL;
 }
