@@ -574,7 +574,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 
 	// The logic for whether we should send a tablet event or an emulated pointer
 	// event is tricky. It comes down to:
-	// * If we began a drag on a non-tablet surface (simulated_tool_tip_down),
+	// * If we began a drag on a non-tablet surface (simulating_pointer_from_tool_tip),
 	//   then we should continue sending emulated pointer events regardless of
 	//   whether the surface currently under us accepts tablet or not.
 	// * Otherwise, if we are over a surface that accepts tablet, then we should
@@ -582,7 +582,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	// * If we began a drag over a tablet surface, we should continue sending
 	//   tablet events until the drag is released, even if we are now over a
 	//   non-tablet surface.
-	if (!cursor->simulated_tool_tip_down &&
+	if (!cursor->simulating_pointer_from_tool_tip &&
 			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
 		seatop_tablet_tool_motion(seat, tool, time_msec, dx, dy);
@@ -671,9 +671,9 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 			wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
 		}
 
-		cursor->simulated_tool_tip_down = event->state == WLR_TABLET_TOOL_TIP_DOWN;
+		cursor->simulating_pointer_from_tool_tip = event->state == WLR_TABLET_TOOL_TIP_DOWN;
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
-				BTN_LEFT, cursor->simulated_tool_tip_down ?
+				BTN_LEFT, cursor->simulating_pointer_from_tool_tip ?
 					WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 		transaction_commit_dirty();
@@ -684,10 +684,10 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		wlr_tablet_v2_tablet_tool_notify_down(sway_tool->tablet_v2_tool);
 		wlr_tablet_tool_v2_start_implicit_grab(sway_tool->tablet_v2_tool);
 	} else {
-		if (cursor->simulated_tool_tip_down) {
+		if (cursor->simulating_pointer_from_tool_tip) {
 			dispatch_cursor_button(cursor, event->device, event->time_msec, BTN_LEFT,
 					WLR_BUTTON_RELEASED);
-			cursor->simulated_tool_tip_down = false;
+			cursor->simulating_pointer_from_tool_tip = false;
 		}
 
 		wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
