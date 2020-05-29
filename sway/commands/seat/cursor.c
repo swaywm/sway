@@ -24,6 +24,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		int delta_y = strtol(argv[2], NULL, 10);
 		wlr_cursor_move(cursor->cursor, NULL, delta_x, delta_y);
 		cursor_rebase(cursor);
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	} else if (strcasecmp(argv[0], "set") == 0) {
 		if (argc < 3) {
 			return cmd_results_new(CMD_INVALID, expected_syntax);
@@ -33,6 +34,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		float y = strtof(argv[2], NULL) / root->height;
 		wlr_cursor_warp_absolute(cursor->cursor, NULL, x, y);
 		cursor_rebase(cursor);
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	} else {
 		if (argc < 2) {
 			return cmd_results_new(CMD_INVALID, expected_syntax);
@@ -117,10 +119,12 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 			.delta_discrete = delta
 		};
 		dispatch_cursor_axis(cursor, &event);
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 		return cmd_results_new(CMD_SUCCESS, NULL);
 	} else if (!button) {
 		return cmd_results_new(CMD_INVALID, "Unknown button %s", button_str);
 	}
 	dispatch_cursor_button(cursor, NULL, 0, button, state);
+	wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
