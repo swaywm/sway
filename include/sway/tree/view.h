@@ -55,6 +55,13 @@ struct sway_view_impl {
 	void (*destroy)(struct sway_view *view);
 };
 
+struct sway_saved_buffer {
+	struct wlr_client_buffer *buffer;
+	int x, y;
+	int width, height;
+	struct wl_list link; // sway_view::saved_buffers
+};
+
 struct sway_view {
 	enum sway_view_type type;
 	const struct sway_view_impl *impl;
@@ -64,9 +71,6 @@ struct sway_view {
 	struct sway_xdg_decoration *xdg_decoration;
 
 	pid_t pid;
-
-	double saved_x, saved_y;
-	int saved_width, saved_height;
 
 	// The size the view would want to be if it weren't tiled.
 	// Used when changing a view from tiled to floating.
@@ -80,8 +84,7 @@ struct sway_view {
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
 
-	struct wlr_client_buffer *saved_buffer;
-	int saved_buffer_width, saved_buffer_height;
+	struct wl_list saved_buffers; // sway_saved_buffer::link
 
 	// The geometry for whatever the client is committing, regardless of
 	// transaction state. Updated on every commit.

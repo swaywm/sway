@@ -210,14 +210,17 @@ static void apply_container_state(struct sway_container *container,
 	struct sway_view *view = container->view;
 	// Damage the old location
 	desktop_damage_whole_container(container);
-	if (view && view->saved_buffer) {
-		struct wlr_box box = {
-			.x = container->current.content_x - view->saved_geometry.x,
-			.y = container->current.content_y - view->saved_geometry.y,
-			.width = view->saved_buffer_width,
-			.height = view->saved_buffer_height,
-		};
-		desktop_damage_box(&box);
+	if (view && !wl_list_empty(&view->saved_buffers)) {
+		struct sway_saved_buffer *saved_buf;
+		wl_list_for_each(saved_buf, &view->saved_buffers, link) {
+			struct wlr_box box = {
+				.x = container->current.content_x - view->saved_geometry.x + saved_buf->x,
+				.y = container->current.content_y - view->saved_geometry.y + saved_buf->y,
+				.width = saved_buf->width,
+				.height = saved_buf->height,
+			};
+			desktop_damage_box(&box);
+		}
 	}
 
 	// There are separate children lists for each instruction state, the
@@ -229,7 +232,7 @@ static void apply_container_state(struct sway_container *container,
 
 	memcpy(&container->current, state, sizeof(struct sway_container_state));
 
-	if (view && view->saved_buffer) {
+	if (view && !wl_list_empty(&view->saved_buffers)) {
 		if (!container->node.destroying || container->node.ntxnrefs == 1) {
 			view_remove_saved_buffer(view);
 		}
@@ -432,7 +435,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			wlr_surface_send_frame_done(
 					node->sway_container->view->surface, &now);
 		}
-		if (node_is_view(node) && !node->sway_container->view->saved_buffer) {
+		if (node_is_view(node) && wl_list_empty(&node->sway_container->view->saved_buffers)) {
 			view_save_buffer(node->sway_container->view);
 			memcpy(&node->sway_container->view->saved_geometry,
 					&node->sway_container->view->geometry,

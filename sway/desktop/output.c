@@ -511,7 +511,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	if (view->saved_buffer) {
+	if (!wl_list_empty(&view->saved_buffers)) {
 		return false;
 	}
 
