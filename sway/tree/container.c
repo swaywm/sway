@@ -274,14 +274,10 @@ static struct sway_container *container_at_linear(struct sway_node *parent,
 	list_t *children = node_get_children(parent);
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
-		struct wlr_box box = {
-			.x = child->x,
-			.y = child->y,
-			.width = child->width,
-			.height = child->height,
-		};
-		if (wlr_box_contains_point(&box, lx, ly)) {
-			return tiling_container_at(&child->node, lx, ly, surface, sx, sy);
+		struct sway_container *container =
+			tiling_container_at(&child->node, lx, ly, surface, sx, sy);
+		if (container) {
+			return container;
 		}
 	}
 	return NULL;
@@ -303,15 +299,10 @@ static struct sway_container *floating_container_at(double lx, double ly,
 			// reverse.
 			for (int k = ws->floating->length - 1; k >= 0; --k) {
 				struct sway_container *floater = ws->floating->items[k];
-				struct wlr_box box = {
-					.x = floater->x,
-					.y = floater->y,
-					.width = floater->width,
-					.height = floater->height,
-				};
-				if (wlr_box_contains_point(&box, lx, ly)) {
-					return tiling_container_at(&floater->node, lx, ly,
-							surface, sx, sy);
+				struct sway_container *container =
+					tiling_container_at(&floater->node, lx, ly, surface, sx, sy);
+				if (container) {
+					return container;
 				}
 			}
 		}
@@ -319,12 +310,34 @@ static struct sway_container *floating_container_at(double lx, double ly,
 	return NULL;
 }
 
+struct sway_container *view_container_at(struct sway_node *parent,
+		double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (!sway_assert(node_is_view(parent), "Expected a view")) {
+		return NULL;
+	}
+
+	struct sway_container *container = parent->sway_container;
+	struct wlr_box box = {
+			.x = container->x,
+			.y = container->y,
+			.width = container->width,
+			.height = container->height,
+	};
+
+	if (wlr_box_contains_point(&box, lx, ly)) {
+		surface_at_view(parent->sway_container, lx, ly, surface, sx, sy);
+		return container;
+	}
+
+	return NULL;
+}
+
 struct sway_container *tiling_container_at(struct sway_node *parent,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (node_is_view(parent)) {
-		surface_at_view(parent->sway_container, lx, ly, surface, sx, sy);
-		return parent->sway_container;
+		return view_container_at(parent, lx, ly, surface, sx, sy);
 	}
 	if (!node_get_children(parent)) {
 		return NULL;
