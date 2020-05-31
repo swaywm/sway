@@ -188,21 +188,22 @@ bool view_inhibit_idle(struct sway_view *view) {
 		|| sway_idle_inhibit_v1_is_active(application_inhibitor);
 }
 
-bool view_is_only_visible(struct sway_view *view) {
-	bool only_view = true;
+bool view_ancestor_is_only_visible(struct sway_view *view) {
+	bool only_visible = true;
 	struct sway_container *con = view->container;
 	while (con) {
 		enum sway_container_layout layout = container_parent_layout(con);
 		if (layout != L_TABBED && layout != L_STACKED) {
 			list_t *siblings = container_get_siblings(con);
 			if (siblings && siblings->length > 1) {
-				only_view = false;
-				break;
+				only_visible = false;
 			}
+		} else {
+			only_visible = true;
 		}
 		con = con->parent;
 	}
-	return only_view;
+	return only_visible;
 }
 
 static bool gaps_to_edge(struct sway_view *view) {
@@ -243,7 +244,7 @@ void view_autoconfigure(struct sway_view *view) {
 		bool smart = config->hide_edge_borders_smart == ESMART_ON ||
 			(config->hide_edge_borders_smart == ESMART_NO_GAPS &&
 			!gaps_to_edge(view));
-		bool hide_smart = smart && view_is_only_visible(view);
+		bool hide_smart = smart && view_ancestor_is_only_visible(view);
 
 		if (config->hide_edge_borders == E_BOTH
 				|| config->hide_edge_borders == E_VERTICAL || hide_smart) {

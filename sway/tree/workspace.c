@@ -709,7 +709,7 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		if (focus && !focus->view) {
 			focus = seat_get_focus_inactive_view(seat, &focus->node);
 		}
-		if (focus && focus->view && view_is_only_visible(focus->view)) {
+		if (focus && focus->view && view_ancestor_is_only_visible(focus->view)) {
 			ws->current_gaps.top = 0;
 			ws->current_gaps.right = 0;
 			ws->current_gaps.bottom = 0;
