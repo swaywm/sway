@@ -239,11 +239,12 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 bool view_inhibit_idle(struct sway_view *view);
 
 /**
- * Whether or not the view is the only visible view in its tree. If the view
- * is tiling, there may be floating views. If the view is floating, there may
- * be tiling views or views in a different floating container.
+ * Whether or not this view's most distant ancestor (possibly itself) is the
+ * only visible node in its tree. If the view is tiling, there may be floating
+ * views. If the view is floating, there may be tiling views or views in a
+ * different floating container.
  */
-bool view_is_only_visible(struct sway_view *view);
+bool view_ancestor_is_only_visible(struct sway_view *view);
 
 /**
  * Configure the view's position and size based on the container's position and
