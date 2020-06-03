@@ -341,8 +341,8 @@ static void transaction_progress_queue(void) {
 	if (!server.transactions->length) {
 		return;
 	}
-	// There's only ever one committed transaction,
-	// and it's the first one in the queue.
+	// Only the first transaction in the queue is committed, so that's the one
+	// we try to process.
 	struct sway_transaction *transaction = server.transactions->items[0];
 	if (transaction->num_waiting) {
 		return;
@@ -351,7 +351,8 @@ static void transaction_progress_queue(void) {
 	transaction_destroy(transaction);
 	list_del(server.transactions, 0);
 
-	if (!server.transactions->length) {
+	if (server.transactions->length == 0) {
+		// The transaction queue is empty, so we're done.
 		sway_idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 		return;
 	}
@@ -369,6 +370,7 @@ static void transaction_progress_queue(void) {
 		}
 	}
 
+	// We again commit the first transaction in the queue to process it.
 	transaction = server.transactions->items[0];
 	transaction_commit(transaction);
 	transaction_progress_queue();
@@ -533,8 +535,7 @@ void transaction_commit_dirty(void) {
 
 	list_add(server.transactions, transaction);
 
-	// There's only ever one committed transaction,
-	// and it's the first one in the queue.
+	// We only commit the first transaction added to the queue.
 	if (server.transactions->length == 1) {
 		transaction_commit(transaction);
 		// Attempting to progress the queue here is useful
