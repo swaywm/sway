@@ -312,7 +312,7 @@ static void render_saved_view(struct sway_view *view,
 		scale_box(&box, wlr_output->scale);
 
 		float matrix[9];
-		wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
+		wlr_matrix_project_box(matrix, &box, saved_buf->transform, 0,
 			wlr_output->transform_matrix);
 
 		render_texture(wlr_output, damage, saved_buf->buffer->texture,
