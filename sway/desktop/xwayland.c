@@ -357,7 +357,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		get_geometry(view, &new_geo);
 
 		if ((new_geo.width != view->geometry.width ||
-					new_geo.height != view->geometry.height)) {
+					new_geo.height != view->geometry.height ||
+					new_geo.x != view->geometry.x ||
+					new_geo.y != view->geometry.y)) {
 			// The view has unexpectedly sent a new size
 			// eg. The Firefox "Save As" dialog when downloading a file
 			desktop_damage_view(view);
