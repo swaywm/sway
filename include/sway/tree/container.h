@@ -105,7 +105,6 @@ struct sway_container {
 	// refuses to resize to the content dimensions then it can be smaller.
 	// These are in layout coordinates.
 	double surface_x, surface_y;
-	double surface_width, surface_height;
 
 	enum sway_fullscreen_mode fullscreen_mode;
 
