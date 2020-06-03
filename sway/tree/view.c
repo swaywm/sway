@@ -730,8 +730,6 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	if (container_is_floating(con)) {
 		con->content_width = width;
 		con->content_height = height;
-		con->current.content_width = width;
-		con->current.content_height = height;
 		container_set_geometry_from_content(con);
 	} else {
 		con->surface_x = con->content_x + (con->content_width - width) / 2;
