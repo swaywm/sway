@@ -282,10 +282,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	} else {
 		struct wlr_box new_geo;
 		wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
-		struct sway_container *con = view->container;
 
-		if ((new_geo.width != con->surface_width ||
-					new_geo.height != con->surface_height)) {
+		if ((new_geo.width != view->geometry.width ||
+					new_geo.height != view->geometry.height)) {
 			// The view has unexpectedly sent a new size
 			desktop_damage_view(view);
 			view_update_size(view, new_geo.width, new_geo.height);

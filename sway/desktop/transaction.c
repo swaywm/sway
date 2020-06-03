@@ -267,8 +267,6 @@ static void apply_container_state(struct sway_container *container,
 		} else {
 			container->surface_y = container->current.content_y;
 		}
-		container->surface_width = container->current.content_width;
-		container->surface_height = container->current.content_height;
 	}
 
 	if (!container->node.destroying) {
