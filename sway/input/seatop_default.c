@@ -235,6 +235,13 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 			return;
 		}
 
+		// Handle moving a tiling container
+		if (config->tiling_drag && mod_pressed && !is_floating_or_child &&
+				cont->fullscreen_mode == FULLSCREEN_NONE) {
+			seatop_begin_move_tiling(seat, cont);
+			return;
+		}
+
 		seatop_begin_down(seat, node->sway_container, time_msec, sx, sy);
 	}
 
