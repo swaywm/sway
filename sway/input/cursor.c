@@ -663,37 +663,30 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
 		&surface, &sx, &sy);
 
-	if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
-		// If we started holding the tool tip down on a surface that accepts tablet
-		// v2, we should notify that surface if it gets released over a surface that
-		// doesn't support v2.
-		if (event->state == WLR_TABLET_TOOL_TIP_UP) {
-			wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
-		}
-
-		cursor->simulating_pointer_from_tool_tip = event->state == WLR_TABLET_TOOL_TIP_DOWN;
+	if (cursor->simulating_pointer_from_tool_tip &&
+			event->state == WLR_TABLET_TOOL_TIP_UP) {
+		cursor->simulating_pointer_from_tool_tip = false;
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
-				BTN_LEFT, cursor->simulating_pointer_from_tool_tip ?
-					WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+			BTN_LEFT, WLR_BUTTON_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 		transaction_commit_dirty();
-		return;
-	}
-
-	if (event->state == WLR_TABLET_TOOL_TIP_DOWN) {
-		wlr_tablet_v2_tablet_tool_notify_down(sway_tool->tablet_v2_tool);
-		wlr_tablet_tool_v2_start_implicit_grab(sway_tool->tablet_v2_tool);
-	} else {
-		if (cursor->simulating_pointer_from_tool_tip) {
-			dispatch_cursor_button(cursor, event->device, event->time_msec, BTN_LEFT,
-					WLR_BUTTON_RELEASED);
-			cursor->simulating_pointer_from_tool_tip = false;
+	} else if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+		// If we started holding the tool tip down on a surface that accepts
+		// tablet v2, we should notify that surface if it gets released over a
+		// surface that doesn't support v2.
+		if (event->state == WLR_TABLET_TOOL_TIP_UP) {
+			seatop_tablet_tool_tip(seat, sway_tool, event->time_msec,
+				WLR_TABLET_TOOL_TIP_UP);
+		} else {
+			cursor->simulating_pointer_from_tool_tip = true;
+			dispatch_cursor_button(cursor, event->device, event->time_msec,
+				BTN_LEFT, WLR_BUTTON_PRESSED);
+			wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
+			transaction_commit_dirty();
 		}
-
-		wlr_tablet_v2_tablet_tool_notify_up(sway_tool->tablet_v2_tool);
+	} else {
+		seatop_tablet_tool_tip(seat, sway_tool, event->time_msec, event->state);
 	}
-
-	seatop_tablet_tool_tip(seat, sway_tool, event->time_msec, event->state);
 }
 
 static struct sway_tablet *get_tablet_for_device(struct sway_cursor *cursor,

@@ -54,6 +54,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
 		enum wlr_tablet_tool_tip_state state) {
 	if (state == WLR_TABLET_TOOL_TIP_UP) {
+		wlr_tablet_v2_tablet_tool_notify_up(tool->tablet_v2_tool);
 		seatop_begin_default(seat);
 	}
 }
