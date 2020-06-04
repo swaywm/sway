@@ -1108,11 +1108,17 @@ void container_set_fullscreen(struct sway_container *con,
 	}
 }
 
-bool container_is_floating_or_child(struct sway_container *container) {
+struct sway_container *container_toplevel_ancestor(
+		struct sway_container *container) {
 	while (container->parent) {
 		container = container->parent;
 	}
-	return container_is_floating(container);
+
+	return container;
+}
+
+bool container_is_floating_or_child(struct sway_container *container) {
+	return container_is_floating(container_toplevel_ancestor(container));
 }
 
 bool container_is_fullscreen_or_child(struct sway_container *container) {
@@ -1537,10 +1543,7 @@ void container_update_marks_textures(struct sway_container *con) {
 
 void container_raise_floating(struct sway_container *con) {
 	// Bring container to front by putting it at the end of the floating list.
-	struct sway_container *floater = con;
-	while (floater->parent) {
-		floater = floater->parent;
-	}
+	struct sway_container *floater = container_toplevel_ancestor(con);
 	if (container_is_floating(floater) && floater->workspace) {
 		list_move_to_end(floater->workspace->floating, floater);
 		node_set_dirty(&floater->workspace->node);
@@ -1552,8 +1555,6 @@ bool container_is_scratchpad_hidden(struct sway_container *con) {
 }
 
 bool container_is_scratchpad_hidden_or_child(struct sway_container *con) {
-	while (con->parent) {
-		con = con->parent;
-	}
+	con = container_toplevel_ancestor(con);
 	return con->scratchpad && !con->workspace;
 }

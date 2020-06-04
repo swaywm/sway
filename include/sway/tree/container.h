@@ -273,6 +273,13 @@ void container_set_fullscreen(struct sway_container *con,
 void container_fullscreen_disable(struct sway_container *con);
 
 /**
+ * Walk up the container tree branch starting at the given container, and return
+ * its earliest ancestor.
+ */
+struct sway_container *container_toplevel_ancestor(
+		struct sway_container *container);
+
+/**
  * Return true if the container is floating, or a child of a floating split
  * container.
  */
