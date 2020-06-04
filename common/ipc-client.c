@@ -79,7 +79,6 @@ bool ipc_set_recv_timeout(int socketfd, struct timeval tv) {
 
 struct ipc_response *ipc_recv_response(int socketfd) {
 	char data[IPC_HEADER_SIZE];
-	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 
 	size_t total = 0;
 	while (total < IPC_HEADER_SIZE) {
@@ -95,15 +94,15 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 		goto error_1;
 	}
 
-	total = 0;
-	memcpy(&response->size, &data32[0], sizeof(data32[0]));
-	memcpy(&response->type, &data32[1], sizeof(data32[1]));
+	memcpy(&response->size, data + sizeof(ipc_magic), sizeof(uint32_t));
+	memcpy(&response->type, data + sizeof(ipc_magic) + sizeof(uint32_t), sizeof(uint32_t));
 
 	char *payload = malloc(response->size + 1);
 	if (!payload) {
 		goto error_2;
 	}
 
+	total = 0;
 	while (total < response->size) {
 		ssize_t received = recv(socketfd, payload + total, response->size - total, 0);
 		if (received < 0) {
@@ -129,10 +128,9 @@ void free_ipc_response(struct ipc_response *response) {
 
 char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
 	char data[IPC_HEADER_SIZE];
-	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	memcpy(&data32[0], len, sizeof(*len));
-	memcpy(&data32[1], &type, sizeof(type));
+	memcpy(data + sizeof(ipc_magic), len, sizeof(*len));
+	memcpy(data + sizeof(ipc_magic) + sizeof(*len), &type, sizeof(type));
 
 	if (write(socketfd, data, IPC_HEADER_SIZE) == -1) {
 		sway_abort("Unable to send IPC header");

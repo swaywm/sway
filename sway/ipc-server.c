@@ -242,7 +242,6 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	}
 
 	uint8_t buf[IPC_HEADER_SIZE];
-	uint32_t *buf32 = (uint32_t*)(buf + sizeof(ipc_magic));
 	// Should be fully available, because read_available >= IPC_HEADER_SIZE
 	ssize_t received = recv(client_fd, buf, IPC_HEADER_SIZE, 0);
 	if (received == -1) {
@@ -257,8 +256,8 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	memcpy(&client->pending_length, &buf32[0], sizeof(buf32[0]));
-	memcpy(&client->pending_type, &buf32[1], sizeof(buf32[1]));
+	memcpy(&client->pending_length, buf + sizeof(ipc_magic), sizeof(uint32_t));
+	memcpy(&client->pending_type, buf + sizeof(ipc_magic) + sizeof(uint32_t), sizeof(uint32_t));
 
 	if (read_available - received >= (long)client->pending_length) {
 		// Reset pending values.
@@ -920,11 +919,10 @@ bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_typ
 	assert(payload);
 
 	char data[IPC_HEADER_SIZE];
-	uint32_t *data32 = (uint32_t*)(data + sizeof(ipc_magic));
 
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	memcpy(&data32[0], &payload_length, sizeof(payload_length));
-	memcpy(&data32[1], &payload_type, sizeof(payload_type));
+	memcpy(data + sizeof(ipc_magic), &payload_length, sizeof(payload_length));
+	memcpy(data + sizeof(ipc_magic) + sizeof(payload_length), &payload_type, sizeof(payload_type));
 
 	while (client->write_buffer_len + IPC_HEADER_SIZE + payload_length >=
 				 client->write_buffer_size) {
