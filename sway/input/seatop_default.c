@@ -338,10 +338,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		if (button == btn_move && (mod_pressed || on_titlebar)) {
 			seat_set_focus_container(seat,
 					seat_get_focus_inactive_view(seat, &cont->node));
-			while (cont->parent) {
-				cont = cont->parent;
-			}
-			seatop_begin_move_floating(seat, cont);
+			seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
 			return;
 		}
 	}
@@ -359,10 +356,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
 		if (mod_pressed && button == btn_resize) {
-			struct sway_container *floater = cont;
-			while (floater->parent) {
-				floater = floater->parent;
-			}
+			struct sway_container *floater = container_toplevel_ancestor(cont);
 			edge = 0;
 			edge |= cursor->cursor->x > floater->x + floater->width / 2 ?
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
