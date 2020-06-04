@@ -715,7 +715,7 @@ bool translate_binding(struct sway_binding *binding) {
 		struct keycode_matches matches = get_keycode_for_keysym(*keysym);
 
 		if (matches.count != 1) {
-			sway_log(SWAY_INFO, "Unable to convert keysym %d into"
+			sway_log(SWAY_INFO, "Unable to convert keysym %" PRIu32 " into"
 					" a single keycode (found %d matches)",
 					*keysym, matches.count);
 			goto error;

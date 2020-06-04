@@ -510,11 +510,11 @@ struct sway_layer_surface *layer_from_wlr_layer_surface_v1(
 
 void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface_v1 *layer_surface = data;
-	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
-			"size %dx%d margin %d,%d,%d,%d",
+	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %" PRIu32
+			" size %" PRIu32 "x%" PRIu32 " margin %" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",",
 		layer_surface->namespace,
 		layer_surface->client_pending.layer,
-		layer_surface->client_pending.layer,
+		layer_surface->client_pending.anchor,
 		layer_surface->client_pending.desired_width,
 		layer_surface->client_pending.desired_height,
 		layer_surface->client_pending.margin.top,
