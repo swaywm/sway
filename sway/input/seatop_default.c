@@ -201,8 +201,12 @@ static void state_add_button(struct seatop_default_event *e, uint32_t button) {
 static void handle_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
 		enum wlr_tablet_tool_tip_state state) {
-	if (state != WLR_TABLET_TOOL_TIP_DOWN) {
+	if (state == WLR_TABLET_TOOL_TIP_UP) {
+		wlr_tablet_v2_tablet_tool_notify_up(tool->tablet_v2_tool);
 		return;
+	} else if (state == WLR_TABLET_TOOL_TIP_DOWN) {
+		wlr_tablet_v2_tablet_tool_notify_down(tool->tablet_v2_tool);
+		wlr_tablet_tool_v2_start_implicit_grab(tool->tablet_v2_tool);
 	}
 
 	struct sway_cursor *cursor = seat->cursor;
