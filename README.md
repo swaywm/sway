@@ -28,6 +28,8 @@ channel or shoot an email to sir@cmpwn.com for advice.
 
 ### Compiling from Source
 
+Check out [this wiki page](https://github.com/swaywm/sway/wiki/Development-Setup) if you want to build the HEAD of sway and wlroots for testing or development.
+
 Install dependencies:
 
 * meson \*
