@@ -223,13 +223,7 @@ static bool is_parallel(enum sway_container_layout layout,
 	return layout_is_horiz == edge_is_horiz;
 }
 
-static void handle_button(struct sway_seat *seat, uint32_t time_msec,
-		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
-	if (seat->cursor->pressed_button_count != 0) {
-		return;
-	}
-
+static void finalize_move(struct sway_seat *seat) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 
 	if (!e->target_node) {
@@ -302,6 +296,22 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	seatop_begin_default(seat);
 }
 
+static void handle_button(struct sway_seat *seat, uint32_t time_msec,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state) {
+	if (seat->cursor->pressed_button_count == 0) {
+		finalize_move(seat);
+	}
+}
+
+static void handle_tablet_tool_tip(struct sway_seat *seat,
+		struct sway_tablet_tool *tool, uint32_t time_msec,
+		enum wlr_tablet_tool_tip_state state) {
+	if (state == WLR_TABLET_TOOL_TIP_UP) {
+		finalize_move(seat);
+	}
+}
+
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (e->target_node == &con->node) { // Drop target
@@ -315,6 +325,7 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
 	.pointer_motion = handle_pointer_motion,
+	.tablet_tool_tip = handle_tablet_tool_tip,
 	.unref = handle_unref,
 	.render = handle_render,
 };
