@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 	}
 
 	sway_log(SWAY_DEBUG, "Output: %s", swaynag.type->output);
-	sway_log(SWAY_DEBUG, "Anchors: %d", swaynag.type->anchors);
+	sway_log(SWAY_DEBUG, "Anchors: %" PRIu32, swaynag.type->anchors);
 	sway_log(SWAY_DEBUG, "Type: %s", swaynag.type->name);
 	sway_log(SWAY_DEBUG, "Message: %s", swaynag.message);
 	sway_log(SWAY_DEBUG, "Font: %s", swaynag.type->font);

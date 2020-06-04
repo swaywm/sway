@@ -916,7 +916,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 	if (seat == input_manager_get_default_seat()) {
 		char cursor_size_fmt[16];
-		snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%d", cursor_size);
+		snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%u", cursor_size);
 		setenv("XCURSOR_SIZE", cursor_size_fmt, 1);
 		if (cursor_theme != NULL) {
 			setenv("XCURSOR_THEME", cursor_theme, 1);

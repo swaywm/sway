@@ -19,7 +19,7 @@ static bool set_send_events(struct libinput_device *device, uint32_t mode) {
 	if (libinput_device_config_send_events_get_mode(device) == mode) {
 		return false;
 	}
-	sway_log(SWAY_DEBUG, "send_events_set_mode(%d)", mode);
+	sway_log(SWAY_DEBUG, "send_events_set_mode(%" PRIu32 ")", mode);
 	log_status(libinput_device_config_send_events_set_mode(device, mode));
 	return true;
 }
@@ -150,7 +150,7 @@ static bool set_scroll_button(struct libinput_device *dev, uint32_t button) {
 			libinput_device_config_scroll_get_button(dev) == button) {
 		return false;
 	}
-	sway_log(SWAY_DEBUG, "scroll_set_button(%d)", button);
+	sway_log(SWAY_DEBUG, "scroll_set_button(%" PRIu32 ")", button);
 	log_status(libinput_device_config_scroll_set_button(dev, button));
 	return true;
 }

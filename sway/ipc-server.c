@@ -140,7 +140,7 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 		dir = "/tmp";
 	}
 	if (path_size <= snprintf(ipc_sockaddr->sun_path, path_size,
-			"%s/sway-ipc.%i.%i.sock", dir, getuid(), getpid())) {
+			"%s/sway-ipc.%u.%i.sock", dir, getuid(), getpid())) {
 		sway_abort("Socket path won't fit into ipc_sockaddr->sun_path");
 	}
 
