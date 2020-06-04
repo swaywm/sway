@@ -194,9 +194,9 @@ static void state_add_button(struct seatop_default_event *e, uint32_t button) {
 	e->pressed_button_count++;
 }
 
-/*----------------------------------\
- * Functions used by handle_button  /
- *--------------------------------*/
+/*-------------------------------------------\
+ * Functions used by handle_tablet_tool_tip  /
+ *-----------------------------------------*/
 
 static void handle_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
@@ -204,22 +204,47 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 	if (state == WLR_TABLET_TOOL_TIP_UP) {
 		wlr_tablet_v2_tablet_tool_notify_up(tool->tablet_v2_tool);
 		return;
-	} else if (state == WLR_TABLET_TOOL_TIP_DOWN) {
-		wlr_tablet_v2_tablet_tool_notify_down(tool->tablet_v2_tool);
-		wlr_tablet_tool_v2_start_implicit_grab(tool->tablet_v2_tool);
 	}
 
 	struct sway_cursor *cursor = seat->cursor;
-
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 	struct sway_node *node = node_at_coords(seat,
 		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
-	if (surface && node && node->type == N_CONTAINER) {
+	if (!sway_assert(surface,
+			"Expected null-surface tablet input to route through pointer emulation")) {
+		return;
+	}
+
+	struct sway_container *cont = node && node->type == N_CONTAINER ?
+		node->sway_container : NULL;
+
+	if (cont) {
+		bool is_floating_or_child = container_is_floating_or_child(cont);
+		bool is_fullscreen_or_child = container_is_fullscreen_or_child(cont);
+		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+		bool mod_pressed = keyboard &&
+			(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
+
+		// Handle beginning floating move
+		if (is_floating_or_child && !is_fullscreen_or_child && mod_pressed) {
+			seat_set_focus_container(seat,
+				seat_get_focus_inactive_view(seat, &cont->node));
+			seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
+			return;
+		}
+
 		seatop_begin_down(seat, node->sway_container, time_msec, sx, sy);
 	}
+
+	wlr_tablet_v2_tablet_tool_notify_down(tool->tablet_v2_tool);
+	wlr_tablet_tool_v2_start_implicit_grab(tool->tablet_v2_tool);
 }
+
+/*----------------------------------\
+ * Functions used by handle_button  /
+ *--------------------------------*/
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
