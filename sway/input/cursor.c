@@ -4,8 +4,6 @@
 #include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
 #include <errno.h>
-#include <float.h>
-#include <limits.h>
 #include <strings.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_cursor.h>
@@ -13,9 +11,9 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/region.h>
-#include "list.h"
-#include "log.h"
 #include "config.h"
+#include "log.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
@@ -24,18 +22,11 @@
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
-#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
-
-static uint32_t get_current_time_msec(void) {
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	return now.tv_nsec / 1000;
-}
 
 static struct wlr_surface *layer_surface_at(struct sway_output *output,
 		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {

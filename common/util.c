@@ -1,14 +1,20 @@
 #define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
-#include <float.h>
 #include <fcntl.h>
 #include <math.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <wayland-server-protocol.h>
 #include "log.h"
 #include "util.h"
+
+uint32_t get_current_time_msec(void) {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return now.tv_sec * 1000 + now.tv_nsec / 1000000;
+}
 
 int wrap(int i, int max) {
 	return ((i % max) + max) % max;
