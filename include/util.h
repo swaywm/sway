@@ -6,7 +6,13 @@
 #include <wayland-server-protocol.h>
 
 /**
- * Wrap i into the range [0, max[
+ * Get the current time, in milliseconds.
+ */
+
+uint32_t get_current_time_msec(void);
+
+/**
+ * Wrap i into the range [0, max]
  */
 int wrap(int i, int max);
 
