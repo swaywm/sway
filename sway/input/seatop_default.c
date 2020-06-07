@@ -295,7 +295,16 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	// Handle tiling resize via border
 	if (cont && resize_edge && button == BTN_LEFT &&
 			state == WLR_BUTTON_PRESSED && !is_floating) {
-		seat_set_focus_container(seat, cont);
+		// If a resize is triggered on a tabbed or stacked container, change
+		// focus to the tab which already had inactive focus -- otherwise, we'd
+		// change the active tab when the user probably just wanted to resize.
+		struct sway_container *cont_to_focus = cont;
+		enum sway_container_layout layout = container_parent_layout(cont);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			cont_to_focus = seat_get_focus_inactive_view(seat, &cont->parent->node);
+		}
+
+		seat_set_focus_container(seat, cont_to_focus);
 		seatop_begin_resize_tiling(seat, cont, edge);
 		return;
 	}
