@@ -52,6 +52,8 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 	static struct option opts[] = {
 		{"button", required_argument, NULL, 'b'},
 		{"button-no-terminal", required_argument, NULL, 'B'},
+		{"button-dismiss", required_argument, NULL, 'z'},
+		{"button-dismiss-no-terminal", required_argument, NULL, 'Z'},
 		{"config", required_argument, NULL, 'c'},
 		{"debug", no_argument, NULL, 'd'},
 		{"edge", required_argument, NULL, 'e'},
@@ -90,6 +92,11 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			"be defined.\n"
 		"  -B, --button-no-terminal <text> <action>  Like --button, but does"
 			"not run the action in a terminal.\n"
+		"  -z, --button-dismiss <text> <action>  Create a button with text that "
+			"dismisses swaynag, and executes action in a terminal when pressed. "
+			"Multiple buttons can be defined.\n"
+		"  -Z, --button-dismiss-no-terminal <text> <action>  Like "
+			"--button-dismiss, but does not run the action in a terminal.\n"
 		"  -c, --config <path>           Path to config file.\n"
 		"  -d, --debug                   Enable debugging.\n"
 		"  -e, --edge top|bottom         Set the edge to use.\n"
@@ -120,13 +127,15 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 
 	optind = 1;
 	while (1) {
-		int c = getopt_long(argc, argv, "b:B:c:de:f:hlL:m:o:s:t:v", opts, NULL);
+		int c = getopt_long(argc, argv, "b:B:z:Z:c:de:f:hlL:m:o:s:t:v", opts, NULL);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 'b': // Button
 		case 'B': // Button (No Terminal)
+		case 'z': // Button (Dismiss)
+		case 'Z': // Button (Dismiss, No Terminal)
 			if (swaynag) {
 				if (optind >= argc) {
 					fprintf(stderr, "Missing action for button %s\n", optarg);
@@ -138,6 +147,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 				button->type = SWAYNAG_ACTION_COMMAND;
 				button->action = strdup(argv[optind]);
 				button->terminal = c == 'b';
+				button->dismiss = c == 'z' || c == 'Z';
 				list_add(swaynag->buttons, button);
 			}
 			optind++;
