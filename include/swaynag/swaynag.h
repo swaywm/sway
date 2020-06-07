@@ -53,6 +53,7 @@ struct swaynag_button {
 	int width;
 	int height;
 	bool terminal;
+	bool dismiss;
 };
 
 struct swaynag_details {

@@ -76,6 +76,11 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 			}
 			_exit(EXIT_SUCCESS);
 		}
+
+		if (button->dismiss) {
+			swaynag->run_display = false;
+		}
+
 		if (waitpid(pid, NULL, 0) < 0) {
 			sway_log_errno(SWAY_DEBUG, "waitpid failed");
 		}

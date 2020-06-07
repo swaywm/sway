@@ -21,6 +21,19 @@ _swaynag_ [options...]
 	_action_ will be run directly instead of in a terminal. Multiple buttons
 	can be defined by providing the flag multiple times.
 
+*-z, --button-dismiss* <text> <action>
+	Create a button with the text _text_ that executes _action_ when pressed,
+	and dismisses swaynag. If the environment variable _TERMINAL_ is set,
+	_action_ will be run inside the terminal. Otherwise, it will fallback to
+	running directly. Multiple buttons can be defined by providing the flag
+	multiple times.
+
+*-Z, --button-dismiss-no-terminal* <text> <action>
+	Create a button with the text _text_ that executes _action_ when pressed,
+	and dismisses swaynag. _action_ will be run directly instead of in a
+	terminal. Multiple buttons can be defined by providing the flag multiple
+	times.
+
 *-c, --config* <path>
 	The config file to use. By default, the following paths are checked:
 	_$HOME/.swaynag/config_, _$XDG\_CONFIG\_HOME/swaynag/config_, and
