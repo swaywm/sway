@@ -1244,6 +1244,10 @@ static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 		double ly = sy + con->content_y - view->geometry.y;
 
 		wlr_cursor_warp(cursor->cursor, NULL, lx, ly);
+
+		// Warp the pointer as well, so that on the next pointer rebase we don't
+		// send an unexpected synthetic motion event to clients.
+		wlr_seat_pointer_warp(constraint->seat, sx, sy);
 	}
 }
 
