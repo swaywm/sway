@@ -445,7 +445,10 @@ void swaynag_setup(struct swaynag *swaynag) {
 
 	struct wl_registry *registry = wl_display_get_registry(swaynag->display);
 	wl_registry_add_listener(registry, &registry_listener, swaynag);
-	wl_display_roundtrip(swaynag->display);
+	if (wl_display_roundtrip(swaynag->display) < 0) {
+		sway_abort("failed to register with the wayland display");
+	}
+
 	assert(swaynag->compositor && swaynag->layer_shell && swaynag->shm);
 
 	while (swaynag->querying_outputs > 0) {
