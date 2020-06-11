@@ -323,6 +323,7 @@ int main(int argc, char **argv) {
 		wlr_log_init(WLR_ERROR, NULL);
 	}
 
+	sway_log(SWAY_INFO, "Sway version " SWAY_VERSION);
 	log_kernel();
 	log_distro();
 	log_env();
