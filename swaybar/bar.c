@@ -413,10 +413,6 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	if (!ipc_initialize(bar)) {
 		return false;
 	}
-	if (bar->config->status_command) {
-		bar->status = status_line_init(bar->config->status_command);
-		bar->status->bar = bar;
-	}
 
 	bar->display = wl_display_connect(NULL);
 	if (!bar->display) {
@@ -443,6 +439,11 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 		pointer->cursor_surface =
 			wl_compositor_create_surface(bar->compositor);
 		assert(pointer->cursor_surface);
+	}
+
+	if (bar->config->status_command) {
+		bar->status = status_line_init(bar->config->status_command);
+		bar->status->bar = bar;
 	}
 
 #if HAVE_TRAY
