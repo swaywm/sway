@@ -949,6 +949,7 @@ void view_child_destroy(struct sway_view_child *child) {
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);
 	wl_list_remove(&child->view_unmap.link);
+	wl_list_remove(&child->surface_new_subsurface.link);
 
 	if (child->impl && child->impl->destroy) {
 		child->impl->destroy(child);
