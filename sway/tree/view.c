@@ -917,7 +917,9 @@ void view_child_init(struct sway_view_child *child,
 
 	// Not all child views have a map/unmap event
 	child->surface_map.notify = view_child_handle_surface_map;
+	wl_list_init(&child->surface_map.link);
 	child->surface_unmap.notify = view_child_handle_surface_unmap;
+	wl_list_init(&child->surface_unmap.link);
 
 	wl_signal_add(&view->events.unmap, &child->view_unmap);
 	child->view_unmap.notify = view_child_handle_view_unmap;
@@ -948,6 +950,8 @@ void view_child_destroy(struct sway_view_child *child) {
 
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);
+	wl_list_remove(&child->surface_map.link);
+	wl_list_remove(&child->surface_unmap.link);
 	wl_list_remove(&child->view_unmap.link);
 	wl_list_remove(&child->surface_new_subsurface.link);
 
