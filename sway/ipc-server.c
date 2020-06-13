@@ -876,6 +876,16 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_BINDING_STATE:
+	{
+		json_object *current_mode = ipc_json_get_binding_mode();
+		const char *json_string = json_object_to_json_string(current_mode);
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
+		json_object_put(current_mode); // free
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_CONFIG:
 	{
 		json_object *json = json_object_new_object();
