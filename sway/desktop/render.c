@@ -32,6 +32,7 @@
 struct render_data {
 	pixman_region32_t *damage;
 	float alpha;
+	struct sway_container *container;
 };
 
 /**
@@ -149,14 +150,22 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 	struct wlr_fbox src_box;
 	wlr_surface_get_buffer_source_box(surface, &src_box);
 
-	struct wlr_box dst_box = *_box;
-	scale_box(&dst_box, wlr_output->scale);
+	struct wlr_box proj_box = *_box;
+	scale_box(&proj_box, wlr_output->scale);
 
 	float matrix[9];
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current.transform);
-	wlr_matrix_project_box(matrix, &dst_box, transform, rotation,
+	wlr_matrix_project_box(matrix, &proj_box, transform, rotation,
 		wlr_output->transform_matrix);
+
+	struct wlr_box dst_box = *_box;
+	struct sway_container *container = data->container;
+	if (container != NULL) {
+		dst_box.width = fmin(dst_box.width, container->current.content_width - surface->sx);
+		dst_box.height = fmin(dst_box.height, container->current.content_height - surface->sy);
+	}
+	scale_box(&dst_box, wlr_output->scale);
 
 	render_texture(wlr_output, output_damage, texture,
 		&src_box, &dst_box, matrix, alpha);
@@ -256,6 +265,9 @@ static void render_view_toplevels(struct sway_view *view,
 		.damage = damage,
 		.alpha = alpha,
 	};
+	if (!container_is_current_floating(view->container)) {
+		data.container = view->container;
+	}
 	// Render all toplevels without descending into popups
 	double ox = view->container->surface_x -
 		output->lx - view->geometry.x;
@@ -282,13 +294,16 @@ static void render_saved_view(struct sway_view *view,
 	if (wl_list_empty(&view->saved_buffers)) {
 		return;
 	}
+
+	bool floating = container_is_current_floating(view->container);
+
 	struct sway_saved_buffer *saved_buf;
 	wl_list_for_each(saved_buf, &view->saved_buffers, link) {
 		if (!saved_buf->buffer->texture) {
 			continue;
 		}
 
-		struct wlr_box box = {
+		struct wlr_box proj_box = {
 			.x = saved_buf->x - view->saved_geometry.x - output->lx,
 			.y = saved_buf->y - view->saved_geometry.y - output->ly,
 			.width = saved_buf->width,
@@ -301,20 +316,31 @@ static void render_saved_view(struct sway_view *view,
 		};
 
 		struct wlr_box intersection;
-		bool intersects = wlr_box_intersection(&intersection, &output_box, &box);
+		bool intersects = wlr_box_intersection(&intersection, &output_box, &proj_box);
 		if (!intersects) {
 			continue;
 		}
 
-		scale_box(&box, wlr_output->scale);
+		struct wlr_box dst_box = proj_box;
+		scale_box(&proj_box, wlr_output->scale);
 
 		float matrix[9];
 		enum wl_output_transform transform = wlr_output_transform_invert(saved_buf->transform);
-		wlr_matrix_project_box(matrix, &box, transform, 0,
+		wlr_matrix_project_box(matrix, &proj_box, transform, 0,
 			wlr_output->transform_matrix);
 
+		if (!floating) {
+			dst_box.width = fmin(dst_box.width,
+					view->container->current.content_width -
+					(saved_buf->x - view->container->current.content_x));
+			dst_box.height = fmin(dst_box.height,
+					view->container->current.content_height -
+					(saved_buf->y - view->container->current.content_y));
+		}
+		scale_box(&dst_box, wlr_output->scale);
+
 		render_texture(wlr_output, damage, saved_buf->buffer->texture,
-			&saved_buf->source_box, &box, matrix, alpha);
+			&saved_buf->source_box, &dst_box, matrix, alpha);
 	}
 
 	// FIXME: we should set the surface that this saved buffer originates from
