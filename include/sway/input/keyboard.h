@@ -75,6 +75,8 @@ struct sway_keyboard_group {
 	struct sway_seat_device *seat_device;
 	struct wl_listener keyboard_key;
 	struct wl_listener keyboard_modifiers;
+	struct wl_listener enter;
+	struct wl_listener leave;
 	struct wl_list link; // sway_seat::keyboard_groups
 };
 
