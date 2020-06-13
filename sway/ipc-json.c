@@ -1261,3 +1261,10 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 #endif
 	return json;
 }
+
+json_object *ipc_json_get_binding_mode(void) {
+	json_object *current_mode = json_object_new_object();
+	json_object_object_add(current_mode, "name",
+			json_object_new_string(config->current_mode->name));
+	return current_mode;
+}

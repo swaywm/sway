@@ -80,6 +80,9 @@ _swaymsg_ [options...] [message]
 *get\_binding\_modes*
 	Gets a JSON-encoded list of currently configured binding modes.
 
+*get\_binding\_state*
+	Gets JSON-encoded info about the current binding state.
+
 *get\_config*
 	Gets a JSON-encoded copy of the current configuration.
 
