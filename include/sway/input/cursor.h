@@ -91,7 +91,7 @@ void cursor_rebase_all(void);
 void cursor_update_image(struct sway_cursor *cursor, struct sway_node *node);
 
 void cursor_handle_activity(struct sway_cursor *cursor,
-	enum sway_input_idle_source idle_source);
+	struct wlr_input_device *device);
 void cursor_unhide(struct sway_cursor *cursor);
 int cursor_get_timeout(struct sway_cursor *cursor);
 
