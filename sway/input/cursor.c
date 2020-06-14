@@ -256,21 +256,21 @@ int cursor_get_timeout(struct sway_cursor *cursor) {
 static enum sway_input_idle_source idle_source_from_device(
 		struct wlr_input_device *device) {
 	switch (device->type) {
-		case WLR_INPUT_DEVICE_KEYBOARD:
-			return IDLE_SOURCE_KEYBOARD;
-		case WLR_INPUT_DEVICE_POINTER:
-			return IDLE_SOURCE_POINTER;
-		case WLR_INPUT_DEVICE_TOUCH:
-			return IDLE_SOURCE_TOUCH;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
-			return IDLE_SOURCE_TABLET_TOOL;
-		case WLR_INPUT_DEVICE_TABLET_PAD:
-			return IDLE_SOURCE_TABLET_PAD;
-		case WLR_INPUT_DEVICE_SWITCH:
-			return IDLE_SOURCE_SWITCH;
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return IDLE_SOURCE_KEYBOARD;
+	case WLR_INPUT_DEVICE_POINTER:
+		return IDLE_SOURCE_POINTER;
+	case WLR_INPUT_DEVICE_TOUCH:
+		return IDLE_SOURCE_TOUCH;
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return IDLE_SOURCE_TABLET_TOOL;
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		return IDLE_SOURCE_TABLET_PAD;
+	case WLR_INPUT_DEVICE_SWITCH:
+		return IDLE_SOURCE_SWITCH;
 	}
 
-	assert(false);
+	abort();
 }
 
 void cursor_handle_activity(struct sway_cursor *cursor,
