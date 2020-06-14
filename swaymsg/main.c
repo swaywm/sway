@@ -286,11 +286,18 @@ static void pretty_print_config(json_object *c) {
 	printf("%s\n", json_object_get_string(config));
 }
 
+static void pretty_print_binding_state(json_object *m) {
+	json_object *name;
+	json_object_object_get_ex(m, "name", &name);
+	printf("%s\n", json_object_get_string(name));
+}
+
 static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
 			type != IPC_GET_VERSION && type != IPC_GET_SEATS &&
-			type != IPC_GET_CONFIG && type != IPC_SEND_TICK) {
+			type != IPC_GET_CONFIG && type != IPC_SEND_TICK &&
+			type != IPC_GET_BINDING_STATE) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
@@ -307,6 +314,11 @@ static void pretty_print(int type, json_object *resp) {
 
 	if (type == IPC_GET_CONFIG) {
 		pretty_print_config(resp);
+		return;
+	}
+
+	if (type == IPC_GET_BINDING_STATE) {
+		pretty_print_binding_state(resp);
 		return;
 	}
 
@@ -440,6 +452,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_VERSION;
 	} else if (strcasecmp(cmdtype, "get_binding_modes") == 0) {
 		type = IPC_GET_BINDING_MODES;
+	} else if (strcasecmp(cmdtype, "get_binding_state") == 0) {
+		type = IPC_GET_BINDING_STATE;
 	} else if (strcasecmp(cmdtype, "get_config") == 0) {
 		type = IPC_GET_CONFIG;
 	} else if (strcasecmp(cmdtype, "send_tick") == 0) {

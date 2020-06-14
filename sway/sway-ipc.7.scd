@@ -75,6 +75,9 @@ supported. *For all replies, any properties not listed are subject to removal.*
 |- 11
 :  SYNC
 :  Replies failure object for i3 compatibility
+|- 12
+:  GET_BINDING_STATE
+:  Get the currently active binding mode name
 |- 100
 :  GET_INPUTS
 :  Get the list of input devices
@@ -1064,6 +1067,22 @@ boolean value _false_.
 ```
 {
 	"success": false
+}
+```
+
+## 12. GET_BINDING_STATE
+
+*MESSAGE*++
+Retrieve the name of the current binding mode
+
+*REPLY*++
+An object with a single string property _name_ with the name of the current
+binding mode.
+
+*Example Reply:*
+```
+{
+	"name": "default"
 }
 ```
 

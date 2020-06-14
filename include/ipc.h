@@ -17,6 +17,7 @@ enum ipc_command_type {
 	IPC_GET_CONFIG = 9,
 	IPC_SEND_TICK = 10,
 	IPC_SYNC = 11,
+	IPC_GET_BINDING_STATE = 12,
 
 	// sway-specific command types
 	IPC_GET_INPUTS = 100,

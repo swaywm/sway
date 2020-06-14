@@ -895,6 +895,18 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_BINDING_STATE:
+	{
+		json_object *json = json_object_new_object();
+		json_object_object_add(json, "name",
+				json_object_new_string(config->current_mode->name));
+		const char *json_string = json_object_to_json_string(json);
+		ipc_send_reply(client, payload_type, json_string,
+			(uint32_t)strlen(json_string));
+		json_object_put(json); //free
+		goto exit_cleanup;
+	}
+
 	default:
 		sway_log(SWAY_INFO, "Unknown IPC command type %x", payload_type);
 		goto exit_cleanup;
