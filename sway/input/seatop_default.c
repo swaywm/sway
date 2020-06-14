@@ -253,10 +253,47 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
  * Functions used by handle_button  /
  *--------------------------------*/
 
+static bool trigger_pointer_button_binding(struct sway_seat *seat,
+		struct wlr_input_device *device, uint32_t button,
+		enum wlr_button_state state, uint32_t modifiers,
+		bool on_titlebar, bool on_border, bool on_contents, bool on_workspace) {
+	// We can reach this for non-pointer devices if we're currently emulating
+	// pointer input for one. Emulated input should not trigger bindings.
+	if (device->type != WLR_INPUT_DEVICE_POINTER) {
+		return false;
+	}
+
+	struct seatop_default_event *e = seat->seatop_data;
+
+	char *device_identifier = device ? input_device_get_identifier(device)
+		: strdup("*");
+	struct sway_binding *binding = NULL;
+	if (state == WLR_BUTTON_PRESSED) {
+		state_add_button(e, button);
+		binding = get_active_mouse_binding(e,
+			config->current_mode->mouse_bindings, modifiers, false,
+			on_titlebar, on_border, on_contents, on_workspace,
+			device_identifier);
+	} else {
+		binding = get_active_mouse_binding(e,
+			config->current_mode->mouse_bindings, modifiers, true,
+			on_titlebar, on_border, on_contents, on_workspace,
+			device_identifier);
+		state_erase_button(e, button);
+	}
+
+	free(device_identifier);
+	if (binding) {
+		seat_execute_command(seat, binding);
+		return true;
+	}
+
+	return false;
+}
+
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
 		enum wlr_button_state state) {
-	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
 	// Determine what's under the cursor
@@ -278,29 +315,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	bool on_workspace = node && node->type == N_WORKSPACE;
 	bool on_titlebar = cont && !on_border && !surface;
 
-	// Handle mouse bindings
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
 
-	char *device_identifier = device ? input_device_get_identifier(device)
-		: strdup("*");
-	struct sway_binding *binding = NULL;
-	if (state == WLR_BUTTON_PRESSED) {
-		state_add_button(e, button);
-		binding = get_active_mouse_binding(e,
-			config->current_mode->mouse_bindings, modifiers, false,
-			on_titlebar, on_border, on_contents, on_workspace,
-			device_identifier);
-	} else {
-		binding = get_active_mouse_binding(e,
-			config->current_mode->mouse_bindings, modifiers, true,
-			on_titlebar, on_border, on_contents, on_workspace,
-			device_identifier);
-		state_erase_button(e, button);
-	}
-	free(device_identifier);
-	if (binding) {
-		seat_execute_command(seat, binding);
+	// Handle mouse bindings
+	if (trigger_pointer_button_binding(seat, device, button, state, modifiers,
+			on_titlebar, on_border, on_contents, on_workspace)) {
 		return;
 	}
 
@@ -342,8 +362,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle tiling resize via mod
-	bool mod_pressed = keyboard &&
-		(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
+	bool mod_pressed = modifiers & config->floating_mod;
 	if (cont && !is_floating_or_child && mod_pressed &&
 			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?
