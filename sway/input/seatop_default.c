@@ -220,7 +220,14 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 
-	if (cont) {
+	if (wlr_surface_is_layer_surface(surface)) {
+		// Handle tapping a layer surface
+		struct wlr_layer_surface_v1 *layer =
+				wlr_layer_surface_v1_from_wlr_surface(surface);
+		if (layer->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, layer);
+		}
+	} else if (cont) {
 		bool is_floating_or_child = container_is_floating_or_child(cont);
 		bool is_fullscreen_or_child = container_is_fullscreen_or_child(cont);
 		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
@@ -242,8 +249,23 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 			return;
 		}
 
+		// Handle tapping on a container surface
+		seat_set_focus_container(seat, cont);
 		seatop_begin_down(seat, node->sway_container, time_msec, sx, sy);
 	}
+#if HAVE_XWAYLAND
+	// Handle tapping on an xwayland unmanaged view
+	else if (wlr_surface_is_xwayland_surface(surface)) {
+		struct wlr_xwayland_surface *xsurface =
+				wlr_xwayland_surface_from_wlr_surface(surface);
+		if (xsurface->override_redirect &&
+				wlr_xwayland_or_surface_wants_focus(xsurface)) {
+			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
+			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+			seat_set_focus_surface(seat, xsurface->surface, false);
+		}
+	}
+#endif
 
 	wlr_tablet_v2_tablet_tool_notify_down(tool->tablet_v2_tool);
 	wlr_tablet_tool_v2_start_implicit_grab(tool->tablet_v2_tool);
