@@ -304,35 +304,51 @@ void cursor_unhide(struct sway_cursor *cursor) {
 static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		struct wlr_input_device *device, double dx, double dy,
 		double dx_unaccel, double dy_unaccel) {
+	double sx, sy;
+	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
 	wlr_relative_pointer_manager_v1_send_relative_motion(
 		server.relative_pointer_manager,
-		cursor->seat->wlr_seat, (uint64_t)time_msec * 1000,
+		wlr_seat, (uint64_t)time_msec * 1000,
 		dx, dy, dx_unaccel, dy_unaccel);
 
-	// Only apply pointer constraints to real pointer input.
-	if (cursor->active_constraint && device->type == WLR_INPUT_DEVICE_POINTER) {
-		struct wlr_surface *surface = NULL;
-		double sx, sy;
-		node_at_coords(cursor->seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	if (device->type == WLR_INPUT_DEVICE_POINTER) {
+		// Only apply pointer constraints to real pointer input.
+		if (cursor->active_constraint) {
+			struct wlr_surface *surface = NULL;
+			node_at_coords(cursor->seat,
+				cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
-		if (cursor->active_constraint->surface != surface) {
-			return;
+			if (cursor->active_constraint->surface != surface) {
+				return;
+			}
+
+			double sx_confined, sy_confined;
+			if (!wlr_region_confine(&cursor->confine, sx, sy, sx + dx, sy + dy,
+					&sx_confined, &sy_confined)) {
+				return;
+			}
+
+			dx = sx_confined - sx;
+			dy = sy_confined - sy;
 		}
 
-		double sx_confined, sy_confined;
-		if (!wlr_region_confine(&cursor->confine, sx, sy, sx + dx, sy + dy,
-				&sx_confined, &sy_confined)) {
-			return;
-		}
-
-		dx = sx_confined - sx;
-		dy = sy_confined - sy;
+		// The expectation is that touch input will not update the cursor
+		// image position at all, even if it's being emulated as pointer input.
+		// Tablet input has already moved the cursor by this point (since it's
+		// based on absolute coordinates).
+		wlr_cursor_move(cursor->cursor, device, dx, dy);
 	}
 
-	wlr_cursor_move(cursor->cursor, device, dx, dy);
-
+	wlr_seat_pointer_position(wlr_seat, &sx, &sy);
 	seatop_pointer_motion(cursor->seat, time_msec, dx, dy);
+
+	// Hack: touch input UX expects the pointer (the cursor is currently
+	// hidden) to not move from touch input, but wlroots tracks pointer state
+	// internally and it will have moved it in the previous call to
+	// `seatop_pointer_motion` -- so restore it here.
+	if (device->type == WLR_INPUT_DEVICE_TOUCH) {
+		wlr_seat_pointer_warp(wlr_seat, sx, sy);
+	}
 }
 
 static void handle_pointer_motion_relative(
