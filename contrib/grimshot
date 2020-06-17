@@ -19,7 +19,7 @@ getTargetDirectory() {
   echo ${XDG_SCREENSHOTS_DIR:-${XDG_PICTURES_DIR:-$HOME}}
 }
 
-if [ $1 == "--notify" ]; then
+if [ "$1" = "--notify" ]; then
   NOTIFY=yes
   shift 1
 else
@@ -55,7 +55,7 @@ notify() {
   notify-send -t 3000 -a grimshot "$@"
 }
 notifyOk() {
-  [ $NOTIFY = "no" ] && return
+  [ "$NOTIFY" = "no" ] && return
 
   TITLE=${2:-"Screenshot"}
   MESSAGE=${1:-"OK"}
