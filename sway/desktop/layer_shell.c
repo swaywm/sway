@@ -235,8 +235,8 @@ void arrange_layers(struct sway_output *output) {
 
 static struct sway_layer_surface *find_mapped_layer_by_client(
 		struct wl_client *client, struct wlr_output *ignore_output) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		if (output->wlr_output == ignore_output) {
 			continue;
 		}

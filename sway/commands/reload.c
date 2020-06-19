@@ -17,8 +17,8 @@ static void rebuild_textures_iterator(struct sway_container *con, void *data) {
 static void do_reload(void *data) {
 	// store bar ids to check against new bars for barconfig_update events
 	list_t *bar_ids = create_list();
-	for (int i = 0; i < config->bars->length; ++i) {
-		struct bar_config *bar = config->bars->items[i];
+	struct bar_config *bar;
+	list_for_each(bar, config->bars) {
 		list_add(bar_ids, strdup(bar->id));
 	}
 
@@ -32,10 +32,10 @@ static void do_reload(void *data) {
 
 	load_swaybars();
 
-	for (int i = 0; i < config->bars->length; ++i) {
-		struct bar_config *bar = config->bars->items[i];
-		for (int j = 0; j < bar_ids->length; ++j) {
-			if (strcmp(bar->id, bar_ids->items[j]) == 0) {
+	list_for_each(bar, config->bars) {
+		char *bar_id;
+		list_for_each(bar_id, bar_ids) {
+			if (strcmp(bar->id, bar_id) == 0) {
 				ipc_event_barconfig_update(bar);
 				break;
 			}

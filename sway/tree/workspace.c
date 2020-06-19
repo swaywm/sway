@@ -21,8 +21,8 @@
 #include "util.h"
 
 struct workspace_config *workspace_find_config(const char *ws_name) {
-	for (int i = 0; i < config->workspace_configs->length; ++i) {
-		struct workspace_config *wsc = config->workspace_configs->items[i];
+	struct workspace_config *wsc;
+	list_for_each(wsc, config->workspace_configs) {
 		if (strcmp(wsc->workspace, ws_name) == 0) {
 			return wsc;
 		}
@@ -496,8 +496,8 @@ bool workspace_is_empty(struct sway_workspace *ws) {
 		return false;
 	}
 	// Sticky views are not considered to be part of this workspace
-	for (int i = 0; i < ws->floating->length; ++i) {
-		struct sway_container *floater = ws->floating->items[i];
+	struct sway_container *floater;
+	list_for_each(floater, ws->floating) {
 		if (!floater->is_sticky) {
 			return false;
 		}
@@ -588,14 +588,13 @@ void workspace_detect_urgent(struct sway_workspace *workspace) {
 void workspace_for_each_container(struct sway_workspace *ws,
 		void (*f)(struct sway_container *con, void *data), void *data) {
 	// Tiling
-	for (int i = 0; i < ws->tiling->length; ++i) {
-		struct sway_container *container = ws->tiling->items[i];
+	struct sway_container *container;
+	list_for_each(container, ws->tiling) {
 		f(container, data);
 		container_for_each_child(container, f, data);
 	}
 	// Floating
-	for (int i = 0; i < ws->floating->length; ++i) {
-		struct sway_container *container = ws->floating->items[i];
+	list_for_each(container, ws->floating) {
 		f(container, data);
 		container_for_each_child(container, f, data);
 	}
@@ -605,8 +604,8 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
 		bool (*test)(struct sway_container *con, void *data), void *data) {
 	struct sway_container *result = NULL;
 	// Tiling
-	for (int i = 0; i < ws->tiling->length; ++i) {
-		struct sway_container *child = ws->tiling->items[i];
+	struct sway_container *child;
+	list_for_each(child, ws->tiling) {
 		if (test(child, data)) {
 			return child;
 		}
@@ -615,8 +614,7 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
 		}
 	}
 	// Floating
-	for (int i = 0; i < ws->floating->length; ++i) {
-		struct sway_container *child = ws->floating->items[i];
+	list_for_each(child, ws->floating) {
 		if (test(child, data)) {
 			return child;
 		}

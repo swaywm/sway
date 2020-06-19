@@ -17,8 +17,8 @@ struct cmd_results *bar_cmd_id(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "id cannot be 'id'");
 	}
 	// check if id is used by a previously defined bar
-	for (int i = 0; i < config->bars->length; ++i) {
-		struct bar_config *find = config->bars->items[i];
+	struct bar_config *find;
+	list_for_each(find, config->bars) {
 		if (strcmp(name, find->id) == 0 && config->current_bar != find) {
 			return cmd_results_new(CMD_FAILURE,
 					"Id '%s' already defined for another bar. Id unchanged (%s).",

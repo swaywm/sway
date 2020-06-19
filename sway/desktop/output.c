@@ -31,8 +31,8 @@
 #include "sway/tree/workspace.h"
 
 struct sway_output *output_by_name_or_id(const char *name_or_id) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		char identifier[128];
 		output_get_identifier(identifier, sizeof(identifier), output);
 		if (strcasecmp(identifier, name_or_id) == 0
@@ -370,9 +370,8 @@ static void output_for_each_surface(struct sway_output *output,
 
 		// TODO: Show transient containers for fullscreen global
 		if (fullscreen_con == workspace->current.fullscreen) {
-			for (int i = 0; i < workspace->current.floating->length; ++i) {
-				struct sway_container *floater =
-					workspace->current.floating->items[i];
+			struct sway_container *floater;
+			list_for_each(floater, workspace->current.floating) {
 				if (container_is_transient_for(floater, fullscreen_con)) {
 					for_each_surface_container_iterator(floater, &data);
 				}
@@ -515,9 +514,8 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	for (int i = 0; i < workspace->current.floating->length; ++i) {
-		struct sway_container *floater =
-			workspace->current.floating->items[i];
+	struct sway_container *floater;
+	list_for_each(floater, workspace->current.floating) {
 		if (container_is_transient_for(floater, view->container)) {
 			return false;
 		}

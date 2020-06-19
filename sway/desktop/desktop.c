@@ -4,8 +4,8 @@
 
 void desktop_damage_surface(struct wlr_surface *surface, double lx, double ly,
 		bool whole) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		struct wlr_box *output_box = wlr_output_layout_get_box(
 			root->output_layout, output->wlr_output);
 		output_damage_surface(output, lx - output_box->x,
@@ -14,15 +14,15 @@ void desktop_damage_surface(struct wlr_surface *surface, double lx, double ly,
 }
 
 void desktop_damage_whole_container(struct sway_container *con) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		output_damage_whole_container(output, con);
 	}
 }
 
 void desktop_damage_box(struct wlr_box *box) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		output_damage_box(output, box);
 	}
 }

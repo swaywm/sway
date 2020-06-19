@@ -715,38 +715,36 @@ json_object *ipc_json_describe_node(struct sway_node *node) {
 
 json_object *ipc_json_describe_node_recursive(struct sway_node *node) {
 	json_object *object = ipc_json_describe_node(node);
-	int i;
 
 	json_object *children = json_object_new_array();
 	switch (node->type) {
 	case N_ROOT:
 		json_object_array_add(children,
 				ipc_json_describe_scratchpad_output());
-		for (i = 0; i < root->outputs->length; ++i) {
-			struct sway_output *output = root->outputs->items[i];
+		struct sway_output *output;
+		list_for_each(output, root->outputs) {
 			json_object_array_add(children,
 					ipc_json_describe_node_recursive(&output->node));
 		}
 		break;
-	case N_OUTPUT:
-		for (i = 0; i < node->sway_output->workspaces->length; ++i) {
-			struct sway_workspace *ws = node->sway_output->workspaces->items[i];
+	case N_OUTPUT:;
+		struct sway_workspace *ws;
+		list_for_each(ws, node->sway_output->workspaces) {
 			json_object_array_add(children,
 					ipc_json_describe_node_recursive(&ws->node));
 		}
 		break;
-	case N_WORKSPACE:
-		for (i = 0; i < node->sway_workspace->tiling->length; ++i) {
-			struct sway_container *con = node->sway_workspace->tiling->items[i];
+	case N_WORKSPACE:;
+		struct sway_container *con;
+		list_for_each(con, node->sway_workspace->tiling) {
 			json_object_array_add(children,
 					ipc_json_describe_node_recursive(&con->node));
 		}
 		break;
 	case N_CONTAINER:
 		if (node->sway_container->children) {
-			for (i = 0; i < node->sway_container->children->length; ++i) {
-				struct sway_container *child =
-					node->sway_container->children->items[i];
+			struct sway_container *child;
+			list_for_each(child, node->sway_container->children) {
 				json_object_array_add(children,
 						ipc_json_describe_node_recursive(&child->node));
 			}

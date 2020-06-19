@@ -154,8 +154,8 @@ struct sway_container *container_find_child(struct sway_container *container,
 	if (!container->children) {
 		return NULL;
 	}
-	for (int i = 0; i < container->children->length; ++i) {
-		struct sway_container *child = container->children->items[i];
+	struct sway_container *child;
+	list_for_each(child, container->children) {
 		if (test(child, data)) {
 			return child;
 		}
@@ -272,8 +272,8 @@ static struct sway_container *container_at_linear(struct sway_node *parent,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	list_t *children = node_get_children(parent);
-	for (int i = 0; i < children->length; ++i) {
-		struct sway_container *child = children->items[i];
+	struct sway_container *child;
+	list_for_each(child, children) {
 		struct sway_container *container =
 			tiling_container_at(&child->node, lx, ly, surface, sx, sy);
 		if (container) {
@@ -409,8 +409,8 @@ void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
 	if (container->children)  {
-		for (int i = 0; i < container->children->length; ++i) {
-			struct sway_container *child = container->children->items[i];
+		struct sway_container *child;
+		list_for_each(child, container->children) {
 			f(child, data);
 			container_for_each_child(child, f, data);
 		}
@@ -429,8 +429,8 @@ bool container_has_ancestor(struct sway_container *descendant,
 }
 
 void container_damage_whole(struct sway_container *container) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		output_damage_whole_container(output, container);
 	}
 }
@@ -853,8 +853,8 @@ void container_floating_translate(struct sway_container *con,
 	con->content_y += y_amount;
 
 	if (con->children) {
-		for (int i = 0; i < con->children->length; ++i) {
-			struct sway_container *child = con->children->items[i];
+		struct sway_container *child;
+		list_for_each(child, con->children) {
 			container_floating_translate(child, x_amount, y_amount);
 		}
 	}
@@ -1153,8 +1153,8 @@ void container_discover_outputs(struct sway_container *con) {
 	};
 	struct sway_output *old_output = container_get_effective_output(con);
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		struct wlr_box output_box;
 		output_get_box(output, &output_box);
 		struct wlr_box intersection;

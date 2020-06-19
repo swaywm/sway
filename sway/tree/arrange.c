@@ -22,8 +22,8 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 	// is currently occupied
 	int new_children = 0;
 	double current_width_fraction = 0;
-	for (int i = 0; i < children->length; ++i) {
-		struct sway_container *child = children->items[i];
+	struct sway_container *child;
+	list_for_each(child, children) {
 		current_width_fraction += child->width_fraction;
 		if (child->width_fraction <= 0) {
 			new_children += 1;
@@ -32,8 +32,7 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 
 	// Calculate each height fraction
 	double total_width_fraction = 0;
-	for (int i = 0; i < children->length; ++i) {
-		struct sway_container *child = children->items[i];
+	list_for_each(child, children) {
 		if (child->width_fraction <= 0) {
 			if (current_width_fraction <= 0) {
 				child->width_fraction = 1.0;
@@ -47,14 +46,13 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		total_width_fraction += child->width_fraction;
 	}
 	// Normalize width fractions so the sum is 1.0
-	for (int i = 0; i < children->length; ++i) {
-		struct sway_container *child = children->items[i];
+	list_for_each(child, children) {
 		child->width_fraction /= total_width_fraction;
 	}
 
 	// Calculate gap size
 	double inner_gap = 0;
-	struct sway_container *child = children->items[0];
+	child = children->items[0];
 	struct sway_workspace *ws = child->workspace;
 	if (ws) {
 		inner_gap = ws->gaps_inner;
@@ -189,8 +187,8 @@ static void apply_stacked_layout(list_t *children, struct wlr_box *parent) {
 	if (!children->length) {
 		return;
 	}
-	for (int i = 0; i < children->length; ++i) {
-		struct sway_container *child = children->items[i];
+	struct sway_container *child;
+	list_for_each(child, children) {
 		int parent_offset = child->view ?  0 :
 			container_titlebar_height() * children->length;
 		child->x = parent->x;
@@ -201,8 +199,8 @@ static void apply_stacked_layout(list_t *children, struct wlr_box *parent) {
 }
 
 static void arrange_floating(list_t *floating) {
-	for (int i = 0; i < floating->length; ++i) {
-		struct sway_container *floater = floating->items[i];
+	struct sway_container *floater;
+	list_for_each(floater, floating) {
 		arrange_container(floater);
 	}
 }
@@ -229,8 +227,8 @@ static void arrange_children(list_t *children,
 	}
 
 	// Recurse into child containers
-	for (int i = 0; i < children->length; ++i) {
-		struct sway_container *child = children->items[i];
+	struct sway_container *child;
+	list_for_each(child, children) {
 		arrange_container(child);
 	}
 }
@@ -275,8 +273,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	double diff_x = workspace->x - prev_x;
 	double diff_y = workspace->y - prev_y;
 	if (!first_arrange && (diff_x != 0 || diff_y != 0)) {
-		for (int i = 0; i < workspace->floating->length; ++i) {
-			struct sway_container *floater = workspace->floating->items[i];
+		struct sway_container *floater;
+		list_for_each(floater, workspace->floating) {
 			container_floating_translate(floater, diff_x, diff_y);
 			double center_x = floater->x + floater->width / 2;
 			double center_y = floater->y + floater->height / 2;
@@ -318,8 +316,8 @@ void arrange_output(struct sway_output *output) {
 	output->width = output_box->width;
 	output->height = output_box->height;
 
-	for (int i = 0; i < output->workspaces->length; ++i) {
-		struct sway_workspace *workspace = output->workspaces->items[i];
+	struct sway_workspace *workspace;
+	list_for_each(workspace, output->workspaces) {
 		arrange_workspace(workspace);
 	}
 }
@@ -343,8 +341,8 @@ void arrange_root(void) {
 		fs->height = root->height;
 		arrange_container(fs);
 	} else {
-		for (int i = 0; i < root->outputs->length; ++i) {
-			struct sway_output *output = root->outputs->items[i];
+		struct sway_output *output;
+		list_for_each(output, root->outputs) {
 			arrange_output(output);
 		}
 	}

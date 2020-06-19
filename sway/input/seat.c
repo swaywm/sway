@@ -928,8 +928,8 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		}
 	}
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *sway_output = root->outputs->items[i];
+	struct sway_output *sway_output;
+	list_for_each(sway_output, root->outputs) {
 		struct wlr_output *output = sway_output->wlr_output;
 		bool result =
 			wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
@@ -1210,8 +1210,8 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 		seat->exclusive_client = client;
 		// Triggers a refocus of the topmost surface layer if necessary
 		// TODO: Make layer surface focus per-output based on cursor position
-		for (int i = 0; i < root->outputs->length; ++i) {
-			struct sway_output *output = root->outputs->items[i];
+		struct sway_output *output;
+		list_for_each(output, root->outputs) {
 			arrange_layers(output);
 		}
 		return;

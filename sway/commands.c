@@ -294,8 +294,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 					cmd_results_new(CMD_FAILURE, "No matching node."));
 		} else {
 			struct cmd_results *fail_res = NULL;
-			for (int i = 0; i < containers->length; ++i) {
-				struct sway_container *container = containers->items[i];
+			struct sway_container *container;
+			list_for_each(container, containers) {
 				set_config_node(&container->node);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status == CMD_SUCCESS) {
@@ -527,8 +527,8 @@ void free_cmd_results(struct cmd_results *results) {
 
 char *cmd_results_to_json(list_t *res_list) {
 	json_object *result_array = json_object_new_array();
-	for (int i = 0; i < res_list->length; ++i) {
-		struct cmd_results *results = res_list->items[i];
+	struct cmd_results *results;
+	list_for_each(results, res_list) {
 		json_object *root = json_object_new_object();
 		json_object_object_add(root, "success",
 				json_object_new_boolean(results->status == CMD_SUCCESS));

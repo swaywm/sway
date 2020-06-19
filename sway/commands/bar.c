@@ -59,8 +59,8 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 	char *id = NULL;
 	if (strcmp(argv[0], "id") != 0 && is_subcommand(argv[1])) {
-		for (int i = 0; i < config->bars->length; ++i) {
-			struct bar_config *item = config->bars->items[i];
+		struct bar_config *item;
+		list_for_each(item, config->bars) {
 			if (strcmp(item->id, argv[0]) == 0) {
 				sway_log(SWAY_DEBUG, "Selecting bar: %s", argv[0]);
 				config->current_bar = item;

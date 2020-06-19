@@ -668,8 +668,8 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 	case IPC_GET_OUTPUTS:
 	{
 		json_object *outputs = json_object_new_array();
-		for (int i = 0; i < root->outputs->length; ++i) {
-			struct sway_output *output = root->outputs->items[i];
+		struct sway_output *output;
+		list_for_each(output, root->outputs) {
 			json_object *output_json = ipc_json_describe_node(&output->node);
 
 			// override the default focused indicator because it's set
@@ -686,7 +686,6 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 			json_object_object_add(output_json, "subpixel_hinting", json_object_new_string(subpixel));
 			json_object_array_add(outputs, output_json);
 		}
-		struct sway_output *output;
 		wl_list_for_each(output, &root->all_outputs, link) {
 			if (!output->enabled && output != root->noop_output) {
 				json_object_array_add(outputs,
@@ -829,8 +828,8 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		if (!buf[0]) {
 			// Send list of configured bar IDs
 			json_object *bars = json_object_new_array();
-			for (int i = 0; i < config->bars->length; ++i) {
-				struct bar_config *bar = config->bars->items[i];
+			struct bar_config *bar;
+			list_for_each(bar, config->bars) {
 				json_object_array_add(bars, json_object_new_string(bar->id));
 			}
 			const char *json_string = json_object_to_json_string(bars);

@@ -68,8 +68,8 @@ static void restore_workspaces(struct sway_output *output) {
 		// outside of the output's bounds, do the same as the output layout has
 		// likely changed and the maximum size needs to be checked and the
 		// floater re-centered
-		for (int i = 0; i < ws->floating->length; i++) {
-			struct sway_container *floater = ws->floating->items[i];
+		struct sway_container *floater;
+		list_for_each(floater, ws->floating) {
 			if (floater->width == 0 || floater->height == 0 ||
 					floater->width > output->width ||
 					floater->height > output->height ||

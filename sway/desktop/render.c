@@ -697,9 +697,8 @@ static void render_container(struct sway_output *output,
  */
 static void render_containers_linear(struct sway_output *output,
 		pixman_region32_t *damage, struct parent_data *parent) {
-	for (int i = 0; i < parent->children->length; ++i) {
-		struct sway_container *child = parent->children->items[i];
-
+	struct sway_container *child;
+	list_for_each(child, parent->children) {
 		if (child->view) {
 			struct sway_view *view = child->view;
 			struct border_colors *colors;
@@ -960,15 +959,15 @@ static void render_floating_container(struct sway_output *soutput,
 
 static void render_floating(struct sway_output *soutput,
 		pixman_region32_t *damage) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		for (int j = 0; j < output->current.workspaces->length; ++j) {
-			struct sway_workspace *ws = output->current.workspaces->items[j];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
+		struct sway_workspace *ws;
+		list_for_each(ws, output->current.workspaces) {
 			if (!workspace_is_visible(ws)) {
 				continue;
 			}
-			for (int k = 0; k < ws->current.floating->length; ++k) {
-				struct sway_container *floater = ws->current.floating->items[k];
+			struct sway_container *floater;
+			list_for_each(floater, ws->current.floating) {
 				if (floater->fullscreen_mode != FULLSCREEN_NONE) {
 					continue;
 				}

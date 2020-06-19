@@ -126,8 +126,8 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 }
 
 static void merge_wildcard_on_all(struct output_config *wildcard) {
-	for (int i = 0; i < config->output_configs->length; i++) {
-		struct output_config *oc = config->output_configs->items[i];
+	struct output_config *oc;
+	list_for_each(oc, config->output_configs) {
 		if (strcmp(wildcard->name, oc->name) != 0) {
 			sway_log(SWAY_DEBUG, "Merging output * config on %s", oc->name);
 			merge_output_config(oc, wildcard);

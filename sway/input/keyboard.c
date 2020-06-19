@@ -588,8 +588,8 @@ static int handle_keyboard_repeat(void *data) {
 }
 
 static void determine_bar_visibility(uint32_t modifiers) {
-	for (int i = 0; i < config->bars->length; ++i) {
-		struct bar_config *bar = config->bars->items[i];
+	struct bar_config *bar;
+	list_for_each(bar, config->bars) {
 		if (bar->modifier == 0) {
 			continue;
 		}

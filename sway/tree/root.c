@@ -342,22 +342,22 @@ void root_remove_workspace_pid(pid_t pid) {
 
 void root_for_each_workspace(void (*f)(struct sway_workspace *ws, void *data),
 		void *data) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		output_for_each_workspace(output, f, data);
 	}
 }
 
 void root_for_each_container(void (*f)(struct sway_container *con, void *data),
 		void *data) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		output_for_each_container(output, f, data);
 	}
 
 	// Scratchpad
-	for (int i = 0; i < root->scratchpad->length; ++i) {
-		struct sway_container *container = root->scratchpad->items[i];
+	struct sway_container *container;
+	list_for_each(container, root->scratchpad) {
 		if (container_is_scratchpad_hidden(container)) {
 			f(container, data);
 			container_for_each_child(container, f, data);
@@ -365,16 +365,16 @@ void root_for_each_container(void (*f)(struct sway_container *con, void *data),
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->noop_output->workspaces->length; ++i) {
-		struct sway_workspace *ws = root->noop_output->workspaces->items[i];
+	struct sway_workspace *ws;
+	list_for_each(ws, root->noop_output->workspaces) {
 		workspace_for_each_container(ws, f, data);
 	}
 }
 
 struct sway_output *root_find_output(
 		bool (*test)(struct sway_output *output, void *data), void *data) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		if (test(output, data)) {
 			return output;
 		}
@@ -385,8 +385,8 @@ struct sway_output *root_find_output(
 struct sway_workspace *root_find_workspace(
 		bool (*test)(struct sway_workspace *ws, void *data), void *data) {
 	struct sway_workspace *result = NULL;
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		if ((result = output_find_workspace(output, test, data))) {
 			return result;
 		}
@@ -397,16 +397,16 @@ struct sway_workspace *root_find_workspace(
 struct sway_container *root_find_container(
 		bool (*test)(struct sway_container *con, void *data), void *data) {
 	struct sway_container *result = NULL;
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		if ((result = output_find_container(output, test, data))) {
 			return result;
 		}
 	}
 
 	// Scratchpad
-	for (int i = 0; i < root->scratchpad->length; ++i) {
-		struct sway_container *container = root->scratchpad->items[i];
+	struct sway_container *container;
+	list_for_each(container, root->scratchpad) {
 		if (container_is_scratchpad_hidden(container)) {
 			if (test(container, data)) {
 				return container;
@@ -418,8 +418,8 @@ struct sway_container *root_find_container(
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->noop_output->workspaces->length; ++i) {
-		struct sway_workspace *ws = root->noop_output->workspaces->items[i];
+	struct sway_workspace *ws;
+	list_for_each(ws, root->noop_output->workspaces) {
 		if ((result = workspace_find_container(ws, test, data))) {
 			return result;
 		}

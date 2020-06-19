@@ -21,8 +21,8 @@ struct cmd_results *cmd_title_align(int argc, char **argv) {
 				"Expected 'title_align left|center|right'");
 	}
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	list_for_each(output, root->outputs) {
 		output_damage_whole(output);
 	}
 

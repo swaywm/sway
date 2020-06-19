@@ -62,8 +62,8 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 		error = bar_set_mode(config->current_bar, mode);
 	} else {
 		const char *id = argc == 2 ? argv[1] : NULL;
-		for (int i = 0; i < config->bars->length; ++i) {
-			struct bar_config *bar = config->bars->items[i];
+		struct bar_config *bar;
+		list_for_each(bar, config->bars) {
 			if (id) {
 				if (strcmp(id, bar->id) == 0) {
 					error = bar_set_mode(bar, mode);

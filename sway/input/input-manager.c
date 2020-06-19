@@ -125,8 +125,8 @@ const char *input_device_get_type(struct sway_input_device *device) {
 static void apply_input_type_config(struct sway_input_device *input_device) {
 	const char *device_type = input_device_get_type(input_device);
 	struct input_config *type_config = NULL;
-	for (int i = 0; i < config->input_type_configs->length; i++) {
-		struct input_config *ic = config->input_type_configs->items[i];
+	struct input_config *ic;
+	list_for_each(ic, config->input_type_configs) {
 		if (strcmp(ic->identifier + 5, device_type) == 0) {
 			type_config = ic;
 			break;

@@ -264,8 +264,8 @@ void load_swaybar(struct bar_config *bar) {
 }
 
 void load_swaybars(void) {
-	for (int i = 0; i < config->bars->length; ++i) {
-		struct bar_config *bar = config->bars->items[i];
+	struct bar_config *bar;
+	list_for_each(bar, config->bars) {
 		load_swaybar(bar);
 	}
 }

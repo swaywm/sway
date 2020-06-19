@@ -175,8 +175,8 @@ static bool validate_xkb_merge(struct input_config *dest,
 
 static bool validate_wildcard_on_all(struct input_config *wildcard,
 		char **error) {
-	for (int i = 0; i < config->input_configs->length; i++) {
-		struct input_config *ic = config->input_configs->items[i];
+	struct input_config *ic;
+	list_for_each(ic, config->input_configs) {
 		if (strcmp(wildcard->identifier, ic->identifier) != 0) {
 			sway_log(SWAY_DEBUG, "Validating xkb merge of * on %s",
 					ic->identifier);
@@ -186,8 +186,7 @@ static bool validate_wildcard_on_all(struct input_config *wildcard,
 		}
 	}
 
-	for (int i = 0; i < config->input_type_configs->length; i++) {
-		struct input_config *ic = config->input_type_configs->items[i];
+	list_for_each(ic, config->input_type_configs) {
 		sway_log(SWAY_DEBUG, "Validating xkb merge of * config on %s",
 				ic->identifier);
 		if (!validate_xkb_merge(ic, wildcard, error)) {
@@ -199,16 +198,15 @@ static bool validate_wildcard_on_all(struct input_config *wildcard,
 }
 
 static void merge_wildcard_on_all(struct input_config *wildcard) {
-	for (int i = 0; i < config->input_configs->length; i++) {
-		struct input_config *ic = config->input_configs->items[i];
+	struct input_config *ic;
+	list_for_each(ic, config->input_configs) {
 		if (strcmp(wildcard->identifier, ic->identifier) != 0) {
 			sway_log(SWAY_DEBUG, "Merging input * config on %s", ic->identifier);
 			merge_input_config(ic, wildcard);
 		}
 	}
 
-	for (int i = 0; i < config->input_type_configs->length; i++) {
-		struct input_config *ic = config->input_type_configs->items[i];
+	list_for_each(ic, config->input_type_configs) {
 		sway_log(SWAY_DEBUG, "Merging input * config on %s", ic->identifier);
 		merge_input_config(ic, wildcard);
 	}
@@ -216,8 +214,8 @@ static void merge_wildcard_on_all(struct input_config *wildcard) {
 
 static bool validate_type_on_existing(struct input_config *type_wildcard,
 		char **error) {
-	for (int i = 0; i < config->input_configs->length; i++) {
-		struct input_config *ic = config->input_configs->items[i];
+	struct input_config *ic;
+	list_for_each(ic, config->input_configs) {
 		if (ic->input_type == NULL) {
 			continue;
 		}
@@ -234,8 +232,8 @@ static bool validate_type_on_existing(struct input_config *type_wildcard,
 }
 
 static void merge_type_on_existing(struct input_config *type_wildcard) {
-	for (int i = 0; i < config->input_configs->length; i++) {
-		struct input_config *ic = config->input_configs->items[i];
+	struct input_config *ic;
+	list_for_each(ic, config->input_configs) {
 		if (ic->input_type == NULL) {
 			continue;
 		}
@@ -284,8 +282,8 @@ struct input_config *store_input_config(struct input_config *ic,
 	}
 
 	if (!current && !wildcard && !type && set_input_type(ic)) {
-		for (i = 0; i < config->input_type_configs->length; i++) {
-			struct input_config *tc = config->input_type_configs->items[i];
+		struct input_config *tc;
+		list_for_each(tc, config->input_type_configs) {
 			if (strcmp(ic->input_type, tc->identifier + 5) == 0) {
 				current = new_input_config(ic->identifier);
 				current->input_type = ic->input_type;

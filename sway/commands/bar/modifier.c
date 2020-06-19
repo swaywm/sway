@@ -13,18 +13,19 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 	uint32_t mod = 0;
 	if (strcmp(argv[0], "none") != 0) {
 		list_t *split = split_string(argv[0], "+");
-		for (int i = 0; i < split->length; ++i) {
+		char *name;
+		list_for_each(name, split) {
 			uint32_t tmp_mod;
-			if ((tmp_mod = get_modifier_mask_by_name(split->items[i])) > 0) {
+			if ((tmp_mod = get_modifier_mask_by_name(name)) > 0) {
 				mod |= tmp_mod;
-			} else if (strcmp(split->items[i], "none") == 0) {
+			} else if (strcmp(name, "none") == 0) {
 				error = cmd_results_new(CMD_INVALID,
 						"none cannot be used along with other modifiers");
 				list_free_items_and_destroy(split);
 				return error;
 			} else {
 				error = cmd_results_new(CMD_INVALID,
-					"Unknown modifier '%s'", (char *)split->items[i]);
+					"Unknown modifier '%s'", name);
 				list_free_items_and_destroy(split);
 				return error;
 			}
