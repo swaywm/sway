@@ -1179,7 +1179,13 @@ void seat_set_focus_surface(struct sway_seat *seat,
 		seat_send_unfocus(focus, seat);
 		seat->has_focus = false;
 	}
-	seat_keyboard_notify_enter(seat, surface);
+
+	if (surface) {
+		seat_keyboard_notify_enter(seat, surface);
+	} else {
+		wlr_seat_keyboard_notify_clear_focus(seat->wlr_seat);
+	}
+
 	seat_tablet_pads_notify_enter(seat, surface);
 }
 
