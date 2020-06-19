@@ -94,6 +94,17 @@ The following commands may only be used in the configuration file.
 *input* <identifier> xkb_numlock enabled|disabled
 	Initially enables or disables NumLock on startup, the default is disabled.
 
+## TABLET CONFIGURATION
+
+*input* <identifier> tool_mode <tool> <absolute|relative>
+	Sets whether movement of a tablet tool should be treated as absolute or
+	relative; the default is absolute.
+
+	Valid values for _\<tool\>_ are currently "pen", "eraser", "brush",
+	"pencil", "airbrush", and the wildcard _\*_, which matches all tools.
+
+	Mouse and lens tools ignore this setting and are always treated as relative.
+
 ## MAPPING CONFIGURATION
 
 *input* <identifier> map_to_output <identifier>
