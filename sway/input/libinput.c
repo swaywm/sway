@@ -4,6 +4,7 @@
 #include <wlr/backend/libinput.h>
 #include "log.h"
 #include "sway/config.h"
+#include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/ipc-server.h"
 
@@ -190,9 +191,24 @@ static bool config_libinput_pointer(struct libinput_device *device,
 	sway_log(SWAY_DEBUG, "config_libinput_pointer('%s' on  '%s')",
 			ic->identifier, device_id);
 	bool changed = false;
-	if (ic->send_events != INT_MIN) {
+
+	if (ic->mapped_to_output &&
+			!output_by_name_or_id(ic->mapped_to_output)) {
+		sway_log(SWAY_DEBUG,
+				"Pointer '%s' is mapped to offline output '%s'; disabling input",
+				ic->identifier, ic->mapped_to_output);
+		changed |= set_send_events(device,
+			LIBINPUT_CONFIG_SEND_EVENTS_DISABLED);
+	} else if (ic->send_events != INT_MIN) {
 		changed |= set_send_events(device, ic->send_events);
+	} else {
+		// Have to reset to the default mode here, otherwise if ic->send_events
+		// is unset and a mapped output just came online after being disabled,
+		// we'd remain stuck sending no events.
+		changed |= set_send_events(device,
+			libinput_device_config_send_events_get_default_mode(device));
 	}
+
 	if (ic->tap != INT_MIN) {
 		changed |= set_tap(device, ic->tap);
 	}
