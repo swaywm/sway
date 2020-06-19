@@ -140,6 +140,29 @@ void sway_tablet_tool_configure(struct sway_tablet *tablet,
 		return;
 	}
 
+	switch (wlr_tool->type) {
+	case WLR_TABLET_TOOL_TYPE_LENS:
+	case WLR_TABLET_TOOL_TYPE_MOUSE:
+		tool->mode = SWAY_TABLET_TOOL_MODE_RELATIVE;
+		break;
+	default:
+		tool->mode = SWAY_TABLET_TOOL_MODE_ABSOLUTE;
+
+		struct input_config *ic = input_device_get_config(
+			tablet->seat_device->input_device);
+		if (!ic) {
+			break;
+		}
+
+		for (int i = 0; i < ic->tools->length; i++) {
+			struct input_config_tool *tool_config = ic->tools->items[i];
+			if (tool_config->type == wlr_tool->type) {
+				tool->mode = tool_config->mode;
+				break;
+			}
+		}
+	}
+
 	tool->seat = tablet->seat_device->sway_seat;
 	tool->tablet = tablet;
 	tool->tablet_v2_tool =

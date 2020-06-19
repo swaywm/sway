@@ -6,11 +6,13 @@
 #include <time.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_tablet_tool.h>
 #include <xkbcommon/xkbcommon.h>
 #include "../include/config.h"
 #include "list.h"
 #include "swaynag.h"
 #include "tree/container.h"
+#include "sway/input/tablet.h"
 #include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
@@ -116,6 +118,11 @@ enum input_config_mapped_to {
 	MAPPED_TO_REGION,
 };
 
+struct input_config_tool {
+	enum wlr_tablet_tool_type type;
+	enum sway_tablet_tool_mode mode;
+};
+
 /**
  * options for input devices
  */
@@ -159,6 +166,8 @@ struct input_config {
 	enum input_config_mapped_to mapped_to;
 	char *mapped_to_output;
 	struct wlr_box *mapped_to_region;
+
+	list_t *tools;
 
 	bool capturable;
 	struct wlr_box region;
