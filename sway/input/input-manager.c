@@ -521,6 +521,22 @@ static void retranslate_keysyms(struct input_config *input_config) {
 	}
 }
 
+static void input_manager_configure_input(
+		struct sway_input_device *input_device) {
+	sway_input_configure_libinput_device(input_device);
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		seat_configure_device(seat, input_device);
+	}
+}
+
+void input_manager_configure_all_inputs(void) {
+	struct sway_input_device *input_device = NULL;
+	wl_list_for_each(input_device, &server.input->devices, link) {
+		input_manager_configure_input(input_device);
+	}
+}
+
 void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
 	bool wildcard = strcmp(input_config->identifier, "*") == 0;
@@ -531,11 +547,7 @@ void input_manager_apply_input_config(struct input_config *input_config) {
 		if (strcmp(input_device->identifier, input_config->identifier) == 0
 				|| wildcard
 				|| type_matches) {
-			sway_input_configure_libinput_device(input_device);
-			struct sway_seat *seat = NULL;
-			wl_list_for_each(seat, &server.input->seats, link) {
-				seat_configure_device(seat, input_device);
-			}
+			input_manager_configure_input(input_device);
 		}
 	}
 
@@ -550,7 +562,7 @@ void input_manager_reset_input(struct sway_input_device *input_device) {
 	}
 }
 
-void input_manager_reset_all_inputs() {
+void input_manager_reset_all_inputs(void) {
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &server.input->devices, link) {
 		input_manager_reset_input(input_device);
@@ -567,7 +579,6 @@ void input_manager_reset_all_inputs() {
 		}
 	}
 }
-
 
 void input_manager_apply_seat_config(struct seat_config *seat_config) {
 	sway_log(SWAY_DEBUG, "applying seat config for seat %s", seat_config->name);
