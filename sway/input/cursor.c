@@ -567,6 +567,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	}
 
 	switch (tool->tablet_v2_tool->wlr_tool->type) {
+	case WLR_TABLET_TOOL_TYPE_LENS:
 	case WLR_TABLET_TOOL_TYPE_MOUSE:
 		wlr_cursor_move(cursor->cursor, input_device->wlr_device, dx, dy);
 		break;
