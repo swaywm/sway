@@ -738,10 +738,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		input_manager_set_focus(&view->container->node);
 	}
 
-	const char *app_id = view_get_app_id(view);
-	if (app_id != NULL) {
+	const char *app_id;
+	const char *class;
+	if ((app_id = view_get_app_id(view)) != NULL) {
 		wlr_foreign_toplevel_handle_v1_set_app_id(
 				view->foreign_toplevel, app_id);
+	} else if ((class = view_get_class(view)) != NULL) {
+		wlr_foreign_toplevel_handle_v1_set_app_id(
+				view->foreign_toplevel, class);
 	}
 }
 
