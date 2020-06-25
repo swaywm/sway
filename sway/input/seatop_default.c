@@ -280,8 +280,9 @@ static bool trigger_pointer_button_binding(struct sway_seat *seat,
 		enum wlr_button_state state, uint32_t modifiers,
 		bool on_titlebar, bool on_border, bool on_contents, bool on_workspace) {
 	// We can reach this for non-pointer devices if we're currently emulating
-	// pointer input for one. Emulated input should not trigger bindings.
-	if (device->type != WLR_INPUT_DEVICE_POINTER) {
+	// pointer input for one. Emulated input should not trigger bindings. The
+	// device can be NULL if this is synthetic (e.g. swaymsg-generated) input.
+	if (device && device->type != WLR_INPUT_DEVICE_POINTER) {
 		return false;
 	}
 
