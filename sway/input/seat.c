@@ -402,6 +402,31 @@ static void drag_icon_handle_destroy(struct wl_listener *listener, void *data) {
 	free(icon);
 }
 
+static void drag_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_drag *drag = wl_container_of(listener, drag, destroy);
+
+	// Focus enter isn't sent during drag, so refocus the focused node, layer
+	// surface or unmanaged surface.
+	struct sway_seat *seat = drag->seat;
+	struct sway_node *focus = seat_get_focus(seat);
+	if (focus) {
+		seat_set_focus(seat, NULL);
+		seat_set_focus(seat, focus);
+	} else if (seat->focused_layer) {
+		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+		seat_set_focus_layer(seat, NULL);
+		seat_set_focus_layer(seat, layer);
+	} else {
+		struct wlr_surface *unmanaged = seat->wlr_seat->keyboard_state.focused_surface;
+		seat_set_focus_surface(seat, NULL, false);
+		seat_set_focus_surface(seat, unmanaged, false);
+	}
+
+	drag->wlr_drag->data = NULL;
+	wl_list_remove(&drag->destroy.link);
+	free(drag);
+}
+
 static void handle_request_start_drag(struct wl_listener *listener,
 		void *data) {
 	struct sway_seat *seat = wl_container_of(listener, seat, request_start_drag);
@@ -431,6 +456,19 @@ static void handle_request_start_drag(struct wl_listener *listener,
 static void handle_start_drag(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = wl_container_of(listener, seat, start_drag);
 	struct wlr_drag *wlr_drag = data;
+
+	struct sway_drag *drag = calloc(1, sizeof(struct sway_drag));
+	if (drag == NULL) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		return;
+	}
+	drag->seat = seat;
+	drag->wlr_drag = wlr_drag;
+	wlr_drag->data = drag;
+
+	drag->destroy.notify = drag_handle_destroy;
+	wl_signal_add(&wlr_drag->events.destroy, &drag->destroy);
+
 	struct wlr_drag_icon *wlr_drag_icon = wlr_drag->icon;
 	if (wlr_drag_icon == NULL) {
 		return;

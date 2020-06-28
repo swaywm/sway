@@ -64,6 +64,12 @@ struct sway_drag_icon {
 	struct wl_listener destroy;
 };
 
+struct sway_drag {
+	struct sway_seat *seat;
+	struct wlr_drag *wlr_drag;
+	struct wl_listener destroy;
+};
+
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
