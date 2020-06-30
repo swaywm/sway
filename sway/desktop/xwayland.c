@@ -383,6 +383,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 			desktop_damage_view(view);
 			transaction_commit_dirty();
+			transaction_notify_view_ready_by_size(view,
+					new_geo.width, new_geo.height);
 		} else {
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		}

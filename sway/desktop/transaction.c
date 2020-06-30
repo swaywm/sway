@@ -501,7 +501,7 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
 		uint32_t serial) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
-	if (instruction->serial == serial) {
+	if (instruction != NULL && instruction->serial == serial) {
 		set_instruction_ready(instruction);
 	}
 }
@@ -510,7 +510,8 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 		int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
-	if (instruction->container_state.content_width == width &&
+	if (instruction != NULL &&
+			instruction->container_state.content_width == width &&
 			instruction->container_state.content_height == height) {
 		set_instruction_ready(instruction);
 	}

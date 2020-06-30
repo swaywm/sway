@@ -434,18 +434,10 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 }
 
 bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
-	struct wlr_layer_surface_v1 *wlr_layer_surface_v1;
-	wl_list_for_each(wlr_layer_surface_v1, &server.layer_shell->surfaces, link) {
-		if (wlr_layer_surface_v1->output != output->wlr_output ||
-				wlr_layer_surface_v1->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY) {
-			continue;
-		}
-		struct wlr_surface *wlr_surface = wlr_layer_surface_v1->surface;
-		struct sway_layer_surface *sway_layer_surface =
-			layer_from_wlr_layer_surface_v1(wlr_layer_surface_v1);
-		if (sway_layer_surface == NULL) {
-			continue;
-		}
+	struct sway_layer_surface *sway_layer_surface;
+	wl_list_for_each(sway_layer_surface,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
+		struct wlr_surface *wlr_surface = sway_layer_surface->layer_surface->surface;
 		pixman_box32_t output_box = {
 			.x2 = output->width,
 			.y2 = output->height,
