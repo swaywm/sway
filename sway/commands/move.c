@@ -275,12 +275,11 @@ static void workspace_rejigger(struct sway_workspace *ws,
 		return;
 	}
 	container_detach(child);
-	struct sway_container *new_parent = workspace_wrap_children(ws);
+	workspace_wrap_children(ws);
 
 	int index =
 		move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_UP ? 0 : 1;
 	workspace_insert_tiling(ws, child, index);
-	container_flatten(new_parent);
 	ws->layout =
 		move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_RIGHT ?
 		L_HORIZ : L_VERT;
@@ -349,8 +348,11 @@ static bool container_move_in_direction(struct sway_container *container,
 							container_insert_child(current->parent, container,
 									index + (offs < 0 ? 0 : 1));
 						} else {
-							workspace_insert_tiling(current->workspace, container,
-									index + (offs < 0 ? 0 : 1));
+							struct sway_workspace *ws = current->workspace;
+							workspace_insert_tiling(ws,
+								container_split(container,
+									output_get_default_layout(ws->output)),
+								index + (offs < 0 ? 0 : 1));
 						}
 						return true;
 					}
