@@ -1329,6 +1329,14 @@ void container_detach(struct sway_container *child) {
 		container_update_representation(old_parent);
 		node_set_dirty(&old_parent->node);
 	} else if (old_workspace) {
+		// We may have removed the last tiling child from the workspace. If the
+		// workspace layout was e.g. tabbed, then at this point it may be just
+		// H[]. So, reset it to the default (e.g. T[]) for next time.
+		if (!old_workspace->tiling->length) {
+			old_workspace->layout =
+				output_get_default_layout(old_workspace->output);
+		}
+
 		workspace_update_representation(old_workspace);
 		node_set_dirty(&old_workspace->node);
 	}
