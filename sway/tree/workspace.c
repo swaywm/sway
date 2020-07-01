@@ -641,6 +641,21 @@ struct sway_container *workspace_wrap_children(struct sway_workspace *ws) {
 	return middle;
 }
 
+void workspace_unwrap_children(struct sway_workspace *ws,
+		struct sway_container *wrap) {
+	if (!sway_assert(workspace_is_empty(ws),
+			"target workspace must be empty")) {
+		return;
+	}
+
+	ws->layout = wrap->layout;
+	while (wrap->children->length) {
+		struct sway_container *child = wrap->children->items[0];
+		container_detach(child);
+		workspace_add_tiling(ws, child);
+	}
+}
+
 void workspace_detach(struct sway_workspace *workspace) {
 	struct sway_output *output = workspace->output;
 	int index = list_find(output->workspaces, workspace);

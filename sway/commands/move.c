@@ -208,9 +208,13 @@ static void container_move_to_workspace(struct sway_container *container,
 		}
 	} else {
 		container_detach(container);
-		container->width = container->height = 0;
-		container->width_fraction = container->height_fraction = 0;
-		workspace_add_tiling(workspace, container);
+		if (workspace_is_empty(workspace) && container->children) {
+			workspace_unwrap_children(workspace, container);
+		} else {
+			container->width = container->height = 0;
+			container->width_fraction = container->height_fraction = 0;
+			workspace_add_tiling(workspace, container);
+		}
 		container_update_representation(container);
 	}
 	if (container->view) {
