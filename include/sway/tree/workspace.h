@@ -105,6 +105,9 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
  */
 struct sway_container *workspace_wrap_children(struct sway_workspace *ws);
 
+void workspace_unwrap_children(struct sway_workspace *ws,
+		struct sway_container *wrap);
+
 void workspace_detach(struct sway_workspace *workspace);
 
 void workspace_add_tiling(struct sway_workspace *workspace,
