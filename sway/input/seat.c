@@ -925,7 +925,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		}
 
 #if HAVE_XWAYLAND
-		if (config->xwayland && (!server.xwayland.xcursor_manager ||
+		if (server.xwayland.wlr_xwayland && (!server.xwayland.xcursor_manager ||
 				!xcursor_manager_is_named(server.xwayland.xcursor_manager,
 					cursor_theme) ||
 				server.xwayland.xcursor_manager->size != cursor_size)) {
