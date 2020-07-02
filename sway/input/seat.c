@@ -572,14 +572,6 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 	seat->deferred_bindings = create_list();
 
-	if (!wl_list_empty(&server.input->seats)) {
-		// Since this is not the first seat, attempt to set initial focus
-		struct sway_seat *current_seat = input_manager_current_seat();
-		struct sway_node *current_focus =
-			seat_get_focus_inactive(current_seat, &root->node);
-		seat_set_focus(seat, current_focus);
-	}
-
 	wl_signal_add(&root->events.new_node, &seat->new_node);
 	seat->new_node.notify = handle_new_node;
 
@@ -604,7 +596,16 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 	sway_input_method_relay_init(seat, &seat->im_relay);
 
+	bool first = wl_list_empty(&server.input->seats);
 	wl_list_insert(&server.input->seats, &seat->link);
+
+	if (!first) {
+		// Since this is not the first seat, attempt to set initial focus
+		struct sway_seat *current_seat = input_manager_current_seat();
+		struct sway_node *current_focus =
+			seat_get_focus_inactive(current_seat, &root->node);
+		seat_set_focus(seat, current_focus);
+	}
 
 	seatop_begin_default(seat);
 
