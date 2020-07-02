@@ -202,6 +202,7 @@ bool server_start(struct sway_server *server) {
 					config->xwayland == XWAYLAND_MODE_LAZY);
 		if (!server->xwayland.wlr_xwayland) {
 			sway_log(SWAY_ERROR, "Failed to start Xwayland");
+			unsetenv("DISPLAY");
 		} else {
 			wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
 				&server->xwayland_surface);
