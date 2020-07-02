@@ -1171,7 +1171,7 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	ipc_event_window(view->container, "title");
 
-	if (view->foreign_toplevel) {
+	if (view->foreign_toplevel && title) {
 		wlr_foreign_toplevel_handle_v1_set_title(view->foreign_toplevel, title);
 	}
 }
