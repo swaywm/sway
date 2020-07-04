@@ -447,6 +447,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		}
 	}
 
+	config->user_config_path = file ? true : false;
 	config->current_config_path = path;
 	list_add(config->config_chain, real_path);
 

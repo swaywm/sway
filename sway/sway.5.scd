@@ -272,7 +272,9 @@ set|plus|minus <amount>
 	optional comment argument is ignored, but logged for debugging purposes.
 
 *reload*
-	Reloads the sway config file and applies any changes.
+	Reloads the sway config file and applies any changes. The config file is
+	located at path specified by the command line arguments when started,
+	otherwise according to the priority stated in *sway*(1).
 
 *rename workspace* [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
