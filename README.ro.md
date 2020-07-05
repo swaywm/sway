@@ -14,12 +14,12 @@ Noile versiuni sunt semnate cu [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vinde
 
 ### Din pachete (packages) 
 
-sway este valabil în multe distribuții. încercați a instala "sway" pe distribuția voastră. Dacă nu este valabil, uitați-vă în [această pagină wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
+sway este disponibil în multe distribuții. Încercați să instalați pachetul "sway" pe distribuția voastră. Dacă nu este disponibil, uitați-vă în [această pagină wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 pentru informații a cum puteți să instalați pentru distribuția voastră.
 
 Dacă sunteți interesați in a crea pachete pentru distribuția voastră, informați-ne prin IRC sau contactați prin email pe sir@cmpwn.com pentru ajutor.
 
-### Construire din sursă
+### Compilare din sursă
 
 Dependențe pentru instalare:
 
@@ -31,9 +31,9 @@ Dependențe pentru instalare:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (optional: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: pagini man) \*
-* git (optional: info versiune) \*
+* gdk-pixbuf2 (opțional, dacă doriți să aveți system tray)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (opțional, pentru paginile man) \*
+* git (opțional, pentru informații de versiune) \*
 
 *Dependențe doar pentru compilare*
 
@@ -45,12 +45,13 @@ Rulați aceste comenzi:
     sudo ninja -C build install
 ```
 
-Pe sisteme fără logind, trebuie făcut următorul:
+Pe sisteme fără logind, trebuie să folosiți următoarea comandă pentru a marca binarul de Sway ca suid:
 
 ```
     sudo chmod a+s /usr/local/bin/sway
 ```
-Sway o să scape de permisiuni root la puțin timp după lansare.
+
+Imediat după pornire, Sway va renunța la permisiunile de root.
 
 ## Configurare
 

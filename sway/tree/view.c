@@ -746,6 +746,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	} else if ((class = view_get_class(view)) != NULL) {
 		wlr_foreign_toplevel_handle_v1_set_app_id(
 				view->foreign_toplevel, class);
+	}
 }
 
 void view_unmap(struct sway_view *view) {
@@ -1170,7 +1171,7 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	ipc_event_window(view->container, "title");
 
-	if (view->foreign_toplevel) {
+	if (view->foreign_toplevel && title) {
 		wlr_foreign_toplevel_handle_v1_set_title(view->foreign_toplevel, title);
 	}
 }
