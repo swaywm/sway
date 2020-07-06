@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions
+    url: "http://webchat.freenode.net/?channels=sway&uio=d4"
+    about: "Please ask questions on IRC in #sway on irc.freenode.net"
