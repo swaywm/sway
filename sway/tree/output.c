@@ -254,23 +254,31 @@ void output_disable(struct sway_output *output) {
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
 	wl_signal_emit(&output->events.destroy, output);
 
-	output_evacuate(output);
+	if (output->configured) {
+		output_evacuate(output);
 
-	root_for_each_container(untrack_output, output);
+		root_for_each_container(untrack_output, output);
 
-	int index = list_find(root->outputs, output);
-	list_del(root->outputs, index);
+		int index = list_find(root->outputs, output);
+		if (index >= 0) {
+			list_del(root->outputs, index);
+		} else {
+			sway_log(SWAY_ERROR, "Output %s was configured, but unlisted",
+					output->wlr_output->name);
+		}
+
+		output->configured = false;
+
+		arrange_root();
+
+		// Reconfigure all devices, since devices with map_to_output directives for
+		// an output that goes offline should stop sending events as long as the
+		// output remains offline.
+		input_manager_configure_all_inputs();
+	}
 
 	output->enabled = false;
-	output->configured = false;
 	output->current_mode = NULL;
-
-	arrange_root();
-
-	// Reconfigure all devices, since devices with map_to_output directives for
-	// an output that goes offline should stop sending events as long as the
-	// output remains offline.
-	input_manager_configure_all_inputs();
 }
 
 void output_begin_destroy(struct sway_output *output) {

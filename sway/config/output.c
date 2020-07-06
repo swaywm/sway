@@ -397,13 +397,21 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
+	// Store some information so we can restore in case the commit fails.
 	bool was_enabled = output->enabled;
+	bool was_configured = output->configured;
+	double old_x = 0, old_y = 0;
+
 	if (oc && !oc->enabled) {
 		// Output is configured to be disabled
 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
 		if (output->enabled) {
 			output_disable(output);
-			wlr_output_layout_remove(root->output_layout, wlr_output);
+			if (was_configured) {
+				wlr_output_layout_output_coords(
+						root->output_layout, wlr_output, &old_x, &old_y);
+				wlr_output_layout_remove(root->output_layout, wlr_output);
+			}
 		}
 	} else {
 		output->enabled = true;
@@ -417,11 +425,16 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
 	if (!wlr_output_commit(wlr_output)) {
-		// Failed to commit output changes, maybe the output is missing a CRTC.
-		// Leave the output disabled for now and try again when the output gets
-		// the mode we asked for.
-		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
+		// Failed to commit output changes. Restore the output. If this was an
+		// attempt to enable and was caused by a lack of a CRTC, it will be
+		// retried when the output mode we asked for gets set.
+		sway_log(SWAY_ERROR, "Failed to commit output %s. Restoring output.",
+				wlr_output->name);
 		output->enabled = was_enabled;
+		if (was_configured) {
+			wlr_output_layout_add(root->output_layout, wlr_output, old_x, old_y);
+			output_configure(output);
+		}
 		return false;
 	}
 
