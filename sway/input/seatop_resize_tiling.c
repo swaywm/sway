@@ -4,6 +4,9 @@
 #include "sway/commands.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
+#include "sway/tree/arrange.h"
+#include "sway/tree/container.h"
+#include "sway/tree/view.h"
 
 struct seatop_resize_tiling_event {
 	struct sway_container *con;    // leaf container
@@ -12,6 +15,10 @@ struct seatop_resize_tiling_event {
 	struct sway_container *h_con;
 	struct sway_container *v_con;
 
+	// sibling con(s) that will be resized to accommodate
+	struct sway_container *h_sib;
+	struct sway_container *v_sib;
+
 	enum wlr_edges edge;
 	enum wlr_edges edge_x, edge_y;
 	double ref_lx, ref_ly;         // cursor's x/y at start of op
@@ -19,10 +26,47 @@ struct seatop_resize_tiling_event {
 	double v_con_orig_height;      // height of the vertical ancestor at start
 };
 
+static struct sway_container *container_get_resize_sibling(
+		struct sway_container *con, uint32_t edge) {
+	if (!con) {
+		return NULL;
+	}
+
+	list_t *siblings = container_get_siblings(con);
+	int index = container_sibling_index(con);
+	int offset = edge & (WLR_EDGE_TOP | WLR_EDGE_LEFT) ? -1 : 1;
+
+	if (siblings->length == 1) {
+		return NULL;
+	} else {
+		return siblings->items[index + offset];
+	}
+}
+
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
 		enum wlr_button_state state) {
+	struct seatop_resize_tiling_event *e = seat->seatop_data;
+
 	if (seat->cursor->pressed_button_count == 0) {
+		if (e->h_con) {
+			container_set_resizing(e->h_con, false);
+			container_set_resizing(e->h_sib, false);
+			if (e->h_con->parent) {
+				arrange_container(e->h_con->parent);
+			} else {
+				arrange_workspace(e->h_con->workspace);
+			}
+		}
+		if (e->v_con) {
+			container_set_resizing(e->v_con, false);
+			container_set_resizing(e->v_sib, false);
+			if (e->v_con->parent) {
+				arrange_container(e->v_con->parent);
+			} else {
+				arrange_workspace(e->v_con->workspace);
+			}
+		}
 		seatop_begin_default(seat);
 	}
 }
@@ -89,16 +133,22 @@ void seatop_begin_resize_tiling(struct sway_seat *seat,
 	if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
 		e->edge_x = edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 		e->h_con = container_find_resize_parent(e->con, e->edge_x);
+		e->h_sib = container_get_resize_sibling(e->h_con, e->edge_x);
 
 		if (e->h_con) {
+			container_set_resizing(e->h_con, true);
+			container_set_resizing(e->h_sib, true);
 			e->h_con_orig_width = e->h_con->width;
 		}
 	}
 	if (edge & (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
 		e->edge_y = edge & (WLR_EDGE_TOP | WLR_EDGE_BOTTOM);
 		e->v_con = container_find_resize_parent(e->con, e->edge_y);
+		e->v_sib = container_get_resize_sibling(e->v_con, e->edge_y);
 
 		if (e->v_con) {
+			container_set_resizing(e->v_con, true);
+			container_set_resizing(e->v_sib, true);
 			e->v_con_orig_height = e->v_con->height;
 		}
 	}

@@ -185,6 +185,14 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	wlr_xdg_toplevel_set_fullscreen(surface, fullscreen);
 }
 
+static void set_resizing(struct sway_view *view, bool resizing) {
+	if (xdg_shell_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
+	wlr_xdg_toplevel_set_resizing(surface, resizing);
+}
+
 static bool wants_floating(struct sway_view *view) {
 	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_surface->toplevel;
 	struct wlr_xdg_toplevel_state *state = &toplevel->current;
@@ -260,6 +268,7 @@ static const struct sway_view_impl view_impl = {
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
+	.set_resizing = set_resizing,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.for_each_popup = for_each_popup,
