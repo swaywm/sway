@@ -99,8 +99,8 @@ struct sway_node *node_at_coords(
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
-	if (!output || !output->configured) {
-		// output is being destroyed or is being configured
+	if (!output || !output->enabled) {
+		// output is being destroyed or is being enabled
 		return NULL;
 	}
 	double ox = lx, oy = ly;
