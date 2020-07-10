@@ -110,12 +110,12 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	return output;
 }
 
-void output_configure(struct sway_output *output) {
-	if (!sway_assert(!output->configured, "output is already configured")) {
+void output_enable(struct sway_output *output) {
+	if (!sway_assert(!output->enabled, "output is already enabled")) {
 		return;
 	}
 	struct wlr_output *wlr_output = output->wlr_output;
-	output->configured = true;
+	output->enabled = true;
 	list_add(root->outputs, output);
 
 	restore_workspaces(output);
@@ -262,7 +262,6 @@ void output_disable(struct sway_output *output) {
 	list_del(root->outputs, index);
 
 	output->enabled = false;
-	output->configured = false;
 	output->current_mode = NULL;
 
 	arrange_root();
