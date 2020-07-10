@@ -397,17 +397,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	bool was_enabled = output->enabled;
-	if (oc && !oc->enabled) {
-		// Output is configured to be disabled
-		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
-		if (output->enabled) {
-			output_disable(output);
-			wlr_output_layout_remove(root->output_layout, wlr_output);
-		}
-	} else {
-		output->enabled = true;
-	}
+	// Flag to prevent the output mode event handler from calling us
+	output->enabling = (!oc || oc->enabled);
 
 	queue_output_config(oc, output);
 
@@ -421,11 +412,18 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		// Leave the output disabled for now and try again when the output gets
 		// the mode we asked for.
 		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
-		output->enabled = was_enabled;
+		output->enabling = false;
 		return false;
 	}
 
+	output->enabling = false;
+
 	if (oc && !oc->enabled) {
+		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
+		if (output->enabled) {
+			output_disable(output);
+			wlr_output_layout_remove(root->output_layout, wlr_output);
+		}
 		return true;
 	}
 
@@ -468,8 +466,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	output->width = output_box->width;
 	output->height = output_box->height;
 
-	if (!output->configured) {
-		output_configure(output);
+	if (!output->enabled) {
+		output_enable(output);
 	}
 
 	if (oc && oc->max_render_time >= 0) {
