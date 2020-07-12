@@ -251,6 +251,11 @@ void output_disable(struct sway_output *output) {
 	if (!sway_assert(output->enabled, "Expected an enabled output")) {
 		return;
 	}
+	int index = list_find(root->outputs, output);
+	if (!sway_assert(index >= 0, "Output not found in root node")) {
+		return;
+	}
+
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
 	wl_signal_emit(&output->events.destroy, output);
 
@@ -258,7 +263,6 @@ void output_disable(struct sway_output *output) {
 
 	root_for_each_container(untrack_output, output);
 
-	int index = list_find(root->outputs, output);
 	list_del(root->outputs, index);
 
 	output->enabled = false;
