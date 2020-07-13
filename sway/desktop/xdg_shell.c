@@ -360,6 +360,11 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	transaction_commit_dirty();
 }
 
+static void handle_request_maximize(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_surface *surface = data;
+	wlr_xdg_surface_schedule_configure(surface);
+}
+
 static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_move);
@@ -402,6 +407,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	wl_list_remove(&xdg_shell_view->request_maximize.link);
 	wl_list_remove(&xdg_shell_view->request_move.link);
 	wl_list_remove(&xdg_shell_view->request_resize.link);
 	wl_list_remove(&xdg_shell_view->set_title.link);
@@ -449,6 +455,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
 	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
 			&xdg_shell_view->request_fullscreen);
+
+	xdg_shell_view->request_maximize.notify = handle_request_maximize;
+	wl_signal_add(&xdg_surface->toplevel->events.request_maximize,
+			&xdg_shell_view->request_maximize);
 
 	xdg_shell_view->request_move.notify = handle_request_move;
 	wl_signal_add(&xdg_surface->toplevel->events.request_move,
