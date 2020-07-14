@@ -261,6 +261,10 @@ static void render_view_toplevels(struct sway_view *view,
 		output->lx - view->geometry.x;
 	double oy = view->container->surface_y -
 		output->ly - view->geometry.y;
+
+	// override color config for surface
+	view->surface->color = view->color;
+
 	output_surface_for_each_surface(output, view->surface, ox, oy,
 			render_surface_iterator, &data);
 }
