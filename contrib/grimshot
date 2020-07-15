@@ -111,6 +111,10 @@ if [ "$ACTION" = "check" ] ; then
   exit
 elif [ "$SUBJECT" = "area" ] ; then
   GEOM=$(slurp -d)
+  # Check if user exited slurp without selecting the area
+  if [ -z "$GEOM" ]; then
+    exit
+  fi
   WHAT="Area"
 elif [ "$SUBJECT" = "active" ] ; then
   FOCUSED=$(swaymsg -t get_tree | jq -r 'recurse(.nodes[]?, .floating_nodes[]?) | select(.focused)')
@@ -126,6 +130,10 @@ elif [ "$SUBJECT" = "output" ] ; then
   WHAT="$OUTPUT"
 elif [ "$SUBJECT" = "window" ] ; then
   GEOM=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp)
+  # Check if user exited slurp without selecting the area
+  if [ -z "$GEOM" ]; then
+   exit
+  fi
   WHAT="Window"
 else
   die "Unknown subject to take a screen shot from" "$SUBJECT"
