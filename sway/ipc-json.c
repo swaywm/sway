@@ -157,7 +157,7 @@ static const char *ipc_json_user_idle_inhibitor_description(enum sway_idle_inhib
 }
 
 json_object *ipc_json_get_version(void) {
-	int major = 0, minor = 0, patch = 0;
+	int major = 1, minor = 5, patch = 0;
 	json_object *version = json_object_new_object();
 
 	sscanf(SWAY_VERSION, "%u.%u.%u", &major, &minor, &patch);
