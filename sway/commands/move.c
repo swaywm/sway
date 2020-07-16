@@ -820,37 +820,81 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, expected_position_syntax);
 	}
 
-	double lx, ly;
-	char *inv;
-	lx = (double)strtol(argv[0], &inv, 10);
-	if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
-		return cmd_results_new(CMD_FAILURE, "Invalid position specified");
-	}
-	if (strcmp(argv[1], "px") == 0) {
-		--argc;
-		++argv;
+	struct movement_amount lx = { .amount = 0, .unit = MOVEMENT_UNIT_INVALID };
+	// X direction
+	int num_consumed_args = parse_movement_amount(argc, argv, &lx);
+	argc -= num_consumed_args;
+	argv += num_consumed_args;
+	if (lx.unit == MOVEMENT_UNIT_INVALID) {
+		return cmd_results_new(CMD_INVALID, "Invalid x position specified");
 	}
 
-	if (argc > 3) {
-		return cmd_results_new(CMD_FAILURE, expected_position_syntax);
+	struct movement_amount ly = { .amount = 0, .unit = MOVEMENT_UNIT_INVALID };
+	// Y direction
+	num_consumed_args = parse_movement_amount(argc, argv, &ly);
+	argc -= num_consumed_args;
+	argv += num_consumed_args;
+	if (argc > 0) {
+		return cmd_results_new(CMD_INVALID, expected_position_syntax);
+	}
+	if (ly.unit == MOVEMENT_UNIT_INVALID) {
+		return cmd_results_new(CMD_INVALID, "Invalid y position specified");
 	}
 
-	ly = (double)strtol(argv[1], &inv, 10);
-	if ((*inv != '\0' && strcasecmp(inv, "px") != 0) ||
-			(argc == 3 && strcmp(argv[2], "px") != 0)) {
-		return cmd_results_new(CMD_FAILURE, "Invalid position specified");
+	struct sway_workspace *ws = container->workspace;
+	if (!ws) {
+		struct sway_seat *seat = config->handler_context.seat;
+		ws = seat_get_focused_workspace(seat);
 	}
 
-	if (!absolute) {
-		struct sway_workspace *ws = container->workspace;
-		if (!ws) {
-			struct sway_seat *seat = config->handler_context.seat;
-			ws = seat_get_focused_workspace(seat);
+	switch (lx.unit) {
+	case MOVEMENT_UNIT_PPT:
+		if (container_is_scratchpad_hidden(container)) {
+			return cmd_results_new(CMD_FAILURE,
+					"Cannot move a hidden scratchpad container by ppt");
 		}
-		lx += ws->x;
-		ly += ws->y;
+		if (absolute) {
+			return cmd_results_new(CMD_FAILURE,
+					"Cannot move to absolute positions by ppt");
+		}
+		// Convert to px
+		lx.amount = ws->width * lx.amount / 100;
+		lx.unit = MOVEMENT_UNIT_PX;
+		// Falls through
+	case MOVEMENT_UNIT_PX:
+	case MOVEMENT_UNIT_DEFAULT:
+		break;
+	case MOVEMENT_UNIT_INVALID:
+		sway_assert(false, "invalid x unit");
+		break;
 	}
-	container_floating_move_to(container, lx, ly);
+
+	switch (ly.unit) {
+	case MOVEMENT_UNIT_PPT:
+		if (container_is_scratchpad_hidden(container)) {
+			return cmd_results_new(CMD_FAILURE,
+					"Cannot move a hidden scratchpad container by ppt");
+		}
+		if (absolute) {
+			return cmd_results_new(CMD_FAILURE,
+					"Cannot move to absolute positions by ppt");
+		}
+		// Convert to px
+		ly.amount = ws->height * ly.amount / 100;
+		ly.unit = MOVEMENT_UNIT_PX;
+		// Falls through
+	case MOVEMENT_UNIT_PX:
+	case MOVEMENT_UNIT_DEFAULT:
+		break;
+	case MOVEMENT_UNIT_INVALID:
+		sway_assert(false, "invalid y unit");
+		break;
+	}
+	if (!absolute) {
+		lx.amount += ws->x;
+		ly.amount += ws->y;
+	}
+	container_floating_move_to(container, lx.amount, ly.amount);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
