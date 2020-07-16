@@ -306,7 +306,7 @@ set|plus|minus <amount>
 	Shows a window from the scratchpad. Repeatedly using this command will
 	cycle through the windows in the scratchpad.
 
-*shortcuts inhibitor* enable|disable
+*shortcuts_inhibitor* enable|disable
 	Enables or disables the ability of clients to inhibit keyboard
 	shortcuts for a view. This is primarily useful for virtualization and
 	remote desktop software. It affects either the currently focused view
