@@ -222,6 +222,11 @@ static void set_activated(struct sway_view *view, bool activated) {
 		return;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+
+	if (activated && surface->minimized) {
+		wlr_xwayland_surface_set_minimized(surface, false);
+	}
+
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
@@ -406,6 +411,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_configure.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->request_minimize.link);
 	wl_list_remove(&xwayland_view->request_move.link);
 	wl_list_remove(&xwayland_view->request_resize.link);
 	wl_list_remove(&xwayland_view->request_activate.link);
@@ -506,6 +512,21 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 
 	arrange_root();
 	transaction_commit_dirty();
+}
+
+static void handle_request_minimize(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_minimize);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
+
+	struct wlr_xwayland_minimize_event *e = data;
+	struct sway_seat *seat = input_manager_current_seat();
+	bool focused = seat_get_focus(seat) == &view->container->node;
+	wlr_xwayland_surface_set_minimized(xsurface, !focused && e->minimize);
 }
 
 static void handle_request_move(struct wl_listener *listener, void *data) {
@@ -652,6 +673,10 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.request_fullscreen,
 		&xwayland_view->request_fullscreen);
 	xwayland_view->request_fullscreen.notify = handle_request_fullscreen;
+
+	wl_signal_add(&xsurface->events.request_minimize,
+		&xwayland_view->request_minimize);
+	xwayland_view->request_minimize.notify = handle_request_minimize;
 
 	wl_signal_add(&xsurface->events.request_activate,
 		&xwayland_view->request_activate);
