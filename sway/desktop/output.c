@@ -996,7 +996,8 @@ static void output_manager_apply(struct sway_server *server,
 		} else {
 			oc->width = config_head->state.custom_mode.width;
 			oc->height = config_head->state.custom_mode.height;
-			oc->refresh_rate = config_head->state.custom_mode.refresh;
+			oc->refresh_rate =
+				config_head->state.custom_mode.refresh / 1000.f;
 		}
 		oc->x = config_head->state.x;
 		oc->y = config_head->state.y;
