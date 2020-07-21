@@ -217,8 +217,8 @@ set|plus|minus <amount>
 
 *move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ptt]
 	Moves the focused container to the specified position in the workspace.
-	The position can be specified in pixels or percentage points, ommitting
-	the unit defualts to pixels. If	_absolute_ is used, the position is
+	The position can be specified in pixels or percentage points, omitting
+	the unit defaults to pixels. If	_absolute_ is used, the position is
 	relative to all outputs. _absolute_ can not be used with percentage points.
 
 *move* [absolute] position center
