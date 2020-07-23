@@ -72,7 +72,6 @@ static struct cmd_handler handlers[] = {
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
 	{ "hide_edge_borders", cmd_hide_edge_borders },
-	{ "include", cmd_include },
 	{ "input", cmd_input },
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
@@ -101,6 +100,7 @@ static struct cmd_handler handlers[] = {
 /* Config-time only commands. Keep alphabetized */
 static struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
+	{ "include", cmd_include },
 	{ "swaybg_command", cmd_swaybg_command },
 	{ "swaynag_command", cmd_swaynag_command },
 	{ "workspace_layout", cmd_workspace_layout },
