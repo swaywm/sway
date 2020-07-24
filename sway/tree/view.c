@@ -625,7 +625,12 @@ static void handle_foreign_activate_request(
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		if (seat->wlr_seat == event->seat) {
+			if (container_is_scratchpad_hidden_or_child(view->container)) {
+				root_scratchpad_show(view->container);
+			}
 			seat_set_focus_container(seat, view->container);
+			seat_consider_warp_to_focus(seat);
+			container_raise_floating(view->container);
 			break;
 		}
 	}
