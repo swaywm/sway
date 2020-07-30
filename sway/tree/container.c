@@ -978,6 +978,10 @@ static void set_fullscreen_iterator(struct sway_container *con, void *data) {
 	if (con->view->impl->set_fullscreen) {
 		bool *enable = data;
 		con->view->impl->set_fullscreen(con->view, *enable);
+		if (con->view->foreign_toplevel) {
+			wlr_foreign_toplevel_handle_v1_set_fullscreen(
+				con->view->foreign_toplevel, *enable);
+		}
 	}
 }
 
