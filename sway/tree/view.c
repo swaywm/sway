@@ -636,6 +636,33 @@ static void handle_foreign_activate_request(
 	}
 }
 
+static void handle_foreign_fullscreen_request(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(
+			listener, view, foreign_fullscreen_request);
+	struct wlr_foreign_toplevel_handle_v1_fullscreen_event *event = data;
+
+	// Match fullscreen command behavior for scratchpad hidden views
+	struct sway_container *container = view->container;
+	if (!container->workspace) {
+		while (container->parent) {
+			container = container->parent;
+		}
+	}
+
+	container_set_fullscreen(container,
+		event->fullscreen ? FULLSCREEN_WORKSPACE : FULLSCREEN_NONE);
+	if (event->fullscreen) {
+		arrange_root();
+	} else {
+		if (container->parent) {
+			arrange_container(container->parent);
+		} else if (container->workspace) {
+			arrange_workspace(container->workspace);
+		}
+	}
+}
+
 static void handle_foreign_close_request(
 		struct wl_listener *listener, void *data) {
 	struct sway_view *view = wl_container_of(
@@ -676,6 +703,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	view->foreign_activate_request.notify = handle_foreign_activate_request;
 	wl_signal_add(&view->foreign_toplevel->events.request_activate,
 			&view->foreign_activate_request);
+	view->foreign_fullscreen_request.notify = handle_foreign_fullscreen_request;
+	wl_signal_add(&view->foreign_toplevel->events.request_fullscreen,
+			&view->foreign_fullscreen_request);
 	view->foreign_close_request.notify = handle_foreign_close_request;
 	wl_signal_add(&view->foreign_toplevel->events.request_close,
 			&view->foreign_close_request);
