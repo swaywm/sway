@@ -185,6 +185,14 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	wlr_xdg_toplevel_set_fullscreen(surface, fullscreen);
 }
 
+static void set_resizing(struct sway_view *view, bool resizing) {
+	if (xdg_shell_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
+	wlr_xdg_toplevel_set_resizing(surface, resizing);
+}
+
 static bool wants_floating(struct sway_view *view) {
 	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_surface->toplevel;
 	struct wlr_xdg_toplevel_state *state = &toplevel->current;
@@ -260,6 +268,7 @@ static const struct sway_view_impl view_impl = {
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
+	.set_resizing = set_resizing,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.for_each_popup = for_each_popup,
@@ -360,6 +369,11 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	transaction_commit_dirty();
 }
 
+static void handle_request_maximize(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_surface *surface = data;
+	wlr_xdg_surface_schedule_configure(surface);
+}
+
 static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_move);
@@ -402,6 +416,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	wl_list_remove(&xdg_shell_view->request_maximize.link);
 	wl_list_remove(&xdg_shell_view->request_move.link);
 	wl_list_remove(&xdg_shell_view->request_resize.link);
 	wl_list_remove(&xdg_shell_view->set_title.link);
@@ -449,6 +464,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
 	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
 			&xdg_shell_view->request_fullscreen);
+
+	xdg_shell_view->request_maximize.notify = handle_request_maximize;
+	wl_signal_add(&xdg_surface->toplevel->events.request_maximize,
+			&xdg_shell_view->request_maximize);
 
 	xdg_shell_view->request_move.notify = handle_request_move;
 	wl_signal_add(&xdg_surface->toplevel->events.request_move,

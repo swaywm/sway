@@ -21,7 +21,12 @@ struct seatop_resize_floating_event {
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
 		enum wlr_button_state state) {
+	struct seatop_resize_floating_event *e = seat->seatop_data;
+	struct sway_container *con = e->con;
+
 	if (seat->cursor->pressed_button_count == 0) {
+		container_set_resizing(con, false);
+		arrange_container(con); // Send configure w/o resizing hint
 		seatop_begin_default(seat);
 	}
 }
@@ -170,6 +175,7 @@ void seatop_begin_resize_floating(struct sway_seat *seat,
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
 
+	container_set_resizing(con, true);
 	container_raise_floating(con);
 
 	const char *image = edge == WLR_EDGE_NONE ?

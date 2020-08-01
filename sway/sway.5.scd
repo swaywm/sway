@@ -215,9 +215,11 @@ set|plus|minus <amount>
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos_x> [px] <pos_y> [px]
-	Moves the focused container to the specified position in the workspace. If
-	_absolute_ is used, the position is relative to all outputs.
+*move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ptt]
+	Moves the focused container to the specified position in the workspace.
+	The position can be specified in pixels or percentage points, omitting
+	the unit defaults to pixels. If	_absolute_ is used, the position is
+	relative to all outputs. _absolute_ can not be used with percentage points.
 
 *move* [absolute] position center
 	Moves the focused container to be centered on the workspace. If _absolute_
@@ -272,7 +274,9 @@ set|plus|minus <amount>
 	optional comment argument is ignored, but logged for debugging purposes.
 
 *reload*
-	Reloads the sway config file and applies any changes.
+	Reloads the sway config file and applies any changes. The config file is
+	located at path specified by the command line arguments when started,
+	otherwise according to the priority stated in *sway*(1).
 
 *rename workspace* [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
@@ -304,7 +308,7 @@ set|plus|minus <amount>
 	Shows a window from the scratchpad. Repeatedly using this command will
 	cycle through the windows in the scratchpad.
 
-*shortcuts inhibitor* enable|disable
+*shortcuts_inhibitor* enable|disable
 	Enables or disables the ability of clients to inhibit keyboard
 	shortcuts for a view. This is primarily useful for virtualization and
 	remote desktop software. It affects either the currently focused view

@@ -138,7 +138,8 @@ static void log_env(void) {
 		"SWAYSOCK",
 	};
 	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
-		sway_log(SWAY_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
+		char *value = getenv(log_vars[i]);
+		sway_log(SWAY_INFO, "%s=%s", log_vars[i], value != NULL ? value : "");
 	}
 }
 

@@ -470,31 +470,29 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 	wl_signal_add(&wlr_drag->events.destroy, &drag->destroy);
 
 	struct wlr_drag_icon *wlr_drag_icon = wlr_drag->icon;
-	if (wlr_drag_icon == NULL) {
-		return;
+	if (wlr_drag_icon != NULL) {
+		struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
+		if (icon == NULL) {
+			sway_log(SWAY_ERROR, "Allocation failed");
+			return;
+		}
+		icon->seat = seat;
+		icon->wlr_drag_icon = wlr_drag_icon;
+		wlr_drag_icon->data = icon;
+
+		icon->surface_commit.notify = drag_icon_handle_surface_commit;
+		wl_signal_add(&wlr_drag_icon->surface->events.commit, &icon->surface_commit);
+		icon->unmap.notify = drag_icon_handle_unmap;
+		wl_signal_add(&wlr_drag_icon->events.unmap, &icon->unmap);
+		icon->map.notify = drag_icon_handle_map;
+		wl_signal_add(&wlr_drag_icon->events.map, &icon->map);
+		icon->destroy.notify = drag_icon_handle_destroy;
+		wl_signal_add(&wlr_drag_icon->events.destroy, &icon->destroy);
+
+		wl_list_insert(&root->drag_icons, &icon->link);
+
+		drag_icon_update_position(icon);
 	}
-
-	struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
-	if (icon == NULL) {
-		sway_log(SWAY_ERROR, "Allocation failed");
-		return;
-	}
-	icon->seat = seat;
-	icon->wlr_drag_icon = wlr_drag_icon;
-	wlr_drag_icon->data = icon;
-
-	icon->surface_commit.notify = drag_icon_handle_surface_commit;
-	wl_signal_add(&wlr_drag_icon->surface->events.commit, &icon->surface_commit);
-	icon->unmap.notify = drag_icon_handle_unmap;
-	wl_signal_add(&wlr_drag_icon->events.unmap, &icon->unmap);
-	icon->map.notify = drag_icon_handle_map;
-	wl_signal_add(&wlr_drag_icon->events.map, &icon->map);
-	icon->destroy.notify = drag_icon_handle_destroy;
-	wl_signal_add(&wlr_drag_icon->events.destroy, &icon->destroy);
-
-	wl_list_insert(&root->drag_icons, &icon->link);
-
-	drag_icon_update_position(icon);
 	seatop_begin_default(seat);
 }
 
@@ -918,7 +916,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 	if (seat == input_manager_get_default_seat()) {
 		char cursor_size_fmt[16];
-		snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%d", cursor_size);
+		snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%u", cursor_size);
 		setenv("XCURSOR_SIZE", cursor_size_fmt, 1);
 		if (cursor_theme != NULL) {
 			setenv("XCURSOR_THEME", cursor_theme, 1);

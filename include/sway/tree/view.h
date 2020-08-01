@@ -43,6 +43,7 @@ struct sway_view_impl {
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
+	void (*set_resizing)(struct sway_view *view, bool resizing);
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
@@ -146,6 +147,7 @@ struct sway_xwayland_view {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener request_minimize;
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
 	struct wl_listener request_activate;

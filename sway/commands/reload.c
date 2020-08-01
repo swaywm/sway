@@ -22,7 +22,12 @@ static void do_reload(void *data) {
 		list_add(bar_ids, strdup(bar->id));
 	}
 
-	if (!load_main_config(config->current_config_path, true, false)) {
+	const char *path = NULL;
+	if (config->user_config_path) {
+		path = config->current_config_path;
+	}
+
+	if (!load_main_config(path, true, false)) {
 		sway_log(SWAY_ERROR, "Error(s) reloading config");
 		list_free_items_and_destroy(bar_ids);
 		return;
@@ -55,7 +60,12 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 		return error;
 	}
 
-	if (!load_main_config(config->current_config_path, true, true)) {
+	const char *path = NULL;
+	if (config->user_config_path) {
+		path = config->current_config_path;
+	}
+
+	if (!load_main_config(path, true, true)) {
 		return cmd_results_new(CMD_FAILURE, "Error(s) reloading config.");
 	}
 

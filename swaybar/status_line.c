@@ -185,6 +185,7 @@ struct status_line *status_line_init(char *cmd) {
 
 void status_line_free(struct status_line *status) {
 	status_line_close_fds(status);
+	kill(status->pid, status->cont_signal);
 	kill(status->pid, SIGTERM);
 	waitpid(status->pid, NULL, 0);
 	if (status->protocol == PROTOCOL_I3BAR) {

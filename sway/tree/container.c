@@ -746,6 +746,28 @@ void container_floating_set_default_size(struct sway_container *con) {
 	free(box);
 }
 
+
+/**
+ * Indicate to clients in this container that they are participating in (or
+ * have just finished) an interactive resize
+ */
+void container_set_resizing(struct sway_container *con, bool resizing) {
+	if (!con) {
+		return;
+	}
+
+	if (con->view) {
+		if (con->view->impl->set_resizing) {
+			con->view->impl->set_resizing(con->view, resizing);
+		}
+	} else {
+		for (int i = 0; i < con->children->length; ++i ) {
+			struct sway_container *child = con->children->items[i];
+			container_set_resizing(child, resizing);
+		}
+	}
+}
+
 void container_set_floating(struct sway_container *container, bool enable) {
 	if (container_is_floating(container) == enable) {
 		return;

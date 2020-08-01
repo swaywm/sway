@@ -500,6 +500,7 @@ struct sway_config {
 	struct side_gaps gaps_outer;
 
 	list_t *config_chain;
+	bool user_config_path;
 	const char *current_config_path;
 	const char *current_config;
 	int current_config_line_number;
