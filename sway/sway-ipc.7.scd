@@ -93,8 +93,10 @@ Parses and runs the payload as sway commands
 *REPLY*++
 An array of objects corresponding to each command that was parsed. Each object
 has the property _success_, which is a boolean indicating whether the command
-was successful. The object may also contain the property _error_, which is a
-human readable error message.
+was successful. The object may also contain the properties _error_ and _parse\_error_.
+The _error_ property is a human readable error message while _parse\_error_ is a
+boolean indicating whether the reason the command failed was because the command
+was unknown or not able to be parsed.
 
 *Example Reply:*
 ```
@@ -104,6 +106,7 @@ human readable error message.
 	},
 	{
 		"success": false,
+		"parse_error": true,
 		"error": "Invalid/unknown command"
 	}
 ]
