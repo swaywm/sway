@@ -131,7 +131,6 @@ void workspace_destroy(struct sway_workspace *workspace) {
 				"which is still referenced by transactions")) {
 		return;
 	}
-
 	wlr_workspace_handle_v1_destroy(workspace->workspace_handle);
 
 	free(workspace->workspace_handle);

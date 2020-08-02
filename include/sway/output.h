@@ -9,6 +9,7 @@
 #include "config.h"
 #include "sway/tree/node.h"
 #include "sway/tree/view.h"
+#include <sway/tree/workspace.h>
 
 struct sway_server;
 struct sway_container;

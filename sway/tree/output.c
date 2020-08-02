@@ -131,6 +131,7 @@ void output_enable(struct sway_output *output) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			if (!seat->has_focus) {
 				seat_set_focus_workspace(seat, ws);
+				wlr_workspace_handle_v1_set_active(ws->workspace_handle, true);
 			}
 		}
 		free(ws_name);
@@ -379,22 +380,21 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	return 0;
 }
 
-static void set_workspace_coordinates(struct wlr_workspace_group_handle_v1 *workspace_group) {
-	struct wlr_workspace_handle_v1 *workspace_handle;
-	int i = wl_list_length(&workspace_group->workspaces);
-	wl_list_for_each(workspace_handle, &workspace_group->workspaces, link) {
+static void set_workspace_coordinates(list_t *workspaces) {
+	for (int i = 0; i < workspaces->length; ++i) {
 		struct wl_array coordinates;
 		wl_array_init(&coordinates);
-		*(int*)wl_array_add(&coordinates, sizeof(int)) = i;
-		wlr_workspace_handle_v1_set_coordinates(workspace_handle, &coordinates);
+		*(int*)wl_array_add(&coordinates, sizeof(int)) = i + 1;
+		wlr_workspace_handle_v1_set_coordinates(
+				((struct sway_workspace*)workspaces->items[i])
+						->workspace_handle, &coordinates);
 		wl_array_release(&coordinates);
-		--i;
 	}
 }
 
 void output_sort_workspaces(struct sway_output *output) {
 	list_stable_sort(output->workspaces, sort_workspace_cmp_qsort);
-	set_workspace_coordinates(output->workspace_group);
+	set_workspace_coordinates(output->workspaces);
 }
 
 void output_get_box(struct sway_output *output, struct wlr_box *box) {

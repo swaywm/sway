@@ -86,6 +86,7 @@ struct sway_server {
 	struct wlr_text_input_manager_v3 *text_input;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_workspace_manager_v1 *workspace_manager;
+	struct wl_listener workspace_manager_commit_request;
 
 	size_t txn_timeout_ms;
 	list_t *transactions;
