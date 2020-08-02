@@ -144,6 +144,8 @@ bool server_init(struct sway_server *server) {
 	server->text_input = wlr_text_input_manager_v3_create(server->wl_display);
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
+	server->workspace_manager =
+			wlr_workspace_manager_v1_create(server->wl_display);
 
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);

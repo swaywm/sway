@@ -233,6 +233,8 @@ void output_destroy(struct sway_output *output) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+	wlr_workspace_group_handle_v1_output_leave(output->workspace_group, output->wlr_output);
+	free(output->workspace_group);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
 	wl_event_source_remove(output->repaint_timer);
@@ -377,8 +379,22 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	return 0;
 }
 
+static void set_workspace_coordinates(struct wlr_workspace_group_handle_v1 *workspace_group) {
+	struct wlr_workspace_handle_v1 *workspace_handle;
+	int i = wl_list_length(&workspace_group->workspaces);
+	wl_list_for_each(workspace_handle, &workspace_group->workspaces, link) {
+		struct wl_array coordinates;
+		wl_array_init(&coordinates);
+		*(int*)wl_array_add(&coordinates, sizeof(int)) = i;
+		wlr_workspace_handle_v1_set_coordinates(workspace_handle, &coordinates);
+		wl_array_release(&coordinates);
+		--i;
+	}
+}
+
 void output_sort_workspaces(struct sway_output *output) {
 	list_stable_sort(output->workspaces, sort_workspace_cmp_qsort);
+	set_workspace_coordinates(output->workspace_group);
 }
 
 void output_get_box(struct sway_output *output, struct wlr_box *box) {
