@@ -140,10 +140,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* output <name>
 	Moves focus to the named output.
 
-*focus tiling*
+*focus* tiling
 	Sets focus to the last focused tiling container.
 
-*focus floating*
+*focus* floating
 	Sets focus to the last focused floating container.
 
 *focus* mode_toggle
@@ -278,7 +278,7 @@ set|plus|minus <amount>
 	located at path specified by the command line arguments when started,
 	otherwise according to the priority stated in *sway*(1).
 
-*rename workspace* [<old_name>] to <new_name>
+*rename* workspace [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
 
 *resize* shrink|grow width|height [<amount> [px|ppt]]
@@ -286,25 +286,25 @@ set|plus|minus <amount>
 	percentage points. If the units are omitted, floating containers are resized
 	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
 
-*resize set* height <height> [px|ppt]
+*resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _height_ is 0, the container
 	will not be resized.
 
-*resize set* [width] <width> [px|ppt]
+*resize* set [width] <width> [px|ppt]
 	Sets the width of the container to _width_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _width_ is 0, the container
 	will not be resized.
 
-*resize set* [width] <width> [px|ppt] [height] <height> [px|ppt]
+*resize* set [width] <width> [px|ppt] [height] <height> [px|ppt]
 	Sets the width and height of the container to _width_ and _height_,
 	specified in pixels or percentage points. If the units are omitted,
 	floating containers are resized in px and tiled containers by ppt. If
 	_width_ or _height_ is 0, the container will not be resized on that axis.
 
-*scratchpad show*
+*scratchpad* show
 	Shows a window from the scratchpad. Repeatedly using this command will
 	cycle through the windows in the scratchpad.
 
