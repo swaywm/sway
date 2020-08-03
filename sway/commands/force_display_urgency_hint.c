@@ -1,5 +1,6 @@
 #include "sway/commands.h"
 #include "sway/config.h"
+#include <errno.h>
 
 struct cmd_results *cmd_force_display_urgency_hint(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -8,13 +9,16 @@ struct cmd_results *cmd_force_display_urgency_hint(int argc, char **argv) {
 		return error;
 	}
 
-	char *err;
-	int timeout = (int)strtol(argv[0], &err, 10);
-	if (*err) {
-		if (strcmp(err, "ms") != 0) {
-			return cmd_results_new(CMD_INVALID,
-					"Expected 'force_display_urgency_hint <timeout> ms'");
-		}
+	errno = 0;
+	char *end;
+	int timeout = (int)strtol(argv[0], &end, 10);
+	if (errno || end == argv[0] || (*end && strcmp(end, "ms") != 0)) {
+		return cmd_results_new(CMD_INVALID, "timeout integer invalid");
+	}
+
+	if (argc > 1 && strcmp(argv[1], "ms") != 0) {
+		return cmd_results_new(CMD_INVALID,
+				"Expected 'force_display_urgency_hint <timeout> [ms]'");
 	}
 
 	config->urgent_timeout = timeout > 0 ? timeout : 0;
