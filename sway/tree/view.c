@@ -670,6 +670,17 @@ static void handle_foreign_close_request(
 	view_close(view);
 }
 
+static void handle_foreign_destroy(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(
+			listener, view, foreign_destroy);
+
+	wl_list_remove(&view->foreign_activate_request.link);
+	wl_list_remove(&view->foreign_fullscreen_request.link);
+	wl_list_remove(&view->foreign_close_request.link);
+	wl_list_remove(&view->foreign_destroy.link);
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			  bool fullscreen, struct wlr_output *fullscreen_output,
 			  bool decoration) {
@@ -709,6 +720,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	view->foreign_close_request.notify = handle_foreign_close_request;
 	wl_signal_add(&view->foreign_toplevel->events.request_close,
 			&view->foreign_close_request);
+	view->foreign_destroy.notify = handle_foreign_destroy;
+	wl_signal_add(&view->foreign_toplevel->events.destroy,
+			&view->foreign_destroy);
 
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
