@@ -244,19 +244,22 @@ static uint32_t render_status_block(cairo_t *cairo,
 
 	uint32_t border_color = block->urgent
 		? config->colors.urgent_workspace.border : block->border;
-	if (border_color && block->border_top > 0) {
-		render_sharp_line(cairo, border_color, x_pos, y_pos,
-				block_width, block->border_top * output->scale);
-	}
-	if (border_color && block->border_bottom > 0) {
-		render_sharp_line(cairo, border_color, x_pos,
-				y_pos + render_height - block->border_bottom * output->scale,
-				block_width, block->border_bottom * output->scale);
-	}
-	if (border_color && block->border_left > 0) {
-		render_sharp_line(cairo, border_color, x_pos, y_pos,
-				block->border_left * output->scale, render_height);
-		x_pos += block->border_left * output->scale + margin;
+	
+	if (border_color){
+		if (block->border_top > 0) {
+			render_sharp_line(cairo, border_color, x_pos, y_pos,
+					block_width, block->border_top * output->scale);
+		}
+		if (block->border_bottom > 0) {
+			render_sharp_line(cairo, border_color, x_pos,
+					y_pos + render_height - block->border_bottom * output->scale,
+					block_width, block->border_bottom * output->scale);
+		}
+		if (block->border_left > 0) {
+			render_sharp_line(cairo, border_color, x_pos, y_pos,
+					block->border_left * output->scale, render_height);
+			x_pos += block->border_left * output->scale + margin;
+		}
 	}
 
 	double offset = 0;
