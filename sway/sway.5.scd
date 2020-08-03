@@ -632,6 +632,13 @@ The default colors are:
 	information on pango font descriptions, see
 	https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
 
+*force_display_urgency_hint* <timeout> [ms]
+	If an application on another workspace sets an urgency hint, switching to this
+	workspace may lead to immediate focus of the application, which also means the
+	window decoration color would be immediately resetted to *client.focused*. This
+	may make it unnecessarily hard to tell which window originally raised the
+	event. This option allows to set a _timeout_ in ms to delay the urgency hint reset.
+
 *titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels
 
