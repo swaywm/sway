@@ -309,9 +309,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 
 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
 
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
-	if(renderer->color) {
-		json_object_object_add(object, "icc_profile", json_object_new_string(renderer->color->icc_profile_path));
+	if(wlr_output->color) {
+		json_object_object_add(object, "icc_profile", json_object_new_string(wlr_output->color->icc_profile_path));
 	}
 }
 

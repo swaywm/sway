@@ -483,9 +483,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	if(oc) {
-		struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
-		wlr_color_config_free(renderer->color);
-		renderer->color = wlr_color_config_copy(oc->color);
+		wlr_color_config_free(wlr_output->color);
+		wlr_output->color = wlr_color_config_copy(oc->color);
 	}
 
 	// Reconfigure all devices, since input config may have been applied before
