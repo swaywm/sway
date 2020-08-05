@@ -582,7 +582,7 @@ static void handle_set_title(struct wl_listener *listener, void *data) {
 		return;
 	}
 	view_update_title(view, false);
-	view_execute_criteria(view);
+	view_execute_criteria(view, "title");
 }
 
 static void handle_set_class(struct wl_listener *listener, void *data) {
@@ -593,7 +593,7 @@ static void handle_set_class(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	view_execute_criteria(view);
+	view_execute_criteria(view, "class");
 }
 
 static void handle_set_role(struct wl_listener *listener, void *data) {
@@ -604,7 +604,7 @@ static void handle_set_role(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	view_execute_criteria(view);
+	view_execute_criteria(view, "window_role");
 }
 
 static void handle_set_window_type(struct wl_listener *listener, void *data) {
@@ -615,7 +615,7 @@ static void handle_set_window_type(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	view_execute_criteria(view);
+	view_execute_criteria(view, "window_type");
 }
 
 static void handle_set_hints(struct wl_listener *listener, void *data) {

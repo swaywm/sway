@@ -236,7 +236,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 					goto cleanup;
 				}
 				list_free(containers);
-				containers = criteria_get_containers(criteria);
+				containers = criteria_get_containers(criteria, "command");
 				head += strlen(criteria->raw);
 				criteria_destroy(criteria);
 				config->handler_context.using_criteria = true;
