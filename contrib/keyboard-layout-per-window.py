@@ -7,11 +7,7 @@
 
 import i3ipc
 
-ipc = i3ipc.Connection()
-prev_focused = ipc.get_tree().find_focused().id
-windows = {}
-
-def on_window_focus(ipc, event):
+def on_window_focus(ipc: i3ipc.connection.Connection, event: i3ipc.events.WindowEvent):
     global windows, prev_focused
 
     # Save current layout
@@ -23,21 +19,26 @@ def on_window_focus(ipc, event):
     if event.container.id in windows:
         for (kdb_id, layout_index) in windows[event.container.id].items():
             if layout_index != layouts[kdb_id]:
-                ipc.command("""input "{}" xkb_switch_layout {}""".format(
-                    kdb_id, layout_index))
+                ipc.command(f"input \"{kdb_id}\" xkb_switch_layout {layout_index}")
+                break
 
     prev_focused = event.container.id
 
-def on_window_close(ipc, event):
+def on_window_close(ipc: i3ipc.connection.Connection, event: i3ipc.events.WindowEvent):
     global windows
     if event.container.id in windows:
         del(windows[event.container.id])
 
-def on_window(ipc, event):
+def on_window(ipc: i3ipc.connection.Connection, event: i3ipc.events.WindowEvent):
     if event.change == "focus":
         on_window_focus(ipc, event)
     elif event.change == "close":
         on_window_close(ipc, event)
 
-ipc.on("window", on_window)
-ipc.main()
+if __name__ == "__main__":
+    ipc = i3ipc.Connection()
+    prev_focused = ipc.get_tree().find_focused().id
+    windows = {}
+
+    ipc.on("window", on_window)
+    ipc.main()
