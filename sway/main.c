@@ -367,6 +367,7 @@ int main(int argc, char **argv) {
 
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
+	signal(SIGINT, sig_handler);
 
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
