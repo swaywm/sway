@@ -413,8 +413,8 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 static void render_titlebar(struct sway_output *output,
 		pixman_region32_t *output_damage, struct sway_container *con,
 		int x, int y, int width,
-		struct border_colors *colors, struct wlr_texture *title_texture,
-		struct wlr_texture *marks_texture) {
+		struct border_colors *colors,
+		struct wlr_texture *title_texture, struct wlr_texture *marks_texture) {
 	struct wlr_box box;
 	float color[4];
 	float output_scale = output->wlr_output->scale;
@@ -686,6 +686,173 @@ struct parent_data {
 	struct sway_container *active_child;
 };
 
+/**
+ * Render a single border texture.
+ */
+static void render_border_texture(struct sway_output *output,
+		pixman_region32_t *damage, struct wlr_box box,
+		struct wlr_texture *texture, float alpha) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	scale_box(&box, wlr_output->scale);
+	box.x -= output->lx * wlr_output->scale;
+	box.y -= output->ly * wlr_output->scale;
+
+	// TODO: Fix texture drawing between outputs.
+	float matrix[9];
+	memcpy(matrix, wlr_output->transform_matrix, sizeof(matrix));
+	wlr_matrix_translate(matrix, box.x, box.y);
+	wlr_matrix_scale(matrix, box.width, box.height);
+
+	pixman_region32_t texture_damage;
+	pixman_region32_init_rect(&texture_damage, box.x, box.y, box.width, box.height);
+	wlr_output_damage_add(output->damage, &texture_damage);
+	render_texture(wlr_output, damage, texture, NULL, &box, matrix, alpha);
+}
+
+/**
+ * Render all border textures based on a given wlr_box.
+ */
+static void render_border_textures(struct sway_output *output,
+		pixman_region32_t *damage, struct wlr_box *full_box,
+		struct border_textures *textures, float alpha) {
+
+	struct wlr_box box;
+	struct wlr_texture *texture;
+	texture = textures->left_edge;
+	if (texture) {
+		box.x = full_box->x - texture->width;
+		box.y = full_box->y;
+		box.width = texture->width;
+		box.height = full_box->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->right_edge;
+	if (texture) {
+		box.x = full_box->x + full_box->width;
+		box.y = full_box->y;
+		box.width = texture->width;
+		box.height = full_box->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->top_edge;
+	if (texture) {
+		box.x = full_box->x;
+		box.y = full_box->y - texture->height;
+		box.width = full_box->width;
+		box.height = texture->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->top_left_corner;
+	if (texture) {
+		box.x = full_box->x - texture->width;
+		box.y = full_box->y - texture->height;
+		box.width = texture->width;
+		box.height = texture->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->top_right_corner;
+	if (texture) {
+		box.x = full_box->x + full_box->width;
+		box.y = full_box->y - texture->height;
+		box.width = texture->width;
+		box.height = texture->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->bottom_edge;
+	if (texture) {
+		box.x = full_box->x;
+		box.y = full_box->y + full_box->height;
+		box.width = full_box->width;
+		box.height = texture->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->bottom_left_corner;
+	if (texture) {
+		box.x = full_box->x - texture->width;
+		box.y = full_box->y + full_box->height;
+		box.width = texture->width;
+		box.height = texture->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+
+	texture = textures->bottom_right_corner;
+	if (texture) {
+		box.x = full_box->x + full_box->width;
+		box.y = full_box->y + full_box->height;
+		box.width = texture->width;
+		box.height = texture->height;
+		render_border_texture(output, damage, box, texture, alpha);
+	}
+}
+
+/**
+ * Render all of the border textures for a container.
+ */
+static void render_border_textures_for_container(struct sway_container *con,
+		pixman_region32_t *damage) {
+	if (container_is_floating(con)) {
+		goto bypass_border_checks;
+	}
+
+	struct sway_container *temp = con;
+	while (temp) {
+		enum sway_container_layout layout = container_parent_layout(temp);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			return;
+		}
+		temp = temp->parent;
+	}
+
+	if ((con->layout == L_VERT || con->layout == L_HORIZ) &&
+			container_parent_layout(con) == con->layout) {
+		return;
+	}
+
+	struct border_textures *textures;
+bypass_border_checks:
+	// TODO: Use the appropriate border_texture based on children
+	textures = &config->border_textures.focused;
+
+	struct sway_output *output = con->workspace->output;
+	struct sway_container_state *state = &con->current;
+	struct wlr_box box;
+	box.x = state->x;
+	box.y = state->y;
+	box.width = state->width;
+	box.height = state->height;
+	render_border_textures(output, damage, &box, textures, con->alpha);
+}
+
+/**
+ * Render all of the border textures for tiling containers within a workspace
+ */
+static void render_border_textures_for_workspace(struct sway_output *output,
+		pixman_region32_t *damage, struct sway_workspace *ws) {
+	// If the workspace layout is tabbed or stacked, all containers within are
+	// part of a parent container so only one border needs to be drawn.
+	if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
+		struct wlr_box box;
+		workspace_get_box(ws, &box);
+
+		// TODO: Use the appropriate border_texture based on children
+		struct border_textures *textures = &config->border_textures.focused;
+		struct sway_container *con = ws->tiling->items[0];
+		render_border_textures(output, damage, &box, textures, con->alpha);
+		return;
+	}
+	for (int i = 0; i < ws->tiling->length; ++i) {
+		struct sway_container *container = ws->tiling->items[i];
+		render_border_textures_for_container(container, damage);
+	}
+}
+
 static void render_container(struct sway_output *output,
 	pixman_region32_t *damage, struct sway_container *con, bool parent_focused);
 
@@ -848,7 +1015,8 @@ static void render_containers_stacked(struct sway_output *output,
 
 		int y = parent->box.y + titlebar_height * i;
 		render_titlebar(output, damage, child, parent->box.x, y,
-				parent->box.width, colors, title_texture, marks_texture);
+				parent->box.width, colors, title_texture,
+				marks_texture);
 
 		if (child == current) {
 			current_colors = colors;
@@ -921,6 +1089,7 @@ static void render_workspace(struct sway_output *output,
 		.active_child = ws->current.focused_inactive_child,
 	};
 	render_containers(output, damage, &data);
+	render_border_textures_for_workspace(output, damage, ws);
 }
 
 static void render_floating_container(struct sway_output *soutput,
@@ -953,6 +1122,7 @@ static void render_floating_container(struct sway_output *soutput,
 			render_top_border(soutput, damage, con, colors);
 		}
 		render_view(soutput, damage, con, colors);
+		render_border_textures_for_container(con, damage);
 	} else {
 		render_container(soutput, damage, con, con->current.focused);
 	}
