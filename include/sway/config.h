@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <wlr/render/wlr_texture.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
@@ -374,6 +375,17 @@ struct border_colors {
 	float child_border[4];
 };
 
+struct border_textures {
+	struct wlr_texture *top_edge;
+	struct wlr_texture *right_edge;
+	struct wlr_texture *bottom_edge;
+	struct wlr_texture *left_edge;
+	struct wlr_texture *top_left_corner;
+	struct wlr_texture *top_right_corner;
+	struct wlr_texture *bottom_right_corner;
+	struct wlr_texture *bottom_left_corner;
+};
+
 enum edge_border_types {
 	E_NONE, /**< Don't hide edge borders */
 	E_VERTICAL, /**< hide vertical edge borders */
@@ -523,6 +535,15 @@ struct sway_config {
 		struct border_colors placeholder;
 		float background[4];
 	} border_colors;
+
+	// border textures
+	struct {
+		struct border_textures focused;
+		struct border_textures focused_inactive;
+		struct border_textures unfocused;
+		struct border_textures urgent;
+		struct border_textures placeholder;
+	} border_textures;
 
 	// floating view
 	int32_t floating_maximum_width;

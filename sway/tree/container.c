@@ -509,6 +509,7 @@ static void update_title_texture(struct sway_container *con,
 			output->wlr_output->backend);
 	*texture = wlr_texture_from_pixels(
 			renderer, WL_SHM_FORMAT_ARGB8888, stride, width, height, data);
+
 	cairo_surface_destroy(surface);
 	g_object_unref(pango);
 	cairo_destroy(cairo);
