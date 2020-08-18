@@ -644,7 +644,7 @@ struct output_config *store_output_config(struct output_config *oc);
 
 struct output_config *find_output_config(struct sway_output *output);
 
-void apply_output_config_to_outputs(struct output_config *oc);
+void apply_output_config_to_outputs();
 
 void reset_outputs(void);
 

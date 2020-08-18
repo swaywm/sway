@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fnmatch.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -14,13 +15,6 @@
 #include "sway/tree/root.h"
 #include "log.h"
 #include "util.h"
-
-int output_name_cmp(const void *item, const void *data) {
-	const struct output_config *output = item;
-	const char *name = data;
-
-	return strcmp(output->name, name);
-}
 
 void output_get_identifier(char *identifier, size_t len,
 		struct sway_output *output) {
@@ -125,104 +119,8 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 }
 
-static void merge_wildcard_on_all(struct output_config *wildcard) {
-	for (int i = 0; i < config->output_configs->length; i++) {
-		struct output_config *oc = config->output_configs->items[i];
-		if (strcmp(wildcard->name, oc->name) != 0) {
-			sway_log(SWAY_DEBUG, "Merging output * config on %s", oc->name);
-			merge_output_config(oc, wildcard);
-		}
-	}
-}
-
-static void merge_id_on_name(struct output_config *oc) {
-	char *id_on_name = NULL;
-	char id[128];
-	char *name = NULL;
-	struct sway_output *output;
-	wl_list_for_each(output, &root->all_outputs, link) {
-		name = output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), output);
-		if (strcmp(name, oc->name) == 0 || strcmp(id, oc->name) == 0) {
-			size_t length = snprintf(NULL, 0, "%s on %s", id, name) + 1;
-			id_on_name = malloc(length);
-			if (!id_on_name) {
-				sway_log(SWAY_ERROR, "Failed to allocate id on name string");
-				return;
-			}
-			snprintf(id_on_name, length, "%s on %s", id, name);
-			break;
-		}
-	}
-
-	if (!id_on_name) {
-		return;
-	}
-
-	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
-	if (i >= 0) {
-		sway_log(SWAY_DEBUG, "Merging on top of existing id on name config");
-		merge_output_config(config->output_configs->items[i], oc);
-	} else {
-		// If both a name and identifier config, exist generate an id on name
-		int ni = list_seq_find(config->output_configs, output_name_cmp, name);
-		int ii = list_seq_find(config->output_configs, output_name_cmp, id);
-		if ((ni >= 0 && ii >= 0) || (ni >= 0 && strcmp(oc->name, id) == 0)
-				|| (ii >= 0 && strcmp(oc->name, name) == 0)) {
-			struct output_config *ion_oc = new_output_config(id_on_name);
-			if (ni >= 0) {
-				merge_output_config(ion_oc, config->output_configs->items[ni]);
-			}
-			if (ii >= 0) {
-				merge_output_config(ion_oc, config->output_configs->items[ii]);
-			}
-			merge_output_config(ion_oc, oc);
-			list_add(config->output_configs, ion_oc);
-			sway_log(SWAY_DEBUG, "Generated id on name output config \"%s\""
-				" (enabled: %d) (%dx%d@%fHz position %d,%d scale %f "
-				"transform %d) (bg %s %s) (dpms %d) (max render time: %d)",
-				ion_oc->name, ion_oc->enabled, ion_oc->width, ion_oc->height,
-				ion_oc->refresh_rate, ion_oc->x, ion_oc->y, ion_oc->scale,
-				ion_oc->transform, ion_oc->background,
-				ion_oc->background_option, ion_oc->dpms_state,
-				ion_oc->max_render_time);
-		}
-	}
-	free(id_on_name);
-}
-
 struct output_config *store_output_config(struct output_config *oc) {
-	bool wildcard = strcmp(oc->name, "*") == 0;
-	if (wildcard) {
-		merge_wildcard_on_all(oc);
-	} else {
-		merge_id_on_name(oc);
-	}
-
-	int i = list_seq_find(config->output_configs, output_name_cmp, oc->name);
-	if (i >= 0) {
-		sway_log(SWAY_DEBUG, "Merging on top of existing output config");
-		struct output_config *current = config->output_configs->items[i];
-		merge_output_config(current, oc);
-		free_output_config(oc);
-		oc = current;
-	} else if (!wildcard) {
-		sway_log(SWAY_DEBUG, "Adding non-wildcard output config");
-		i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			sway_log(SWAY_DEBUG, "Merging on top of output * config");
-			struct output_config *current = new_output_config(oc->name);
-			merge_output_config(current, config->output_configs->items[i]);
-			merge_output_config(current, oc);
-			free_output_config(oc);
-			oc = current;
-		}
-		list_add(config->output_configs, oc);
-	} else {
-		// New wildcard config. Just add it
-		sway_log(SWAY_DEBUG, "Adding output * config");
-		list_add(config->output_configs, oc);
-	}
+	list_add(config->output_configs, oc);
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (dpms %d) "
@@ -513,125 +411,43 @@ static void default_output_config(struct output_config *oc,
 	oc->max_render_time = 0;
 }
 
-static struct output_config *get_output_config(char *identifier,
-		struct sway_output *sway_output) {
-	const char *name = sway_output->wlr_output->name;
+struct output_config *find_output_config(struct sway_output *sway_output) {
+	// Start with a default config for this output
+	struct output_config *result = new_output_config("merge");
+	default_output_config(result, sway_output->wlr_output);
 
-	struct output_config *oc_id_on_name = NULL;
-	struct output_config *oc_name = NULL;
-	struct output_config *oc_id = NULL;
-
-	size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
-	char *id_on_name = malloc(length);
-	snprintf(id_on_name, length, "%s on %s", identifier, name);
-	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
-	if (i >= 0) {
-		oc_id_on_name = config->output_configs->items[i];
-	} else {
-		i = list_seq_find(config->output_configs, output_name_cmp, name);
-		if (i >= 0) {
-			oc_name = config->output_configs->items[i];
-		}
-
-		i = list_seq_find(config->output_configs, output_name_cmp, identifier);
-		if (i >= 0) {
-			oc_id = config->output_configs->items[i];
+	// Apply all matches in order
+	char id[128];
+	output_get_identifier(id, sizeof(id), sway_output);
+	char *name = sway_output->wlr_output->name;
+	for (int i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *oc = config->output_configs->items[i];
+		if (!strcmp(oc->name, "*") || !strcmp(oc->name, name) || !strcmp(oc->name, id)) {
+			merge_output_config(result, oc);
 		}
 	}
 
-	struct output_config *result = new_output_config("temp");
-	if (config->reloading) {
-		default_output_config(result, sway_output->wlr_output);
-	}
-	if (oc_id_on_name) {
-		// Already have an identifier on name config, use that
-		free(result->name);
-		result->name = strdup(id_on_name);
-		merge_output_config(result, oc_id_on_name);
-	} else if (oc_name && oc_id) {
-		// Generate a config named `<identifier> on <name>` which contains a
-		// merged copy of the identifier on name. This will make sure that both
-		// identifier and name configs are respected, with identifier getting
-		// priority
-		struct output_config *temp = new_output_config(id_on_name);
-		merge_output_config(temp, oc_name);
-		merge_output_config(temp, oc_id);
-		list_add(config->output_configs, temp);
+	struct output_config *oc = result;
+	sway_log(SWAY_DEBUG, "Found output config %s (enabled: %d) (%dx%d@%fHz "
+		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (dpms %d) "
+		"(max render time: %d)",
+		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
+		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
+		oc->transform, oc->background, oc->background_option, oc->dpms_state,
+		oc->max_render_time);
 
-		free(result->name);
-		result->name = strdup(id_on_name);
-		merge_output_config(result, temp);
-
-		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
-			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
-			" (dpms %d) (max render time: %d)", result->name, result->enabled,
-			result->width, result->height, result->refresh_rate,
-			result->x, result->y, result->scale, result->transform,
-			result->background, result->background_option, result->dpms_state,
-			result->max_render_time);
-	} else if (oc_name) {
-		// No identifier config, just return a copy of the name config
-		free(result->name);
-		result->name = strdup(name);
-		merge_output_config(result, oc_name);
-	} else if (oc_id) {
-		// No name config, just return a copy of the identifier config
-		free(result->name);
-		result->name = strdup(identifier);
-		merge_output_config(result, oc_id);
-	} else {
-		i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			// No name or identifier config, but there is a wildcard config
-			free(result->name);
-			result->name = strdup("*");
-			merge_output_config(result, config->output_configs->items[i]);
-		} else if (!config->reloading) {
-			// No name, identifier, or wildcard config. Since we are not
-			// reloading with defaults, the output config will be empty, so
-			// just return NULL
-			free_output_config(result);
-			result = NULL;
-		}
-	}
-
-	free(id_on_name);
 	return result;
 }
 
-struct output_config *find_output_config(struct sway_output *output) {
-	char id[128];
-	output_get_identifier(id, sizeof(id), output);
-	return get_output_config(id, output);
-}
-
-void apply_output_config_to_outputs(struct output_config *oc) {
+void apply_output_config_to_outputs(void) {
 	// Try to find the output container and apply configuration now. If
 	// this is during startup then there will be no container and config
 	// will be applied during normal "new output" event from wlroots.
-	bool wildcard = strcmp(oc->name, "*") == 0;
-	char id[128];
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		char *name = sway_output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), sway_output);
-		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
-			struct output_config *current = get_output_config(id, sway_output);
-			if (!current) {
-				// No stored output config matched, apply oc directly
-				sway_log(SWAY_DEBUG, "Applying oc directly");
-				current = new_output_config(oc->name);
-				merge_output_config(current, oc);
-			}
-			apply_output_config(current, sway_output);
-			free_output_config(current);
-
-			if (!wildcard) {
-				// Stop looking if the output config isn't applicable to all
-				// outputs
-				break;
-			}
-		}
+		struct output_config *oc = find_output_config(sway_output);
+		apply_output_config(oc, sway_output);
+		free_output_config(oc);
 	}
 
 	struct sway_seat *seat;
@@ -642,14 +458,7 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 }
 
 void reset_outputs(void) {
-	struct output_config *oc = NULL;
-	int i = list_seq_find(config->output_configs, output_name_cmp, "*");
-	if (i >= 0) {
-		oc = config->output_configs->items[i];
-	} else {
-		oc = store_output_config(new_output_config("*"));
-	}
-	apply_output_config_to_outputs(oc);
+	apply_output_config_to_outputs();
 }
 
 void free_output_config(struct output_config *oc) {
