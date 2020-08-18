@@ -516,7 +516,7 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 	char *name = sway_output->wlr_output->name;
 	for (int i = 0; i < config->output_configs->length; ++i) {
 		struct output_config *oc = config->output_configs->items[i];
-		if (!strcmp(oc->name, "*") || !strcmp(oc->name, name) || !strcmp(oc->name, id)) {
+		if (!fnmatch(oc->name, name, 0) || !fnmatch(oc->name, id, 0)) {
 			merge_output_config(result, oc);
 		}
 	}
