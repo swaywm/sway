@@ -119,7 +119,101 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 }
 
+enum output_config_changes {
+	OUTPUT_CONFIG_ENABLED = 1 << 1,
+	OUTPUT_CONFIG_WIDTH = 1 << 2,
+	OUTPUT_CONFIG_HEIGHT = 1 << 3,
+	OUTPUT_CONFIG_X = 1 << 4,
+	OUTPUT_CONFIG_Y = 1 << 5,
+	OUTPUT_CONFIG_SCALE = 1 << 6,
+	OUTPUT_CONFIG_SCALE_FILTER = 1 << 7,
+	OUTPUT_CONFIG_SUBPIXEL = 1 << 8,
+	OUTPUT_CONFIG_REFRESH_RATE = 1 << 9,
+	OUTPUT_CONFIG_CUSTOM_MODE = 1 << 10,
+	OUTPUT_CONFIG_TRANSFORM = 1 << 11,
+	OUTPUT_CONFIG_MAX_RENDER_TIME = 1 << 12,
+	OUTPUT_CONFIG_ADAPTIVE_SYNC = 1 << 13,
+	OUTPUT_CONFIG_BACKGROUND = 1 << 14,
+	OUTPUT_CONFIG_BACKGROUND_OPTION = 1 << 15,
+	OUTPUT_CONFIG_BACKGROUND_FALLBACK = 1 << 16,
+	OUTPUT_CONFIG_DPMS_STATE = 1 << 17,
+};
+
+static int output_config_changes(struct output_config *src) {
+	int changes = 0;
+
+	if (src->enabled != -1) {
+		changes |= OUTPUT_CONFIG_ENABLED;
+	}
+	if (src->width != -1) {
+		changes |= OUTPUT_CONFIG_WIDTH;
+	}
+	if (src->height != -1) {
+		changes |= OUTPUT_CONFIG_HEIGHT;
+	}
+	if (src->x != -1) {
+		changes |= OUTPUT_CONFIG_X;
+	}
+	if (src->y != -1) {
+		changes |= OUTPUT_CONFIG_Y;
+	}
+	if (src->scale != -1) {
+		changes |= OUTPUT_CONFIG_SCALE;
+	}
+	if (src->scale_filter != SCALE_FILTER_DEFAULT) {
+		changes |= OUTPUT_CONFIG_SCALE_FILTER;
+	}
+	if (src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
+		changes |= OUTPUT_CONFIG_SUBPIXEL;
+	}
+	if (src->refresh_rate != -1) {
+		changes |= OUTPUT_CONFIG_REFRESH_RATE;
+	}
+	if (src->custom_mode != -1) {
+		changes |= OUTPUT_CONFIG_CUSTOM_MODE;
+	}
+	if (src->transform != -1) {
+		changes |= OUTPUT_CONFIG_TRANSFORM;
+	}
+	if (src->max_render_time != -1) {
+		changes |= OUTPUT_CONFIG_MAX_RENDER_TIME;
+	}
+	if (src->adaptive_sync != -1) {
+		changes |= OUTPUT_CONFIG_ADAPTIVE_SYNC;
+	}
+	if (src->background) {
+		changes |= OUTPUT_CONFIG_BACKGROUND;
+	}
+	if (src->background_option) {
+		changes |= OUTPUT_CONFIG_BACKGROUND_OPTION;
+	}
+	if (src->background_fallback) {
+		changes |= OUTPUT_CONFIG_BACKGROUND_FALLBACK;
+	}
+	if (src->dpms_state != 0) {
+		changes |= OUTPUT_CONFIG_DPMS_STATE;
+	}
+
+	return changes;
+}
+
 struct output_config *store_output_config(struct output_config *oc) {
+	// Get rid of a previous output config that has the same name and changes
+	// the same things, as it has been superseded. Since we do this on every
+	// insert there can only ever be one of these. This prevents the output
+	// config list of commands growing unbounded.
+	for (int i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *list_oc = config->output_configs->items[i];
+		if (!strcmp(oc->name, list_oc->name) &&
+			output_config_changes(oc) == output_config_changes(list_oc)) {
+			free_output_config(config->output_configs->items[i]);
+			list_del(config->output_configs, i);
+			break;
+		}
+	}
+
+	// Then simply add the command to the bottom of the list where it will be
+	// applied last and thus have the biggest priority.
 	list_add(config->output_configs, oc);
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
