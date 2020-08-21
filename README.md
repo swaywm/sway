@@ -1,71 +1,66 @@
-# sway
+# sway-borders
 
-[**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) - [Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--) - [中文-简体](https://github.com/swaywm/sway/blob/master/README.zh-CN.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Nederlands](https://github.com/swaywm/sway/blob/master/README.nl.md#sway--) - [Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--)- [中文-繁體](https://github.com/swaywm/sway/blob/master/README.zh-TW.md#sway--) - [Português](https://github.com/swaywm/sway/blob/master/README.pt.md#sway--) - [Danish](https://github.com/swaywm/sway/blob/master/README.dk.md#sway--) - [한국어](https://github.com/swaywm/sway/blob/master/README.ko.md#sway--) - [Română](https://github.com/swaywm/sway/blob/master/README.ro.md#sway--)
+sway-borders is a fork of [Sway](https://swaywm.org), an [i3](https://i3wm.org/)-compatible [Wayland](http://wayland.freedesktop.org/) compositor. It introduces some new features like more customizable borders, but is otherwise kept up to date with [sway](https://github.com/swaywm/sway).
 
-sway is an [i3](https://i3wm.org/)-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
-Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the [IRC
-channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
-irc.freenode.net).
-
-If you'd like to support sway development, please contribute to [SirCmpwn's
-Patreon page](https://patreon.com/sircmpwn).
-
-## Release Signatures
-
-Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
-and published [on GitHub](https://github.com/swaywm/sway/releases).
+Please refer to the [Sway GitHub](https://github.com/swaywm/sway/) for docs and related material which isn't related to the new features below.
 
 ## Installation
+The following package distributions exist. If you package sway-borders for another distribution, feel free to PR its entry here.
+|Distribution|Name|Maintainer|
+|---|---|---|
+|AUR|`sway-borders-git`|TheAvidDev|
 
-### From Packages
+Releases will follow Sway's. To compile from source, follow the same procedure as Sway [here](https://github.com/swaywm/sway#compiling-from-source).
 
-Sway is available in many distributions. Try installing the "sway" package for
-yours. If it's not available, check out [this wiki page](https://github.com/swaywm/sway/wiki/Unsupported-packages)
-for information on installation for your distributions.
+# Features
+ - [X] Border images (allow for drop shadows, outer curved borders, etc.)
+ - [ ] Curved borders (inner)
+Descriptions and usage of the features can be found below. If you would like some more features that won't be added by Sway, feel free to request them for this project instead.
 
-If you're interested in packaging sway for your distribution, stop by the IRC
-channel or shoot an email to sir@cmpwn.com for advice.
+## Border Images
+This feature allows the use of eight images that get snapped on to the corners and edges of windows. This allows for any combination of outer curved borders, drop shadows, and multi-layer borders. These border images are drawn wherever gaps normally appear.
 
-### Compiling from Source
+### Configuration
+Directly from the manpage:
+```
+*border-images.<class>* <folder_path>
+	Configures the images used for borders. The _folder_path_ is expected to be
+	the full path, with a trailing slash, to a folder that contains 8 PNG images
+	named 0.png, 1.png, ..., 7.png. These images are used in clockwise order,
+	starting from the top-left corner, ending on the left edge. For the classes
+  below, _container_ refers to a container which has gaps around it.
 
-Check out [this wiki page](https://github.com/swaywm/sway/wiki/Development-Setup) if you want to build the HEAD of sway and wlroots for testing or development.
+  The available classes are:
 
-Install dependencies:
+	*border_images.focused*
+		The container which is focused or has a window that has focus.
 
-* meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
-* wayland
-* wayland-protocols \*
-* pcre
-* json-c
-* pango
-* cairo
-* gdk-pixbuf2 (optional: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
-* git (optional: version info) \*
+	*border_images.focused_inactive*
+		The container which has the most recently focused view within a container
+		which is not focused.
 
-_\*Compile-time dep_
+	*border_images.unfocused*
+		A container with all of its views unfocused.
 
-Run these commands:
+	*border_images.urgent*
+		A container which has view with an urgency hint. *Note*: Native Wayland windows do not
+		support urgency. Urgency only works for Xwayland windows.
+```
 
-    meson build
-    ninja -C build
-    sudo ninja -C build install
+Unlike pixel borders, the border images will overflow into gaps, so you may have to alter your gaps to accomidate.
 
-On systems without logind, you need to suid the sway binary:
+To use this in your config, you would probably use the following:
+```
+exec_always border-images.focused /some/folder
+exec_always border-images.focused_inactive /some/folder
+exec_always border-images.unfocused /some/folder
+exec_always border-images.urgent /some/folder
+```
 
-    sudo chmod a+s /usr/local/bin/sway
+Note: A folder which doesn't contain any images, or only contains some of the images will not throw any errors or warnings, do double check your folder path if you experience issues.
 
-Sway will drop root permissions shortly after startup.
+### Samples
+The [`/contrib/borders/` folder](https://github.com/TheAvidDev/sway-borders/tree/master/contrib/borders/) contains some example and community contributed border images, alongside screenshots. Feel free to add your own and make a PR!
 
-## Configuration
-
-If you already use i3, then copy your i3 config to `~/.config/sway/config` and
-it'll work out of the box. Otherwise, copy the sample configuration file to
-`~/.config/sway/config`. It is usually located at `/etc/sway/config`.
-Run `man 5 sway` for information on the configuration.
-
-## Running
-
-Run `sway` from a TTY. Some display managers may work but are not supported by
-sway (gdm is known to work fairly well).
+## Rounded Borders
+While the border images allow for rounded borders to be added on the _outside_ of containers, always increasing the total size of the container. An option to round the inner borders, cropping the container content itself is planned.

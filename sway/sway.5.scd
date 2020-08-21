@@ -111,6 +111,29 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* toggle
 	Cycles through the available border styles.
 
+*border-images.<class>* <folder_path>
+	Configures the images used for borders. The _folder_path_ is expected to be
+	the full path, with a trailing slash, to a folder that contains 8 PNG images
+	named 0.png, 1.png, ..., 7.png. These images are used in clockwise order,
+	starting from the top-left corner, ending on the left edge. For the classes 
+	below, _container_ refers to a container which has gaps around it.
+
+	The available classes are:
+
+	*border_images.focused*
+		The container which is focused or has a window that has focus.
+
+	*border_images.focused_inactive*
+		The container which has the most recently focused view within a container
+		which is not focused.
+
+	*border_images.unfocused*
+		A container with all of its views unfocused.
+
+	*border_images.urgent*
+		A container which has view with an urgency hint. *Note*: Native Wayland windows do not
+		support urgency. Urgency only works for Xwayland windows.
+
 *exit*
 	Exit sway and end your Wayland session.
 
