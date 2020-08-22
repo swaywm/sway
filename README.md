@@ -17,6 +17,8 @@ To compile from source, follow the same procedure as Sway [here](https://github.
 # Features
  - [X] Border images (allow for drop shadows, outer curved borders, etc.)
  - [ ] Curved borders (inner)
+ - [ ] Blur
+ - And more, see [sway#3380](https://github.com/swaywm/sway/issues/3380)
  
 Descriptions and usage of the features can be found below. If you would like some more features that won't be added by Sway, feel free to request them for this project instead.
 
@@ -54,10 +56,10 @@ Unlike pixel borders, the border images will overflow into gaps, so you may have
 
 To use this in your config, you would probably use the following:
 ```
-exec_always border-images.focused /some/folder
-exec_always border-images.focused_inactive /some/folder
-exec_always border-images.unfocused /some/folder
-exec_always border-images.urgent /some/folder
+exec_always border-images.focused /some/folder/
+exec_always border-images.focused_inactive /some/folder/
+exec_always border-images.unfocused /some/folder/
+exec_always border-images.urgent /some/folder/
 ```
 
 **Note**: A folder which doesn't contain any images, or only contains some of the images will not throw any errors or warnings, do double check your folder path if you experience issues.
@@ -67,3 +69,8 @@ The [`/contrib/borders/` folder](https://github.com/TheAvidDev/sway-borders/tree
 
 ## Rounded Borders
 While the border images allow for rounded borders to be added on the _outside_ of containers, always increasing the total size of the container. An option to round the inner borders, cropping the container content itself is planned.
+
+## Blur
+It would be nice to add bluring of semi-transparent windows since it's hard to use them with more complex backgrounds. This has quite a few nuances and may even require a custom wlroots build, we'll see.
+
+See: [sway#4356](https://github.com/swaywm/sway/issues/4356)
