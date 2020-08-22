@@ -10,11 +10,14 @@ The following package distributions exist. If you package sway-borders for anoth
 |---|---|---|
 |AUR|`sway-borders-git`|TheAvidDev|
 
-Releases will follow Sway's. To compile from source, follow the same procedure as Sway [here](https://github.com/swaywm/sway#compiling-from-source).
+Releases will follow Sway's.
+
+To compile from source, follow the same procedure as Sway [here](https://github.com/swaywm/sway#compiling-from-source).
 
 # Features
  - [X] Border images (allow for drop shadows, outer curved borders, etc.)
  - [ ] Curved borders (inner)
+ 
 Descriptions and usage of the features can be found below. If you would like some more features that won't be added by Sway, feel free to request them for this project instead.
 
 ## Border Images
@@ -28,7 +31,7 @@ Directly from the manpage:
 	the full path, with a trailing slash, to a folder that contains 8 PNG images
 	named 0.png, 1.png, ..., 7.png. These images are used in clockwise order,
 	starting from the top-left corner, ending on the left edge. For the classes
-  below, _container_ refers to a container which has gaps around it.
+	below, "container" refers to a container which has gaps around it.
 
   The available classes are:
 
@@ -57,7 +60,7 @@ exec_always border-images.unfocused /some/folder
 exec_always border-images.urgent /some/folder
 ```
 
-Note: A folder which doesn't contain any images, or only contains some of the images will not throw any errors or warnings, do double check your folder path if you experience issues.
+**Note**: A folder which doesn't contain any images, or only contains some of the images will not throw any errors or warnings, do double check your folder path if you experience issues.
 
 ### Samples
 The [`/contrib/borders/` folder](https://github.com/TheAvidDev/sway-borders/tree/master/contrib/borders/) contains some example and community contributed border images, alongside screenshots. Feel free to add your own and make a PR!
