@@ -208,16 +208,18 @@ static void apply_workspace_state(struct sway_workspace *ws,
 static void apply_container_state(struct sway_container *container,
 		struct sway_container_state *state) {
 	struct sway_view *view = container->view;
+	int tw, th;
+	wlr_texture_get_size(config->border_textures.focused.texture, &tw, &th);
 	// Damage the old location
 	desktop_damage_whole_container(container);
 	if (view && !wl_list_empty(&view->saved_buffers)) {
 		struct sway_saved_buffer *saved_buf;
 		wl_list_for_each(saved_buf, &view->saved_buffers, link) {
 			struct wlr_box box = {
-				.x = container->current.content_x - view->saved_geometry.x + saved_buf->x,
-				.y = container->current.content_y - view->saved_geometry.y + saved_buf->y,
-				.width = saved_buf->width,
-				.height = saved_buf->height,
+				.x = container->current.content_x - view->saved_geometry.x + saved_buf->x - tw,
+				.y = container->current.content_y - view->saved_geometry.y + saved_buf->y - th,
+				.width = saved_buf->width + 2 * tw,
+				.height = saved_buf->height + 2 * th,
 			};
 			desktop_damage_box(&box);
 		}
@@ -243,10 +245,10 @@ static void apply_container_state(struct sway_container *container,
 	if (view && view->surface) {
 		struct wlr_surface *surface = view->surface;
 		struct wlr_box box = {
-			.x = container->current.content_x - view->geometry.x,
-			.y = container->current.content_y - view->geometry.y,
-			.width = surface->current.width,
-			.height = surface->current.height,
+			.x = container->current.content_x - view->geometry.x - tw,
+			.y = container->current.content_y - view->geometry.y - th,
+			.width = surface->current.width + 2 * tw,
+			.height = surface->current.height + 2 * th,
 		};
 		desktop_damage_box(&box);
 	}

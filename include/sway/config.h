@@ -1,5 +1,6 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
+#include <cairo.h>
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
@@ -376,14 +377,8 @@ struct border_colors {
 };
 
 struct border_textures {
-	struct wlr_texture *top_edge;
-	struct wlr_texture *right_edge;
-	struct wlr_texture *bottom_edge;
-	struct wlr_texture *left_edge;
-	struct wlr_texture *top_left_corner;
-	struct wlr_texture *top_right_corner;
-	struct wlr_texture *bottom_right_corner;
-	struct wlr_texture *bottom_left_corner;
+  cairo_surface_t *image_surface;
+  struct wlr_texture *texture;
 };
 
 enum edge_border_types {
@@ -542,7 +537,6 @@ struct sway_config {
 		struct border_textures focused_inactive;
 		struct border_textures unfocused;
 		struct border_textures urgent;
-		struct border_textures placeholder;
 	} border_textures;
 
 	// floating view

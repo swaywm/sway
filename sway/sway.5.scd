@@ -111,15 +111,16 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* toggle
 	Cycles through the available border styles.
 
-*border-images.<class>* <folder_path>
-	Configures the images used for borders. The _folder_path_ is expected to be
-	the full path, with a trailing slash, to a folder that contains 8 PNG images
-	named 0.png, 1.png, ..., 7.png. These images are used in clockwise order,
-	starting from the top-left corner, ending on the left edge. For the classes 
-	below, _container_ refers to a container which has gaps around it.
+*border-images.<class>* <path>
+	Configures the images used for borders. The _path_ is expected to be an
+	absolute path to an image with an odd width and height which will be scaled to
+	container sizes. The edges are expected to be 1 pixel in width for top and
+	bottom edges, and 1 pixel in height for left edges as they will be stretched
+	across container edges.
 
-	The available classes are:
-
+	For the classes below, "container" refers to a container which has gaps
+	around it. The available classes are:
+	
 	*border_images.focused*
 		The container which is focused or has a window that has focus.
 
