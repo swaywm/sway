@@ -97,6 +97,12 @@ void container_resize_tiled(struct sway_container *parent, uint32_t axis,
 struct sway_container *container_find_resize_parent(struct sway_container *con,
 		uint32_t edge);
 
+/**
+ * Handlers shared by exec and exec_always.
+ */
+sway_cmd cmd_exec_validate;
+sway_cmd cmd_exec_process;
+
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;
 sway_cmd cmd_bindcode;
