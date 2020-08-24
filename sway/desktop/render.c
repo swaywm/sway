@@ -694,15 +694,14 @@ static void render_border_texture(struct sway_output *output,
 		struct wlr_texture *texture, float alpha) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
+	box.x -= output->lx;
+	box.y -= output->ly;
 	scale_box(&box, wlr_output->scale);
-	box.x -= output->lx * wlr_output->scale;
-	box.y -= output->ly * wlr_output->scale;
 
 	// TODO: Fix texture drawing between outputs.
 	float matrix[9];
-	memcpy(matrix, wlr_output->transform_matrix, sizeof(matrix));
-	wlr_matrix_translate(matrix, box.x, box.y);
-	wlr_matrix_scale(matrix, box.width, box.height);
+	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0.0,
+			output->wlr_output->transform_matrix);
 
 	pixman_region32_t texture_damage;
 	pixman_region32_init_rect(&texture_damage, box.x, box.y, box.width, box.height);
@@ -796,7 +795,7 @@ static void render_border_textures(struct sway_output *output,
  * Render all of the border textures for a container.
  */
 static void render_border_textures_for_container(struct sway_container *con,
-		pixman_region32_t *damage) {
+		void *data) {
 	if (container_is_floating(con)) {
 		goto bypass_border_checks;
 	}
@@ -810,8 +809,9 @@ static void render_border_textures_for_container(struct sway_container *con,
 		temp = temp->parent;
 	}
 
+	enum sway_container_layout ws_layout = con->workspace->layout;
 	if ((con->layout == L_VERT || con->layout == L_HORIZ) &&
-			container_parent_layout(con) == con->layout) {
+			(ws_layout == L_VERT || ws_layout == L_HORIZ)) {
 		return;
 	}
 
@@ -821,6 +821,7 @@ bypass_border_checks:
 	textures = &config->border_textures.focused;
 
 	struct sway_output *output = con->workspace->output;
+	pixman_region32_t *damage = (pixman_region32_t *) data;
 	struct sway_container_state *state = &con->current;
 	struct wlr_box box;
 	box.x = state->x;
@@ -847,10 +848,8 @@ static void render_border_textures_for_workspace(struct sway_output *output,
 		render_border_textures(output, damage, &box, textures, con->alpha);
 		return;
 	}
-	for (int i = 0; i < ws->tiling->length; ++i) {
-		struct sway_container *container = ws->tiling->items[i];
-		render_border_textures_for_container(container, damage);
-	}
+	workspace_for_each_tiling_container(ws,
+			render_border_textures_for_container, damage);
 }
 
 static void render_container(struct sway_output *output,
