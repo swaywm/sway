@@ -698,7 +698,6 @@ static void render_border_texture(struct sway_output *output,
 	box.y -= output->ly;
 	scale_box(&box, wlr_output->scale);
 
-	// TODO: Fix texture drawing between outputs.
 	float matrix[9];
 	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0.0,
 			output->wlr_output->transform_matrix);
@@ -791,6 +790,11 @@ static void render_border_textures(struct sway_output *output,
 	}
 }
 
+struct output_and_damage {
+	struct sway_output *output;
+	pixman_region32_t *damage;
+};
+
 /**
  * Render all of the border textures for a container.
  */
@@ -820,15 +824,14 @@ bypass_border_checks:
 	// TODO: Use the appropriate border_texture based on children
 	textures = &config->border_textures.focused;
 
-	struct sway_output *output = con->workspace->output;
-	pixman_region32_t *damage = (pixman_region32_t *) data;
 	struct sway_container_state *state = &con->current;
 	struct wlr_box box;
 	box.x = state->x;
 	box.y = state->y;
 	box.width = state->width;
 	box.height = state->height;
-	render_border_textures(output, damage, &box, textures, con->alpha);
+	struct output_and_damage *oad = (struct output_and_damage *) data;
+	render_border_textures(oad->output, oad->damage, &box, textures, con->alpha);
 }
 
 /**
@@ -848,8 +851,13 @@ static void render_border_textures_for_workspace(struct sway_output *output,
 		render_border_textures(output, damage, &box, textures, con->alpha);
 		return;
 	}
+
+	struct output_and_damage data = {
+		.output = output,
+		.damage = damage,
+	};
 	workspace_for_each_tiling_container(ws,
-			render_border_textures_for_container, damage);
+			render_border_textures_for_container, &data);
 }
 
 static void render_container(struct sway_output *output,
@@ -1121,7 +1129,6 @@ static void render_floating_container(struct sway_output *soutput,
 			render_top_border(soutput, damage, con, colors);
 		}
 		render_view(soutput, damage, con, colors);
-		render_border_textures_for_container(con, damage);
 	} else {
 		render_container(soutput, damage, con, con->current.focused);
 	}
@@ -1142,6 +1149,11 @@ static void render_floating(struct sway_output *soutput,
 					continue;
 				}
 				render_floating_container(soutput, damage, floater);
+				struct output_and_damage data = {
+					.output = soutput,
+					.damage = damage,
+				};
+				render_border_textures_for_container(floater, &data);
 			}
 		}
 	}
