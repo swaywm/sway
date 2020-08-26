@@ -92,20 +92,15 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->commit.link);
 
 	struct sway_seat *seat = input_manager_current_seat();
-	if (seat->wlr_seat->keyboard_state.focused_surface ==
-			xsurface->surface) {
-
-		// Try to find another unmanaged surface from the same process to pass
-		// focus to. This is necessary because some applications (e.g. Jetbrains
-		// IDEs) represent their multi-level menus as unmanaged surfaces, and
-		// when closing a submenu, the main menu should get input focus.
-		struct sway_xwayland_unmanaged *current;
-		wl_list_for_each(current, &root->xwayland_unmanaged, link) {
-			struct wlr_xwayland_surface *prev_xsurface =
-				current->wlr_xwayland_surface;
-			if (prev_xsurface->pid == xsurface->pid &&
-					wlr_xwayland_or_surface_wants_focus(prev_xsurface)) {
-				seat_set_focus_surface(seat, prev_xsurface->surface, false);
+	if (seat->wlr_seat->keyboard_state.focused_surface == xsurface->surface) {
+		// This simply returns focus to the parent surface if there's one available.
+		// This seems to handle JetBrains issues.
+		if (xsurface->parent &&
+				wlr_surface_is_xwayland_surface(xsurface->parent->surface)) {
+			struct wlr_xwayland_surface *next_surface =
+				wlr_xwayland_surface_from_wlr_surface(xsurface->parent->surface);
+			if (wlr_xwayland_or_surface_wants_focus(next_surface)) {
+				seat_set_focus_surface(seat, xsurface->parent->surface, false);
 				return;
 			}
 		}
