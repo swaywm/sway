@@ -832,9 +832,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	output_begin_destroy(output);
 
 	wl_list_remove(&output->destroy.link);
+	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->mode.link);
-	wl_list_remove(&output->transform.link);
-	wl_list_remove(&output->scale.link);
 	wl_list_remove(&output->present.link);
 
 	transaction_commit_dirty();
@@ -867,34 +866,30 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 	update_output_manager_config(output->server);
 }
 
-static void handle_transform(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, transform);
-	if (!output->enabled) {
-		return;
-	}
-	arrange_layers(output);
-	arrange_output(output);
-	transaction_commit_dirty();
-
-	update_output_manager_config(output->server);
-}
-
 static void update_textures(struct sway_container *con, void *data) {
 	container_update_title_textures(con);
 	container_update_marks_textures(con);
 }
 
-static void handle_scale(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, scale);
+static void handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, commit);
+	struct wlr_output_event_commit *event = data;
+
 	if (!output->enabled) {
 		return;
 	}
-	arrange_layers(output);
-	output_for_each_container(output, update_textures, NULL);
-	arrange_output(output);
-	transaction_commit_dirty();
 
-	update_output_manager_config(output->server);
+	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
+		output_for_each_container(output, update_textures, NULL);
+	}
+
+	if (event->committed & (WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {
+		arrange_layers(output);
+		arrange_output(output);
+		transaction_commit_dirty();
+
+		update_output_manager_config(output->server);
+	}
 }
 
 static void handle_present(struct wl_listener *listener, void *data) {
@@ -923,12 +918,10 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
+	wl_signal_add(&wlr_output->events.commit, &output->commit);
+	output->commit.notify = handle_commit;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	output->mode.notify = handle_mode;
-	wl_signal_add(&wlr_output->events.transform, &output->transform);
-	output->transform.notify = handle_transform;
-	wl_signal_add(&wlr_output->events.scale, &output->scale);
-	output->scale.notify = handle_scale;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
 	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
