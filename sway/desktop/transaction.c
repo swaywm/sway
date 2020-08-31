@@ -207,9 +207,13 @@ static void apply_workspace_state(struct sway_workspace *ws,
 
 static void apply_container_state(struct sway_container *container,
 		struct sway_container_state *state) {
+	int tw = 0, th = 0;
+	struct wlr_texture *texture = config->border_textures.focused.texture;
+	if (texture) {
+		wlr_texture_get_size(texture, &tw, &th);
+	}
+
 	struct sway_view *view = container->view;
-	int tw, th;
-	wlr_texture_get_size(config->border_textures.focused.texture, &tw, &th);
 	// Damage the old location
 	desktop_damage_whole_container(container);
 	if (view && !wl_list_empty(&view->saved_buffers)) {
