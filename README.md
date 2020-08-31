@@ -6,9 +6,9 @@ Please refer to the [Sway GitHub](https://github.com/swaywm/sway/) for docs and 
 
 ## Installation
 The following package distributions exist. If you package sway-borders for another distribution, feel free to PR its entry here.
-|Distribution|Name|Maintainer|
-|---|---|---|
-|AUR|`sway-borders-git`|TheAvidDev|
+|Distribution|Name|Maintainer|Notes|
+|---|---|---|---|
+|AUR|`sway-borders-git`|TheAvidDev|Not created yet, but will be shortly.|
 
 Releases will follow Sway's.
 
@@ -28,15 +28,16 @@ This feature allows the use of eight images that get snapped on to the corners a
 ### Configuration
 Directly from the manpage:
 ```
-*border-images.<class>* <folder_path>
-	Configures the images used for borders. The _folder_path_ is expected to be
-	the full path, with a trailing slash, to a folder that contains 8 PNG images
-	named 0.png, 1.png, ..., 7.png. These images are used in clockwise order,
-	starting from the top-left corner, ending on the left edge. For the classes
-	below, "container" refers to a container which has gaps around it.
+*border_images.<class>* <path>
+	Configures the images used for borders. The _path_ is expected to be an
+	absolute path to an image with an odd width and height which will be scaled to
+	container sizes. The edges are expected to be 1 pixel in width for top and
+	bottom edges, and 1 pixel in height for left edges as they will be stretched
+	across container edges.
 
-  The available classes are:
-
+	For the classes below, "container" refers to a container which has gaps
+	around it. The available classes are:
+	
 	*border_images.focused*
 		The container which is focused or has a window that has focus.
 
@@ -52,19 +53,18 @@ Directly from the manpage:
 		support urgency. Urgency only works for Xwayland windows.
 ```
 
+In less technical terms, you can draw your borders around a 1x1 pixel in the center of your image. This image doesn't have to be a square, but for offsets across a single axis, you have to use completely transparent pixels since the center of the image will always be used.
+
 Unlike pixel borders, the border images will overflow into gaps, so you may have to alter your gaps to accomidate.
 
 To use this in your config, you would probably use the following:
 ```
-exec_always border-images.focused /some/folder/
-exec_always border-images.focused_inactive /some/folder/
-exec_always border-images.unfocused /some/folder/
-exec_always border-images.urgent /some/folder/
+border_images.focused /some/folder/
+border_images.focused_inactive /some/folder/
+border_images.unfocused /some/folder/
+border_images.urgent /some/folder/
 ```
 
-**Note**: A folder which doesn't contain any images, or only contains some of the images will not throw any errors or warnings, do double check your folder path if you experience issues.
-
-### Samples
 The [`/contrib/borders/` folder](https://github.com/TheAvidDev/sway-borders/tree/master/contrib/borders/) contains some example and community contributed border images, alongside screenshots. Feel free to add your own and make a PR!
 
 ## Rounded Borders
