@@ -1152,7 +1152,12 @@ static void render_floating_container(struct sway_output *soutput,
 			render_top_border(soutput, damage, con, colors);
 		}
 		render_view(soutput, damage, con, colors);
-		render_border_textures_for_container(con, damage);
+
+		struct output_and_damage data = {
+					.output = soutput,
+					.damage = damage,
+				};
+		render_border_textures_for_container(con, &data);
 	} else {
 		render_container(soutput, damage, con, con->current.focused);
 	}
