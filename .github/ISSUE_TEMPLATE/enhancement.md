@@ -6,7 +6,7 @@ labels: 'enhancement'
 ---
 
 ### Please read the following before submitting:
-- We are not accepting any new window management features unless they get implemented by i3. Please consider searching for or opening an i3 feature request.
+- Please try and get your feature implemented into Sway upstream first. This can be omittited if it definitely won't make it, such as more asthetic features like blur.
 
 ### Please fill out the following:
 - **Description:**

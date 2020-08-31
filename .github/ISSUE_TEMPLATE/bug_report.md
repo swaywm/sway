@@ -1,14 +1,12 @@
 ---
 name: Bugs
-about: Crashes and other bugs
+about: Crashes and other bugs which doesn't occur in Sway upstream
 labels: 'bug'
 
 ---
 
 ### Please read the following before submitting:
-- Please do NOT submit bug reports for questions. Ask questions on IRC at #sway on irc.freenode.net.
-- Proprietary graphics drivers, including nvidia, are not supported. Please use the open source equivalents, such as nouveau, if you would like to use Sway.
-- Problems with the Wayland version of Firefox are likely to be Firefox bugs. Start by submitting your issue to the Firefox Bugzilla and come back here only after they confirm otherwise.
+- Make sure the issue is with one of the additional features of sway-borders or one which does not occur in sway upstream.
 
 ### Please fill out the following:
 - **Sway Version:**
