@@ -111,7 +111,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* toggle
 	Cycles through the available border styles.
 
-*border-images.<class>* <path>
+*border_images.<class>* <path>
 	Configures the images used for borders. The _path_ is expected to be an
 	absolute path to an image with an odd width and height which will be scaled to
 	container sizes. The edges are expected to be 1 pixel in width for top and
