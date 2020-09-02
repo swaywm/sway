@@ -97,6 +97,9 @@ _swaynag_ [options...]
 *--text* <RRGGBB[AA]>
 	Set the text color.
 
+*--button-text* <RRGGBB[AA]>
+	Set the button text color.
+
 *--border-bottom-size* <size>
 	Set the thickness of the bottom border.
 
