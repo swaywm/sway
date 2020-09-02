@@ -578,7 +578,35 @@ static void handle_swaybg_client_destroy(struct wl_listener *listener,
 	sway_config->swaybg_client = NULL;
 }
 
+static int compare_swaybg_cmd(char **cmd1, char **cmd2) {
+	while (true) {
+		if (*cmd1 == NULL && *cmd2 == NULL) {
+			return 0;
+		} else if (*cmd1 == NULL || *cmd2 == NULL) {
+			return 1;
+		} else if (strcmp(*cmd1, *cmd2) != 0) {
+			return 1;
+		} else {
+			cmd1++;
+			cmd2++;
+		}
+	}
+}
+
 static bool _spawn_swaybg(char **command) {
+	if (config->swaybg_full_command != NULL &&
+		compare_swaybg_cmd(command, config->swaybg_full_command) == 0) {
+		// We got the same command as before, ignore it
+		free_swaybg_full_command(command);
+		return true;
+	}
+
+	// Save the command for later comparisons
+	if (config->swaybg_full_command != NULL) {
+		free_swaybg_full_command(config->swaybg_full_command);
+	}
+	config->swaybg_full_command = command;
+
 	if (config->swaybg_client != NULL) {
 		wl_client_destroy(config->swaybg_client);
 	}
@@ -653,35 +681,34 @@ bool spawn_swaybg(void) {
 	}
 
 	size_t i = 0;
-	cmd[i++] = config->swaybg_command;
+	cmd[i++] = strdup(config->swaybg_command);
 
 	// Iterate all the outputs and write the command
-	list_t *output_configs = create_list();
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
 		struct output_config *oc = find_output_config(sway_output);
-		list_add(output_configs, oc);
 		if (!oc->background) {
 			continue;
 		}
 		if (strcmp(oc->background_option, "solid_color") == 0) {
-			cmd[i++] = "-o";
-			cmd[i++] = oc->name;
-			cmd[i++] = "-c";
-			cmd[i++] = oc->background;
+			cmd[i++] = strdup("-o");
+			cmd[i++] = strdup(oc->name);
+			cmd[i++] = strdup("-c");
+			cmd[i++] = strdup(oc->background);
 		} else {
-			cmd[i++] = "-o";
-			cmd[i++] = oc->name;
-			cmd[i++] = "-i";
-			cmd[i++] = oc->background;
-			cmd[i++] = "-m";
-			cmd[i++] = oc->background_option;
+			cmd[i++] = strdup("-o");
+			cmd[i++] = strdup(oc->name);
+			cmd[i++] = strdup("-i");
+			cmd[i++] = strdup(oc->background);
+			cmd[i++] = strdup("-m");
+			cmd[i++] = strdup(oc->background_option);
 			if (oc->background_fallback) {
-				cmd[i++] = "-c";
-				cmd[i++] = oc->background_fallback;
+				cmd[i++] = strdup("-c");
+				cmd[i++] = strdup(oc->background_fallback);
 			}
 		}
 		assert(i < length);
+		free_output_config(oc);
 	}
 
 	for (size_t k = 0; k < i; k++) {
@@ -689,12 +716,6 @@ bool spawn_swaybg(void) {
 	}
 
 	bool result = _spawn_swaybg(cmd);
-
-	free(cmd);
-	for (int k = 0; k < output_configs->length; k++) {
-		free_output_config(output_configs->items[k]);
-	}
-	list_free(output_configs);
 
 	return result;
 }

@@ -476,6 +476,7 @@ struct sway_config {
 
 	// swaybg
 	char *swaybg_command;
+	char **swaybg_full_command;
 	struct wl_client *swaybg_client;
 	struct wl_listener swaybg_client_destroy;
 
@@ -586,6 +587,7 @@ void config_add_swaynag_warning(char *fmt, ...);
 /**
  * Free config struct
  */
+void free_swaybg_full_command(char** cmd);
 void free_config(struct sway_config *config);
 
 void free_sway_variable(struct sway_variable *var);
