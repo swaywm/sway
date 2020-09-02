@@ -528,7 +528,6 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		sway_switch_retrigger_bindings_for_all();
 
 		reset_outputs();
-		spawn_swaybg();
 
 		config->reloading = false;
 		if (config->swaynag_config_errors.client != NULL) {
