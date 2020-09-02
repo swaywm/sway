@@ -42,6 +42,9 @@ colors can be set:
 *text=<color>*
 	The color of the text.
 
+*button-text=<color>*
+	The color of the button text.
+
 The following sizing options can also be set:
 
 *border-bottom-size=<size>*
