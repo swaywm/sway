@@ -45,6 +45,7 @@ struct criteria {
 #endif
 	bool floating;
 	bool tiling;
+	bool always;
 	char urgent; // 'l' for latest or 'o' for oldest
 	struct pattern *workspace;
 	pid_t pid;

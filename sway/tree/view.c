@@ -488,13 +488,14 @@ void view_execute_criteria(struct sway_view *view, const char* trigger) {
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
 		sway_log(SWAY_DEBUG, "Checking criteria %s", criteria->raw);
-		if (view_has_executed_criteria(view, criteria)) {
+		if (!criteria->always && view_has_executed_criteria(view, criteria)) {
 			sway_log(SWAY_DEBUG, "Criteria already executed");
 			continue;
 		}
 		sway_log(SWAY_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
-		list_add(view->executed_criteria, criteria);
+		if (!criteria->always)
+			list_add(view->executed_criteria, criteria);
 		list_t *res_list = execute_command(
 				criteria->cmdlist, NULL, view->container);
 		while (res_list->length) {

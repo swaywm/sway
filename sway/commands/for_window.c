@@ -6,6 +6,19 @@
 #include "stringop.h"
 
 struct cmd_results *cmd_for_window(int argc, char **argv) {
+	bool always = false;
+	while (argc > 0) {
+		if (strcmp("--always", argv[0]) == 0) {
+			always = true;
+		} else if (strcmp("--once", argv[0]) == 0) {
+			always = false;
+		} else {
+			break;
+		}
+		argv++;
+		argc--;
+	}
+
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "for_window", EXPECTED_AT_LEAST, 2))) {
 		return error;
@@ -20,6 +33,7 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 	}
 
 	criteria->type = CT_COMMAND;
+	criteria->always = always;
 	criteria->cmdlist = join_args(argv + 1, argc - 1);
 
 	// Check if it already exists
