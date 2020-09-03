@@ -51,7 +51,9 @@ _swaymsg_ [options...] [message]
 	  If you have quoted multi-word strings in your command, enclose the entire
 	  command in single-quotes. For example, use
 	  _swaymsg 'output "Foobar Display" enable'_ instead of
-	  _swaymsg output "Foobar Display" enable_.
+	  _swaymsg output "Foobar Display" enable_. Furthermore, note that comma
+	  separated options also count as multi-word strings, because commas can be
+	  used to execute commands on the same line.
 	- If you are providing a command that contains a leading hyphen (_-_), insert
 	  two hyphens (_--_) before the command to signal to swaymsg not to parse
 	  anything beyond that point as an option. For example, use
