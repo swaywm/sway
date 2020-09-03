@@ -184,8 +184,8 @@ static uint32_t render_button(cairo_t *cairo, struct swaynag *swaynag,
 		return ideal_surface_height;
 	}
 
-	button->x = *x - border - text_width - padding * 2 + 1;
-	button->y = (int)(ideal_height - text_height) / 2 - padding + 1;
+	button->x = *x - border - text_width - padding * 2;
+	button->y = (int)(ideal_height - text_height) / 2 - padding;
 	button->width = text_width + padding * 2;
 	button->height = text_height + padding * 2;
 
