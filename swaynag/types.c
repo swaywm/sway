@@ -38,6 +38,7 @@ void swaynag_types_add_default(list_t *types) {
 	type_defaults->button_background = 0x333333FF;
 	type_defaults->background = 0x323232FF;
 	type_defaults->text = 0xFFFFFFFF;
+	type_defaults->button_text = 0xFFFFFFFF;
 	type_defaults->border = 0x222222FF;
 	type_defaults->border_bottom = 0x444444FF;
 	type_defaults->bar_border_thickness = 2;
@@ -54,6 +55,7 @@ void swaynag_types_add_default(list_t *types) {
 	type_error->button_background = 0x680A0AFF;
 	type_error->background = 0x900000FF;
 	type_error->text = 0xFFFFFFFF;
+	type_error->button_text = 0xFFFFFFFF;
 	type_error->border = 0xD92424FF;
 	type_error->border_bottom = 0x470909FF;
 	list_add(types, type_error);
@@ -62,6 +64,7 @@ void swaynag_types_add_default(list_t *types) {
 	type_warning->button_background = 0xFFC100FF;
 	type_warning->background = 0xFFA800FF;
 	type_warning->text = 0x000000FF;
+	type_warning->button_text = 0x000000FF;
 	type_warning->border = 0xAB7100FF;
 	type_warning->border_bottom = 0xAB7100FF;
 	list_add(types, type_warning);
@@ -106,6 +109,11 @@ void swaynag_type_merge(struct swaynag_type *dest, struct swaynag_type *src) {
 	if (src->text > 0) {
 		dest->text = src->text;
 	}
+
+	if (src->button_text > 0) {
+		dest->button_text = src->button_text;
+	}
+
 
 	if (src->border > 0) {
 		dest->border = src->border;
