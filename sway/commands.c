@@ -81,6 +81,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output },
 	{ "popup_during_fullscreen", cmd_popup_during_fullscreen },
 	{ "seat", cmd_seat },
+	{ "security", cmd_security },
 	{ "set", cmd_set },
 	{ "show_marks", cmd_show_marks },
 	{ "smart_borders", cmd_smart_borders },

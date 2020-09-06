@@ -34,6 +34,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/security.h"
 #include "sway/tree/root.h"
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
@@ -68,7 +69,7 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	wlr_gamma_control_manager_v1_create(server->wl_display);
+	server->gamma_control_manager = wlr_gamma_control_manager_v1_create(server->wl_display);
 	wlr_gtk_primary_selection_device_manager_create(server->wl_display);
 
 	server->new_output.notify = handle_new_output;
@@ -145,11 +146,13 @@ bool server_init(struct sway_server *server) {
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
 
-	wlr_export_dmabuf_manager_v1_create(server->wl_display);
-	wlr_screencopy_manager_v1_create(server->wl_display);
-	wlr_data_control_manager_v1_create(server->wl_display);
+	server->dmabuf_manager = wlr_export_dmabuf_manager_v1_create(server->wl_display);
+	server->screencopy_manager = wlr_screencopy_manager_v1_create(server->wl_display);
+	server->data_control_manager = wlr_data_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
+
+	wl_display_set_global_filter(server->wl_display, security_global_filter, server);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {

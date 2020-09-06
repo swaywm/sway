@@ -1,0 +1,24 @@
+#pragma once
+
+enum security_perm {
+	PRIV_LAYER_SHELL,
+	PRIV_OUTPUT_MANAGER,
+	PRIV_INPUT_METHOD,
+	PRIV_TEXT_INPUT,
+	PRIV_FOREIGN_TOPLEVEL_MANAGER,
+	PRIV_DMABUF_MANAGER,
+	PRIV_SCREENCOPY_MANAGER,
+	PRIV_DATA_CONTROL_MANAGER,
+	PRIV_GAMMA_CONTROL_MANAGER,
+	PRIV_INPUT_INHIBIT,
+	PRIV_INPUT_KEYBOARD_SHORTCUTS_INHIBIT,
+	PRIV_INPUT_VIRTUAL_KEYBOARD,
+	PRIV_INPUT_VIRTUAL_POINTER,
+	PRIV_OUTPUT_POWER_MANAGER,
+	PRIV_LAST, /* not an actual permission */
+};
+
+bool security_global_filter(const struct wl_client *client, const struct wl_global *global, void *data);
+
+void security_set_permit(struct wl_client *client, uint32_t allowed);
+uint32_t security_get_permit(const struct wl_client *client);
