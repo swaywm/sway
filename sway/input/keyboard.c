@@ -13,6 +13,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
+#include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "log.h"
 
@@ -391,6 +392,10 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
 		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
 	bool shortcuts_inhibited = sway_inhibitor && sway_inhibitor->inhibitor->active;
+
+	if (event->state == WLR_KEY_PRESSED) {
+		cursor_notify_key_press(seat->cursor);
+	}
 
 	// Identify new keycode, raw keysym(s), and translated keysym(s)
 	struct key_info keyinfo;

@@ -253,6 +253,32 @@ int cursor_get_timeout(struct sway_cursor *cursor) {
 	return timeout;
 }
 
+void cursor_notify_key_press(struct sway_cursor *cursor) {
+	if (cursor->hidden) {
+		return;
+	}
+
+	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_DEFAULT) {
+		// No cached value, need to lookup in the seat_config
+		const struct seat_config *seat_config = seat_get_config(cursor->seat);
+		if (!seat_config) {
+			seat_config = seat_get_config_by_name("*");
+			if (!seat_config) {
+				return;
+			}
+		}
+		cursor->hide_when_typing = seat_config->hide_cursor_when_typing;
+		// The default is currently disabled
+		if (cursor->hide_when_typing == HIDE_WHEN_TYPING_DEFAULT) {
+			cursor->hide_when_typing = HIDE_WHEN_TYPING_DISABLE;
+		}
+	}
+
+	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_ENABLE) {
+		cursor_hide(cursor);
+	}
+}
+
 static enum sway_input_idle_source idle_source_from_device(
 		struct wlr_input_device *device) {
 	switch (device->type) {
