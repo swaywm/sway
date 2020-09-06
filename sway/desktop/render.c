@@ -261,7 +261,7 @@ static void render_view_toplevels(struct sway_view *view,
 		output->lx - view->geometry.x;
 	double oy = view->container->surface_y -
 		output->ly - view->geometry.y;
-	output_surface_for_each_surface(output, view->surface, ox, oy,
+	output_surface_for_each_surface(output, view->surface, floor(ox), floor(oy),
 			render_surface_iterator, &data);
 }
 
@@ -299,10 +299,10 @@ static void render_saved_view(struct sway_view *view,
 		}
 
 		struct wlr_box box = {
-			.x = view->container->surface_x - output->lx -
-				view->saved_geometry.x + saved_buf->x,
-			.y = view->container->surface_y - output->ly -
-				view->saved_geometry.y + saved_buf->y,
+			.x = floor(view->container->surface_x - output->lx -
+				view->saved_geometry.x + saved_buf->x),
+			.y = floor(view->container->surface_y - output->ly -
+				view->saved_geometry.y + saved_buf->y),
 			.width = saved_buf->width,
 			.height = saved_buf->height,
 		};
@@ -358,8 +358,8 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 	if (state->border_left) {
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
 		premultiply_alpha(color, con->alpha);
-		box.x = state->x;
-		box.y = state->content_y;
+		box.x = floor(state->x);
+		box.y = floor(state->content_y);
 		box.width = state->border_thickness;
 		box.height = state->content_height;
 		scale_box(&box, output_scale);
@@ -377,8 +377,8 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
 		premultiply_alpha(color, con->alpha);
-		box.x = state->content_x + state->content_width;
-		box.y = state->content_y;
+		box.x = floor(state->content_x + state->content_width);
+		box.y = floor(state->content_y);
 		box.width = state->border_thickness;
 		box.height = state->content_height;
 		scale_box(&box, output_scale);
@@ -392,8 +392,8 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
 		premultiply_alpha(color, con->alpha);
-		box.x = state->x;
-		box.y = state->content_y + state->content_height;
+		box.x = floor(state->x);
+		box.y = floor(state->content_y + state->content_height);
 		box.width = state->width;
 		box.height = state->border_thickness;
 		scale_box(&box, output_scale);
@@ -670,8 +670,8 @@ static void render_top_border(struct sway_output *output,
 	// Child border - top edge
 	memcpy(&color, colors->child_border, sizeof(float) * 4);
 	premultiply_alpha(color, con->alpha);
-	box.x = state->x;
-	box.y = state->y;
+	box.x = floor(state->x);
+	box.y = floor(state->y);
 	box.width = state->width;
 	box.height = state->border_thickness;
 	scale_box(&box, output_scale);
@@ -726,8 +726,8 @@ static void render_containers_linear(struct sway_output *output,
 			}
 
 			if (state->border == B_NORMAL) {
-				render_titlebar(output, damage, child, state->x,
-						state->y, state->width, colors,
+				render_titlebar(output, damage, child, floor(state->x),
+						floor(state->y), state->width, colors,
 						title_texture, marks_texture);
 			} else if (state->border == B_PIXEL) {
 				render_top_border(output, damage, child, colors);
@@ -781,7 +781,7 @@ static void render_containers_tabbed(struct sway_output *output,
 			marks_texture = child->marks_unfocused;
 		}
 
-		int x = cstate->x + tab_width * i;
+		int x = floor(cstate->x + tab_width * i);
 
 		// Make last tab use the remaining width of the parent
 		if (i == parent->children->length - 1) {
@@ -894,8 +894,8 @@ static void render_container(struct sway_output *output,
 	struct parent_data data = {
 		.layout = con->current.layout,
 		.box = {
-			.x = con->current.x,
-			.y = con->current.y,
+			.x = floor(con->current.x),
+			.y = floor(con->current.y),
 			.width = con->current.width,
 			.height = con->current.height,
 		},
@@ -911,8 +911,8 @@ static void render_workspace(struct sway_output *output,
 	struct parent_data data = {
 		.layout = ws->current.layout,
 		.box = {
-			.x = ws->current.x,
-			.y = ws->current.y,
+			.x = floor(ws->current.x),
+			.y = floor(ws->current.y),
 			.width = ws->current.width,
 			.height = ws->current.height,
 		},
@@ -946,8 +946,8 @@ static void render_floating_container(struct sway_output *soutput,
 		}
 
 		if (con->current.border == B_NORMAL) {
-			render_titlebar(soutput, damage, con, con->current.x,
-					con->current.y, con->current.width, colors,
+			render_titlebar(soutput, damage, con, floor(con->current.x),
+					floor(con->current.y), con->current.width, colors,
 					title_texture, marks_texture);
 		} else if (con->current.border == B_PIXEL) {
 			render_top_border(soutput, damage, con, colors);
