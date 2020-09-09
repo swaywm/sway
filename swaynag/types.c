@@ -36,6 +36,7 @@ void swaynag_types_add_default(list_t *types) {
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	type_defaults->button_background = 0x333333FF;
+	type_defaults->details_background = 0x333333FF;
 	type_defaults->background = 0x323232FF;
 	type_defaults->text = 0xFFFFFFFF;
 	type_defaults->button_text = 0xFFFFFFFF;
@@ -53,6 +54,7 @@ void swaynag_types_add_default(list_t *types) {
 
 	struct swaynag_type *type_error = swaynag_type_new("error");
 	type_error->button_background = 0x680A0AFF;
+	type_error->details_background = 0x680A0AFF;
 	type_error->background = 0x900000FF;
 	type_error->text = 0xFFFFFFFF;
 	type_error->button_text = 0xFFFFFFFF;
@@ -62,6 +64,7 @@ void swaynag_types_add_default(list_t *types) {
 
 	struct swaynag_type *type_warning = swaynag_type_new("warning");
 	type_warning->button_background = 0xFFC100FF;
+	type_warning->details_background = 0xFFC100FF;
 	type_warning->background = 0xFFA800FF;
 	type_warning->text = 0x000000FF;
 	type_warning->button_text = 0x000000FF;
@@ -100,6 +103,10 @@ void swaynag_type_merge(struct swaynag_type *dest, struct swaynag_type *src) {
 	// Colors
 	if (src->button_background > 0) {
 		dest->button_background = src->button_background;
+	}
+
+	if (src->details_background > 0) {
+		dest->details_background = src->details_background;
 	}
 
 	if (src->background > 0) {
