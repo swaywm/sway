@@ -37,7 +37,7 @@ static void render_details_scroll_button(cairo_t *cairo,
 	int border = swaynag->type->button_border_thickness * swaynag->scale;
 	int padding = swaynag->type->button_padding * swaynag->scale;
 
-	cairo_set_source_u32(cairo, swaynag->type->border);
+	cairo_set_source_u32(cairo, swaynag->type->details_background);
 	cairo_rectangle(cairo, button->x, button->y,
 			button->width, button->height);
 	cairo_fill(cairo);
@@ -153,7 +153,7 @@ static uint32_t render_detailed(cairo_t *cairo, struct swaynag *swaynag,
 				&swaynag->details.button_down);
 	}
 
-	cairo_set_source_u32(cairo, swaynag->type->border);
+	cairo_set_source_u32(cairo, swaynag->type->details_background);
 	cairo_rectangle(cairo, swaynag->details.x, swaynag->details.y,
 			swaynag->details.width, swaynag->details.height);
 	cairo_fill(cairo);

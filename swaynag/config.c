@@ -38,6 +38,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		TO_COLOR_BORDER,
 		TO_COLOR_BORDER_BOTTOM,
 		TO_COLOR_BUTTON,
+		TO_COLOR_DETAILS,
 		TO_COLOR_TEXT,
 		TO_COLOR_BUTTON_TEXT,
 		TO_THICK_BAR_BORDER,
@@ -77,6 +78,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		{"border-bottom-size", required_argument, NULL, TO_THICK_BAR_BORDER},
 		{"message-padding", required_argument, NULL, TO_PADDING_MESSAGE},
 		{"details-border-size", required_argument, NULL, TO_THICK_DET_BORDER},
+		{"details-background", required_argument, NULL, TO_COLOR_DETAILS},
 		{"button-border-size", required_argument, NULL, TO_THICK_BTN_BORDER},
 		{"button-gap", required_argument, NULL, TO_GAP_BTN},
 		{"button-dismiss-gap", required_argument, NULL, TO_GAP_BTN_DISMISS},
@@ -122,6 +124,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		"  --border-bottom-size size       Thickness of the bar border.\n"
 		"  --message-padding padding       Padding for the message.\n"
 		"  --details-border-size size      Thickness for the details border.\n"
+		"  --details-background RRGGBB[AA] Details background color.\n"
 		"  --button-border-size size       Thickness for the button border.\n"
 		"  --button-gap gap                Size of the gap between buttons\n"
 		"  --button-dismiss-gap gap        Size of the gap for dismiss button.\n"
@@ -251,6 +254,11 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		case TO_COLOR_BUTTON:  // Button background color
 			if (type && !parse_color(optarg, &type->button_background)) {
 				fprintf(stderr, "Invalid button background color: %s", optarg);
+			}
+			break;
+		case TO_COLOR_DETAILS:  // Details background color
+			if (type && !parse_color(optarg, &type->details_background)) {
+				fprintf(stderr, "Invalid details background color: %s", optarg);
 			}
 			break;
 		case TO_COLOR_TEXT:  // Text color
