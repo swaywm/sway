@@ -174,6 +174,12 @@ Keep the use of macros to a minimum, especially if a function can do the job. If
 you do need to use them, try to keep them close to where they're being used and
 `#undef` them after.
 
+### Other Differences
+
+For sizeof, please use the struct name instead of the variable name. This is the
+style that is used throughout the code base and should continue being used to
+maintain consistency.
+
 ### Example
 
 ```c
