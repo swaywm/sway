@@ -86,6 +86,7 @@ sway_sources = files(
 	'commands/reload.c',
 	'commands/rename.c',
 	'commands/resize.c',
+	'commands/sandbox_socket.c',
 	'commands/scratchpad.c',
 	'commands/seat.c',
 	'commands/seat/attach.c',
