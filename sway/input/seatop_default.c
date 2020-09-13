@@ -7,7 +7,9 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/input/tablet.h"
+#include "sway/output.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
@@ -513,6 +515,22 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		struct seatop_default_event *e, struct sway_node *hovered_node) {
 	struct sway_node *focus = seat_get_focus(seat);
 
+	// This is the case if a layer-shell surface is hovered.
+	// If it's on another output, focus the active workspace there.
+	if (!hovered_node) {
+		struct wlr_output *wlr_output = wlr_output_layout_output_at(
+				root->output_layout, seat->cursor->cursor->x, seat->cursor->cursor->y);
+		if (wlr_output == NULL) {
+			return;
+		}
+		struct sway_output *hovered_output = wlr_output->data;
+		if (focus && hovered_output != node_get_output(focus)) {
+			struct sway_workspace *ws = output_get_active_workspace(hovered_output);
+			seat_set_focus(seat, &ws->node);
+		}
+		return;
+	}
+
 	// If a workspace node is hovered (eg. in the gap area), only set focus if
 	// the workspace is on a different output to the previous focus.
 	if (focus && hovered_node->type == N_WORKSPACE) {
@@ -549,7 +567,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 	struct sway_node *node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
-	if (node && config->focus_follows_mouse != FOLLOWS_NO) {
+	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
 	}
 
@@ -583,7 +601,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	struct sway_node *node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
-	if (node && config->focus_follows_mouse != FOLLOWS_NO) {
+	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
 	}
 
