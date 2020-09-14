@@ -299,6 +299,7 @@ void cursor_unhide(struct sway_cursor *cursor) {
 		cursor_set_image(cursor, image, cursor->image_client);
 	}
 	cursor_rebase(cursor);
+	wl_event_source_timer_update(cursor->hide_source, cursor_get_timeout(cursor));
 }
 
 static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
