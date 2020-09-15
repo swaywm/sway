@@ -53,6 +53,9 @@ The following sizing options can also be set:
 *message-padding=<padding>*
 	Set the padding for the message.
 
+*details-gackground=<color>*
+	The background color for the details.
+
 *details-border-size=<size>*
 	Set the thickness for the details border.
 

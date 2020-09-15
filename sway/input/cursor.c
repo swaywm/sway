@@ -299,6 +299,7 @@ void cursor_unhide(struct sway_cursor *cursor) {
 		cursor_set_image(cursor, image, cursor->image_client);
 	}
 	cursor_rebase(cursor);
+	wl_event_source_timer_update(cursor->hide_source, cursor_get_timeout(cursor));
 }
 
 static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
@@ -377,7 +378,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 static void handle_pointer_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
 	struct wlr_event_pointer_button *event = data;
-	cursor_handle_activity(cursor, event->device);
 
 	if (event->state == WLR_BUTTON_PRESSED) {
 		cursor->pressed_button_count++;
@@ -389,6 +389,7 @@ static void handle_pointer_button(struct wl_listener *listener, void *data) {
 		}
 	}
 
+	cursor_handle_activity(cursor, event->device);
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
 	transaction_commit_dirty();
