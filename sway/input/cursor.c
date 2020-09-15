@@ -1041,8 +1041,6 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	cursor->hide_source = wl_event_loop_add_timer(server.wl_event_loop,
 			hide_notify, cursor);
-	wl_event_source_timer_update(
-			cursor->hide_source, cursor_get_timeout(cursor));
 
 	wl_list_init(&cursor->image_surface_destroy.link);
 	cursor->image_surface_destroy.notify = handle_image_surface_destroy;
