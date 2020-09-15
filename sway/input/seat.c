@@ -722,6 +722,8 @@ static void seat_configure_pointer(struct sway_seat *seat,
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
 	seat_apply_input_config(seat, sway_device);
+	wl_event_source_timer_update(
+			seat->cursor->hide_source, cursor_get_timeout(seat->cursor));
 }
 
 static void seat_configure_keyboard(struct sway_seat *seat,
