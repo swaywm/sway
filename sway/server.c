@@ -1,7 +1,8 @@
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
@@ -151,7 +152,16 @@ bool server_init(struct sway_server *server) {
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
 
-	server->socket = wl_display_add_socket_auto(server->wl_display);
+	// Avoid using "wayland-0" as display socket
+	char name_candidate[16];
+	for (int i = 1; i <= 32; ++i) {
+		sprintf(name_candidate, "wayland-%d", i);
+		if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
+			server->socket = strdup(name_candidate);
+			break;
+		}
+	}
+
 	if (!server->socket) {
 		sway_log(SWAY_ERROR, "Unable to open wayland socket");
 		wlr_backend_destroy(server->backend);
