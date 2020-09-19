@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/backend/drm.h>
+#include "sway/client_label.h"
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
@@ -777,6 +778,10 @@ static bool _spawn_swaybg(char **command) {
 	if (config->swaybg_client == NULL) {
 		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
 		return false;
+	}
+
+	if (config->swaybg_label) {
+		wl_client_label_set(config->swaybg_client, strdup(config->swaybg_label));
 	}
 
 	config->swaybg_client_destroy.notify = handle_swaybg_client_destroy;
