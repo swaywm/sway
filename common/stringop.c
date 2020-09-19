@@ -202,6 +202,14 @@ int unescape_string(char *string) {
 				string[i - 1] = '?';
 				string[i] = '\0';
 				break;
+			case ',':
+				string[i - 1] = ',';
+				string[i] = '\0';
+				break;
+			case ';':
+				string[i - 1] = ';';
+				string[i] = '\0';
+				break;
 			case 'x':
 				{
 					unsigned char c = 0;
