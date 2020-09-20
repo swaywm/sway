@@ -208,7 +208,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 					output->height < _ideal_surface_height) {
 				return _ideal_surface_height;
 			}
-			if (sep_width > sep_block_width) {
+			if (block->separator && sep_width > sep_block_width) {
 				sep_block_width = sep_width + margin * 2;
 			}
 		}
