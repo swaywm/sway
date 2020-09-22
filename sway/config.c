@@ -38,10 +38,15 @@ struct sway_config *config = NULL;
 static struct xkb_state *keysym_translation_state_create(
 		struct xkb_rule_names rules) {
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (!context)
+		sway_abort("Failed to create XKB context");
+
 	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_names(
 		context,
 		&rules,
 		XKB_KEYMAP_COMPILE_NO_FLAGS);
+	if (!xkb_keymap)
+		sway_abort("Failed to compile global XKB keymap");
 
 	xkb_context_unref(context);
 	return xkb_state_new(xkb_keymap);
