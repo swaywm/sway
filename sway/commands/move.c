@@ -311,9 +311,10 @@ static bool container_move_in_direction(struct sway_container *container,
 
 	// If container is in a split container by itself, move out of the split
 	if (container->parent) {
+		struct sway_container *old_parent = container->parent;
 		struct sway_container *new_parent =
 			container_flatten(container->parent);
-		if (new_parent != container->parent) {
+		if (new_parent != old_parent) {
 			return true;
 		}
 	}
