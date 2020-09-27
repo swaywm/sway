@@ -115,25 +115,26 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 	const char *prop = d->prop;
 	const char *type = d->type;
 	void *dest = d->dest;
+	wl_list_remove(&d->link);
+	free(d);
 
 	int ret;
 	if (sd_bus_message_is_method_error(msg, NULL)) {
 		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop,
 				sd_bus_message_get_error(msg)->message);
-		ret = sd_bus_message_get_errno(msg);
-		goto cleanup;
+		return sd_bus_message_get_errno(msg);
 	}
 
 	ret = sd_bus_message_enter_container(msg, 'v', type);
 	if (ret < 0) {
 		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
-		goto cleanup;
+		return ret;
 	}
 
 	if (!type) {
 		ret = read_pixmap(msg, sni, prop, dest);
 		if (ret < 0) {
-			goto cleanup;
+			return ret;
 		}
 	} else {
 		if (*type == 's' || *type == 'o') {
@@ -143,7 +144,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 		ret = sd_bus_message_read(msg, type, dest);
 		if (ret < 0) {
 			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
-			goto cleanup;
+			return ret;
 		}
 
 		if (*type == 's' || *type == 'o') {
@@ -160,9 +161,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 				prop[0] == 'A' : strncmp(prop, "Icon", 4) == 0))) {
 		set_sni_dirty(sni);
 	}
-cleanup:
-	wl_list_remove(&d->link);
-	free(data);
+
 	return ret;
 }
 
