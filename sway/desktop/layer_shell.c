@@ -115,9 +115,18 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		// Horizontal axis
 		const uint32_t both_horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-		if ((state->anchor & both_horiz) && box.width == 0) {
-			box.x = bounds.x;
-			box.width = bounds.width;
+		if (box.width == 0) {
+			if ((state->anchor & both_horiz) == both_horiz) {
+				box.x = bounds.x;
+				box.width = bounds.width;
+			} else {
+				sway_log(SWAY_ERROR, "layer surface '%s' requested width 0 "
+					"without setting left and right anchors", layer->namespace);
+				wl_resource_post_error(layer->resource,
+					ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
+					"width 0 requested without setting left and right anchors");
+				continue;
+			}
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT)) {
 			box.x = bounds.x;
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT)) {
@@ -128,9 +137,18 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		// Vertical axis
 		const uint32_t both_vert = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
-		if ((state->anchor & both_vert) && box.height == 0) {
-			box.y = bounds.y;
-			box.height = bounds.height;
+		if (box.height == 0) {
+			if ((state->anchor & both_vert) == both_vert) {
+				box.y = bounds.y;
+				box.height = bounds.height;
+			} else {
+				sway_log(SWAY_ERROR, "layer surface '%s' requested height 0 "
+					"without setting top and bottom anchors", layer->namespace);
+				wl_resource_post_error(layer->resource,
+					ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
+					"height 0 requested without setting top and bottom anchors");
+				continue;
+			}
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP)) {
 			box.y = bounds.y;
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM)) {
