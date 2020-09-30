@@ -1,6 +1,9 @@
+#define _POSIX_C_SOURCE 200809L
 #include <wlr/render/wlr_renderer.h>
+#include <string.h>
 #include "cairo.h"
 #include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/output.h"
@@ -25,7 +28,27 @@ static struct cmd_results *handle_command(int argc, char **argv, char *cmd_name,
 		return error;
 	}
 
-	class->image_surface = cairo_image_surface_create_from_png(argv[0]);
+	char *src = strdup(argv[0]);
+	if (!expand_path(&src)) {
+		error = cmd_results_new(CMD_INVALID, "Invalid syntax (%s)", src);
+		free(src);
+		src = NULL;
+		return error;
+	}
+	if (!src) {
+		sway_log(SWAY_ERROR, "Failed to allocate expanded path");
+		return cmd_results_new(CMD_FAILURE, "Unable to allocate resource");
+	}
+
+	bool can_access = access(src, F_OK) != -1;
+	if (!can_access) {
+		sway_log_errno(SWAY_ERROR, "Unable to access border images file '%s'",
+				src);
+		config_add_swaynag_warning("Unable to access border images file '%s'",
+				src);
+	}
+
+	class->image_surface = cairo_image_surface_create_from_png(src);
 	apply_border_textures_for_class(class);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
