@@ -25,7 +25,7 @@ ou mande um email para sir@cmpwn.com para obter informações.
 
 ### Compilando a partir do código-fonte
 
-Verifique [essa página da wiki](https://github.com/swaywm/sway/wiki/Development-Setup) se você quer compilar o HEAD do sway e o wlroots para testes or desenvolvimento.
+Verifique [essa página da wiki](https://github.com/swaywm/sway/wiki/Development-Setup) se você quer compilar o HEAD do sway e o wlroots para testes ou desenvolvimento.
 
 Instale as dependências:
 
