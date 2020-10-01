@@ -25,6 +25,8 @@ ou mande um email para sir@cmpwn.com para obter informações.
 
 ### Compilando a partir do código-fonte
 
+Verifique [essa página da wiki](https://github.com/swaywm/sway/wiki/Development-Setup) se você quer compilar o HEAD do sway e o wlroots para testes or desenvolvimento.
+
 Instale as dependências:
 
 * meson \*
@@ -35,9 +37,9 @@ Instale as dependências:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (optional: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (Opcional: man pages) \*
-* git \*
+* gdk-pixbuf2 (opcional: system tray)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (opcional: man pages) \*
+* git (opcional: informações de versão) \*
 
 _\*Dependência de tempo de compilação_
 
@@ -62,5 +64,5 @@ Execute `man 5 sway` para se informar sobre a configuração.
 
 ## Execução
 
-Execute o comando `sway` de um TTY. Alguns gerenciadores de display (ou gerenciadores de login) podem funcionar mas alguns não são suportaods
+Execute o comando `sway` de um TTY. Alguns gerenciadores de display (ou gerenciadores de login) podem funcionar mas alguns não são suportados
 pelo sway (o gdm é conhecido por funcionar bem).
