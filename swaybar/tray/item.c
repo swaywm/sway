@@ -111,6 +111,50 @@ finish:
 	return ret;
 }
 
+static int read_sni_tool_tip(sd_bus_message *msg, struct swaybar_sni *sni,
+		const char *prop, struct swaybar_sni_tool_tip *tool_tip) {
+	int ret = sd_bus_message_enter_container(msg, 'r', "sa(iiay)ss");
+	if (ret < 0) {
+		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
+		return ret;
+	}
+
+	free(tool_tip->icon_name);
+	ret = sd_bus_message_read(msg, "s", &tool_tip->icon_name);
+	if (ret < 0) {
+		sway_log(SWAY_ERROR, "%s %s IconName: %s", sni->watcher_id, prop, strerror(-ret));
+		goto error;
+	}
+	tool_tip->icon_name = strdup(tool_tip->icon_name);
+	sway_log(SWAY_DEBUG, "%s %s IconName = '%s'", sni->watcher_id, prop, tool_tip->icon_name);
+	// free(tool_tip->icon_pixmap); // need to free pixmaps first??
+	ret = read_pixmap(msg, sni, prop, &tool_tip->icon_pixmap);
+	if (ret < 0) {
+		goto error;
+	}
+	free(tool_tip->title);
+	free(tool_tip->description);
+	ret = sd_bus_message_read(msg, "ss", &tool_tip->title, &tool_tip->description);
+	if (ret < 0) {
+		sway_log(SWAY_ERROR, "%s %s Title and Description: %s", sni->watcher_id, prop, strerror(-ret));
+		goto error;
+	}
+	tool_tip->title = strdup(tool_tip->title);
+	tool_tip->description = strdup(tool_tip->description);
+	sway_log(SWAY_DEBUG, "%s %s Title = '%s'", sni->watcher_id, prop, tool_tip->title);
+	sway_log(SWAY_DEBUG, "%s %s Description = '%s'", sni->watcher_id, prop, tool_tip->description);
+
+	// list_free_items_and_destroy(*dest);
+	// *dest = pixmaps;
+
+	goto finish;
+error:
+	// list_free_items_and_destroy(pixmaps);
+finish:
+	sd_bus_message_exit_container(msg);
+	return ret;
+}
+
 static int get_property_callback(sd_bus_message *msg, void *data,
 		sd_bus_error *error) {
 	struct swaybar_sni_slot *d = data;
@@ -134,9 +178,16 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 	}
 
 	if (!type) {
-		ret = read_pixmap(msg, sni, prop, dest);
-		if (ret < 0) {
-			goto cleanup;
+		if (strcmp(prop, "ToolTip") == 0) {
+			ret = read_sni_tool_tip(msg, sni, prop, dest);
+			if (ret < 0) {
+				goto cleanup;
+			}
+		} else {
+			ret = read_pixmap(msg, sni, prop, dest);
+			if (ret < 0) {
+				goto cleanup;
+			}
 		}
 	} else {
 		if (*type == 's' || *type == 'o') {
@@ -164,6 +215,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 		set_sni_dirty(sni);
 	}
 cleanup:
+	// sd_bus_message_exit_container(msg);
 	wl_list_remove(&d->link);
 	free(data);
 	return ret;
@@ -289,7 +341,7 @@ struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray) {
 	}
 
 	// Ignored: Category, Id, Title, WindowId, OverlayIconName,
-	//          OverlayIconPixmap, AttentionMovieName, ToolTip
+	//          OverlayIconPixmap, AttentionMovieName
 	sni_get_property_async(sni, "Status", "s", &sni->status);
 	sni_get_property_async(sni, "IconName", "s", &sni->icon_name);
 	sni_get_property_async(sni, "IconPixmap", NULL, &sni->icon_pixmap);
@@ -297,10 +349,12 @@ struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray) {
 	sni_get_property_async(sni, "AttentionIconPixmap", NULL, &sni->attention_icon_pixmap);
 	sni_get_property_async(sni, "ItemIsMenu", "b", &sni->item_is_menu);
 	sni_get_property_async(sni, "Menu", "o", &sni->menu);
+	sni_get_property_async(sni, "ToolTip", NULL, &sni->tool_tip);
 
 	sni_match_signal_async(sni, "NewIcon", handle_new_icon);
 	sni_match_signal_async(sni, "NewAttentionIcon", handle_new_attention_icon);
 	sni_match_signal_async(sni, "NewStatus", handle_new_status);
+	//sni_match_signal_async(sni, "NewToolTip", handle_new_tool_tip);
 
 	return sni;
 }
@@ -320,6 +374,7 @@ void destroy_sni(struct swaybar_sni *sni) {
 	free(sni->attention_icon_name);
 	list_free_items_and_destroy(sni->attention_icon_pixmap);
 	free(sni->menu);
+	free(sni->tool_tip);
 	free(sni->icon_theme_path);
 
 	struct swaybar_sni_slot *slot, *slot_tmp;
