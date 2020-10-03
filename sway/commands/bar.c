@@ -37,6 +37,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "unbindsym", bar_cmd_unbindsym },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 	{ "wrap_scroll", bar_cmd_wrap_scroll },
+	{ "workspace_min_width", bar_cmd_workspace_min_width },
 };
 
 // Must be in alphabetical order for bsearch

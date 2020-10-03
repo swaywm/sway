@@ -270,6 +270,12 @@ static bool ipc_parse_config(
 		config->workspace_buttons = json_object_get_boolean(workspace_buttons);
 	}
 
+	json_object *workspace_min_width =
+		json_object_object_get(bar_config, "workspace_min_width");
+	if (workspace_min_width) {
+		config->workspace_min_width = json_object_get_int(workspace_min_width);
+	}
+
 	json_object *wrap_scroll = json_object_object_get(bar_config, "wrap_scroll");
 	if (wrap_scroll) {
 		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
