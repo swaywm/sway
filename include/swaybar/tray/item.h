@@ -52,6 +52,9 @@ struct swaybar_sni {
 	bool item_is_menu;
 	char *menu;
 	struct swaybar_sni_tool_tip *tool_tip;
+	char *title;
+	char *category;
+	char *id;
 	char *icon_theme_path; // non-standard KDE property
 
 	struct wl_list slots; // swaybar_sni_slot::link
