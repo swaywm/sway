@@ -303,7 +303,7 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
 	for (uint32_t axis = 0; axis < 2; ++axis) {
 		if (seat->axis[axis].discrete_steps) {
 			for (uint32_t step = 0; step < seat->axis[axis].discrete_steps; ++step) {
-				// Honestly, it would probabyl make sense to pass in
+				// Honestly, it would probably make sense to pass in
 				// 'seat->axis[axis].value / seat->axis[axi].discrete_steps' here,
 				// but it's only used to check whether it's positive or negative
 				// so I don't think it's worth the risk of rounding errors.
