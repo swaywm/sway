@@ -43,12 +43,13 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 
 	if (sd_bus_message_at_end(msg, 0)) {
 		sway_log(SWAY_DEBUG, "%s %s no. of icons = 0", sni->watcher_id, prop);
-		return ret;
+		goto finish;
 	}
 
 	list_t *pixmaps = create_list();
 	if (!pixmaps) {
-		return -12; // -ENOMEM
+		ret = -12; // -ENOMEM
+		goto finish;
 	}
 
 	while (!sd_bus_message_at_end(msg, 0)) {
@@ -93,7 +94,7 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 	}
 
 	if (pixmaps->length < 1) {
-		sway_log(SWAY_DEBUG, "%s %s no. of icons = 0", sni->watcher_id, prop);
+		sway_log(SWAY_ERROR, "%s %s no. of icons = 0", sni->watcher_id, prop);
 		goto error;
 	}
 
@@ -102,9 +103,11 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 	sway_log(SWAY_DEBUG, "%s %s no. of icons = %d", sni->watcher_id, prop,
 			pixmaps->length);
 
-	return ret;
+	goto finish;
 error:
 	list_free_items_and_destroy(pixmaps);
+finish:
+	sd_bus_message_exit_container(msg);
 	return ret;
 }
 
