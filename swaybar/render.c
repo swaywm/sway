@@ -402,7 +402,11 @@ static uint32_t predict_workspace_button_length(cairo_t *cairo,
 		return 0;
 	}
 
-	return ws_horizontal_padding * 2 + text_width + border_width * 2;
+	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
+	if (width < config->workspace_min_width * output->scale) {
+		width = config->workspace_min_width * output->scale;
+	}
+	return width;
 }
 
 static uint32_t predict_workspace_buttons_length(cairo_t *cairo,
@@ -446,7 +450,11 @@ static uint32_t predict_binding_mode_indicator_length(cairo_t *cairo,
 			output->height < ideal_surface_height) {
 		return 0;
 	}
-	return text_width + ws_horizontal_padding * 2 + border_width * 2;
+	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
+	if (width < config->workspace_min_width * output->scale) {
+		width = config->workspace_min_width * output->scale;
+	}
+	return width;
 }
 
 static uint32_t render_status_line_i3bar(cairo_t *cairo,
@@ -518,6 +526,9 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 		return ideal_surface_height;
 	}
 	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
+	if (width < config->workspace_min_width * output->scale) {
+		width = config->workspace_min_width * output->scale;
+	}
 
 	uint32_t height = output->height * output->scale;
 	cairo_set_source_u32(cairo, config->colors.binding_mode.background);
@@ -585,7 +596,10 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 		return ideal_surface_height;
 	}
 
-	uint32_t width = ws_horizontal_padding * 2 + text_width + border_width * 2;
+	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
+	if (width < config->workspace_min_width * output->scale) {
+		width = config->workspace_min_width * output->scale;
+	}
 
 	cairo_set_source_u32(cairo, box_colors.background);
 	cairo_rectangle(cairo, *x, 0, width, height);

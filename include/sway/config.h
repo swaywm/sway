@@ -322,6 +322,7 @@ struct bar_config {
 	struct side_gaps gaps;
 	int status_padding;
 	int status_edge_padding;
+	uint32_t workspace_min_width;
 	struct {
 		char *background;
 		char *statusline;

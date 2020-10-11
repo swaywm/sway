@@ -138,6 +138,11 @@ runtime.
 *workspace_buttons* yes|no
 	Enables or disables workspace buttons on the bar. Default is _yes_.
 
+*workspace_min_width* <px> [px]
+	Specifies the minimum width for the workspace buttons on the bar. Default is _0_.
+
+	This setting also applies to the current binding mode indicator.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.
