@@ -660,17 +660,16 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	struct input_config *ic =
 		input_device_get_config(sway_device->input_device);
-	if (ic == NULL) {
-		return;
-	}
 
 	sway_log(SWAY_DEBUG, "Applying input config to %s",
 		sway_device->input_device->identifier);
 
-	const char *mapped_to_output = ic->mapped_to_output;
-	struct wlr_box *mapped_to_region = ic->mapped_to_region;
+	const char *mapped_to_output = ic == NULL ? NULL : ic->mapped_to_output;
+	struct wlr_box *mapped_to_region = ic == NULL ? NULL : ic->mapped_to_region;
+	enum input_config_mapped_to mapped_to =
+		ic == NULL ? MAPPED_TO_DEFAULT : ic->mapped_to;
 
-	switch (ic->mapped_to) {
+	switch (mapped_to) {
 	case MAPPED_TO_DEFAULT:
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
 		if (mapped_to_output == NULL) {
