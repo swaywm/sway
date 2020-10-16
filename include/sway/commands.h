@@ -268,6 +268,7 @@ sway_cmd input_cmd_scroll_button;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
 sway_cmd input_cmd_tap_button_map;
+sway_cmd input_cmd_tool_mode;
 sway_cmd input_cmd_xkb_capslock;
 sway_cmd input_cmd_xkb_file;
 sway_cmd input_cmd_xkb_layout;

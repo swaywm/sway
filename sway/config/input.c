@@ -40,6 +40,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->xkb_numlock = INT_MIN;
 	input->xkb_capslock = INT_MIN;
 	input->xkb_file_is_set = false;
+	input->tools = create_list();
 
 	return input;
 }
@@ -152,6 +153,22 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		dst->calibration_matrix.configured = src->calibration_matrix.configured;
 		memcpy(dst->calibration_matrix.matrix, src->calibration_matrix.matrix,
 			sizeof(src->calibration_matrix.matrix));
+	}
+	for (int i = 0; i < src->tools->length; i++) {
+		struct input_config_tool *src_tool = src->tools->items[i];
+		for (int j = 0; j < dst->tools->length; j++) {
+			struct input_config_tool *dst_tool = dst->tools->items[j];
+			if (src_tool->type == dst_tool->type) {
+				dst_tool->mode = src_tool->mode;
+				goto tool_merge_outer;
+			}
+		}
+
+		struct input_config_tool *dst_tool = malloc(sizeof(*dst_tool));
+		memcpy(dst_tool, src_tool, sizeof(*dst_tool));
+		list_add(dst->tools, dst_tool);
+
+		tool_merge_outer:;
 	}
 }
 
@@ -358,6 +375,7 @@ void free_input_config(struct input_config *ic) {
 	free(ic->mapped_from_region);
 	free(ic->mapped_to_output);
 	free(ic->mapped_to_region);
+	list_free_items_and_destroy(ic->tools);
 	free(ic);
 }
 

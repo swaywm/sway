@@ -567,13 +567,14 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 			ic->mapped_from_region, &x, &y);
 	}
 
-	switch (tool->tablet_v2_tool->wlr_tool->type) {
-	case WLR_TABLET_TOOL_TYPE_MOUSE:
-		wlr_cursor_move(cursor->cursor, input_device->wlr_device, dx, dy);
-		break;
-	default:
+	switch (tool->mode) {
+	case SWAY_TABLET_TOOL_MODE_ABSOLUTE:
 		wlr_cursor_warp_absolute(cursor->cursor, input_device->wlr_device,
 			change_x ? x : NAN, change_y ? y : NAN);
+		break;
+	case SWAY_TABLET_TOOL_MODE_RELATIVE:
+		wlr_cursor_move(cursor->cursor, input_device->wlr_device, dx, dy);
+		break;
 	}
 
 	double sx, sy;
