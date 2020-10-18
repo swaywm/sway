@@ -397,8 +397,12 @@ static bool should_configure(struct sway_node *node,
 	// Xwayland views are position-aware and need to be reconfigured
 	// when their position changes.
 	if (node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {
-		if (cstate->content_x != istate->content_x ||
-				cstate->content_y != istate->content_y) {
+		// Sway logical coordinates are doubles, but they get truncated to
+		// integers when sent to Xwayland through `xcb_configure_window`.
+		// X11 apps will not respond to duplicate configure requests (from their
+		// truncated point of view) and cause transactions to time out.
+		if ((int)cstate->content_x != (int)istate->content_x ||
+				(int)cstate->content_y != (int)istate->content_y) {
 			return true;
 		}
 	}
