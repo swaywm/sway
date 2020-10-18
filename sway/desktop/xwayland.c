@@ -47,6 +47,15 @@ static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, commit);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
+	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
+		false);
+}
+
+static void unmanaged_handle_set_geometry(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, set_geometry);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+
 	if (xsurface->x != surface->lx || xsurface->y != surface->ly) {
 		// Surface has moved
 		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
@@ -55,9 +64,6 @@ static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 		surface->ly = xsurface->y;
 		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
 			true);
-	} else {
-		desktop_damage_surface(xsurface->surface, xsurface->x, xsurface->y,
-			false);
 	}
 }
 
@@ -67,6 +73,9 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
 	wl_list_insert(root->xwayland_unmanaged.prev, &surface->link);
+
+	wl_signal_add(&xsurface->events.set_geometry, &surface->set_geometry);
+	surface->set_geometry.notify = unmanaged_handle_set_geometry;
 
 	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
 	surface->commit.notify = unmanaged_handle_commit;
@@ -89,6 +98,7 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 	desktop_damage_surface(xsurface->surface, xsurface->x, xsurface->y, true);
 	wl_list_remove(&surface->link);
+	wl_list_remove(&surface->set_geometry.link);
 	wl_list_remove(&surface->commit.link);
 
 	struct sway_seat *seat = input_manager_current_seat();
@@ -173,7 +183,6 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 
 	return surface;
 }
-
 
 static struct sway_xwayland_view *xwayland_view_from_view(
 		struct sway_view *view) {
@@ -392,8 +401,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 
 	if (view->container->node.instruction) {
 		get_geometry(view, &view->geometry);
-		transaction_notify_view_ready_by_size(view,
-				state->width, state->height);
+		transaction_notify_view_ready_by_geometry(view,
+				xsurface->x, xsurface->y, state->width, state->height);
 	} else {
 		struct wlr_box new_geo;
 		get_geometry(view, &new_geo);
@@ -409,8 +418,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 			desktop_damage_view(view);
 			transaction_commit_dirty();
-			transaction_notify_view_ready_by_size(view,
-					new_geo.width, new_geo.height);
+			transaction_notify_view_ready_by_geometry(view,
+					xsurface->x, xsurface->y, new_geo.width, new_geo.height);
 		} else {
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		}
