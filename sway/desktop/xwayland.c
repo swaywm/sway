@@ -401,8 +401,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 
 	if (view->container->node.instruction) {
 		get_geometry(view, &view->geometry);
-		transaction_notify_view_ready_by_size(view,
-				state->width, state->height);
+		transaction_notify_view_ready_by_geometry(view,
+				xsurface->x, xsurface->y, state->width, state->height);
 	} else {
 		struct wlr_box new_geo;
 		get_geometry(view, &new_geo);
@@ -418,8 +418,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 			desktop_damage_view(view);
 			transaction_commit_dirty();
-			transaction_notify_view_ready_by_size(view,
-					new_geo.width, new_geo.height);
+			transaction_notify_view_ready_by_geometry(view,
+					xsurface->x, xsurface->y, new_geo.width, new_geo.height);
 		} else {
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		}
