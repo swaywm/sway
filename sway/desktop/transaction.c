@@ -358,11 +358,20 @@ static void transaction_progress_queue(void) {
 	// If there's a bunch of consecutive transactions which all apply to the
 	// same views, skip all except the last one.
 	while (server.transactions->length >= 2) {
-		struct sway_transaction *a = server.transactions->items[0];
-		struct sway_transaction *b = server.transactions->items[1];
-		if (transaction_same_nodes(a, b)) {
+		struct sway_transaction *txn = server.transactions->items[0];
+		struct sway_transaction *dup = NULL;
+
+		for (int i = 1; i < server.transactions->length; i++) {
+			struct sway_transaction *maybe_dup = server.transactions->items[i];
+			if (transaction_same_nodes(txn, maybe_dup)) {
+				dup = maybe_dup;
+				break;
+			}
+		}
+
+		if (dup) {
 			list_del(server.transactions, 0);
-			transaction_destroy(a);
+			transaction_destroy(txn);
 		} else {
 			break;
 		}
