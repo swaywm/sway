@@ -510,13 +510,23 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
 	}
 }
 
-void transaction_notify_view_ready_by_size(struct sway_view *view,
-		int width, int height) {
+void transaction_notify_view_ready_by_geometry(struct sway_view *view,
+		double x, double y, int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
 	if (instruction != NULL &&
+			(int)instruction->container_state.content_x == (int)x &&
+			(int)instruction->container_state.content_y == (int)y &&
 			instruction->container_state.content_width == width &&
 			instruction->container_state.content_height == height) {
+		set_instruction_ready(instruction);
+	}
+}
+
+void transaction_notify_view_ready_immediately(struct sway_view *view) {
+	struct sway_transaction_instruction *instruction =
+			view->container->node.instruction;
+	if (instruction != NULL) {
 		set_instruction_ready(instruction);
 	}
 }
