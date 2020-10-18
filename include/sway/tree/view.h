@@ -174,6 +174,7 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
 	struct wl_listener commit;
+	struct wl_listener set_geometry;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
