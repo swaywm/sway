@@ -56,15 +56,12 @@ static void unmanaged_handle_set_geometry(struct wl_listener *listener, void *da
 		wl_container_of(listener, surface, set_geometry);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	if (xsurface->x != surface->lx || xsurface->y != surface->ly) {
-		// Surface has moved
-		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
-			true);
-		surface->lx = xsurface->x;
-		surface->ly = xsurface->y;
-		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
-			true);
-	}
+	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
+		true);
+	surface->lx = xsurface->x;
+	surface->ly = xsurface->y;
+	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
+		true);
 }
 
 static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
@@ -396,33 +393,40 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
-	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	struct wlr_surface_state *state = &xsurface->surface->current;
 
-	if (view->container->node.instruction) {
-		get_geometry(view, &view->geometry);
-		transaction_notify_view_ready_by_geometry(view,
-				xsurface->x, xsurface->y, state->width, state->height);
-	} else {
-		struct wlr_box new_geo;
-		get_geometry(view, &new_geo);
+	struct wlr_box new_geo;
+	get_geometry(view, &new_geo);
+	if ((new_geo.width != view->geometry.width ||
+				new_geo.height != view->geometry.height ||
+				new_geo.x != view->geometry.x ||
+				new_geo.y != view->geometry.y)) {
+		desktop_damage_view(view);
+		view_update_size(view, new_geo.width, new_geo.height);
+		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		desktop_damage_view(view);
 
-		if ((new_geo.width != view->geometry.width ||
-					new_geo.height != view->geometry.height ||
-					new_geo.x != view->geometry.x ||
-					new_geo.y != view->geometry.y)) {
+		if (!view->container->node.instruction) {
 			// The view has unexpectedly sent a new size
 			// eg. The Firefox "Save As" dialog when downloading a file
-			desktop_damage_view(view);
-			view_update_size(view, new_geo.width, new_geo.height);
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-			desktop_damage_view(view);
 			transaction_commit_dirty();
-			transaction_notify_view_ready_by_geometry(view,
-					xsurface->x, xsurface->y, new_geo.width, new_geo.height);
-		} else {
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		}
+	} else {
+		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+	}
+
+	// We have no serial to match commits with transactions. We could naively
+	// match based on geometry, but this breaks for applications that respond
+	// to configure requests with different geometries than requested. For
+	// example, JetBrains IDEs do this when resizing the "Search everywhere"
+	// dialog, since they resize both edges at the same time to keep the dialog
+	// symmetric (even though Sway requested a single edge to be resized).
+	//
+	// Instead, just assume that the first commit following a transaction is in
+	// response to that transaction. This is obviously racey. (N.B. we can also
+	// enter this branch if we just started a transaction above, but that case
+	// is not interesting.)
+	if (view->container->node.instruction) {
+		transaction_notify_view_ready_immediately(view);
 	}
 
 	view_damage_from(view);

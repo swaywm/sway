@@ -37,15 +37,6 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
 		uint32_t serial);
 
 /**
- * Notify the transaction system that a view is ready for the new layout, but
- * identifying the instruction by geometry rather than by serial.
- *
- * This is used by xwayland views, as they don't have serials.
- */
-void transaction_notify_view_ready_by_geometry(struct sway_view *view,
-		double x, double y, int width, int height);
-
-/**
  * Unconditionally notify the transaction system that a view is ready for the
  * new layout.
  */
