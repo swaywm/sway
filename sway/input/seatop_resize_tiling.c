@@ -107,6 +107,9 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 	if (e->con == con) {
 		seatop_begin_default(seat);
 	}
+	if (e->h_sib == con || e->v_sib == con) {
+		seatop_begin_default(seat);
+	}
 }
 
 static const struct sway_seatop_impl seatop_impl = {
