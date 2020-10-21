@@ -224,7 +224,7 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 	} else if (axis == WLR_EDGE_LEFT) {
 		grow_x = -grow_width;
 	}
-	if (grow_x == 0 && grow_y == 0) {
+	if (grow_width == 0 && grow_height == 0) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
 	con->x += grow_x;
