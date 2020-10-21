@@ -537,7 +537,8 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	struct sway_node *focus = seat_get_focus(seat);
 
 	// move container
-	if (container->scratchpad) {
+	if (container_is_scratchpad_hidden_or_child(container)) {
+		container_detach(container);
 		root_scratchpad_show(container);
 	}
 	switch (destination->type) {
