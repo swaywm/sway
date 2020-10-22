@@ -429,13 +429,31 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		}
 	}
 
+	// Handle changing focus when clicking on a container
+	if (cont && state == WLR_BUTTON_PRESSED) {
+		// Default case: focus the container that was just clicked.
+		node = &cont->node;
+
+		// If the container is a tab/stacked container and the click happened
+		// on a tab, switch to the tab. If the tab contents were already
+		// focused, focus the tab container itself. If the tab container was
+		// already focused, cycle back to focusing the tab contents.
+		if (on_titlebar) {
+			struct sway_container *focus = seat_get_focused_container(seat);
+			if (focus == cont || !container_has_ancestor(focus, cont)) {
+				node = seat_get_focus_inactive(seat, &cont->node);
+			}
+		}
+
+		seat_set_focus(seat, node);
+		transaction_commit_dirty();
+	}
+
 	// Handle beginning floating move
 	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
 			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && (mod_pressed || on_titlebar)) {
-			seat_set_focus_container(seat,
-					seat_get_focus_inactive_view(seat, &cont->node));
 			seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
 			return;
 		}
@@ -471,25 +489,18 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
 			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
 			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
-		struct sway_container *focus = seat_get_focused_container(seat);
-		bool focused = focus == cont || container_has_ancestor(focus, cont);
-		if (on_titlebar && !focused) {
-			node = seat_get_focus_inactive(seat, &cont->node);
-			seat_set_focus(seat, node);
-		}
-
 		// If moving a container by its title bar, use a threshold for the drag
 		if (!mod_pressed && config->tiling_drag_threshold > 0) {
 			seatop_begin_move_tiling_threshold(seat, cont);
 		} else {
 			seatop_begin_move_tiling(seat, cont);
 		}
+
 		return;
 	}
 
 	// Handle mousedown on a container surface
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
-		seat_set_focus_container(seat, cont);
 		seatop_begin_down(seat, cont, time_msec, sx, sy);
 		seat_pointer_notify_button(seat, time_msec, button, WLR_BUTTON_PRESSED);
 		return;
@@ -497,9 +508,6 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle clicking a container surface or decorations
 	if (cont && state == WLR_BUTTON_PRESSED) {
-		node = seat_get_focus_inactive(seat, &cont->node);
-		seat_set_focus(seat, node);
-		transaction_commit_dirty();
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
