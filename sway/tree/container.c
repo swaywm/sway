@@ -1410,6 +1410,28 @@ void container_replace(struct sway_container *container,
 
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout) {
+	// i3 doesn't split singleton H/V containers
+	// https://github.com/i3/i3/blob/3cd1c45eba6de073bc4300eebb4e1cc1a0c4479a/src/tree.c#L354
+	if (child->parent || child->workspace) {
+		list_t *siblings = container_get_siblings(child);
+		if (siblings->length == 1) {
+			enum sway_container_layout current = container_parent_layout(child);
+			if (container_is_floating(child)) {
+				current = L_NONE;
+			}
+			if (current == L_HORIZ || current == L_VERT) {
+				if (child->parent) {
+					child->parent->layout = layout;
+					container_update_representation(child->parent);
+				} else {
+					child->workspace->layout = layout;
+					workspace_update_representation(child->workspace);
+				}
+				return child;
+			}
+		}
+	}
+
 	struct sway_seat *seat = input_manager_get_default_seat();
 	bool set_focus = (seat_get_focus(seat) == &child->node);
 

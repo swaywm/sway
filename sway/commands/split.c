@@ -23,10 +23,6 @@ static struct cmd_results *do_split(int layout) {
 		workspace_split(ws, layout);
 	}
 
-	if (con && con->parent && con->parent->parent) {
-		container_flatten(con->parent->parent);
-	}
-
 	if (root->fullscreen_global) {
 		arrange_root();
 	} else {
