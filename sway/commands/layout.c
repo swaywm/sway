@@ -162,6 +162,12 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			}
 			container->layout = new_layout;
 			container_update_representation(container);
+		} else if (config->handler_context.container) {
+			// i3 avoids changing workspace layouts with a new container
+			// https://github.com/i3/i3/blob/3cd1c45eba6de073bc4300eebb4e1cc1a0c4479a/src/con.c#L1817
+			container = workspace_wrap_children(workspace);
+			container->layout = new_layout;
+			container_update_representation(container);
 		} else {
 			if (old_layout != L_TABBED && old_layout != L_STACKED) {
 				workspace->prev_split_layout = old_layout;
