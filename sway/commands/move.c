@@ -309,16 +309,6 @@ static bool container_move_in_direction(struct sway_container *container,
 		return false;
 	}
 
-	// If container is in a split container by itself, move out of the split
-	if (container->parent) {
-		struct sway_container *old_parent = container->parent;
-		struct sway_container *new_parent =
-			container_flatten(container->parent);
-		if (new_parent != old_parent) {
-			return true;
-		}
-	}
-
 	// Look for a suitable *container* sibling or parent.
 	// The below loop stops once we hit the workspace because current->parent
 	// is NULL for the topmost containers in a workspace.
@@ -720,10 +710,18 @@ static struct cmd_results *cmd_move_in_direction(
 		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
 	struct sway_workspace *old_ws = container->workspace;
+	struct sway_container *old_parent = container->parent;
 
 	if (!container_move_in_direction(container, direction)) {
 		// Container didn't move
 		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+
+	// clean-up, destroying parents if the container was the last child
+	if (old_parent) {
+		container_reap_empty(old_parent);
+	} else if (old_ws) {
+		workspace_consider_destroy(old_ws);
 	}
 
 	struct sway_workspace *new_ws = container->workspace;
