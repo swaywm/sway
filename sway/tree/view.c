@@ -732,10 +732,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		ws = seat_get_last_known_workspace(seat);
 	}
 
+	struct sway_container *container = view->container;
 	if (target_sibling) {
-		container_add_sibling(target_sibling, view->container, 1);
+		container_add_sibling(target_sibling, container, 1);
 	} else if (ws) {
-		workspace_add_tiling(ws, view->container);
+		container = workspace_add_tiling(ws, container);
 	}
 	ipc_event_window(view->container, "new");
 
@@ -759,26 +760,26 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 
 	if (config->popup_during_fullscreen == POPUP_LEAVE &&
-			view->container->workspace &&
-			view->container->workspace->fullscreen &&
-			view->container->workspace->fullscreen->view) {
-		struct sway_container *fs = view->container->workspace->fullscreen;
+			container->workspace &&
+			container->workspace->fullscreen &&
+			container->workspace->fullscreen->view) {
+		struct sway_container *fs = container->workspace->fullscreen;
 		if (view_is_transient_for(view, fs->view)) {
 			container_set_fullscreen(fs, false);
 		}
 	}
 
 	view_update_title(view, false);
-	container_update_representation(view->container);
+	container_update_representation(container);
 
 	if (fullscreen) {
 		container_set_fullscreen(view->container, true);
 		arrange_workspace(view->container->workspace);
 	} else {
-		if (view->container->parent) {
-			arrange_container(view->container->parent);
-		} else if (view->container->workspace) {
-			arrange_workspace(view->container->workspace);
+		if (container->parent) {
+			arrange_container(container->parent);
+		} else if (container->workspace) {
+			arrange_workspace(container->workspace);
 		}
 	}
 

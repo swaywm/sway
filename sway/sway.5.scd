@@ -89,7 +89,7 @@ The following commands may only be used in the configuration file.
 	_swaynag\_command -_
 
 *workspace_layout* default|stacking|tabbed
-	Specifies the initial layout for new workspaces.
+	Specifies the initial layout for new containers in an empty workspace.
 
 *xwayland* enable|disable|force
 	Enables or disables Xwayland support, which allows X11 applications to be

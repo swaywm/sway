@@ -110,13 +110,13 @@ void workspace_unwrap_children(struct sway_workspace *ws,
 
 void workspace_detach(struct sway_workspace *workspace);
 
-void workspace_add_tiling(struct sway_workspace *workspace,
+struct sway_container *workspace_add_tiling(struct sway_workspace *workspace,
 		struct sway_container *con);
 
 void workspace_add_floating(struct sway_workspace *workspace,
 		struct sway_container *con);
 
-void workspace_insert_tiling(struct sway_workspace *workspace,
+struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 		struct sway_container *con, int index);
 
 void workspace_remove_gaps(struct sway_workspace *ws);

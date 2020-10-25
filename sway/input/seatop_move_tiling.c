@@ -247,7 +247,7 @@ static void finalize_move(struct sway_seat *seat) {
 
 	// Moving container into empty workspace
 	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
-		workspace_add_tiling(new_ws, con);
+		con = workspace_add_tiling(new_ws, con);
 	} else if (target_node->type == N_CONTAINER) {
 		// Moving container before/after another
 		struct sway_container *target = target_node->sway_container;

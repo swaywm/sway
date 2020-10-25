@@ -349,19 +349,20 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
+	struct sway_container *container = view->container;
 	if (e->fullscreen && e->output && e->output->data) {
 		struct sway_output *output = e->output->data;
 		struct sway_workspace *ws = output_get_active_workspace(output);
-		if (ws && !container_is_scratchpad_hidden(view->container)) {
-			if (container_is_floating(view->container)) {
-				workspace_add_floating(ws, view->container);
+		if (ws && !container_is_scratchpad_hidden(container)) {
+			if (container_is_floating(container)) {
+				workspace_add_floating(ws, container);
 			} else {
-				workspace_add_tiling(ws, view->container);
+				container = workspace_add_tiling(ws, container);
 			}
 		}
 	}
 
-	container_set_fullscreen(view->container, e->fullscreen);
+	container_set_fullscreen(container, e->fullscreen);
 
 	arrange_root();
 	transaction_commit_dirty();

@@ -804,9 +804,10 @@ void container_set_floating(struct sway_container *container, bool enable) {
 			container->width = reference->width;
 			container->height = reference->height;
 		} else {
-			workspace_add_tiling(workspace, container);
-			container->width = workspace->width;
-			container->height = workspace->height;
+			struct sway_container *other =
+				workspace_add_tiling(workspace, container);
+			other->width = workspace->width;
+			other->height = workspace->height;
 		}
 		if (container->view) {
 			view_set_tiled(container->view, true);

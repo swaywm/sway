@@ -395,9 +395,6 @@ void output_get_box(struct sway_output *output, struct wlr_box *box) {
 
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output) {
-	if (config->default_layout != L_NONE) {
-		return config->default_layout;
-	}
 	if (config->default_orientation != L_NONE) {
 		return config->default_orientation;
 	}
