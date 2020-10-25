@@ -627,6 +627,21 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
 	return NULL;
 }
 
+static void set_workspace(struct sway_container *container, void *data) {
+	container->workspace = container->parent->workspace;
+}
+
+static void workspace_attach_tiling(struct sway_workspace *ws,
+		struct sway_container *con) {
+	list_add(ws->tiling, con);
+	con->workspace = ws;
+	container_for_each_child(con, set_workspace, NULL);
+	container_handle_fullscreen_reparent(con);
+	workspace_update_representation(ws);
+	node_set_dirty(&ws->node);
+	node_set_dirty(&con->node);
+}
+
 struct sway_container *workspace_wrap_children(struct sway_workspace *ws) {
 	struct sway_container *fs = ws->fullscreen;
 	struct sway_container *middle = container_create(NULL);
@@ -636,7 +651,7 @@ struct sway_container *workspace_wrap_children(struct sway_workspace *ws) {
 		container_detach(child);
 		container_add_child(middle, child);
 	}
-	workspace_add_tiling(ws, middle);
+	workspace_attach_tiling(ws, middle);
 	ws->fullscreen = fs;
 	return middle;
 }
@@ -668,14 +683,13 @@ void workspace_detach(struct sway_workspace *workspace) {
 	node_set_dirty(&output->node);
 }
 
-static void set_workspace(struct sway_container *container, void *data) {
-	container->workspace = container->parent->workspace;
-}
-
-void workspace_add_tiling(struct sway_workspace *workspace,
+struct sway_container *workspace_add_tiling(struct sway_workspace *workspace,
 		struct sway_container *con) {
 	if (con->workspace) {
 		container_detach(con);
+	}
+	if (config->default_layout != L_NONE) {
+		con = container_split(con, config->default_layout);
 	}
 	list_add(workspace->tiling, con);
 	con->workspace = workspace;
@@ -684,6 +698,7 @@ void workspace_add_tiling(struct sway_workspace *workspace,
 	workspace_update_representation(workspace);
 	node_set_dirty(&workspace->node);
 	node_set_dirty(&con->node);
+	return con;
 }
 
 void workspace_add_floating(struct sway_workspace *workspace,
@@ -699,13 +714,13 @@ void workspace_add_floating(struct sway_workspace *workspace,
 	node_set_dirty(&con->node);
 }
 
-void workspace_insert_tiling(struct sway_workspace *workspace,
+struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 		struct sway_container *con, int index) {
 	if (con->workspace) {
 		container_detach(con);
 	}
-	if (workspace->layout == L_STACKED || workspace->layout == L_TABBED) {
-		con = container_split(con, workspace->layout);
+	if (config->default_layout != L_NONE) {
+		con = container_split(con, config->default_layout);
 	}
 	list_insert(workspace->tiling, index, con);
 	con->workspace = workspace;
@@ -714,6 +729,7 @@ void workspace_insert_tiling(struct sway_workspace *workspace,
 	workspace_update_representation(workspace);
 	node_set_dirty(&workspace->node);
 	node_set_dirty(&con->node);
+	return con;
 }
 
 void workspace_add_gaps(struct sway_workspace *ws) {
