@@ -20,6 +20,11 @@ set $term alacritty
 # on the original workspace that the command was run on.
 set $menu dmenu_path | dmenu | xargs swaymsg exec --
 
+#### Variable override
+#
+# Files in this directory can be used to override variables
+include /etc/sway/config-vars.d/*
+
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in @datadir@/backgrounds/sway/)
