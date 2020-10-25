@@ -280,7 +280,8 @@ void view_autoconfigure(struct sway_view *view) {
 			(config->hide_edge_borders_smart == ESMART_NO_GAPS &&
 			!gaps_to_edge(view));
 		if (smart) {
-			bool show_border = !view_is_only_visible(view);
+			bool show_border = container_is_floating_or_child(con) ||
+				!view_is_only_visible(view);
 			con->border_left &= show_border;
 			con->border_right &= show_border;
 			con->border_top &= show_border;
