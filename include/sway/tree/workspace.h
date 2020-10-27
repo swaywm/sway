@@ -132,4 +132,6 @@ void workspace_get_box(struct sway_workspace *workspace, struct wlr_box *box);
 
 size_t workspace_num_tiling_views(struct sway_workspace *ws);
 
+size_t workspace_num_sticky_containers(struct sway_workspace *ws);
+
 #endif
