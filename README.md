@@ -7,7 +7,7 @@ Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the [IRC
 channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-If you'd like to support sway development, please contribute to [SirCmpwn's
+If you would like to support sway development, please contribute to [SirCmpwn's
 Patreon page](https://patreon.com/sircmpwn).
 
 ## Release Signatures
@@ -23,7 +23,7 @@ Sway is available in many distributions. Try installing the "sway" package for
 yours. If it's not available, check out [this wiki page](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 for information on installation for your distributions.
 
-If you're interested in packaging sway for your distribution, stop by the IRC
+If you are interested in packaging sway for your distribution, stop by the IRC
 channel or shoot an email to sir@cmpwn.com for advice.
 
 ### Compiling from Source
