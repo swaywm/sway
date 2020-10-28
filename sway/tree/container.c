@@ -1414,6 +1414,13 @@ struct sway_container *container_split(struct sway_container *child,
 	struct sway_seat *seat = input_manager_get_default_seat();
 	bool set_focus = (seat_get_focus(seat) == &child->node);
 
+	if (container_is_floating(child) && child->view) {
+		view_set_tiled(child->view, true);
+		if (child->view->using_csd) {
+			child->border = child->saved_border;
+		}
+	}
+
 	struct sway_container *cont = container_create(NULL);
 	cont->width = child->width;
 	cont->height = child->height;

@@ -158,7 +158,7 @@ static void evacuate_sticky(struct sway_workspace *old_ws,
 	if (!sway_assert(new_ws, "New output does not have a workspace")) {
 		return;
 	}
-	while (old_ws->floating->length) {
+	while(old_ws->floating->length) {
 		struct sway_container *sticky = old_ws->floating->items[0];
 		container_detach(sticky);
 		workspace_add_floating(new_ws, sticky);
@@ -195,17 +195,22 @@ static void output_evacuate(struct sway_output *output) {
 			new_output = root->noop_output;
 		}
 
-		if (workspace_is_empty(workspace)) {
-			// If floating is not empty, there are sticky containers to move
-			if (workspace->floating->length) {
-				evacuate_sticky(workspace, new_output);
-			}
-			workspace_begin_destroy(workspace);
-			continue;
-		}
-
 		struct sway_workspace *new_output_ws =
 			output_get_active_workspace(new_output);
+
+		if (workspace_is_empty(workspace)) {
+			// If the new output has an active workspace (the noop output may
+			// not have one), move all sticky containers to it
+			if (new_output_ws &&
+					workspace_num_sticky_containers(workspace) > 0) {
+				evacuate_sticky(workspace, new_output);
+			}
+
+			if (workspace_num_sticky_containers(workspace) == 0) {
+				workspace_begin_destroy(workspace);
+				continue;
+			}
+		}
 
 		workspace_output_add_priority(workspace, new_output);
 		output_add_workspace(new_output, workspace);

@@ -821,3 +821,16 @@ size_t workspace_num_tiling_views(struct sway_workspace *ws) {
 	workspace_for_each_container(ws, count_tiling_views, &count);
 	return count;
 }
+
+static void count_sticky_containers(struct sway_container *con, void *data) {
+	if (container_is_floating(con) && con->is_sticky) {
+		size_t *count = data;
+		*count += 1;
+	}
+}
+
+size_t workspace_num_sticky_containers(struct sway_workspace *ws) {
+	size_t count = 0;
+	workspace_for_each_container(ws, count_sticky_containers, &count);
+	return count;
+}
