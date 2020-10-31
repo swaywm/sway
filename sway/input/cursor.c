@@ -306,12 +306,16 @@ void cursor_handle_activity(struct sway_cursor *cursor,
 
 	enum sway_input_idle_source idle_source = idle_source_from_device(device);
 	seat_idle_notify_activity(cursor->seat, idle_source);
-	if (cursor->hidden && idle_source != IDLE_SOURCE_TOUCH) {
+	if (idle_source != IDLE_SOURCE_TOUCH) {
 		cursor_unhide(cursor);
 	}
 }
 
 void cursor_unhide(struct sway_cursor *cursor) {
+	if (!cursor->hidden) {
+		return;
+	}
+
 	cursor->hidden = false;
 	if (cursor->image_surface) {
 		cursor_set_image_surface(cursor,
@@ -1141,18 +1145,19 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 /**
  * Warps the cursor to the middle of the container argument.
- * Does nothing if the cursor is already inside the container.
- * If container is NULL, returns without doing anything.
+ * Does nothing if the cursor is already inside the container and `force` is
+ * false. If container is NULL, returns without doing anything.
  */
 void cursor_warp_to_container(struct sway_cursor *cursor,
-		struct sway_container *container) {
+		struct sway_container *container, bool force) {
 	if (!container) {
 		return;
 	}
 
 	struct wlr_box box;
 	container_get_box(container, &box);
-	if (wlr_box_contains_point(&box, cursor->cursor->x, cursor->cursor->y)) {
+	if (!force && wlr_box_contains_point(&box, cursor->cursor->x,
+			cursor->cursor->y)) {
 		return;
 	}
 
@@ -1160,6 +1165,7 @@ void cursor_warp_to_container(struct sway_cursor *cursor,
 	double y = container->y + container->height / 2.0;
 
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
+	cursor_unhide(cursor);
 }
 
 /**
@@ -1176,6 +1182,7 @@ void cursor_warp_to_workspace(struct sway_cursor *cursor,
 	double y = workspace->y + workspace->height / 2.0;
 
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
+	cursor_unhide(cursor);
 }
 
 uint32_t get_mouse_bindsym(const char *name, char **error) {
