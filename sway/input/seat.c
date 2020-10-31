@@ -1477,12 +1477,9 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	}
 
 	if (focus->type == N_CONTAINER) {
-		cursor_warp_to_container(seat->cursor, focus->sway_container);
+		cursor_warp_to_container(seat->cursor, focus->sway_container, false);
 	} else {
 		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
-	}
-	if (seat->cursor->hidden){
-		cursor_unhide(seat->cursor);
 	}
 }
 
