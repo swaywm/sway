@@ -31,8 +31,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_resize_floating_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
 	enum wlr_edges edge = e->edge;

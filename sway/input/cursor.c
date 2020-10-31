@@ -359,7 +359,7 @@ static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	wlr_cursor_move(cursor->cursor, device, dx, dy);
 
-	seatop_pointer_motion(cursor->seat, time_msec, dx, dy);
+	seatop_pointer_motion(cursor->seat, time_msec);
 }
 
 static void handle_pointer_motion_relative(
@@ -621,7 +621,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	if (!cursor->simulating_pointer_from_tool_tip &&
 			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
-		seatop_tablet_tool_motion(seat, tool, time_msec, dx, dy);
+		seatop_tablet_tool_motion(seat, tool, time_msec);
 	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);

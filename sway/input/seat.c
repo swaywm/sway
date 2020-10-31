@@ -1500,10 +1500,9 @@ void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
-void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	if (seat->seatop_impl->pointer_motion) {
-		seat->seatop_impl->pointer_motion(seat, time_msec, dx, dy);
+		seat->seatop_impl->pointer_motion(seat, time_msec);
 	}
 }
 
@@ -1523,11 +1522,11 @@ void seatop_tablet_tool_tip(struct sway_seat *seat,
 }
 
 void seatop_tablet_tool_motion(struct sway_seat *seat,
-		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
+		struct sway_tablet_tool *tool, uint32_t time_msec) {
 	if (seat->seatop_impl->tablet_tool_motion) {
-		seat->seatop_impl->tablet_tool_motion(seat, tool, time_msec, dx, dy);
+		seat->seatop_impl->tablet_tool_motion(seat, tool, time_msec);
 	} else {
-		seatop_pointer_motion(seat, time_msec, dx, dy);
+		seatop_pointer_motion(seat, time_msec);
 	}
 }
 
