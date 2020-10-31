@@ -207,8 +207,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	desktop_damage_box(&e->drop_box);
 }
 
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (e->threshold_reached) {
 		handle_motion_postthreshold(seat);
