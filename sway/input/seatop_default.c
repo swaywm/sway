@@ -15,10 +15,18 @@
 #include "sway/xwayland.h"
 #endif
 
+struct grab_info {
+	// Fields only valid if `con` is not NULL.
+	struct sway_container *con;
+	double ref_lx, ref_ly;         // cursor's x/y at start of op
+	double ref_con_lx, ref_con_ly; // container's x/y at start of op
+};
+
 struct seatop_default_event {
 	struct sway_node *previous_node;
 	uint32_t pressed_buttons[SWAY_CURSOR_PRESSED_BUTTONS_CAP];
 	size_t pressed_button_count;
+	struct grab_info grab_info;
 };
 
 /*-----------------------------------------\
@@ -196,6 +204,30 @@ static void state_add_button(struct seatop_default_event *e, uint32_t button) {
 	e->pressed_button_count++;
 }
 
+static void begin_grab(struct sway_seat *seat, struct sway_container *con,
+		uint32_t time_msec, int sx, int sy) {
+	struct seatop_default_event *e = seat->seatop_data;
+	e->grab_info = (struct grab_info) {
+		.con = con,
+		.ref_lx = seat->cursor->cursor->x,
+		.ref_ly = seat->cursor->cursor->y,
+		.ref_con_lx = sx,
+		.ref_con_ly = sy,
+	};
+
+	container_raise_floating(con);
+}
+
+static void end_grab(struct sway_seat *seat) {
+	struct seatop_default_event *e = seat->seatop_data;
+	e->grab_info.con = NULL;
+}
+
+static bool is_grabbed(struct sway_seat *seat) {
+	struct seatop_default_event *e = seat->seatop_data;
+	return e->grab_info.con != NULL;
+}
+
 /*-------------------------------------------\
  * Functions used by handle_tablet_tool_tip  /
  *-----------------------------------------*/
@@ -204,6 +236,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
 		enum wlr_tablet_tool_tip_state state) {
 	if (state == WLR_TABLET_TOOL_TIP_UP) {
+		end_grab(seat);
 		wlr_tablet_v2_tablet_tool_notify_up(tool->tablet_v2_tool);
 		return;
 	}
@@ -253,7 +286,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 
 		// Handle tapping on a container surface
 		seat_set_focus_container(seat, cont);
-		seatop_begin_down(seat, node->sway_container, time_msec, sx, sy);
+		begin_grab(seat, node->sway_container, time_msec, sx, sy);
 	}
 #if HAVE_XWAYLAND
 	// Handle tapping on an xwayland unmanaged view
@@ -346,6 +379,15 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	// Handle mouse bindings
 	if (trigger_pointer_button_binding(seat, device, button, state, modifiers,
 			on_titlebar, on_border, on_contents, on_workspace)) {
+		return;
+	}
+
+	if (is_grabbed(seat)) {
+		seat_pointer_notify_button(seat, time_msec, button, state);
+		if (!seat->cursor->pressed_button_count) {
+			end_grab(seat);
+		}
+
 		return;
 	}
 
@@ -475,7 +517,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	// Handle mousedown on a container surface
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
 		seat_set_focus_container(seat, cont);
-		seatop_begin_down(seat, cont, time_msec, sx, sy);
+		begin_grab(seat, cont, time_msec, sx, sy);
 		seat_pointer_notify_button(seat, time_msec, button, WLR_BUTTON_PRESSED);
 		return;
 	}
@@ -557,6 +599,17 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 	}
 }
 
+static void cursor_coords_relative_to_grab(struct sway_seat *seat, double *sx,
+		double *sy) {
+	struct seatop_default_event *e = seat->seatop_data;
+	sway_assert(e->grab_info.con != NULL, "not in grab");
+
+	double moved_x = seat->cursor->cursor->x - e->grab_info.ref_lx;
+	double moved_y = seat->cursor->cursor->y - e->grab_info.ref_ly;
+	*sx = e->grab_info.ref_con_lx + moved_x;
+	*sy = e->grab_info.ref_con_ly + moved_y;
+}
+
 static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 		double dx, double dy) {
 	struct seatop_default_event *e = seat->seatop_data;
@@ -566,6 +619,15 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 	double sx, sy;
 	struct sway_node *node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
+	if (is_grabbed(seat)) {
+		if (seat_is_input_allowed(seat, e->grab_info.con->view->surface)) {
+			cursor_coords_relative_to_grab(seat, &sx, &sy);
+			wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
+		}
+
+		return;
+	}
 
 	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
@@ -600,6 +662,15 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	double sx, sy;
 	struct sway_node *node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
+	if (is_grabbed(seat)) {
+		if (seat_is_input_allowed(seat, e->grab_info.con->view->surface)) {
+			cursor_coords_relative_to_grab(seat, &sx, &sy);
+			wlr_tablet_v2_tablet_tool_notify_motion(tool->tablet_v2_tool, sx, sy);
+		}
+
+		return;
+	}
 
 	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
@@ -650,6 +721,12 @@ static void handle_pointer_axis(struct sway_seat *seat,
 		input_device ? input_device_get_config(input_device) : NULL;
 	struct sway_cursor *cursor = seat->cursor;
 	struct seatop_default_event *e = seat->seatop_data;
+	float scroll_factor =
+			(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
+
+	if (is_grabbed(seat)) {
+		goto do_notify_and_return;
+	}
 
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
@@ -665,10 +742,6 @@ static void handle_pointer_axis(struct sway_seat *seat,
 		cursor->cursor->y < cont->content_y;
 	bool on_contents = cont && !on_border && surface;
 	bool on_workspace = node && node->type == N_WORKSPACE;
-	float scroll_factor =
-		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
-
-	bool handled = false;
 
 	// Gather information needed for mouse bindings
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
@@ -686,11 +759,11 @@ static void handle_pointer_axis(struct sway_seat *seat,
 			dev_id);
 	if (binding) {
 		seat_execute_command(seat, binding);
-		handled = true;
+		return;
 	}
 
 	// Scrolling on a tabbed or stacked title bar (handled as press event)
-	if (!handled && (on_titlebar || on_titlebar_border)) {
+	if (on_titlebar || on_titlebar_border) {
 		enum sway_container_layout layout = container_parent_layout(cont);
 		if (layout == L_TABBED || layout == L_STACKED) {
 			struct sway_node *tabcontainer = node_get_parent(node);
@@ -717,7 +790,8 @@ static void handle_pointer_axis(struct sway_seat *seat,
 				seat_set_raw_focus(seat, new_focus);
 				seat_set_raw_focus(seat, old_focus);
 			}
-			handled = true;
+
+			return;
 		}
 	}
 
@@ -728,15 +802,14 @@ static void handle_pointer_axis(struct sway_seat *seat,
 	state_erase_button(e, button);
 	if (binding) {
 		seat_execute_command(seat, binding);
-		handled = true;
+		return;
 	}
 	free(dev_id);
 
-	if (!handled) {
-		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-			event->orientation, scroll_factor * event->delta,
-			round(scroll_factor * event->delta_discrete), event->source);
-	}
+do_notify_and_return:
+	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
+		event->orientation, scroll_factor * event->delta,
+		round(scroll_factor * event->delta_discrete), event->source);
 }
 
 /*----------------------------------\
@@ -762,6 +835,13 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	}
 }
 
+static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
+	struct seatop_default_event *e = seat->seatop_data;
+	if (e->grab_info.con == con) {
+		end_grab(seat);
+	}
+}
+
 static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
 	.pointer_motion = handle_pointer_motion,
@@ -769,6 +849,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
 	.rebase = handle_rebase,
+	.unref = handle_unref,
 	.allow_set_cursor = true,
 };
 
