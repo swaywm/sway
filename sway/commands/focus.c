@@ -268,7 +268,16 @@ static struct cmd_results *focus_mode(struct sway_workspace *ws,
 	}
 	if (new_focus) {
 		seat_set_focus_container(seat, new_focus);
-		seat_consider_warp_to_focus(seat);
+
+		// If we're on the floating layer and the floating container area
+		// overlaps the position on the tiling layer that would be warped to,
+		// `seat_consider_warp_to_focus` would decide not to warp, but we need
+		// to anyway.
+		if (config->mouse_warping == WARP_CONTAINER) {
+			cursor_warp_to_container(seat->cursor, new_focus, true);
+		} else {
+			seat_consider_warp_to_focus(seat);
+		}
 	} else {
 		return cmd_results_new(CMD_FAILURE,
 				"Failed to find a %s container in workspace",

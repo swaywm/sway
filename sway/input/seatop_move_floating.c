@@ -34,8 +34,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		finalize_move(seat);
 	}
 }
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_move_floating_event *e = seat->seatop_data;
 	struct wlr_cursor *cursor = seat->cursor->cursor;
 	desktop_damage_whole_container(e->con);

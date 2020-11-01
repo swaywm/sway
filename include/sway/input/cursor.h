@@ -6,6 +6,7 @@
 #include <wlr/types/wlr_pointer_gestures_v1.h>
 #include <wlr/types/wlr_surface.h>
 #include "sway/input/seat.h"
+#include "config.h"
 
 #define SWAY_CURSOR_PRESSED_BUTTONS_CAP 32
 
@@ -68,6 +69,10 @@ struct sway_cursor {
 
 	struct wl_event_source *hide_source;
 	bool hidden;
+	// This field is just a cache of the field in seat_config in order to avoid
+	// costly seat_config lookups on every keypress. HIDE_WHEN_TYPING_DEFAULT
+	// indicates that there is no cached value.
+	enum seat_config_hide_cursor_when_typing hide_when_typing;
 
 	size_t pressed_button_count;
 };
@@ -94,6 +99,7 @@ void cursor_handle_activity(struct sway_cursor *cursor,
 		struct wlr_input_device *device);
 void cursor_unhide(struct sway_cursor *cursor);
 int cursor_get_timeout(struct sway_cursor *cursor);
+void cursor_notify_key_press(struct sway_cursor *cursor);
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
 	struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
@@ -110,7 +116,7 @@ void cursor_set_image_surface(struct sway_cursor *cursor,
 		struct wl_client *client);
 
 void cursor_warp_to_container(struct sway_cursor *cursor,
-	struct sway_container *container);
+	struct sway_container *container, bool force);
 
 void cursor_warp_to_workspace(struct sway_cursor *cursor,
 		struct sway_workspace *workspace);

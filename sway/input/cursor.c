@@ -253,6 +253,32 @@ int cursor_get_timeout(struct sway_cursor *cursor) {
 	return timeout;
 }
 
+void cursor_notify_key_press(struct sway_cursor *cursor) {
+	if (cursor->hidden) {
+		return;
+	}
+
+	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_DEFAULT) {
+		// No cached value, need to lookup in the seat_config
+		const struct seat_config *seat_config = seat_get_config(cursor->seat);
+		if (!seat_config) {
+			seat_config = seat_get_config_by_name("*");
+			if (!seat_config) {
+				return;
+			}
+		}
+		cursor->hide_when_typing = seat_config->hide_cursor_when_typing;
+		// The default is currently disabled
+		if (cursor->hide_when_typing == HIDE_WHEN_TYPING_DEFAULT) {
+			cursor->hide_when_typing = HIDE_WHEN_TYPING_DISABLE;
+		}
+	}
+
+	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_ENABLE) {
+		cursor_hide(cursor);
+	}
+}
+
 static enum sway_input_idle_source idle_source_from_device(
 		struct wlr_input_device *device) {
 	switch (device->type) {
@@ -280,12 +306,16 @@ void cursor_handle_activity(struct sway_cursor *cursor,
 
 	enum sway_input_idle_source idle_source = idle_source_from_device(device);
 	seat_idle_notify_activity(cursor->seat, idle_source);
-	if (cursor->hidden && idle_source != IDLE_SOURCE_TOUCH) {
+	if (idle_source != IDLE_SOURCE_TOUCH) {
 		cursor_unhide(cursor);
 	}
 }
 
 void cursor_unhide(struct sway_cursor *cursor) {
+	if (!cursor->hidden) {
+		return;
+	}
+
 	cursor->hidden = false;
 	if (cursor->image_surface) {
 		cursor_set_image_surface(cursor,
@@ -333,7 +363,7 @@ static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	wlr_cursor_move(cursor->cursor, device, dx, dy);
 
-	seatop_pointer_motion(cursor->seat, time_msec, dx, dy);
+	seatop_pointer_motion(cursor->seat, time_msec);
 }
 
 static void handle_pointer_motion_relative(
@@ -595,7 +625,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	if (!cursor->simulating_pointer_from_tool_tip &&
 			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
-		seatop_tablet_tool_motion(seat, tool, time_msec, dx, dy);
+		seatop_tablet_tool_motion(seat, tool, time_msec);
 	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
@@ -1115,18 +1145,19 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 /**
  * Warps the cursor to the middle of the container argument.
- * Does nothing if the cursor is already inside the container.
- * If container is NULL, returns without doing anything.
+ * Does nothing if the cursor is already inside the container and `force` is
+ * false. If container is NULL, returns without doing anything.
  */
 void cursor_warp_to_container(struct sway_cursor *cursor,
-		struct sway_container *container) {
+		struct sway_container *container, bool force) {
 	if (!container) {
 		return;
 	}
 
 	struct wlr_box box;
 	container_get_box(container, &box);
-	if (wlr_box_contains_point(&box, cursor->cursor->x, cursor->cursor->y)) {
+	if (!force && wlr_box_contains_point(&box, cursor->cursor->x,
+			cursor->cursor->y)) {
 		return;
 	}
 
@@ -1134,6 +1165,7 @@ void cursor_warp_to_container(struct sway_cursor *cursor,
 	double y = container->y + container->height / 2.0;
 
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
+	cursor_unhide(cursor);
 }
 
 /**
@@ -1150,6 +1182,7 @@ void cursor_warp_to_workspace(struct sway_cursor *cursor,
 	double y = workspace->y + workspace->height / 2.0;
 
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
+	cursor_unhide(cursor);
 }
 
 uint32_t get_mouse_bindsym(const char *name, char **error) {

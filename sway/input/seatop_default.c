@@ -557,8 +557,7 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 	}
 }
 
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
@@ -592,7 +591,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
 }
 
 static void handle_tablet_tool_motion(struct sway_seat *seat,
-		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
+		struct sway_tablet_tool *tool, uint32_t time_msec) {
 	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
@@ -704,19 +703,14 @@ static void handle_pointer_axis(struct sway_seat *seat,
 			} else if (desired >= siblings->length) {
 				desired = siblings->length - 1;
 			}
-			struct sway_node *old_focus = seat_get_focus(seat);
+
 			struct sway_container *new_sibling_con = siblings->items[desired];
 			struct sway_node *new_sibling = &new_sibling_con->node;
 			struct sway_node *new_focus =
 				seat_get_focus_inactive(seat, new_sibling);
-			if (node_has_ancestor(old_focus, tabcontainer)) {
-				seat_set_focus(seat, new_focus);
-			} else {
-				// Scrolling when focus is not in the tabbed container at all
-				seat_set_raw_focus(seat, new_sibling);
-				seat_set_raw_focus(seat, new_focus);
-				seat_set_raw_focus(seat, old_focus);
-			}
+			// Use the focused child of the tabbed/stacked container, not the
+			// container the user scrolled on.
+			seat_set_focus(seat, new_focus);
 			handled = true;
 		}
 	}
