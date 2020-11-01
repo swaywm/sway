@@ -263,126 +263,141 @@ static void container_move_to_container(struct sway_container *container,
 	}
 }
 
-/* Takes one child, sets it aside, wraps the rest of the children in a new
- * container, switches the layout of the workspace, and drops the child back in.
- * In other words, rejigger it. */
-static void workspace_rejigger(struct sway_workspace *ws,
-		struct sway_container *child, enum wlr_direction move_dir) {
-	if (!child->parent && ws->tiling->length == 1) {
-		ws->layout =
-			move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_RIGHT ?
-			L_HORIZ : L_VERT;
-		workspace_update_representation(ws);
-		return;
+static bool container_move_to_next_output(struct sway_container *container,
+		struct sway_output *output, enum wlr_direction move_dir) {
+	struct sway_output *next_output =
+		output_get_in_direction(output, move_dir);
+	if (next_output) {
+		struct sway_workspace *ws = output_get_active_workspace(next_output);
+		if (!sway_assert(ws, "Expected output to have a workspace")) {
+			return false;
+		}
+		switch (container->fullscreen_mode) {
+		case FULLSCREEN_NONE:
+			container_move_to_workspace_from_direction(container, ws, move_dir);
+			return true;
+		case FULLSCREEN_WORKSPACE:
+			container_move_to_workspace(container, ws);
+			return true;
+		case FULLSCREEN_GLOBAL:
+			return false;
+		}
 	}
-	container_detach(child);
-	struct sway_container *new_parent = workspace_wrap_children(ws);
-
-	int index =
-		move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_UP ? 0 : 1;
-	workspace_insert_tiling(ws, child, index);
-	container_flatten(new_parent);
-	ws->layout =
-		move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_RIGHT ?
-		L_HORIZ : L_VERT;
-	workspace_update_representation(ws);
-	child->width = child->height = 0;
+	return false;
 }
 
 // Returns true if moved
 static bool container_move_in_direction(struct sway_container *container,
 		enum wlr_direction move_dir) {
 	// If moving a fullscreen view, only consider outputs
-	if (container->fullscreen_mode == FULLSCREEN_WORKSPACE) {
-		struct sway_output *new_output =
-			output_get_in_direction(container->workspace->output, move_dir);
-		if (!new_output) {
-			return false;
-		}
-		struct sway_workspace *ws = output_get_active_workspace(new_output);
-		if (!sway_assert(ws, "Expected output to have a workspace")) {
-			return false;
-		}
-		container_move_to_workspace(container, ws);
-		return true;
-	}
-	if (container->fullscreen_mode == FULLSCREEN_GLOBAL) {
+	switch (container->fullscreen_mode) {
+	case FULLSCREEN_NONE:
+		break;
+	case FULLSCREEN_WORKSPACE:
+		return container_move_to_next_output(container,
+				container->workspace->output, move_dir);
+	case FULLSCREEN_GLOBAL:
 		return false;
 	}
 
-	// Look for a suitable *container* sibling or parent.
-	// The below loop stops once we hit the workspace because current->parent
-	// is NULL for the topmost containers in a workspace.
-	struct sway_container *current = container;
 	int offs =
 		move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_UP ? -1 : 1;
+	int index = -1;
+	int	desired = -1;
+	list_t *siblings = NULL;
+	struct sway_container *target = NULL;
 
-	while (current) {
-		list_t *siblings = container_get_siblings(current);
-		if (siblings) {
-			enum sway_container_layout layout = container_parent_layout(current);
-			int index = list_find(siblings, current);
-			int desired = index + offs;
+	// Look for a suitable ancestor of the container to move within
+	struct sway_container *ancestor = NULL;
+	struct sway_container *current = container;
+	bool wrapped = false;
+	while (!ancestor) {
+		// Don't allow containers to move out of their
+		// fullscreen or floating parent
+		if (current->fullscreen_mode || container_is_floating(current)) {
+			return false;
+		}
 
-			// Don't allow containers to move out of their
-			// fullscreen or floating parent
-			if (current->fullscreen_mode || container_is_floating(current)) {
-				return false;
+		enum sway_container_layout parent_layout = container_parent_layout(current);
+		if (!is_parallel(parent_layout, move_dir)) {
+			if (!current->parent) {
+				// No parallel parent, so we reorient the workspace
+				current = workspace_wrap_children(current->workspace);
+				current->workspace->layout =
+					move_dir == WLR_DIRECTION_LEFT ||
+					move_dir == WLR_DIRECTION_RIGHT ?
+					L_HORIZ : L_VERT;
+				container->height = container->width = 0;
+				container->height_fraction = container->width_fraction = 0;
+				workspace_update_representation(current->workspace);
+				wrapped = true;
+			} else {
+				// Keep looking for a parallel parent
+				current = current->parent;
 			}
+			continue;
+		}
 
-			if (is_parallel(layout, move_dir)) {
-				if (desired == -1 || desired == siblings->length) {
-					if (current->parent == container->parent) {
-						current = current->parent;
-						continue;
-					} else {
-						// Reparenting
-						if (current->parent) {
-							container_insert_child(current->parent, container,
-									index + (offs < 0 ? 0 : 1));
-						} else {
-							workspace_insert_tiling(current->workspace, container,
-									index + (offs < 0 ? 0 : 1));
-						}
-						return true;
-					}
-				} else {
-					// Container can move within its siblings
-					container_move_to_container_from_direction(container,
-							siblings->items[desired], move_dir);
-					return true;
-				}
+		// Only scratchpad hidden containers don't have siblings
+		// so siblings != NULL here
+		siblings = container_get_siblings(current);
+		index = list_find(siblings, current);
+		desired = index + offs;
+		target = desired == -1 || desired == siblings->length ?
+				NULL : siblings->items[desired];
+
+		// If the move is simple we can complete it here early
+		if (current == container) {
+			if (target) {
+				// Container will swap with or descend into its neighbor
+				container_move_to_container_from_direction(container,
+						target, move_dir);
+				return true;
+			} else if (!container->parent) {
+				// Container is at workspace level so we move it to the
+				// next workspace if possible
+				return container_move_to_next_output(container,
+						current->workspace->output, move_dir);
+			} else {
+				// Container has escaped its immediate parallel parent
+				current = current->parent;
+				continue;
 			}
 		}
 
-		current = current->parent;
+		// We found a suitable ancestor, the loop will end
+		ancestor = current;
 	}
 
-	// Maybe rejigger the workspace
-	struct sway_workspace *ws = container->workspace;
-	if (ws) {
-		if (!is_parallel(ws->layout, move_dir)) {
-			workspace_rejigger(ws, container, move_dir);
-			return true;
-		} else if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
-			workspace_rejigger(ws, container, move_dir);
-			return true;
+	if (target) {
+		// Container will move in with its cousin
+		container_move_to_container_from_direction(container,
+				target, move_dir);
+		return true;
+	} else if (!wrapped && !container->parent->parent &&
+			container->parent->children->length == 1) {
+		// Treat singleton children as if they are at workspace level like i3
+		// https://github.com/i3/i3/blob/1d9160f2d247dbaa83fb62f02fd7041dec767fc2/src/move.c#L367
+		return container_move_to_next_output(container,
+				ancestor->workspace->output, move_dir);
+	} else {
+		// Container will be promoted
+		struct sway_container *old_parent = container->parent;
+		if (ancestor->parent) {
+			// Container will move in with its parent
+			container_insert_child(ancestor->parent, container,
+					index + (offs < 0 ? 0 : 1));
+		} else {
+			// Container will move to workspace level,
+			// may be re-split by workspace_layout
+			workspace_insert_tiling(ancestor->workspace, container,
+					index + (offs < 0 ? 0 : 1));
 		}
-
-		// Try adjacent output
-		struct sway_output *output =
-			output_get_in_direction(container->workspace->output, move_dir);
-		if (output) {
-			struct sway_workspace *ws = output_get_active_workspace(output);
-			if (!sway_assert(ws, "Expected output to have a workspace")) {
-				return false;
-			}
-			container_move_to_workspace_from_direction(container, ws, move_dir);
-			return true;
+		if (old_parent) {
+			container_reap_empty(old_parent);
 		}
-		sway_log(SWAY_DEBUG, "Hit edge of output, nowhere else to go");
+		return true;
 	}
-	return false;
 }
 
 static struct cmd_results *cmd_move_to_scratchpad(void);
