@@ -1225,12 +1225,18 @@ void container_discover_outputs(struct sway_container *con) {
 }
 
 enum sway_container_layout container_parent_layout(struct sway_container *con) {
+	if (container_is_floating(con)) {
+		return L_NONE;
+	}
+
 	if (con->parent) {
 		return con->parent->layout;
 	}
+
 	if (con->workspace) {
 		return con->workspace->layout;
 	}
+
 	return L_NONE;
 }
 
