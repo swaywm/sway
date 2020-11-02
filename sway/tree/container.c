@@ -1630,3 +1630,65 @@ bool container_is_sticky(struct sway_container *con) {
 bool container_is_sticky_or_child(struct sway_container *con) {
 	return container_is_sticky(container_toplevel_ancestor(con));
 }
+
+static bool is_parallel(enum sway_container_layout first,
+		enum sway_container_layout second) {
+	switch (first) {
+	case L_TABBED:
+	case L_HORIZ:
+		return second == L_TABBED || second == L_HORIZ;
+	case L_STACKED:
+	case L_VERT:
+		return second == L_STACKED || second == L_VERT;
+	default:
+		return false;
+	}
+}
+
+static bool container_is_squashable(struct sway_container *con,
+		struct sway_container *child) {
+	enum sway_container_layout gp_layout = container_parent_layout(con);
+	return (con->layout == L_HORIZ || con->layout == L_VERT) &&
+		(child->layout == L_HORIZ || child->layout == L_VERT) &&
+		!is_parallel(con->layout, child->layout) &&
+		is_parallel(gp_layout, child->layout);
+}
+
+static void container_squash_children(struct sway_container *con) {
+	for (int i = 0; i < con->children->length; i++) {
+		struct sway_container *child = con->children->items[i];
+		i += container_squash(child);
+	}
+}
+
+int container_squash(struct sway_container *con) {
+	if (!con->children) {
+		return 0;
+	}
+	if (con->children->length != 1) {
+		container_squash_children(con);
+		return 0;
+	}
+	struct sway_container *child = con->children->items[0];
+	int idx = container_sibling_index(con);
+	int change = 0;
+	if (container_is_squashable(con, child)) {
+		// con and child are a redundant H/V pair. Destroy them.
+		while (child->children->length) {
+			struct sway_container *current = child->children->items[0];
+			container_detach(current);
+			if (con->parent) {
+				container_insert_child(con->parent, current, idx);
+			} else {
+				workspace_insert_tiling_direct(con->workspace, current, idx);
+			}
+			change++;
+		}
+		// This will also destroy con because child was its only child
+		container_reap_empty(child);
+		change--;
+	} else {
+		container_squash_children(con);
+	}
+	return change;
+}
