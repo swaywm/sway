@@ -714,6 +714,17 @@ void workspace_add_floating(struct sway_workspace *workspace,
 	node_set_dirty(&con->node);
 }
 
+void workspace_insert_tiling_direct(struct sway_workspace *workspace,
+		struct sway_container *con, int index) {
+	list_insert(workspace->tiling, index, con);
+	con->workspace = workspace;
+	container_for_each_child(con, set_workspace, NULL);
+	container_handle_fullscreen_reparent(con);
+	workspace_update_representation(workspace);
+	node_set_dirty(&workspace->node);
+	node_set_dirty(&con->node);
+}
+
 struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 		struct sway_container *con, int index) {
 	if (con->workspace) {
@@ -722,13 +733,7 @@ struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 	if (config->default_layout != L_NONE) {
 		con = container_split(con, config->default_layout);
 	}
-	list_insert(workspace->tiling, index, con);
-	con->workspace = workspace;
-	container_for_each_child(con, set_workspace, NULL);
-	container_handle_fullscreen_reparent(con);
-	workspace_update_representation(workspace);
-	node_set_dirty(&workspace->node);
-	node_set_dirty(&con->node);
+	workspace_insert_tiling_direct(workspace, con, index);
 	return con;
 }
 
@@ -845,4 +850,11 @@ size_t workspace_num_sticky_containers(struct sway_workspace *ws) {
 	size_t count = 0;
 	workspace_for_each_container(ws, count_sticky_containers, &count);
 	return count;
+}
+
+void workspace_squash(struct sway_workspace *workspace) {
+	for (int i = 0; i < workspace->tiling->length; i++) {
+		struct sway_container *child = workspace->tiling->items[i];
+		i += container_squash(child);
+	}
 }
