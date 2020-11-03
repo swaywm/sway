@@ -1151,7 +1151,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		for (int i = 0; i < new_output_last_ws->floating->length; ++i) {
 			struct sway_container *floater =
 				new_output_last_ws->floating->items[i];
-			if (floater->is_sticky) {
+			if (container_is_sticky(floater)) {
 				container_detach(floater);
 				workspace_add_floating(new_workspace, floater);
 				--i;
