@@ -482,7 +482,7 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 			// We have to create the workspace, but if the container is
 			// sticky and the workspace is going to be created on the same
 			// output, we'll bail out first.
-			if (container->is_sticky && container_is_floating_or_child(container)) {
+			if (container_is_sticky_or_child(container)) {
 				struct sway_output *new_output =
 					workspace_get_initial_output(ws_name);
 				if (old_output == new_output) {
@@ -521,8 +521,8 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		return cmd_move_to_scratchpad();
 	}
 
-	if (container->is_sticky && container_is_floating_or_child(container) &&
-			old_output && node_has_ancestor(destination, &old_output->node)) {
+	if (container_is_sticky_or_child(container) && old_output &&
+			node_has_ancestor(destination, &old_output->node)) {
 		return cmd_results_new(CMD_FAILURE, "Can't move sticky "
 				"container to another workspace on the same output");
 	}

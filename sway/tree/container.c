@@ -1609,3 +1609,11 @@ bool container_is_scratchpad_hidden_or_child(struct sway_container *con) {
 	con = container_toplevel_ancestor(con);
 	return con->scratchpad && !con->workspace;
 }
+
+bool container_is_sticky(struct sway_container *con) {
+	return con->is_sticky && container_is_floating(con);
+}
+
+bool container_is_sticky_or_child(struct sway_container *con) {
+	return container_is_sticky(container_toplevel_ancestor(con));
+}

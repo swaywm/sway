@@ -1244,13 +1244,9 @@ bool view_is_visible(struct sway_view *view) {
 			return false;
 		}
 	}
-	// Determine if view is nested inside a floating container which is sticky
-	struct sway_container *floater = view->container;
-	while (floater->parent) {
-		floater = floater->parent;
-	}
-	bool is_sticky = container_is_floating(floater) && floater->is_sticky;
-	if (!is_sticky && workspace && !workspace_is_visible(workspace)) {
+
+	if (!container_is_sticky_or_child(view->container) && workspace &&
+			!workspace_is_visible(workspace)) {
 		return false;
 	}
 	// Check view isn't in a tabbed or stacked container on an inactive tab
