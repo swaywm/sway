@@ -260,6 +260,8 @@ void container_floating_move_to_center(struct sway_container *con);
 
 bool container_has_urgent_child(struct sway_container *container);
 
+bool container_has_focused_child(struct sway_container *container);
+
 /**
  * If the container is involved in a drag or resize operation via a mouse, this
  * ends the operation.

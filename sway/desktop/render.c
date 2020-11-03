@@ -819,6 +819,30 @@ struct output_and_damage {
 };
 
 /**
+ * Determines which border texture class to render for a given container.
+ */
+struct border_textures *get_border_textures_for_container(
+		struct sway_container *con) {
+	if (container_has_urgent_child(con)) {
+		return &config->border_textures.urgent;
+	}
+	if (container_has_focused_child(con) || con->current.focused) {
+		return &config->border_textures.focused;
+	}
+	if (!con->children) {
+		return &config->border_textures.unfocused;
+	}
+
+	for (int i = 0; i < con->children->length; ++i) {
+		struct sway_container *child = con->children->items[i];
+		if (child == con->current.focused_inactive_child) {
+			return &config->border_textures.focused_inactive;
+		}
+	}
+	return &config->border_textures.unfocused;
+}
+
+/**
  * Render all of the border textures for a container.
  */
 static void render_border_textures_for_container(struct sway_container *con,
@@ -842,18 +866,19 @@ static void render_border_textures_for_container(struct sway_container *con,
 		return;
 	}
 
-	struct border_textures *textures;
-bypass_border_checks:
-	// TODO: Use the appropriate border_texture based on children
-	textures = &config->border_textures.focused;
 
-	struct sway_container_state *state = &con->current;
+	struct border_textures *textures;
+	struct sway_container_state *state;
 	struct wlr_box box;
+	struct output_and_damage *oad;
+bypass_border_checks:
+	state = &con->current;
 	box.x = state->x;
 	box.y = state->y;
 	box.width = state->width;
 	box.height = state->height;
-	struct output_and_damage *oad = (struct output_and_damage *) data;
+	oad = (struct output_and_damage *) data;
+	textures = get_border_textures_for_container(con);
 	render_border_textures(oad->output, oad->damage, &box, textures->texture, con->alpha);
 }
 
@@ -868,9 +893,8 @@ static void render_border_textures_for_workspace(struct sway_output *output,
 		struct wlr_box box;
 		workspace_get_box(ws, &box);
 
-		// TODO: Use the appropriate border_texture based on children
-		struct border_textures *textures = &config->border_textures.focused;
 		struct sway_container *con = ws->tiling->items[0];
+		struct border_textures *textures = get_border_textures_for_container(con);
 		render_border_textures(output, damage, &box, textures->texture, con->alpha);
 		return;
 	}

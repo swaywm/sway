@@ -965,6 +965,14 @@ bool container_has_urgent_child(struct sway_container *container) {
 	return container_find_child(container, find_urgent_iterator, NULL);
 }
 
+static bool find_focused_iterator(struct sway_container *con, void *data) {
+	return con->current.focused;
+}
+
+bool container_has_focused_child(struct sway_container *container) {
+	return container_find_child(container, find_focused_iterator, NULL);
+}
+
 void container_end_mouse_operation(struct sway_container *container) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
