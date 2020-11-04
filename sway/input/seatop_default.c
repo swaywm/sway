@@ -73,6 +73,9 @@ static enum wlr_edges find_edge(struct sway_container *cont,
 			cont->border == B_CSD) {
 		return WLR_EDGE_NONE;
 	}
+	if (cont->fullscreen_mode) {
+		return WLR_EDGE_NONE;
+	}
 
 	enum wlr_edges edge = 0;
 	if (cursor->cursor->x < cont->x + cont->border_thickness) {
