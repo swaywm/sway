@@ -369,7 +369,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_output *output = sway_layer->layer_surface->output->data;
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
-	wlr_surface_send_enter(sway_layer->layer_surface->surface,
+	wlr_surface_enter_output(sway_layer->layer_surface->surface,
 		sway_layer->layer_surface->output);
 	cursor_rebase_all();
 }
@@ -416,7 +416,7 @@ static void popup_handle_map(struct wl_listener *listener, void *data) {
 	struct sway_layer_popup *popup = wl_container_of(listener, popup, map);
 	struct sway_layer_surface *layer = popup_get_layer(popup);
 	struct wlr_output *wlr_output = layer->layer_surface->output;
-	wlr_surface_send_enter(popup->wlr_popup->base->surface, wlr_output);
+	wlr_surface_enter_output(popup->wlr_popup->base->surface, wlr_output);
 	popup_damage(popup, true);
 }
 

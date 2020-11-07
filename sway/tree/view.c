@@ -1049,7 +1049,7 @@ void view_child_init(struct sway_view_child *child,
 
 	struct sway_workspace *workspace = child->view->container->workspace;
 	if (workspace) {
-		wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+		wlr_surface_enter_output(child->surface, workspace->output->wlr_output);
 	}
 
 	view_init_subsurfaces(child->view, surface);
