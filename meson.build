@@ -60,7 +60,7 @@ math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 
 # Try first to find wlroots as a subproject, then as a system dependency
-wlroots_version = ['>=0.11.0', '<0.12.0']
+wlroots_version = ['>=0.12.0', '<0.13.0']
 wlroots_proj = subproject(
 	'wlroots',
 	default_options: ['examples=false'],
