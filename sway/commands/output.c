@@ -15,6 +15,7 @@ static struct cmd_handler output_handlers[] = {
 	{ "enable", output_cmd_enable },
 	{ "max_render_time", output_cmd_max_render_time },
 	{ "mode", output_cmd_mode },
+	{ "phys_scale", output_cmd_phys_scale },
 	{ "pos", output_cmd_position },
 	{ "position", output_cmd_position },
 	{ "res", output_cmd_mode },

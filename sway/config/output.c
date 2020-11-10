@@ -59,6 +59,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->refresh_rate = -1;
 	oc->custom_mode = -1;
 	oc->x = oc->y = -1;
+	oc->phys_scale = -1;
 	oc->scale = -1;
 	oc->scale_filter = SCALE_FILTER_DEFAULT;
 	oc->transform = -1;
@@ -83,6 +84,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->y != -1) {
 		dst->y = src->y;
+	}
+	if (src->phys_scale != -1) {
+		dst->phys_scale = src->phys_scale;
 	}
 	if (src->scale != -1) {
 		dst->scale = src->scale;
@@ -367,6 +371,13 @@ static void queue_output_config(struct output_config *oc,
 	if (oc && oc->transform >= 0) {
 		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
+	}
+
+	if (oc && oc->phys_scale > 0) {
+		wlr_output->phys_width = wlr_output->phys_width * oc->phys_scale;
+		wlr_output->phys_height = wlr_output->phys_height * oc->phys_scale;
+		sway_log(SWAY_DEBUG, "Scaling %s physical sizes by %f to %dx%d mm", oc->name,
+			oc->phys_scale, wlr_output->phys_width, wlr_output->phys_height);
 	}
 
 	// Apply the scale last before the commit, because the scale auto-detection
