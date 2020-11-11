@@ -395,6 +395,8 @@ static bool container_move_in_direction(struct sway_container *container,
 			workspace_insert_tiling(ancestor->workspace, container,
 					index + (offs < 0 ? 0 : 1));
 		}
+		ancestor->height = ancestor->width = 0;
+		ancestor->height_fraction = ancestor->width_fraction = 0;
 		if (old_parent) {
 			container_reap_empty(old_parent);
 		}
