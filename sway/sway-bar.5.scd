@@ -93,7 +93,7 @@ runtime.
 	status lines using the i3bar JSON protocol.
 
 *position* top|bottom
-	Sets position of the bar. Default is _bottom_.
+	Sets position of the bar. Default is _top_.
 
 *separator_symbol* <symbol>
 	Specifies the separator symbol to separate blocks on the bar.
