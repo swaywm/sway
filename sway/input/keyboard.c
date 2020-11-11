@@ -125,7 +125,7 @@ static void state_add_key(struct sway_shortcut_state *state,
  * Update the shortcut model state in response to new input
  */
 static bool update_shortcut_state(struct sway_shortcut_state *state,
-		uint32_t keycode, enum wlr_key_state keystate, uint32_t new_key,
+		uint32_t keycode, enum wl_keyboard_key_state keystate, uint32_t new_key,
 		uint32_t raw_modifiers) {
 	bool last_key_was_a_modifier = raw_modifiers != state->last_raw_modifiers;
 	state->last_raw_modifiers = raw_modifiers;
@@ -135,7 +135,7 @@ static bool update_shortcut_state(struct sway_shortcut_state *state,
 		state_erase_key(state, state->last_keycode);
 	}
 
-	if (keystate == WLR_KEY_PRESSED) {
+	if (keystate == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		// Add current key to set; there may be duplicates
 		state_add_key(state, keycode, new_key);
 		state->last_keycode = keycode;
@@ -349,7 +349,7 @@ struct key_info {
 };
 
 static void update_keyboard_state(struct sway_keyboard *keyboard,
-		uint32_t raw_keycode, enum wlr_key_state keystate,
+		uint32_t raw_keycode, enum wl_keyboard_key_state keystate,
 		struct key_info *keyinfo) {
 	// Identify new keycode, raw keysym(s), and translated keysym(s)
 	keyinfo->keycode = raw_keycode + 8;
@@ -393,7 +393,7 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
 	bool shortcuts_inhibited = sway_inhibitor && sway_inhibitor->inhibitor->active;
 
-	if (event->state == WLR_KEY_PRESSED) {
+	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		cursor_notify_key_press(seat->cursor);
 	}
 
@@ -422,20 +422,20 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 
 	// Execute stored release binding once no longer active
 	if (keyboard->held_binding && binding_released != keyboard->held_binding &&
-			event->state == WLR_KEY_RELEASED) {
+			event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
 		seat_execute_command(seat, keyboard->held_binding);
 		handled = true;
 	}
 	if (binding_released != keyboard->held_binding) {
 		keyboard->held_binding = NULL;
 	}
-	if (binding_released && event->state == WLR_KEY_PRESSED) {
+	if (binding_released && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		keyboard->held_binding = binding_released;
 	}
 
 	// Identify and execute active pressed binding
 	struct sway_binding *binding = NULL;
-	if (event->state == WLR_KEY_PRESSED) {
+	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		get_active_binding(&keyboard->state_keycodes,
 				config->current_mode->keycode_bindings, &binding,
 				keyinfo.code_modifiers, false, input_inhibited,
@@ -478,22 +478,22 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	}
 
 	// Compositor bindings
-	if (!handled && event->state == WLR_KEY_PRESSED) {
+	if (!handled && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		handled = keyboard_execute_compositor_binding(
 				keyboard, keyinfo.translated_keysyms,
 				keyinfo.translated_modifiers, keyinfo.translated_keysyms_len);
 	}
-	if (!handled && event->state == WLR_KEY_PRESSED) {
+	if (!handled && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		handled = keyboard_execute_compositor_binding(
 				keyboard, keyinfo.raw_keysyms, keyinfo.raw_modifiers,
 				keyinfo.raw_keysyms_len);
 	}
 
-	if (!handled || event->state == WLR_KEY_RELEASED) {
+	if (!handled || event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
 		bool pressed_sent = update_shortcut_state(
 				&keyboard->state_pressed_sent, event->keycode, event->state,
 				keyinfo.keycode, 0);
-		if (pressed_sent || event->state == WLR_KEY_PRESSED) {
+		if (pressed_sent || event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 			wlr_seat_set_keyboard(wlr_seat, wlr_device);
 			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 					event->keycode, event->state);
@@ -528,7 +528,7 @@ static void handle_keyboard_group_enter(struct wl_listener *listener,
 	uint32_t *keycode;
 	wl_array_for_each(keycode, keycodes) {
 		struct key_info keyinfo;
-		update_keyboard_state(keyboard, *keycode, WLR_KEY_PRESSED, &keyinfo);
+		update_keyboard_state(keyboard, *keycode, WL_KEYBOARD_KEY_STATE_PRESSED, &keyinfo);
 	}
 }
 
@@ -544,10 +544,10 @@ static void handle_keyboard_group_leave(struct wl_listener *listener,
 	uint32_t *keycode;
 	wl_array_for_each(keycode, keycodes) {
 		struct key_info keyinfo;
-		update_keyboard_state(keyboard, *keycode, WLR_KEY_RELEASED, &keyinfo);
+		update_keyboard_state(keyboard, *keycode, WL_KEYBOARD_KEY_STATE_RELEASED, &keyinfo);
 
 		pressed_sent |= update_shortcut_state(&keyboard->state_pressed_sent,
-				*keycode, WLR_KEY_RELEASED, keyinfo.keycode, 0);
+				*keycode, WL_KEYBOARD_KEY_STATE_RELEASED, keyinfo.keycode, 0);
 	}
 
 	if (!pressed_sent) {
