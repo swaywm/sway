@@ -626,10 +626,12 @@ static void handle_modifier_event(struct sway_keyboard *keyboard) {
 		determine_bar_visibility(modifiers);
 	}
 
-	if (wlr_device->keyboard->modifiers.group != keyboard->effective_layout &&
-			!wlr_keyboard_group_from_wlr_keyboard(wlr_device->keyboard)) {
+	if (wlr_device->keyboard->modifiers.group != keyboard->effective_layout) {
 		keyboard->effective_layout = wlr_device->keyboard->modifiers.group;
-		ipc_event_input("xkb_layout", keyboard->seat_device->input_device);
+
+		if (!wlr_keyboard_group_from_wlr_keyboard(wlr_device->keyboard)) {
+			ipc_event_input("xkb_layout", keyboard->seat_device->input_device);
+		}
 	}
 }
 
