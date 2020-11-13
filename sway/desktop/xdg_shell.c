@@ -284,28 +284,27 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_surface *xdg_surface = view->wlr_xdg_surface;
 
+	struct wlr_box new_geo;
+	wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
+	bool new_size = new_geo.width != view->geometry.width ||
+			new_geo.height != view->geometry.height ||
+			new_geo.x != view->geometry.x ||
+			new_geo.y != view->geometry.y;
+
+	if (new_size) {
+		// The view has unexpectedly sent a new size
+		desktop_damage_view(view);
+		view_update_size(view, new_geo.width, new_geo.height);
+		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		desktop_damage_view(view);
+		transaction_commit_dirty();
+	}
+
 	if (view->container->node.instruction) {
-		wlr_xdg_surface_get_geometry(xdg_surface, &view->geometry);
 		transaction_notify_view_ready_by_serial(view,
 				xdg_surface->configure_serial);
-	} else {
-		struct wlr_box new_geo;
-		wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
-
-		if ((new_geo.width != view->geometry.width ||
-					new_geo.height != view->geometry.height ||
-					new_geo.x != view->geometry.x ||
-					new_geo.y != view->geometry.y)) {
-			// The view has unexpectedly sent a new size
-			desktop_damage_view(view);
-			view_update_size(view, new_geo.width, new_geo.height);
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-			desktop_damage_view(view);
-			transaction_commit_dirty();
-			transaction_notify_view_ready_immediately(view);
-		} else {
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-		}
+	} else if (new_size) {
+		transaction_notify_view_ready_immediately(view);
 	}
 
 	view_damage_from(view);
