@@ -580,10 +580,12 @@ static int output_repaint_timer_handler(void *data) {
 			scan_out_fullscreen_view(output, fullscreen_con->view);
 
 		if (scanned_out && !last_scanned_out) {
-			sway_log(SWAY_DEBUG, "Scanning out fullscreen view");
+			sway_log(SWAY_DEBUG, "Scanning out fullscreen view on %s",
+				output->wlr_output->name);
 		}
 		if (last_scanned_out && !scanned_out) {
-			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out");
+			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out on %s",
+				output->wlr_output->name);
 		}
 		last_scanned_out = scanned_out;
 
