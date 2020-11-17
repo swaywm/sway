@@ -188,7 +188,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->title->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && strcmp(title, view_get_title(focused))) {
+			if (focused && lenient_strcmp(title, view_get_title(focused))) {
 				return false;
 			}
 			break;
@@ -228,7 +228,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->app_id->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && strcmp(app_id, view_get_app_id(focused))) {
+			if (focused && lenient_strcmp(app_id, view_get_app_id(focused))) {
 				return false;
 			}
 			break;
@@ -260,7 +260,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->class->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && strcmp(class, view_get_class(focused))) {
+			if (focused && lenient_strcmp(class, view_get_class(focused))) {
 				return false;
 			}
 			break;
