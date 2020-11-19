@@ -919,6 +919,33 @@ char *do_var_replacement(char *str) {
 			++find;
 			continue;
 		}
+		// Is an environment variable requested?
+		if (strncmp(find, "$ENV:", strlen("$ENV:")) == 0) {
+			char *var_name = &find[5];
+			int vnlen = strlen(var_name);
+			if (var_name[0] == '\0') continue;
+			char *env_value = getenv(var_name);
+			if (env_value) {
+				int vvlen = strlen(env_value);
+				char *newstr = malloc(strlen(str) - (strlen("$ENV:") + vnlen) + vvlen + 1);
+				if (!newstr) {
+					sway_log(SWAY_ERROR,
+							"Unable to allocate replacement "
+							"during variable expansion");
+					continue;
+				}
+				char *newptr = newstr;
+				int offset = find - str;
+				strncpy(newptr, str, offset);
+				newptr += offset;
+				strncpy(newptr, env_value, vvlen);
+				newptr += vvlen;
+				strcpy(newptr, find + vnlen + strlen("$ENV:"));
+				free(str);
+				str = newstr;
+				find = str + offset + vvlen;
+			}
+		}
 		// Find matching variable
 		for (i = 0; i < config->symbols->length; ++i) {
 			struct sway_variable *var = config->symbols->items[i];

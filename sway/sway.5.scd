@@ -586,6 +586,21 @@ The default colors are:
 *exec_always* <shell command>
 	Like *exec*, but the shell command will be executed _again_ after *reload*.
 
+*export* <name> <value>
+	Sets the Wayland session environment variable _name_ to a specific
+	_value_. All environment variables are available in the config
+	using the _$ENV:<name>_ syntax.
+
+	Example:
+```
+    	export CLUTTER_BACKEND wayland
+    	export GDK_BACKEND wayland
+    	export MOZ_ENABLE_WAYLAND 1
+    	export PATH $ENV:HOME/bin:$ENV:PATH
+    	export QT_QPA_PLATFORM wayland-egl
+    	export QT_WAYLAND_DISABLE_WINDOWDECORATION 1
+```
+
 *floating_maximum_size* <width> x <height>
 	Specifies the maximum size of floating windows. -1 x -1 removes the upper
 	limit. The default is 0 x 0, which will use the width and height of the

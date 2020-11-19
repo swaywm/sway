@@ -51,6 +51,7 @@ sway_sources = files(
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
+	'commands/export.c',
 	'commands/floating.c',
 	'commands/floating_minmax_size.c',
 	'commands/floating_modifier.c',
