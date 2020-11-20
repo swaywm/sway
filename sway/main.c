@@ -83,44 +83,6 @@ void detect_raspi(void) {
 	}
 }
 
-void detect_proprietary(int allow_unsupported_gpu) {
-	FILE *f = fopen("/proc/modules", "r");
-	if (!f) {
-		return;
-	}
-	char *line = NULL;
-	size_t line_size = 0;
-	while (getline(&line, &line_size, f) != -1) {
-		if (strncmp(line, "nvidia ", 7) == 0) {
-			if (allow_unsupported_gpu) {
-				sway_log(SWAY_ERROR,
-						"!!! Proprietary Nvidia drivers are in use !!!");
-			} else {
-				sway_log(SWAY_ERROR,
-					"Proprietary Nvidia drivers are NOT supported. "
-					"Use Nouveau. To launch sway anyway, launch with "
-					"--my-next-gpu-wont-be-nvidia and DO NOT report issues.");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		}
-		if (strstr(line, "fglrx")) {
-			if (allow_unsupported_gpu) {
-				sway_log(SWAY_ERROR,
-						"!!! Proprietary AMD drivers are in use !!!");
-			} else {
-				sway_log(SWAY_ERROR, "Proprietary AMD drivers do NOT support "
-					"Wayland. Use radeon. To try anyway, launch sway with "
-					"--unsupported-gpu and DO NOT report issues.");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		}
-	}
-	free(line);
-	fclose(f);
-}
-
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -224,7 +186,7 @@ void enable_debug_flag(const char *flag) {
 }
 
 int main(int argc, char **argv) {
-	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
+	static int verbose = 0, debug = 0, validate = 0;
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -235,7 +197,6 @@ int main(int argc, char **argv) {
 		{"verbose", no_argument, NULL, 'V'},
 		{"get-socketpath", no_argument, NULL, 'p'},
 		{"unsupported-gpu", no_argument, NULL, 'u'},
-		{"my-next-gpu-wont-be-nvidia", no_argument, NULL, 'u'},
 		{0, 0, 0, 0}
 	};
 
@@ -279,7 +240,7 @@ int main(int argc, char **argv) {
 			enable_debug_flag(optarg);
 			break;
 		case 'u':
-			allow_unsupported_gpu = 1;
+			// allow_unsupported_gpu = 1;
 			break;
 		case 'v': // version
 			fprintf(stdout, "sway version " SWAY_VERSION "\n");
@@ -328,7 +289,6 @@ int main(int argc, char **argv) {
 	log_kernel();
 	log_distro();
 	log_env();
-	detect_proprietary(allow_unsupported_gpu);
 	detect_raspi();
 
 	if (optind < argc) { // Behave as IPC client
