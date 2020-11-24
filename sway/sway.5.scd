@@ -68,8 +68,11 @@ The following commands may only be used in the configuration file.
 *include* <path>
 	Includes another file from _path_. _path_ can be either a full path or a
 	path relative to the parent config, and expands shell syntax (see
-	*wordexp*(3) for details). The same include file can only be included once;
-	subsequent attempts will be ignored.
+	*wordexp*(3) for details). When using shell expansion (wildcards), order of
+	file inclusion is based on your locale. This can be important if some
+	configuration files use variables defined in another file. The same
+	include file can only be included once; subsequent attempts will be
+	ignored.
 
 *swaybg_command* <command>
 	Executes custom background _command_. Default is _swaybg_. Refer to
