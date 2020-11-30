@@ -18,25 +18,6 @@
 #include "list.h"
 #include "log.h"
 
-struct sway_transaction {
-	struct wl_event_source *timer;
-	list_t *instructions;   // struct sway_transaction_instruction *
-	size_t num_waiting;
-	size_t num_configures;
-	struct timespec commit_time;
-};
-
-struct sway_transaction_instruction {
-	struct sway_transaction *transaction;
-	struct sway_node *node;
-	union {
-		struct sway_output_state output_state;
-		struct sway_workspace_state workspace_state;
-		struct sway_container_state container_state;
-	};
-	uint32_t serial;
-};
-
 static struct sway_transaction *transaction_create(void) {
 	struct sway_transaction *transaction =
 		calloc(1, sizeof(struct sway_transaction));

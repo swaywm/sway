@@ -1,6 +1,10 @@
 #ifndef _SWAY_TRANSACTION_H
 #define _SWAY_TRANSACTION_H
 #include <stdint.h>
+#include "sway/output.h"
+#include "sway/tree/container.h"
+#include "sway/tree/workspace.h"
+
 
 /**
  * Transactions enable us to perform atomic layout updates.
@@ -19,7 +23,25 @@
  * create and commits a transaction from the dirty containers.
  */
 
-struct sway_transaction_instruction;
+struct sway_transaction {
+	struct wl_event_source *timer;
+	list_t *instructions;   // struct sway_transaction_instruction *
+	size_t num_waiting;
+	size_t num_configures;
+	struct timespec commit_time;
+};
+
+struct sway_transaction_instruction {
+	struct sway_transaction *transaction;
+	struct sway_node *node;
+	union {
+		struct sway_output_state output_state;
+		struct sway_workspace_state workspace_state;
+		struct sway_container_state container_state;
+	};
+	uint32_t serial;
+};
+
 struct sway_view;
 
 /**
