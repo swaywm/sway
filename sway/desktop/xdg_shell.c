@@ -291,20 +291,40 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			new_geo.x != view->geometry.x ||
 			new_geo.y != view->geometry.y;
 
-	if (new_size) {
-		// The view has unexpectedly sent a new size
+	// Did the view send the size we expect?
+	bool expected = !new_size;
+	if (view->container->node.instruction) {
+		struct sway_container_state *requested =
+			&view->container->node.instruction->container_state;
+		expected = requested->content_width == new_geo.width &&
+				requested->content_height == new_geo.height;
+	}
+
+	if (new_size && expected) {
+		// The client has resized as requested
+		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		transaction_notify_view_ready_by_serial(view,
+				xdg_surface->configure_serial);
+	} else if (new_size && !expected) {
+		// The view has sent an unexpected size
 		desktop_damage_view(view);
 		view_update_size(view, new_geo.width, new_geo.height);
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		desktop_damage_view(view);
 		transaction_commit_dirty();
-	}
-
-	if (view->container->node.instruction) {
+		if (view->container->node.instruction) {
+			// The size is different than requested
+			transaction_notify_view_ready_by_serial(view,
+					xdg_surface->configure_serial);
+		} else {
+			// The view has resized unprompted
+			transaction_notify_view_ready_immediately(view);
+		}
+	} else if (!new_size && !expected) {
+		// The view has unexpectedly refused to resize
+		desktop_damage_view(view);
 		transaction_notify_view_ready_by_serial(view,
 				xdg_surface->configure_serial);
-	} else if (new_size) {
-		transaction_notify_view_ready_immediately(view);
 	}
 
 	view_damage_from(view);
