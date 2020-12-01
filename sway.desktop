@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=Sway
 Comment=An i3-compatible Wayland compositor
-Exec=sway
+Exec=env _JAVA_AWT_WM_NONREPARENTING=1 sway
 Type=Application
