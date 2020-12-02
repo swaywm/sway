@@ -223,6 +223,25 @@ void enable_debug_flag(const char *flag) {
 	}
 }
 
+static sway_log_importance_t convert_wlr_log_importance(
+		enum wlr_log_importance importance) {
+	switch (importance) {
+	case WLR_ERROR:
+		return SWAY_ERROR;
+	case WLR_INFO:
+		return SWAY_INFO;
+	default:
+		return SWAY_DEBUG;
+	}
+}
+
+static void handle_wlr_log(enum wlr_log_importance importance,
+		const char *fmt, va_list args) {
+	static char sway_fmt[1024];
+	snprintf(sway_fmt, sizeof(sway_fmt), "[wlr] %s", fmt);
+	_sway_vlog(convert_wlr_log_importance(importance), sway_fmt, args);
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
 
@@ -315,13 +334,13 @@ int main(int argc, char **argv) {
 	// sway, we do not need to override it.
 	if (debug) {
 		sway_log_init(SWAY_DEBUG, sway_terminate);
-		wlr_log_init(WLR_DEBUG, NULL);
+		wlr_log_init(WLR_DEBUG, handle_wlr_log);
 	} else if (verbose) {
 		sway_log_init(SWAY_INFO, sway_terminate);
-		wlr_log_init(WLR_INFO, NULL);
+		wlr_log_init(WLR_INFO, handle_wlr_log);
 	} else {
 		sway_log_init(SWAY_ERROR, sway_terminate);
-		wlr_log_init(WLR_ERROR, NULL);
+		wlr_log_init(WLR_ERROR, handle_wlr_log);
 	}
 
 	sway_log(SWAY_INFO, "Sway version " SWAY_VERSION);
