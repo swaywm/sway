@@ -19,11 +19,7 @@ swaybar_deps = [
 	wayland_cursor
 ]
 if have_tray
-	if systemd.found()
-		swaybar_deps += systemd
-	elif elogind.found()
-		swaybar_deps += elogind
-	endif
+	swaybar_deps += sdbus
 endif
 
 executable(
