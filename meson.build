@@ -67,19 +67,31 @@ wlroots_proj = subproject(
 	required: false,
 	version: wlroots_version,
 )
+wlroots_features = {
+	'xwayland': false,
+	'systemd': false,
+	'elogind': false,
+	'libseat': false,
+}
 if wlroots_proj.found()
 	wlroots = wlroots_proj.get_variable('wlroots')
 	wlroots_conf = wlroots_proj.get_variable('conf_data')
-	wlroots_has_xwayland = wlroots_conf.get('WLR_HAS_XWAYLAND') == 1
+	foreach name, _ : wlroots_features
+		has = wlroots_conf.get('WLR_HAS_' + name.to_upper()) == 1
+		wlroots_features += { name: has }
+	endforeach
 else
 	wlroots = dependency('wlroots', version: wlroots_version)
-	wlroots_has_xwayland = cc.get_define('WLR_HAS_XWAYLAND', prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
+	foreach name, _ : wlroots_features
+		has = cc.get_define('WLR_HAS_' + name.to_upper(), prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
+		wlroots_features += { name: has }
+	endforeach
 endif
 
-if get_option('xwayland').enabled() and not wlroots_has_xwayland
+if get_option('xwayland').enabled() and not wlroots_features['xwayland']
 	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
 endif
-have_xwayland = xcb.found() and wlroots_has_xwayland
+have_xwayland = xcb.found() and wlroots_features['xwayland']
 
 tray_deps_found = systemd.found() or elogind.found()
 if get_option('tray').enabled() and not tray_deps_found
@@ -285,7 +297,7 @@ summary({
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
 
-if not systemd.found() and not elogind.found()
-	warning('The sway binary must be setuid when compiled without (e)logind')
+if not wlroots_features['systemd'] and not wlroots_features['elogind'] and not wlroots_features['libseat']
+	warning('The sway binary must be setuid when compiled without (e)logind or libseat')
 	warning('You must do this manually post-install: chmod a+s /path/to/sway')
 endif
