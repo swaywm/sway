@@ -2,9 +2,9 @@
 #define _SWAYBAR_TRAY_TRAY_H
 
 #include "config.h"
-#ifdef HAVE_SYSTEMD
+#ifdef HAVE_LIBSYSTEMD
 #include <systemd/sd-bus.h>
-#elif HAVE_ELOGIND
+#elif HAVE_LIBELOGIND
 #include <elogind/sd-bus.h>
 #endif
 #include <cairo.h>

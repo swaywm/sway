@@ -51,8 +51,6 @@ pixman         = dependency('pixman-1')
 glesv2         = dependency('glesv2')
 libevdev       = dependency('libevdev')
 libinput       = dependency('libinput', version: '>=1.6.0')
-systemd        = dependency('libsystemd', version: '>=239', required: false)
-elogind        = dependency('libelogind', version: '>=239', required: false)
 xcb            = dependency('xcb', required: get_option('xwayland'))
 bash_comp      = dependency('bash-completion', required: false)
 fish_comp      = dependency('fish', required: false)
@@ -93,9 +91,28 @@ if get_option('xwayland').enabled() and not wlroots_features['xwayland']
 endif
 have_xwayland = xcb.found() and wlroots_features['xwayland']
 
-tray_deps_found = systemd.found() or elogind.found()
+if get_option('sd-bus-provider') == 'auto'
+	if not get_option('tray').disabled()
+		assert(get_option('auto_features').auto(), 'sd-bus-provider must not be set to auto since auto_features != auto')
+	endif
+	sdbus = dependency('libsystemd',
+		required: false,
+		version: '>=239',
+		not_found_message: 'libsystemd not found, trying libelogind',
+	)
+	if not sdbus.found()
+		sdbus = dependency('libelogind',
+			required: false,
+			version: '>=239',
+		)
+	endif
+else
+	sdbus = dependency(get_option('sd-bus-provider'), required: get_option('tray'))
+endif
+
+tray_deps_found = sdbus.found()
 if get_option('tray').enabled() and not tray_deps_found
-	error('Building with -Dtray=enabled, but libsystemd and libelogind have not been not found')
+	error('Building with -Dtray=enabled, but sd-bus has not been not found')
 endif
 have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
@@ -103,8 +120,8 @@ conf_data = configuration_data()
 
 conf_data.set10('HAVE_XWAYLAND', have_xwayland)
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
-conf_data.set10('HAVE_SYSTEMD', systemd.found())
-conf_data.set10('HAVE_ELOGIND', elogind.found())
+conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd')
+conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_TRAY', have_tray)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
@@ -291,8 +308,7 @@ endif
 summary({
 	'xwayland': have_xwayland,
 	'gdk-pixbuf': gdk_pixbuf.found(),
-	'systemd': systemd.found(),
-	'elogind': elogind.found(),
+	'sd-bus': sdbus.found(),
 	'tray': have_tray,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
