@@ -64,7 +64,7 @@ char *lenient_strncat(char *dest, const char *src, size_t len) {
 }
 
 // strcmp that also handles null pointers.
-int lenient_strcmp(char *a, char *b) {
+int lenient_strcmp(const char *a, const char *b) {
 	if (a == b) {
 		return 0;
 	} else if (!a) {
