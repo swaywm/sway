@@ -351,6 +351,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->unmap.link);
 	wl_list_remove(&sway_layer->surface_commit.link);
 	wl_list_remove(&sway_layer->new_popup.link);
+	wl_list_remove(&sway_layer->new_subsurface.link);
 	if (sway_layer->layer_surface->output != NULL) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
 		if (output != NULL) {
@@ -379,6 +380,82 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 			listener, sway_layer, unmap);
 	unmap(sway_layer);
 }
+
+static void subsurface_damage(struct sway_layer_subsurface *subsurface,
+		bool whole) {
+	struct sway_layer_surface *layer = subsurface->layer_surface;
+	struct wlr_output *wlr_output = layer->layer_surface->output;
+	if (!wlr_output) {
+		return;
+	}
+	struct sway_output *output = wlr_output->data;
+	int ox = subsurface->wlr_subsurface->current.x + layer->geo.x;
+	int oy = subsurface->wlr_subsurface->current.y + layer->geo.y;
+	output_damage_surface(
+			output, ox, oy, subsurface->wlr_subsurface->surface, whole);
+}
+
+static void subsurface_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, unmap);
+	subsurface_damage(subsurface, true);
+}
+
+static void subsurface_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, map);
+	subsurface_damage(subsurface, true);
+}
+
+static void subsurface_handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, commit);
+	subsurface_damage(subsurface, false);
+}
+
+static void subsurface_handle_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, destroy);
+
+	wl_list_remove(&subsurface->map.link);
+	wl_list_remove(&subsurface->unmap.link);
+	wl_list_remove(&subsurface->destroy.link);
+	wl_list_remove(&subsurface->commit.link);
+	free(subsurface);
+}
+
+static struct sway_layer_subsurface *create_subsurface(
+		struct wlr_subsurface *wlr_subsurface,
+		struct sway_layer_surface *layer_surface) {
+	struct sway_layer_subsurface *subsurface =
+			calloc(1, sizeof(struct sway_layer_surface));
+	if (subsurface == NULL) {
+		return NULL;
+	}
+
+	subsurface->wlr_subsurface = wlr_subsurface;
+	subsurface->layer_surface = layer_surface;
+
+	subsurface->map.notify = subsurface_handle_map;
+	wl_signal_add(&wlr_subsurface->events.map, &subsurface->map);
+	subsurface->unmap.notify = subsurface_handle_unmap;
+	wl_signal_add(&wlr_subsurface->events.unmap, &subsurface->unmap);
+	subsurface->destroy.notify = subsurface_handle_destroy;
+	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
+	subsurface->commit.notify = subsurface_handle_commit;
+	wl_signal_add(&wlr_subsurface->surface->events.commit, &subsurface->commit);
+
+	return subsurface;
+}
+
+static void handle_new_subsurface(struct wl_listener *listener, void *data) {
+	struct sway_layer_surface *sway_layer_surface =
+			wl_container_of(listener, sway_layer_surface, new_subsurface);
+	struct wlr_subsurface *wlr_subsurface = data;
+	create_subsurface(wlr_subsurface, sway_layer_surface);
+}
+
 
 static struct sway_layer_surface *popup_get_layer(
 		struct sway_layer_popup *popup) {
@@ -563,6 +640,9 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&layer_surface->events.unmap, &sway_layer->unmap);
 	sway_layer->new_popup.notify = handle_new_popup;
 	wl_signal_add(&layer_surface->events.new_popup, &sway_layer->new_popup);
+	sway_layer->new_subsurface.notify = handle_new_subsurface;
+	wl_signal_add(&layer_surface->surface->events.new_subsurface,
+			&sway_layer->new_subsurface);
 
 	sway_layer->layer_surface = layer_surface;
 	layer_surface->data = sway_layer;
