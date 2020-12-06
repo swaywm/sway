@@ -45,6 +45,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		}
 	}
 
+	cursor_handle_activity_from_idle_source(cursor, IDLE_SOURCE_POINTER);
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
