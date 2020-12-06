@@ -1424,7 +1424,7 @@ void seat_apply_config(struct sway_seat *seat,
 
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_configure_device(seat, seat_device->input_device);
-		cursor_handle_activity(seat->cursor,
+		cursor_handle_activity_from_device(seat->cursor,
 			seat_device->input_device->wlr_device);
 	}
 }
