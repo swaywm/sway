@@ -173,7 +173,12 @@ bool server_init(struct sway_server *server) {
 
 	server->headless_backend =
 		wlr_headless_backend_create_with_renderer(server->wl_display, renderer);
-	wlr_multi_backend_add(server->backend, server->headless_backend);
+	if (!server->headless_backend) {
+		sway_log(SWAY_INFO, "Failed to create secondary headless backend, "
+			"starting without it");
+	} else {
+		wlr_multi_backend_add(server->backend, server->headless_backend);
+	}
 
 	// This may have been set already via -Dtxn-timeout
 	if (!server->txn_timeout_ms) {
