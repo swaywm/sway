@@ -21,6 +21,7 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->shell
 		&& !criteria->app_id
 		&& !criteria->con_mark
+		&& !criteria->cli_label
 		&& !criteria->con_id
 #if HAVE_XWAYLAND
 		&& !criteria->class
@@ -96,6 +97,7 @@ void criteria_destroy(struct criteria *criteria) {
 	pattern_destroy(criteria->window_role);
 #endif
 	pattern_destroy(criteria->con_mark);
+	pattern_destroy(criteria->cli_label);
 	free(criteria->workspace);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -240,6 +242,26 @@ static bool criteria_matches_view(struct criteria *criteria,
 			break;
 		case PATTERN_PCRE2:
 			if (regex_cmp(app_id, criteria->app_id->regex) != 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->cli_label) {
+		const char *cli_label = view_get_conn_label(view);
+		if (!cli_label) {
+			return false;
+		}
+
+		switch (criteria->cli_label->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(cli_label, view_get_conn_label(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(cli_label, criteria->cli_label->regex) != 0) {
 				return false;
 			}
 			break;
@@ -458,6 +480,7 @@ enum criteria_token {
 	T_APP_ID,
 	T_CON_ID,
 	T_CON_MARK,
+	T_CLI_LABEL,
 	T_FLOATING,
 #if HAVE_XWAYLAND
 	T_CLASS,
@@ -483,6 +506,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_CON_ID;
 	} else if (strcmp(name, "con_mark") == 0) {
 		return T_CON_MARK;
+	} else if (strcmp(name, "cli_label") == 0) {
+		return T_CLI_LABEL;
 #if HAVE_XWAYLAND
 	} else if (strcmp(name, "class") == 0) {
 		return T_CLASS;
@@ -558,6 +583,9 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		break;
 	case T_CON_MARK:
 		pattern_create(&criteria->con_mark, value);
+		break;
+	case T_CLI_LABEL:
+		pattern_create(&criteria->cli_label, value);
 		break;
 #if HAVE_XWAYLAND
 	case T_CLASS:
