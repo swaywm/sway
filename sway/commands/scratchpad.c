@@ -105,12 +105,12 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Scratchpad is empty");
 	}
 
-	if (config->handler_context.using_criteria) {
+	if (config->handler_context.node_overridden) {
 		struct sway_container *con = config->handler_context.container;
 
 		// If the container is in a floating split container,
 		// operate on the split container instead of the child.
-		if (container_is_floating_or_child(con)) {
+		if (con && container_is_floating_or_child(con)) {
 			while (con->pending.parent) {
 				con = con->pending.parent;
 			}
@@ -118,8 +118,9 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 
 		// If using criteria, this command is executed for every container which
 		// matches the criteria. If this container isn't in the scratchpad,
-		// we'll just silently return a success.
-		if (!con->scratchpad) {
+		// we'll just silently return a success. The same is true if the
+		// overridden node is not a container.
+		if (!con || !con->scratchpad) {
 			return cmd_results_new(CMD_SUCCESS, NULL);
 		}
 		scratchpad_toggle_container(con);
