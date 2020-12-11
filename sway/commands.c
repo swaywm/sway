@@ -174,10 +174,11 @@ static const struct cmd_handler *find_core_handler(char *line) {
 			handlers, sizeof(handlers));
 }
 
-static void set_config_node(struct sway_node *node) {
+static void set_config_node(struct sway_node *node, bool node_overridden) {
 	config->handler_context.node = node;
 	config->handler_context.container = NULL;
 	config->handler_context.workspace = NULL;
+	config->handler_context.node_overridden = node_overridden;
 
 	if (node == NULL) {
 		return;
@@ -202,6 +203,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 	char *cmd;
 	char matched_delim = ';';
 	list_t *containers = NULL;
+	bool using_criteria = false;
 
 	if (seat == NULL) {
 		// passing a NULL seat means we just pick the default seat
@@ -225,7 +227,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		for (; isspace(*head); ++head) {}
 		// Extract criteria (valid for this command list only).
 		if (matched_delim == ';') {
-			config->handler_context.using_criteria = false;
+			using_criteria = false;
 			if (*head == '[') {
 				char *error = NULL;
 				struct criteria *criteria = criteria_parse(head, &error);
@@ -239,7 +241,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				containers = criteria_get_containers(criteria);
 				head += strlen(criteria->raw);
 				criteria_destroy(criteria);
-				config->handler_context.using_criteria = true;
+				using_criteria = true;
 				// Skip leading whitespace
 				for (; isspace(*head); ++head) {}
 			}
@@ -278,11 +280,14 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			argv[i] = do_var_replacement(argv[i]);
 		}
 
-		if (!config->handler_context.using_criteria) {
-			// The container or workspace which this command will run on.
-			struct sway_node *node = con ? &con->node :
-					seat_get_focus_inactive(seat, &root->node);
-			set_config_node(node);
+
+		if (!using_criteria) {
+			if (con) {
+				set_config_node(&con->node, true);
+			} else {
+				set_config_node(seat_get_focus_inactive(seat, &root->node),
+						false);
+			}
 			struct cmd_results *res = handler->handle(argc-1, argv+1);
 			list_add(res_list, res);
 			if (res->status == CMD_INVALID) {
@@ -296,7 +301,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			struct cmd_results *fail_res = NULL;
 			for (int i = 0; i < containers->length; ++i) {
 				struct sway_container *container = containers->items[i];
-				set_config_node(&container->node);
+				set_config_node(&container->node, true);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status == CMD_SUCCESS) {
 					free_cmd_results(res);
