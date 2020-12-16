@@ -395,6 +395,8 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 			wlr_subsurface_from_wlr_surface(surface);
 		surface = subsurface->parent;
 	}
+	if (wlr_surface_is_input_popup_surface_v2(surface))
+		return true;
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_from_wlr_surface(surface);
 	return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;

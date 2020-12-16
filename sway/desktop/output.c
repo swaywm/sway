@@ -22,6 +22,7 @@
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/input/text_input.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
@@ -246,6 +247,28 @@ void output_unmanaged_for_each_surface(struct sway_output *output,
 }
 #endif
 
+void output_input_popups_for_each_surface(struct sway_output *output,
+		struct wl_list *input_popups, sway_surface_iterator_func_t iterator,
+		void *user_data) {
+	struct sway_input_popup *popup;
+	wl_list_for_each(popup, input_popups, link) {
+		int lx, ly;
+		if (!sway_input_popup_get_position(popup, &lx, &ly)) {
+			continue;
+		}
+		if (!popup->popup_surface->mapped || !popup->visible) {
+			continue;
+		}
+
+		double ox = lx - output->lx;
+		double oy = ly - output->ly;
+
+		output_surface_for_each_surface(output,
+			popup->popup_surface->surface, ox, oy,
+			iterator, user_data);
+	}
+}
+
 void output_drag_icons_for_each_surface(struct sway_output *output,
 		struct wl_list *drag_icons, sway_surface_iterator_func_t iterator,
 		void *user_data) {
@@ -336,6 +359,9 @@ static void output_for_each_surface(struct sway_output *output,
 overlay:
 	output_layer_for_each_surface(output,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+		iterator, user_data);
+	output_input_popups_for_each_surface(
+		output, &input_manager_current_seat()->im_relay.input_popups,
 		iterator, user_data);
 	output_drag_icons_for_each_surface(output, &root->drag_icons,
 		iterator, user_data);

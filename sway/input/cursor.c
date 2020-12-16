@@ -37,6 +37,28 @@ static uint32_t get_current_time_msec(void) {
 	return now.tv_sec * 1000 + now.tv_nsec / 1000000;
 }
 
+static struct wlr_surface *input_popup_surface_at(struct sway_output *output,
+		struct sway_input_method_relay *relay, double ox, double oy, double *sx, double *sy) {
+	struct sway_input_popup *popup;
+	wl_list_for_each(popup, &relay->input_popups, link) {
+		int lx, ly;
+		if (!sway_input_popup_get_position(popup, &lx, &ly)) {
+			continue;
+		}
+		if (!popup->popup_surface->mapped || !popup->visible) {
+			continue;
+		}
+		double _sx = ox - lx;
+		double _sy = oy - ly;
+		struct wlr_surface *sub = wlr_surface_surface_at(
+			popup->popup_surface->surface, _sx, _sy, sx, sy);
+		if (sub) {
+			return sub;
+		}
+	}
+	return NULL;
+}
+
 static struct wlr_surface *layer_surface_at(struct sway_output *output,
 		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
 	struct sway_layer_surface *sway_layer;
@@ -136,6 +158,11 @@ struct sway_node *node_at_coords(
 	// find the focused workspace on the output for this seat
 	struct sway_workspace *ws = output_get_active_workspace(output);
 	if (!ws) {
+		return NULL;
+	}
+
+	if ((*surface = input_popup_surface_at(output,
+			&seat->im_relay, ox, oy, sx, sy))) {
 		return NULL;
 	}
 
