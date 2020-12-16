@@ -2,7 +2,7 @@
 #define _SWAYBAR_TRAY_TRAY_H
 
 #include "config.h"
-#ifdef HAVE_LIBSYSTEMD
+#if HAVE_LIBSYSTEMD
 #include <systemd/sd-bus.h>
 #elif HAVE_LIBELOGIND
 #include <elogind/sd-bus.h>
