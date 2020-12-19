@@ -34,7 +34,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_resize_floating_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
-	enum wlr_edges edge = e->edge;
+    enum wlr_edges edge;
+    if(config->resizing_corner){
+      edge = config->resizing_corner;
+    } else {
+      edge = e->edge;
+    }
 	struct sway_cursor *cursor = seat->cursor;
 
 	// The amount the mouse has moved since the start of the resize operation

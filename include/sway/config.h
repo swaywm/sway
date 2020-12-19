@@ -15,6 +15,8 @@
 #include "sway/input/tablet.h"
 #include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include <wlr/util/edges.h>
+
 
 // TODO: Refactor this shit
 
@@ -473,6 +475,7 @@ struct sway_config {
 	bool floating_mod_inverse;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
+    enum wlr_edges resizing_corner;
 	char *floating_scroll_up_cmd;
 	char *floating_scroll_down_cmd;
 	char *floating_scroll_left_cmd;
