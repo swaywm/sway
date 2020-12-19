@@ -43,7 +43,7 @@ bool server_privileged_prepare(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Preparing Wayland server initialization");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
+	server->backend = wlr_backend_autocreate(server->wl_display);
 
 	if (!server->backend) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
