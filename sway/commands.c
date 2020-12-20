@@ -78,6 +78,7 @@ static struct cmd_handler handlers[] = {
 	{ "new_float", cmd_new_float },
 	{ "new_window", cmd_new_window },
 	{ "no_focus", cmd_no_focus },
+	{ "no_titlebars", cmd_no_titlebars },
 	{ "output", cmd_output },
 	{ "popup_during_fullscreen", cmd_popup_during_fullscreen },
 	{ "seat", cmd_seat },

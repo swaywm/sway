@@ -511,6 +511,7 @@ struct sway_config {
 
 	bool tiling_drag;
 	int tiling_drag_threshold;
+	bool no_titlebars;
 
 	bool smart_gaps;
 	int gaps_inner;

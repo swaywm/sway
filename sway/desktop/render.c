@@ -659,6 +659,9 @@ static void render_titlebar(struct sway_output *output,
 static void render_top_border(struct sway_output *output,
 		pixman_region32_t *output_damage, struct sway_container *con,
 		struct border_colors *colors) {
+	if (config->no_titlebars) {
+		return;
+	}
 	struct sway_container_state *state = &con->current;
 	if (!state->border_top) {
 		return;

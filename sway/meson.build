@@ -79,6 +79,7 @@ sway_sources = files(
 	'commands/new_float.c',
 	'commands/new_window.c',
 	'commands/no_focus.c',
+	'commands/no_titlebars.c',
 	'commands/nop.c',
 	'commands/output.c',
 	'commands/popup_during_fullscreen.c',

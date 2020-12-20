@@ -617,7 +617,11 @@ void container_update_representation(struct sway_container *con) {
 }
 
 size_t container_titlebar_height(void) {
-	return config->font_height + config->titlebar_v_padding * 2;
+	if (config->no_titlebars) {
+		return 0;
+	} else {
+		return config->font_height + config->titlebar_v_padding * 2;
+	}
 }
 
 void floating_calculate_constraints(int *min_width, int *max_width,

@@ -160,6 +160,7 @@ sway_cmd cmd_opacity;
 sway_cmd cmd_new_float;
 sway_cmd cmd_new_window;
 sway_cmd cmd_no_focus;
+sway_cmd cmd_no_titlebars;
 sway_cmd cmd_output;
 sway_cmd cmd_permit;
 sway_cmd cmd_popup_during_fullscreen;

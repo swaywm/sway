@@ -639,6 +639,9 @@ The default colors are:
 	may make it unnecessarily hard to tell which window originally raised the
 	event. This option allows to set a _timeout_ in ms to delay the urgency hint reset.
 
+*no_titlebars* enable|disable|toggle
+	Do not render titlebars
+
 *titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels
 
