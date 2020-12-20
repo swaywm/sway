@@ -4,36 +4,41 @@ grimshot(1)
 
 grimshot - a helper for screenshots within sway
 
-# DESCRIPTION
+# SYNOPSIS
 
-grimshot [--notify] (copy|save) [TARGET] [FILE]
-grimshot check
-grimshot usage
+*grimshot* [--notify] (copy|save) [TARGET] [FILE]++
+*grimshot* check++
+*grimshot* usage
+
+# OPTIONS
 
 *--notify*
 	Show notifications to the user that a screenshot has been taken.
 
 *save*
 	Save the screenshot into a regular file. Grimshot will write images
-	files to *$XDG_SCREENSHOTS_DIR* if this is set (or defined
-	in `user-dirs.dir`), or otherwise fall back to `$XDG_PICTURES_DIR`
+	files to *XDG_SCREENSHOTS_DIR* if this is set (or defined
+	in *user-dirs.dir*), or otherwise fall back to *XDG_PICTURES_DIR*.
 
 *copy*
 	Copy the screenshot data (as image/png) into the clipboard.
 
-# SYNOPSIS
+# DESCRIPTION
 
-Grimshot is an easy to use screenshot tool for sway. It relies on grim, slurp
-and jq to do the heavy lifting, and mostly provides an easy to use interface.
+Grimshot is an easy-to-use screenshot utility for sway. It provides a
+convenient interface over grim, slurp and jq, and supports storing the
+screenshot either directly to the clipboard using wl-copy or to a file.
 
-A recommended usage pattern is to just bind this to Super+P via sway:
+# EXAMPLES
+
+An example usage pattern is to add these bindings to your sway config:
 
 ```
 # Screenshots:
-# Cmd+P: Current window
-# Cmd+Shift+p: Select area
-# Cmd+Alt+p Current output
-# Cmd+Ctrl+p Select a window
+# Super+P: Current window
+# Super+Shift+p: Select area
+# Super+Alt+p Current output
+# Super+Ctrl+p Select a window
 
 bindsym Mod4+p       exec grimshot save active
 bindsym Mod4+Shift+p exec grimshot save area
@@ -63,8 +68,8 @@ _output_
 
 # OUTPUT
 
-Grimshot will always print the filename of the captured screenshot to
-stdout.
+Grimshot will print the filename of the captured screenshot to stdout if called
+with the _save_ subcommand.
 
 # SEE ALSO
 
