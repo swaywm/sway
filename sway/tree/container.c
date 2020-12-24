@@ -994,6 +994,7 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 	bool enable = true;
 	set_fullscreen_iterator(con, &enable);
 	container_for_each_child(con, set_fullscreen_iterator, &enable);
+	con->fullscreen_mode = FULLSCREEN_WORKSPACE;
 
 	con->saved_x = con->x;
 	con->saved_y = con->y;
@@ -1017,7 +1018,6 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 		}
 	}
 
-	con->fullscreen_mode = FULLSCREEN_WORKSPACE;
 	container_end_mouse_operation(con);
 	ipc_event_window(con, "fullscreen_mode");
 }
