@@ -379,7 +379,6 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
-	bool is_floating = focus && container_is_floating_or_child(focus);
 	// Focused view's popups
 	if (focus && focus->view) {
 		c = surface_at_view(focus, lx, ly, surface, sx, sy);
@@ -392,13 +391,7 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 	if ((c = floating_container_at(lx, ly, surface ,sx ,sy))) {
 		return c;
 	}
-	// Tiling (focused)
-	if (focus && focus->view && !is_floating) {
-		if ((c = surface_at_view(focus, lx, ly, surface, sx, sy))) {
-			return c;
-		}
-	}
-	// Tiling (non-focused)
+	// Tiling
 	if ((c = tiling_container_at(&workspace->node, lx, ly, surface, sx, sy))) {
 		return c;
 	}
