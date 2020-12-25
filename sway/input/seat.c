@@ -1184,6 +1184,11 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		}
 	}
 
+	// If we've focused a floating container, bring it to the front.
+	if (container && config->raise_floating) {
+		container_raise_floating(container);
+	}
+
 	if (new_output_last_ws) {
 		workspace_consider_destroy(new_output_last_ws);
 	}

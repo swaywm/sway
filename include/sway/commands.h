@@ -131,6 +131,7 @@ sway_cmd cmd_floating_modifier;
 sway_cmd cmd_floating_scroll;
 sway_cmd cmd_focus;
 sway_cmd cmd_focus_follows_mouse;
+sway_cmd cmd_raise_floating;
 sway_cmd cmd_focus_on_window_activation;
 sway_cmd cmd_focus_wrapping;
 sway_cmd cmd_font;
