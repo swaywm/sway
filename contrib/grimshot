@@ -12,11 +12,20 @@
 ##
 ## See `man 1 grimshot` or `grimshot usage` for further details.
 
-getTargetDirectory() {
+get_target_directory() {
   test -f "${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs" && \
     . "${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
 
   echo "${XDG_SCREENSHOTS_DIR:-${XDG_PICTURES_DIR:-$HOME}}"
+}
+
+get_target_file() {
+  NAME=$(date +%Y%m%d_%H%M%S)
+  DIR=${1:-$(get_target_directory)}
+  while [ -e "$DIR/$NAME$SUFFIX.png" ]; do
+    SUFFIX="_$((i+=1))"
+  done
+  echo "$DIR/$NAME$SUFFIX.png"
 }
 
 NOTIFY=no
@@ -42,7 +51,7 @@ done
 
 ACTION=${1:-usage}
 SUBJECT=${2:-screen}
-FILE=${3:-$(getTargetDirectory)/$(date -Ins).png}
+FILE=${3:-$(get_target_file)}
 
 if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" ]; then
   echo "Usage:"
