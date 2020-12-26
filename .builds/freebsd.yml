@@ -1,5 +1,6 @@
 image: freebsd/latest
 packages:
+- devel/basu
 - devel/json-c
 - devel/libevdev
 - devel/meson
@@ -32,7 +33,7 @@ tasks:
     cd subprojects
     ln -s ../../wlroots wlroots
     cd ..
-    meson build
+    meson build -Dtray=enabled -Dsd-bus-provider=basu
 - build: |
     cd sway
     ninja -C build
