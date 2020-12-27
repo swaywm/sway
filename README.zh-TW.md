@@ -5,9 +5,6 @@ sway 是一個與 [i3](https://i3wm.org/) 相容的 [Wayland](http://wayland.fre
 頻道](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net)
 
-如果你想支持 sway 的開發，請到 [SirCmpwn's
-Patreon page](https://patreon.com/sircmpwn) 貢獻。
-
 ## 發行簽章
 
 所有發行的版本都會以 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 簽署

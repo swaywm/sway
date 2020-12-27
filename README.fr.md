@@ -6,9 +6,6 @@ avec [i3](https://i3wm.org/), **en cours de développement**.  Lisez la
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway sur
 irc.freenode.net).
 
-Si vous souhaitez soutenir le développement de Sway, vous pouvez contribuer à [la page
-Patreon de SirCmpwn](https://patreon.com/sircmpwn).
-
 ## Aide en français
 
 [abdelq](//github.com/abdelq) fournit du support en français sur IRC et Github, dans le fuseau horaire UTC-4 (EST).

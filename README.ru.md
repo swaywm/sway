@@ -5,9 +5,6 @@ sway - это [i3](https://i3wm.org/)-совместимый композито�
 [IRC-каналу](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-Если вы хотите поддержать разработку sway, сделайте пожертвование SirCmpwn на
-[странице Patreon](https://patreon.com/sircmpwn).
-
 ## Подписи релизов
 
 Релизы подписываются ключом [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

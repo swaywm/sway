@@ -5,9 +5,6 @@ Sway це сумісний з [i3](https://i3wm.org/) композитор [Wayl
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-Якщо ви маєте бажання підтримати розробку sway, ви можете зробити свій внесок на сторінці
-[SirCmpwn у Patreon](https://patreon.com/sircmpwn).
-
 ## Підтримка українською мовою
 
 Якщо ви хочете отримати підтримку українською мовою, можете звернутись до користувача

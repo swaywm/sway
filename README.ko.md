@@ -3,8 +3,6 @@
 sway는 [i3](https://i3wm.org/)-호환 [Wayland](http://wayland.freedesktop.org/) 컴포지터입니다.
 [FAQ](https://github.com/swaywm/sway/wiki)를 읽어보세요. [IRC 채널](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)도 있습니다.
 
-sway 개발을 도우고 싶으시다면, [SirCmpwn의 Patreon 페이지](https://patreon.com/sircmpwn)에 기여해 주세요.
-
 ## 릴리즈 서명
 
 릴리즈는 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)에서 서명되고,

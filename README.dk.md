@@ -4,8 +4,6 @@ Sway er en [i3](https://i3wm.org/)-kompatibel [Wayland](http://wayland.freedeskt
 Læs [Ofte stillede spørgsmål](https://github.com/swaywm/sway/wiki).
 Deltag på [IRC kanalen](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway på irc.freenode.net).
 
-Hvis du har lyst til at støtte sway udviklingen, venligst send bidrag på [Sir Cmpwn's Patreon side](https://patreon.com/sircmpwn).
-
 ## Udgivelses Signaturer
 
 Udgivelser er signeret med [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

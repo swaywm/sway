@@ -1,8 +1,6 @@
 # Sway
 Sway ist ein [i3](https://i3wm.org/)-kompatibler [Wayland](http://wayland.freedesktop.org/)-Compositor. Lies die [FAQ](https://github.com/swaywm/sway/wiki). Tritt dem [IRC Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway on irc.freenode.net; Englisch).
 
-Falls du die Entwicklung von Sway unterstützen möchtest, kannst du das auf [SirCmpwn's Patreon Seite](https://patreon.com/sircmpwn) machen.
-
 ## Signaturen
 Jedes Release wird mit dem PGP-Schlüssel [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) signiert und auf GitHub veröffentlicht.
 

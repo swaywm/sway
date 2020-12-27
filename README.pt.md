@@ -5,9 +5,6 @@ Leia o [FAQ](https://github.com/swaywm/sway/wiki). Junte-se ao [canal do
 IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway em
 irc.freenode.net).
 
-Se você gostaria de apoiar o desenvolvimento do sway, por favor, contribua na [página do patreon de
-SirCmpwn](https://patreon.com/sircmpwn).
-
 ## Assinatura das versões
 
 As versões são assinadas com [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

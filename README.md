@@ -5,9 +5,6 @@
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.freenode.net).
 
-If you'd like to support sway development, please contribute to [SirCmpwn's
-Patreon page].
-
 ## Release Signatures
 
 Releases are signed with [E88F5E48] and published [on GitHub][GitHub releases].
