@@ -15,6 +15,7 @@
 #include "config.h"
 #include "list.h"
 #include "log.h"
+#include "sway/config.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
@@ -53,6 +54,9 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 }
 
 void seat_destroy(struct sway_seat *seat) {
+	if (seat == config->handler_context.seat) {
+		config->handler_context.seat = input_manager_get_default_seat();
+	}
 	struct sway_seat_device *seat_device, *next;
 	wl_list_for_each_safe(seat_device, next, &seat->devices, link) {
 		seat_device_destroy(seat_device);
