@@ -46,10 +46,21 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	free(seat_device);
 }
 
+static void seat_node_destroy(struct sway_seat_node *seat_node) {
+	wl_list_remove(&seat_node->destroy.link);
+	wl_list_remove(&seat_node->link);
+	free(seat_node);
+}
+
 void seat_destroy(struct sway_seat *seat) {
 	struct sway_seat_device *seat_device, *next;
 	wl_list_for_each_safe(seat_device, next, &seat->devices, link) {
 		seat_device_destroy(seat_device);
+	}
+	struct sway_seat_node *seat_node, *next_seat_node;
+	wl_list_for_each_safe(seat_node, next_seat_node, &seat->focus_stack,
+			link) {
+		seat_node_destroy(seat_node);
 	}
 	sway_input_method_relay_finish(&seat->im_relay);
 	sway_cursor_destroy(seat->cursor);
@@ -66,12 +77,6 @@ void seat_destroy(struct sway_seat *seat) {
 	list_free(seat->deferred_bindings);
 	free(seat->prev_workspace_name);
 	free(seat);
-}
-
-static void seat_node_destroy(struct sway_seat_node *seat_node) {
-	wl_list_remove(&seat_node->destroy.link);
-	wl_list_remove(&seat_node->link);
-	free(seat_node);
 }
 
 void seat_idle_notify_activity(struct sway_seat *seat,
