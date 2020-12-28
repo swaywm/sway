@@ -51,6 +51,7 @@ void seat_destroy(struct sway_seat *seat) {
 	wl_list_for_each_safe(seat_device, next, &seat->devices, link) {
 		seat_device_destroy(seat_device);
 	}
+	sway_input_method_relay_finish(&seat->im_relay);
 	sway_cursor_destroy(seat->cursor);
 	wl_list_remove(&seat->new_node.link);
 	wl_list_remove(&seat->request_start_drag.link);

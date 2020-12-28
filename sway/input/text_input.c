@@ -263,6 +263,11 @@ void sway_input_method_relay_init(struct sway_seat *seat,
 		&relay->input_method_new);
 }
 
+void sway_input_method_relay_finish(struct sway_input_method_relay *relay) {
+	wl_list_remove(&relay->input_method_new.link);
+	wl_list_remove(&relay->text_input_new.link);
+}
+
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 		struct wlr_surface *surface) {
 	struct sway_text_input *text_input;
