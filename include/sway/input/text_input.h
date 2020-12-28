@@ -53,6 +53,8 @@ struct sway_text_input {
 void sway_input_method_relay_init(struct sway_seat *seat,
 	struct sway_input_method_relay *relay);
 
+void sway_input_method_relay_finish(struct sway_input_method_relay *relay);
+
 // Updates currently focused surface. Surface must belong to the same seat.
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 	struct wlr_surface *surface);
