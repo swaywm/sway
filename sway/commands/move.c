@@ -120,6 +120,7 @@ static void container_move_to_container_from_direction(
 			int container_index = list_find(siblings, container);
 			int destination_index = list_find(siblings, destination);
 			list_swap(siblings, container_index, destination_index);
+			container_update_representation(container);
 		} else {
 			sway_log(SWAY_DEBUG, "Promoting to sibling of cousin");
 			int offset =
