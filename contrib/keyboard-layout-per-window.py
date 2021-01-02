@@ -37,7 +37,11 @@ def on_window(ipc: i3ipc.connection.Connection, event: i3ipc.events.WindowEvent)
 
 if __name__ == "__main__":
     ipc = i3ipc.Connection()
-    prev_focused = ipc.get_tree().find_focused().id
+    focused = ipc.get_tree().find_focused()
+    if focused:
+        prev_focused = focused.id
+    else:
+        prev_focused = None
     windows = {}
 
     ipc.on("window", on_window)
