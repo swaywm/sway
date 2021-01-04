@@ -8,6 +8,15 @@ irc.freenode.net upfront and discuss your plans.
 Note: rules are made to be broken. Adjust or ignore any/all of these as you see
 fit, but be prepared to justify it to your peers.
 
+## Scope of future changes to sway
+
+**Important**: Sway has completed its core value proposition: it is a fully
+featured Wayland-compatible replacement for i3. It is not our intention to
+expand on the scope of what i3 aims to accomplish. Our priorities now are
+increasing the stability, reliability, and performance of sway within its
+current scope. For this reason, most new window management feature requests are
+not accepted, even if accompanied by a patch.
+
 ## Pull Requests
 
 If you already have your own pull request habits, feel free to use them. If you
