@@ -634,6 +634,12 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 
 	json_object_object_add(object, "marks", marks);
 
+	char last_focused[14];
+	sprintf(last_focused, "%ld%03ld",
+		c->current.last_focused.tv_sec,
+		c->current.last_focused.tv_nsec / 1000000);
+	json_object_object_add(object, "last_focused", json_object_new_string(last_focused));
+
 	if (c->view) {
 		ipc_json_describe_view(c, object);
 	}

@@ -52,6 +52,7 @@ struct sway_container_state {
 
 	struct sway_container *focused_inactive_child;
 	bool focused;
+	struct timespec last_focused;
 
 	enum sway_container_border border;
 	int border_thickness;

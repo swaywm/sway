@@ -152,6 +152,13 @@ static void copy_container_state(struct sway_container *container,
 
 	struct sway_seat *seat = input_manager_current_seat();
 	state->focused = seat_get_focus(seat) == &container->node;
+	if (state->focused) {
+		struct timespec ts;
+		timespec_get(&ts, TIME_UTC);
+		state->last_focused = ts;
+	} else {
+		state->last_focused = container->current.last_focused;
+	}
 
 	if (!container->view) {
 		struct sway_node *focus =
