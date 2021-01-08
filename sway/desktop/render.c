@@ -171,7 +171,7 @@ static void render_layer_toplevel(struct sway_output *output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_layer_for_each_surface_toplevel(output, layer_surfaces,
+	output_layer_for_each_toplevel_surface(output, layer_surfaces,
 		render_surface_iterator, &data);
 }
 
@@ -181,7 +181,7 @@ static void render_layer_popups(struct sway_output *output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_layer_for_each_surface_popup(output, layer_surfaces,
+	output_layer_for_each_popup_surface(output, layer_surfaces,
 		render_surface_iterator, &data);
 }
 
