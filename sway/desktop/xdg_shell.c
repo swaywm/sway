@@ -211,12 +211,13 @@ static void for_each_surface(struct sway_view *view,
 		user_data);
 }
 
-static void for_each_popup(struct sway_view *view,
+static void for_each_popup_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return;
 	}
-	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface, iterator, user_data);
+	wlr_xdg_surface_for_each_popup_surface(view->wlr_xdg_surface, iterator,
+		user_data);
 }
 
 static bool is_transient_for(struct sway_view *child,
@@ -271,7 +272,7 @@ static const struct sway_view_impl view_impl = {
 	.set_resizing = set_resizing,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
-	.for_each_popup = for_each_popup,
+	.for_each_popup_surface = for_each_popup_surface,
 	.is_transient_for = is_transient_for,
 	.close = _close,
 	.close_popups = close_popups,

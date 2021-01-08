@@ -265,24 +265,14 @@ static void render_view_toplevels(struct sway_view *view,
 			render_surface_iterator, &data);
 }
 
-static void render_popup_iterator(struct sway_output *output, struct sway_view *view,
-		struct wlr_surface *surface, struct wlr_box *box, float rotation,
-		void *data) {
-	// Render this popup's surface
-	render_surface_iterator(output, view, surface, box, rotation, data);
-
-	// Render this popup's child toplevels
-	output_surface_for_each_surface(output, surface, box->x, box->y,
-			render_surface_iterator, data);
-}
-
 static void render_view_popups(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct render_data data = {
 		.damage = damage,
 		.alpha = alpha,
 	};
-	output_view_for_each_popup(output, view, render_popup_iterator, &data);
+	output_view_for_each_popup_surface(output, view,
+		render_surface_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view,
