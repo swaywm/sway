@@ -103,7 +103,7 @@ _XCURSOR_THEME_
 
 # AUTHORS
 
-Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
+Maintained by Simon Ser <contact@emersion.fr>, who is assisted by other open
 source contributors. For more information about sway development, see
 <https://github.com/swaywm/sway>.
 

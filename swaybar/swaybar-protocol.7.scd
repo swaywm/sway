@@ -258,12 +258,6 @@ the following properties:
 }
 ```
 
-# AUTHORS
-
-Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
-source contributors. For more information about swaybar development, see
-https://github.com/swaywm/sway.
-
 # SEE ALSO
 
 *sway-bar*(5)
