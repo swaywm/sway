@@ -47,7 +47,7 @@ struct sway_view_impl {
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
-	void (*for_each_popup)(struct sway_view *view,
+	void (*for_each_popup_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	bool (*is_transient_for)(struct sway_view *child,
 			struct sway_view *ancestor);
@@ -297,9 +297,9 @@ void view_for_each_surface(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 /**
- * Iterate all popups recursively.
+ * Iterate all popup surfaces of a view.
  */
-void view_for_each_popup(struct sway_view *view,
+void view_for_each_popup_surface(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation

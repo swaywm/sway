@@ -449,13 +449,13 @@ void view_for_each_surface(struct sway_view *view,
 	}
 }
 
-void view_for_each_popup(struct sway_view *view,
+void view_for_each_popup_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	if (!view->surface) {
 		return;
 	}
-	if (view->impl->for_each_popup) {
-		view->impl->for_each_popup(view, iterator, user_data);
+	if (view->impl->for_each_popup_surface) {
+		view->impl->for_each_popup_surface(view, iterator, user_data);
 	}
 }
 

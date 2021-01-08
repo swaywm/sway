@@ -179,7 +179,7 @@ void output_view_for_each_surface(struct sway_output *output,
 	view_for_each_surface(view, output_for_each_surface_iterator, &data);
 }
 
-void output_view_for_each_popup(struct sway_output *output,
+void output_view_for_each_popup_surface(struct sway_output *output,
 		struct sway_view *view, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct surface_iterator_data data = {
@@ -196,7 +196,7 @@ void output_view_for_each_popup(struct sway_output *output,
 		.rotation = 0, // TODO
 	};
 
-	view_for_each_popup(view, output_for_each_surface_iterator, &data);
+	view_for_each_popup_surface(view, output_for_each_surface_iterator, &data);
 }
 
 void output_layer_for_each_surface(struct sway_output *output,
