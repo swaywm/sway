@@ -243,7 +243,7 @@ void output_layer_for_each_surface(struct sway_output *output,
 	}
 }
 
-void output_layer_for_each_surface_toplevel(struct sway_output *output,
+void output_layer_for_each_toplevel_surface(struct sway_output *output,
 		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct sway_layer_surface *layer_surface;
@@ -257,7 +257,7 @@ void output_layer_for_each_surface_toplevel(struct sway_output *output,
 }
 
 
-void output_layer_for_each_surface_popup(struct sway_output *output,
+void output_layer_for_each_popup_surface(struct sway_output *output,
 		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct sway_layer_surface *layer_surface;
