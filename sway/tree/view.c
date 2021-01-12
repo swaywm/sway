@@ -785,7 +785,18 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	view_execute_criteria(view);
 
-	if (should_focus(view)) {
+	bool set_focus = should_focus(view);
+
+#if HAVE_XWAYLAND
+	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
+		struct wlr_xwayland_surface *xsurface =
+			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
+    	set_focus = (wlr_xwayland_icccm_input_model(xsurface) !=
+			WLR_ICCCM_INPUT_MODEL_NONE) && set_focus;
+	}
+#endif
+
+	if (set_focus) {
 		input_manager_set_focus(&view->container->node);
 	}
 
