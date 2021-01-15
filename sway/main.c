@@ -48,33 +48,33 @@ void sig_handler(int signal) {
 
 void detect_raspi(void) {
 	bool raspi = false;
-	FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
-	if (!f) {
+	FILE *DetectRaspi = fopen("/sys/firmware/devicetree/base/model", "r");
+	if (!DetectRaspi) {
 		return;
 	}
 	char *line = NULL;
 	size_t line_size = 0;
-	while (getline(&line, &line_size, f) != -1) {
+	while (getline(&line, &line_size, DetectRaspi) != -1) {
 		if (strstr(line, "Raspberry Pi")) {
 			raspi = true;
 			break;
 		}
 	}
-	fclose(f);
-	FILE *g = fopen("/proc/modules", "r");
-	if (!g) {
+	fclose(DetectRaspi);
+	FILE *DetectVc4 = fopen("/proc/modules", "r");
+	if (!DetectVc4) {
 		free(line);
 		return;
 	}
 	bool vc4 = false;
-	while (getline(&line, &line_size, g) != -1) {
+	while (getline(&line, &line_size, DetectVc4) != -1) {
 		if (strstr(line, "vc4")) {
 			vc4 = true;
 			break;
 		}
 	}
 	free(line);
-	fclose(g);
+	fclose(DetectVc4);
 	if (!vc4 && raspi) {
 		fprintf(stderr, "\x1B[1;31mWarning: You have a "
 				"Raspberry Pi, but the vc4 Module is "
@@ -84,13 +84,13 @@ void detect_raspi(void) {
 }
 
 void detect_proprietary(int allow_unsupported_gpu) {
-	FILE *f = fopen("/proc/modules", "r");
-	if (!f) {
+	FILE *DetectUnsupportedGpu = fopen("/proc/modules", "r");
+	if (!DetectUnsupportedGpu) {
 		return;
 	}
 	char *line = NULL;
 	size_t line_size = 0;
-	while (getline(&line, &line_size, f) != -1) {
+	while (getline(&line, &line_size, DetectUnsupportedGpu) != -1) {
 		if (strncmp(line, "nvidia ", 7) == 0) {
 			if (allow_unsupported_gpu) {
 				sway_log(SWAY_ERROR,
@@ -118,7 +118,7 @@ void detect_proprietary(int allow_unsupported_gpu) {
 		}
 	}
 	free(line);
-	fclose(f);
+	fclose(DetectUnsupportedGpu);
 }
 
 void run_as_ipc_client(char *command, char *socket_path) {
@@ -157,6 +157,7 @@ static void log_file(FILE *f) {
 }
 
 static void log_distro(void) {
+	FILE *path = NULL;
 	const char *paths[] = {
 		"/etc/lsb-release",
 		"/etc/os-release",
@@ -165,7 +166,7 @@ static void log_distro(void) {
 		"/etc/gentoo-release",
 	};
 	for (size_t i = 0; i < sizeof(paths) / sizeof(char *); ++i) {
-		FILE *f = fopen(paths[i], "r");
+		path = fopen(paths[i], "r");
 		if (f) {
 			sway_log(SWAY_INFO, "Contents of %s:", paths[i]);
 			log_file(f);
@@ -175,13 +176,13 @@ static void log_distro(void) {
 }
 
 static void log_kernel(void) {
-	FILE *f = popen("uname -a", "r");
-	if (!f) {
+	FILE *Kernel = popen("uname -a", "r");
+	if (!Kernel) {
 		sway_log(SWAY_INFO, "Unable to determine kernel version");
 		return;
 	}
-	log_file(f);
-	pclose(f);
+	log_file(Kernel);
+	pclose(Kernel);
 }
 
 
@@ -273,8 +274,9 @@ int main(int argc, char **argv) {
 		"\n";
 
 	int c;
+	int option_index;
 	while (1) {
-		int option_index = 0;
+		option_index = 0;
 		c = getopt_long(argc, argv, "hCdD:vVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
