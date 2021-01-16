@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
 		}
 		switch (c) {
 		case 'h': // help
-			fprintf(stdout, "%s", usage);
+			printf("%s", usage);
 			exit(EXIT_SUCCESS);
 			break;
 		case 'c': // config
@@ -301,7 +301,7 @@ int main(int argc, char **argv) {
 			allow_unsupported_gpu = 1;
 			break;
 		case 'v': // version
-			fprintf(stdout, "sway version " SWAY_VERSION "\n");
+			printf("sway version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		case 'V': // verbose
@@ -309,7 +309,7 @@ int main(int argc, char **argv) {
 			break;
 		case 'p': ; // --get-socketpath
 			if (getenv("SWAYSOCK")) {
-				fprintf(stdout, "%s\n", getenv("SWAYSOCK"));
+				printf("%s\n", getenv("SWAYSOCK"));
 				exit(EXIT_SUCCESS);
 			} else {
 				fprintf(stderr, "sway socket not detected.\n");
