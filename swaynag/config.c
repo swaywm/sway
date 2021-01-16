@@ -234,7 +234,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			}
 			break;
 		case 'v': // Version
-			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
+			printf("swaynag version " SWAY_VERSION "\n");
 			return -1;
 		case TO_COLOR_BACKGROUND: // Background color
 			if (type && !parse_color(optarg, &type->background)) {
