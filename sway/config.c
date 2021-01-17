@@ -410,7 +410,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 	char *real_path = realpath(path, NULL);
 	if (real_path == NULL) {
-		sway_log(SWAY_DEBUG, "%s not found.", path);
+		sway_log(SWAY_ERROR, "%s not found", path);
 		free(path);
 		return false;
 	}
