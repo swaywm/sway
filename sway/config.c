@@ -407,6 +407,10 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	} else {
 		path = get_config_path();
 	}
+	if (path == NULL) {
+		sway_log(SWAY_ERROR, "Cannot find config file");
+		return false;
+	}
 
 	char *real_path = realpath(path, NULL);
 	if (real_path == NULL) {
