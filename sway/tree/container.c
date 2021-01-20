@@ -418,6 +418,28 @@ void container_for_each_child(struct sway_container *container,
 	}
 }
 
+struct sway_container *container_obstructing_fullscreen_container(struct sway_container *container)
+{
+	struct sway_workspace *workspace = container->pending.workspace;
+
+	if (workspace && workspace->fullscreen && !container_is_fullscreen_or_child(container)) {
+		if (container_is_transient_for(container, workspace->fullscreen)) {
+			return NULL;
+		}
+		return workspace->fullscreen;
+	}
+
+	struct sway_container *fullscreen_global = root->fullscreen_global;
+	if (fullscreen_global && container != fullscreen_global && !container_has_ancestor(container, fullscreen_global)) {
+		if (container_is_transient_for(container, fullscreen_global)) {
+			return NULL;
+		}
+		return fullscreen_global;
+	}
+
+	return NULL;
+}
+
 bool container_has_ancestor(struct sway_container *descendant,
 		struct sway_container *ancestor) {
 	while (descendant) {
