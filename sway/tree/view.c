@@ -651,6 +651,18 @@ static void handle_foreign_fullscreen_request(
 		}
 	}
 
+	if (event->fullscreen && event->output && event->output->data) {
+		struct sway_output *output = event->output->data;
+		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (ws && !container_is_scratchpad_hidden(view->container)) {
+			if (container_is_floating(view->container)) {
+				workspace_add_floating(ws, view->container);
+			} else {
+				workspace_add_tiling(ws, view->container);
+			}
+		}
+	}
+
 	container_set_fullscreen(container,
 		event->fullscreen ? FULLSCREEN_WORKSPACE : FULLSCREEN_NONE);
 	if (event->fullscreen) {
