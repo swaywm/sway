@@ -377,6 +377,13 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		if (container_is_scratchpad_hidden_or_child(container)) {
 			root_scratchpad_show(container);
 		}
+		// if we are switching to a container under a fullscreen window, we first
+		// need to exit fullscreen so that the newly focused container becomes visible
+		struct sway_container *obstructing = container_obstructing_fullscreen_container(container);
+		if (obstructing) {
+			container_fullscreen_disable(obstructing);
+			arrange_root();
+		}
 		seat_set_focus_container(seat, container);
 		seat_consider_warp_to_focus(seat);
 		container_raise_floating(container);

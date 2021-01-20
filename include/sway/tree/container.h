@@ -164,6 +164,11 @@ void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 /**
+ * Returns the fullscreen container obstructing this container if it exists.
+ */
+struct sway_container *container_obstructing_fullscreen_container(struct sway_container *container);
+
+/**
  * Returns true if the given container is an ancestor of this container.
  */
 bool container_has_ancestor(struct sway_container *container,

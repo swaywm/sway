@@ -1139,25 +1139,14 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	struct sway_container *container = node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 
-	// Deny setting focus to a view which is hidden by a fullscreen container
-	if (new_workspace && new_workspace->fullscreen && container &&
-			!container_is_fullscreen_or_child(container)) {
-		// Unless it's a transient container
-		if (!container_is_transient_for(container, new_workspace->fullscreen)) {
-			return;
-		}
+	// Deny setting focus to a view which is hidden by a fullscreen container or global
+	if (container && container_obstructing_fullscreen_container(container)) {
+		return;
 	}
+
 	// Deny setting focus to a workspace node when using fullscreen global
 	if (root->fullscreen_global && !container && new_workspace) {
 		return;
-	}
-	// Deny setting focus to a view which is hidden by a fullscreen global
-	if (root->fullscreen_global && container != root->fullscreen_global &&
-				!container_has_ancestor(container, root->fullscreen_global)) {
-		// Unless it's a transient container
-		if (!container_is_transient_for(container, root->fullscreen_global)) {
-			return;
-		}
 	}
 
 	struct sway_output *new_output =
