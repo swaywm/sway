@@ -110,12 +110,12 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	return output;
 }
 
-void output_configure(struct sway_output *output) {
-	if (!sway_assert(!output->configured, "output is already configured")) {
+void output_enable(struct sway_output *output) {
+	if (!sway_assert(!output->enabled, "output is already enabled")) {
 		return;
 	}
 	struct wlr_output *wlr_output = output->wlr_output;
-	output->configured = true;
+	output->enabled = true;
 	list_add(root->outputs, output);
 
 	restore_workspaces(output);
@@ -251,6 +251,11 @@ void output_disable(struct sway_output *output) {
 	if (!sway_assert(output->enabled, "Expected an enabled output")) {
 		return;
 	}
+	int index = list_find(root->outputs, output);
+	if (!sway_assert(index >= 0, "Output not found in root node")) {
+		return;
+	}
+
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
 	wl_signal_emit(&output->events.destroy, output);
 
@@ -258,11 +263,9 @@ void output_disable(struct sway_output *output) {
 
 	root_for_each_container(untrack_output, output);
 
-	int index = list_find(root->outputs, output);
 	list_del(root->outputs, index);
 
 	output->enabled = false;
-	output->configured = false;
 	output->current_mode = NULL;
 
 	arrange_root();

@@ -844,7 +844,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
-	if (!output->configured && !output->enabled) {
+	if (!output->enabled && !output->enabling) {
 		struct output_config *oc = find_output_config(output);
 		if (output->wlr_output->current_mode != NULL &&
 				(!oc || oc->enabled)) {
@@ -857,7 +857,7 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 		}
 		return;
 	}
-	if (!output->enabled || !output->configured) {
+	if (!output->enabled) {
 		return;
 	}
 	arrange_layers(output);
@@ -869,7 +869,7 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
-	if (!output->enabled || !output->configured) {
+	if (!output->enabled) {
 		return;
 	}
 	arrange_layers(output);
@@ -886,7 +886,7 @@ static void update_textures(struct sway_container *con, void *data) {
 
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
-	if (!output->enabled || !output->configured) {
+	if (!output->enabled) {
 		return;
 	}
 	arrange_layers(output);
