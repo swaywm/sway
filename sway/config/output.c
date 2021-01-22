@@ -344,12 +344,12 @@ static void queue_output_config(struct output_config *oc,
 
 	if (oc && (!oc->enabled || oc->dpms_state == DPMS_OFF)) {
 		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
-		wlr_output_enable(wlr_output, false);
+		wlr_output_disable(wlr_output);
 		return;
 	}
 
 	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
-	wlr_output_enable(wlr_output, true);
+	wlr_output_enable(wlr_output);
 
 	if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
@@ -389,7 +389,11 @@ static void queue_output_config(struct output_config *oc,
 	if (oc && oc->adaptive_sync != -1) {
 		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
 			oc->adaptive_sync);
-		wlr_output_enable_adaptive_sync(wlr_output, oc->adaptive_sync == 1);
+		if (oc->adaptive_sync == 1) {
+			wlr_output_enable_adaptive_sync(wlr_output);
+		} else {
+			wlr_output_disable_adaptive_sync(wlr_output);
+		}
 	}
 }
 
