@@ -9,6 +9,7 @@
 #include <wlr/backend/multi.h>
 #include <wlr/backend/noop.h>
 #include <wlr/backend/session.h>
+#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_control_v1.h>
@@ -25,6 +26,11 @@
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#if WLR_HAS_XDG_FOREIGN
+#include <wlr/types/wlr_xdg_foreign_registry.h>
+#include <wlr/types/wlr_xdg_foreign_v1.h>
+#include <wlr/types/wlr_xdg_foreign_v2.h>
+#endif
 #include <wlr/types/wlr_xdg_output_v1.h>
 #include "config.h"
 #include "list.h"
@@ -149,6 +155,13 @@ bool server_init(struct sway_server *server) {
 	wlr_data_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
+
+#if WLR_HAS_XDG_FOREIGN
+	struct wlr_xdg_foreign_registry *foreign_registry =
+		wlr_xdg_foreign_registry_create(server->wl_display);
+	wlr_xdg_foreign_v1_create(server->wl_display, foreign_registry);
+	wlr_xdg_foreign_v2_create(server->wl_display, foreign_registry);
+#endif
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
