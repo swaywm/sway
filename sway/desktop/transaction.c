@@ -238,19 +238,6 @@ static void apply_container_state(struct sway_container *container,
 		}
 	}
 
-	// Damage the new location
-	desktop_damage_whole_container(container);
-	if (view && view->surface) {
-		struct wlr_surface *surface = view->surface;
-		struct wlr_box box = {
-			.x = container->current.content_x - view->geometry.x,
-			.y = container->current.content_y - view->geometry.y,
-			.width = surface->current.width,
-			.height = surface->current.height,
-		};
-		desktop_damage_box(&box);
-	}
-
 	// If the view hasn't responded to the configure, center it within
 	// the container. This is important for fullscreen views which
 	// refuse to resize to the size of the output.
@@ -267,6 +254,19 @@ static void apply_container_state(struct sway_container *container,
 		} else {
 			container->surface_y = container->current.content_y;
 		}
+	}
+
+	// Damage the new location
+	desktop_damage_whole_container(container);
+	if (view && view->surface) {
+		struct wlr_surface *surface = view->surface;
+		struct wlr_box box = {
+			.x = container->current.content_x - view->geometry.x,
+			.y = container->current.content_y - view->geometry.y,
+			.width = surface->current.width,
+			.height = surface->current.height,
+		};
+		desktop_damage_box(&box);
 	}
 
 	if (!container->node.destroying) {
