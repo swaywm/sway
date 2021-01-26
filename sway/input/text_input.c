@@ -144,6 +144,10 @@ static void handle_text_input_disable(struct wl_listener *listener,
 		void *data) {
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
 		text_input_disable);
+	if (text_input->input->focused_surface == NULL) {
+		sway_log(SWAY_DEBUG, "Disabling text input, but no longer focused");
+		return;
+	}
 	relay_disable_text_input(text_input->relay, text_input);
 }
 
