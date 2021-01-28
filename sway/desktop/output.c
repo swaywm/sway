@@ -806,6 +806,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->damage.link);
 	wl_list_remove(&output->frame.link);
 	wl_list_remove(&output->needs_frame.link);
+	wl_list_remove(&output->request_state.link);
 
 	wlr_damage_ring_finish(&output->damage_ring);
 
@@ -893,6 +894,13 @@ static void handle_present(struct wl_listener *listener, void *data) {
 	output->refresh_nsec = output_event->refresh;
 }
 
+static void handle_request_state(struct wl_listener *listener, void *data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, request_state);
+	const struct wlr_output_event_request_state *event = data;
+	wlr_output_commit_state(output->wlr_output, event->state);
+}
+
 static unsigned int last_headless_num = 0;
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -950,6 +958,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->frame.notify = handle_frame;
 	wl_signal_add(&wlr_output->events.needs_frame, &output->needs_frame);
 	output->needs_frame.notify = handle_needs_frame;
+	wl_signal_add(&wlr_output->events.request_state, &output->request_state);
+	output->request_state.notify = handle_request_state;
 
 	output->repaint_timer = wl_event_loop_add_timer(server->wl_event_loop,
 		output_repaint_timer_handler, output);
