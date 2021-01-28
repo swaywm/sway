@@ -1278,8 +1278,7 @@ bool view_is_visible(struct sway_view *view) {
 	struct sway_container *con = view->container;
 	while (con) {
 		enum sway_container_layout layout = container_parent_layout(con);
-		if ((layout == L_TABBED || layout == L_STACKED)
-				&& !container_is_floating(con)) {
+		if (layout == L_TABBED || layout == L_STACKED) {
 			struct sway_node *parent = con->parent ?
 				&con->parent->node : &con->workspace->node;
 			if (seat_get_active_tiling_child(seat, parent) != &con->node) {
