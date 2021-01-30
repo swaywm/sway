@@ -24,8 +24,8 @@ grimshot - a helper for screenshots within sway
 	Copy the screenshot data (as image/png) into the clipboard.
 
 *save-copy*
-	Save the screeshot into a regular file (see above for save) and 
-	copy the screenshot data into the clipboard (see above for copy).
+	Save the screenshot into a regular file (see above for *save*) and 
+	copy the screenshot data into the clipboard (see above for *copy*).
 
 # DESCRIPTION
 
