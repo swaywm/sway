@@ -1234,6 +1234,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 		wlr_seat_keyboard_notify_clear_focus(seat->wlr_seat);
 	}
 
+	sway_input_method_relay_set_focus(&seat->im_relay, surface);
 	seat_tablet_pads_notify_enter(seat, surface);
 }
 
