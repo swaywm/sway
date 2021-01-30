@@ -270,7 +270,16 @@ found:
 			sway_log(SWAY_DEBUG,
 					"Creating workspace %s for pid %d because it disappeared",
 					pw->workspace, pid);
-			ws = workspace_create(pw->output, pw->workspace);
+
+			struct sway_output *output = pw->output;
+			if (pw->output && !pw->output->enabled) {
+				sway_log(SWAY_DEBUG,
+						"Workspace output %s is disabled, trying another one",
+						pw->output->wlr_output->name);
+				output = NULL;
+			}
+
+			ws = workspace_create(output, pw->workspace);
 		}
 
 		pid_workspace_destroy(pw);
