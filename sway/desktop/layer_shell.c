@@ -429,7 +429,7 @@ static struct sway_layer_subsurface *create_subsurface(
 		struct wlr_subsurface *wlr_subsurface,
 		struct sway_layer_surface *layer_surface) {
 	struct sway_layer_subsurface *subsurface =
-			calloc(1, sizeof(struct sway_layer_surface));
+			calloc(1, sizeof(struct sway_layer_subsurface));
 	if (subsurface == NULL) {
 		return NULL;
 	}
