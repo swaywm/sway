@@ -26,7 +26,7 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	char *tmp = NULL;
+	char *cmd = NULL;
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
 		sway_log(SWAY_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		--argc; ++argv;
@@ -36,17 +36,12 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	}
 
 	if (argc == 1 && (argv[0][0] == '\'' || argv[0][0] == '"')) {
-		tmp = strdup(argv[0]);
-		strip_quotes(tmp);
+		cmd = strdup(argv[0]);
+		strip_quotes(cmd);
 	} else {
-		tmp = join_args(argv, argc);
+		cmd = join_args(argv, argc);
 	}
 
-	// Put argument into cmd array
-	char cmd[4096];
-	strncpy(cmd, tmp, sizeof(cmd) - 1);
-	cmd[sizeof(cmd) - 1] = 0;
-	free(tmp);
 	sway_log(SWAY_DEBUG, "Executing %s", cmd);
 
 	int fd[2];
@@ -76,10 +71,12 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 		close(fd[1]);
 		_exit(0); // Close child process
 	} else if (pid < 0) {
+		free(cmd);
 		close(fd[0]);
 		close(fd[1]);
 		return cmd_results_new(CMD_FAILURE, "fork() failed");
 	}
+	free(cmd);
 	close(fd[1]); // close write
 	ssize_t s = 0;
 	while ((size_t)s < sizeof(pid_t)) {
