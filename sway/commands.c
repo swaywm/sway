@@ -42,7 +42,7 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 }
 
 /* Keep alphabetized */
-static struct cmd_handler handlers[] = {
+static const struct cmd_handler handlers[] = {
 	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
@@ -98,7 +98,7 @@ static struct cmd_handler handlers[] = {
 };
 
 /* Config-time only commands. Keep alphabetized */
-static struct cmd_handler config_handlers[] = {
+static const struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
 	{ "include", cmd_include },
 	{ "swaybg_command", cmd_swaybg_command },
@@ -108,7 +108,7 @@ static struct cmd_handler config_handlers[] = {
 };
 
 /* Runtime-only commands. Keep alphabetized */
-static struct cmd_handler command_handlers[] = {
+static const struct cmd_handler command_handlers[] = {
 	{ "border", cmd_border },
 	{ "create_output", cmd_create_output },
 	{ "exit", cmd_exit },
@@ -144,22 +144,22 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
-struct cmd_handler *find_handler(char *line, struct cmd_handler *handlers,
-		size_t handlers_size) {
+const struct cmd_handler *find_handler(char *line,
+		const struct cmd_handler *handlers, size_t handlers_size) {
 	if (!handlers || !handlers_size) {
 		return NULL;
 	}
-	struct cmd_handler query = { .command = line };
+	const struct cmd_handler query = { .command = line };
 	return bsearch(&query, handlers,
 			handlers_size / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 }
 
-static struct cmd_handler *find_handler_ex(char *line,
-		struct cmd_handler *config_handlers, size_t config_handlers_size,
-		struct cmd_handler *command_handlers, size_t command_handlers_size,
-		struct cmd_handler *handlers, size_t handlers_size) {
-	struct cmd_handler *handler = NULL;
+static const struct cmd_handler *find_handler_ex(char *line,
+		const struct cmd_handler *config_handlers, size_t config_handlers_size,
+		const struct cmd_handler *command_handlers, size_t command_handlers_size,
+		const struct cmd_handler *handlers, size_t handlers_size) {
+	const struct cmd_handler *handler = NULL;
 	if (config->reading) {
 		handler = find_handler(line, config_handlers, config_handlers_size);
 	} else if (config->active) {
@@ -168,7 +168,7 @@ static struct cmd_handler *find_handler_ex(char *line,
 	return handler ? handler : find_handler(line, handlers, handlers_size);
 }
 
-static struct cmd_handler *find_core_handler(char *line) {
+static const struct cmd_handler *find_core_handler(char *line) {
 	return find_handler_ex(line, config_handlers, sizeof(config_handlers),
 			command_handlers, sizeof(command_handlers),
 			handlers, sizeof(handlers));
@@ -265,7 +265,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				}
 			}
 		}
-		struct cmd_handler *handler = find_core_handler(argv[0]);
+		const struct cmd_handler *handler = find_core_handler(argv[0]);
 		if (!handler) {
 			list_add(res_list, cmd_results_new(CMD_INVALID,
 					"Unknown/invalid command '%s'", argv[0]));
@@ -370,7 +370,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 
 	// Determine the command handler
 	sway_log(SWAY_INFO, "Config command: %s", exec);
-	struct cmd_handler *handler = find_core_handler(argv[0]);
+	const struct cmd_handler *handler = find_core_handler(argv[0]);
 	if (!handler || !handler->handle) {
 		const char *error = handler
 			? "Command '%s' is shimmed, but unimplemented"
@@ -418,12 +418,12 @@ cleanup:
 }
 
 struct cmd_results *config_subcommand(char **argv, int argc,
-		struct cmd_handler *handlers, size_t handlers_size) {
+		const struct cmd_handler *handlers, size_t handlers_size) {
 	char *command = join_args(argv, argc);
 	sway_log(SWAY_DEBUG, "Subcommand: %s", command);
 	free(command);
 
-	struct cmd_handler *handler = find_handler(argv[0], handlers,
+	const struct cmd_handler *handler = find_handler(argv[0], handlers,
 			handlers_size);
 	if (!handler) {
 		return cmd_results_new(CMD_INVALID,
@@ -453,7 +453,7 @@ struct cmd_results *config_commands_command(char *exec) {
 		goto cleanup;
 	}
 
-	struct cmd_handler *handler = find_handler(cmd, NULL, 0);
+	const struct cmd_handler *handler = find_handler(cmd, NULL, 0);
 	if (!handler && strcmp(cmd, "*") != 0) {
 		results = cmd_results_new(CMD_INVALID,
 			"Unknown/invalid command '%s'", cmd);
