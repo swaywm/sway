@@ -339,7 +339,7 @@ static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
 	seat->axis[axis].discrete_steps += abs(discrete);
 }
 
-static struct wl_pointer_listener pointer_listener = {
+static const struct wl_pointer_listener pointer_listener = {
 	.enter = wl_pointer_enter,
 	.leave = wl_pointer_leave,
 	.motion = wl_pointer_motion,
