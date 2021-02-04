@@ -245,7 +245,7 @@ static void handle_wlr_log(enum wlr_log_importance importance,
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
 
-	static struct option long_options[] = {
+	static const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
 		{"validate", no_argument, NULL, 'C'},
