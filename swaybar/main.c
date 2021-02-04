@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	bool debug = false;
 
-	static struct option long_options[] = {
+	static const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},

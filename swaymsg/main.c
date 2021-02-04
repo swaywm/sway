@@ -343,7 +343,7 @@ int main(int argc, char **argv) {
 
 	sway_log_init(SWAY_INFO, NULL);
 
-	static struct option long_options[] = {
+	static const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"monitor", no_argument, NULL, 'm'},
 		{"pretty", no_argument, NULL, 'p'},
