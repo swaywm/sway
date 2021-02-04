@@ -103,7 +103,7 @@ static void layer_surface_closed(void *data,
 	swaynag_destroy(swaynag);
 }
 
-static struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.configure = layer_surface_configure,
 	.closed = layer_surface_closed,
 };
@@ -124,7 +124,7 @@ static void surface_enter(void *data, struct wl_surface *surface,
 	};
 }
 
-static struct wl_surface_listener surface_listener = {
+static const struct wl_surface_listener surface_listener = {
 	.enter = surface_enter,
 	.leave = nop,
 };
@@ -263,7 +263,7 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	render_frame(swaynag);
 }
 
-static struct wl_pointer_listener pointer_listener = {
+static const struct wl_pointer_listener pointer_listener = {
 	.enter = wl_pointer_enter,
 	.leave = nop,
 	.motion = wl_pointer_motion,
@@ -289,7 +289,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	}
 }
 
-const struct wl_seat_listener seat_listener = {
+static const struct wl_seat_listener seat_listener = {
 	.capabilities = seat_handle_capabilities,
 	.name = nop,
 };
@@ -305,7 +305,7 @@ static void output_scale(void *data, struct wl_output *output,
 	}
 }
 
-static struct wl_output_listener output_listener = {
+static const struct wl_output_listener output_listener = {
 	.geometry = nop,
 	.mode = nop,
 	.done = nop,
@@ -327,7 +327,7 @@ static void xdg_output_handle_name(void *data,
 	swaynag_output->swaynag->querying_outputs--;
 }
 
-static struct zxdg_output_v1_listener xdg_output_listener = {
+static const struct zxdg_output_v1_listener xdg_output_listener = {
 	.logical_position = nop,
 	.logical_size = nop,
 	.done = nop,
