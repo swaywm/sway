@@ -178,6 +178,8 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaynag_seat *seat = data;
 	struct swaynag_pointer *pointer = &seat->pointer;
+	pointer->x = wl_fixed_to_int(surface_x);
+	pointer->y = wl_fixed_to_int(surface_y);
 	pointer->serial = serial;
 	update_cursor(seat);
 }
