@@ -1350,8 +1350,8 @@ static void view_save_buffer_iterator(struct wlr_surface *surface,
 		saved_buffer->buffer = surface->buffer;
 		saved_buffer->width = surface->current.width;
 		saved_buffer->height = surface->current.height;
-		saved_buffer->x = sx;
-		saved_buffer->y = sy;
+		saved_buffer->x = view->container->surface_x + sx;
+		saved_buffer->y = view->container->surface_y + sy;
 		saved_buffer->transform = surface->current.transform;
 		wlr_surface_get_buffer_source_box(surface, &saved_buffer->source_box);
 		wl_list_insert(&view->saved_buffers, &saved_buffer->link);

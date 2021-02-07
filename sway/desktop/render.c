@@ -289,10 +289,8 @@ static void render_saved_view(struct sway_view *view,
 		}
 
 		struct wlr_box box = {
-			.x = view->container->surface_x - output->lx -
-				view->saved_geometry.x + saved_buf->x,
-			.y = view->container->surface_y - output->ly -
-				view->saved_geometry.y + saved_buf->y,
+			.x = saved_buf->x - view->saved_geometry.x - output->lx,
+			.y = saved_buf->y - view->saved_geometry.y - output->ly,
 			.width = saved_buf->width,
 			.height = saved_buf->height,
 		};
