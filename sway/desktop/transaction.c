@@ -214,8 +214,8 @@ static void apply_container_state(struct sway_container *container,
 		struct sway_saved_buffer *saved_buf;
 		wl_list_for_each(saved_buf, &view->saved_buffers, link) {
 			struct wlr_box box = {
-				.x = container->current.content_x - view->saved_geometry.x + saved_buf->x,
-				.y = container->current.content_y - view->saved_geometry.y + saved_buf->y,
+				.x = saved_buf->x - view->saved_geometry.x,
+				.y = saved_buf->y - view->saved_geometry.y,
 				.width = saved_buf->width,
 				.height = saved_buf->height,
 			};
