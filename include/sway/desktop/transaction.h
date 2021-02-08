@@ -51,10 +51,4 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
 void transaction_notify_view_ready_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height);
 
-/**
- * Unconditionally notify the transaction system that a view is ready for the
- * new layout.
- */
-void transaction_notify_view_ready_immediately(struct sway_view *view);
-
 #endif

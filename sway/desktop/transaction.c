@@ -521,14 +521,6 @@ void transaction_notify_view_ready_by_geometry(struct sway_view *view,
 	}
 }
 
-void transaction_notify_view_ready_immediately(struct sway_view *view) {
-	struct sway_transaction_instruction *instruction =
-			view->container->node.instruction;
-	if (instruction != NULL) {
-		set_instruction_ready(instruction);
-	}
-}
-
 static void _transaction_commit_dirty(bool server_request) {
 	if (!server.dirty_nodes->length) {
 		return;
