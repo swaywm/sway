@@ -20,6 +20,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
+#include "sway/input/libinput.h"
 #include "sway/input/seat.h"
 #include "sway/input/switch.h"
 #include "sway/input/tablet.h"
@@ -666,6 +667,40 @@ static void seat_reset_input_config(struct sway_seat *seat,
 		sway_device->input_device->wlr_device, NULL);
 }
 
+static bool has_prefix(const char *str, const char *prefix) {
+	return strncmp(str, prefix, strlen(prefix)) == 0;
+}
+
+/**
+ * Get the name of the built-in output, if any. Returns NULL if there isn't
+ * exactly one built-in output.
+ */
+static const char *get_builtin_output_name(void) {
+	const char *match = NULL;
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		const char *name = output->wlr_output->name;
+		if (has_prefix(name, "eDP-") || has_prefix(name, "LVDS-") ||
+				has_prefix(name, "DSI-")) {
+			if (match != NULL) {
+				return NULL;
+			}
+			match = name;
+		}
+	}
+	return match;
+}
+
+static bool is_touch_or_tablet_tool(struct sway_seat_device *seat_device) {
+	switch (seat_device->input_device->wlr_device->type) {
+	case WLR_INPUT_DEVICE_TOUCH:
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static void seat_apply_input_config(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	struct input_config *ic =
@@ -681,7 +716,21 @@ static void seat_apply_input_config(struct sway_seat *seat,
 
 	switch (mapped_to) {
 	case MAPPED_TO_DEFAULT:
+		/*
+		 * If the wlroots backend provides an output name, use that.
+		 *
+		 * Otherwise, try to map built-in touch and tablet tool devices to the
+		 * built-in output.
+		 */
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
+		if (mapped_to_output == NULL && is_touch_or_tablet_tool(sway_device) &&
+				sway_libinput_device_is_builtin(sway_device->input_device)) {
+			mapped_to_output = get_builtin_output_name();
+			if (mapped_to_output) {
+				sway_log(SWAY_DEBUG, "Auto-detected output '%s' for device '%s'",
+					mapped_to_output, sway_device->input_device->identifier);
+			}
+		}
 		if (mapped_to_output == NULL) {
 			return;
 		}

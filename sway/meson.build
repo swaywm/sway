@@ -208,6 +208,7 @@ sway_deps = [
 	jsonc,
 	libevdev,
 	libinput,
+	libudev,
 	math,
 	pango,
 	pcre,
