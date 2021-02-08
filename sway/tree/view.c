@@ -887,6 +887,16 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	}
 }
 
+void view_center_surface(struct sway_view *view) {
+	struct sway_container *con = view->container;
+	// We always center the current coordinates rather than the next, as the
+	// geometry immediately affects the currently active rendering.
+	con->surface_x = fmax(con->current.content_x, con->current.content_x +
+			(con->current.content_width - view->geometry.width) / 2);
+	con->surface_y = fmax(con->current.content_y, con->current.content_y +
+			(con->current.content_height - view->geometry.height) / 2);
+}
+
 static const struct sway_view_child_impl subsurface_impl;
 
 static void subsurface_get_root_coords(struct sway_view_child *child,
