@@ -20,7 +20,6 @@
 #include "util.h"
 #include "sway/commands.h"
 #include "sway/desktop.h"
-#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
@@ -383,7 +382,6 @@ static void handle_pointer_motion_relative(
 
 	pointer_motion(cursor, e->time_msec, e->device, e->delta_x, e->delta_y,
 			e->unaccel_dx, e->unaccel_dy);
-	transaction_commit_dirty();
 }
 
 static void handle_pointer_motion_absolute(
@@ -401,7 +399,6 @@ static void handle_pointer_motion_absolute(
 	double dy = ly - cursor->cursor->y;
 
 	pointer_motion(cursor, event->time_msec, event->device, dx, dy, dx, dy);
-	transaction_commit_dirty();
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
@@ -431,7 +428,6 @@ static void handle_pointer_button(struct wl_listener *listener, void *data) {
 	cursor_handle_activity_from_device(cursor, event->device);
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
-	transaction_commit_dirty();
 }
 
 void dispatch_cursor_axis(struct sway_cursor *cursor,
@@ -444,7 +440,6 @@ static void handle_pointer_axis(struct wl_listener *listener, void *data) {
 	struct wlr_event_pointer_axis *event = data;
 	cursor_handle_activity_from_device(cursor, event->device);
 	dispatch_cursor_axis(cursor, event);
-	transaction_commit_dirty();
 }
 
 static void handle_pointer_frame(struct wl_listener *listener, void *data) {
@@ -495,7 +490,6 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
 				BTN_LEFT, WLR_BUTTON_PRESSED);
 		wlr_seat_pointer_notify_frame(wlr_seat);
-		transaction_commit_dirty();
 	}
 }
 
@@ -512,7 +506,6 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 			dispatch_cursor_button(cursor, event->device, event->time_msec,
 					BTN_LEFT, WLR_BUTTON_RELEASED);
 			wlr_seat_pointer_notify_frame(wlr_seat);
-			transaction_commit_dirty();
 		}
 	} else {
 		wlr_seat_touch_notify_up(wlr_seat, event->time_msec, event->touch_id);
@@ -553,7 +546,6 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 			dx = lx - cursor->cursor->x;
 			dy = ly - cursor->cursor->y;
 			pointer_motion(cursor, event->time_msec, event->device, dx, dy, dx, dy);
-			transaction_commit_dirty();
 		}
 	} else if (surface) {
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
@@ -639,8 +631,6 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
 	}
-
-	transaction_commit_dirty();
 }
 
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
@@ -720,7 +710,6 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
 			BTN_LEFT, WLR_BUTTON_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-		transaction_commit_dirty();
 	} else if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
 		// If we started holding the tool tip down on a surface that accepts
 		// tablet v2, we should notify that surface if it gets released over a
@@ -733,7 +722,6 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 			dispatch_cursor_button(cursor, event->device, event->time_msec,
 				BTN_LEFT, WLR_BUTTON_PRESSED);
 			wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-			transaction_commit_dirty();
 		}
 	} else {
 		seatop_tablet_tool_tip(seat, sway_tool, event->time_msec, event->state);
@@ -820,7 +808,6 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 			break;
 		}
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-		transaction_commit_dirty();
 		return;
 	}
 

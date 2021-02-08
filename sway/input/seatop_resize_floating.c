@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
@@ -27,6 +28,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	if (seat->cursor->pressed_button_count == 0) {
 		container_set_resizing(con, false);
 		arrange_container(con); // Send configure w/o resizing hint
+		transaction_commit_dirty();
 		seatop_begin_default(seat);
 	}
 }
@@ -133,6 +135,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	con->content_height += relative_grow_height;
 
 	arrange_container(con);
+	transaction_commit_dirty();
 }
 
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
@@ -176,6 +179,7 @@ void seatop_begin_resize_floating(struct sway_seat *seat,
 
 	container_set_resizing(con, true);
 	container_raise_floating(con);
+	transaction_commit_dirty();
 
 	const char *image = edge == WLR_EDGE_NONE ?
 		"se-resize" : wlr_xcursor_get_resize_name(edge);

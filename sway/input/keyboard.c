@@ -9,7 +9,6 @@
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include "sway/commands.h"
-#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
@@ -500,7 +499,6 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		}
 	}
 
-	transaction_commit_dirty();
 
 	free(device_identifier);
 }
@@ -587,7 +585,6 @@ static int handle_keyboard_repeat(void *data) {
 
 		seat_execute_command(keyboard->seat_device->sway_seat,
 				keyboard->repeat_binding);
-		transaction_commit_dirty();
 	}
 	return 0;
 }

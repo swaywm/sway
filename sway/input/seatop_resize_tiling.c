@@ -2,6 +2,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/util/edges.h>
 #include "sway/commands.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
@@ -67,6 +68,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 				arrange_workspace(e->v_con->workspace);
 			}
 		}
+		transaction_commit_dirty();
 		seatop_begin_default(seat);
 	}
 }
@@ -99,6 +101,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	if (amount_y != 0) {
 		container_resize_tiled(e->v_con, e->edge_y, amount_y);
 	}
+	transaction_commit_dirty();
 }
 
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
@@ -158,5 +161,6 @@ void seatop_begin_resize_tiling(struct sway_seat *seat,
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
 
+	transaction_commit_dirty();
 	wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 }

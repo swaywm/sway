@@ -3,6 +3,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/util/edges.h>
 #include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
@@ -214,6 +215,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	} else {
 		handle_motion_prethreshold(seat);
 	}
+	transaction_commit_dirty();
 }
 
 static bool is_parallel(enum sway_container_layout layout,
@@ -294,6 +296,7 @@ static void finalize_move(struct sway_seat *seat) {
 		arrange_workspace(new_ws);
 	}
 
+	transaction_commit_dirty();
 	seatop_begin_default(seat);
 }
 
@@ -348,6 +351,7 @@ void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
 	seat->seatop_data = e;
 
 	container_raise_floating(con);
+	transaction_commit_dirty();
 	wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 }
 
