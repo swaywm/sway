@@ -255,18 +255,7 @@ static void apply_container_state(struct sway_container *container,
 	// the container. This is important for fullscreen views which
 	// refuse to resize to the size of the output.
 	if (view && view->surface) {
-		if (view->geometry.width < container->current.content_width) {
-			container->surface_x = container->current.content_x +
-				(container->current.content_width - view->geometry.width) / 2;
-		} else {
-			container->surface_x = container->current.content_x;
-		}
-		if (view->geometry.height < container->current.content_height) {
-			container->surface_y = container->current.content_y +
-				(container->current.content_height - view->geometry.height) / 2;
-		} else {
-			container->surface_y = container->current.content_y;
-		}
+		view_center_surface(view);
 	}
 
 	if (!container->node.destroying) {
