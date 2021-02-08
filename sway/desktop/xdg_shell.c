@@ -295,17 +295,20 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	if (new_size) {
 		// The view has unexpectedly sent a new size
 		desktop_damage_view(view);
-		view_update_size(view, new_geo.width, new_geo.height);
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		if (container_is_floating(view->container)) {
+			view_update_size(view, new_geo.width, new_geo.height);
+			transaction_commit_dirty();
+			transaction_notify_view_ready_immediately(view);
+		} else {
+			view_center_surface(view);
+		}
 		desktop_damage_view(view);
-		transaction_commit_dirty();
 	}
 
 	if (view->container->node.instruction) {
 		transaction_notify_view_ready_by_serial(view,
 				xdg_surface->configure_serial);
-	} else if (new_size) {
-		transaction_notify_view_ready_immediately(view);
 	}
 
 	view_damage_from(view);

@@ -406,22 +406,25 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	} else {
 		struct wlr_box new_geo;
 		get_geometry(view, &new_geo);
+		bool new_size = new_geo.width != view->geometry.width ||
+				new_geo.height != view->geometry.height ||
+				new_geo.x != view->geometry.x ||
+				new_geo.y != view->geometry.y;
 
-		if ((new_geo.width != view->geometry.width ||
-					new_geo.height != view->geometry.height ||
-					new_geo.x != view->geometry.x ||
-					new_geo.y != view->geometry.y)) {
+		if (new_size) {
 			// The view has unexpectedly sent a new size
 			// eg. The Firefox "Save As" dialog when downloading a file
 			desktop_damage_view(view);
-			view_update_size(view, new_geo.width, new_geo.height);
 			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-			desktop_damage_view(view);
-			transaction_commit_dirty();
-			transaction_notify_view_ready_by_geometry(view,
+			if (container_is_floating(view->container)) {
+				view_update_size(view, new_geo.width, new_geo.height);
+				transaction_commit_dirty();
+				transaction_notify_view_ready_by_geometry(view,
 					xsurface->x, xsurface->y, new_geo.width, new_geo.height);
-		} else {
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+			} else {
+				view_center_surface(view);
+			}
+			desktop_damage_view(view);
 		}
 	}
 

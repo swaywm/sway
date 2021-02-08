@@ -874,17 +874,9 @@ void view_unmap(struct sway_view *view) {
 
 void view_update_size(struct sway_view *view, int width, int height) {
 	struct sway_container *con = view->container;
-
-	if (container_is_floating(con)) {
-		con->content_width = width;
-		con->content_height = height;
-		container_set_geometry_from_content(con);
-	} else {
-		con->surface_x = con->content_x + (con->content_width - width) / 2;
-		con->surface_y = con->content_y + (con->content_height - height) / 2;
-		con->surface_x = fmax(con->surface_x, con->content_x);
-		con->surface_y = fmax(con->surface_y, con->content_y);
-	}
+	con->content_width = width;
+	con->content_height = height;
+	container_set_geometry_from_content(con);
 }
 
 void view_center_surface(struct sway_view *view) {
