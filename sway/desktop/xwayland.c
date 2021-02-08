@@ -399,33 +399,30 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	struct wlr_surface_state *state = &xsurface->surface->current;
 
+	struct wlr_box new_geo;
+	get_geometry(view, &new_geo);
+	bool new_size = new_geo.width != view->geometry.width ||
+			new_geo.height != view->geometry.height ||
+			new_geo.x != view->geometry.x ||
+			new_geo.y != view->geometry.y;
+
+	if (new_size) {
+		// The view has unexpectedly sent a new size
+		// eg. The Firefox "Save As" dialog when downloading a file
+		desktop_damage_view(view);
+		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		if (container_is_floating(view->container)) {
+			view_update_size(view, new_geo.width, new_geo.height);
+			transaction_commit_dirty();
+		} else {
+			view_center_surface(view);
+		}
+		desktop_damage_view(view);
+	}
+
 	if (view->container->node.instruction) {
-		get_geometry(view, &view->geometry);
 		transaction_notify_view_ready_by_geometry(view,
 				xsurface->x, xsurface->y, state->width, state->height);
-	} else {
-		struct wlr_box new_geo;
-		get_geometry(view, &new_geo);
-		bool new_size = new_geo.width != view->geometry.width ||
-				new_geo.height != view->geometry.height ||
-				new_geo.x != view->geometry.x ||
-				new_geo.y != view->geometry.y;
-
-		if (new_size) {
-			// The view has unexpectedly sent a new size
-			// eg. The Firefox "Save As" dialog when downloading a file
-			desktop_damage_view(view);
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-			if (container_is_floating(view->container)) {
-				view_update_size(view, new_geo.width, new_geo.height);
-				transaction_commit_dirty();
-				transaction_notify_view_ready_by_geometry(view,
-					xsurface->x, xsurface->y, new_geo.width, new_geo.height);
-			} else {
-				view_center_surface(view);
-			}
-			desktop_damage_view(view);
-		}
 	}
 
 	view_damage_from(view);
