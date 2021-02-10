@@ -1,42 +1,43 @@
 # sway
 
-sway - это [i3](https://i3wm.org/)-совместимый композитор [Wayland](http://wayland.freedesktop.org/).
-Больше информации в [FAQ](https://github.com/swaywm/sway/wiki). Присоединяйтесь к
-[IRC-каналу](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
+**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Danish][dk] - [한국어][ko] - [Română][ro]
+
+sway - это [i3]-совместимый композитор [Wayland].
+Больше информации в [FAQ]. Присоединяйтесь к
+[IRC-каналу][IRC channel] (#sway на
 irc.freenode.net).
 
 ## Подписи релизов
 
-Релизы подписываются ключом [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
-и публикуются [на GitHub](https://github.com/swaywm/sway/releases).
+Релизы подписываются ключом [E88F5E48] и публикуются [на GitHub][GitHub releases].
 
 ## Установка
 
 ### Из репозиториев
 
-sway доступен во многих дистрибутивах. Попробуйте установить пакет "sway".
-Если он вдруг недоступен, проверьте [эту страницу на wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
-для получения информации о подробностях установки для вашего
-дистрибутива.
+Sway доступен во многих дистрибутивах. Попробуйте установить пакет "sway".
 
-Если вы заинтересованы поддерживать sway в вашем дистрибутиве, загляните в наш IRC-канал
-или обратитесь на sir@cmpwn.com за советом.
+Если Вас интересует создание пакета sway для вашего дистрибутива, зайдите [IRC-канал][IRC channel]
+или отправьте письмо на sir@cmpwn.com за советом.
 
 ### Сборка из исходников
+
+Посетите [эту страницу на вики][Development setup], если вы хотите создать HEAD
+sway и wlroots для тестирования или разработки. 
 
 Установите зависимости:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots]
 * wayland
 * wayland-protocols \*
 * pcre
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (необязательно: для работы трея)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (необязательно: для сборки man-страниц) \*
-* git \*
+* gdk-pixbuf2 (опционально: для работы трея)
+* [scdoc] (опционально: для man-страниц) \*
+* git (опционально: для информации о версии) \*
 
 _\*Зависимости для сборки_
 
@@ -63,3 +64,28 @@ sway сбросит root-права при запуске.
 
 Выполните команду `sway` прямо из TTY. Некоторые дисплейные менеджеры могут работать, но они не поддерживаются со стороны
 sway (gdm работает довольно неплохо).
+
+[en]: https://github.com/swaywm/sway#readme
+[ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
+[fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
+[uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
+[es]: https://github.com/swaywm/sway/blob/master/README.es.md
+[pl]: https://github.com/swaywm/sway/blob/master/README.pl.md
+[zh-CN]: https://github.com/swaywm/sway/blob/master/README.zh-CN.md
+[de]: https://github.com/swaywm/sway/blob/master/README.de.md
+[nl]: https://github.com/swaywm/sway/blob/master/README.nl.md
+[ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
+[zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
+[pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
+[dk]: https://github.com/swaywm/sway/blob/master/README.dk.md
+[ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
+[ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: http://webchat.freenode.net/?channels=sway&uio=d4
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://github.com/swaywm/wlroots
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc
