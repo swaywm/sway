@@ -1,7 +1,5 @@
 # sway
 
-**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Danish][dk] - [한국어][ko] - [Română][ro]
-
 sway - это [i3]-совместимый композитор [Wayland].
 Больше информации в [FAQ]. Присоединяйтесь к
 [IRC-каналу][IRC channel] (#sway на
@@ -65,21 +63,6 @@ sway сбросит root-права при запуске.
 Выполните команду `sway` прямо из TTY. Некоторые дисплейные менеджеры могут работать, но они не поддерживаются со стороны
 sway (gdm работает довольно неплохо).
 
-[en]: https://github.com/swaywm/sway#readme
-[ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
-[fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
-[uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
-[es]: https://github.com/swaywm/sway/blob/master/README.es.md
-[pl]: https://github.com/swaywm/sway/blob/master/README.pl.md
-[zh-CN]: https://github.com/swaywm/sway/blob/master/README.zh-CN.md
-[de]: https://github.com/swaywm/sway/blob/master/README.de.md
-[nl]: https://github.com/swaywm/sway/blob/master/README.nl.md
-[ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
-[zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
-[pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
-[dk]: https://github.com/swaywm/sway/blob/master/README.dk.md
-[ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
-[ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
