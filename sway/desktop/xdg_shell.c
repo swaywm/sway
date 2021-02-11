@@ -284,20 +284,25 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xdg_shell_view, commit);
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_surface *xdg_surface = view->wlr_xdg_surface;
+	struct wlr_surface *surface = xdg_surface->surface;
 
 	struct wlr_box new_geo;
 	wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
 	bool new_size = new_geo.width != view->geometry.width ||
 			new_geo.height != view->geometry.height ||
 			new_geo.x != view->geometry.x ||
-			new_geo.y != view->geometry.y;
+			new_geo.y != view->geometry.y ||
+			surface->sx != 0 ||
+			surface->sy != 0;
 
 	if (new_size) {
 		// The view has unexpectedly sent a new size
 		desktop_damage_view(view);
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
-			view_update_size(view);
+			view_update_size(view, xdg_surface->surface->sx, xdg_surface->surface->sy);
+			xdg_surface->surface->sx = 0;
+			xdg_surface->surface->sy = 0;
 			transaction_commit_dirty();
 			transaction_notify_view_ready_immediately(view);
 		} else {

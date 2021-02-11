@@ -412,7 +412,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		desktop_damage_view(view);
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
-			view_update_size(view);
+			view_update_size(view, 0, 0);
 			transaction_commit_dirty();
 		} else {
 			view_center_surface(view);

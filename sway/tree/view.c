@@ -872,10 +872,13 @@ void view_unmap(struct sway_view *view) {
 	view->surface = NULL;
 }
 
-void view_update_size(struct sway_view *view) {
+void view_update_size(struct sway_view *view, int dx, int dy) {
 	struct sway_container *con = view->container;
+	con->content_x += dx;
+	con->content_y += dy;
 	con->content_width = view->geometry.width;
 	con->content_height = view->geometry.height;
+
 	container_set_geometry_from_content(con);
 }
 
