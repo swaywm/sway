@@ -128,8 +128,8 @@ static void copy_workspace_state(struct sway_workspace *ws,
 	// Set focused_inactive_child to the direct tiling child
 	struct sway_container *focus = seat_get_focus_inactive_tiling(seat, ws);
 	if (focus) {
-		while (focus->parent) {
-			focus = focus->parent;
+		while (focus->pending.parent) {
+			focus = focus->pending.parent;
 		}
 	}
 	state->focused_inactive_child = focus;
@@ -139,32 +139,19 @@ static void copy_container_state(struct sway_container *container,
 		struct sway_transaction_instruction *instruction) {
 	struct sway_container_state *state = &instruction->container_state;
 
-	state->layout = container->layout;
-	state->x = container->x;
-	state->y = container->y;
-	state->width = container->width;
-	state->height = container->height;
-	state->fullscreen_mode = container->fullscreen_mode;
-	state->parent = container->parent;
-	state->workspace = container->workspace;
-	state->border = container->border;
-	state->border_thickness = container->border_thickness;
-	state->border_top = container->border_top;
-	state->border_left = container->border_left;
-	state->border_right = container->border_right;
-	state->border_bottom = container->border_bottom;
-	state->content_x = container->content_x;
-	state->content_y = container->content_y;
-	state->content_width = container->content_width;
-	state->content_height = container->content_height;
+	if (state->children) {
+		list_free(state->children);
+	}
+
+	memcpy(state, &container->pending, sizeof(struct sway_container_state));
 
 	if (!container->view) {
-		if (state->children) {
-			state->children->length = 0;
-		} else {
-			state->children = create_list();
-		}
-		list_cat(state->children, container->children);
+		// We store a copy of the child list to avoid having it mutated after
+		// we copy the state.
+		state->children = create_list();
+		list_cat(state->children, container->pending.children);
+	} else {
+		state->children = NULL;
 	}
 
 	struct sway_seat *seat = input_manager_current_seat();

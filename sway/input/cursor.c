@@ -824,8 +824,8 @@ static void check_constraint_region(struct sway_cursor *cursor) {
 
 		struct sway_container *con = view->container;
 
-		double sx = cursor->cursor->x - con->content_x + view->geometry.x;
-		double sy = cursor->cursor->y - con->content_y + view->geometry.y;
+		double sx = cursor->cursor->x - con->pending.content_x + view->geometry.x;
+		double sy = cursor->cursor->y - con->pending.content_y + view->geometry.y;
 
 		if (!pixman_region32_contains_point(region,
 				floor(sx), floor(sy), NULL)) {
@@ -836,8 +836,8 @@ static void check_constraint_region(struct sway_cursor *cursor) {
 				double sy = (boxes[0].y1 + boxes[0].y2) / 2.;
 
 				wlr_cursor_warp_closest(cursor->cursor, NULL,
-					sx + con->content_x - view->geometry.x,
-					sy + con->content_y - view->geometry.y);
+					sx + con->pending.content_x - view->geometry.x,
+					sy + con->pending.content_y - view->geometry.y);
 
 				cursor_rebase(cursor);
 			}
@@ -1157,8 +1157,8 @@ void cursor_warp_to_container(struct sway_cursor *cursor,
 		return;
 	}
 
-	double x = container->x + container->width / 2.0;
-	double y = container->y + container->height / 2.0;
+	double x = container->pending.x + container->pending.width / 2.0;
+	double y = container->pending.y + container->pending.height / 2.0;
 
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
 	cursor_unhide(cursor);
@@ -1271,8 +1271,8 @@ static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 		struct sway_view *view = view_from_wlr_surface(constraint->surface);
 		struct sway_container *con = view->container;
 
-		double lx = sx + con->content_x - view->geometry.x;
-		double ly = sy + con->content_y - view->geometry.y;
+		double lx = sx + con->pending.content_x - view->geometry.x;
+		double ly = sy + con->pending.content_y - view->geometry.y;
 
 		wlr_cursor_warp(cursor->cursor, NULL, lx, ly);
 

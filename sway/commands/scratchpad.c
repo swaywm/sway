@@ -21,8 +21,8 @@ static void scratchpad_toggle_auto(void) {
 	// If the focus is in a floating split container,
 	// operate on the split container instead of the child.
 	if (focus && container_is_floating_or_child(focus)) {
-		while (focus->parent) {
-			focus = focus->parent;
+		while (focus->pending.parent) {
+			focus = focus->pending.parent;
 		}
 	}
 
@@ -52,7 +52,7 @@ static void scratchpad_toggle_auto(void) {
 	// In this case we move it to the current workspace.
 	for (int i = 0; i < root->scratchpad->length; ++i) {
 		struct sway_container *con = root->scratchpad->items[i];
-		if (con->parent) {
+		if (con->pending.parent) {
 			sway_log(SWAY_DEBUG,
 					"Moving a visible scratchpad window (%s) to this workspace",
 					con->title);
@@ -80,7 +80,7 @@ static void scratchpad_toggle_container(struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	// Check if it matches a currently visible scratchpad window and hide it.
-	if (con->workspace && ws == con->workspace) {
+	if (con->pending.workspace && ws == con->pending.workspace) {
 		root_scratchpad_hide(con);
 		return;
 	}
@@ -111,8 +111,8 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		// If the container is in a floating split container,
 		// operate on the split container instead of the child.
 		if (container_is_floating_or_child(con)) {
-			while (con->parent) {
-				con = con->parent;
+			while (con->pending.parent) {
+				con = con->pending.parent;
 			}
 		}
 
