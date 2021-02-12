@@ -86,7 +86,11 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 static void copy_output_state(struct sway_output *output,
 		struct sway_transaction_instruction *instruction) {
 	struct sway_output_state *state = &instruction->output_state;
-	state->workspaces = create_list();
+	if (state->workspaces) {
+		state->workspaces->length = 0;
+	} else {
+		state->workspaces = create_list();
+	}
 	list_cat(state->workspaces, output->workspaces);
 
 	state->active_workspace = output_get_active_workspace(output);
@@ -104,8 +108,16 @@ static void copy_workspace_state(struct sway_workspace *ws,
 	state->layout = ws->layout;
 
 	state->output = ws->output;
-	state->floating = create_list();
-	state->tiling = create_list();
+	if (state->floating) {
+		state->floating->length = 0;
+	} else {
+		state->floating = create_list();
+	}
+	if (state->tiling) {
+		state->tiling->length = 0;
+	} else {
+		state->tiling = create_list();
+	}
 	list_cat(state->floating, ws->floating);
 	list_cat(state->tiling, ws->tiling);
 
@@ -146,7 +158,11 @@ static void copy_container_state(struct sway_container *container,
 	state->content_height = container->content_height;
 
 	if (!container->view) {
-		state->children = create_list();
+		if (state->children) {
+			state->children->length = 0;
+		} else {
+			state->children = create_list();
+		}
 		list_cat(state->children, container->children);
 	}
 
@@ -162,13 +178,32 @@ static void copy_container_state(struct sway_container *container,
 
 static void transaction_add_node(struct sway_transaction *transaction,
 		struct sway_node *node) {
-	struct sway_transaction_instruction *instruction =
-		calloc(1, sizeof(struct sway_transaction_instruction));
-	if (!sway_assert(instruction, "Unable to allocate instruction")) {
-		return;
+	struct sway_transaction_instruction *instruction = NULL;
+
+	// Check if we have an instruction for this node already, in which case we
+	// update that instead of creating a new one.
+	if (node->ntxnrefs > 0) {
+		for (int idx = 0; idx < transaction->instructions->length; idx++) {
+			struct sway_transaction_instruction *other =
+				transaction->instructions->items[idx];
+			if (other->node == node) {
+				instruction = other;
+				break;
+			}
+		}
 	}
-	instruction->transaction = transaction;
-	instruction->node = node;
+
+	if (!instruction) {
+		instruction = calloc(1, sizeof(struct sway_transaction_instruction));
+		if (!sway_assert(instruction, "Unable to allocate instruction")) {
+			return;
+		}
+		instruction->transaction = transaction;
+		instruction->node = node;
+
+		list_add(transaction->instructions, instruction);
+		node->ntxnrefs++;
+	}
 
 	switch (node->type) {
 	case N_ROOT:
@@ -183,9 +218,6 @@ static void transaction_add_node(struct sway_transaction *transaction,
 		copy_container_state(node->sway_container, instruction);
 		break;
 	}
-
-	list_add(transaction->instructions, instruction);
-	node->ntxnrefs++;
 }
 
 static void apply_output_state(struct sway_output *output,
@@ -306,70 +338,25 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	cursor_rebase_all();
 }
 
-static void transaction_commit(struct sway_transaction *transaction);
+static void transaction_commit_pending(void);
 
-// Return true if both transactions operate on the same nodes
-static bool transaction_same_nodes(struct sway_transaction *a,
-		struct sway_transaction *b) {
-	if (a->instructions->length != b->instructions->length) {
-		return false;
-	}
-	for (int i = 0; i < a->instructions->length; ++i) {
-		struct sway_transaction_instruction *a_inst = a->instructions->items[i];
-		struct sway_transaction_instruction *b_inst = b->instructions->items[i];
-		if (a_inst->node != b_inst->node) {
-			return false;
-		}
-	}
-	return true;
-}
-
-static void transaction_progress_queue(void) {
-	if (!server.transactions->length) {
+static void transaction_progress(void) {
+	if (!server.queued_transaction) {
 		return;
 	}
-	// Only the first transaction in the queue is committed, so that's the one
-	// we try to process.
-	struct sway_transaction *transaction = server.transactions->items[0];
-	if (transaction->num_waiting) {
+	if (server.queued_transaction->num_waiting > 0) {
 		return;
 	}
-	transaction_apply(transaction);
-	transaction_destroy(transaction);
-	list_del(server.transactions, 0);
+	transaction_apply(server.queued_transaction);
+	transaction_destroy(server.queued_transaction);
+	server.queued_transaction = NULL;
 
-	if (server.transactions->length == 0) {
-		// The transaction queue is empty, so we're done.
+	if (!server.pending_transaction) {
 		sway_idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 		return;
 	}
 
-	// If there's a bunch of consecutive transactions which all apply to the
-	// same views, skip all except the last one.
-	while (server.transactions->length >= 2) {
-		struct sway_transaction *txn = server.transactions->items[0];
-		struct sway_transaction *dup = NULL;
-
-		for (int i = 1; i < server.transactions->length; i++) {
-			struct sway_transaction *maybe_dup = server.transactions->items[i];
-			if (transaction_same_nodes(txn, maybe_dup)) {
-				dup = maybe_dup;
-				break;
-			}
-		}
-
-		if (dup) {
-			list_del(server.transactions, 0);
-			transaction_destroy(txn);
-		} else {
-			break;
-		}
-	}
-
-	// We again commit the first transaction in the queue to process it.
-	transaction = server.transactions->items[0];
-	transaction_commit(transaction);
-	transaction_progress_queue();
+	transaction_commit_pending();
 }
 
 static int handle_timeout(void *data) {
@@ -377,7 +364,7 @@ static int handle_timeout(void *data) {
 	sway_log(SWAY_DEBUG, "Transaction %p timed out (%zi waiting)",
 			transaction, transaction->num_waiting);
 	transaction->num_waiting = 0;
-	transaction_progress_queue();
+	transaction_progress();
 	return 0;
 }
 
@@ -472,6 +459,17 @@ static void transaction_commit(struct sway_transaction *transaction) {
 	}
 }
 
+static void transaction_commit_pending(void) {
+	if (server.queued_transaction) {
+		return;
+	}
+	struct sway_transaction *transaction = server.pending_transaction;
+	server.pending_transaction = NULL;
+	server.queued_transaction = transaction;
+	transaction_commit(transaction);
+	transaction_progress();
+}
+
 static void set_instruction_ready(
 		struct sway_transaction_instruction *instruction) {
 	struct sway_transaction *transaction = instruction->transaction;
@@ -496,7 +494,7 @@ static void set_instruction_ready(
 	}
 
 	instruction->node->instruction = NULL;
-	transaction_progress_queue();
+	transaction_progress();
 }
 
 void transaction_notify_view_ready_by_serial(struct sway_view *view,
@@ -533,24 +531,20 @@ void transaction_commit_dirty(void) {
 	if (!server.dirty_nodes->length) {
 		return;
 	}
-	struct sway_transaction *transaction = transaction_create();
-	if (!transaction) {
-		return;
+
+	if (!server.pending_transaction) {
+		server.pending_transaction = transaction_create();
+		if (!server.pending_transaction) {
+			return;
+		}
 	}
+
 	for (int i = 0; i < server.dirty_nodes->length; ++i) {
 		struct sway_node *node = server.dirty_nodes->items[i];
-		transaction_add_node(transaction, node);
+		transaction_add_node(server.pending_transaction, node);
 		node->dirty = false;
 	}
 	server.dirty_nodes->length = 0;
 
-	list_add(server.transactions, transaction);
-
-	// We only commit the first transaction added to the queue.
-	if (server.transactions->length == 1) {
-		transaction_commit(transaction);
-		// Attempting to progress the queue here is useful
-		// if the transaction has nothing to wait for.
-		transaction_progress_queue();
-	}
+	transaction_commit_pending();
 }
