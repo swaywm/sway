@@ -456,27 +456,27 @@ static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	bool tab_or_stack = parent_layout == L_TABBED || parent_layout == L_STACKED;
 	if (((!tab_or_stack || container_is_floating(c)) &&
 				c->current.border != B_NORMAL) ||
-			c->fullscreen_mode != FULLSCREEN_NONE ||
-			c->workspace == NULL) {
+			c->pending.fullscreen_mode != FULLSCREEN_NONE ||
+			c->pending.workspace == NULL) {
 		deco_rect->x = deco_rect->y = deco_rect->width = deco_rect->height = 0;
 		return;
 	}
 
-	if (c->parent) {
-		deco_rect->x = c->x - c->parent->x;
-		deco_rect->y = c->y - c->parent->y;
+	if (c->pending.parent) {
+		deco_rect->x = c->pending.x - c->pending.parent->pending.x;
+		deco_rect->y = c->pending.y - c->pending.parent->pending.y;
 	} else {
-		deco_rect->x = c->x - c->workspace->x;
-		deco_rect->y = c->y - c->workspace->y;
+		deco_rect->x = c->pending.x - c->pending.workspace->x;
+		deco_rect->y = c->pending.y - c->pending.workspace->y;
 	}
-	deco_rect->width = c->width;
+	deco_rect->width = c->pending.width;
 	deco_rect->height = container_titlebar_height();
 
 	if (!container_is_floating(c)) {
 		if (parent_layout == L_TABBED) {
-			deco_rect->width = c->parent
-				? c->parent->width / c->parent->children->length
-				: c->workspace->width / c->workspace->tiling->length;
+			deco_rect->width = c->pending.parent
+				? c->pending.parent->pending.width / c->pending.parent->pending.children->length
+				: c->pending.workspace->width / c->pending.workspace->tiling->length;
 			deco_rect->x += deco_rect->width * container_sibling_index(c);
 		} else if (parent_layout == L_STACKED) {
 			if (!c->view) {
@@ -499,10 +499,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "visible", json_object_new_boolean(visible));
 
 	struct wlr_box window_box = {
-		c->content_x - c->x,
+		c->pending.content_x - c->pending.x,
 		(c->current.border == B_PIXEL) ? c->current.border_thickness : 0,
-		c->content_width,
-		c->content_height
+		c->pending.content_width,
+		c->pending.content_height
 	};
 
 	json_object_object_add(object, "window_rect", ipc_json_create_rect(&window_box));
@@ -595,11 +595,11 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 
 	json_object_object_add(object, "layout",
 			json_object_new_string(
-				ipc_json_layout_description(c->layout)));
+				ipc_json_layout_description(c->pending.layout)));
 
 	json_object_object_add(object, "orientation",
 			json_object_new_string(
-				ipc_json_orientation_description(c->layout)));
+				ipc_json_orientation_description(c->pending.layout)));
 
 	bool urgent = c->view ?
 		view_is_urgent(c->view) : container_has_urgent_child(c);
@@ -607,7 +607,7 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	json_object_object_add(object, "sticky", json_object_new_boolean(c->is_sticky));
 
 	json_object_object_add(object, "fullscreen_mode",
-			json_object_new_int(c->fullscreen_mode));
+			json_object_new_int(c->pending.fullscreen_mode));
 
 	struct sway_node *parent = node_get_parent(&c->node);
 	struct wlr_box parent_box = {0, 0, 0, 0};
@@ -617,8 +617,8 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	}
 
 	if (parent_box.width != 0 && parent_box.height != 0) {
-		double percent = ((double)c->width / parent_box.width)
-				* ((double)c->height / parent_box.height);
+		double percent = ((double)c->pending.width / parent_box.width)
+				* ((double)c->pending.height / parent_box.height);
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 
@@ -749,10 +749,10 @@ json_object *ipc_json_describe_node_recursive(struct sway_node *node) {
 		}
 		break;
 	case N_CONTAINER:
-		if (node->sway_container->children) {
-			for (i = 0; i < node->sway_container->children->length; ++i) {
+		if (node->sway_container->pending.children) {
+			for (i = 0; i < node->sway_container->pending.children->length; ++i) {
 				struct sway_container *child =
-					node->sway_container->children->items[i];
+					node->sway_container->pending.children->items[i];
 				json_object_array_add(children,
 						ipc_json_describe_node_recursive(&child->node));
 			}

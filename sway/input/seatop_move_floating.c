@@ -15,7 +15,7 @@ static void finalize_move(struct sway_seat *seat) {
 
 	// We "move" the container to its own location
 	// so it discovers its output again.
-	container_floating_move_to(e->con, e->con->x, e->con->y);
+	container_floating_move_to(e->con, e->con->pending.x, e->con->pending.y);
 	transaction_commit_dirty();
 
 	seatop_begin_default(seat);
@@ -70,8 +70,8 @@ void seatop_begin_move_floating(struct sway_seat *seat,
 		return;
 	}
 	e->con = con;
-	e->dx = cursor->cursor->x - con->x;
-	e->dy = cursor->cursor->y - con->y;
+	e->dx = cursor->cursor->x - con->pending.x;
+	e->dy = cursor->cursor->y - con->pending.y;
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;

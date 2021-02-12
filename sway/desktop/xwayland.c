@@ -527,10 +527,10 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		view->natural_height = ev->height;
 		container_floating_resize_and_center(view->container);
 
-		configure(view, view->container->content_x,
-				view->container->content_y,
-				view->container->content_width,
-				view->container->content_height);
+		configure(view, view->container->pending.content_x,
+				view->container->pending.content_y,
+				view->container->pending.content_width,
+				view->container->pending.content_height);
 		node_set_dirty(&view->container->node);
 	} else {
 		configure(view, view->container->current.content_x,

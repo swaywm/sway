@@ -46,9 +46,9 @@ struct sway_container_state {
 
 	enum sway_fullscreen_mode fullscreen_mode;
 
-	struct sway_workspace *workspace;
-	struct sway_container *parent;
-	list_t *children;
+	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
+	struct sway_container *parent;    // NULL if container in root of workspace
+	list_t *children;                 // struct sway_container
 
 	struct sway_container *focused_inactive_child;
 	bool focused;
@@ -60,6 +60,7 @@ struct sway_container_state {
 	bool border_left;
 	bool border_right;
 
+	// These are in layout coordinates.
 	double content_x, content_y;
 	double content_width, content_height;
 };
@@ -68,14 +69,12 @@ struct sway_container {
 	struct sway_node node;
 	struct sway_view *view;
 
-	// The pending state is the main container properties, and the current state is in the below struct.
-	// This means most places of the code can refer to the main variables (pending state) and it'll just work.
 	struct sway_container_state current;
+	struct sway_container_state pending;
 
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
 
-	enum sway_container_layout layout;
 	enum sway_container_layout prev_split_layout;
 
 	// Whether stickiness has been enabled on this container. Use
@@ -86,10 +85,12 @@ struct sway_container {
 	// For C_ROOT, this has no meaning
 	// For other types, this is the position in layout coordinates
 	// Includes borders
-	double x, y;
-	double width, height;
 	double saved_x, saved_y;
 	double saved_width, saved_height;
+
+	// Used when the view changes to CSD unexpectedly. This will be a non-B_CSD
+	// border which we use to restore when the view returns to SSD.
+	enum sway_container_border saved_border;
 
 	// The share of the space of parent container this container occupies
 	double width_fraction;
@@ -100,32 +101,10 @@ struct sway_container {
 	double child_total_width;
 	double child_total_height;
 
-	// These are in layout coordinates.
-	double content_x, content_y;
-	int content_width, content_height;
-
 	// In most cases this is the same as the content x and y, but if the view
 	// refuses to resize to the content dimensions then it can be smaller.
 	// These are in layout coordinates.
 	double surface_x, surface_y;
-
-	enum sway_fullscreen_mode fullscreen_mode;
-
-	enum sway_container_border border;
-
-	// Used when the view changes to CSD unexpectedly. This will be a non-B_CSD
-	// border which we use to restore when the view returns to SSD.
-	enum sway_container_border saved_border;
-
-	int border_thickness;
-	bool border_top;
-	bool border_bottom;
-	bool border_left;
-	bool border_right;
-
-	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
-	struct sway_container *parent;    // NULL if container in root of workspace
-	list_t *children;                 // struct sway_container
 
 	// Outputs currently being intersected
 	list_t *outputs; // struct sway_output

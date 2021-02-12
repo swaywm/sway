@@ -186,7 +186,7 @@ static void set_config_node(struct sway_node *node) {
 	switch (node->type) {
 	case N_CONTAINER:
 		config->handler_context.container = node->sway_container;
-		config->handler_context.workspace = node->sway_container->workspace;
+		config->handler_context.workspace = node->sway_container->pending.workspace;
 		break;
 	case N_WORKSPACE:
 		config->handler_context.workspace = node->sway_workspace;

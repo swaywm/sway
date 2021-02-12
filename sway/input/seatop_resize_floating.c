@@ -118,21 +118,21 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 
 	// Determine the amounts we need to bump everything relative to the current
 	// size.
-	int relative_grow_width = width - con->width;
-	int relative_grow_height = height - con->height;
-	int relative_grow_x = (e->ref_con_lx + grow_x) - con->x;
-	int relative_grow_y = (e->ref_con_ly + grow_y) - con->y;
+	int relative_grow_width = width - con->pending.width;
+	int relative_grow_height = height - con->pending.height;
+	int relative_grow_x = (e->ref_con_lx + grow_x) - con->pending.x;
+	int relative_grow_y = (e->ref_con_ly + grow_y) - con->pending.y;
 
 	// Actually resize stuff
-	con->x += relative_grow_x;
-	con->y += relative_grow_y;
-	con->width += relative_grow_width;
-	con->height += relative_grow_height;
+	con->pending.x += relative_grow_x;
+	con->pending.y += relative_grow_y;
+	con->pending.width += relative_grow_width;
+	con->pending.height += relative_grow_height;
 
-	con->content_x += relative_grow_x;
-	con->content_y += relative_grow_y;
-	con->content_width += relative_grow_width;
-	con->content_height += relative_grow_height;
+	con->pending.content_x += relative_grow_x;
+	con->pending.content_y += relative_grow_y;
+	con->pending.content_width += relative_grow_width;
+	con->pending.content_height += relative_grow_height;
 
 	arrange_container(con);
 	transaction_commit_dirty();
@@ -169,10 +169,10 @@ void seatop_begin_resize_floating(struct sway_seat *seat,
 	e->edge = edge == WLR_EDGE_NONE ? WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT : edge;
 	e->ref_lx = seat->cursor->cursor->x;
 	e->ref_ly = seat->cursor->cursor->y;
-	e->ref_con_lx = con->x;
-	e->ref_con_ly = con->y;
-	e->ref_width = con->width;
-	e->ref_height = con->height;
+	e->ref_con_lx = con->pending.x;
+	e->ref_con_ly = con->pending.y;
+	e->ref_width = con->pending.width;
+	e->ref_height = con->pending.height;
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
