@@ -199,7 +199,6 @@ bool server_init(struct sway_server *server) {
 	}
 
 	server->dirty_nodes = create_list();
-	server->transactions = create_list();
 
 	server->input = input_manager_create(server);
 	input_manager_get_default_seat(); // create seat0
@@ -215,7 +214,6 @@ void server_fini(struct sway_server *server) {
 	wl_display_destroy_clients(server->wl_display);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
-	list_free(server->transactions);
 }
 
 bool server_start(struct sway_server *server) {
