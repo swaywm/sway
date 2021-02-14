@@ -35,6 +35,7 @@ struct sway_transaction_instruction {
 		struct sway_container_state container_state;
 	};
 	uint32_t serial;
+	bool waiting;
 };
 
 static struct sway_transaction *transaction_create(void) {
@@ -420,13 +421,18 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_node *node = instruction->node;
+		bool hidden = node_is_view(node) &&
+			!view_is_visible(node->sway_container->view);
 		if (should_configure(node, instruction)) {
 			instruction->serial = view_configure(node->sway_container->view,
 					instruction->container_state.content_x,
 					instruction->container_state.content_y,
 					instruction->container_state.content_width,
 					instruction->container_state.content_height);
-			++transaction->num_waiting;
+			if (!hidden) {
+				instruction->waiting = true;
+				++transaction->num_waiting;
+			}
 
 			// From here on we are rendering a saved buffer of the view, which
 			// means we can send a frame done event to make the client redraw it
@@ -437,7 +443,8 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			wlr_surface_send_frame_done(
 					node->sway_container->view->surface, &now);
 		}
-		if (node_is_view(node) && wl_list_empty(&node->sway_container->view->saved_buffers)) {
+		if (!hidden && node_is_view(node) &&
+				wl_list_empty(&node->sway_container->view->saved_buffers)) {
 			view_save_buffer(node->sway_container->view);
 			memcpy(&node->sway_container->view->saved_geometry,
 					&node->sway_container->view->geometry,
@@ -490,7 +497,8 @@ static void set_instruction_ready(
 	}
 
 	// If the transaction has timed out then its num_waiting will be 0 already.
-	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
+	if (instruction->waiting && transaction->num_waiting > 0 &&
+			--transaction->num_waiting == 0) {
 		sway_log(SWAY_DEBUG, "Transaction %p is ready", transaction);
 		wl_event_source_timer_update(transaction->timer, 0);
 	}
