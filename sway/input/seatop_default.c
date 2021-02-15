@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/input/tablet.h"
@@ -530,6 +531,7 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		if (focus && hovered_output != node_get_output(focus)) {
 			struct sway_workspace *ws = output_get_active_workspace(hovered_output);
 			seat_set_focus(seat, &ws->node);
+			transaction_commit_dirty();
 		}
 		return;
 	}
@@ -541,6 +543,7 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		struct sway_output *hovered_output = node_get_output(hovered_node);
 		if (hovered_output != focused_output) {
 			seat_set_focus(seat, seat_get_focus_inactive(seat, hovered_node));
+			transaction_commit_dirty();
 		}
 		return;
 	}
@@ -556,6 +559,7 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		if (hovered_node != e->previous_node ||
 				config->focus_follows_mouse == FOLLOWS_ALWAYS) {
 			seat_set_focus(seat, hovered_node);
+			transaction_commit_dirty();
 		}
 	}
 }
