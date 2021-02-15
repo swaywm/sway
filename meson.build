@@ -65,26 +65,23 @@ wlroots_proj = subproject(
 	required: false,
 	version: wlroots_version,
 )
+if wlroots_proj.found()
+	wlroots = wlroots_proj.get_variable('wlroots')
+else
+	wlroots = dependency('wlroots', version: wlroots_version)
+endif
+
 wlroots_features = {
 	'xwayland': false,
 	'systemd': false,
 	'elogind': false,
 	'libseat': false,
 }
-if wlroots_proj.found()
-	wlroots = wlroots_proj.get_variable('wlroots')
-	wlroots_conf = wlroots_proj.get_variable('conf_data')
-	foreach name, _ : wlroots_features
-		has = wlroots_conf.get('WLR_HAS_' + name.to_upper()) == 1
-		wlroots_features += { name: has }
-	endforeach
-else
-	wlroots = dependency('wlroots', version: wlroots_version)
-	foreach name, _ : wlroots_features
-		has = cc.get_define('WLR_HAS_' + name.to_upper(), prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
-		wlroots_features += { name: has }
-	endforeach
-endif
+foreach name, _ : wlroots_features
+	var_name = 'have_' + name.underscorify()
+	have = wlroots.get_variable(pkgconfig: var_name, internal: var_name) == 'true'
+	wlroots_features += { name: have }
+endforeach
 
 if get_option('xwayland').enabled() and not wlroots_features['xwayland']
 	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
