@@ -601,15 +601,13 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	// clean-up, destroying parents if the container was the last child
 	if (old_parent) {
 		container_reap_empty(old_parent);
-	} else if (old_ws) {
-		workspace_consider_destroy(old_ws);
 	}
 
 	// arrange windows
 	if (root->fullscreen_global) {
 		arrange_root();
 	} else {
-		if (old_ws && !old_ws->node.destroying) {
+		if (old_ws) {
 			arrange_workspace(old_ws);
 		}
 		arrange_node(node_get_parent(destination));
@@ -642,8 +640,6 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 		free(ws_name);
 		seat_set_raw_focus(seat, &ws->node);
 	}
-
-	workspace_consider_destroy(new_output_old_ws);
 
 	output_sort_workspaces(output);
 	struct sway_node *focus = seat_get_focus_inactive(seat, &workspace->node);
@@ -740,8 +736,6 @@ static struct cmd_results *cmd_move_in_direction(
 	// clean-up, destroying parents if the container was the last child
 	if (old_parent) {
 		container_reap_empty(old_parent);
-	} else if (old_ws) {
-		workspace_consider_destroy(old_ws);
 	}
 
 	struct sway_workspace *new_ws = container->workspace;

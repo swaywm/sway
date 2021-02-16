@@ -36,12 +36,10 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 					"Expected output to have a workspace");
 		}
 		if (container->workspace != active_workspace) {
-			struct sway_workspace *old_workspace = container->workspace;
 			container_detach(container);
 			workspace_add_floating(active_workspace, container);
 			container_handle_fullscreen_reparent(container);
 			arrange_workspace(active_workspace);
-			workspace_consider_destroy(old_workspace);
 		}
 	}
 

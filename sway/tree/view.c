@@ -843,14 +843,12 @@ void view_unmap(struct sway_view *view) {
 	container_begin_destroy(view->container);
 	if (parent) {
 		container_reap_empty(parent);
-	} else if (ws) {
-		workspace_consider_destroy(ws);
 	}
 
 	if (root->fullscreen_global) {
 		// Container may have been a child of the root fullscreen container
 		arrange_root();
-	} else if (ws && !ws->node.destroying) {
+	} else if (ws) {
 		arrange_workspace(ws);
 		workspace_detect_urgent(ws);
 	}

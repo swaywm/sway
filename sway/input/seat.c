@@ -1194,13 +1194,6 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		}
 	}
 
-	if (new_output_last_ws) {
-		workspace_consider_destroy(new_output_last_ws);
-	}
-	if (last_workspace && last_workspace != new_output_last_ws) {
-		workspace_consider_destroy(last_workspace);
-	}
-
 	seat->has_focus = true;
 
 	if (config->smart_gaps && new_workspace) {

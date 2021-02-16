@@ -131,7 +131,6 @@ void root_scratchpad_show(struct sway_container *con) {
 	// Show the container
 	if (old_ws) {
 		container_detach(con);
-		workspace_consider_destroy(old_ws);
 	} else {
 		// Act on the ancestor of scratchpad hidden split containers
 		while (con->parent) {

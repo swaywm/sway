@@ -121,7 +121,6 @@ void container_reap_empty(struct sway_container *con) {
 	if (con->view) {
 		return;
 	}
-	struct sway_workspace *ws = con->workspace;
 	while (con) {
 		if (con->children->length) {
 			return;
@@ -129,9 +128,6 @@ void container_reap_empty(struct sway_container *con) {
 		struct sway_container *parent = con->parent;
 		container_begin_destroy(con);
 		con = parent;
-	}
-	if (ws) {
-		workspace_consider_destroy(ws);
 	}
 }
 
