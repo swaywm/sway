@@ -232,6 +232,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 				wlr_layer_surface_v1_from_wlr_surface(surface);
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(seat, layer);
+			transaction_commit_dirty();
 		}
 	} else if (cont) {
 		bool is_floating_or_child = container_is_floating_or_child(cont);
@@ -269,6 +270,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 			seat_set_focus_surface(seat, xsurface->surface, false);
+			transaction_commit_dirty();
 		}
 	}
 #endif
@@ -357,6 +359,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	if (node && node->type == N_WORKSPACE) {
 		if (state == WLR_BUTTON_PRESSED) {
 			seat_set_focus(seat, node);
+			transaction_commit_dirty();
 		}
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
@@ -368,6 +371,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			wlr_layer_surface_v1_from_wlr_surface(surface);
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(seat, layer);
+			transaction_commit_dirty();
 		}
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
@@ -488,6 +492,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	if (cont && state == WLR_BUTTON_PRESSED) {
 		node = seat_get_focus_inactive(seat, &cont->node);
 		seat_set_focus(seat, node);
+		transaction_commit_dirty();
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
@@ -502,6 +507,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 			seat_set_focus_surface(seat, xsurface->surface, false);
+			transaction_commit_dirty();
 			seat_pointer_notify_button(seat, time_msec, button, state);
 			return;
 		}
@@ -718,6 +724,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 			// Use the focused child of the tabbed/stacked container, not the
 			// container the user scrolled on.
 			seat_set_focus(seat, new_focus);
+			transaction_commit_dirty();
 			handled = true;
 		}
 	}
