@@ -982,8 +982,18 @@ static void view_child_subsurface_create(struct sway_view_child *child,
 	view_child_damage(&subsurface->child, true);
 }
 
+static bool view_child_is_mapped(struct sway_view_child *child) {
+	while (child) {
+		if (!child->mapped) {
+			return false;
+		}
+		child = child->parent;
+	}
+	return true;
+}
+
 static void view_child_damage(struct sway_view_child *child, bool whole) {
-	if (!child || !child->mapped || !child->view || !child->view->container) {
+	if (!child || !view_child_is_mapped(child) || !child->view || !child->view->container) {
 		return;
 	}
 	int sx, sy;
@@ -1082,7 +1092,7 @@ void view_child_init(struct sway_view_child *child,
 }
 
 void view_child_destroy(struct sway_view_child *child) {
-	if (child->mapped && child->view->container != NULL) {
+	if (view_child_is_mapped(child) && child->view->container != NULL) {
 		view_child_damage(child, true);
 	}
 
