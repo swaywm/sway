@@ -464,6 +464,9 @@ static void view_subsurface_create(struct sway_view *view,
 static void view_init_subsurfaces(struct sway_view *view,
 	struct wlr_surface *surface);
 
+static void view_child_init_subsurfaces(struct sway_view_child *view_child,
+	struct wlr_surface *surface);
+
 static void view_handle_surface_new_subsurface(struct wl_listener *listener,
 		void *data) {
 	struct sway_view *view =
@@ -957,6 +960,14 @@ static void view_init_subsurfaces(struct sway_view *view,
 	}
 }
 
+static void view_child_init_subsurfaces(struct sway_view_child *view_child,
+		struct wlr_surface *surface) {
+	struct wlr_subsurface *subsurface;
+	wl_list_for_each(subsurface, &surface->subsurfaces, parent_link) {
+		view_child_subsurface_create(view_child, subsurface);
+	}
+}
+
 static void view_child_handle_surface_map(struct wl_listener *listener,
 		void *data) {
 	struct sway_view_child *child =
@@ -1012,7 +1023,7 @@ void view_child_init(struct sway_view_child *child,
 		wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
 	}
 
-	view_init_subsurfaces(child->view, surface);
+	view_child_init_subsurfaces(child, surface);
 }
 
 void view_child_destroy(struct sway_view_child *child) {
