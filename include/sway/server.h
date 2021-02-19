@@ -44,6 +44,7 @@ struct sway_server {
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
 	struct wlr_data_device_manager *data_device_manager;
+	struct wlr_gamma_control_manager_v1 *gamma_control_manager;
 
 	struct sway_input_manager *input;
 
@@ -97,6 +98,10 @@ struct sway_server {
 
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
+
+	struct wlr_export_dmabuf_manager_v1 *dmabuf_manager;
+	struct wlr_screencopy_manager_v1 *screencopy_manager;
+	struct wlr_data_control_manager_v1 *data_control_manager;
 
 	// The timeout for transactions, after which a transaction is applied
 	// regardless of readiness.

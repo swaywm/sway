@@ -746,6 +746,12 @@ The default colors are:
 	dialog will not be rendered. If _leave_fullscreen_, the view will exit
 	fullscreen mode and the dialog will be rendered.
 
+*security_label* [set|permit|deny] <label> <permissions...>
+	Create a security label with the given permissions.  See *SECURITY* for
+	details.  Labels whose permissions are not defined using this command
+	will use the permissions assigned to the "default" label, which in turn
+	defaults to allowing all interfaces.
+
 *set* $<name> <value>
 	Sets variable $_name_ to _value_. You can use the new variable in the
 	arguments of future commands. When the variable is used, it can be escaped
@@ -954,6 +960,59 @@ The following attributes may be matched with:
 	Compare against the workspace name for this view. Can be a regular
 	expression. If the value is \_\_focused\_\_, then all the views on the
 	currently focused workspace matches.
+
+# SECURITY
+
+Some wayland interfaces can be restricted for security reasons.  Restrictions
+are defined per-client by the client's label.  A client's label can be set using
+the _--label_ argument to *exec* or by connecting to a labeled *sandbox_socket*.
+Clients without a label are assigned the "default" label.  The following is a
+list of the permissions and what they allow clients to do:
+
+*data_control*
+	Access the clipboard and selection when not focused.  Used by clipboard
+	managers.
+
+*foreign_toplevel_manager*
+	View and manage the list of open windows.
+
+*gamma_control*
+	Control how outputs manage colors.
+
+*input_inhibit*
+	Prevent any input events from being sent to other clients.  Used by
+	lockscreens.
+
+*input_keyboard_shortcuts_inhibit*
+	Disable keyboard shortcuts while a surface is focused.  Used by remote
+	desktop clients.
+
+*input_method*
+	Act as a text input device - send text to other applications as if typed
+	by the user.
+
+*input_virtual_keyboard*
+	Act as a keyboard to other applications.
+
+*input_virtual_pointer*
+	Act as a pointer to other applications.
+
+*layer_shell*
+	Create bars, docks and full-screen overlays without the normal window
+	management capabilities.  Used by backgrounds, launchers, desktops, and
+	other "utility" clients.
+
+*output_manager*
+	Enable, disable, and control the positions and resolutions of outputs.
+
+*output_power_manager*
+	Turn outputs on or off.
+
+*screenshot*
+	Take screenshots using export_dmabuf or screencopy.
+
+*session_lock*
+	Lock the screen and display a lockscreen surface.
 
 # SEE ALSO
 
