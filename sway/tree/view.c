@@ -1029,6 +1029,9 @@ void view_child_destroy(struct sway_view_child *child) {
 	wl_list_for_each_safe(subchild, tmpchild, &child->children, link) {
 		wl_list_remove(&subchild->link);
 		subchild->parent = NULL;
+		// The subchild lost its parent link, so it cannot see that the parent
+		// is unmapped. Unmap it directly.
+		subchild->mapped = false;
 	}
 
 	wl_list_remove(&child->surface_commit.link);
