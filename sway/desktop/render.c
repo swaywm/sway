@@ -518,6 +518,10 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
+
+		float title_scale = container_get_effective_output(con)->wlr_output->scale;
+		texture_box.width = texture_box.width * output_scale / title_scale;
+		texture_box.height = texture_box.height * output_scale / title_scale;
 		ob_title_width = texture_box.width;
 
 		// The title texture might be shorter than the config->font_height,
