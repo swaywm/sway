@@ -407,8 +407,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			new_geo.y != view->geometry.y;
 
 	if (new_size) {
-		// The view has unexpectedly sent a new size
-		// eg. The Firefox "Save As" dialog when downloading a file
+		// The client changed its surface size in this commit. For floating
+		// containers, we resize the container to match. For tiling containers,
+		// we only recenter the surface.
 		desktop_damage_view(view);
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
