@@ -210,8 +210,15 @@ void container_set_geometry_from_content(struct sway_container *con);
 /**
  * Determine if the given container is itself floating.
  * This will return false for any descendants of a floating container.
+ *
+ * Uses pending container state.
  */
 bool container_is_floating(struct sway_container *container);
+
+/**
+ * Same as above, but for current container state.
+ */
+bool container_is_current_floating(struct sway_container *container);
 
 /**
  * Get a container's box in layout coordinates.
