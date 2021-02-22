@@ -359,7 +359,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		container_current_parent_layout(con);
 
 	if (state->border_right) {
-		if (!container_is_floating(con) && siblings->length == 1 && layout == L_HORIZ) {
+		if (!container_is_current_floating(con) && siblings->length == 1 && layout == L_HORIZ) {
 			memcpy(&color, colors->indicator, sizeof(float) * 4);
 		} else {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
@@ -374,7 +374,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 	}
 
 	if (state->border_bottom) {
-		if (!container_is_floating(con) && siblings->length == 1 && layout == L_VERT) {
+		if (!container_is_current_floating(con) && siblings->length == 1 && layout == L_VERT) {
 			memcpy(&color, colors->indicator, sizeof(float) * 4);
 		} else {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);

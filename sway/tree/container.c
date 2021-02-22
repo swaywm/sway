@@ -858,6 +858,17 @@ bool container_is_floating(struct sway_container *container) {
 	return false;
 }
 
+bool container_is_current_floating(struct sway_container *container) {
+	if (!container->current.parent && container->current.workspace &&
+			list_find(container->current.workspace->floating, container) != -1) {
+		return true;
+	}
+	if (container->scratchpad) {
+		return true;
+	}
+	return false;
+}
+
 void container_get_box(struct sway_container *container, struct wlr_box *box) {
 	box->x = container->pending.x;
 	box->y = container->pending.y;
