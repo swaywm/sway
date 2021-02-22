@@ -105,8 +105,8 @@ static bool get_surface_box(struct surface_iterator_data *data,
 		data->rotation);
 
 	struct wlr_box box = {
-		.x = data->ox + _sx,
-		.y = data->oy + _sy,
+		.x = floor(data->ox + _sx),
+		.y = floor(data->oy + _sy),
 		.width = sw,
 		.height = sh,
 	};
