@@ -408,6 +408,15 @@ static void transaction_commit(struct sway_transaction *transaction) {
 				++transaction->num_waiting;
 			}
 
+			sway_log(SWAY_DEBUG, "Transaction %p[%d]: configure view %p to %dx%d+%d+%d, serial %d",
+					transaction, i, node->sway_container->view,
+					(int)instruction->container_state.content_width,
+					(int)instruction->container_state.content_height,
+					(int)instruction->container_state.content_x,
+					(int)instruction->container_state.content_y,
+					instruction->serial
+			);
+
 			// From here on we are rendering a saved buffer of the view, which
 			// means we can send a frame done event to make the client redraw it
 			// as soon as possible. Additionally, this is required if a view is
@@ -496,8 +505,17 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
 		uint32_t serial) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
-	if (instruction != NULL && instruction->serial == serial) {
-		set_instruction_ready(instruction);
+	if (instruction != NULL) {
+		if (instruction->serial == serial) {
+			sway_log(SWAY_DEBUG,
+				"Transaction %p: view %p acked serial %d",
+				instruction->transaction, view, serial);
+			set_instruction_ready(instruction);
+		} else {
+			sway_log(SWAY_DEBUG,
+				"Transaction %p: view %p acked serial %d, was expecting %d",
+				instruction->transaction, view, serial, instruction->serial);
+		}
 	}
 }
 
@@ -505,12 +523,23 @@ void transaction_notify_view_ready_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
-	if (instruction != NULL &&
-			(int)instruction->container_state.content_x == (int)x &&
-			(int)instruction->container_state.content_y == (int)y &&
-			instruction->container_state.content_width == width &&
-			instruction->container_state.content_height == height) {
-		set_instruction_ready(instruction);
+	if (instruction != NULL) {
+		int txn_x = (int)instruction->container_state.content_x;
+		int txn_y = (int)instruction->container_state.content_y;
+		int txn_width = instruction->container_state.content_width;
+		int txn_height = instruction->container_state.content_height;
+		if (txn_x == (int)x && txn_y == (int)y &&
+				txn_width == width && txn_height == height) {
+			sway_log(SWAY_DEBUG,
+				"Transaction %p: view %p acked geometry %dx%d+%d+%d",
+				instruction->transaction, view, width, height, (int)x, (int)y);
+			set_instruction_ready(instruction);
+		} else {
+			sway_log(SWAY_DEBUG,
+				"Transaction %p: view %p acked geometry %dx%d+%d+%d, was expecting %dx%d+%d+%d",
+				instruction->transaction, view, width, height, (int)x, (int)y,
+				txn_width, txn_height, txn_x, txn_y);
+		}
 	}
 }
 
@@ -518,6 +547,8 @@ void transaction_notify_view_ready_immediately(struct sway_view *view) {
 	struct sway_transaction_instruction *instruction =
 			view->container->node.instruction;
 	if (instruction != NULL) {
+		sway_log(SWAY_DEBUG, "Transaction %p: view %p marked ready",
+			instruction->transaction, view);
 		set_instruction_ready(instruction);
 	}
 }
