@@ -395,7 +395,7 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 	}
 	// Tiling (focused)
 	if (focus && focus->view && !is_floating) {
-		if ((c = surface_at_view(focus, lx, ly, surface, sx, sy))) {
+		if ((c = view_container_at(&focus->node, lx, ly, surface, sx, sy))) {
 			return c;
 		}
 	}
