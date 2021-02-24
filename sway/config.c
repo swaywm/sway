@@ -85,6 +85,19 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode);
 }
 
+void free_swaybg_full_command(char **cmd) {
+	if (!cmd) {
+		return;
+	}
+
+	char **pos = cmd;
+	while (*pos) {
+		free(*pos);
+		pos++;
+	}
+	free(cmd);
+}
+
 void free_config(struct sway_config *config) {
 	if (!config) {
 		return;
@@ -160,6 +173,7 @@ void free_config(struct sway_config *config) {
 	free(config->floating_scroll_right_cmd);
 	free(config->font);
 	free(config->swaybg_command);
+	free_swaybg_full_command(config->swaybg_full_command);
 	free(config->swaynag_command);
 	free((char *)config->current_config_path);
 	free((char *)config->current_config);
@@ -532,7 +546,6 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		sway_switch_retrigger_bindings_for_all();
 
 		reset_outputs();
-		spawn_swaybg();
 
 		config->reloading = false;
 		if (config->swaynag_config_errors.client != NULL) {
