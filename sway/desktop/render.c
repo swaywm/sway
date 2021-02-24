@@ -519,7 +519,11 @@ static void render_titlebar(struct sway_output *output,
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
 
-		float title_scale = container_get_effective_output(con)->wlr_output->scale;
+		// The effective output may be NULL when con is not on any output.
+		// This can happen because we render all children of containers,
+		// even those that are out of the bounds of any output.
+		struct sway_output *effective = container_get_effective_output(con);
+		float title_scale = effective ? effective->wlr_output->scale : output_scale;
 		texture_box.width = texture_box.width * output_scale / title_scale;
 		texture_box.height = texture_box.height * output_scale / title_scale;
 		ob_title_width = texture_box.width;
