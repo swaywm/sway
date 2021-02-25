@@ -9,9 +9,10 @@ import argparse
 import i3ipc
 import signal
 import sys
+import re
 from functools import partial
 
-def on_window_focus(not_focused_opacity, focused_opacity, ipc, event):
+def on_window_focus(not_focused_opacity, focused_opacity, focused_regex, ipc, event):
     global prev_focused
     global prev_workspace
 
@@ -19,17 +20,21 @@ def on_window_focus(not_focused_opacity, focused_opacity, ipc, event):
     workspace = ipc.get_tree().find_focused().workspace().num
 
     if focused.id != prev_focused.id:  # https://github.com/swaywm/sway/issues/2859
-        focused.command("opacity " + focused_opacity)
+        if re.match(focused_regex, focused.app_id):
+            focused.command("opacity " + focused_opacity)
+        else:
+            focused.command("opacity 1")
+
         if workspace == prev_workspace:
             prev_focused.command("opacity " + not_focused_opacity)
         prev_focused = focused
         prev_workspace = workspace
 
 
-def restore_opacity(ipc, opacity):
+def restore_opacity(ipc):
     for workspace in ipc.get_tree().workspaces():
         for w in workspace:
-            w.command("opacity " + opacity)
+            w.command("opacity 1")
     ipc.main_quit()
     sys.exit(0)
 
@@ -52,6 +57,12 @@ if __name__ == "__main__":
         default="1.00",
         help="set focused window opacity value in range 0...1",
     )
+    parser.add_argument(
+        "--focused-appid",
+        type=str,
+        default=".*",
+        help="set focused window opacity only for app_ids which match this regexp",
+    )
     args = parser.parse_args()
 
     ipc = i3ipc.Connection()
@@ -64,6 +75,6 @@ if __name__ == "__main__":
         else:
             window.command("opacity " + args.opacity)
     for sig in [signal.SIGINT, signal.SIGTERM]:
-        signal.signal(sig, lambda signal, frame: restore_opacity(ipc, args.focused_opacity))
-    ipc.on("window::focus", partial(on_window_focus, args.opacity, args.focused_opacity))
+        signal.signal(sig, lambda signal, frame: restore_opacity(ipc))
+    ipc.on("window::focus", partial(on_window_focus, args.opacity, args.focused_opacity, args.focused_appid))
     ipc.main()
