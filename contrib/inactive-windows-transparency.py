@@ -20,7 +20,7 @@ def on_window_focus(not_focused_opacity, focused_opacity, focused_regex, ipc, ev
     workspace = ipc.get_tree().find_focused().workspace().num
 
     if focused.id != prev_focused.id:  # https://github.com/swaywm/sway/issues/2859
-        if re.match(focused_regex, focused.app_id):
+        if isinstance(focused.app_id, str) and re.match(focused_regex, focused.app_id):
             focused.command("opacity " + focused_opacity)
         else:
             focused.command("opacity 1")
