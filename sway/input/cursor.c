@@ -74,7 +74,7 @@ static struct wlr_surface *layer_surface_popup_at(struct sway_output *output,
  * Returns the node at the cursor's position. If there is a surface at that
  * location, it is stored in **surface (it may not be a view).
  */
-struct sway_node *node_at_coords(
+static struct sway_node *node_at_coords(
 		struct sway_seat *seat, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	// check for unmanaged views first
@@ -340,6 +340,50 @@ void cursor_unhide(struct sway_cursor *cursor) {
 	wl_event_source_timer_update(cursor->hide_source, cursor_get_timeout(cursor));
 }
 
+static bool cursor_motion_is_constrained(struct sway_cursor *cursor,
+		enum wlr_input_device_type type) {
+	// Only apply pointer constraints to real pointer input.
+	return cursor->active_constraint && type == WLR_INPUT_DEVICE_POINTER;
+}
+
+static void cursor_update_current_node(struct sway_cursor *cursor,
+		enum wlr_input_device_type type) {
+	struct sway_node *node = NULL;
+	struct wlr_surface *surface = NULL;
+	double sx = 0, sy = 0;
+
+	if (cursor_motion_is_constrained(cursor, type)) {
+		struct wlr_pointer_constraint_v1 *constraint = cursor->active_constraint;
+		struct sway_view *view = view_from_wlr_surface(constraint->surface);
+
+		if (view) {
+			struct sway_container *con = view->container;
+			sx = cursor->cursor->x - con->pending.content_x + view->geometry.x;
+			sy = cursor->cursor->y - con->pending.content_y + view->geometry.y;
+
+			if (pixman_region32_contains_point(&constraint->region, floor(sx),
+						floor(sy), NULL)) {
+				node = &view->container->node;
+				surface = constraint->surface;
+			}
+		}
+	}
+
+	// This is subtle: this means that if an actively constrained surface is
+	// partially occluded by another node (say, by a floating node), the cursor
+	// shall remain constrained and pass "under" the floating node. Need to
+	// check both `node` and `surface` since neither implies the other.
+	if (!node && !surface) {
+		node = node_at_coords(cursor->seat, cursor->cursor->x, cursor->cursor->y,
+				&surface, &sx, &sy);
+	}
+
+	cursor->current.sx = sx;
+	cursor->current.sy = sy;
+	cursor->current.node = node;
+	cursor->current.surface = surface;
+}
+
 static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		struct wlr_input_device *device, double dx, double dy,
 		double dx_unaccel, double dy_unaccel) {
@@ -348,17 +392,12 @@ static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		cursor->seat->wlr_seat, (uint64_t)time_msec * 1000,
 		dx, dy, dx_unaccel, dy_unaccel);
 
-	// Only apply pointer constraints to real pointer input.
-	if (cursor->active_constraint && device->type == WLR_INPUT_DEVICE_POINTER) {
-		struct wlr_surface *surface = NULL;
-		double sx, sy;
-		node_at_coords(cursor->seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	cursor_update_current_node(cursor, device->type);
 
-		if (cursor->active_constraint->surface != surface) {
-			return;
-		}
+	if (cursor_motion_is_constrained(cursor, device->type)) {
+		assert(cursor->active_constraint->surface == cursor->current.surface);
 
+		double sx = cursor->current.sx, sy = cursor->current.sy;
 		double sx_confined, sy_confined;
 		if (!wlr_region_confine(&cursor->confine, sx, sy, sx + dx, sy + dy,
 				&sx_confined, &sy_confined)) {
@@ -370,6 +409,7 @@ static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	}
 
 	wlr_cursor_move(cursor->cursor, device, dx, dy);
+	cursor_update_current_node(cursor, device->type);
 
 	seatop_pointer_motion(cursor->seat, time_msec);
 }
@@ -608,10 +648,8 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 		break;
 	}
 
-	double sx, sy;
-	struct wlr_surface *surface = NULL;
+	struct wlr_surface *surface = cursor->current.surface;
 	struct sway_seat *seat = cursor->seat;
-	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	// The logic for whether we should send a tablet event or an emulated pointer
 	// event is tricky. It comes down to:
@@ -626,6 +664,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	if (!cursor->simulating_pointer_from_tool_tip &&
 			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
+		cursor_update_current_node(cursor, input_device->wlr_device->type);
 		seatop_tablet_tool_motion(seat, tool, time_msec);
 	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
@@ -839,8 +878,11 @@ static void check_constraint_region(struct sway_cursor *cursor) {
 					sx + con->pending.content_x - view->geometry.x,
 					sy + con->pending.content_y - view->geometry.y);
 
+				cursor_update_current_node(cursor, WLR_INPUT_DEVICE_POINTER);
 				cursor_rebase(cursor);
 			}
+		} else {
+			cursor_update_current_node(cursor, WLR_INPUT_DEVICE_POINTER);
 		}
 	}
 
@@ -1279,6 +1321,7 @@ static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 		// Warp the pointer as well, so that on the next pointer rebase we don't
 		// send an unexpected synthetic motion event to clients.
 		wlr_seat_pointer_warp(constraint->seat, sx, sy);
+		cursor_update_current_node(cursor, WLR_INPUT_DEVICE_POINTER);
 	}
 }
 

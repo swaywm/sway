@@ -213,10 +213,9 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 	}
 
 	struct sway_cursor *cursor = seat->cursor;
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_surface *surface = cursor->current.surface;
+	double sx = cursor->current.sx, sy = cursor->current.sy;
+	struct sway_node *node = cursor->current.node;
 
 	if (!sway_assert(surface,
 			"Expected null-surface tablet input to route through pointer emulation")) {
@@ -328,10 +327,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	struct sway_cursor *cursor = seat->cursor;
 
 	// Determine what's under the cursor
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_surface *surface = cursor->current.surface;
+	double sx = cursor->current.sx, sy = cursor->current.sy;
+	struct sway_node *node = cursor->current.node;
 
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
@@ -574,10 +572,9 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_surface *surface = cursor->current.surface;
+	double sx = cursor->current.sx, sy = cursor->current.sy;
+	struct sway_node *node = cursor->current.node;
 
 	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
@@ -608,10 +605,9 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	struct seatop_default_event *e = seat->seatop_data;
 	struct sway_cursor *cursor = seat->cursor;
 
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_surface *surface = cursor->current.surface;
+	double sx = cursor->current.sx, sy = cursor->current.sy;
+	struct sway_node *node = cursor->current.node;
 
 	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
@@ -664,10 +660,8 @@ static void handle_pointer_axis(struct sway_seat *seat,
 	struct seatop_default_event *e = seat->seatop_data;
 
 	// Determine what's under the cursor
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_surface *surface = cursor->current.surface;
+	struct sway_node *node = cursor->current.node;
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 	enum wlr_edges edge = cont ? find_edge(cont, surface, cursor) : WLR_EDGE_NONE;
@@ -756,8 +750,7 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	struct sway_cursor *cursor = seat->cursor;
 	struct wlr_surface *surface = NULL;
 	double sx = 0.0, sy = 0.0;
-	e->previous_node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	e->previous_node = cursor->current.node;
 
 	if (surface) {
 		if (seat_is_input_allowed(seat, surface)) {

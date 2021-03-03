@@ -22,6 +22,15 @@ struct sway_cursor {
 		double x, y;
 		struct sway_node *node;
 	} previous;
+
+	// Not to be confused with `previous` above; they store entirely unrelated
+	// data.
+	struct {
+		double sx, sy;
+		struct sway_node *node;
+		struct wlr_surface *surface;
+	} current;
+
 	struct wlr_xcursor_manager *xcursor_manager;
 	struct wl_list tablets;
 	struct wl_list tablet_pads;
@@ -78,10 +87,6 @@ struct sway_cursor {
 };
 
 struct sway_node;
-
-struct sway_node *node_at_coords(
-		struct sway_seat *seat, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy);
 
 void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
