@@ -311,7 +311,30 @@ static struct sway_container *floating_container_at(double lx, double ly,
 	return NULL;
 }
 
-struct sway_container *view_container_at(struct sway_node *parent,
+static struct sway_container *view_container_content_at(struct sway_node *parent,
+		double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (!sway_assert(node_is_view(parent), "Expected a view")) {
+		return NULL;
+	}
+
+	struct sway_container *container = parent->sway_container;
+	struct wlr_box box = {
+			.x = container->pending.content_x,
+			.y = container->pending.content_y,
+			.width = container->pending.content_width,
+			.height = container->pending.content_height,
+	};
+
+	if (wlr_box_contains_point(&box, lx, ly)) {
+		surface_at_view(parent->sway_container, lx, ly, surface, sx, sy);
+		return container;
+	}
+
+	return NULL;
+}
+
+static struct sway_container *view_container_at(struct sway_node *parent,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (!sway_assert(node_is_view(parent), "Expected a view")) {
@@ -395,7 +418,7 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 	}
 	// Tiling (focused)
 	if (focus && focus->view && !is_floating) {
-		if ((c = view_container_at(&focus->node, lx, ly, surface, sx, sy))) {
+		if ((c = view_container_content_at(&focus->node, lx, ly, surface, sx, sy))) {
 			return c;
 		}
 	}
