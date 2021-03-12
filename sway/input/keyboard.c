@@ -503,7 +503,22 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 				keyinfo.raw_keysyms_len);
 	}
 
-	if (!handled || event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+	bool pressed_sent = false;
+	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+		// If the pressed event was sent to a client, also send the released
+		// event. In particular, don't send the released event to the IM grab.
+		pressed_sent = update_shortcut_state(
+			&keyboard->state_pressed_sent, event->keycode,
+			event->state, keyinfo.keycode, 0);
+		if (pressed_sent) {
+			wlr_seat_set_keyboard(wlr_seat, wlr_device);
+			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
+				event->keycode, event->state);
+			handled = true;
+		}
+	}
+
+	if (!handled) {
 		struct wlr_input_method_keyboard_grab_v2 *kb_grab = keyboard_get_im_grab(keyboard);
 		struct wlr_virtual_keyboard_v1 *virtual_keyboard =
 			wlr_input_device_get_virtual_keyboard(wlr_device);
@@ -513,39 +528,23 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		if (kb_grab && !(virtual_keyboard &&
 				wl_resource_get_client(virtual_keyboard->resource) ==
 				wl_resource_get_client(kb_grab->resource))) {
-			// Do not send release event to grab if the press event was not
-			// sent to grab.
-			if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-				bool pressed_sent = update_shortcut_state(
-					&keyboard->state_pressed_sent, event->keycode,
-					event->state, keyinfo.keycode, 0);
-				if (pressed_sent) {
-					wlr_seat_set_keyboard(wlr_seat, wlr_device);
-					wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-						event->keycode, event->state);
-					goto end;
-				}
-
-			}
-
 			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
 				wlr_device->keyboard);
 			wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
 				event->time_msec, event->keycode, event->state);
-			goto end;
-		}
-
-		bool pressed_sent = update_shortcut_state(
-				&keyboard->state_pressed_sent, event->keycode, event->state,
-				keyinfo.keycode, 0);
-		if (pressed_sent || event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-			wlr_seat_set_keyboard(wlr_seat, wlr_device);
-			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-					event->keycode, event->state);
+			handled = true;
 		}
 	}
 
-end:
+	if (!handled && !pressed_sent) {
+		update_shortcut_state(
+			&keyboard->state_pressed_sent, event->keycode, event->state,
+			keyinfo.keycode, 0);
+		wlr_seat_set_keyboard(wlr_seat, wlr_device);
+		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
+				event->keycode, event->state);
+	}
+
 	free(device_identifier);
 }
 
