@@ -115,10 +115,11 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 	const char *prop = d->prop;
 	const char *type = d->type;
 	void *dest = d->dest;
+	sway_log_importance_t log_lv = strcmp(prop, "IconThemePath") ? SWAY_ERROR : SWAY_DEBUG;
 
 	int ret;
 	if (sd_bus_message_is_method_error(msg, NULL)) {
-		sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop,
+		sway_log(log_lv, "%s %s: %s", sni->watcher_id, prop,
 				sd_bus_message_get_error(msg)->message);
 		ret = sd_bus_message_get_errno(msg);
 		goto cleanup;
