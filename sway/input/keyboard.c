@@ -378,6 +378,21 @@ static void update_keyboard_state(struct sway_keyboard *keyboard,
 	}
 }
 
+/**
+ * Get keyboard grab of the seat from sway_keyboard.
+ *
+ * Returns NULL if the keyboard is not grabbed by an input method.
+ */
+static struct wlr_input_method_keyboard_grab_v2 *keyboard_get_im_grab(
+		struct sway_keyboard *keyboard) {
+	struct wlr_input_method_v2 *input_method = keyboard->seat_device->
+		sway_seat->im_relay.input_method;
+	if (!input_method) {
+		return NULL;
+	}
+	return input_method->keyboard_grab;
+}
+
 static void handle_key_event(struct sway_keyboard *keyboard,
 		struct wlr_event_keyboard_key *event) {
 	struct sway_seat *seat = keyboard->seat_device->sway_seat;
@@ -489,38 +504,35 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	}
 
 	if (!handled || event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-		if (seat->im_relay.input_method) {
-			struct wlr_input_method_keyboard_grab_v2 *kb_grab =
-				seat->im_relay.input_method->keyboard_grab;
-			struct wlr_virtual_keyboard_v1 *virtual_keyboard =
-				wlr_input_device_get_virtual_keyboard(wlr_device);
+		struct wlr_input_method_keyboard_grab_v2 *kb_grab = keyboard_get_im_grab(keyboard);
+		struct wlr_virtual_keyboard_v1 *virtual_keyboard =
+			wlr_input_device_get_virtual_keyboard(wlr_device);
 
-			// If event is from virtual keyboard of the same client as grab,
-			// do not send it back. TODO see swaywm/wlroots#2322
-			if (kb_grab && !(virtual_keyboard &&
-					wl_resource_get_client(virtual_keyboard->resource) ==
-					wl_resource_get_client(kb_grab->resource))) {
-				// Do not send release event to grab if the press event was not
-				// sent to grab.
-				if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-					bool pressed_sent = update_shortcut_state(
-						&keyboard->state_pressed_sent, event->keycode,
-						event->state, keyinfo.keycode, 0);
-					if (pressed_sent) {
-						wlr_seat_set_keyboard(wlr_seat, wlr_device);
-						wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-							event->keycode, event->state);
-						goto end;
-					}
-
+		// If event is from virtual keyboard of the same client as grab,
+		// do not send it back. TODO see swaywm/wlroots#2322
+		if (kb_grab && !(virtual_keyboard &&
+				wl_resource_get_client(virtual_keyboard->resource) ==
+				wl_resource_get_client(kb_grab->resource))) {
+			// Do not send release event to grab if the press event was not
+			// sent to grab.
+			if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+				bool pressed_sent = update_shortcut_state(
+					&keyboard->state_pressed_sent, event->keycode,
+					event->state, keyinfo.keycode, 0);
+				if (pressed_sent) {
+					wlr_seat_set_keyboard(wlr_seat, wlr_device);
+					wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
+						event->keycode, event->state);
+					goto end;
 				}
 
-				wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
-					wlr_device->keyboard);
-				wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
-					event->time_msec, event->keycode, event->state);
-				goto end;
 			}
+
+			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
+				wlr_device->keyboard);
+			wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
+				event->time_msec, event->keycode, event->state);
+			goto end;
 		}
 
 		bool pressed_sent = update_shortcut_state(
@@ -648,29 +660,23 @@ static void handle_modifier_event(struct sway_keyboard *keyboard) {
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 	if (!wlr_device->keyboard->group) {
-		struct sway_seat *seat = keyboard->seat_device->sway_seat;
-		bool sent_to_kb_grab = false;
-		if (seat->im_relay.input_method) {
-			struct wlr_input_method_keyboard_grab_v2 *kb_grab =
-				seat->im_relay.input_method->keyboard_grab;
-			struct wlr_virtual_keyboard_v1 *virtual_keyboard =
-				wlr_input_device_get_virtual_keyboard(wlr_device);
+		struct wlr_input_method_keyboard_grab_v2 *kb_grab = keyboard_get_im_grab(keyboard);
+		struct wlr_virtual_keyboard_v1 *virtual_keyboard =
+			wlr_input_device_get_virtual_keyboard(wlr_device);
 
-			// If event is from virtual keyboard of the same client as grab,
-			// do not send it back. TODO see swaywm/wlroots#2322
-			if (kb_grab && !(virtual_keyboard &&
-					wl_resource_get_client(virtual_keyboard->resource) ==
-					wl_resource_get_client(kb_grab->resource))) {
-				wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
-						wlr_device->keyboard);
-				wlr_input_method_keyboard_grab_v2_send_modifiers(kb_grab,
-						&wlr_device->keyboard->modifiers);
-				sent_to_kb_grab = true;
-			}
-		}
-		if (!sent_to_kb_grab) {
-			wlr_seat_set_keyboard(seat->wlr_seat, wlr_device);
-			wlr_seat_keyboard_notify_modifiers(seat->wlr_seat,
+		// If event is from virtual keyboard of the same client as grab,
+		// do not send it back. TODO see swaywm/wlroots#2322
+		if (kb_grab && !(virtual_keyboard &&
+				wl_resource_get_client(virtual_keyboard->resource) ==
+				wl_resource_get_client(kb_grab->resource))) {
+			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
+					wlr_device->keyboard);
+			wlr_input_method_keyboard_grab_v2_send_modifiers(kb_grab,
+					&wlr_device->keyboard->modifiers);
+		} else {
+			struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
+			wlr_seat_set_keyboard(wlr_seat, wlr_device);
+			wlr_seat_keyboard_notify_modifiers(wlr_seat,
 					&wlr_device->keyboard->modifiers);
 		}
 
