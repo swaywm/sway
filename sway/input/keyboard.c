@@ -503,11 +503,10 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 				keyinfo.raw_keysyms_len);
 	}
 
-	bool pressed_sent = false;
 	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
 		// If the pressed event was sent to a client, also send the released
 		// event. In particular, don't send the released event to the IM grab.
-		pressed_sent = update_shortcut_state(
+		bool pressed_sent = update_shortcut_state(
 			&keyboard->state_pressed_sent, event->keycode,
 			event->state, keyinfo.keycode, 0);
 		if (pressed_sent) {
@@ -536,7 +535,9 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		}
 	}
 
-	if (!handled && !pressed_sent) {
+	if (!handled && event->state != WL_KEYBOARD_KEY_STATE_RELEASED) {
+		// If a released event failed pressed sent test, and not in sent to
+		// keyboard grab, it is still not handled. Don't handle released here.
 		update_shortcut_state(
 			&keyboard->state_pressed_sent, event->keycode, event->state,
 			keyinfo.keycode, 0);
