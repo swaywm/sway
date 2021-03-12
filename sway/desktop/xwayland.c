@@ -105,14 +105,10 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	if (seat->wlr_seat->keyboard_state.focused_surface == xsurface->surface) {
 		// This simply returns focus to the parent surface if there's one available.
 		// This seems to handle JetBrains issues.
-		if (xsurface->parent && xsurface->parent->surface &&
-				wlr_surface_is_xwayland_surface(xsurface->parent->surface)) {
-			struct wlr_xwayland_surface *next_surface =
-				wlr_xwayland_surface_from_wlr_surface(xsurface->parent->surface);
-			if (wlr_xwayland_or_surface_wants_focus(next_surface)) {
-				seat_set_focus_surface(seat, xsurface->parent->surface, false);
-				return;
-			}
+		if (xsurface->parent && xsurface->parent->surface
+				&& wlr_xwayland_or_surface_wants_focus(xsurface->parent)) {
+			seat_set_focus_surface(seat, xsurface->parent->surface, false);
+			return;
 		}
 
 		// Restore focus
