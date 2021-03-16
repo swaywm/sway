@@ -1,7 +1,7 @@
 project(
 	'sway',
 	'c',
-	version: '1.5', #release_version
+	version: '1.6-rc1',
 	license: 'MIT',
 	meson_version: '>=0.53.0',
 	default_options: [
