@@ -59,7 +59,7 @@ void sway_idle_inhibit_v1_user_inhibitor_register(struct sway_view *view,
 	wl_list_insert(&inhibitor->manager->inhibitors, &inhibitor->link);
 
 	inhibitor->destroy.notify = handle_destroy;
-	wl_signal_add(&view->events.unmap, &inhibitor->destroy);
+	wl_signal_add(&view->events.destroy, &inhibitor->destroy);
 
 	sway_idle_inhibit_v1_check_active(inhibitor->manager);
 }
@@ -122,7 +122,6 @@ bool sway_idle_inhibit_v1_is_active(struct sway_idle_inhibitor_v1 *inhibitor) {
 			container_is_fullscreen_or_child(inhibitor->view->container) &&
 			view_is_visible(inhibitor->view);
 	case INHIBIT_IDLE_OPEN:
-		// Inhibitor is destroyed on unmap so it must be open/mapped
 		return true;
 	case INHIBIT_IDLE_VISIBLE:
 		return view_is_visible(inhibitor->view);
