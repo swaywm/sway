@@ -115,12 +115,16 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 	const char *prop = d->prop;
 	const char *type = d->type;
 	void *dest = d->dest;
-	sway_log_importance_t log_lv = strcmp(prop, "IconThemePath") ? SWAY_ERROR : SWAY_DEBUG;
 
 	int ret;
 	if (sd_bus_message_is_method_error(msg, NULL)) {
-		sway_log(log_lv, "%s %s: %s", sni->watcher_id, prop,
-				sd_bus_message_get_error(msg)->message);
+		const sd_bus_error *err = sd_bus_message_get_error(msg);
+		sway_log_importance_t log_lv = SWAY_ERROR;
+		if ((!strcmp(prop, "IconThemePath")) &&
+				(!strcmp(err->name, SD_BUS_ERROR_UNKNOWN_PROPERTY))) {
+			log_lv = SWAY_DEBUG;
+		}
+		sway_log(log_lv, "%s %s: %s", sni->watcher_id, prop, err->message);
 		ret = sd_bus_message_get_errno(msg);
 		goto cleanup;
 	}
