@@ -11,14 +11,21 @@
 static void destroy_inhibitor(struct sway_idle_inhibitor_v1 *inhibitor) {
 	wl_list_remove(&inhibitor->link);
 	wl_list_remove(&inhibitor->destroy.link);
+	wl_list_remove(&inhibitor->view_unmap.link);
 	sway_idle_inhibit_v1_check_active(inhibitor->manager);
 	free(inhibitor);
+	sway_log(SWAY_DEBUG, "Sway idle inhibitor destroyed");
+}
+
+static void handle_view_unmap(struct wl_listener *listener, void *data) {
+	struct sway_idle_inhibitor_v1 *inhibitor =
+		wl_container_of(listener, inhibitor, view_unmap);
+	destroy_inhibitor(inhibitor);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_idle_inhibitor_v1 *inhibitor =
 		wl_container_of(listener, inhibitor, destroy);
-	sway_log(SWAY_DEBUG, "Sway idle inhibitor destroyed");
 	destroy_inhibitor(inhibitor);
 }
 
@@ -39,6 +46,13 @@ void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data) {
 	inhibitor->view = view_from_wlr_surface(wlr_inhibitor->surface);
 	wl_list_insert(&manager->inhibitors, &inhibitor->link);
 
+	if (inhibitor->view) {
+		inhibitor->view_unmap.notify = handle_view_unmap;
+		wl_signal_add(&inhibitor->view->events.unmap, &inhibitor->view_unmap);
+	} else {
+		wl_list_init(&inhibitor->view_unmap.link);
+	}
+
 	inhibitor->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_inhibitor->events.destroy, &inhibitor->destroy);
 
@@ -58,8 +72,9 @@ void sway_idle_inhibit_v1_user_inhibitor_register(struct sway_view *view,
 	inhibitor->view = view;
 	wl_list_insert(&inhibitor->manager->inhibitors, &inhibitor->link);
 
-	inhibitor->destroy.notify = handle_destroy;
-	wl_signal_add(&view->events.unmap, &inhibitor->destroy);
+	inhibitor->view_unmap.notify = handle_view_unmap;
+	wl_signal_add(&view->events.unmap, &inhibitor->view_unmap);
+	wl_list_init(&inhibitor->destroy.link);
 
 	sway_idle_inhibit_v1_check_active(inhibitor->manager);
 }

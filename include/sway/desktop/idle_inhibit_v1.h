@@ -27,6 +27,7 @@ struct sway_idle_inhibitor_v1 {
 
 	struct wl_list link;
 	struct wl_listener destroy;
+	struct wl_listener view_unmap;
 };
 
 bool sway_idle_inhibit_v1_is_active(
