@@ -48,6 +48,9 @@ _swaynag_ [options...]
 *-e, --edge* top|bottom
 	Set the edge to use.
 
+*-y, --layer* overlay|top|bottom|background
+	Set the layer to use.
+
 *-f, --font* <font>
 	Set the font to use.
 

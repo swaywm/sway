@@ -79,6 +79,9 @@ Additionally, the following options can be assigned a default per-type:
 *edge=top|bottom*
 	Set the edge to use.
 
+*layer=overlay|top|bottom|background*
+	Set the layer to use.
+
 *font=<font>*
 	Set the font to use.
 

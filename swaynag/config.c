@@ -59,6 +59,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		{"config", required_argument, NULL, 'c'},
 		{"debug", no_argument, NULL, 'd'},
 		{"edge", required_argument, NULL, 'e'},
+		{"layer", required_argument, NULL, 'y'},
 		{"font", required_argument, NULL, 'f'},
 		{"help", no_argument, NULL, 'h'},
 		{"detailed-message", no_argument, NULL, 'l'},
@@ -104,6 +105,8 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		"  -c, --config <path>             Path to config file.\n"
 		"  -d, --debug                     Enable debugging.\n"
 		"  -e, --edge top|bottom           Set the edge to use.\n"
+		"  -y, --layer overlay|top|bottom|background\n"
+	    "                                  Set the layer to use.\n"
 		"  -f, --font <font>               Set the font to use.\n"
 		"  -h, --help                      Show help message and quit.\n"
 		"  -l, --detailed-message          Read a detailed message from stdin.\n"
@@ -133,7 +136,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 
 	optind = 1;
 	while (1) {
-		int c = getopt_long(argc, argv, "b:B:z:Z:c:de:f:hlL:m:o:s:t:v", opts, NULL);
+		int c = getopt_long(argc, argv, "b:B:z:Z:c:de:y:f:hlL:m:o:s:t:v", opts, NULL);
 		if (c == -1) {
 			break;
 		}
@@ -180,6 +183,24 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 				} else {
 					fprintf(stderr, "Invalid edge: %s\n", optarg);
+					return EXIT_FAILURE;
+				}
+			}
+			break;
+		case 'y': // Layer
+			if (type) {
+				if (strcmp(optarg, "background") == 0) {
+					type->layer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
+				} else if (strcmp(optarg, "bottom") == 0) {
+					type->layer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+				} else if (strcmp(optarg, "top") == 0) {
+					type->layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+				} else if (strcmp(optarg, "overlay") == 0) {
+					type->layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+				} else {
+					fprintf(stderr, "Invalid layer: %s\n"
+							"Usage: --layer overlay|top|bottom|background\n",
+							optarg);
 					return EXIT_FAILURE;
 				}
 			}

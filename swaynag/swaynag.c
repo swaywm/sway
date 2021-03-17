@@ -476,7 +476,8 @@ void swaynag_setup(struct swaynag *swaynag) {
 	swaynag->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			swaynag->layer_shell, swaynag->surface,
 			swaynag->output ? swaynag->output->wl_output : NULL,
-			ZWLR_LAYER_SHELL_V1_LAYER_TOP, "swaynag");
+			swaynag->type->layer,
+			"swaynag");
 	assert(swaynag->layer_surface);
 	zwlr_layer_surface_v1_add_listener(swaynag->layer_surface,
 			&layer_surface_listener, swaynag);
