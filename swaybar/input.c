@@ -101,6 +101,8 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaybar_seat *seat = data;
 	struct swaybar_pointer *pointer = &seat->pointer;
+	seat->pointer.x = wl_fixed_to_double(surface_x);
+	seat->pointer.y = wl_fixed_to_double(surface_y);
 	pointer->serial = serial;
 	struct swaybar_output *output;
 	wl_list_for_each(output, &seat->bar->outputs, link) {
