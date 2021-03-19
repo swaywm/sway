@@ -91,7 +91,7 @@ struct bar_config *default_bar_config(void) {
 	}
 	bar->outputs = NULL;
 	bar->position = strdup("bottom");
-	bar->pango_markup = false;
+	bar->pango_markup = PANGO_MARKUP_DEFAULT;
 	bar->swaybar_command = NULL;
 	bar->font = NULL;
 	bar->height = 0;
