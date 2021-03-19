@@ -292,6 +292,12 @@ struct workspace_config {
 	struct side_gaps gaps_outer;
 };
 
+enum pango_markup_config {
+	PANGO_MARKUP_DISABLED = false,
+	PANGO_MARKUP_ENABLED = true,
+	PANGO_MARKUP_DEFAULT // The default is font dependent ("pango:" prefix)
+};
+
 struct bar_config {
 	char *swaybar_command;
 	struct wl_client *client;
@@ -323,7 +329,7 @@ struct bar_config {
 	char *position;
 	list_t *bindings;
 	char *status_command;
-	bool pango_markup;
+	enum pango_markup_config pango_markup;
 	char *font;
 	int height; // -1 not defined
 	bool workspace_buttons;
