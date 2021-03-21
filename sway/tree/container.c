@@ -1705,10 +1705,16 @@ static bool is_parallel(enum sway_container_layout first,
 static bool container_is_squashable(struct sway_container *con,
 		struct sway_container *child) {
 	enum sway_container_layout gp_layout = container_parent_layout(con);
-	return (con->pending.layout == L_HORIZ || con->pending.layout == L_VERT) &&
-		(child->pending.layout == L_HORIZ || child->pending.layout == L_VERT) &&
+	bool both_tiling = (con->pending.layout == L_HORIZ || con->pending.layout == L_VERT) &&
+		(child->pending.layout == L_HORIZ || child->pending.layout == L_VERT);
+
+	// this function is only called when con has one child. Therefore
+	// it is redundant if its layout is the same as the child's
+	return  (con->pending.layout == child->pending.layout) ||
+		// We can squash eg. H[a, b, V[H[c, d]]] to H[a, b, c, d]
+		(both_tiling &&
 		!is_parallel(con->pending.layout, child->pending.layout) &&
-		is_parallel(gp_layout, child->pending.layout);
+		is_parallel(gp_layout, child->pending.layout));
 }
 
 static void container_squash_children(struct sway_container *con) {
@@ -1730,7 +1736,7 @@ int container_squash(struct sway_container *con) {
 	int idx = container_sibling_index(con);
 	int change = 0;
 	if (container_is_squashable(con, child)) {
-		// con and child are a redundant H/V pair. Destroy them.
+		// con and child are a redundant pair. Destroy them.
 		while (child->pending.children->length) {
 			struct sway_container *current = child->pending.children->items[0];
 			container_detach(current);
