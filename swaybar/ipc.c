@@ -547,9 +547,14 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		return false;
 	}
 
-	json_object *result = json_tokener_parse(resp->payload);
-	if (!result) {
-		sway_log(SWAY_ERROR, "failed to parse payload as json");
+	json_tokener *tok = json_tokener_new_ex(INT_MAX);
+	json_object *result = json_tokener_parse_ex(tok, resp->payload, -1);
+	enum json_tokener_error err = json_tokener_get_error(tok);
+	json_tokener_free(tok);
+
+	if (err != json_tokener_success) {
+		sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+				json_tokener_error_desc(err));
 		free_ipc_response(resp);
 		return false;
 	}
