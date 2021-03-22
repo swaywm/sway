@@ -1,4 +1,3 @@
-#include "sway/config.h"
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <math.h>
@@ -33,6 +32,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "sway/commands.h"
+#include "sway/config.h"
 
 static struct wlr_surface *layer_surface_at(struct sway_output *output,
 		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
