@@ -23,6 +23,7 @@
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_tablet_v2.h>
+#include <wlr/types/wlr_transactions_v1.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
@@ -155,6 +156,7 @@ bool server_init(struct sway_server *server) {
 	wlr_data_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
+	wlr_transaction_manager_v1_create(server->wl_display);
 
 #if WLR_HAS_XDG_FOREIGN
 	struct wlr_xdg_foreign_registry *foreign_registry =
