@@ -31,7 +31,7 @@ def icon_for_window(window):
     else:
         # xwayland support
         class_name = window.window_class
-        if len(class_name) > 0:
+        if class_name is not None and len(class_name) > 0:
             class_name = class_name.lower()
             if class_name in WINDOW_ICONS:
                 return WINDOW_ICONS[class_name]
