@@ -87,6 +87,9 @@ struct sway_server {
 	struct wlr_text_input_manager_v3 *text_input;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 
+	struct wlr_xdg_activation_v1 *xdg_activation_v1;
+	struct wl_listener xdg_activation_v1_request_activate;
+
 	// The timeout for transactions, after which a transaction is applied
 	// regardless of readiness.
 	size_t txn_timeout_ms;
@@ -141,5 +144,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data);
 void handle_server_decoration(struct wl_listener *listener, void *data);
 void handle_xdg_decoration(struct wl_listener *listener, void *data);
 void handle_pointer_constraint(struct wl_listener *listener, void *data);
+void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
+	void *data);
 
 #endif

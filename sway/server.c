@@ -25,6 +25,7 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_foreign_registry.h>
 #include <wlr/types/wlr_xdg_foreign_v1.h>
@@ -158,6 +159,12 @@ bool server_init(struct sway_server *server) {
 		wlr_xdg_foreign_registry_create(server->wl_display);
 	wlr_xdg_foreign_v1_create(server->wl_display, foreign_registry);
 	wlr_xdg_foreign_v2_create(server->wl_display, foreign_registry);
+
+	server->xdg_activation_v1 = wlr_xdg_activation_v1_create(server->wl_display);
+	server->xdg_activation_v1_request_activate.notify =
+		xdg_activation_v1_handle_request_activate;
+	wl_signal_add(&server->xdg_activation_v1->events.request_activate,
+		&server->xdg_activation_v1_request_activate);
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
