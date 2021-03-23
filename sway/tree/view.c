@@ -1157,6 +1157,9 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if (wlr_surface_is_subsurface(wlr_surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(wlr_surface);
+		if (subsurface == NULL) {
+			return NULL;
+		}
 		return view_from_wlr_surface(subsurface->parent);
 	}
 	if (wlr_surface_is_layer_surface(wlr_surface)) {
