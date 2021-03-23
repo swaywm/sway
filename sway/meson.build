@@ -8,6 +8,7 @@ sway_sources = files(
 	'main.c',
 	'server.c',
 	'swaynag.c',
+	'xdg_activation_v1.c',
 	'xdg_decoration.c',
 
 	'desktop/desktop.c',
