@@ -352,6 +352,7 @@ static char *config_path(const char *prefix, const char *config_folder) {
 }
 
 static char *get_config_path(void) {
+	char *path = NULL;
 	const char *home = getenv("HOME");
 	size_t size_fallback = 1 + strlen(home) + strlen("/.config");
 	char *config_home_fallback = calloc(size_fallback, sizeof(char));
@@ -378,19 +379,19 @@ static char *get_config_path(void) {
 
 	size_t num_config_paths = sizeof(config_paths)/sizeof(config_paths[0]);
 	for (size_t i = 0; i < num_config_paths; i++) {
-		char *path = config_path(config_paths[i].prefix, config_paths[i].config_folder);
+		path = config_path(config_paths[i].prefix, config_paths[i].config_folder);
 		if (!path) {
 			continue;
 		}
 		if (file_exists(path)) {
-			free(config_home_fallback);
-			return path;
+			break;
 		}
 		free(path);
+		path = NULL;
 	}
 
 	free(config_home_fallback);
-	return NULL;
+	return path;
 }
 
 static bool load_config(const char *path, struct sway_config *config,
