@@ -16,6 +16,7 @@ packages:
   - wayland-dev
   - wayland-protocols
   - xcb-util-image-dev
+  - xcb-util-wm-dev
   - xwayland
 sources:
   - https://github.com/swaywm/sway
