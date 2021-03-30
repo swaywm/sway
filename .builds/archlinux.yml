@@ -13,6 +13,7 @@ packages:
   - wayland
   - wayland-protocols
   - xcb-util-image
+  - xcb-util-wm
   - xorg-xwayland
 sources:
   - https://github.com/swaywm/sway
