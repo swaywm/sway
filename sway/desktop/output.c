@@ -553,6 +553,7 @@ static int output_repaint_timer_handler(void *data) {
 		if (last_scanned_out && !scanned_out) {
 			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out on %s",
 				output->wlr_output->name);
+			output_damage_whole(output);
 		}
 		last_scanned_out = scanned_out;
 
