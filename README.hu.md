@@ -13,7 +13,7 @@ A kiadott csomagok az [E88F5E48] kulccsal vannak aláírva és [GitHub-on][GitHu
 A Sway sok disztribúció csomagkezelőjéből elérhető, próbáld meg a "sway"
 csomagot telepíteni az általad használt eszközzel.
 
-Ha szeretnél csomagot készíteni a saját disztribúciódhoz, ugurj be az IRC
+Ha szeretnél csomagot készíteni a saját disztribúciódhoz, ugorj be az IRC
 csatornára, vagy küldj levelet a sir@cmpwn.com címre tanácsokért.
 
 ### Fordítás forráskódból
@@ -44,7 +44,7 @@ Futtasd ezeket a parancsokat:
     ninja -C build
     sudo ninja -C build install
 
-Ha `logind` nélküli rendszert használsz, akkor be kell állítanod a `suid` bit-et
+Ha `logind` nélküli rendszert használsz, akkor be kell állítanod a `suid` bitet
 a futtaható állományon:
 
     sudo chmod a+s /usr/local/bin/sway
