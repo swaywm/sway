@@ -1,6 +1,6 @@
 # sway
 
-**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Danish][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu]
+**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Türkçe][tr] -  [Danish][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.freenode.net).
@@ -76,6 +76,7 @@ sway (gdm is known to work fairly well).
 [ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
 [zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
 [pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
+[tr]: https://github.com/swaywm/sway/blob/master/README.tr.md
 [dk]: https://github.com/swaywm/sway/blob/master/README.dk.md
 [ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
 [ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
