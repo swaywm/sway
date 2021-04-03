@@ -1,7 +1,5 @@
 # sway
 
-[English][en] - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - **[Türkçe][tr]** - [Danish][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu]
-
 sway, i3 ile bağdaşlaşan ve wayland üzerinde çalışan bir pencere yöneticisidir. 
 [SSS] okuyun. [IRC] kanalına katılın \(irc.freenode.net üzerinde #sway).
 
