@@ -1039,16 +1039,15 @@ void container_end_mouse_operation(struct sway_container *container) {
 	}
 }
 
-static void set_fullscreen_iterator(struct sway_container *con, void *data) {
+static void set_fullscreen(struct sway_container *con, bool enable) {
 	if (!con->view) {
 		return;
 	}
 	if (con->view->impl->set_fullscreen) {
-		bool *enable = data;
-		con->view->impl->set_fullscreen(con->view, *enable);
+		con->view->impl->set_fullscreen(con->view, enable);
 		if (con->view->foreign_toplevel) {
 			wlr_foreign_toplevel_handle_v1_set_fullscreen(
-				con->view->foreign_toplevel, *enable);
+				con->view->foreign_toplevel, enable);
 		}
 	}
 }
@@ -1058,9 +1057,7 @@ static void container_fullscreen_workspace(struct sway_container *con) {
 				"Expected a non-fullscreen container")) {
 		return;
 	}
-	bool enable = true;
-	set_fullscreen_iterator(con, &enable);
-	container_for_each_child(con, set_fullscreen_iterator, &enable);
+	set_fullscreen(con, true);
 	con->pending.fullscreen_mode = FULLSCREEN_WORKSPACE;
 
 	con->saved_x = con->pending.x;
@@ -1094,9 +1091,7 @@ static void container_fullscreen_global(struct sway_container *con) {
 				"Expected a non-fullscreen container")) {
 		return;
 	}
-	bool enable = true;
-	set_fullscreen_iterator(con, &enable);
-	container_for_each_child(con, set_fullscreen_iterator, &enable);
+	set_fullscreen(con, true);
 
 	root->fullscreen_global = con;
 	con->saved_x = con->pending.x;
@@ -1122,9 +1117,7 @@ void container_fullscreen_disable(struct sway_container *con) {
 				"Expected a fullscreen container")) {
 		return;
 	}
-	bool enable = false;
-	set_fullscreen_iterator(con, &enable);
-	container_for_each_child(con, set_fullscreen_iterator, &enable);
+	set_fullscreen(con, false);
 
 	if (container_is_floating(con)) {
 		con->pending.x = con->saved_x;
@@ -1388,10 +1381,6 @@ void container_add_child(struct sway_container *parent,
 	child->pending.parent = parent;
 	child->pending.workspace = parent->pending.workspace;
 	container_for_each_child(child, set_workspace, NULL);
-	bool fullscreen = child->pending.fullscreen_mode != FULLSCREEN_NONE ||
-		parent->pending.fullscreen_mode != FULLSCREEN_NONE;
-	set_fullscreen_iterator(child, &fullscreen);
-	container_for_each_child(child, set_fullscreen_iterator, &fullscreen);
 	container_handle_fullscreen_reparent(child);
 	container_update_representation(parent);
 	node_set_dirty(&child->node);
