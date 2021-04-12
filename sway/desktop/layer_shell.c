@@ -191,7 +191,7 @@ void arrange_layers(struct sway_output *output) {
 		arrange_output(output);
 	}
 
-	// Arrange non-exlusive surfaces from top->bottom
+	// Arrange non-exclusive surfaces from top->bottom
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 			&usable_area, false);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
