@@ -12,6 +12,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
+#include <wlr/version.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
@@ -344,6 +345,7 @@ int main(int argc, char **argv) {
 	}
 
 	sway_log(SWAY_INFO, "Sway version " SWAY_VERSION);
+	sway_log(SWAY_INFO, "wlroots version " WLR_VERSION_STR);
 	log_kernel();
 	log_distro();
 	log_env();
