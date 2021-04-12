@@ -94,11 +94,8 @@ static void resize_box(struct wlr_box *box, enum wlr_edges edge,
 
 static void handle_motion_postthreshold(struct sway_seat *seat) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
 	struct sway_cursor *cursor = seat->cursor;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_node *node = cursor->current.node;
 	// Damage the old location
 	desktop_damage_box(&e->drop_box);
 
