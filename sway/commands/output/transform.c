@@ -71,7 +71,7 @@ struct cmd_results *output_cmd_transform(int argc, char **argv) {
 				"Cannot apply relative transform to all outputs.");
 		}
 		struct sway_output *s_output = output_by_name_or_id(output->name);
-		if (s_output == NULL) {
+		if (!s_output) {
 			return cmd_results_new(CMD_INVALID,
 				"Cannot apply relative transform to unknown output %s", output->name);
 		}

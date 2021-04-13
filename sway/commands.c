@@ -180,7 +180,7 @@ static void set_config_node(struct sway_node *node, bool node_overridden) {
 	config->handler_context.workspace = NULL;
 	config->handler_context.node_overridden = node_overridden;
 
-	if (node == NULL) {
+	if (!node) {
 		return;
 	}
 
@@ -205,7 +205,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 	list_t *containers = NULL;
 	bool using_criteria = false;
 
-	if (seat == NULL) {
+	if (!seat) {
 		// passing a NULL seat means we just pick the default seat
 		seat = input_manager_get_default_seat();
 		if (!sway_assert(seat, "could not find a seat to run the command on")) {

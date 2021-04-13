@@ -13,7 +13,7 @@ struct cmd_results *cmd_opacity(int argc, char **argv) {
 
 	struct sway_container *con = config->handler_context.container;
 
-	if (con == NULL) {
+	if (!con) {
 		return cmd_results_new(CMD_FAILURE, "No current container");
 	}
 

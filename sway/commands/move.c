@@ -516,7 +516,7 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		destination = seat_get_focus_inactive(seat, &new_output->node);
 	} else if (strcasecmp(argv[0], "mark") == 0) {
 		struct sway_container *dest_con = container_find_mark(argv[1]);
-		if (dest_con == NULL) {
+		if (!dest_con) {
 			return cmd_results_new(CMD_FAILURE,
 					"Mark '%s' not found", argv[1]);
 		}
