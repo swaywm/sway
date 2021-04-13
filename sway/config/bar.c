@@ -200,7 +200,7 @@ static void invoke_swaybar(struct bar_config *bar) {
 	}
 
 	bar->client = wl_client_create(server.wl_display, sockets[0]);
-	if (bar->client == NULL) {
+	if (!bar->client) {
 		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
 		return;
 	}

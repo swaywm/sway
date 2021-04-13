@@ -46,11 +46,11 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 
 struct output_config *new_output_config(const char *name) {
 	struct output_config *oc = calloc(1, sizeof(struct output_config));
-	if (oc == NULL) {
+	if (!oc) {
 		return NULL;
 	}
 	oc->name = strdup(name);
-	if (oc->name == NULL) {
+	if (!oc->name) {
 		free(oc);
 		return NULL;
 	}
@@ -256,7 +256,7 @@ static void set_mode(struct wlr_output *output, int width, int height,
 				best = mode;
 				break;
 			}
-			if (best == NULL || mode->refresh > best->refresh) {
+			if (!best || mode->refresh > best->refresh) {
 				best = mode;
 			}
 		}
@@ -690,7 +690,7 @@ static bool _spawn_swaybg(char **command) {
 	}
 
 	config->swaybg_client = wl_client_create(server.wl_display, sockets[0]);
-	if (config->swaybg_client == NULL) {
+	if (!config->swaybg_client) {
 		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
 		return false;
 	}

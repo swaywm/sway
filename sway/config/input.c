@@ -235,7 +235,7 @@ static bool validate_type_on_existing(struct input_config *type_wildcard,
 		char **error) {
 	for (int i = 0; i < config->input_configs->length; i++) {
 		struct input_config *ic = config->input_configs->items[i];
-		if (ic->input_type == NULL) {
+		if (!ic->input_type) {
 			continue;
 		}
 
@@ -253,7 +253,7 @@ static bool validate_type_on_existing(struct input_config *type_wildcard,
 static void merge_type_on_existing(struct input_config *type_wildcard) {
 	for (int i = 0; i < config->input_configs->length; i++) {
 		struct input_config *ic = config->input_configs->items[i];
-		if (ic->input_type == NULL) {
+		if (!ic->input_type) {
 			continue;
 		}
 

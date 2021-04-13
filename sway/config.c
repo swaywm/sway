@@ -359,7 +359,7 @@ static char *get_config_path(void) {
 	snprintf(config_home_fallback, size_fallback, "%s/.config", home);
 
 	const char *config_home = getenv("XDG_CONFIG_HOME");
-	if (config_home == NULL || config_home[0] == '\0') {
+	if (!config_home || config_home[0] == '\0') {
 		config_home = config_home_fallback;
 	}
 
@@ -396,7 +396,7 @@ static char *get_config_path(void) {
 
 static bool load_config(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag) {
-	if (path == NULL) {
+	if (!path) {
 		sway_log(SWAY_ERROR, "Unable to find a config file!");
 		return false;
 	}
@@ -432,13 +432,13 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	} else {
 		path = get_config_path();
 	}
-	if (path == NULL) {
+	if (!path) {
 		sway_log(SWAY_ERROR, "Cannot find config file");
 		return false;
 	}
 
 	char *real_path = realpath(path, NULL);
-	if (real_path == NULL) {
+	if (!real_path) {
 		sway_log(SWAY_ERROR, "%s not found", path);
 		free(path);
 		return false;
@@ -596,7 +596,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	char *real_path = realpath(full_path, NULL);
 	free(full_path);
 
-	if (real_path == NULL) {
+	if (!real_path) {
 		sway_log(SWAY_DEBUG, "%s not found.", path);
 		return false;
 	}
@@ -771,7 +771,7 @@ bool read_config(FILE *file, struct sway_config *config,
 	bool reading_main_config = false;
 	char *this_config = NULL;
 	size_t config_size = 0;
-	if (config->current_config == NULL) {
+	if (!config->current_config) {
 		reading_main_config = true;
 
 		int ret_seek = fseek(file, 0, SEEK_END);
@@ -784,7 +784,7 @@ bool read_config(FILE *file, struct sway_config *config,
 		rewind(file);
 
 		config->current_config = this_config = calloc(1, config_size + 1);
-		if (this_config == NULL) {
+		if (!this_config) {
 			sway_log(SWAY_ERROR, "Unable to allocate buffer for config contents");
 			return false;
 		}
