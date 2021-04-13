@@ -44,14 +44,14 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 }
 
 void view_destroy(struct sway_view *view) {
-	if (!sway_assert(view->surface == NULL, "Tried to free mapped view")) {
+	if (!sway_assert(!view->surface, "Tried to free mapped view")) {
 		return;
 	}
 	if (!sway_assert(view->destroying,
 				"Tried to free view which wasn't marked as destroying")) {
 		return;
 	}
-	if (!sway_assert(view->container == NULL,
+	if (!sway_assert(!view->container,
 				"Tried to free view which still has a container "
 				"(might have a pending transaction?)")) {
 		return;
@@ -71,7 +71,7 @@ void view_destroy(struct sway_view *view) {
 }
 
 void view_begin_destroy(struct sway_view *view) {
-	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+	if (!sway_assert(!view->surface, "Tried to destroy a mapped view")) {
 		return;
 	}
 	view->destroying = true;
@@ -700,7 +700,7 @@ static void handle_foreign_destroy(
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			  bool fullscreen, struct wlr_output *fullscreen_output,
 			  bool decoration) {
-	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
+	if (!sway_assert(!view->surface, "cannot map mapped view")) {
 		return;
 	}
 	view->surface = wlr_surface;
@@ -910,7 +910,7 @@ static void subsurface_get_root_coords(struct sway_view_child *child,
 		while (surface && wlr_surface_is_subsurface(surface)) {
 			struct wlr_subsurface *subsurface =
 				wlr_subsurface_from_wlr_surface(surface);
-			if (subsurface == NULL) {
+			if (!subsurface) {
 				break;
 			}
 			*root_sx += subsurface->current.x;
@@ -949,7 +949,7 @@ static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *wlr_subsurface) {
 	struct sway_subsurface *subsurface =
 		calloc(1, sizeof(struct sway_subsurface));
-	if (subsurface == NULL) {
+	if (!subsurface) {
 		sway_log(SWAY_ERROR, "Allocation failed");
 		return;
 	}
@@ -968,7 +968,7 @@ static void view_child_subsurface_create(struct sway_view_child *child,
 		struct wlr_subsurface *wlr_subsurface) {
 	struct sway_subsurface *subsurface =
 		calloc(1, sizeof(struct sway_subsurface));
-	if (subsurface == NULL) {
+	if (!subsurface) {
 		sway_log(SWAY_ERROR, "Allocation failed");
 		return;
 	}
@@ -1139,7 +1139,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if (wlr_surface_is_xdg_surface(wlr_surface)) {
 		struct wlr_xdg_surface *xdg_surface =
 			wlr_xdg_surface_from_wlr_surface(wlr_surface);
-		if (xdg_surface == NULL) {
+		if (!xdg_surface) {
 			return NULL;
 		}
 		return view_from_wlr_xdg_surface(xdg_surface);
@@ -1148,7 +1148,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
 		struct wlr_xwayland_surface *xsurface =
 			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
-		if (xsurface == NULL) {
+		if (!xsurface) {
 			return NULL;
 		}
 		return view_from_wlr_xwayland_surface(xsurface);
@@ -1157,7 +1157,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if (wlr_surface_is_subsurface(wlr_surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(wlr_surface);
-		if (subsurface == NULL) {
+		if (!subsurface) {
 			return NULL;
 		}
 		return view_from_wlr_surface(subsurface->parent);

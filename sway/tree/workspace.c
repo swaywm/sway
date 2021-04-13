@@ -56,7 +56,7 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 
 struct sway_workspace *workspace_create(struct sway_output *output,
 		const char *name) {
-	if (output == NULL) {
+	if (!output) {
 		output = workspace_get_initial_output(name);
 	}
 
@@ -584,7 +584,7 @@ bool workspace_switch(struct sway_workspace *workspace,
 	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
 	struct sway_node *next = seat_get_focus_inactive(seat, &workspace->node);
-	if (next == NULL) {
+	if (!next) {
 		next = &workspace->node;
 	}
 	seat_set_focus(seat, next);
