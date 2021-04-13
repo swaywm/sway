@@ -127,7 +127,7 @@ void ipc_init(struct sway_server *server) {
 
 struct sockaddr_un *ipc_user_sockaddr(void) {
 	struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
-	if (ipc_sockaddr == NULL) {
+	if (!ipc_sockaddr) {
 		sway_abort("Can't allocate ipc_sockaddr");
 	}
 
@@ -714,7 +714,7 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 	{
 		// TODO: Check if they're permitted to use these events
 		struct json_object *request = json_tokener_parse(buf);
-		if (request == NULL || !json_object_is_type(request, json_type_array)) {
+		if (!request || !json_object_is_type(request, json_type_array)) {
 			const char msg[] = "{\"success\": false}";
 			ipc_send_reply(client, payload_type, msg, strlen(msg));
 			sway_log(SWAY_INFO, "Failed to parse subscribe request");

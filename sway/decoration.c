@@ -22,7 +22,7 @@ static void server_decoration_handle_mode(struct wl_listener *listener,
 		wl_container_of(listener, deco, mode);
 	struct sway_view *view =
 		view_from_wlr_surface(deco->wlr_server_decoration->surface);
-	if (view == NULL || view->surface != deco->wlr_server_decoration->surface) {
+	if (!view || view->surface != deco->wlr_server_decoration->surface) {
 		return;
 	}
 
@@ -38,7 +38,7 @@ void handle_server_decoration(struct wl_listener *listener, void *data) {
 	struct wlr_server_decoration *wlr_deco = data;
 
 	struct sway_server_decoration *deco = calloc(1, sizeof(*deco));
-	if (deco == NULL) {
+	if (!deco) {
 		return;
 	}
 

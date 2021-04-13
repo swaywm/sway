@@ -457,7 +457,7 @@ static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	if (((!tab_or_stack || container_is_floating(c)) &&
 				c->current.border != B_NORMAL) ||
 			c->pending.fullscreen_mode != FULLSCREEN_NONE ||
-			c->pending.workspace == NULL) {
+			!c->pending.workspace) {
 		deco_rect->x = deco_rect->y = deco_rect->width = deco_rect->height = 0;
 		return;
 	}
@@ -657,7 +657,7 @@ static void focus_inactive_children_iterator(struct sway_node *node,
 	json_object *focus = data->object;
 	if (data->node == &root->node) {
 		struct sway_output *output = node_get_output(node);
-		if (output == NULL) {
+		if (!output) {
 			return;
 		}
 		size_t id = output->node.id;

@@ -51,7 +51,7 @@ bool swaynag_spawn(const char *swaynag_command,
 	}
 
 	swaynag->client = wl_client_create(server.wl_display, sockets[0]);
-	if (swaynag->client == NULL) {
+	if (!swaynag->client) {
 		sway_log_errno(SWAY_ERROR, "wl_client_create failed");
 		goto failed;
 	}
@@ -137,7 +137,7 @@ void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,
 		return;
 	}
 
-	if (swaynag->client == NULL && !swaynag_spawn(swaynag_command, swaynag)) {
+	if (!swaynag->client && !swaynag_spawn(swaynag_command, swaynag)) {
 		return;
 	}
 

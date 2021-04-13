@@ -32,7 +32,7 @@ void handle_xdg_decoration(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view = wlr_deco->surface->data;
 
 	struct sway_xdg_decoration *deco = calloc(1, sizeof(*deco));
-	if (deco == NULL) {
+	if (!deco) {
 		return;
 	}
 
