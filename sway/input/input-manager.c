@@ -133,7 +133,7 @@ static void apply_input_type_config(struct sway_input_device *input_device) {
 			break;
 		}
 	}
-	if (type_config == NULL) {
+	if (!type_config) {
 		return;
 	}
 

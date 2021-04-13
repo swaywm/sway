@@ -114,7 +114,7 @@ static void handle_tablet_tool_set_cursor(struct wl_listener *listener, void *da
 	}
 
 	// TODO: check cursor mode
-	if (focused_client == NULL ||
+	if (!focused_client ||
 			event->seat_client->client != focused_client) {
 		sway_log(SWAY_DEBUG, "denying request to set cursor from unfocused client");
 		return;

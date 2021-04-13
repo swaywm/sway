@@ -265,12 +265,12 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 
 	// Find new focus_inactive (ie. sibling, or workspace if no siblings left)
 	struct sway_node *next_focus = NULL;
-	while (next_focus == NULL && parent != NULL) {
+	while (!next_focus && parent) {
 		struct sway_container *con =
 			seat_get_focus_inactive_view(seat, parent);
 		next_focus = con ? &con->node : NULL;
 
-		if (next_focus == NULL && parent->type == N_WORKSPACE) {
+		if (!next_focus && parent->type == N_WORKSPACE) {
 			next_focus = parent;
 			break;
 		}
@@ -332,7 +332,7 @@ static struct sway_seat_node *seat_node_from_node(
 	}
 
 	seat_node = calloc(1, sizeof(struct sway_seat_node));
-	if (seat_node == NULL) {
+	if (!seat_node) {
 		sway_log(SWAY_ERROR, "could not allocate seat node");
 		return NULL;
 	}
@@ -375,7 +375,7 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 	case WLR_DRAG_GRAB_KEYBOARD_TOUCH:;
 		struct wlr_touch_point *point =
 			wlr_seat_touch_get_point(seat->wlr_seat, wlr_icon->drag->touch_id);
-		if (point == NULL) {
+		if (!point) {
 			return;
 		}
 		icon->x = seat->touch_x;
@@ -469,7 +469,7 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 	struct wlr_drag *wlr_drag = data;
 
 	struct sway_drag *drag = calloc(1, sizeof(struct sway_drag));
-	if (drag == NULL) {
+	if (!drag) {
 		sway_log(SWAY_ERROR, "Allocation failed");
 		return;
 	}
@@ -483,7 +483,7 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 	struct wlr_drag_icon *wlr_drag_icon = wlr_drag->icon;
 	if (wlr_drag_icon != NULL) {
 		struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
-		if (icon == NULL) {
+		if (!icon) {
 			sway_log(SWAY_ERROR, "Allocation failed");
 			return;
 		}
@@ -723,7 +723,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		 * built-in output.
 		 */
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
-		if (mapped_to_output == NULL && is_touch_or_tablet_tool(sway_device) &&
+		if (!mapped_to_output && is_touch_or_tablet_tool(sway_device) &&
 				sway_libinput_device_is_builtin(sway_device->input_device)) {
 			mapped_to_output = get_builtin_output_name();
 			if (mapped_to_output) {
@@ -731,7 +731,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 					mapped_to_output, sway_device->input_device->identifier);
 			}
 		}
-		if (mapped_to_output == NULL) {
+		if (!mapped_to_output) {
 			return;
 		}
 		/* fallthrough */
@@ -1123,7 +1123,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 
 	struct sway_workspace *last_workspace = seat_get_focused_workspace(seat);
 
-	if (node == NULL) {
+	if (!node) {
 		// Close any popups on the old focus
 		if (node_is_view(last_focus)) {
 			view_close_popups(last_focus->sway_container->view);

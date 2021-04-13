@@ -98,7 +98,7 @@ struct sway_node *node_at_coords(
 	// find the output the cursor is on
 	struct wlr_output *wlr_output = wlr_output_layout_output_at(
 			root->output_layout, lx, ly);
-	if (wlr_output == NULL) {
+	if (!wlr_output) {
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
@@ -888,7 +888,7 @@ static void handle_request_pointer_set_cursor(struct wl_listener *listener,
 	}
 
 	// TODO: check cursor mode
-	if (focused_client == NULL ||
+	if (!focused_client ||
 			event->seat_client->client != focused_client) {
 		sway_log(SWAY_DEBUG, "denying request to set cursor from unfocused client");
 		return;
@@ -1345,7 +1345,7 @@ void sway_cursor_constrain(struct sway_cursor *cursor,
 
 	wl_list_remove(&cursor->constraint_commit.link);
 	if (cursor->active_constraint) {
-		if (constraint == NULL) {
+		if (!constraint) {
 			warp_to_constraint_cursor_hint(cursor);
 		}
 		wlr_pointer_constraint_v1_send_deactivated(
@@ -1354,7 +1354,7 @@ void sway_cursor_constrain(struct sway_cursor *cursor,
 
 	cursor->active_constraint = constraint;
 
-	if (constraint == NULL) {
+	if (!constraint) {
 		wl_list_init(&cursor->constraint_commit.link);
 		return;
 	}

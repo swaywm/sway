@@ -142,7 +142,7 @@ static void relay_send_im_state(struct sway_input_method_relay *relay,
 static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
 		text_input_enable);
-	if (text_input->relay->input_method == NULL) {
+	if (!text_input->relay->input_method) {
 		sway_log(SWAY_INFO, "Enabling text input when input method is gone");
 		return;
 	}
@@ -159,7 +159,7 @@ static void handle_text_input_commit(struct wl_listener *listener,
 		return;
 	}
 	sway_log(SWAY_DEBUG, "Text input committed update");
-	if (text_input->relay->input_method == NULL) {
+	if (!text_input->relay->input_method) {
 		sway_log(SWAY_INFO, "Text input committed, but input method is gone");
 		return;
 	}
@@ -168,7 +168,7 @@ static void handle_text_input_commit(struct wl_listener *listener,
 
 static void relay_disable_text_input(struct sway_input_method_relay *relay,
 		struct sway_text_input *text_input) {
-	if (relay->input_method == NULL) {
+	if (!relay->input_method) {
 		sway_log(SWAY_DEBUG, "Disabling text input, but input method is gone");
 		return;
 	}
@@ -180,7 +180,7 @@ static void handle_text_input_disable(struct wl_listener *listener,
 		void *data) {
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
 		text_input_disable);
-	if (text_input->input->focused_surface == NULL) {
+	if (!text_input->input->focused_surface) {
 		sway_log(SWAY_DEBUG, "Disabling text input, but no longer focused");
 		return;
 	}
@@ -316,12 +316,12 @@ void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 	struct sway_text_input *text_input;
 	wl_list_for_each(text_input, &relay->text_inputs, link) {
 		if (text_input->pending_focused_surface) {
-			assert(text_input->input->focused_surface == NULL);
+			assert(!text_input->input->focused_surface);
 			if (surface != text_input->pending_focused_surface) {
 				text_input_set_pending_focused_surface(text_input, NULL);
 			}
 		} else if (text_input->input->focused_surface) {
-			assert(text_input->pending_focused_surface == NULL);
+			assert(!text_input->pending_focused_surface);
 			if (surface != text_input->input->focused_surface) {
 				relay_disable_text_input(relay, text_input);
 				wlr_text_input_v3_send_leave(text_input->input);

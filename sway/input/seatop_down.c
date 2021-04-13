@@ -21,7 +21,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 	struct input_config *ic =
 		input_device ? input_device_get_config(input_device) : NULL;
 	float scroll_factor =
-		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
+		(!ic || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
 
 	wlr_seat_pointer_notify_axis(seat->wlr_seat, event->time_msec,
 		event->orientation, scroll_factor * event->delta,
