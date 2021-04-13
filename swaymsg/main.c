@@ -481,7 +481,7 @@ int main(int argc, char **argv) {
 
 	// pretty print the json
 	json_object *obj = json_tokener_parse(resp);
-	if (obj == NULL) {
+	if (!obj) {
 		if (!quiet) {
 			fprintf(stderr, "ERROR: Could not parse json response from ipc. "
 					"This is a bug in sway.");
@@ -518,7 +518,7 @@ int main(int argc, char **argv) {
 			}
 
 			json_object *obj = json_tokener_parse(reply->payload);
-			if (obj == NULL) {
+			if (!obj) {
 				if (!quiet) {
 					fprintf(stderr, "ERROR: Could not parse json response from"
 							" ipc. This is a bug in sway.");
