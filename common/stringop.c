@@ -319,7 +319,7 @@ bool expand_path(char **path) {
 		memmove(ptr + 1, ptr, strlen(ptr) + 1);
 		*ptr = '\\';
 	}
-	if (wordexp(*path, &p, 0) != 0 || p.we_wordv[0] == NULL) {
+	if (wordexp(*path, &p, 0) != 0 || !p.we_wordv[0]) {
 		wordfree(&p);
 		return false;
 	}

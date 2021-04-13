@@ -91,7 +91,7 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	va_end(args);
 
 	char *buf = malloc(length);
-	if (buf == NULL) {
+	if (!buf) {
 		sway_log(SWAY_ERROR, "Failed to allocate memory");
 		return;
 	}
@@ -118,7 +118,7 @@ void pango_printf(cairo_t *cairo, const char *font,
 	va_end(args);
 
 	char *buf = malloc(length);
-	if (buf == NULL) {
+	if (!buf) {
 		sway_log(SWAY_ERROR, "Failed to allocate memory");
 		return;
 	}
