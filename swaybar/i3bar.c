@@ -13,7 +13,7 @@
 #include "swaybar/status_line.h"
 
 void i3bar_block_unref(struct i3bar_block *block) {
-	if (block == NULL) {
+	if (!block) {
 		return;
 	}
 

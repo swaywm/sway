@@ -51,7 +51,7 @@ bool status_handle_readable(struct status_line *status) {
 			status->buffer_size = available_bytes + 1;
 			status->buffer = realloc(status->buffer, status->buffer_size);
 		}
-		if (status->buffer == NULL) {
+		if (!status->buffer) {
 			sway_log_errno(SWAY_ERROR, "Unable to read status line");
 			status_error(status, "[error reading from status command]");
 			return true;

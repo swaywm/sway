@@ -298,7 +298,7 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
 	struct swaybar_pointer *pointer = &seat->pointer;
 	struct swaybar_output *output = pointer->current;
 
-	if (output == NULL) {
+	if (!output) {
 		return;
 	}
 
@@ -473,7 +473,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	if (!have_pointer && seat->pointer.pointer != NULL) {
 		wl_pointer_release(seat->pointer.pointer);
 		seat->pointer.pointer = NULL;
-	} else if (have_pointer && seat->pointer.pointer == NULL) {
+	} else if (have_pointer && !seat->pointer.pointer) {
 		seat->pointer.pointer = wl_seat_get_pointer(wl_seat);
 		if (seat->bar->running && !seat->pointer.cursor_surface) {
 			seat->pointer.cursor_surface =
@@ -485,7 +485,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	if (!have_touch && seat->touch.touch != NULL) {
 		wl_touch_release(seat->touch.touch);
 		seat->touch.touch = NULL;
-	} else if (have_touch && seat->touch.touch == NULL) {
+	} else if (have_touch && !seat->touch.touch) {
 		seat->touch.touch = wl_seat_get_touch(wl_seat);
 		wl_touch_add_listener(seat->touch.touch, &touch_listener, seat);
 	}
