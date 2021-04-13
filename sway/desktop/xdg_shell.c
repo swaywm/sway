@@ -90,7 +90,7 @@ static struct sway_xdg_popup *popup_create(
 
 	struct sway_xdg_popup *popup =
 		calloc(1, sizeof(struct sway_xdg_popup));
-	if (popup == NULL) {
+	if (!popup) {
 		return NULL;
 	}
 	view_child_init(&popup->child, &popup_impl, view, xdg_surface->surface);
@@ -131,7 +131,7 @@ static void get_constraints(struct sway_view *view, double *min_width,
 
 static const char *get_string_prop(struct sway_view *view,
 		enum sway_view_prop prop) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return NULL;
 	}
 	switch (prop) {
@@ -148,14 +148,14 @@ static uint32_t configure(struct sway_view *view, double lx, double ly,
 		int width, int height) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		xdg_shell_view_from_view(view);
-	if (xdg_shell_view == NULL) {
+	if (!xdg_shell_view) {
 		return 0;
 	}
 	return wlr_xdg_toplevel_set_size(view->wlr_xdg_surface, width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
@@ -165,7 +165,7 @@ static void set_activated(struct sway_view *view, bool activated) {
 }
 
 static void set_tiled(struct sway_view *view, bool tiled) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
@@ -178,7 +178,7 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 }
 
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
@@ -186,7 +186,7 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 }
 
 static void set_resizing(struct sway_view *view, bool resizing) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
@@ -204,7 +204,7 @@ static bool wants_floating(struct sway_view *view) {
 
 static void for_each_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	wlr_xdg_surface_for_each_surface(view->wlr_xdg_surface, iterator,
@@ -213,7 +213,7 @@ static void for_each_surface(struct sway_view *view,
 
 static void for_each_popup_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	wlr_xdg_surface_for_each_popup_surface(view->wlr_xdg_surface, iterator,
@@ -222,7 +222,7 @@ static void for_each_popup_surface(struct sway_view *view,
 
 static bool is_transient_for(struct sway_view *child,
 		struct sway_view *ancestor) {
-	if (xdg_shell_view_from_view(child) == NULL) {
+	if (!xdg_shell_view_from_view(child)) {
 		return false;
 	}
 	struct wlr_xdg_surface *surface = child->wlr_xdg_surface;
@@ -236,7 +236,7 @@ static bool is_transient_for(struct sway_view *child,
 }
 
 static void _close(struct sway_view *view) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	if (!xdg_shell_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
@@ -256,7 +256,7 @@ static void close_popups(struct sway_view *view) {
 static void destroy(struct sway_view *view) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		xdg_shell_view_from_view(view);
-	if (xdg_shell_view == NULL) {
+	if (!xdg_shell_view) {
 		return;
 	}
 	free(xdg_shell_view);
@@ -494,7 +494,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, destroy);
 	struct sway_view *view = &xdg_shell_view->view;
-	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+	if (!sway_assert(!view->surface, "Tried to destroy a mapped view")) {
 		return;
 	}
 	wl_list_remove(&xdg_shell_view->destroy.link);

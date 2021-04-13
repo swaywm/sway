@@ -1017,7 +1017,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 	}
 
 	struct sway_workspace *workspace = output->current.active_workspace;
-	if (workspace == NULL) {
+	if (!workspace) {
 		return;
 	}
 

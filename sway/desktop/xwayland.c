@@ -158,7 +158,7 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 		struct wlr_xwayland_surface *xsurface) {
 	struct sway_xwayland_unmanaged *surface =
 		calloc(1, sizeof(struct sway_xwayland_unmanaged));
-	if (surface == NULL) {
+	if (!surface) {
 		sway_log(SWAY_ERROR, "Allocation failed");
 		return NULL;
 	}
@@ -190,7 +190,7 @@ static struct sway_xwayland_view *xwayland_view_from_view(
 }
 
 static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return NULL;
 	}
 	switch (prop) {
@@ -208,7 +208,7 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 }
 
 static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return 0;
 	}
 	switch (prop) {
@@ -232,7 +232,7 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 static uint32_t configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
-	if (xwayland_view == NULL) {
+	if (!xwayland_view) {
 		return 0;
 	}
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
@@ -244,7 +244,7 @@ static uint32_t configure(struct sway_view *view, double lx, double ly, int widt
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
@@ -257,7 +257,7 @@ static void set_activated(struct sway_view *view, bool activated) {
 }
 
 static void set_tiled(struct sway_view *view, bool tiled) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
@@ -265,7 +265,7 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 }
 
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
@@ -273,7 +273,7 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 }
 
 static bool wants_floating(struct sway_view *view) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return false;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
@@ -316,7 +316,7 @@ static void handle_set_decorations(struct wl_listener *listener, void *data) {
 
 static bool is_transient_for(struct sway_view *child,
 		struct sway_view *ancestor) {
-	if (xwayland_view_from_view(child) == NULL) {
+	if (!xwayland_view_from_view(child)) {
 		return false;
 	}
 	struct wlr_xwayland_surface *surface = child->wlr_xwayland_surface;
@@ -330,7 +330,7 @@ static bool is_transient_for(struct sway_view *child,
 }
 
 static void _close(struct sway_view *view) {
-	if (xwayland_view_from_view(view) == NULL) {
+	if (!xwayland_view_from_view(view)) {
 		return;
 	}
 	wlr_xwayland_surface_close(view->wlr_xwayland_surface);
@@ -338,7 +338,7 @@ static void _close(struct sway_view *view) {
 
 static void destroy(struct sway_view *view) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
-	if (xwayland_view == NULL) {
+	if (!xwayland_view) {
 		return;
 	}
 	free(xwayland_view);
@@ -349,7 +349,7 @@ static void get_constraints(struct sway_view *view, double *min_width,
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	struct wlr_xwayland_surface_size_hints *size_hints = surface->size_hints;
 
-	if (size_hints == NULL) {
+	if (!size_hints) {
 		*min_width = DBL_MIN;
 		*max_width = DBL_MAX;
 		*min_height = DBL_MIN;
@@ -787,7 +787,7 @@ void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 		xcb_generic_error_t *error = NULL;
 		xcb_intern_atom_reply_t *reply =
 			xcb_intern_atom_reply(xcb_conn, cookies[i], &error);
-		if (reply != NULL && error == NULL) {
+		if (reply != NULL && !error) {
 			xwayland->atoms[i] = reply->atom;
 		}
 		free(reply);

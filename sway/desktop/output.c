@@ -492,7 +492,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	}
 
 	struct wlr_surface *surface = view->surface;
-	if (surface == NULL) {
+	if (!surface) {
 		return false;
 	}
 	size_t n_surfaces = 0;
@@ -502,7 +502,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	if (surface->buffer == NULL) {
+	if (!surface->buffer) {
 		return false;
 	}
 
@@ -524,14 +524,14 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
-	if (output->wlr_output == NULL) {
+	if (!output->wlr_output) {
 		return 0;
 	}
 
 	output->wlr_output->frame_pending = false;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
-	if (workspace == NULL) {
+	if (!workspace) {
 		return 0;
 	}
 

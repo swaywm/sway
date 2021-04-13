@@ -293,7 +293,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, layer, surface_commit);
 	struct wlr_layer_surface_v1 *layer_surface = layer->layer_surface;
 	struct wlr_output *wlr_output = layer_surface->output;
-	if (wlr_output == NULL) {
+	if (!wlr_output) {
 		return;
 	}
 
@@ -334,11 +334,11 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 	cursor_rebase_all();
 
 	struct wlr_output *wlr_output = sway_layer->layer_surface->output;
-	if (wlr_output == NULL) {
+	if (!wlr_output) {
 		return;
 	}
 	struct sway_output *output = wlr_output->data;
-	if (output == NULL) {
+	if (!output) {
 		return;
 	}
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
@@ -438,7 +438,7 @@ static struct sway_layer_subsurface *create_subsurface(
 		struct sway_layer_surface *layer_surface) {
 	struct sway_layer_subsurface *subsurface =
 			calloc(1, sizeof(struct sway_layer_subsurface));
-	if (subsurface == NULL) {
+	if (!subsurface) {
 		return NULL;
 	}
 
@@ -550,7 +550,7 @@ static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
 		enum layer_parent parent_type, void *parent) {
 	struct sway_layer_popup *popup =
 		calloc(1, sizeof(struct sway_layer_popup));
-	if (popup == NULL) {
+	if (!popup) {
 		return NULL;
 	}
 
