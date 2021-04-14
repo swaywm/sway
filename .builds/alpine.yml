@@ -6,6 +6,7 @@ packages:
   - json-c-dev
   - libevdev-dev
   - libinput-dev
+  - libseat-dev
   - libxcb-dev
   - libxkbcommon-dev
   - mesa-dev
