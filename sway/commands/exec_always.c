@@ -66,7 +66,8 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 		if ((child = fork()) == 0) {
 			close(fd[1]);
 			execlp("sh", "sh", "-c", cmd, (void *)NULL);
-			_exit(0);
+			sway_log_errno(SWAY_ERROR, "execlp failed");
+			_exit(1);
 		}
 		ssize_t s = 0;
 		while ((size_t)s < sizeof(pid_t)) {
