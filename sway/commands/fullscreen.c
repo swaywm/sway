@@ -33,15 +33,7 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 		}
 	}
 
-	bool is_fullscreen = false;
-	for (struct sway_container *curr = container; curr; curr = curr->pending.parent) {
-		if (curr->pending.fullscreen_mode != FULLSCREEN_NONE) {
-			container = curr;
-			is_fullscreen = true;
-			break;
-		}
-	}
-
+	bool is_fullscreen = container->pending.fullscreen_mode != FULLSCREEN_NONE;
 	bool global = false;
 	bool enable = !is_fullscreen;
 
