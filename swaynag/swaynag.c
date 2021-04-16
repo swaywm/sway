@@ -30,8 +30,8 @@ static bool terminal_execute(char *terminal, char *command) {
 	chmod(fname, S_IRUSR | S_IWUSR | S_IXUSR);
 	char *cmd = malloc(sizeof(char) * (strlen(terminal) + strlen(" -e ") + strlen(fname) + 1));
 	sprintf(cmd, "%s -e %s", terminal, fname);
-	execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-	sway_log_errno(SWAY_ERROR, "Failed to run command, execl() returned.");
+	execlp("sh", "sh", "-c", cmd, NULL);
+	sway_log_errno(SWAY_ERROR, "Failed to run command, execlp() returned.");
 	free(cmd);
 	return false;
 }
@@ -69,8 +69,8 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 						sway_log(SWAY_DEBUG,
 								"$TERMINAL not found. Running directly");
 					}
-					execl("/bin/sh", "/bin/sh", "-c", button->action, NULL);
-					sway_log_errno(SWAY_DEBUG, "execl failed");
+					execlp("sh", "sh", "-c", button->action, NULL);
+					sway_log_errno(SWAY_DEBUG, "execlp failed");
 					_exit(EXIT_FAILURE);
 				}
 			}

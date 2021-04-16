@@ -87,8 +87,8 @@ bool swaynag_spawn(const char *swaynag_command,
 			size_t length = strlen(swaynag_command) + strlen(swaynag->args) + 2;
 			char *cmd = malloc(length);
 			snprintf(cmd, length, "%s %s", swaynag_command, swaynag->args);
-			execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-			sway_log_errno(SWAY_ERROR, "execl failed");
+			execlp("sh", "sh", "-c", cmd, NULL);
+			sway_log_errno(SWAY_ERROR, "execlp failed");
 			_exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
