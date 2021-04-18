@@ -116,6 +116,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 	if (res && res->status != CMD_SUCCESS) {
 		if (id) {
 			free_bar_config(config->current_bar);
+			config->current_bar = NULL;
 			id = NULL;
 		}
 		return res;
