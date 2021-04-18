@@ -358,7 +358,8 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	if (e->fullscreen && e->output && e->output->data) {
 		struct sway_output *output = e->output->data;
 		struct sway_workspace *ws = output_get_active_workspace(output);
-		if (ws && !container_is_scratchpad_hidden(container)) {
+		if (ws && !container_is_scratchpad_hidden(container) &&
+				container->pending.workspace != ws) {
 			if (container_is_floating(container)) {
 				workspace_add_floating(ws, container);
 			} else {
