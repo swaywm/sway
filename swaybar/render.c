@@ -14,6 +14,9 @@
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
+#include "swaybar/tray/icon.h"
+#include "log.h"
+#include "background-image.h"
 #if HAVE_TRAY
 #include "swaybar/tray/tray.h"
 #endif
@@ -118,6 +121,51 @@ static uint32_t render_status_line_text(struct render_context *ctx, double *x) {
 	pango_printf(cairo, config->font, output->scale,
 			config->pango_markup, "%s", text);
 	*x -= margin;
+	return output->height;
+}
+
+static uint32_t render_focused_window_title(struct render_context *ctx, double *x, double max_width) {
+	struct swaybar_output *output = ctx->output;
+	const char *text = output->bar->focused_window ? output->bar->focused_window->name : "";
+	if (!text) {
+		return 0;
+	}
+
+	cairo_t *cairo = ctx->cairo;
+	struct swaybar_config *config = output->bar->config;
+	uint32_t fontcolor = output->focused ?
+			config->colors.focused_statusline : config->colors.statusline;
+	cairo_set_source_u32(cairo, fontcolor);
+
+	int text_width, text_height;
+	get_text_size(cairo,
+			config->font,
+			&text_width,
+			&text_height,
+			NULL,
+			output->scale,
+			config->pango_markup,
+			"%s",
+			text);
+
+	double ws_vertical_padding = config->status_padding * output->scale;
+	int margin = 6 * output->scale;
+
+	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
+	uint32_t ideal_surface_height = ideal_height / output->scale;
+	if (!output->bar->config->height &&
+			output->height < ideal_surface_height) {
+		return ideal_surface_height;
+	}
+
+	/* *x += margin; */
+	uint32_t height = output->height * output->scale;
+	double text_y = height / 2.0 - text_height / 2.0;
+	cairo_move_to(cairo, *x, (int)floor(text_y));
+	choose_text_aa_mode(ctx, fontcolor);
+	pango_printf_ellipsize(cairo, config->font, output->scale,
+						   config->pango_markup, max_width, "%s", text);
+	*x += margin;
 	return output->height;
 }
 
@@ -539,7 +587,7 @@ static uint32_t render_status_line(struct render_context *ctx, double *x) {
 }
 
 static uint32_t render_binding_mode_indicator(struct render_context *ctx,
-		double x) {
+		double *x) {
 	struct swaybar_output *output = ctx->output;
 	const char *mode = output->bar->mode;
 	if (!mode) {
@@ -573,25 +621,28 @@ static uint32_t render_binding_mode_indicator(struct render_context *ctx,
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_u32(cairo, config->colors.binding_mode.background);
 	ctx->background_color = config->colors.binding_mode.background;
-	cairo_rectangle(cairo, x, 0, width, height);
+	cairo_rectangle(cairo, *x, 0, width, height);
 	cairo_fill(cairo);
 
 	cairo_set_source_u32(cairo, config->colors.binding_mode.border);
-	cairo_rectangle(cairo, x, 0, width, border_width);
+	cairo_rectangle(cairo, *x, 0, width, border_width);
 	cairo_fill(cairo);
-	cairo_rectangle(cairo, x, 0, border_width, height);
+	cairo_rectangle(cairo, *x, 0, border_width, height);
 	cairo_fill(cairo);
-	cairo_rectangle(cairo, x + width - border_width, 0, border_width, height);
+	cairo_rectangle(cairo, *x + width - border_width, 0, border_width, height);
 	cairo_fill(cairo);
-	cairo_rectangle(cairo, x, height - border_width, width, border_width);
+	cairo_rectangle(cairo, *x, height - border_width, width, border_width);
 	cairo_fill(cairo);
 
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, config->colors.binding_mode.text);
-	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
+	cairo_move_to(cairo, *x + width / 2 - text_width / 2, (int)floor(text_y));
 	choose_text_aa_mode(ctx, config->colors.binding_mode.text);
 	pango_printf(cairo, config->font, output->scale,
 			output->bar->mode_pango_markup, "%s", mode);
+
+	*x += width;
+
 	return output->height;
 }
 
@@ -681,6 +732,76 @@ static uint32_t render_workspace_button(struct render_context *ctx,
 	return output->height;
 }
 
+uint32_t render_focused_window_icon(cairo_t *cairo,
+		struct swaybar_output *output,
+		double *x) {
+	assert(output);
+	assert(output->bar);
+
+	if (!output->bar->focused_window) {
+		return output->height;
+	}
+
+	uint32_t height = output->height * output->scale;
+	int padding = 4;
+	int target_size = height - 2 * padding;
+
+	char *icon_name = output->bar->focused_window->icon_name;
+	cairo_surface_t *icon = NULL;
+	if (icon_name) {
+		char *icon_theme = output->bar->config->icon_theme;
+		list_t *basedirs = get_basedirs();
+		int min_size = 0;
+		int max_size = 0;
+
+		list_t *themes = create_list();
+		// TODO: Load correct theme
+		list_add(themes, "Adwaita");
+
+		assert(output->bar->tray);
+		assert(output->bar->tray->themes);
+		char *icon_path = find_icon(output->bar->tray->themes,
+				basedirs,
+				icon_name,
+				target_size,
+				icon_theme,
+				&min_size,
+				&max_size);
+		icon = load_background_image(icon_path);
+	} else {
+		// TODO: Generate a image on the fly
+		icon = load_background_image(
+				"/usr/share/icons/Adwaita/16x16/apps/"
+				"utilities-terminal-symbolic.symbolic.png");
+	}
+	assert(icon);
+	if (!icon) {
+		return output->height;
+	}
+
+	int icon_size;
+	int actual_size = cairo_image_surface_get_height(icon);
+	icon_size = actual_size < target_size ?
+		actual_size*(target_size/actual_size) : target_size;
+	icon = cairo_image_surface_scale(icon, icon_size, icon_size);
+
+	int padded_size = icon_size + 2 * padding;
+	int y = floor((height - padded_size) / 2.0);
+
+	cairo_operator_t op = cairo_get_operator(cairo);
+	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
+	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
+	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
+	cairo_fill(cairo);
+	cairo_set_operator(cairo, op);
+
+	*x += padded_size;
+
+	cairo_surface_destroy(icon);
+
+	return output->height;
+}
+
 static uint32_t render_to_cairo(struct render_context *ctx) {
 	cairo_t *cairo = ctx->cairo;
 	struct swaybar_output *output = ctx->output;
@@ -717,6 +838,8 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 		uint32_t h = render_status_line(ctx, &x);
 		max_height = h > max_height ? h : max_height;
 	}
+
+	double old_x = x;
 	x = 0;
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;
@@ -726,7 +849,15 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 		}
 	}
 	if (config->binding_mode_indicator) {
-		uint32_t h = render_binding_mode_indicator(ctx, x);
+		uint32_t h = render_binding_mode_indicator(ctx, &x);
+		max_height = h > max_height ? h : max_height;
+	}
+
+	if (!bar->workspace_changed && output->focused) {
+		uint32_t h = render_focused_window_icon(cairo, output, &x);
+		max_height = h > max_height ? h : max_height;
+		old_x -= x;
+		h = render_focused_window_title(ctx, &x, old_x);
 		max_height = h > max_height ? h : max_height;
 	}
 

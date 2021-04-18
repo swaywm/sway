@@ -5,14 +5,18 @@
 #include <string.h>
 #include <strings.h>
 #include <json.h>
+#include <assert.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
 #include "swaybar/status_line.h"
 #if HAVE_TRAY
 #include "swaybar/tray/tray.h"
 #endif
+#include "desktop.h"
 #include "config.h"
+#include "swaybar/tray/icon.h"
 #include "ipc-client.h"
+#include "background-image.h"
 #include "list.h"
 #include "log.h"
 #include "loop.h"
@@ -427,7 +431,7 @@ bool ipc_initialize(struct swaybar *bar) {
 	struct swaybar_config *config = bar->config;
 	char subscribe[128]; // suitably large buffer
 	len = snprintf(subscribe, 128,
-			"[ \"barconfig_update\" , \"bar_state_update\" %s %s ]",
+				   "[ \"barconfig_update\" , \"bar_state_update\", \"window\" %s %s ]",
 			config->binding_mode_indicator ? ", \"mode\"" : "",
 			config->workspace_buttons ? ", \"workspace\"" : "");
 	free(ipc_single_command(bar->ipc_event_socketfd,
@@ -541,6 +545,112 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 	return true;
 }
 
+static const char *get_app_name_from_node(json_object *json_node) {
+	assert(json_node);
+
+	json_object *json_app_id;
+	json_object_object_get_ex(json_node, "app_id", &json_app_id);
+	if (!json_app_id) {
+		// If no app_id is found, take the instance property from window_properties
+		json_object *json_window_properties;
+		json_object_object_get_ex(
+				json_node, "window_properties", &json_window_properties);
+		assert(json_window_properties);
+
+		json_object *json_instance;
+		json_object_object_get_ex(
+				json_window_properties, "instance", &json_instance);
+		assert(json_instance);
+
+		json_app_id = json_instance;
+	}
+
+	const char *app_id = json_object_get_string(json_app_id);
+	assert(app_id);
+
+	return app_id;
+}
+
+static struct swaybar_window *get_focused_window_from_nodes(
+		json_object *json_nodes) {
+	assert(json_nodes);
+
+	size_t json_nodes_length = json_object_array_length(json_nodes);
+	for (size_t i = 0; i < json_nodes_length; ++i) {
+		json_object *json_node;
+		json_node = json_object_array_get_idx(json_nodes, i);
+		struct json_object *json_focused;
+		json_object_object_get_ex(json_node, "focused", &json_focused);
+		assert(json_focused);
+		bool focused = json_object_get_boolean(json_focused);
+		struct json_object *json_type;
+		json_object_object_get_ex(json_node, "type", &json_type);
+		assert(json_type);
+		const char* type = json_object_get_string(json_type);
+		assert(type);
+
+		if (focused && ((strcmp(type, "con") == 0) ||
+							   (strcmp(type, "floating_con") == 0))) {
+			json_object *json_name;
+			json_object_object_get_ex(json_node, "name", &json_name);
+			assert(json_name);
+			const char *name = json_object_get_string(json_name);
+			assert(name);
+
+			const char *app_name = get_app_name_from_node(json_node);
+			char *desktop_entry = load_desktop_entry_from_xdgdirs(app_name);
+			char *icon_name = get_icon_name_from_desktop_entry(desktop_entry);
+			free(desktop_entry);
+
+			struct swaybar_window *window =
+					calloc(1, sizeof(struct swaybar_window));
+			window->name = strdup(name);
+			window->icon_name = icon_name;
+
+			return window;
+		}
+
+		struct json_object *json_inner_nodes;
+		json_object_object_get_ex(json_node, "nodes", &json_inner_nodes);
+		if (json_nodes) {
+			struct swaybar_window *window =
+					get_focused_window_from_nodes(json_inner_nodes);
+			if (window) {
+				return window;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+bool ipc_set_focused_window(struct swaybar *bar) {
+	uint32_t len = 0;
+	char *res = ipc_single_command(bar->ipc_socketfd,
+			IPC_GET_TREE, NULL, &len);
+	json_object *results = json_tokener_parse(res);
+	if (!results) {
+		free(res);
+		return false;
+	}
+
+	json_object *json_nodes;
+	json_object_object_get_ex(results, "nodes", &json_nodes);
+	assert(json_nodes);
+	struct swaybar_window *window = get_focused_window_from_nodes(json_nodes);
+	if (bar->focused_window) {
+		free_window(bar->focused_window);
+		bar->focused_window = NULL;
+	}
+	if (window) {
+		bar->focused_window = window;
+	}
+
+	bar->workspace_changed = false;
+	// TODO: cache
+	return true;
+}
+
 bool handle_ipc_readable(struct swaybar *bar) {
 	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
 	if (!resp) {
@@ -571,7 +681,10 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	bool bar_is_dirty = true;
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
+		bar->workspace_changed = true;
 		bar_is_dirty = ipc_get_workspaces(bar);
+		const bool focused_window_change = ipc_set_focused_window(bar);
+		bar_is_dirty = bar_is_dirty ? true : focused_window_change;
 		break;
 	case IPC_EVENT_MODE: {
 		json_object *json_change, *json_pango_markup;
@@ -597,6 +710,9 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		break;
 	case IPC_EVENT_BAR_STATE_UPDATE:
 		bar_is_dirty = handle_bar_state_update(bar, result);
+		break;
+	case IPC_EVENT_WINDOW:
+		bar_is_dirty = ipc_set_focused_window(bar);
 		break;
 	default:
 		bar_is_dirty = false;

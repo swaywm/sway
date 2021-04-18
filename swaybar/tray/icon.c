@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
+#include <assert.h>
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -23,7 +24,25 @@ static bool dir_exists(char *path) {
 	return stat(path, &sb) == 0 && S_ISDIR(sb.st_mode);
 }
 
-static list_t *get_basedirs(void) {
+char* append_path_safe(const char * base_path, const char * append_path) {
+	assert(base_path);
+	assert(append_path);
+
+	size_t base_path_len = strlen(base_path);
+	if (base_path[base_path_len - 1] == '/') {
+		size_t path_len = snprintf(NULL, 0, "%s%s", base_path, append_path) + 1;
+		char *path = malloc(path_len);
+		snprintf(path, path_len, "%s%s", base_path, append_path);
+		return path;
+	}
+
+	size_t path_len = snprintf(NULL, 0, "%s/%s", base_path, append_path) + 1;
+	char *path = malloc(path_len);
+	snprintf(path, path_len, "%s/%s", base_path, append_path);
+	return path;
+}
+
+list_t *get_basedirs(void) {
 	list_t *basedirs = create_list();
 	list_add(basedirs, strdup("$HOME/.icons")); // deprecated
 
@@ -40,9 +59,7 @@ static list_t *get_basedirs(void) {
 	data_dirs = strdup(data_dirs);
 	char *dir = strtok(data_dirs, ":");
 	do {
-		size_t path_len = snprintf(NULL, 0, "%s/icons", dir) + 1;
-		char *path = malloc(path_len);
-		snprintf(path, path_len, "%s/icons", dir);
+		char *path = append_path_safe(dir, "icons");
 		list_add(basedirs, path);
 	} while ((dir = strtok(NULL, ":")));
 	free(data_dirs);

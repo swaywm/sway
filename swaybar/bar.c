@@ -40,6 +40,17 @@ void free_workspaces(struct wl_list *list) {
 	}
 }
 
+void free_window(struct swaybar_window *window) {
+	if (window->icon_name) {
+		free(window->icon_name);
+	}
+	if (window->icon) {
+		cairo_surface_destroy(window->icon);
+	}
+	free(window->name);
+	free(window);
+}
+
 static void swaybar_output_free(struct swaybar_output *output) {
 	if (!output) {
 		return;
@@ -455,6 +466,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	if (bar->config->workspace_buttons) {
 		ipc_get_workspaces(bar);
 	}
+	ipc_set_focused_window(bar);
 	determine_bar_visibility(bar, false);
 	return true;
 }

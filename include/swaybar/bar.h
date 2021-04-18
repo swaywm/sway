@@ -13,6 +13,7 @@ struct swaybar_output;
 struct swaybar_tray;
 #endif
 struct swaybar_workspace;
+struct swaybar_window;
 struct loop;
 
 struct swaybar {
@@ -43,6 +44,11 @@ struct swaybar {
 	struct wl_list outputs; // swaybar_output::link
 	struct wl_list unused_outputs; // swaybar_output::link
 	struct wl_list seats; // swaybar_seat::link
+
+	struct swaybar_window *focused_window;
+
+	// TOOD: Better name
+	bool workspace_changed;
 
 #if HAVE_TRAY
 	struct swaybar_tray *tray;
@@ -89,6 +95,12 @@ struct swaybar_workspace {
 	bool urgent;
 };
 
+struct swaybar_window {
+	char *name;
+	char *icon_name;
+	cairo_surface_t *icon;
+};
+
 bool bar_setup(struct swaybar *bar, const char *socket_path);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
@@ -109,6 +121,7 @@ void set_bar_dirty(struct swaybar *bar);
  */
 bool determine_bar_visibility(struct swaybar *bar, bool moving_layer);
 void free_workspaces(struct wl_list *list);
+void free_window(struct swaybar_window *window);
 
 void status_in(int fd, short mask, void *data);
 
