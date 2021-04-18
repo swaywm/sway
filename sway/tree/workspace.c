@@ -794,7 +794,11 @@ void workspace_detach(struct sway_workspace *workspace) {
 struct sway_container *workspace_add_tiling(struct sway_workspace *workspace,
 		struct sway_container *con) {
 	if (con->pending.workspace) {
+		struct sway_container *old_parent = con->pending.parent;
 		container_detach(con);
+		if (old_parent) {
+			container_reap_empty(old_parent);
+		}
 	}
 	if (config->default_layout != L_NONE) {
 		con = container_split(con, config->default_layout);
