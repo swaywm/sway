@@ -18,16 +18,13 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE,
 				"Can't run this command while there's no outputs connected.");
 	}
-	struct sway_node *node = config->handler_context.node;
 	struct sway_container *container = config->handler_context.container;
-	struct sway_workspace *workspace = config->handler_context.workspace;
-	if (node->type == N_WORKSPACE && workspace->tiling->length == 0) {
-		return cmd_results_new(CMD_FAILURE,
-				"Can't fullscreen an empty workspace");
-	}
 
-	// If in the scratchpad, operate on the highest container
-	if (container && !container->pending.workspace) {
+	if (!container) {
+		// If the focus is not a container, do nothing successfully
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	} else if (!container->pending.workspace) {
+		// If in the scratchpad, operate on the highest container
 		while (container->pending.parent) {
 			container = container->pending.parent;
 		}
@@ -47,13 +44,6 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 
 	if (argc >= 2) {
 		global = strcasecmp(argv[1], "global") == 0;
-	}
-
-	if (enable && node->type == N_WORKSPACE) {
-		// Wrap the workspace's children in a container so we can fullscreen it
-		container = workspace_wrap_children(workspace);
-		workspace->layout = L_HORIZ;
-		seat_set_focus_container(config->handler_context.seat, container);
 	}
 
 	enum sway_fullscreen_mode mode = FULLSCREEN_NONE;
