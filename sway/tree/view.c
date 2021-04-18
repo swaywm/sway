@@ -56,6 +56,7 @@ void view_destroy(struct sway_view *view) {
 				"(might have a pending transaction?)")) {
 		return;
 	}
+	wl_list_remove(&view->events.unmap.listener_list);
 	if (!wl_list_empty(&view->saved_buffers)) {
 		view_remove_saved_buffer(view);
 	}
