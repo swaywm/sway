@@ -1624,6 +1624,10 @@ static void update_marks_texture(struct sway_container *con,
 			"%s", buffer);
 	cairo_destroy(c);
 
+	if (width == 0 || height == 0) {
+		return;
+	}
+
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cairo = cairo_create(surface);
