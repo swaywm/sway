@@ -531,6 +531,10 @@ static void update_title_texture(struct sway_container *con,
 	cairo_surface_destroy(dummy_surface);
 	cairo_destroy(c);
 
+	if (width == 0 || height == 0) {
+		return;
+	}
+
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cairo = cairo_create(surface);
