@@ -554,7 +554,7 @@ static void update_title_texture(struct sway_container *con,
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
-	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	int stride = cairo_image_surface_get_stride(surface);
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(
 			output->wlr_output->backend);
 	*texture = wlr_texture_from_pixels(
@@ -1639,7 +1639,7 @@ static void update_marks_texture(struct sway_container *con,
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
-	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	int stride = cairo_image_surface_get_stride(surface);
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(
 			output->wlr_output->backend);
 	*texture = wlr_texture_from_pixels(
