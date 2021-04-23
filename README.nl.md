@@ -5,9 +5,6 @@ Lees de [FAQ](https://github.com/swaywm/sway/wiki). Word lid van het [IRC
 kanaal](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway op
 irc.freenode.net).
 
-Als je de ontwikkeling van sway wilt ondersteunen, draag dan bij aan [SirCmpwn's
-Patreon-pagina](https://patreon.com/sircmpwn).
-
 ## Releasehandtekeningen
 
 Releases worden ondertekend met [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

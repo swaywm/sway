@@ -138,7 +138,8 @@ static void log_env(void) {
 		"SWAYSOCK",
 	};
 	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
-		sway_log(SWAY_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
+		char *value = getenv(log_vars[i]);
+		sway_log(SWAY_INFO, "%s=%s", log_vars[i], value != NULL ? value : "");
 	}
 }
 
@@ -222,10 +223,29 @@ void enable_debug_flag(const char *flag) {
 	}
 }
 
+static sway_log_importance_t convert_wlr_log_importance(
+		enum wlr_log_importance importance) {
+	switch (importance) {
+	case WLR_ERROR:
+		return SWAY_ERROR;
+	case WLR_INFO:
+		return SWAY_INFO;
+	default:
+		return SWAY_DEBUG;
+	}
+}
+
+static void handle_wlr_log(enum wlr_log_importance importance,
+		const char *fmt, va_list args) {
+	static char sway_fmt[1024];
+	snprintf(sway_fmt, sizeof(sway_fmt), "[wlr] %s", fmt);
+	_sway_vlog(convert_wlr_log_importance(importance), sway_fmt, args);
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
 
-	static struct option long_options[] = {
+	static const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
 		{"validate", no_argument, NULL, 'C'},
@@ -261,7 +281,7 @@ int main(int argc, char **argv) {
 		}
 		switch (c) {
 		case 'h': // help
-			fprintf(stdout, "%s", usage);
+			printf("%s", usage);
 			exit(EXIT_SUCCESS);
 			break;
 		case 'c': // config
@@ -281,7 +301,7 @@ int main(int argc, char **argv) {
 			allow_unsupported_gpu = 1;
 			break;
 		case 'v': // version
-			fprintf(stdout, "sway version " SWAY_VERSION "\n");
+			printf("sway version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		case 'V': // verbose
@@ -289,7 +309,7 @@ int main(int argc, char **argv) {
 			break;
 		case 'p': ; // --get-socketpath
 			if (getenv("SWAYSOCK")) {
-				fprintf(stdout, "%s\n", getenv("SWAYSOCK"));
+				printf("%s\n", getenv("SWAYSOCK"));
 				exit(EXIT_SUCCESS);
 			} else {
 				fprintf(stderr, "sway socket not detected.\n");
@@ -314,13 +334,13 @@ int main(int argc, char **argv) {
 	// sway, we do not need to override it.
 	if (debug) {
 		sway_log_init(SWAY_DEBUG, sway_terminate);
-		wlr_log_init(WLR_DEBUG, NULL);
+		wlr_log_init(WLR_DEBUG, handle_wlr_log);
 	} else if (verbose) {
 		sway_log_init(SWAY_INFO, sway_terminate);
-		wlr_log_init(WLR_INFO, NULL);
+		wlr_log_init(WLR_INFO, handle_wlr_log);
 	} else {
 		sway_log_init(SWAY_ERROR, sway_terminate);
-		wlr_log_init(WLR_ERROR, NULL);
+		wlr_log_init(WLR_ERROR, handle_wlr_log);
 	}
 
 	sway_log(SWAY_INFO, "Sway version " SWAY_VERSION);
@@ -366,6 +386,7 @@ int main(int argc, char **argv) {
 
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
+	signal(SIGINT, sig_handler);
 
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);

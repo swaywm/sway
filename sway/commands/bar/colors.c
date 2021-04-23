@@ -4,7 +4,7 @@
 #include "util.h"
 
 // Must be in alphabetical order for bsearch
-static struct cmd_handler bar_colors_handlers[] = {
+static const struct cmd_handler bar_colors_handlers[] = {
 	{ "active_workspace", bar_colors_cmd_active_workspace },
 	{ "background", bar_colors_cmd_background },
 	{ "binding_mode", bar_colors_cmd_binding_mode },
@@ -24,6 +24,9 @@ static char *hex_to_rgba_hex(const char *hex) {
 		return NULL;
 	}
 	char *rgba = malloc(10);
+	if (!rgba) {
+		return NULL;
+	}
 	snprintf(rgba, 10, "#%08x", color);
 	return rgba;
 }
@@ -36,7 +39,7 @@ static struct cmd_results *parse_single_color(char **color,
 	}
 
 	char *rgba = hex_to_rgba_hex(argv[0]);
-	if (!*rgba) {
+	if (!rgba) {
 		return cmd_results_new(CMD_INVALID, "Invalid color: %s", argv[0]);
 	}
 

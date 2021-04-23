@@ -110,13 +110,20 @@ void workspace_unwrap_children(struct sway_workspace *ws,
 
 void workspace_detach(struct sway_workspace *workspace);
 
-void workspace_add_tiling(struct sway_workspace *workspace,
+struct sway_container *workspace_add_tiling(struct sway_workspace *workspace,
 		struct sway_container *con);
 
 void workspace_add_floating(struct sway_workspace *workspace,
 		struct sway_container *con);
 
-void workspace_insert_tiling(struct sway_workspace *workspace,
+/**
+ * Adds a tiling container to the workspace without considering
+ * the workspace_layout, so the con will not be split.
+ */
+void workspace_insert_tiling_direct(struct sway_workspace *workspace,
+		struct sway_container *con, int index);
+
+struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 		struct sway_container *con, int index);
 
 void workspace_remove_gaps(struct sway_workspace *ws);
@@ -131,5 +138,15 @@ void workspace_update_representation(struct sway_workspace *ws);
 void workspace_get_box(struct sway_workspace *workspace, struct wlr_box *box);
 
 size_t workspace_num_tiling_views(struct sway_workspace *ws);
+
+size_t workspace_num_sticky_containers(struct sway_workspace *ws);
+
+/**
+ * workspace_squash is container_flatten in the reverse
+ * direction. Instead of eliminating redundant splits that are
+ * parents of the target container, it eliminates pairs of
+ * redundant H/V splits that are children of the workspace.
+ */
+void workspace_squash(struct sway_workspace *workspace);
 
 #endif

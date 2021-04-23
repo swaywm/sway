@@ -46,8 +46,8 @@ enum expected_args {
 struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
 
-struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
-		size_t handlers_size);
+const struct cmd_handler *find_handler(char *line,
+		const struct cmd_handler *cmd_handlers, size_t handlers_size);
 
 /**
  * Parse and executes a command.
@@ -68,7 +68,7 @@ struct cmd_results *config_command(char *command, char **new_block);
  * Parse and handle a sub command
  */
 struct cmd_results *config_subcommand(char **argv, int argc,
-		struct cmd_handler *handlers, size_t handlers_size);
+		const struct cmd_handler *handlers, size_t handlers_size);
 /*
  * Parses a command policy rule.
  */
@@ -96,6 +96,12 @@ void container_resize_tiled(struct sway_container *parent, uint32_t axis,
 
 struct sway_container *container_find_resize_parent(struct sway_container *con,
 		uint32_t edge);
+
+/**
+ * Handlers shared by exec and exec_always.
+ */
+sway_cmd cmd_exec_validate;
+sway_cmd cmd_exec_process;
 
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;
@@ -223,6 +229,7 @@ sway_cmd bar_cmd_unbindcode;
 sway_cmd bar_cmd_unbindsym;
 sway_cmd bar_cmd_wrap_scroll;
 sway_cmd bar_cmd_workspace_buttons;
+sway_cmd bar_cmd_workspace_min_width;
 
 sway_cmd bar_colors_cmd_active_workspace;
 sway_cmd bar_colors_cmd_background;
@@ -258,6 +265,7 @@ sway_cmd input_cmd_scroll_button;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
 sway_cmd input_cmd_tap_button_map;
+sway_cmd input_cmd_tool_mode;
 sway_cmd input_cmd_xkb_capslock;
 sway_cmd input_cmd_xkb_file;
 sway_cmd input_cmd_xkb_layout;

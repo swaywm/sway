@@ -97,11 +97,17 @@ _swaynag_ [options...]
 *--text* <RRGGBB[AA]>
 	Set the text color.
 
+*--button-text* <RRGGBB[AA]>
+	Set the button text color.
+
 *--border-bottom-size* <size>
 	Set the thickness of the bottom border.
 
 *--message-padding* <padding>
 	Set the padding for the message.
+
+*--details-background* <RRGGBB[AA]>
+	Set the color for the background for details.
 
 *--details-border-size* <size>
 	Set the thickness for the details border.

@@ -11,58 +11,10 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
+#include "util.h"
 
 #define AXIS_HORIZONTAL (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)
 #define AXIS_VERTICAL   (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)
-
-enum resize_unit {
-	RESIZE_UNIT_PX,
-	RESIZE_UNIT_PPT,
-	RESIZE_UNIT_DEFAULT,
-	RESIZE_UNIT_INVALID,
-};
-
-struct resize_amount {
-	int amount;
-	enum resize_unit unit;
-};
-
-static enum resize_unit parse_resize_unit(const char *unit) {
-	if (strcasecmp(unit, "px") == 0) {
-		return RESIZE_UNIT_PX;
-	}
-	if (strcasecmp(unit, "ppt") == 0) {
-		return RESIZE_UNIT_PPT;
-	}
-	if (strcasecmp(unit, "default") == 0) {
-		return RESIZE_UNIT_DEFAULT;
-	}
-	return RESIZE_UNIT_INVALID;
-}
-
-// Parse arguments such as "10", "10px" or "10 px".
-// Returns the number of arguments consumed.
-static int parse_resize_amount(int argc, char **argv,
-		struct resize_amount *amount) {
-	char *err;
-	amount->amount = (int)strtol(argv[0], &err, 10);
-	if (*err) {
-		// e.g. 10px
-		amount->unit = parse_resize_unit(err);
-		return 1;
-	}
-	if (argc == 1) {
-		amount->unit = RESIZE_UNIT_DEFAULT;
-		return 1;
-	}
-	// Try the second argument
-	amount->unit = parse_resize_unit(argv[1]);
-	if (amount->unit == RESIZE_UNIT_INVALID) {
-		amount->unit = RESIZE_UNIT_DEFAULT;
-		return 1;
-	}
-	return 2;
-}
 
 static uint32_t parse_resize_axis(const char *axis) {
 	if (strcasecmp(axis, "width") == 0 || strcasecmp(axis, "horizontal") == 0) {
@@ -105,7 +57,7 @@ struct sway_container *container_find_resize_parent(struct sway_container *con,
 				(allow_last || index < siblings->length - 1)) {
 			return con;
 		}
-		con = con->parent;
+		con = con->pending.parent;
 	}
 
 	return NULL;
@@ -163,13 +115,13 @@ void container_resize_tiled(struct sway_container *con,
 	int sibling_amount = prev ? ceil((double)amount / 2.0) : amount;
 
 	if (is_horizontal(axis)) {
-		if (con->width + amount < MIN_SANE_W) {
+		if (con->pending.width + amount < MIN_SANE_W) {
 			return;
 		}
-		if (next->width - sibling_amount < MIN_SANE_W) {
+		if (next->pending.width - sibling_amount < MIN_SANE_W) {
 			return;
 		}
-		if (prev && prev->width - sibling_amount < MIN_SANE_W) {
+		if (prev && prev->pending.width - sibling_amount < MIN_SANE_W) {
 			return;
 		}
 		if (con->child_total_width <= 0) {
@@ -181,7 +133,7 @@ void container_resize_tiled(struct sway_container *con,
 		list_t *siblings = container_get_siblings(con);
 		for (int i = 0; i < siblings->length; ++i) {
 			struct sway_container *con = siblings->items[i];
-			con->width_fraction = con->width / con->child_total_width;
+			con->width_fraction = con->pending.width / con->child_total_width;
 		}
 
 		double amount_fraction = (double)amount / con->child_total_width;
@@ -194,13 +146,13 @@ void container_resize_tiled(struct sway_container *con,
 			prev->width_fraction -= sibling_amount_fraction;
 		}
 	} else {
-		if (con->height + amount < MIN_SANE_H) {
+		if (con->pending.height + amount < MIN_SANE_H) {
 			return;
 		}
-		if (next->height - sibling_amount < MIN_SANE_H) {
+		if (next->pending.height - sibling_amount < MIN_SANE_H) {
 			return;
 		}
-		if (prev && prev->height - sibling_amount < MIN_SANE_H) {
+		if (prev && prev->pending.height - sibling_amount < MIN_SANE_H) {
 			return;
 		}
 		if (con->child_total_height <= 0) {
@@ -212,7 +164,7 @@ void container_resize_tiled(struct sway_container *con,
 		list_t *siblings = container_get_siblings(con);
 		for (int i = 0; i < siblings->length; ++i) {
 			struct sway_container *con = siblings->items[i];
-			con->height_fraction = con->height / con->child_total_height;
+			con->height_fraction = con->pending.height / con->child_total_height;
 		}
 
 		double amount_fraction = (double)amount / con->child_total_height;
@@ -226,10 +178,10 @@ void container_resize_tiled(struct sway_container *con,
 		}
 	}
 
-	if (con->parent) {
-		arrange_container(con->parent);
+	if (con->pending.parent) {
+		arrange_container(con->pending.parent);
 	} else {
-		arrange_workspace(con->workspace);
+		arrange_workspace(con->pending.workspace);
 	}
 }
 
@@ -237,7 +189,7 @@ void container_resize_tiled(struct sway_container *con,
  * Implement `resize <grow|shrink>` for a floating container.
  */
 static struct cmd_results *resize_adjust_floating(uint32_t axis,
-		struct resize_amount *amount) {
+		struct movement_amount *amount) {
 	struct sway_container *con = config->handler_context.container;
 	int grow_width = 0, grow_height = 0;
 
@@ -251,15 +203,15 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 	int min_width, max_width, min_height, max_height;
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
-	if (con->width + grow_width < min_width) {
-		grow_width = min_width - con->width;
-	} else if (con->width + grow_width > max_width) {
-		grow_width = max_width - con->width;
+	if (con->pending.width + grow_width < min_width) {
+		grow_width = min_width - con->pending.width;
+	} else if (con->pending.width + grow_width > max_width) {
+		grow_width = max_width - con->pending.width;
 	}
-	if (con->height + grow_height < min_height) {
-		grow_height = min_height - con->height;
-	} else if (con->height + grow_height > max_height) {
-		grow_height = max_height - con->height;
+	if (con->pending.height + grow_height < min_height) {
+		grow_height = min_height - con->pending.height;
+	} else if (con->pending.height + grow_height > max_height) {
+		grow_height = max_height - con->pending.height;
 	}
 	int grow_x = 0, grow_y = 0;
 
@@ -272,18 +224,18 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 	} else if (axis == WLR_EDGE_LEFT) {
 		grow_x = -grow_width;
 	}
-	if (grow_x == 0 && grow_y == 0) {
+	if (grow_width == 0 && grow_height == 0) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
-	con->x += grow_x;
-	con->y += grow_y;
-	con->width += grow_width;
-	con->height += grow_height;
+	con->pending.x += grow_x;
+	con->pending.y += grow_y;
+	con->pending.width += grow_width;
+	con->pending.height += grow_height;
 
-	con->content_x += grow_x;
-	con->content_y += grow_y;
-	con->content_width += grow_width;
-	con->content_height += grow_height;
+	con->pending.content_x += grow_x;
+	con->pending.content_y += grow_y;
+	con->pending.content_width += grow_width;
+	con->pending.content_height += grow_height;
 
 	arrange_container(con);
 
@@ -294,19 +246,19 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
  * Implement `resize <grow|shrink>` for a tiled container.
  */
 static struct cmd_results *resize_adjust_tiled(uint32_t axis,
-		struct resize_amount *amount) {
+		struct movement_amount *amount) {
 	struct sway_container *current = config->handler_context.container;
 
-	if (amount->unit == RESIZE_UNIT_DEFAULT) {
-		amount->unit = RESIZE_UNIT_PPT;
+	if (amount->unit == MOVEMENT_UNIT_DEFAULT) {
+		amount->unit = MOVEMENT_UNIT_PPT;
 	}
-	if (amount->unit == RESIZE_UNIT_PPT) {
+	if (amount->unit == MOVEMENT_UNIT_PPT) {
 		float pct = amount->amount / 100.0f;
 
 		if (is_horizontal(axis)) {
-			amount->amount = (float)current->width * pct;
+			amount->amount = (float)current->pending.width * pct;
 		} else {
-			amount->amount = (float)current->height * pct;
+			amount->amount = (float)current->pending.height * pct;
 		}
 	}
 
@@ -324,46 +276,46 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
  * Implement `resize set` for a tiled container.
  */
 static struct cmd_results *resize_set_tiled(struct sway_container *con,
-		struct resize_amount *width, struct resize_amount *height) {
+		struct movement_amount *width, struct movement_amount *height) {
 	if (width->amount) {
-		if (width->unit == RESIZE_UNIT_PPT ||
-				width->unit == RESIZE_UNIT_DEFAULT) {
+		if (width->unit == MOVEMENT_UNIT_PPT ||
+				width->unit == MOVEMENT_UNIT_DEFAULT) {
 			// Convert to px
-			struct sway_container *parent = con->parent;
-			while (parent && parent->layout != L_HORIZ) {
-				parent = parent->parent;
+			struct sway_container *parent = con->pending.parent;
+			while (parent && parent->pending.layout != L_HORIZ) {
+				parent = parent->pending.parent;
 			}
 			if (parent) {
-				width->amount = parent->width * width->amount / 100;
+				width->amount = parent->pending.width * width->amount / 100;
 			} else {
-				width->amount = con->workspace->width * width->amount / 100;
+				width->amount = con->pending.workspace->width * width->amount / 100;
 			}
-			width->unit = RESIZE_UNIT_PX;
+			width->unit = MOVEMENT_UNIT_PX;
 		}
-		if (width->unit == RESIZE_UNIT_PX) {
+		if (width->unit == MOVEMENT_UNIT_PX) {
 			container_resize_tiled(con, AXIS_HORIZONTAL,
-					width->amount - con->width);
+					width->amount - con->pending.width);
 		}
 	}
 
 	if (height->amount) {
-		if (height->unit == RESIZE_UNIT_PPT ||
-				height->unit == RESIZE_UNIT_DEFAULT) {
+		if (height->unit == MOVEMENT_UNIT_PPT ||
+				height->unit == MOVEMENT_UNIT_DEFAULT) {
 			// Convert to px
-			struct sway_container *parent = con->parent;
-			while (parent && parent->layout != L_VERT) {
-				parent = parent->parent;
+			struct sway_container *parent = con->pending.parent;
+			while (parent && parent->pending.layout != L_VERT) {
+				parent = parent->pending.parent;
 			}
 			if (parent) {
-				height->amount = parent->height * height->amount / 100;
+				height->amount = parent->pending.height * height->amount / 100;
 			} else {
-				height->amount = con->workspace->height * height->amount / 100;
+				height->amount = con->pending.workspace->height * height->amount / 100;
 			}
-			height->unit = RESIZE_UNIT_PX;
+			height->unit = MOVEMENT_UNIT_PX;
 		}
-		if (height->unit == RESIZE_UNIT_PX) {
+		if (height->unit == MOVEMENT_UNIT_PX) {
 			container_resize_tiled(con, AXIS_VERTICAL,
-					height->amount - con->height);
+					height->amount - con->pending.height);
 		}
 	}
 
@@ -374,30 +326,30 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
  * Implement `resize set` for a floating container.
  */
 static struct cmd_results *resize_set_floating(struct sway_container *con,
-		struct resize_amount *width, struct resize_amount *height) {
+		struct movement_amount *width, struct movement_amount *height) {
 	int min_width, max_width, min_height, max_height, grow_width = 0, grow_height = 0;
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
 
 	if (width->amount) {
 		switch (width->unit) {
-		case RESIZE_UNIT_PPT:
+		case MOVEMENT_UNIT_PPT:
 			if (container_is_scratchpad_hidden(con)) {
 				return cmd_results_new(CMD_FAILURE,
 						"Cannot resize a hidden scratchpad container by ppt");
 			}
 			// Convert to px
-			width->amount = con->workspace->width * width->amount / 100;
-			width->unit = RESIZE_UNIT_PX;
+			width->amount = con->pending.workspace->width * width->amount / 100;
+			width->unit = MOVEMENT_UNIT_PX;
 			// Falls through
-		case RESIZE_UNIT_PX:
-		case RESIZE_UNIT_DEFAULT:
+		case MOVEMENT_UNIT_PX:
+		case MOVEMENT_UNIT_DEFAULT:
 			width->amount = fmax(min_width, fmin(width->amount, max_width));
-			grow_width = width->amount - con->width;
-			con->x -= grow_width / 2;
-			con->width = width->amount;
+			grow_width = width->amount - con->pending.width;
+			con->pending.x -= grow_width / 2;
+			con->pending.width = width->amount;
 			break;
-		case RESIZE_UNIT_INVALID:
+		case MOVEMENT_UNIT_INVALID:
 			sway_assert(false, "invalid width unit");
 			break;
 		}
@@ -405,32 +357,32 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 
 	if (height->amount) {
 		switch (height->unit) {
-		case RESIZE_UNIT_PPT:
+		case MOVEMENT_UNIT_PPT:
 			if (container_is_scratchpad_hidden(con)) {
 				return cmd_results_new(CMD_FAILURE,
 						"Cannot resize a hidden scratchpad container by ppt");
 			}
 			// Convert to px
-			height->amount = con->workspace->height * height->amount / 100;
-			height->unit = RESIZE_UNIT_PX;
+			height->amount = con->pending.workspace->height * height->amount / 100;
+			height->unit = MOVEMENT_UNIT_PX;
 			// Falls through
-		case RESIZE_UNIT_PX:
-		case RESIZE_UNIT_DEFAULT:
+		case MOVEMENT_UNIT_PX:
+		case MOVEMENT_UNIT_DEFAULT:
 			height->amount = fmax(min_height, fmin(height->amount, max_height));
-			grow_height = height->amount - con->height;
-			con->y -= grow_height / 2;
-			con->height = height->amount;
+			grow_height = height->amount - con->pending.height;
+			con->pending.y -= grow_height / 2;
+			con->pending.height = height->amount;
 			break;
-		case RESIZE_UNIT_INVALID:
+		case MOVEMENT_UNIT_INVALID:
 			sway_assert(false, "invalid height unit");
 			break;
 		}
 	}
 
-	con->content_x -= grow_width / 2;
-	con->content_y -= grow_height / 2;
-	con->content_width += grow_width;
-	con->content_height += grow_height;
+	con->pending.content_x -= grow_width / 2;
+	con->pending.content_y -= grow_height / 2;
+	con->pending.content_width += grow_width;
+	con->pending.content_height += grow_height;
 
 	arrange_container(con);
 
@@ -454,30 +406,30 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		"'resize set [width] <width> [px|ppt] [height] <height> [px|ppt]'";
 
 	// Width
-	struct resize_amount width = {0};
+	struct movement_amount width = {0};
 	if (argc >= 2 && !strcmp(argv[0], "width") && strcmp(argv[1], "height")) {
 		argc--; argv++;
 	}
 	if (strcmp(argv[0], "height")) {
-		int num_consumed_args = parse_resize_amount(argc, argv, &width);
+		int num_consumed_args = parse_movement_amount(argc, argv, &width);
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
-		if (width.unit == RESIZE_UNIT_INVALID) {
+		if (width.unit == MOVEMENT_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
 	}
 
 	// Height
-	struct resize_amount height = {0};
+	struct movement_amount height = {0};
 	if (argc) {
 		if (argc >= 2 && !strcmp(argv[0], "height")) {
 			argc--; argv++;
 		}
-		int num_consumed_args = parse_resize_amount(argc, argv, &height);
+		int num_consumed_args = parse_movement_amount(argc, argv, &height);
 		if (argc > num_consumed_args) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
-		if (width.unit == RESIZE_UNIT_INVALID) {
+		if (width.unit == MOVEMENT_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
 	}
@@ -485,10 +437,10 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 	// If 0, don't resize that dimension
 	struct sway_container *con = config->handler_context.container;
 	if (width.amount <= 0) {
-		width.amount = con->width;
+		width.amount = con->pending.width;
 	}
 	if (height.amount <= 0) {
-		height.amount = con->height;
+		height.amount = con->pending.height;
 	}
 
 	if (container_is_floating(con)) {
@@ -515,17 +467,17 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	--argc; ++argv;
 
 	// First amount
-	struct resize_amount first_amount;
+	struct movement_amount first_amount;
 	if (argc) {
-		int num_consumed_args = parse_resize_amount(argc, argv, &first_amount);
+		int num_consumed_args = parse_movement_amount(argc, argv, &first_amount);
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
-		if (first_amount.unit == RESIZE_UNIT_INVALID) {
+		if (first_amount.unit == MOVEMENT_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
 	} else {
 		first_amount.amount = 10;
-		first_amount.unit = RESIZE_UNIT_DEFAULT;
+		first_amount.unit = MOVEMENT_UNIT_DEFAULT;
 	}
 
 	// "or"
@@ -537,18 +489,18 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	}
 
 	// Second amount
-	struct resize_amount second_amount;
+	struct movement_amount second_amount;
 	if (argc) {
-		int num_consumed_args = parse_resize_amount(argc, argv, &second_amount);
+		int num_consumed_args = parse_movement_amount(argc, argv, &second_amount);
 		if (argc > num_consumed_args) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
-		if (second_amount.unit == RESIZE_UNIT_INVALID) {
+		if (second_amount.unit == MOVEMENT_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, usage);
 		}
 	} else {
 		second_amount.amount = 0;
-		second_amount.unit = RESIZE_UNIT_INVALID;
+		second_amount.unit = MOVEMENT_UNIT_INVALID;
 	}
 
 	first_amount.amount *= multiplier;
@@ -558,13 +510,13 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	if (container_is_floating(con)) {
 		// Floating containers can only resize in px. Choose an amount which
 		// uses px, with fallback to an amount that specified no unit.
-		if (first_amount.unit == RESIZE_UNIT_PX) {
+		if (first_amount.unit == MOVEMENT_UNIT_PX) {
 			return resize_adjust_floating(axis, &first_amount);
-		} else if (second_amount.unit == RESIZE_UNIT_PX) {
+		} else if (second_amount.unit == MOVEMENT_UNIT_PX) {
 			return resize_adjust_floating(axis, &second_amount);
-		} else if (first_amount.unit == RESIZE_UNIT_DEFAULT) {
+		} else if (first_amount.unit == MOVEMENT_UNIT_DEFAULT) {
 			return resize_adjust_floating(axis, &first_amount);
-		} else if (second_amount.unit == RESIZE_UNIT_DEFAULT) {
+		} else if (second_amount.unit == MOVEMENT_UNIT_DEFAULT) {
 			return resize_adjust_floating(axis, &second_amount);
 		} else {
 			return cmd_results_new(CMD_INVALID,
@@ -573,13 +525,13 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	}
 
 	// For tiling, prefer ppt -> default -> px
-	if (first_amount.unit == RESIZE_UNIT_PPT) {
+	if (first_amount.unit == MOVEMENT_UNIT_PPT) {
 		return resize_adjust_tiled(axis, &first_amount);
-	} else if (second_amount.unit == RESIZE_UNIT_PPT) {
+	} else if (second_amount.unit == MOVEMENT_UNIT_PPT) {
 		return resize_adjust_tiled(axis, &second_amount);
-	} else if (first_amount.unit == RESIZE_UNIT_DEFAULT) {
+	} else if (first_amount.unit == MOVEMENT_UNIT_DEFAULT) {
 		return resize_adjust_tiled(axis, &first_amount);
-	} else if (second_amount.unit == RESIZE_UNIT_DEFAULT) {
+	} else if (second_amount.unit == MOVEMENT_UNIT_DEFAULT) {
 		return resize_adjust_tiled(axis, &second_amount);
 	} else {
 		return resize_adjust_tiled(axis, &first_amount);

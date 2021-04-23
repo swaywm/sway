@@ -25,18 +25,18 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 
 	container->is_sticky = parse_boolean(argv[0], container->is_sticky);
 
-	if (container->is_sticky && container_is_floating_or_child(container) &&
+	if (container_is_sticky_or_child(container) &&
 			!container_is_scratchpad_hidden(container)) {
 		// move container to active workspace
 		struct sway_workspace *active_workspace =
-			output_get_active_workspace(container->workspace->output);
+			output_get_active_workspace(container->pending.workspace->output);
 		if (!sway_assert(active_workspace,
 					"Expected output to have a workspace")) {
 			return cmd_results_new(CMD_FAILURE,
 					"Expected output to have a workspace");
 		}
-		if (container->workspace != active_workspace) {
-			struct sway_workspace *old_workspace = container->workspace;
+		if (container->pending.workspace != active_workspace) {
+			struct sway_workspace *old_workspace = container->pending.workspace;
 			container_detach(container);
 			workspace_add_floating(active_workspace, container);
 			container_handle_fullscreen_reparent(container);

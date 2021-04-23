@@ -5,6 +5,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/tree/view.h"
+#include "sway/desktop/transaction.h"
 #include "log.h"
 
 struct seatop_down_event {
@@ -37,8 +38,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
 	if (seat_is_input_allowed(seat, con->view->surface)) {
@@ -60,7 +60,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 }
 
 static void handle_tablet_tool_motion(struct sway_seat *seat,
-		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
+		struct sway_tablet_tool *tool, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
 	if (seat_is_input_allowed(seat, con->view->surface)) {
@@ -108,4 +108,5 @@ void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->seatop_data = e;
 
 	container_raise_floating(con);
+	transaction_commit_dirty();
 }

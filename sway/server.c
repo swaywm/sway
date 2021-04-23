@@ -1,19 +1,20 @@
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/noop.h>
 #include <wlr/backend/session.h>
+#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
-#include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
@@ -25,6 +26,11 @@
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#if WLR_HAS_XDG_FOREIGN
+#include <wlr/types/wlr_xdg_foreign_registry.h>
+#include <wlr/types/wlr_xdg_foreign_v1.h>
+#include <wlr/types/wlr_xdg_foreign_v2.h>
+#endif
 #include <wlr/types/wlr_xdg_output_v1.h>
 #include "config.h"
 #include "list.h"
@@ -43,7 +49,7 @@ bool server_privileged_prepare(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Preparing Wayland server initialization");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
+	server->backend = wlr_backend_autocreate(server->wl_display);
 
 	if (!server->backend) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
@@ -69,7 +75,6 @@ bool server_init(struct sway_server *server) {
 		wlr_data_device_manager_create(server->wl_display);
 
 	wlr_gamma_control_manager_v1_create(server->wl_display);
-	wlr_gtk_primary_selection_device_manager_create(server->wl_display);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
@@ -151,7 +156,23 @@ bool server_init(struct sway_server *server) {
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
 
-	server->socket = wl_display_add_socket_auto(server->wl_display);
+#if WLR_HAS_XDG_FOREIGN
+	struct wlr_xdg_foreign_registry *foreign_registry =
+		wlr_xdg_foreign_registry_create(server->wl_display);
+	wlr_xdg_foreign_v1_create(server->wl_display, foreign_registry);
+	wlr_xdg_foreign_v2_create(server->wl_display, foreign_registry);
+#endif
+
+	// Avoid using "wayland-0" as display socket
+	char name_candidate[16];
+	for (int i = 1; i <= 32; ++i) {
+		sprintf(name_candidate, "wayland-%d", i);
+		if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
+			server->socket = strdup(name_candidate);
+			break;
+		}
+	}
+
 	if (!server->socket) {
 		sway_log(SWAY_ERROR, "Unable to open wayland socket");
 		wlr_backend_destroy(server->backend);
@@ -165,7 +186,12 @@ bool server_init(struct sway_server *server) {
 
 	server->headless_backend =
 		wlr_headless_backend_create_with_renderer(server->wl_display, renderer);
-	wlr_multi_backend_add(server->backend, server->headless_backend);
+	if (!server->headless_backend) {
+		sway_log(SWAY_INFO, "Failed to create secondary headless backend, "
+			"starting without it");
+	} else {
+		wlr_multi_backend_add(server->backend, server->headless_backend);
+	}
 
 	// This may have been set already via -Dtxn-timeout
 	if (!server->txn_timeout_ms) {
@@ -173,7 +199,6 @@ bool server_init(struct sway_server *server) {
 	}
 
 	server->dirty_nodes = create_list();
-	server->transactions = create_list();
 
 	server->input = input_manager_create(server);
 	input_manager_get_default_seat(); // create seat0
@@ -189,7 +214,6 @@ void server_fini(struct sway_server *server) {
 	wl_display_destroy_clients(server->wl_display);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
-	list_free(server->transactions);
 }
 
 bool server_start(struct sway_server *server) {

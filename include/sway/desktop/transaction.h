@@ -28,6 +28,12 @@ struct sway_view;
  */
 void transaction_commit_dirty(void);
 
+/*
+ * Same as transaction_commit_dirty, but signalling that this is a
+ * client-initiated change has already taken effect.
+ */
+void transaction_commit_dirty_client(void);
+
 /**
  * Notify the transaction system that a view is ready for the new layout.
  *
@@ -38,11 +44,11 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
 
 /**
  * Notify the transaction system that a view is ready for the new layout, but
- * identifying the instruction by width and height rather than by serial.
+ * identifying the instruction by geometry rather than by serial.
  *
  * This is used by xwayland views, as they don't have serials.
  */
-void transaction_notify_view_ready_by_size(struct sway_view *view,
-		int width, int height);
+void transaction_notify_view_ready_by_geometry(struct sway_view *view,
+		double x, double y, int width, int height);
 
 #endif

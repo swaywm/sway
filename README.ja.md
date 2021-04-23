@@ -2,11 +2,9 @@
 
 Swayは[i3](https://i3wm.org/)互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
-[IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)もあります。
+[IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (irc.freenode.netの#sway)もあります。
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
-Swayの開発を支援したい場合は、[SirCmpwnのPatreon](https://patreon.com/sircmpwn)や、特定の機能に対する[報奨金のページ](https://github.com/swaywm/sway/issues/986)から寄付ができます。誰でも報奨金を請求できますし、自分の欲しい機能に報奨金を懸ける事も出来ます。またSwayのメンテナンスを支援するには、Patreonがより有用です。
 
 ## 日本語サポート
 

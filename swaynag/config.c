@@ -38,7 +38,9 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		TO_COLOR_BORDER,
 		TO_COLOR_BORDER_BOTTOM,
 		TO_COLOR_BUTTON,
+		TO_COLOR_DETAILS,
 		TO_COLOR_TEXT,
+		TO_COLOR_BUTTON_TEXT,
 		TO_THICK_BAR_BORDER,
 		TO_PADDING_MESSAGE,
 		TO_THICK_DET_BORDER,
@@ -49,7 +51,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		TO_PADDING_BTN,
 	};
 
-	static struct option opts[] = {
+	static const struct option opts[] = {
 		{"button", required_argument, NULL, 'b'},
 		{"button-no-terminal", required_argument, NULL, 'B'},
 		{"button-dismiss", required_argument, NULL, 'z'},
@@ -72,9 +74,11 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		{"border-bottom", required_argument, NULL, TO_COLOR_BORDER_BOTTOM},
 		{"button-background", required_argument, NULL, TO_COLOR_BUTTON},
 		{"text", required_argument, NULL, TO_COLOR_TEXT},
+		{"button-text", required_argument, NULL, TO_COLOR_BUTTON_TEXT},
 		{"border-bottom-size", required_argument, NULL, TO_THICK_BAR_BORDER},
 		{"message-padding", required_argument, NULL, TO_PADDING_MESSAGE},
 		{"details-border-size", required_argument, NULL, TO_THICK_DET_BORDER},
+		{"details-background", required_argument, NULL, TO_COLOR_DETAILS},
 		{"button-border-size", required_argument, NULL, TO_THICK_BTN_BORDER},
 		{"button-gap", required_argument, NULL, TO_GAP_BTN},
 		{"button-dismiss-gap", required_argument, NULL, TO_GAP_BTN_DISMISS},
@@ -97,33 +101,35 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			"Multiple buttons can be defined.\n"
 		"  -Z, --button-dismiss-no-terminal <text> <action>  Like "
 			"--button-dismiss, but does not run the action in a terminal.\n"
-		"  -c, --config <path>           Path to config file.\n"
-		"  -d, --debug                   Enable debugging.\n"
-		"  -e, --edge top|bottom         Set the edge to use.\n"
-		"  -f, --font <font>             Set the font to use.\n"
-		"  -h, --help                    Show help message and quit.\n"
-		"  -l, --detailed-message        Read a detailed message from stdin.\n"
-		"  -L, --detailed-button <text>  Set the text of the detail button.\n"
-		"  -m, --message <msg>           Set the message text.\n"
-		"  -o, --output <output>         Set the output to use.\n"
-		"  -s, --dismiss-button <text>   Set the dismiss button text.\n"
-		"  -t, --type <type>             Set the message type.\n"
-		"  -v, --version                 Show the version number and quit.\n"
+		"  -c, --config <path>             Path to config file.\n"
+		"  -d, --debug                     Enable debugging.\n"
+		"  -e, --edge top|bottom           Set the edge to use.\n"
+		"  -f, --font <font>               Set the font to use.\n"
+		"  -h, --help                      Show help message and quit.\n"
+		"  -l, --detailed-message          Read a detailed message from stdin.\n"
+		"  -L, --detailed-button <text>    Set the text of the detail button.\n"
+		"  -m, --message <msg>             Set the message text.\n"
+		"  -o, --output <output>           Set the output to use.\n"
+		"  -s, --dismiss-button <text>     Set the dismiss button text.\n"
+		"  -t, --type <type>               Set the message type.\n"
+		"  -v, --version                   Show the version number and quit.\n"
 		"\n"
 		"The following appearance options can also be given:\n"
-		"  --background RRGGBB[AA]       Background color.\n"
-		"  --border RRGGBB[AA]           Border color.\n"
-		"  --border-bottom RRGGBB[AA]    Bottom border color.\n"
-		"  --button-background RRGGBB[AA]           Button background color.\n"
-		"  --text RRGGBB[AA]             Text color.\n"
-		"  --border-bottom-size size     Thickness of the bar border.\n"
-		"  --message-padding padding     Padding for the message.\n"
-		"  --details-border-size size    Thickness for the details border.\n"
-		"  --button-border-size size     Thickness for the button border.\n"
-		"  --button-gap gap              Size of the gap between buttons\n"
-		"  --button-dismiss-gap gap      Size of the gap for dismiss button.\n"
-		"  --button-margin-right margin  Margin from dismiss button to edge.\n"
-		"  --button-padding padding      Padding for the button text.\n";
+		"  --background RRGGBB[AA]         Background color.\n"
+		"  --border RRGGBB[AA]             Border color.\n"
+		"  --border-bottom RRGGBB[AA]      Bottom border color.\n"
+		"  --button-background RRGGBB[AA]  Button background color.\n"
+		"  --text RRGGBB[AA]               Text color.\n"
+		"  --button-text RRGGBB[AA]        Button text color.\n"
+		"  --border-bottom-size size       Thickness of the bar border.\n"
+		"  --message-padding padding       Padding for the message.\n"
+		"  --details-border-size size      Thickness for the details border.\n"
+		"  --details-background RRGGBB[AA] Details background color.\n"
+		"  --button-border-size size       Thickness for the button border.\n"
+		"  --button-gap gap                Size of the gap between buttons\n"
+		"  --button-dismiss-gap gap        Size of the gap for dismiss button.\n"
+		"  --button-margin-right margin    Margin from dismiss button to edge.\n"
+		"  --button-padding padding        Padding for the button text.\n";
 
 	optind = 1;
 	while (1) {
@@ -228,7 +234,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			}
 			break;
 		case 'v': // Version
-			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
+			printf("swaynag version " SWAY_VERSION "\n");
 			return -1;
 		case TO_COLOR_BACKGROUND: // Background color
 			if (type && !parse_color(optarg, &type->background)) {
@@ -250,9 +256,19 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 				fprintf(stderr, "Invalid button background color: %s", optarg);
 			}
 			break;
+		case TO_COLOR_DETAILS:  // Details background color
+			if (type && !parse_color(optarg, &type->details_background)) {
+				fprintf(stderr, "Invalid details background color: %s", optarg);
+			}
+			break;
 		case TO_COLOR_TEXT:  // Text color
 			if (type && !parse_color(optarg, &type->text)) {
 				fprintf(stderr, "Invalid text color: %s", optarg);
+			}
+			break;
+		case TO_COLOR_BUTTON_TEXT:  // Button text color
+			if (type && !parse_color(optarg, &type->button_text)) {
+				fprintf(stderr, "Invalid button text color: %s", optarg);
 			}
 			break;
 		case TO_THICK_BAR_BORDER:  // Bottom border thickness

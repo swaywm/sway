@@ -4,8 +4,6 @@ sway es un compositor de [Wayland](http://wayland.freedesktop.org/) compatible c
 Lea el [FAQ](https://github.com/swaywm/sway/wiki). Únase al [canal de IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-Si quiere apoyar el desarrollo de sway, por favor, contribuya en [la página de Patreon de SirCmpwn](https://patreon.com/sircmpwn).
-
 ## Firmas de las versiones
 
 Las distintas versiones están firmadas con [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

@@ -70,13 +70,13 @@ static void popup_unconstrain(struct sway_xdg_popup *popup) {
 	struct sway_view *view = popup->child.view;
 	struct wlr_xdg_popup *wlr_popup = popup->wlr_xdg_surface->popup;
 
-	struct sway_output *output = view->container->workspace->output;
+	struct sway_output *output = view->container->pending.workspace->output;
 
 	// the output box expressed in the coordinate system of the toplevel parent
 	// of the popup
 	struct wlr_box output_toplevel_sx_box = {
-		.x = output->lx - view->container->content_x,
-		.y = output->ly - view->container->content_y,
+		.x = output->lx - view->container->pending.content_x,
+		.y = output->ly - view->container->pending.content_y,
 		.width = output->width,
 		.height = output->height,
 	};
@@ -185,6 +185,14 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	wlr_xdg_toplevel_set_fullscreen(surface, fullscreen);
 }
 
+static void set_resizing(struct sway_view *view, bool resizing) {
+	if (xdg_shell_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
+	wlr_xdg_toplevel_set_resizing(surface, resizing);
+}
+
 static bool wants_floating(struct sway_view *view) {
 	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_surface->toplevel;
 	struct wlr_xdg_toplevel_state *state = &toplevel->current;
@@ -203,12 +211,13 @@ static void for_each_surface(struct sway_view *view,
 		user_data);
 }
 
-static void for_each_popup(struct sway_view *view,
+static void for_each_popup_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return;
 	}
-	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface, iterator, user_data);
+	wlr_xdg_surface_for_each_popup_surface(view->wlr_xdg_surface, iterator,
+		user_data);
 }
 
 static bool is_transient_for(struct sway_view *child,
@@ -260,9 +269,10 @@ static const struct sway_view_impl view_impl = {
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
+	.set_resizing = set_resizing,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
-	.for_each_popup = for_each_popup,
+	.for_each_popup_surface = for_each_popup_surface,
 	.is_transient_for = is_transient_for,
 	.close = _close,
 	.close_popups = close_popups,
@@ -275,29 +285,31 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_surface *xdg_surface = view->wlr_xdg_surface;
 
+	struct wlr_box new_geo;
+	wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
+	bool new_size = new_geo.width != view->geometry.width ||
+			new_geo.height != view->geometry.height ||
+			new_geo.x != view->geometry.x ||
+			new_geo.y != view->geometry.y;
+
+	if (new_size) {
+		// The client changed its surface size in this commit. For floating
+		// containers, we resize the container to match. For tiling containers,
+		// we only recenter the surface.
+		desktop_damage_view(view);
+		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		if (container_is_floating(view->container)) {
+			view_update_size(view);
+			transaction_commit_dirty_client();
+		} else {
+			view_center_surface(view);
+		}
+		desktop_damage_view(view);
+	}
+
 	if (view->container->node.instruction) {
-		wlr_xdg_surface_get_geometry(xdg_surface, &view->geometry);
 		transaction_notify_view_ready_by_serial(view,
 				xdg_surface->configure_serial);
-	} else {
-		struct wlr_box new_geo;
-		wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
-
-		if ((new_geo.width != view->geometry.width ||
-					new_geo.height != view->geometry.height ||
-					new_geo.x != view->geometry.x ||
-					new_geo.y != view->geometry.y)) {
-			// The view has unexpectedly sent a new size
-			desktop_damage_view(view);
-			view_update_size(view, new_geo.width, new_geo.height);
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-			desktop_damage_view(view);
-			transaction_commit_dirty();
-			transaction_notify_view_ready_by_size(view,
-					new_geo.width, new_geo.height);
-		} else {
-			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
-		}
 	}
 
 	view_damage_from(view);
@@ -342,19 +354,20 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
+	struct sway_container *container = view->container;
 	if (e->fullscreen && e->output && e->output->data) {
 		struct sway_output *output = e->output->data;
 		struct sway_workspace *ws = output_get_active_workspace(output);
-		if (ws && !container_is_scratchpad_hidden(view->container)) {
-			if (container_is_floating(view->container)) {
-				workspace_add_floating(ws, view->container);
+		if (ws && !container_is_scratchpad_hidden(container)) {
+			if (container_is_floating(container)) {
+				workspace_add_floating(ws, container);
 			} else {
-				workspace_add_tiling(ws, view->container);
+				container = workspace_add_tiling(ws, container);
 			}
 		}
 	}
 
-	container_set_fullscreen(view->container, e->fullscreen);
+	container_set_fullscreen(container, e->fullscreen);
 
 	arrange_root();
 	transaction_commit_dirty();

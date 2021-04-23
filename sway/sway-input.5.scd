@@ -94,11 +94,25 @@ The following commands may only be used in the configuration file.
 *input* <identifier> xkb_numlock enabled|disabled
 	Initially enables or disables NumLock on startup, the default is disabled.
 
+## TABLET CONFIGURATION
+
+*input* <identifier> tool_mode <tool> <absolute|relative>
+	Sets whether movement of a tablet tool should be treated as absolute or
+	relative; the default is absolute.
+
+	Valid values for _\<tool\>_ are currently "pen", "eraser", "brush",
+	"pencil", "airbrush", and the wildcard _\*_, which matches all tools.
+
+	Mouse and lens tools ignore this setting and are always treated as relative.
+
 ## MAPPING CONFIGURATION
 
 *input* <identifier> map_to_output <identifier>
 	Maps inputs from this device to the specified output. Only meaningful if the
 	device is a pointer, touch, or drawing tablet device.
+
+	The wildcard _\*_ can be used to map the input device to the whole desktop
+	layout.
 
 *input* <identifier> map_to_region <X> <Y> <width> <height>
 	Maps inputs from this device to the specified region of the global output
@@ -218,11 +232,16 @@ correct seat.
 	Set this seat as the fallback seat. A fallback seat will attach any device
 	not explicitly attached to another seat (similar to a "default" seat).
 
-*seat* <name> hide_cursor <timeout>
-	Hides the cursor image after the specified _timeout_ (in milliseconds)
-	has elapsed with no activity on that cursor. A timeout of 0 (default)
-	disables hiding the cursor. The minimal timeout is 100 and any value less
-	than that (aside from 0), will be increased to 100.
+*seat* <name> hide_cursor <timeout>|when-typing [enable|disable]
+	Hides the cursor image after the specified event occured.
+
+	If _timeout_ is specified, then the cursor will be hidden after _timeout_
+	(in milliseconds) has elapsed with no activity on the cursor. A timeout of 0
+	(default) disables hiding the cursor. The minimal timeout is 100 and any
+	value less than that (aside from 0), will be increased to 100.
+
+	If _when-typing_ is enabled, then the cursor will be hidden whenever a key
+	is pressed.
 
 *seat* <name> idle_inhibit <sources...>
 	Sets the set of input event sources which can prevent the seat from

@@ -3,8 +3,6 @@
 sway este un compositor pentru [Wayland](http://wayland.freedesktop.org/) compatibil cu [i3](https://i3wm.org/).
 Citiți [FAQ](https://github.com/swaywm/sway/wiki)-ul. Connectați-vă la canalul nostru [IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway pe irc.freenode.net).
 
-Dacă doriți să contribuiți la dezvoltarea sway, vă rugăm contribuiți în [pagina de Patreon lui SirCmpwn](https://patreon.com/sircmpwn).
-
 ## Semnarea digitală
 
 Noile versiuni sunt semnate cu [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

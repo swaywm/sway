@@ -7,11 +7,13 @@
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/render/color.h>
+#include <wlr/types/wlr_tablet_tool.h>
 #include <xkbcommon/xkbcommon.h>
 #include "../include/config.h"
 #include "list.h"
 #include "swaynag.h"
 #include "tree/container.h"
+#include "sway/input/tablet.h"
 #include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
@@ -117,6 +119,11 @@ enum input_config_mapped_to {
 	MAPPED_TO_REGION,
 };
 
+struct input_config_tool {
+	enum wlr_tablet_tool_type type;
+	enum sway_tablet_tool_mode mode;
+};
+
 /**
  * options for input devices
  */
@@ -161,6 +168,8 @@ struct input_config {
 	char *mapped_to_output;
 	struct wlr_box *mapped_to_region;
 
+	list_t *tools;
+
 	bool capturable;
 	struct wlr_box region;
 };
@@ -171,6 +180,12 @@ struct input_config {
 struct seat_attachment_config {
 	char *identifier;
 	// TODO other things are configured here for some reason
+};
+
+enum seat_config_hide_cursor_when_typing {
+	HIDE_WHEN_TYPING_DEFAULT, // the default is currently disabled
+	HIDE_WHEN_TYPING_ENABLE,
+	HIDE_WHEN_TYPING_DISABLE,
 };
 
 enum seat_config_allow_constrain {
@@ -208,6 +223,7 @@ struct seat_config {
 	int fallback; // -1 means not set
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
+	enum seat_config_hide_cursor_when_typing hide_cursor_when_typing;
 	enum seat_config_allow_constrain allow_constrain;
 	enum seat_config_shortcuts_inhibit shortcuts_inhibit;
 	enum seat_keyboard_grouping keyboard_grouping;
@@ -322,6 +338,7 @@ struct bar_config {
 	struct side_gaps gaps;
 	int status_padding;
 	int status_edge_padding;
+	uint32_t workspace_min_width;
 	struct {
 		char *background;
 		char *statusline;
@@ -544,7 +561,7 @@ struct sway_config {
 		struct sway_node *node;
 		struct sway_container *container;
 		struct sway_workspace *workspace;
-		bool using_criteria;
+		bool node_overridden; // True if the node is selected by means other than focus
 		struct {
 			int argc;
 			char **argv;

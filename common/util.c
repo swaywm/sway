@@ -71,6 +71,40 @@ float parse_float(const char *value) {
 	return flt;
 }
 
+enum movement_unit parse_movement_unit(const char *unit) {
+	if (strcasecmp(unit, "px") == 0) {
+		return MOVEMENT_UNIT_PX;
+	}
+	if (strcasecmp(unit, "ppt") == 0) {
+		return MOVEMENT_UNIT_PPT;
+	}
+	if (strcasecmp(unit, "default") == 0) {
+		return MOVEMENT_UNIT_DEFAULT;
+	}
+	return MOVEMENT_UNIT_INVALID;
+}
+
+int parse_movement_amount(int argc, char **argv,
+		struct movement_amount *amount) {
+	char *err;
+	amount->amount = (int)strtol(argv[0], &err, 10);
+	if (*err) {
+		// e.g. 10px
+		amount->unit = parse_movement_unit(err);
+		return 1;
+	}
+	if (argc == 1) {
+		amount->unit = MOVEMENT_UNIT_DEFAULT;
+		return 1;
+	}
+	// Try the second argument
+	amount->unit = parse_movement_unit(argv[1]);
+	if (amount->unit == MOVEMENT_UNIT_INVALID) {
+		amount->unit = MOVEMENT_UNIT_DEFAULT;
+		return 1;
+	}
+	return 2;
+}
 
 const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel) {
 	switch (subpixel) {

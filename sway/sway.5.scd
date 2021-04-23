@@ -89,7 +89,7 @@ The following commands may only be used in the configuration file.
 	_swaynag\_command -_
 
 *workspace_layout* default|stacking|tabbed
-	Specifies the initial layout for new workspaces.
+	Specifies the initial layout for new containers in an empty workspace.
 
 *xwayland* enable|disable|force
 	Enables or disables Xwayland support, which allows X11 applications to be
@@ -140,10 +140,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* output <name>
 	Moves focus to the named output.
 
-*focus tiling*
+*focus* tiling
 	Sets focus to the last focused tiling container.
 
-*focus floating*
+*focus* floating
 	Sets focus to the last focused floating container.
 
 *focus* mode_toggle
@@ -215,9 +215,11 @@ set|plus|minus <amount>
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos_x> [px] <pos_y> [px]
-	Moves the focused container to the specified position in the workspace. If
-	_absolute_ is used, the position is relative to all outputs.
+*move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ptt]
+	Moves the focused container to the specified position in the workspace.
+	The position can be specified in pixels or percentage points, omitting
+	the unit defaults to pixels. If	_absolute_ is used, the position is
+	relative to all outputs. _absolute_ can not be used with percentage points.
 
 *move* [absolute] position center
 	Moves the focused container to be centered on the workspace. If _absolute_
@@ -276,7 +278,7 @@ set|plus|minus <amount>
 	located at path specified by the command line arguments when started,
 	otherwise according to the priority stated in *sway*(1).
 
-*rename workspace* [<old_name>] to <new_name>
+*rename* workspace [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
 
 *resize* shrink|grow width|height [<amount> [px|ppt]]
@@ -284,29 +286,29 @@ set|plus|minus <amount>
 	percentage points. If the units are omitted, floating containers are resized
 	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
 
-*resize set* height <height> [px|ppt]
+*resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _height_ is 0, the container
 	will not be resized.
 
-*resize set* [width] <width> [px|ppt]
+*resize* set [width] <width> [px|ppt]
 	Sets the width of the container to _width_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _width_ is 0, the container
 	will not be resized.
 
-*resize set* [width] <width> [px|ppt] [height] <height> [px|ppt]
+*resize* set [width] <width> [px|ppt] [height] <height> [px|ppt]
 	Sets the width and height of the container to _width_ and _height_,
 	specified in pixels or percentage points. If the units are omitted,
 	floating containers are resized in px and tiled containers by ppt. If
 	_width_ or _height_ is 0, the container will not be resized on that axis.
 
-*scratchpad show*
+*scratchpad* show
 	Shows a window from the scratchpad. Repeatedly using this command will
 	cycle through the windows in the scratchpad.
 
-*shortcuts inhibitor* enable|disable
+*shortcuts_inhibitor* enable|disable
 	Enables or disables the ability of clients to inhibit keyboard
 	shortcuts for a view. This is primarily useful for virtualization and
 	remote desktop software. It affects either the currently focused view
@@ -629,6 +631,13 @@ The default colors are:
 	_font_ should be specified as a pango font description. For more
 	information on pango font descriptions, see
 	https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
+
+*force_display_urgency_hint* <timeout> [ms]
+	If an application on another workspace sets an urgency hint, switching to this
+	workspace may lead to immediate focus of the application, which also means the
+	window decoration color would be immediately resetted to *client.focused*. This
+	may make it unnecessarily hard to tell which window originally raised the
+	event. This option allows to set a _timeout_ in ms to delay the urgency hint reset.
 
 *titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels

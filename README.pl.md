@@ -4,8 +4,6 @@ sway jest kompozytorem [Wayland](http://wayland.freedesktop.org/) kompatybilnym 
 Przeczytaj [FAQ](https://github.com/swaywm/sway/wiki). Dołącz do [kanału IRC](http://webchat.freenode.net/?channels=sway&uio=d4)
 (#sway na irc.freenode.net).
 
-Jeśli chcesz wesprzeć rozwój sway, rozważ wsparcie SirCmpwn na jego [stronie Patreon](https://patreon.com/sircmpwn).
-
 ## Podpisy cyfrowe wydań
 
 Wydania są podpisywane przy pomocy klucza [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)

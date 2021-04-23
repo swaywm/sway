@@ -4,8 +4,6 @@ Sway er en [i3](https://i3wm.org/)-kompatibel [Wayland](http://wayland.freedeskt
 Læs [Ofte stillede spørgsmål](https://github.com/swaywm/sway/wiki).
 Deltag på [IRC kanalen](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway på irc.freenode.net).
 
-Hvis du har lyst til at støtte sway udviklingen, venligst send bidrag på [Sir Cmpwn's Patreon side](https://patreon.com/sircmpwn).
-
 ## Udgivelses Signaturer
 
 Udgivelser er signeret med [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
@@ -15,7 +13,7 @@ og publiseret på [GitHub](https://github.com/swaywm/sway/releases).
 
 ### Fra Pakker
 
-Sway er tilgængelig i mange distributioner. Prøv at installere pakken "svay". Hvis den ikke er tilgængelig, så tjek [denne wiki-side](https://github.com/swaywm/sway/wiki/Unsupported-packages)
+Sway er tilgængelig i mange distributioner. Prøv at installere pakken "sway". Hvis den ikke er tilgængelig, så tjek [denne wiki-side](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 for information om installation til din(e) distribution(er).
 
 Hvis du er interesseret i at lave en Sway pakke til din distribution, burde du besøge IRC

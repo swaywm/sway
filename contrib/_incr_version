@@ -1,6 +1,13 @@
 #!/bin/sh -eu
 old_version="$1"
 new_version="$2"
+
+if [ "$new_version" != "${new_version#v}" ]
+then
+	echo "Error: The new version shouldn't be prefixed with a \"v\"." >&2
+	exit 1
+fi
+
 sed -i meson.build -e "s/^	version: .*#release_version/	version: '$new_version', #release_version/g"
 
 printf "Minimum wlroots version? "

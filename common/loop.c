@@ -117,9 +117,15 @@ void loop_add_fd(struct loop *loop, int fd, short mask,
 	struct pollfd pfd = {fd, mask, 0};
 
 	if (loop->fd_length == loop->fd_capacity) {
-		loop->fd_capacity += 10;
-		loop->fds = realloc(loop->fds,
-				sizeof(struct pollfd) * loop->fd_capacity);
+		int capacity = loop->fd_capacity + 10;
+		struct pollfd *tmp = realloc(loop->fds,
+				sizeof(struct pollfd) * capacity);
+		if (!tmp) {
+			sway_log(SWAY_ERROR, "Unable to allocate memory for pollfd");
+			return;
+		}
+		loop->fds = tmp;
+		loop->fd_capacity = capacity;
 	}
 
 	loop->fds[loop->fd_length++] = pfd;

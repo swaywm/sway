@@ -3,6 +3,7 @@ packages:
   - cairo
   - gdk-pixbuf2
   - json-c
+  - libegl
   - libinput
   - libxcb
   - libxkbcommon
@@ -12,7 +13,8 @@ packages:
   - wayland
   - wayland-protocols
   - xcb-util-image
-  - xorg-server-xwayland
+  - xcb-util-wm
+  - xorg-xwayland
 sources:
   - https://github.com/swaywm/sway
   - https://github.com/swaywm/wlroots
@@ -24,7 +26,7 @@ tasks:
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build -Dauto_features=enabled
+      meson build -Dauto_features=enabled -Dsd-bus-provider=libsystemd
   - build: |
       cd sway
       ninja -C build

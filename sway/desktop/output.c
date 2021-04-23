@@ -105,8 +105,8 @@ static bool get_surface_box(struct surface_iterator_data *data,
 		data->rotation);
 
 	struct wlr_box box = {
-		.x = data->ox + _sx,
-		.y = data->oy + _sy,
+		.x = floor(data->ox + _sx),
+		.y = floor(data->oy + _sy),
 		.width = sw,
 		.height = sh,
 	};
@@ -179,7 +179,7 @@ void output_view_for_each_surface(struct sway_output *output,
 	view_for_each_surface(view, output_for_each_surface_iterator, &data);
 }
 
-void output_view_for_each_popup(struct sway_output *output,
+void output_view_for_each_popup_surface(struct sway_output *output,
 		struct sway_view *view, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct surface_iterator_data data = {
@@ -196,7 +196,7 @@ void output_view_for_each_popup(struct sway_output *output,
 		.rotation = 0, // TODO
 	};
 
-	view_for_each_popup(view, output_for_each_surface_iterator, &data);
+	view_for_each_popup_surface(view, output_for_each_surface_iterator, &data);
 }
 
 void output_layer_for_each_surface(struct sway_output *output,
@@ -206,44 +206,24 @@ void output_layer_for_each_surface(struct sway_output *output,
 	wl_list_for_each(layer_surface, layer_surfaces, link) {
 		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
 			layer_surface->layer_surface;
-		output_surface_for_each_surface(output, wlr_layer_surface_v1->surface,
-			layer_surface->geo.x, layer_surface->geo.y, iterator,
-			user_data);
-
-		struct wlr_xdg_popup *state;
-		wl_list_for_each(state, &wlr_layer_surface_v1->popups, link) {
-			struct wlr_xdg_surface *popup = state->base;
-			if (!popup->configured) {
-				continue;
-			}
-
-			double popup_sx, popup_sy;
-			popup_sx = layer_surface->geo.x +
-				popup->popup->geometry.x - popup->geometry.x;
-			popup_sy = layer_surface->geo.y +
-				popup->popup->geometry.y - popup->geometry.y;
-
-			struct wlr_surface *surface = popup->surface;
-
-			struct surface_iterator_data data = {
-				.user_iterator = iterator,
-				.user_data = user_data,
-				.output = output,
-				.view = NULL,
-				.ox = popup_sx,
-				.oy = popup_sy,
-				.width = surface->current.width,
-				.height = surface->current.height,
-				.rotation = 0,
-			};
-
-			wlr_xdg_surface_for_each_surface(
-					popup, output_for_each_surface_iterator, &data);
-		}
+		struct wlr_surface *surface = wlr_layer_surface_v1->surface;
+		struct surface_iterator_data data = {
+			.user_iterator = iterator,
+			.user_data = user_data,
+			.output = output,
+			.view = NULL,
+			.ox = layer_surface->geo.x,
+			.oy = layer_surface->geo.y,
+			.width = surface->current.width,
+			.height = surface->current.height,
+			.rotation = 0,
+		};
+		wlr_layer_surface_v1_for_each_surface(wlr_layer_surface_v1,
+			output_for_each_surface_iterator, &data);
 	}
 }
 
-void output_layer_for_each_surface_toplevel(struct sway_output *output,
+void output_layer_for_each_toplevel_surface(struct sway_output *output,
 		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct sway_layer_surface *layer_surface;
@@ -257,44 +237,27 @@ void output_layer_for_each_surface_toplevel(struct sway_output *output,
 }
 
 
-void output_layer_for_each_surface_popup(struct sway_output *output,
+void output_layer_for_each_popup_surface(struct sway_output *output,
 		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct sway_layer_surface *layer_surface;
 	wl_list_for_each(layer_surface, layer_surfaces, link) {
 		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
 			layer_surface->layer_surface;
-
-		struct wlr_xdg_popup *state;
-		wl_list_for_each(state, &wlr_layer_surface_v1->popups, link) {
-			struct wlr_xdg_surface *popup = state->base;
-			if (!popup->configured) {
-				continue;
-			}
-
-			double popup_sx, popup_sy;
-			popup_sx = layer_surface->geo.x +
-				popup->popup->geometry.x - popup->geometry.x;
-			popup_sy = layer_surface->geo.y +
-				popup->popup->geometry.y - popup->geometry.y;
-
-			struct wlr_surface *surface = popup->surface;
-
-			struct surface_iterator_data data = {
-				.user_iterator = iterator,
-				.user_data = user_data,
-				.output = output,
-				.view = NULL,
-				.ox = popup_sx,
-				.oy = popup_sy,
-				.width = surface->current.width,
-				.height = surface->current.height,
-				.rotation = 0,
-			};
-
-			wlr_xdg_surface_for_each_surface(
-					popup, output_for_each_surface_iterator, &data);
-		}
+		struct wlr_surface *surface = wlr_layer_surface_v1->surface;
+		struct surface_iterator_data data = {
+			.user_iterator = iterator,
+			.user_data = user_data,
+			.output = output,
+			.view = NULL,
+			.ox = layer_surface->geo.x,
+			.oy = layer_surface->geo.y,
+			.width = surface->current.width,
+			.height = surface->current.height,
+			.rotation = 0,
+		};
+		wlr_layer_surface_v1_for_each_popup_surface(wlr_layer_surface_v1,
+			output_for_each_surface_iterator, &data);
 	}
 }
 
@@ -548,10 +511,14 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
+	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
+	if (!wlr_output_test(wlr_output)) {
+		return false;
+	}
+
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
 
-	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
 	return wlr_output_commit(wlr_output);
 }
 
@@ -580,10 +547,13 @@ static int output_repaint_timer_handler(void *data) {
 			scan_out_fullscreen_view(output, fullscreen_con->view);
 
 		if (scanned_out && !last_scanned_out) {
-			sway_log(SWAY_DEBUG, "Scanning out fullscreen view");
+			sway_log(SWAY_DEBUG, "Scanning out fullscreen view on %s",
+				output->wlr_output->name);
 		}
 		if (last_scanned_out && !scanned_out) {
-			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out");
+			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out on %s",
+				output->wlr_output->name);
+			output_damage_whole(output);
 		}
 		last_scanned_out = scanned_out;
 
@@ -810,7 +780,7 @@ static void update_output_manager_config(struct sway_server *server) {
 		struct wlr_box *output_box = wlr_output_layout_get_box(
 			root->output_layout, output->wlr_output);
 		// We mark the output enabled even if it is switched off by DPMS
-		config_head->state.enabled = output->enabled;
+		config_head->state.enabled = output->current_mode != NULL && output->enabled;
 		config_head->state.mode = output->current_mode;
 		if (output_box) {
 			config_head->state.x = output_box->x;
@@ -832,9 +802,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	output_begin_destroy(output);
 
 	wl_list_remove(&output->destroy.link);
+	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->mode.link);
-	wl_list_remove(&output->transform.link);
-	wl_list_remove(&output->scale.link);
 	wl_list_remove(&output->present.link);
 
 	transaction_commit_dirty();
@@ -867,34 +836,30 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 	update_output_manager_config(output->server);
 }
 
-static void handle_transform(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, transform);
-	if (!output->enabled) {
-		return;
-	}
-	arrange_layers(output);
-	arrange_output(output);
-	transaction_commit_dirty();
-
-	update_output_manager_config(output->server);
-}
-
 static void update_textures(struct sway_container *con, void *data) {
 	container_update_title_textures(con);
 	container_update_marks_textures(con);
 }
 
-static void handle_scale(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, scale);
+static void handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, commit);
+	struct wlr_output_event_commit *event = data;
+
 	if (!output->enabled) {
 		return;
 	}
-	arrange_layers(output);
-	output_for_each_container(output, update_textures, NULL);
-	arrange_output(output);
-	transaction_commit_dirty();
 
-	update_output_manager_config(output->server);
+	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
+		output_for_each_container(output, update_textures, NULL);
+	}
+
+	if (event->committed & (WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {
+		arrange_layers(output);
+		arrange_output(output);
+		transaction_commit_dirty();
+
+		update_output_manager_config(output->server);
+	}
 }
 
 static void handle_present(struct wl_listener *listener, void *data) {
@@ -923,12 +888,10 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
+	wl_signal_add(&wlr_output->events.commit, &output->commit);
+	output->commit.notify = handle_commit;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	output->mode.notify = handle_mode;
-	wl_signal_add(&wlr_output->events.transform, &output->transform);
-	output->transform.notify = handle_transform;
-	wl_signal_add(&wlr_output->events.scale, &output->scale);
-	output->scale.notify = handle_scale;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
 	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
@@ -996,7 +959,8 @@ static void output_manager_apply(struct sway_server *server,
 		} else {
 			oc->width = config_head->state.custom_mode.width;
 			oc->height = config_head->state.custom_mode.height;
-			oc->refresh_rate = config_head->state.custom_mode.refresh;
+			oc->refresh_rate =
+				config_head->state.custom_mode.refresh / 1000.f;
 		}
 		oc->x = config_head->state.x;
 		oc->y = config_head->state.y;
