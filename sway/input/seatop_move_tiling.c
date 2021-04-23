@@ -16,6 +16,10 @@
 // Thickness of the dropzone when dragging to the edge of a layout container
 #define DROP_LAYOUT_BORDER 30
 
+// Thickness of indicator when dropping onto a titlebar.  This should be a
+// multiple of 2.
+#define DROP_SPLIT_INDICATOR 10
+
 struct seatop_move_tiling_event {
 	struct sway_container *con;
 	struct sway_node *target_node;
@@ -23,6 +27,8 @@ struct seatop_move_tiling_event {
 	struct wlr_box drop_box;
 	double ref_lx, ref_ly; // cursor's x/y at start of op
 	bool threshold_reached;
+	bool split_target;
+	bool insert_after_target;
 };
 
 static void handle_render(struct sway_seat *seat,
@@ -92,8 +98,76 @@ static void resize_box(struct wlr_box *box, enum wlr_edges edge,
 	}
 }
 
+static void split_border(double pos, int offset, int len, int n_children,
+		int avoid, int *out_pos, bool *out_after) {
+	int region = 2 * n_children * (pos - offset) / len;
+	// If the cursor is over the right side of a left-adjacent titlebar, or the
+	// left side of a right-adjacent titlebar, it's position when dropped will
+	// be the same.  To avoid this, shift the region for adjacent containers.
+	if (avoid >= 0) {
+		if (region == 2 * avoid - 1 || region == 2 * avoid) {
+			region--;
+		} else if (region == 2 * avoid + 1 || region == 2 * avoid + 2) {
+			region++;
+		}
+	}
+
+	int child_index = (region + 1) / 2;
+	*out_after = region % 2;
+	// When dropping at the beginning or end of a container, show the drop
+	// region within the container boundary, otherwise show it on top of the
+	// border between two titlebars.
+	if (child_index == 0) {
+		*out_pos = offset;
+	} else if (child_index == n_children) {
+		*out_pos = offset + len - DROP_SPLIT_INDICATOR;
+	} else {
+		*out_pos = offset + child_index * len / n_children -
+			DROP_SPLIT_INDICATOR / 2;
+	}
+}
+
+static bool split_titlebar(struct sway_node *node, struct sway_container *avoid,
+		struct wlr_cursor *cursor, struct wlr_box *title_box, bool *after) {
+	struct sway_container *con = node->sway_container;
+	struct sway_node *parent = &con->pending.parent->node;
+	int title_height = container_titlebar_height();
+	struct wlr_box box;
+	int n_children, avoid_index;
+	enum sway_container_layout layout =
+		parent ? node_get_layout(parent) : L_NONE;
+	if (layout == L_TABBED || layout == L_STACKED) {
+		node_get_box(parent, &box);
+		n_children = node_get_children(parent)->length;
+		avoid_index = list_find(node_get_children(parent), avoid);
+	} else {
+		node_get_box(node, &box);
+		n_children = 1;
+		avoid_index = -1;
+	}
+	if (layout == L_STACKED && cursor->y < box.y + title_height * n_children) {
+		// Drop into stacked titlebars.
+		title_box->width = box.width;
+		title_box->height = DROP_SPLIT_INDICATOR;
+		title_box->x = box.x;
+		split_border(cursor->y, box.y, title_height * n_children,
+			n_children, avoid_index, &title_box->y, after);
+		return true;
+	} else if (layout != L_STACKED && cursor->y < box.y + title_height) {
+		// Drop into side-by-side titlebars.
+		title_box->width = DROP_SPLIT_INDICATOR;
+		title_box->height = title_height;
+		title_box->y = box.y;
+		split_border(cursor->x, box.x, box.width, n_children,
+			avoid_index, &title_box->x, after);
+		return true;
+	}
+	return false;
+}
+
 static void handle_motion_postthreshold(struct sway_seat *seat) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
+	e->split_target = false;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 	struct sway_cursor *cursor = seat->cursor;
@@ -127,27 +201,53 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		return;
 	}
 
+	// Check if the cursor is over a tilebar only if the destination
+	// container is not a descendant of the source container.
+	if (!surface && !container_has_ancestor(con, e->con) &&
+			split_titlebar(node, e->con, cursor->cursor,
+				&e->drop_box, &e->insert_after_target)) {
+		// Don't allow dropping over the source container's titlebar
+		// to give users a chance to cancel a drag operation.
+		if (con == e->con) {
+			e->target_node = NULL;
+		} else {
+			e->target_node = node;
+			e->split_target = true;
+		}
+		e->target_edge = WLR_EDGE_NONE;
+		return;
+	}
+
 	// Traverse the ancestors, trying to find a layout container perpendicular
 	// to the edge. Eg. close to the top or bottom of a horiz layout.
+	int thresh_top = con->pending.content_y + DROP_LAYOUT_BORDER;
+	int thresh_bottom = con->pending.content_y +
+		con->pending.content_height - DROP_LAYOUT_BORDER;
+	int thresh_left = con->pending.content_x + DROP_LAYOUT_BORDER;
+	int thresh_right = con->pending.content_x +
+		con->pending.content_width - DROP_LAYOUT_BORDER;
 	while (con) {
 		enum wlr_edges edge = WLR_EDGE_NONE;
 		enum sway_container_layout layout = container_parent_layout(con);
-		struct wlr_box parent;
-		con->pending.parent ? container_get_box(con->pending.parent, &parent) :
-			workspace_get_box(con->pending.workspace, &parent);
+		struct wlr_box box;
+		node_get_box(node_get_parent(&con->node), &box);
 		if (layout == L_HORIZ || layout == L_TABBED) {
-			if (cursor->cursor->y < parent.y + DROP_LAYOUT_BORDER) {
+			if (cursor->cursor->y < thresh_top) {
 				edge = WLR_EDGE_TOP;
-			} else if (cursor->cursor->y > parent.y + parent.height
-					- DROP_LAYOUT_BORDER) {
+				box.height = thresh_top - box.y;
+			} else if (cursor->cursor->y > thresh_bottom) {
 				edge = WLR_EDGE_BOTTOM;
+				box.height = box.y + box.height - thresh_bottom;
+				box.y = thresh_bottom;
 			}
 		} else if (layout == L_VERT || layout == L_STACKED) {
-			if (cursor->cursor->x < parent.x + DROP_LAYOUT_BORDER) {
+			if (cursor->cursor->x < thresh_left) {
 				edge = WLR_EDGE_LEFT;
-			} else if (cursor->cursor->x > parent.x + parent.width
-					- DROP_LAYOUT_BORDER) {
+				box.width = thresh_left - box.x;
+			} else if (cursor->cursor->x > thresh_right) {
 				edge = WLR_EDGE_RIGHT;
+				box.width = box.x + box.width - thresh_right;
+				box.x = thresh_right;
 			}
 		}
 		if (edge) {
@@ -156,8 +256,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 				e->target_node = node_get_parent(e->target_node);
 			}
 			e->target_edge = edge;
-			node_get_box(e->target_node, &e->drop_box);
-			resize_box(&e->drop_box, edge, DROP_LAYOUT_BORDER);
+			e->drop_box = box;
 			desktop_damage_box(&e->drop_box);
 			return;
 		}
@@ -241,7 +340,8 @@ static void finalize_move(struct sway_seat *seat) {
 		target_node->sway_workspace : target_node->sway_container->pending.workspace;
 	enum wlr_edges edge = e->target_edge;
 	int after = edge != WLR_EDGE_TOP && edge != WLR_EDGE_LEFT;
-	bool swap = edge == WLR_EDGE_NONE && target_node->type == N_CONTAINER;
+	bool swap = edge == WLR_EDGE_NONE && target_node->type == N_CONTAINER &&
+		!e->split_target;
 
 	if (!swap) {
 		container_detach(con);
@@ -250,6 +350,14 @@ static void finalize_move(struct sway_seat *seat) {
 	// Moving container into empty workspace
 	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
 		con = workspace_add_tiling(new_ws, con);
+	} else if (e->split_target) {
+		struct sway_container *target = target_node->sway_container;
+		enum sway_container_layout layout = container_parent_layout(target);
+		if (layout != L_TABBED && layout != L_STACKED) {
+			container_split(target, L_TABBED);
+		}
+		container_add_sibling(target, con, e->insert_after_target);
+		ipc_event_window(con, "move");
 	} else if (target_node->type == N_CONTAINER) {
 		// Moving container before/after another
 		struct sway_container *target = target_node->sway_container;
