@@ -32,7 +32,7 @@
 struct render_data {
 	pixman_region32_t *damage;
 	float alpha;
-	struct sway_container *container;
+	struct wlr_box *clip_box;
 };
 
 /**
@@ -160,10 +160,10 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 		wlr_output->transform_matrix);
 
 	struct wlr_box dst_box = *_box;
-	struct sway_container *container = data->container;
-	if (container != NULL) {
-		dst_box.width = fmin(dst_box.width, container->current.content_width);
-		dst_box.height = fmin(dst_box.height, container->current.content_height);
+	struct wlr_box *clip_box = data->clip_box;
+	if (clip_box != NULL) {
+		dst_box.width = fmin(dst_box.width, clip_box->width);
+		dst_box.height = fmin(dst_box.height, clip_box->height);
 	}
 	scale_box(&dst_box, wlr_output->scale);
 
@@ -265,8 +265,13 @@ static void render_view_toplevels(struct sway_view *view,
 		.damage = damage,
 		.alpha = alpha,
 	};
+	struct wlr_box clip_box;
 	if (!container_is_current_floating(view->container)) {
-		data.container = view->container;
+		// As we pass the geometry offsets to the surface iterator, we will
+		// need to account for the offsets in the clip dimensions.
+		clip_box.width = view->container->current.content_width + view->geometry.x;
+		clip_box.height = view->container->current.content_height + view->geometry.y;
+		data.clip_box = &clip_box;
 	}
 	// Render all toplevels without descending into popups
 	double ox = view->container->surface_x -
@@ -332,10 +337,10 @@ static void render_saved_view(struct sway_view *view,
 		if (!floating) {
 			dst_box.width = fmin(dst_box.width,
 					view->container->current.content_width -
-					(saved_buf->x - view->container->current.content_x));
+					(saved_buf->x - view->container->current.content_x) + view->saved_geometry.x);
 			dst_box.height = fmin(dst_box.height,
 					view->container->current.content_height -
-					(saved_buf->y - view->container->current.content_y));
+					(saved_buf->y - view->container->current.content_y) + view->saved_geometry.y);
 		}
 		scale_box(&dst_box, wlr_output->scale);
 
