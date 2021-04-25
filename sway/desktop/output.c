@@ -99,8 +99,8 @@ static bool get_surface_box(struct surface_iterator_data *data,
 	int sw = surface->current.width;
 	int sh = surface->current.height;
 
-	double _sx = sx + surface->sx;
-	double _sy = sy + surface->sy;
+	double _sx = sx;
+	double _sy = sy;
 	rotate_child_position(&_sx, &_sy, sw, sh, data->width, data->height,
 		data->rotation);
 
