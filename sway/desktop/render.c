@@ -159,8 +159,8 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 	struct wlr_box dst_box = *_box;
 	struct sway_container *container = data->container;
 	if (container != NULL) {
-		dst_box.width = fmin(dst_box.width, container->current.content_width - surface->sx);
-		dst_box.height = fmin(dst_box.height, container->current.content_height - surface->sy);
+		dst_box.width = fmin(dst_box.width, container->current.content_width);
+		dst_box.height = fmin(dst_box.height, container->current.content_height);
 	}
 	scale_box(&dst_box, wlr_output->scale);
 
