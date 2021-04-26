@@ -56,26 +56,6 @@ struct sway_output *all_output_by_name_or_id(const char *name_or_id) {
 	return NULL;
 }
 
-/**
- * Rotate a child's position relative to a parent. The parent size is (pw, ph),
- * the child position is (*sx, *sy) and its size is (sw, sh).
- */
-static void rotate_child_position(double *sx, double *sy, double sw, double sh,
-		double pw, double ph, float rotation) {
-	if (rotation == 0.0f) {
-		return;
-	}
-
-	// Coordinates relative to the center of the subsurface
-	double ox = *sx - pw/2 + sw/2,
-		oy = *sy - ph/2 + sh/2;
-	// Rotated coordinates
-	double rx = cos(-rotation)*ox - sin(-rotation)*oy,
-		ry = cos(-rotation)*oy + sin(-rotation)*ox;
-	*sx = rx + pw/2 - sw/2;
-	*sy = ry + ph/2 - sh/2;
-}
-
 struct surface_iterator_data {
 	sway_surface_iterator_func_t user_iterator;
 	void *user_data;
@@ -84,7 +64,6 @@ struct surface_iterator_data {
 	struct sway_view *view;
 	double ox, oy;
 	int width, height;
-	float rotation;
 };
 
 static bool get_surface_box(struct surface_iterator_data *data,
@@ -99,14 +78,9 @@ static bool get_surface_box(struct surface_iterator_data *data,
 	int sw = surface->current.width;
 	int sh = surface->current.height;
 
-	double _sx = sx;
-	double _sy = sy;
-	rotate_child_position(&_sx, &_sy, sw, sh, data->width, data->height,
-		data->rotation);
-
 	struct wlr_box box = {
-		.x = floor(data->ox + _sx),
-		.y = floor(data->oy + _sy),
+		.x = floor(data->ox + sx),
+		.y = floor(data->oy + sy),
 		.width = sw,
 		.height = sh,
 	};
@@ -114,16 +88,13 @@ static bool get_surface_box(struct surface_iterator_data *data,
 		memcpy(surface_box, &box, sizeof(struct wlr_box));
 	}
 
-	struct wlr_box rotated_box;
-	wlr_box_rotated_bounds(&rotated_box, &box, data->rotation);
-
 	struct wlr_box output_box = {
 		.width = output->width,
 		.height = output->height,
 	};
 
 	struct wlr_box intersection;
-	return wlr_box_intersection(&intersection, &output_box, &rotated_box);
+	return wlr_box_intersection(&intersection, &output_box, &box);
 }
 
 static void output_for_each_surface_iterator(struct wlr_surface *surface,
@@ -136,7 +107,7 @@ static void output_for_each_surface_iterator(struct wlr_surface *surface,
 		return;
 	}
 
-	data->user_iterator(data->output, data->view, surface, &box, data->rotation,
+	data->user_iterator(data->output, data->view, surface, &box,
 		data->user_data);
 }
 
@@ -152,7 +123,6 @@ void output_surface_for_each_surface(struct sway_output *output,
 		.oy = oy,
 		.width = surface->current.width,
 		.height = surface->current.height,
-		.rotation = 0,
 	};
 
 	wlr_surface_for_each_surface(surface,
@@ -173,7 +143,6 @@ void output_view_for_each_surface(struct sway_output *output,
 			- view->geometry.y,
 		.width = view->container->current.content_width,
 		.height = view->container->current.content_height,
-		.rotation = 0, // TODO
 	};
 
 	view_for_each_surface(view, output_for_each_surface_iterator, &data);
@@ -193,7 +162,6 @@ void output_view_for_each_popup_surface(struct sway_output *output,
 			- view->geometry.y,
 		.width = view->container->current.content_width,
 		.height = view->container->current.content_height,
-		.rotation = 0, // TODO
 	};
 
 	view_for_each_popup_surface(view, output_for_each_surface_iterator, &data);
@@ -216,7 +184,6 @@ void output_layer_for_each_surface(struct sway_output *output,
 			.oy = layer_surface->geo.y,
 			.width = surface->current.width,
 			.height = surface->current.height,
-			.rotation = 0,
 		};
 		wlr_layer_surface_v1_for_each_surface(wlr_layer_surface_v1,
 			output_for_each_surface_iterator, &data);
@@ -254,7 +221,6 @@ void output_layer_for_each_popup_surface(struct sway_output *output,
 			.oy = layer_surface->geo.y,
 			.width = surface->current.width,
 			.height = surface->current.height,
-			.rotation = 0,
 		};
 		wlr_layer_surface_v1_for_each_popup_surface(wlr_layer_surface_v1,
 			output_for_each_surface_iterator, &data);
@@ -426,9 +392,9 @@ struct send_frame_done_data {
 	int msec_until_refresh;
 };
 
-static void send_frame_done_iterator(struct sway_output *output, struct sway_view *view,
-		struct wlr_surface *surface, struct wlr_box *box, float rotation,
-		void *user_data) {
+static void send_frame_done_iterator(struct sway_output *output,
+		struct sway_view *view, struct wlr_surface *surface,
+		struct wlr_box *box, void *user_data) {
 	int view_max_render_time = 0;
 	if (view != NULL) {
 		view_max_render_time = view->max_render_time;
@@ -451,9 +417,9 @@ static void send_frame_done(struct sway_output *output, struct send_frame_done_d
 	output_for_each_surface(output, send_frame_done_iterator, data);
 }
 
-static void count_surface_iterator(struct sway_output *output, struct sway_view *view,
-		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
-		void *data) {
+static void count_surface_iterator(struct sway_output *output,
+		struct sway_view *view, struct wlr_surface *surface,
+		struct wlr_box *box, void *data) {
 	size_t *n = data;
 	(*n)++;
 }
@@ -657,17 +623,14 @@ void output_damage_whole(struct sway_output *output) {
 	}
 }
 
-static void damage_surface_iterator(struct sway_output *output, struct sway_view *view,
-		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
-		void *_data) {
+static void damage_surface_iterator(struct sway_output *output,
+		struct sway_view *view, struct wlr_surface *surface,
+		struct wlr_box *_box, void *_data) {
 	bool *data = _data;
 	bool whole = *data;
 
 	struct wlr_box box = *_box;
 	scale_box(&box, output->wlr_output->scale);
-
-	int center_x = box.x + box.width/2;
-	int center_y = box.y + box.height/2;
 
 	if (pixman_region32_not_empty(&surface->buffer_damage)) {
 		pixman_region32_t damage;
@@ -681,14 +644,11 @@ static void damage_surface_iterator(struct sway_output *output, struct sway_view
 				ceil(output->wlr_output->scale) - surface->current.scale);
 		}
 		pixman_region32_translate(&damage, box.x, box.y);
-		wlr_region_rotated_bounds(&damage, &damage, rotation,
-			center_x, center_y);
 		wlr_output_damage_add(output->damage, &damage);
 		pixman_region32_fini(&damage);
 	}
 
 	if (whole) {
-		wlr_box_rotated_bounds(&box, &box, rotation);
 		wlr_output_damage_add_box(output->damage, &box);
 	}
 
