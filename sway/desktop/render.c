@@ -131,9 +131,9 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static void render_surface_iterator(struct sway_output *output, struct sway_view *view,
-		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
-		void *_data) {
+static void render_surface_iterator(struct sway_output *output,
+		struct sway_view *view, struct wlr_surface *surface,
+		struct wlr_box *_box, void *_data) {
 	struct render_data *data = _data;
 	struct wlr_output *wlr_output = output->wlr_output;
 	pixman_region32_t *output_damage = data->damage;
@@ -153,7 +153,7 @@ static void render_surface_iterator(struct sway_output *output, struct sway_view
 	float matrix[9];
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current.transform);
-	wlr_matrix_project_box(matrix, &proj_box, transform, rotation,
+	wlr_matrix_project_box(matrix, &proj_box, transform, 0.0,
 		wlr_output->transform_matrix);
 
 	struct wlr_box dst_box = *_box;
