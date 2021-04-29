@@ -601,7 +601,7 @@ static bool should_focus(struct sway_view *view) {
 	}
 
 	// View opened "under" fullscreen view should not be given focus.
-	if (root->fullscreen_global || map_ws->fullscreen) {
+	if (root->fullscreen_global || !map_ws || map_ws->fullscreen) {
 		return false;
 	}
 
