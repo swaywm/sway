@@ -158,9 +158,10 @@ static uint32_t render_focused_window_title(struct render_context *ctx, double *
 		return ideal_surface_height;
 	}
 
-	/* *x += margin; */
 	uint32_t height = output->height * output->scale;
 	double text_y = height / 2.0 - text_height / 2.0;
+	int padding = 4;
+	*x += padding;
 	cairo_move_to(cairo, *x, (int)floor(text_y));
 	choose_text_aa_mode(ctx, fontcolor);
 	pango_printf_ellipsize(cairo, config->font, output->scale,
@@ -768,13 +769,8 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 				&min_size,
 				&max_size);
 		icon = load_background_image(icon_path);
-	} else {
-		// TODO: Generate a image on the fly
-		icon = load_background_image(
-				"/usr/share/icons/Adwaita/16x16/apps/"
-				"utilities-terminal-symbolic.symbolic.png");
 	}
-	assert(icon);
+
 	if (!icon) {
 		return output->height;
 	}
@@ -785,7 +781,7 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 		actual_size*(target_size/actual_size) : target_size;
 	icon = cairo_image_surface_scale(icon, icon_size, icon_size);
 
-	int padded_size = icon_size + 2 * padding;
+	int padded_size = icon_size + padding;
 	int y = floor((height - padded_size) / 2.0);
 
 	cairo_operator_t op = cairo_get_operator(cairo);
