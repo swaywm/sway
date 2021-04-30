@@ -274,6 +274,12 @@ static bool ipc_parse_config(
 		config->workspace_buttons = json_object_get_boolean(workspace_buttons);
 	}
 
+	json_object *window_title =
+			json_object_object_get(bar_config, "window_title");
+	if (window_title) {
+		config->window_title = json_object_get_boolean(window_title);
+	}
+
 	json_object *workspace_min_width =
 		json_object_object_get(bar_config, "workspace_min_width");
 	if (workspace_min_width) {
@@ -430,10 +436,12 @@ bool ipc_initialize(struct swaybar *bar) {
 
 	struct swaybar_config *config = bar->config;
 	char subscribe[128]; // suitably large buffer
-	len = snprintf(subscribe, 128,
-				   "[ \"barconfig_update\" , \"bar_state_update\", \"window\" %s %s ]",
+	len = snprintf(subscribe,
+			128,
+			"[ \"barconfig_update\" , \"bar_state_update\" %s %s %s ]",
 			config->binding_mode_indicator ? ", \"mode\"" : "",
-			config->workspace_buttons ? ", \"workspace\"" : "");
+			config->workspace_buttons ? ", \"workspace\"" : "",
+			config->window_title ? ", \"window\"" : "");
 	free(ipc_single_command(bar->ipc_event_socketfd,
 			IPC_SUBSCRIBE, subscribe, &len));
 	return true;
@@ -634,16 +642,19 @@ bool ipc_set_focused_window(struct swaybar *bar) {
 		return false;
 	}
 
-	json_object *json_nodes;
-	json_object_object_get_ex(results, "nodes", &json_nodes);
-	assert(json_nodes);
-	struct swaybar_window *window = get_focused_window_from_nodes(json_nodes);
-	if (bar->focused_window) {
-		free_window(bar->focused_window);
-		bar->focused_window = NULL;
-	}
-	if (window) {
-		bar->focused_window = window;
+	if (bar->config->window_title) {
+		json_object *json_nodes;
+		json_object_object_get_ex(results, "nodes", &json_nodes);
+		assert(json_nodes);
+		struct swaybar_window *window =
+				get_focused_window_from_nodes(json_nodes);
+		if (bar->focused_window) {
+			free_window(bar->focused_window);
+			bar->focused_window = NULL;
+		}
+		if (window) {
+			bar->focused_window = window;
+		}
 	}
 
 	bar->workspace_changed = false;
@@ -683,8 +694,10 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	case IPC_EVENT_WORKSPACE:
 		bar->workspace_changed = true;
 		bar_is_dirty = ipc_get_workspaces(bar);
-		const bool focused_window_change = ipc_set_focused_window(bar);
-		bar_is_dirty = bar_is_dirty ? true : focused_window_change;
+		if (bar->config->window_title) {
+			const bool focused_window_change = ipc_set_focused_window(bar);
+			bar_is_dirty = bar_is_dirty ? true : focused_window_change;
+		}
 		break;
 	case IPC_EVENT_MODE: {
 		json_object *json_change, *json_pango_markup;

@@ -96,6 +96,7 @@ struct bar_config *default_bar_config(void) {
 	bar->font = NULL;
 	bar->height = 0;
 	bar->workspace_buttons = true;
+	bar->window_title = false;
 	bar->wrap_scroll = false;
 	bar->separator_symbol = NULL;
 	bar->strip_workspace_numbers = false;

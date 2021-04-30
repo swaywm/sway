@@ -327,6 +327,7 @@ struct bar_config {
 	char *font;
 	int height; // -1 not defined
 	bool workspace_buttons;
+	bool window_title;
 	bool wrap_scroll;
 	char *separator_symbol;
 	bool strip_workspace_numbers;
@@ -361,8 +362,8 @@ struct bar_config {
 		char *binding_mode_text;
 	} colors;
 
-#if HAVE_TRAY
 	char *icon_theme;
+#if HAVE_TRAY
 	struct wl_list tray_bindings; // struct tray_binding::link
 	list_t *tray_outputs; // char *
 	int tray_padding;

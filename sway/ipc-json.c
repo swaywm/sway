@@ -1104,6 +1104,8 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 			json_object_new_boolean(bar->wrap_scroll));
 	json_object_object_add(json, "workspace_buttons",
 			json_object_new_boolean(bar->workspace_buttons));
+	json_object_object_add(json, "window_title",
+			json_object_new_boolean(bar->window_title));
 	json_object_object_add(json, "strip_workspace_numbers",
 			json_object_new_boolean(bar->strip_workspace_numbers));
 	json_object_object_add(json, "strip_workspace_name",
