@@ -19,6 +19,7 @@
 #include "swaybar/ipc.h"
 #include "swaybar/status_line.h"
 #include "swaybar/render.h"
+#include "swaybar/icon.h"
 #if HAVE_TRAY
 #include "swaybar/tray/tray.h"
 #endif
@@ -462,6 +463,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 		bar->tray = create_tray(bar);
 	}
 #endif
+	init_themes(&bar->themes, &bar->basedirs);
 
 	if (bar->config->workspace_buttons) {
 		ipc_get_workspaces(bar);
@@ -536,6 +538,7 @@ void bar_teardown(struct swaybar *bar) {
 #if HAVE_TRAY
 	destroy_tray(bar->tray);
 #endif
+	finish_themes(bar->themes, bar->basedirs);
 	free_outputs(&bar->outputs);
 	free_outputs(&bar->unused_outputs);
 	free_seats(&bar->seats);

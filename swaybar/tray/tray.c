@@ -4,7 +4,7 @@
 #include <string.h>
 #include "swaybar/config.h"
 #include "swaybar/bar.h"
-#include "swaybar/tray/icon.h"
+#include "swaybar/icon.h"
 #include "swaybar/tray/host.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
@@ -67,8 +67,6 @@ struct swaybar_tray *create_tray(struct swaybar *bar) {
 	init_host(&tray->host_xdg, "freedesktop", tray);
 	init_host(&tray->host_kde, "kde", tray);
 
-	init_themes(&tray->themes, &tray->basedirs);
-
 	return tray;
 }
 
@@ -85,7 +83,6 @@ void destroy_tray(struct swaybar_tray *tray) {
 	destroy_watcher(tray->watcher_xdg);
 	destroy_watcher(tray->watcher_kde);
 	sd_bus_flush_close_unref(tray->bus);
-	finish_themes(tray->themes, tray->basedirs);
 	free(tray);
 }
 

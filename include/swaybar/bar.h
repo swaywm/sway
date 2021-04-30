@@ -45,6 +45,9 @@ struct swaybar {
 	struct wl_list unused_outputs; // swaybar_output::link
 	struct wl_list seats; // swaybar_seat::link
 
+	list_t *basedirs; // char *
+	list_t *themes;	  // struct swaybar_theme *
+
 	struct swaybar_window *focused_window;
 
 	// TOOD: Better name

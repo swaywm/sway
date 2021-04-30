@@ -9,7 +9,7 @@
 #include "swaybar/config.h"
 #include "swaybar/input.h"
 #include "swaybar/tray/host.h"
-#include "swaybar/tray/icon.h"
+#include "swaybar/icon.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
 #include "background-image.h"
@@ -410,19 +410,26 @@ static enum hotspot_event_handling icon_hotspot_callback(
 	return HOTSPOT_PROCESS;
 }
 
-static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
+static void reload_sni(struct swaybar_sni *sni,
+		char *icon_theme,
+		list_t *basedirs, // char *
+		list_t *themes,	  // struct swaybar_theme *
 		int target_size) {
 	char *icon_name = sni->status[0] == 'N' ?
 		sni->attention_icon_name : sni->icon_name;
 	if (icon_name) {
 		list_t *icon_search_paths = create_list();
-		list_cat(icon_search_paths, sni->tray->basedirs);
+		list_cat(icon_search_paths, basedirs);
 		if (sni->icon_theme_path) {
 			list_add(icon_search_paths, sni->icon_theme_path);
 		}
-		char *icon_path = find_icon(sni->tray->themes, icon_search_paths,
-				icon_name, target_size, icon_theme,
-				&sni->min_size, &sni->max_size);
+		char *icon_path = find_icon(themes,
+				icon_search_paths,
+				icon_name,
+				target_size,
+				icon_theme,
+				&sni->min_size,
+				&sni->max_size);
 		list_free(icon_search_paths);
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
@@ -460,7 +467,11 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	if (target_size != sni->target_size && sni_ready(sni)) {
 		// check if another icon should be loaded
 		if (target_size < sni->min_size || target_size > sni->max_size) {
-			reload_sni(sni, output->bar->config->icon_theme, target_size);
+			reload_sni(sni,
+					output->bar->config->icon_theme,
+					output->bar->basedirs,
+					output->bar->themes,
+					target_size);
 		}
 
 		sni->target_size = target_size;

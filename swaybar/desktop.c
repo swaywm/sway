@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-#include "swaybar/tray/icon.h"
+#include "swaybar/icon.h"
 #include "desktop.h"
 #include "log.h"
 

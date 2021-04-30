@@ -129,8 +129,7 @@ void free_config(struct swaybar_config *config) {
 		wl_list_remove(&tray_bind->link);
 		free_tray_binding(tray_bind);
 	}
-
-	free(config->icon_theme);
 #endif
+	free(config->icon_theme);
 	free(config);
 }

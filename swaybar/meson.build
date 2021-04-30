@@ -1,6 +1,5 @@
 tray_files = have_tray ? [
 	'tray/host.c',
-	'tray/icon.c',
 	'tray/item.c',
 	'tray/tray.c',
 	'tray/watcher.c'
@@ -29,6 +28,7 @@ executable(
 		'i3bar.c',
 		'input.c',
 		'ipc.c',
+        'icon.c',
 		'main.c',
 		'render.c',
 		'status_line.c',

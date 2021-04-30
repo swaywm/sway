@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <wordexp.h>
-#include "swaybar/tray/icon.h"
+#include "swaybar/icon.h"
 #include "config.h"
 #include "list.h"
 #include "log.h"

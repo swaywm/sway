@@ -14,7 +14,7 @@
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
-#include "swaybar/tray/icon.h"
+#include "swaybar/icon.h"
 #include "log.h"
 #include "background-image.h"
 #if HAVE_TRAY
@@ -759,9 +759,9 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 		// TODO: Load correct theme
 		list_add(themes, "Adwaita");
 
-		assert(output->bar->tray);
-		assert(output->bar->tray->themes);
-		char *icon_path = find_icon(output->bar->tray->themes,
+		assert(output->bar);
+		assert(output->bar->themes);
+		char *icon_path = find_icon(output->bar->themes,
 				basedirs,
 				icon_name,
 				target_size,

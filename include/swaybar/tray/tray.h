@@ -29,9 +29,6 @@ struct swaybar_tray {
 	list_t *items; // struct swaybar_sni *
 	struct swaybar_watcher *watcher_xdg;
 	struct swaybar_watcher *watcher_kde;
-
-	list_t *basedirs; // char *
-	list_t *themes; // struct swaybar_theme *
 };
 
 struct swaybar_tray *create_tray(struct swaybar *bar);

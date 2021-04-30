@@ -14,7 +14,7 @@
 #endif
 #include "desktop.h"
 #include "config.h"
-#include "swaybar/tray/icon.h"
+#include "swaybar/icon.h"
 #include "ipc-client.h"
 #include "background-image.h"
 #include "list.h"
