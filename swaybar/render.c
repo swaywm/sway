@@ -124,7 +124,13 @@ static uint32_t render_status_line_text(struct render_context *ctx, double *x) {
 	return output->height;
 }
 
-static uint32_t render_focused_window_title(struct render_context *ctx, double *x, double max_width) {
+static uint32_t render_focused_window_title(struct render_context *ctx,
+		double *x,
+		double max_width) {
+	if (*x >= max_width) {
+		return 0;
+	}
+
 	struct swaybar_output *output = ctx->output;
 	const char *text = output->bar->focused_window ? output->bar->focused_window->name : "";
 	if (!text) {
@@ -735,7 +741,8 @@ static uint32_t render_workspace_button(struct render_context *ctx,
 
 uint32_t render_focused_window_icon(cairo_t *cairo,
 		struct swaybar_output *output,
-		double *x) {
+		double *x,
+		double max_width) {
 	assert(output);
 	assert(output->bar);
 
@@ -782,6 +789,9 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 	icon = cairo_image_surface_scale(icon, icon_size, icon_size);
 
 	int padded_size = icon_size + padding;
+	if (*x + padded_size >= max_width) {
+		return output->height;
+	}
 	int y = floor((height - padded_size) / 2.0);
 
 	cairo_operator_t op = cairo_get_operator(cairo);
@@ -850,7 +860,7 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 	}
 
 	if (bar->workspace_window_title_sync && output->focused) {
-		uint32_t h = render_focused_window_icon(cairo, output, &x);
+		uint32_t h = render_focused_window_icon(cairo, output, &x, old_x);
 		max_height = h > max_height ? h : max_height;
 		old_x -= x;
 		h = render_focused_window_title(ctx, &x, old_x);
