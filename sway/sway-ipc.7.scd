@@ -832,6 +832,9 @@ their value mean can be found in *sway-bar*(5):
 |- workspace_buttons
 :  boolean
 :  Whether to display the workspace buttons on the bar
+|- window_title
+:  boolean
+:  Whether to display the focused windows title on the bar
 |- workspace_min_width
 :  integer
 :  Minimum width in px for the workspace buttons on the bar
@@ -937,6 +940,7 @@ containing the _#RRGGBBAA_ representation of the color:
 	"status_padding": 1,
 	"status_edge_padding": 3,
 	"workspace_buttons": true,
+  	"window_title": false,
 	"workspace_min_width": 0,
 	"binding_mode_indicator": true,
 	"verbose": false,

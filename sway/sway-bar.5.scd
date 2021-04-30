@@ -141,6 +141,9 @@ runtime.
 *workspace_min_width* <px> [px]
 	Specifies the minimum width for the workspace buttons on the bar. Default is _0_.
 
+*window_title* yes|no
+	Enables or disables the focused window title on the bar. Default is _no_.
+
 	This setting also applies to the current binding mode indicator.
 
 ## TRAY
