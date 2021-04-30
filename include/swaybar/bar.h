@@ -50,8 +50,7 @@ struct swaybar {
 
 	struct swaybar_window *focused_window;
 
-	// TOOD: Better name
-	bool workspace_changed;
+	bool workspace_window_title_sync;
 
 #if HAVE_TRAY
 	struct swaybar_tray *tray;

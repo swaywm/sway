@@ -657,7 +657,7 @@ bool ipc_set_focused_window(struct swaybar *bar) {
 		}
 	}
 
-	bar->workspace_changed = false;
+	bar->workspace_window_title_sync = true;
 	// TODO: cache
 	return true;
 }
@@ -692,7 +692,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	bool bar_is_dirty = true;
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
-		bar->workspace_changed = true;
+		bar->workspace_window_title_sync = false;
 		bar_is_dirty = ipc_get_workspaces(bar);
 		if (bar->config->window_title) {
 			const bool focused_window_change = ipc_set_focused_window(bar);

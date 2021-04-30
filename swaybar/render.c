@@ -849,7 +849,7 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 		max_height = h > max_height ? h : max_height;
 	}
 
-	if (!bar->workspace_changed && output->focused) {
+	if (bar->workspace_window_title_sync && output->focused) {
 		uint32_t h = render_focused_window_icon(cairo, output, &x);
 		max_height = h > max_height ? h : max_height;
 		old_x -= x;
