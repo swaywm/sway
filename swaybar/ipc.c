@@ -553,30 +553,41 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 	return true;
 }
 
-static const char *get_app_name_from_node(json_object *json_node) {
+static char *get_desktop_entry_from_node(json_object *json_node) {
 	assert(json_node);
 
 	json_object *json_app_id;
 	json_object_object_get_ex(json_node, "app_id", &json_app_id);
-	if (!json_app_id) {
-		// If no app_id is found, take the instance property from window_properties
-		json_object *json_window_properties;
-		json_object_object_get_ex(
-				json_node, "window_properties", &json_window_properties);
-		assert(json_window_properties);
-
-		json_object *json_instance;
-		json_object_object_get_ex(
-				json_window_properties, "instance", &json_instance);
-		assert(json_instance);
-
-		json_app_id = json_instance;
+	if (json_app_id) {
+		const char *app_id = json_object_get_string(json_app_id);
+		return load_desktop_entry_from_xdgdirs(app_id);
 	}
 
-	const char *app_id = json_object_get_string(json_app_id);
-	assert(app_id);
+	// If no app_id is found, take the instance property from window_properties
+	json_object *json_window_properties;
+	json_object_object_get_ex(
+			json_node, "window_properties", &json_window_properties);
+	assert(json_window_properties);
 
-	return app_id;
+	json_object *json_instance;
+	json_object_object_get_ex(
+			json_window_properties, "instance", &json_instance);
+	assert(json_instance);
+
+	const char *instance = json_object_get_string(json_instance);
+	assert(instance);
+	char *desktop_entry = load_desktop_entry_from_xdgdirs(instance);
+	if (desktop_entry) {
+		return desktop_entry;
+	}
+
+	json_object *json_class;
+	json_object_object_get_ex(json_window_properties, "class", &json_class);
+	assert(json_instance);
+
+	const char *class = json_object_get_string(json_class);
+	assert(class);
+	return load_desktop_entry_from_xdgdirs(class);
 }
 
 static struct swaybar_window *get_focused_window_from_nodes(
@@ -605,8 +616,7 @@ static struct swaybar_window *get_focused_window_from_nodes(
 			const char *name = json_object_get_string(json_name);
 			assert(name);
 
-			const char *app_name = get_app_name_from_node(json_node);
-			char *desktop_entry = load_desktop_entry_from_xdgdirs(app_name);
+			char *desktop_entry = get_desktop_entry_from_node(json_node);
 			char *icon_name = get_icon_name_from_desktop_entry(desktop_entry);
 			free(desktop_entry);
 
