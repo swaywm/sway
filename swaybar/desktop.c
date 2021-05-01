@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <wordexp.h>
 
 #include "swaybar/icon.h"
 #include "desktop.h"
@@ -14,9 +15,38 @@
 
 static list_t *get_desktop_files_basedirs() {
 	list_t *basedirs = create_list();
-	// TODO: Get correct list of directories
-	list_add(basedirs, "/usr/share/applications");
-	return basedirs;
+
+	char *data_home = getenv("XDG_DATA_HOME");
+	list_add(basedirs,
+			strdup(data_home && *data_home
+							? "$XDG_DATA_HOME/applications"
+							: "$HOME/.local/share/applications"));
+	char *data_dirs = getenv("XDG_DATA_DIRS");
+	if (!(data_dirs && *data_dirs)) {
+		data_dirs = "/usr/local/share:/usr/share";
+	}
+	data_dirs = strdup(data_dirs);
+	char *dir = strtok(data_dirs, ":");
+	do {
+		char *path = append_path_safe(dir, "applications");
+		list_add(basedirs, path);
+	} while ((dir = strtok(NULL, ":")));
+	free(data_dirs);
+
+	list_t *basedirs_expanded = create_list();
+	for (int i = 0; i < basedirs->length; ++i) {
+		wordexp_t p;
+		if (wordexp(basedirs->items[i], &p, WRDE_UNDEF) == 0) {
+			if (dir_exists(p.we_wordv[0])) {
+				list_add(basedirs_expanded, strdup(p.we_wordv[0]));
+			}
+			wordfree(&p);
+		}
+	}
+
+	list_free_items_and_destroy(basedirs);
+
+	return basedirs_expanded;
 }
 
 static char *load_desktop_entry(const char *app_name, list_t *basedirs) {

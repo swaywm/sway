@@ -69,4 +69,6 @@ bool sway_set_cloexec(int fd, bool cloexec);
 
 char *append_path_safe(const char *base_path, const char *append_path);
 
+bool dir_exists(char *path);
+
 #endif

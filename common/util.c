@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <wayland-server-protocol.h>
+#include <sys/stat.h>
 #include "log.h"
 #include "util.h"
 
@@ -161,4 +162,9 @@ char *append_path_safe(const char *base_path, const char *append_path) {
 	char *path = malloc(path_len);
 	snprintf(path, path_len, "%s/%s", base_path, append_path);
 	return path;
+}
+
+bool dir_exists(char *path) {
+	struct stat sb;
+	return stat(path, &sb) == 0 && S_ISDIR(sb.st_mode);
 }

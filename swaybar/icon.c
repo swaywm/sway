@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <wordexp.h>
 #include "swaybar/icon.h"
@@ -18,11 +17,6 @@
 
 static int cmp_id(const void *item, const void *cmp_to) {
 	return strcmp(item, cmp_to);
-}
-
-static bool dir_exists(char *path) {
-	struct stat sb;
-	return stat(path, &sb) == 0 && S_ISDIR(sb.st_mode);
 }
 
 static list_t *get_basedirs(void) {
