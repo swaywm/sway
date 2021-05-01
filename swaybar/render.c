@@ -805,13 +805,14 @@ static void draw_focused_window_icon(cairo_t *cairo,
 	if (*x + padded_size >= max_width) {
 		return;
 	}
-	int y = floor((height - padded_size) / 2.0);
+	int y = (height - icon_size) / 2.0;
 
 	cairo_operator_t op = cairo_get_operator(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
-	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
+	cairo_set_source_surface(cairo, icon, *x + padding, y);
 	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
 	cairo_fill(cairo);
+
 	cairo_set_operator(cairo, op);
 
 	*x += padded_size;
