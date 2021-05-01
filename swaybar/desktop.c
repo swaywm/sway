@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 200809
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <string.h>
 #include <dirent.h>
@@ -10,6 +10,7 @@
 #include "swaybar/icon.h"
 #include "desktop.h"
 #include "log.h"
+#include "util.h"
 
 static list_t *get_desktop_files_basedirs() {
 	list_t *basedirs = create_list();

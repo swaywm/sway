@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <stdio.h>
+#include <assert.h>
 #include <wayland-server-protocol.h>
 #include "log.h"
 #include "util.h"
@@ -141,4 +143,22 @@ bool sway_set_cloexec(int fd, bool cloexec) {
 		return false;
 	}
 	return true;
+}
+
+char *append_path_safe(const char *base_path, const char *append_path) {
+	assert(base_path);
+	assert(append_path);
+
+	size_t base_path_len = strlen(base_path);
+	if (base_path[base_path_len - 1] == '/') {
+		size_t path_len = snprintf(NULL, 0, "%s%s", base_path, append_path) + 1;
+		char *path = malloc(path_len);
+		snprintf(path, path_len, "%s%s", base_path, append_path);
+		return path;
+	}
+
+	size_t path_len = snprintf(NULL, 0, "%s/%s", base_path, append_path) + 1;
+	char *path = malloc(path_len);
+	snprintf(path, path_len, "%s/%s", base_path, append_path);
+	return path;
 }

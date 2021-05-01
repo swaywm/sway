@@ -67,4 +67,6 @@ const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel);
 
 bool sway_set_cloexec(int fd, bool cloexec);
 
+char *append_path_safe(const char *base_path, const char *append_path);
+
 #endif

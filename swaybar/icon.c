@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <wordexp.h>
 #include "swaybar/icon.h"
+#include "util.h"
 #include "config.h"
 #include "list.h"
 #include "log.h"
@@ -22,24 +23,6 @@ static int cmp_id(const void *item, const void *cmp_to) {
 static bool dir_exists(char *path) {
 	struct stat sb;
 	return stat(path, &sb) == 0 && S_ISDIR(sb.st_mode);
-}
-
-char* append_path_safe(const char * base_path, const char * append_path) {
-	assert(base_path);
-	assert(append_path);
-
-	size_t base_path_len = strlen(base_path);
-	if (base_path[base_path_len - 1] == '/') {
-		size_t path_len = snprintf(NULL, 0, "%s%s", base_path, append_path) + 1;
-		char *path = malloc(path_len);
-		snprintf(path, path_len, "%s%s", base_path, append_path);
-		return path;
-	}
-
-	size_t path_len = snprintf(NULL, 0, "%s/%s", base_path, append_path) + 1;
-	char *path = malloc(path_len);
-	snprintf(path, path_len, "%s/%s", base_path, append_path);
-	return path;
 }
 
 static list_t *get_basedirs(void) {

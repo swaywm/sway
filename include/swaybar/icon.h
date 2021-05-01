@@ -31,8 +31,6 @@ struct icon_theme {
 void init_themes(list_t **themes, list_t **basedirs);
 void finish_themes(list_t *themes, list_t *basedirs);
 
-char *append_path_safe(const char *base_path, const char *append_path);
-
 /*
  * Finds an icon of a specified size given a list of themes and base directories.
  * If the icon is found, the pointers min_size & max_size are set to minimum &
