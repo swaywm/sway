@@ -42,7 +42,7 @@ char* append_path_safe(const char * base_path, const char * append_path) {
 	return path;
 }
 
-list_t *get_basedirs(void) {
+static list_t *get_basedirs(void) {
 	list_t *basedirs = create_list();
 	list_add(basedirs, strdup("$HOME/.icons")); // deprecated
 

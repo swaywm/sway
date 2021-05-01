@@ -335,11 +335,11 @@ static bool ipc_parse_config(
 			wl_list_insert(&config->tray_bindings, &binding->link);
 		}
 	}
-
+#endif
+	json_object *icon_theme;
 	if ((json_object_object_get_ex(bar_config, "icon_theme", &icon_theme))) {
 		config->icon_theme = strdup(json_object_get_string(icon_theme));
 	}
-#endif
 
 	json_object_put(bar_config);
 	return true;

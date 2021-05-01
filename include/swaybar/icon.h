@@ -27,7 +27,7 @@ struct icon_theme {
 	char *dir;
 	list_t *subdirs; // struct icon_theme_subdir *
 };
-list_t *get_basedirs(void);
+
 void init_themes(list_t **themes, list_t **basedirs);
 void finish_themes(list_t *themes, list_t *basedirs);
 

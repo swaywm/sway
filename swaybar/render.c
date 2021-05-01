@@ -758,18 +758,13 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 	cairo_surface_t *icon = NULL;
 	if (icon_name) {
 		char *icon_theme = output->bar->config->icon_theme;
-		list_t *basedirs = get_basedirs();
 		int min_size = 0;
 		int max_size = 0;
-
-		list_t *themes = create_list();
-		// TODO: Load correct theme
-		list_add(themes, "Adwaita");
 
 		assert(output->bar);
 		assert(output->bar->themes);
 		char *icon_path = find_icon(output->bar->themes,
-				basedirs,
+				output->bar->basedirs,
 				icon_name,
 				target_size,
 				icon_theme,
