@@ -754,51 +754,62 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 	int padding = 4;
 	int target_size = height - 2 * padding;
 
+	cairo_surface_t **icon = &output->bar->focused_window->icon;
 	char *icon_name = output->bar->focused_window->icon_name;
-	cairo_surface_t *icon = NULL;
-	if (icon_name) {
+	bool icon_name_icon_sync = output->bar->focused_window->icon_name_icon_sync;
+	if (!icon_name_icon_sync && icon_name) {
+		assert(output->bar->config);
 		char *icon_theme = output->bar->config->icon_theme;
+		list_t *basedirs = output->bar->basedirs;
+		list_t *themes = output->bar->themes;
 		int min_size = 0;
 		int max_size = 0;
-
-		assert(output->bar);
-		assert(output->bar->themes);
-		char *icon_path = find_icon(output->bar->themes,
-				output->bar->basedirs,
+		char *icon_path = find_icon(themes,
+				basedirs,
 				icon_name,
 				target_size,
 				icon_theme,
 				&min_size,
 				&max_size);
-		icon = load_background_image(icon_path);
+		if (*icon) {
+			cairo_surface_destroy(*icon);
+			icon = NULL;
+		}
+		*icon = load_background_image(icon_path);
+		output->bar->focused_window->icon_name_icon_sync = true;
 	}
 
-	if (!icon) {
+	if (!*icon) {
 		return output->height;
 	}
 
-	int icon_size;
-	int actual_size = cairo_image_surface_get_height(icon);
-	icon_size = actual_size < target_size ?
-		actual_size*(target_size/actual_size) : target_size;
-	icon = cairo_image_surface_scale(icon, icon_size, icon_size);
+	{
+		int icon_size;
+		int actual_size = cairo_image_surface_get_height(
+				output->bar->focused_window->icon);
+		icon_size = actual_size < target_size
+							? actual_size * (target_size / actual_size)
+							: target_size;
+		cairo_surface_t *icon = cairo_image_surface_scale(
+				output->bar->focused_window->icon, icon_size, icon_size);
 
-	int padded_size = icon_size + padding;
-	if (*x + padded_size >= max_width) {
-		return output->height;
+		int padded_size = icon_size + padding;
+		if (*x + padded_size >= max_width) {
+			return output->height;
+		}
+		int y = floor((height - padded_size) / 2.0);
+
+		cairo_operator_t op = cairo_get_operator(cairo);
+		cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
+		cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
+		cairo_rectangle(cairo, *x, y, padded_size, padded_size);
+		cairo_fill(cairo);
+		cairo_set_operator(cairo, op);
+
+		*x += padded_size;
+
+		cairo_surface_destroy(icon);
 	}
-	int y = floor((height - padded_size) / 2.0);
-
-	cairo_operator_t op = cairo_get_operator(cairo);
-	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
-	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
-	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
-	cairo_fill(cairo);
-	cairo_set_operator(cairo, op);
-
-	*x += padded_size;
-
-	cairo_surface_destroy(icon);
 
 	return output->height;
 }

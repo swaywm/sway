@@ -101,6 +101,7 @@ struct swaybar_window {
 	char *name;
 	char *icon_name;
 	cairo_surface_t *icon;
+	bool icon_name_icon_sync;
 };
 
 bool bar_setup(struct swaybar *bar, const char *socket_path);
