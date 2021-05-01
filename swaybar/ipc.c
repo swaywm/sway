@@ -668,7 +668,6 @@ bool ipc_set_focused_window(struct swaybar *bar) {
 	}
 
 	bar->workspace_window_title_sync = true;
-	// TODO: cache
 	return true;
 }
 
