@@ -874,7 +874,7 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 		max_height = h > max_height ? h : max_height;
 	}
 
-	double old_x = x;
+	double max_width = x;
 	x = 0;
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;
@@ -889,10 +889,10 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 	}
 
 	if (bar->workspace_window_title_sync && output->focused) {
-		uint32_t h = render_focused_window_icon(cairo, output, &x, old_x);
+		uint32_t h = render_focused_window_icon(cairo, output, &x, max_width);
 		max_height = h > max_height ? h : max_height;
-		old_x -= x;
-		h = render_focused_window_title(ctx, &x, old_x);
+		max_width -= x;
+		h = render_focused_window_title(ctx, &x, max_width);
 		max_height = h > max_height ? h : max_height;
 	}
 
