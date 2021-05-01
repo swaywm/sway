@@ -291,7 +291,7 @@ static bool ipc_parse_config(
 		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
 	}
 #if HAVE_TRAY
-	json_object *tray_outputs, *tray_padding, *tray_bindings, *icon_theme;
+	json_object *tray_outputs, *tray_padding, *tray_bindings;
 
 	if (config->tray_outputs && config->tray_outputs->length) {
 		list_free_items_and_destroy(config->tray_outputs);
