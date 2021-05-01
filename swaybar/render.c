@@ -739,25 +739,23 @@ static uint32_t render_workspace_button(struct render_context *ctx,
 	return output->height;
 }
 
-uint32_t render_focused_window_icon(cairo_t *cairo,
+static cairo_surface_t *reload_focused_window_icon(
 		struct swaybar_output *output,
-		double *x,
-		double max_width) {
+		int padding,
+		uint32_t height,
+		int target_size) {
 	assert(output);
 	assert(output->bar);
 
 	if (!output->bar->focused_window) {
-		return output->height;
+		return NULL;
 	}
 
-	uint32_t height = output->height * output->scale;
-	int padding = 4;
-	int target_size = height - 2 * padding;
-
 	cairo_surface_t **icon = &output->bar->focused_window->icon;
+	int old_target_size = output->bar->focused_window->bar_icon_target_size;
 	char *icon_name = output->bar->focused_window->icon_name;
 	bool icon_name_icon_sync = output->bar->focused_window->icon_name_icon_sync;
-	if (!icon_name_icon_sync && icon_name) {
+	if ((!icon_name_icon_sync || old_target_size != target_size) && icon_name) {
 		assert(output->bar->config);
 		char *icon_theme = output->bar->config->icon_theme;
 		list_t *basedirs = output->bar->basedirs;
@@ -771,45 +769,70 @@ uint32_t render_focused_window_icon(cairo_t *cairo,
 				icon_theme,
 				&min_size,
 				&max_size);
+		output->bar->focused_window->bar_icon_target_size = target_size;
 		if (*icon) {
 			cairo_surface_destroy(*icon);
-			icon = NULL;
+			*icon = NULL;
 		}
 		*icon = load_background_image(icon_path);
 		output->bar->focused_window->icon_name_icon_sync = true;
 	}
+	return *icon;
+}
 
-	if (!*icon) {
+static void draw_focused_window_icon(cairo_t *cairo,
+		struct swaybar_output *output,
+		int padding,
+		uint32_t height,
+		int target_size,
+		int max_width,
+		double *x) {
+	assert(output);
+	assert(output->bar);
+	assert(output->bar->focused_window);
+	assert(output->bar->focused_window->icon);
+
+	int icon_size;
+	int actual_size =
+			cairo_image_surface_get_height(output->bar->focused_window->icon);
+	icon_size = actual_size < target_size
+						? actual_size * (target_size / actual_size)
+						: target_size;
+	cairo_surface_t *icon = cairo_image_surface_scale(
+			output->bar->focused_window->icon, icon_size, icon_size);
+
+	int padded_size = icon_size + padding;
+	if (*x + padded_size >= max_width) {
+		return;
+	}
+	int y = floor((height - padded_size) / 2.0);
+
+	cairo_operator_t op = cairo_get_operator(cairo);
+	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
+	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
+	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
+	cairo_fill(cairo);
+	cairo_set_operator(cairo, op);
+
+	*x += padded_size;
+
+	cairo_surface_destroy(icon);
+}
+
+uint32_t render_focused_window_icon(cairo_t *cairo,
+		struct swaybar_output *output,
+		double *x,
+		double max_width) {
+	uint32_t height = output->height * output->scale;
+	int padding = 4;
+	int target_size = height - 2 * padding;
+
+	if (!reload_focused_window_icon(output, padding, height, target_size)) {
 		return output->height;
 	}
 
-	{
-		int icon_size;
-		int actual_size = cairo_image_surface_get_height(
-				output->bar->focused_window->icon);
-		icon_size = actual_size < target_size
-							? actual_size * (target_size / actual_size)
-							: target_size;
-		cairo_surface_t *icon = cairo_image_surface_scale(
-				output->bar->focused_window->icon, icon_size, icon_size);
-
-		int padded_size = icon_size + padding;
-		if (*x + padded_size >= max_width) {
-			return output->height;
-		}
-		int y = floor((height - padded_size) / 2.0);
-
-		cairo_operator_t op = cairo_get_operator(cairo);
-		cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
-		cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
-		cairo_rectangle(cairo, *x, y, padded_size, padded_size);
-		cairo_fill(cairo);
-		cairo_set_operator(cairo, op);
-
-		*x += padded_size;
-
-		cairo_surface_destroy(icon);
-	}
+	draw_focused_window_icon(
+			cairo, output, padding, height, target_size, max_width, x);
 
 	return output->height;
 }
