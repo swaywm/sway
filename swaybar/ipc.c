@@ -567,7 +567,9 @@ static char *get_desktop_entry_from_node(json_object *json_node) {
 	json_object *json_window_properties;
 	json_object_object_get_ex(
 			json_node, "window_properties", &json_window_properties);
-	assert(json_window_properties);
+	if (!json_window_properties) {
+		return NULL;
+	}
 
 	json_object *json_instance;
 	json_object_object_get_ex(
