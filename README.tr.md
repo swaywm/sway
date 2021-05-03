@@ -57,22 +57,6 @@ Yapılandırma hakkında bilgi almak için `man 5 sway` komutunu çalıştırın
 
 TTY'den `sway` çalıştırın. Bazı  görüntü yöneticileriyle(display manager) çalışabilir ama Sway tarafından desteklenmez. (gdm'nin oldukça iyi çalıştığı bilinmektedir.)
 
-[en]: https://github.com/swaywm/sway#readme
-[ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
-[fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
-[uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
-[es]: https://github.com/swaywm/sway/blob/master/README.es.md
-[pl]: https://github.com/swaywm/sway/blob/master/README.pl.md
-[zh-CN]: https://github.com/swaywm/sway/blob/master/README.zh-CN.md
-[de]: https://github.com/swaywm/sway/blob/master/README.de.md
-[nl]: https://github.com/swaywm/sway/blob/master/README.nl.md
-[ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
-[zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
-[pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
-[dk]: https://github.com/swaywm/sway/blob/master/README.dk.md
-[ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
-[ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
-[tr]: https://github.com/swaywm/sway/blob/master/README.tr.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
