@@ -1,6 +1,5 @@
 # sway
 
-[English][en] - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Danish][dk] - [한국어][ko] - [Română][ro] - **[Türkçe][tr]**
 
 Sway, [i3]-uyumlu bir [Wayland] dizgicisidir. [SSS][FAQ]'yi okuyun. 
 [IRC kanalı][IRC channel]na katılın \(irc.freenode.net'te #sway (İngilizce)).
@@ -43,7 +42,7 @@ _\*Derleme-anı bağımlılıkları_
     ninja -C build
     sudo ninja -C build install
 
-logind olmayan sistemlerde, sway ikilisine(binary) izin vermeniz (suid) gerekir:
+logind olmayan sistemlerde, sway ikilisine (binary) izin vermeniz (suid) gerekir:
 
     sudo chmod a+s /usr/local/bin/sway
 
