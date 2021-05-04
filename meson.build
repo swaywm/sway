@@ -310,7 +310,6 @@ endif
 summary({
 	'xwayland': have_xwayland,
 	'gdk-pixbuf': gdk_pixbuf.found(),
-	'sd-bus': sdbus.found(),
 	'tray': have_tray,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
