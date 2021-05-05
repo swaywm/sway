@@ -56,6 +56,7 @@ void view_destroy(struct sway_view *view) {
 				"(might have a pending transaction?)")) {
 		return;
 	}
+	wl_list_remove(&view->events.unmap.listener_list);
 	if (!wl_list_empty(&view->saved_buffers)) {
 		view_remove_saved_buffer(view);
 	}
@@ -599,6 +600,11 @@ static bool should_focus(struct sway_view *view) {
 		return true;
 	}
 
+	// View opened "under" fullscreen view should not be given focus.
+	if (root->fullscreen_global || !map_ws || map_ws->fullscreen) {
+		return false;
+	}
+
 	// Views can only take focus if they are mapped into the active workspace
 	if (prev_ws != map_ws) {
 		return false;
@@ -757,7 +763,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
-		&view->surface_new_subsurface);
+			&view->surface_new_subsurface);
 	view->surface_new_subsurface.notify = view_handle_surface_new_subsurface;
 
 	if (decoration) {
@@ -805,9 +811,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 #if HAVE_XWAYLAND
 	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
 		struct wlr_xwayland_surface *xsurface =
-			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
-    	set_focus = (wlr_xwayland_icccm_input_model(xsurface) !=
-			WLR_ICCCM_INPUT_MODEL_NONE) && set_focus;
+				wlr_xwayland_surface_from_wlr_surface(wlr_surface);
+		set_focus &= wlr_xwayland_icccm_input_model(xsurface) !=
+				WLR_ICCCM_INPUT_MODEL_NONE;
 	}
 #endif
 
@@ -818,11 +824,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	const char *app_id;
 	const char *class;
 	if ((app_id = view_get_app_id(view)) != NULL) {
-		wlr_foreign_toplevel_handle_v1_set_app_id(
-				view->foreign_toplevel, app_id);
+		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, app_id);
 	} else if ((class = view_get_class(view)) != NULL) {
-		wlr_foreign_toplevel_handle_v1_set_app_id(
-				view->foreign_toplevel, class);
+		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, class);
 	}
 }
 
@@ -1157,6 +1161,9 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if (wlr_surface_is_subsurface(wlr_surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(wlr_surface);
+		if (subsurface == NULL) {
+			return NULL;
+		}
 		return view_from_wlr_surface(subsurface->parent);
 	}
 	if (wlr_surface_is_layer_surface(wlr_surface)) {

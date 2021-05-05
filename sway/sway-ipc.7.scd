@@ -1131,6 +1131,9 @@ following properties:
 |- xkb_active_layout_index
 :  integer
 :  (Only keyboards) The index of the active keyboard layout in use
+|- scroll_factor
+:  floating
+:  (Only pointers) Multiplier applied on scroll event values.
 |- libinput
 :  object
 :  (Only libinput devices) An object describing the current device settings.
