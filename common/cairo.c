@@ -1,6 +1,6 @@
 #include <stdint.h>
-#include <cairo/cairo.h>
-#include "cairo.h"
+#include <cairo.h>
+#include "cairo_util.h"
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 	cairo_set_source_rgba(cairo,

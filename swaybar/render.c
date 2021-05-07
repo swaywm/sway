@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "cairo.h"
+#include "cairo_util.h"
 #include "pango.h"
 #include "pool-buffer.h"
 #include "swaybar/bar.h"

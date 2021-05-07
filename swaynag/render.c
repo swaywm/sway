@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "cairo.h"
+#include "cairo_util.h"
 #include "log.h"
 #include "pango.h"
 #include "pool-buffer.h"

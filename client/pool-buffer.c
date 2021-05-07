@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200809
 #include <assert.h>
-#include <cairo/cairo.h>
+#include <cairo.h>
 #include <fcntl.h>
 #include <pango/pangocairo.h>
 #include <stdio.h>

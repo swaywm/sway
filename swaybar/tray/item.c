@@ -13,7 +13,7 @@
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
 #include "background-image.h"
-#include "cairo.h"
+#include "cairo_util.h"
 #include "list.h"
 #include "log.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
