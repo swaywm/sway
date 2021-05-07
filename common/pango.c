@@ -1,4 +1,4 @@
-#include <cairo/cairo.h>
+#include <cairo.h>
 #include <pango/pangocairo.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cairo.h"
+#include "cairo_util.h"
 #include "log.h"
 #include "stringop.h"
 

@@ -1,6 +1,6 @@
 #ifndef _SWAY_BUFFERS_H
 #define _SWAY_BUFFERS_H
-#include <cairo/cairo.h>
+#include <cairo.h>
 #include <pango/pangocairo.h>
 #include <stdbool.h>
 #include <stdint.h>
