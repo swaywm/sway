@@ -476,7 +476,7 @@ int main(int argc, char **argv) {
 	int socketfd = ipc_open_socket(socket_path);
 	struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
 	ipc_set_recv_timeout(socketfd, timeout);
-	uint32_t len = strlen(command);
+	size_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 
 	// pretty print the json
