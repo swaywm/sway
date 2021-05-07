@@ -7,7 +7,7 @@
 #include <strings.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
-#include "cairo.h"
+#include "cairo_util.h"
 #include "pango.h"
 #include "sway/config.h"
 #include "sway/desktop.h"

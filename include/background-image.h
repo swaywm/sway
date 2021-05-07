@@ -1,6 +1,6 @@
 #ifndef _SWAY_BACKGROUND_IMAGE_H
 #define _SWAY_BACKGROUND_IMAGE_H
-#include "cairo.h"
+#include "cairo_util.h"
 
 enum background_mode {
 	BACKGROUND_MODE_STRETCH,
