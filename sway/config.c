@@ -26,7 +26,7 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
-#include "cairo.h"
+#include "cairo_util.h"
 #include "pango.h"
 #include "stringop.h"
 #include "list.h"
