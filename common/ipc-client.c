@@ -153,9 +153,15 @@ char *ipc_single_command(int socketfd, uint32_t type, const char *payload, size_
 	}
 
 	struct ipc_response *resp = ipc_recv_response(socketfd);
-	char *response = resp->payload;
-	*len = resp->size;
-	free(resp);
+	char *response;
+	if (resp == NULL) {
+		response = NULL;
+		*len = 0;
+	} else {
+		response = resp->payload;
+		*len = resp->size;
+		free(resp);
+	}
 
 	return response;
 }

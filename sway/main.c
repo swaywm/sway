@@ -89,7 +89,7 @@ void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	size_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, IPC_COMMAND, command, &len);
-	printf("%s\n", resp);
+	printf("%s\n", resp == NULL ? "(null)" : resp);
 	free(resp);
 	close(socketfd);
 }

@@ -478,6 +478,14 @@ int main(int argc, char **argv) {
 	ipc_set_recv_timeout(socketfd, timeout);
 	size_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len);
+	if (resp == NULL) {
+		if (!quiet) {
+			sway_log(SWAY_ERROR, "Failed to receive reply");
+		}
+		close(socketfd);
+		free(socket_path);
+		return 1;
+	}
 
 	// pretty print the json
 	json_object *obj = json_tokener_parse(resp);

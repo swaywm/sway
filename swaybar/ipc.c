@@ -344,6 +344,9 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 	size_t len = 0;
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_WORKSPACES, NULL, &len);
+	if (res == NULL) {
+		return false;
+	}
 	json_object *results = json_tokener_parse(res);
 	if (!results) {
 		free(res);
@@ -418,7 +421,7 @@ bool ipc_initialize(struct swaybar *bar) {
 	size_t len = strlen(bar->id);
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_BAR_CONFIG, bar->id, &len);
-	if (!ipc_parse_config(bar->config, res)) {
+	if (res == NULL || !ipc_parse_config(bar->config, res)) {
 		free(res);
 		return false;
 	}
