@@ -1,5 +1,9 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
+#if !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE+0 < 200112L
+#undef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
+#endif
+
 #include <linux/input-event-codes.h>
 #include <assert.h>
 #include <errno.h>

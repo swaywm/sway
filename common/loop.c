@@ -1,4 +1,8 @@
+#if !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE+0 < 200112L
+#undef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
+#endif
+
 #include <limits.h>
 #include <string.h>
 #include <stdbool.h>
