@@ -644,6 +644,7 @@ static void handle_foreign_activate_request(
 			break;
 		}
 	}
+	transaction_commit_dirty();
 }
 
 static void handle_foreign_fullscreen_request(
@@ -683,6 +684,7 @@ static void handle_foreign_fullscreen_request(
 			arrange_workspace(container->pending.workspace);
 		}
 	}
+	transaction_commit_dirty();
 }
 
 static void handle_foreign_close_request(
