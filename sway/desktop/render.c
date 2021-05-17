@@ -488,9 +488,10 @@ static void render_titlebar(struct sway_output *output,
 	int ob_marks_x = 0; // output-buffer-local
 	int ob_marks_width = 0; // output-buffer-local
 	if (config->show_marks && marks_texture) {
-		struct wlr_box texture_box;
-		wlr_texture_get_size(marks_texture,
-			&texture_box.width, &texture_box.height);
+		struct wlr_box texture_box = {
+			.width = marks_texture->width,
+			.height = marks_texture->height,
+		};
 		ob_marks_width = texture_box.width;
 
 		// The marks texture might be shorter than the config->font_height, in
@@ -541,9 +542,10 @@ static void render_titlebar(struct sway_output *output,
 	int ob_title_x = 0;  // output-buffer-local
 	int ob_title_width = 0; // output-buffer-local
 	if (title_texture) {
-		struct wlr_box texture_box;
-		wlr_texture_get_size(title_texture,
-			&texture_box.width, &texture_box.height);
+		struct wlr_box texture_box = {
+			.width = title_texture->width,
+			.height = title_texture->height,
+		};
 
 		// The effective output may be NULL when con is not on any output.
 		// This can happen because we render all children of containers,
