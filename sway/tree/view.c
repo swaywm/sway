@@ -262,7 +262,7 @@ void view_autoconfigure(struct sway_view *view) {
 	con->pending.border_left = con->pending.border_right = true;
 	double y_offset = 0;
 
-	if (!container_is_floating(con) && ws) {
+	if (!container_is_floating_or_child(con) && ws) {
 		if (config->hide_edge_borders == E_BOTH
 				|| config->hide_edge_borders == E_VERTICAL) {
 			con->pending.border_left = con->pending.x != ws->x;
@@ -281,14 +281,15 @@ void view_autoconfigure(struct sway_view *view) {
 			(config->hide_edge_borders_smart == ESMART_NO_GAPS &&
 			!gaps_to_edge(view));
 		if (smart) {
-			bool show_border = container_is_floating_or_child(con) ||
-				!view_is_only_visible(view);
+			bool show_border = !view_is_only_visible(view);
 			con->pending.border_left &= show_border;
 			con->pending.border_right &= show_border;
 			con->pending.border_top &= show_border;
 			con->pending.border_bottom &= show_border;
 		}
+	}
 
+	if (!container_is_floating(con)) {
 		// In a tabbed or stacked container, the container's y is the top of the
 		// title area. We have to offset the surface y by the height of the title,
 		// bar, and disable any top border because we'll always have the title bar.
