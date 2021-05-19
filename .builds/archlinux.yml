@@ -16,7 +16,7 @@ packages:
   - xorg-xwayland
 sources:
   - https://github.com/swaywm/sway
-  - https://github.com/swaywm/wlroots
+  - https://github.com/swaywm/wlroots#0.12.0
 tasks:
   - wlroots: |
       cd wlroots
