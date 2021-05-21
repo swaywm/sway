@@ -1,5 +1,5 @@
 # Sway
-Sway ist ein [i3](https://i3wm.org/)-kompatibler [Wayland](http://wayland.freedesktop.org/)-Compositor. Lies die [FAQ](https://github.com/swaywm/sway/wiki). Tritt dem [IRC Channel](http://webchat.freenode.net/?channels=sway&uio=d4) bei (#sway on irc.freenode.net; Englisch).
+Sway ist ein [i3](https://i3wm.org/)-kompatibler [Wayland](http://wayland.freedesktop.org/)-Compositor. Lies die [FAQ](https://github.com/swaywm/sway/wiki). Tritt dem [IRC Channel](https://kiwiirc.com/nextclient/irc.libera.chat:+6697/#sway) bei (#sway on irc.libera.chat; Englisch).
 
 ## Signaturen
 Jedes Release wird mit dem PGP-Schlüssel [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) signiert und auf GitHub veröffentlicht.

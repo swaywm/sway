@@ -1,6 +1,6 @@
 # sway
 
-A Sway egy [i3]-kompatibilis [Wayland] kompozitor. Olvasd el a [Gyarkan Ismételt Kérdéseket][FAQ]. Csatlakozz az [IRC csatornához][IRC channel] \(`#sway` az `irc.freenode.net`-en).
+A Sway egy [i3]-kompatibilis [Wayland] kompozitor. Olvasd el a [Gyarkan Ismételt Kérdéseket][FAQ]. Csatlakozz az [IRC csatornához][IRC channel] \(`#sway` az `irc.libera.chat`-en).
 
 ## Csomag aláírások
 
@@ -69,7 +69,7 @@ gdm-ről ismeretes, hogy egész jól működik.)
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
-[IRC channel]: http://webchat.freenode.net/?channels=sway&uio=d4
+[IRC channel]: https://kiwiirc.com/nextclient/irc.libera.chat:+6697/#sway
 [E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup

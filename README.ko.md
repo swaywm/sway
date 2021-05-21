@@ -1,7 +1,7 @@
 # sway
 
 sway는 [i3](https://i3wm.org/)-호환 [Wayland](http://wayland.freedesktop.org/) 컴포지터입니다.
-[FAQ](https://github.com/swaywm/sway/wiki)를 읽어보세요. [IRC 채널](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)도 있습니다.
+[FAQ](https://github.com/swaywm/sway/wiki)를 읽어보세요. [IRC 채널](https://kiwiirc.com/nextclient/irc.libera.chat:+6697/#sway) (#sway on irc.libera.chat)도 있습니다.
 
 ## 릴리즈 서명
 

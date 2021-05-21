@@ -1,7 +1,7 @@
 # sway
 
 sway este un compositor pentru [Wayland](http://wayland.freedesktop.org/) compatibil cu [i3](https://i3wm.org/).
-Citiți [FAQ](https://github.com/swaywm/sway/wiki)-ul. Connectați-vă la canalul nostru [IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway pe irc.freenode.net).
+Citiți [FAQ](https://github.com/swaywm/sway/wiki)-ul. Connectați-vă la canalul nostru [IRC](https://kiwiirc.com/nextclient/irc.libera.chat:+6697/#sway) (#sway pe irc.libera.chat).
 
 ## Semnarea digitală
 

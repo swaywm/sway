@@ -2,8 +2,8 @@
 
 Contributing just involves sending a pull request. You will probably be more
 successful with your contribution if you visit
-[#sway-devel](https://webchat.freenode.net/?channels=sway-devel) on
-irc.freenode.net upfront and discuss your plans.
+[#sway-devel](https://kiwiirc.com/nextclient/irc.libera.chat:+6697/#sway-devel) on
+irc.libera.chat upfront and discuss your plans.
 
 Note: rules are made to be broken. Adjust or ignore any/all of these as you see
 fit, but be prepared to justify it to your peers.
