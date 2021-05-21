@@ -6,7 +6,7 @@ labels: 'bug'
 ---
 
 ### Please read the following before submitting:
-- Please do NOT submit bug reports for questions. Ask questions on IRC at #sway on irc.freenode.net.
+- Please do NOT submit bug reports for questions. Ask questions on IRC at #sway on Libera Chat.
 - Proprietary graphics drivers, including nvidia, are not supported. Please use the open source equivalents, such as nouveau, if you would like to use Sway.
 - Please do NOT submit issues for information from the github wiki. The github wiki is community maintained and therefore may contain outdated information, scripts that don't work or obsolete workarounds.
   If you fix a script or find outdated information, don't hesitate to adjust the wiki page.

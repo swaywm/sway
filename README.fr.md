@@ -1,7 +1,7 @@
 # sway
 
 Sway est un compositeur [Wayland] compatible avec [i3]. Lisez la
-[FAQ]. Rejoignez le [canal IRC] (#sway sur irc.freenode.net).
+[FAQ]. Rejoignez le [canal IRC] (#sway sur irc.libera.chat).
 
 ## Aide en français
 
@@ -74,7 +74,7 @@ bien fonctionner).
 [Wayland]: http://wayland.freedesktop.org/
 [i3]: https://i3wm.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
-[canal IRC]: http://webchat.freenode.net/?channels=sway&uio=d4
+[canal IRC]: ircs://irc.libera.chat/#sway
 [abdelq]: https://github.com/abdelq
 [E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
 [versions GitHub]: https://github.com/swaywm/sway/releases

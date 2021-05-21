@@ -2,8 +2,8 @@
 
 O sway é um compositor do [Wayland](http://wayland.freedesktop.org/) compatível com o [i3](https://i3wm.org/).
 Leia o [FAQ](https://github.com/swaywm/sway/wiki). Junte-se ao [canal do    
-IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway em
-irc.freenode.net).
+IRC](ircs://irc.libera.chat/#sway) (#sway em
+irc.libera.chat).
 
 ## Assinatura das versões
 

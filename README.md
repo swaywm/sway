@@ -3,7 +3,7 @@
 **[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Danish][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
-[IRC channel] \(#sway on irc.freenode.net).
+[IRC channel] \(#sway on irc.libera.chat).
 
 ## Release Signatures
 
@@ -84,7 +84,7 @@ sway (gdm is known to work fairly well).
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
-[IRC channel]: http://webchat.freenode.net/?channels=sway&uio=d4
+[IRC channel]: ircs://irc.libera.chat/#sway
 [E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
