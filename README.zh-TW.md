@@ -7,7 +7,7 @@ irc.freenode.net)
 
 ## 發行簽章
 
-所有發行的版本都會以 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 簽署
+所有發行的版本都會以 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) 簽署
 並發佈於 [GitHub](https://github.com/swaywm/sway/releases)
 
 ## 安裝

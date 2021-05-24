@@ -6,7 +6,7 @@ Przeczytaj [FAQ](https://github.com/swaywm/sway/wiki). Dołącz do [kanału IRC]
 
 ## Podpisy cyfrowe wydań
 
-Wydania są podpisywane przy pomocy klucza [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
+Wydania są podpisywane przy pomocy klucza [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)
 i publikowane [na GitHubie](https://github.com/swaywm/sway/releases).
 
 ## Instalacja

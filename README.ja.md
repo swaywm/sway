@@ -12,7 +12,7 @@ SirCmpwnは、日本語でのサポートをIRCとGitHubで行います。タイ
 
 ## リリースの署名
 
-Swayのリリースは[B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)で署名され、[GitHub](https://github.com/swaywm/sway/releases)で公開されています。
+Swayのリリースは[E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)で署名され、[GitHub](https://github.com/swaywm/sway/releases)で公開されています。
 
 ## インストール
 
