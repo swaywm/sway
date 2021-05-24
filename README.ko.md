@@ -5,7 +5,7 @@ sway는 [i3](https://i3wm.org/)-호환 [Wayland](http://wayland.freedesktop.org/
 
 ## 릴리즈 서명
 
-릴리즈는 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)에서 서명되고,
+릴리즈는 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)에서 서명되고,
 [GitHub에서](https://github.com/swaywm/sway/releases) 공개되고 있습니다.
 
 ## 설치
