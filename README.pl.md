@@ -1,7 +1,7 @@
 # sway
 
 sway jest kompozytorem [Wayland](http://wayland.freedesktop.org/) kompatybilnym z [i3](https://i3wm.org/).
-Przeczytaj [FAQ](https://github.com/swaywm/sway/wiki). Dołącz do [kanału IRC](ircs://irc.libera.chat/#sway)
+Przeczytaj [FAQ](https://github.com/swaywm/sway/wiki). Dołącz do [kanału IRC](https://web.libera.chat/?channels=#sway)
 (#sway na irc.libera.chat).
 
 ## Podpisy cyfrowe wydań

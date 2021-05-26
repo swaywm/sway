@@ -2,7 +2,7 @@
 
 Sway er en [i3](https://i3wm.org/)-kompatibel [Wayland](http://wayland.freedesktop.org/) compositor.
 Læs [Ofte stillede spørgsmål](https://github.com/swaywm/sway/wiki).
-Deltag på [IRC kanalen](ircs://irc.libera.chat/#sway) (#sway på irc.libera.chat).
+Deltag på [IRC kanalen](https://web.libera.chat/?channels=#sway) (#sway på irc.libera.chat).
 
 ## Udgivelses Signaturer
 
