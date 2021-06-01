@@ -1037,7 +1037,10 @@ static void view_child_handle_surface_destroy(struct wl_listener *listener,
 static void view_init_subsurfaces(struct sway_view *view,
 		struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface;
-	wl_list_for_each(subsurface, &surface->subsurfaces, parent_link) {
+	wl_list_for_each(subsurface, &surface->subsurfaces_below, parent_link) {
+		view_subsurface_create(view, subsurface);
+	}
+	wl_list_for_each(subsurface, &surface->subsurfaces_above, parent_link) {
 		view_subsurface_create(view, subsurface);
 	}
 }
@@ -1045,7 +1048,10 @@ static void view_init_subsurfaces(struct sway_view *view,
 static void view_child_init_subsurfaces(struct sway_view_child *view_child,
 		struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface;
-	wl_list_for_each(subsurface, &surface->subsurfaces, parent_link) {
+	wl_list_for_each(subsurface, &surface->subsurfaces_below, parent_link) {
+		view_child_subsurface_create(view_child, subsurface);
+	}
+	wl_list_for_each(subsurface, &surface->subsurfaces_above, parent_link) {
 		view_child_subsurface_create(view_child, subsurface);
 	}
 }
