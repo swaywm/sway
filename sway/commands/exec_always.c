@@ -57,6 +57,7 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 		sigset_t set;
 		sigemptyset(&set);
 		sigprocmask(SIG_SETMASK, &set, NULL);
+		signal(SIGPIPE, SIG_DFL);
 		close(fd[0]);
 		if ((child = fork()) == 0) {
 			close(fd[1]);
