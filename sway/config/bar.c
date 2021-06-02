@@ -217,6 +217,7 @@ static void invoke_swaybar(struct bar_config *bar) {
 		sigset_t set;
 		sigemptyset(&set);
 		sigprocmask(SIG_SETMASK, &set, NULL);
+		signal(SIGPIPE, SIG_DFL);
 
 		pid = fork();
 		if (pid < 0) {
