@@ -13,10 +13,12 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
+#include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
@@ -78,7 +80,13 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
-	wlr_renderer_init_wl_display(server->renderer, server->wl_display);
+	wlr_renderer_init_wl_shm(server->renderer, server->wl_display);
+
+	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer) != NULL) {
+		wlr_drm_create(server->wl_display, server->renderer);
+		server->linux_dmabuf_v1 =
+			wlr_linux_dmabuf_v1_create(server->wl_display, server->renderer);
+	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
 		server->renderer);
