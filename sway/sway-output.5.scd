@@ -142,7 +142,7 @@ must be separated by one space. For example:
 	Enables or disables adaptive synchronization (often referred to as Variable
 	Refresh Rate, or by the vendor-specific names FreeSync/G-Sync).
 
-	Adaptive sync allows clients to submit frames a little to late without
+	Adaptive sync allows clients to submit frames a little too late without
 	having to wait a whole refresh period to display it on screen. Enabling
 	adaptive sync can improve latency, but can cause flickering on some
 	hardware.
