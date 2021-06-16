@@ -90,6 +90,8 @@ struct sway_server {
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
 
+	struct wlr_surface_suspension_manager_v1 *surface_suspension_manager_v1;
+
 	// The timeout for transactions, after which a transaction is applied
 	// regardless of readiness.
 	size_t txn_timeout_ms;

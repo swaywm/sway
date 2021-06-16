@@ -22,6 +22,7 @@
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_surface_suspension_v1.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -165,6 +166,9 @@ bool server_init(struct sway_server *server) {
 		xdg_activation_v1_handle_request_activate;
 	wl_signal_add(&server->xdg_activation_v1->events.request_activate,
 		&server->xdg_activation_v1_request_activate);
+
+	server->surface_suspension_manager_v1 =
+		wlr_surface_suspension_manager_v1_create(server->wl_display);
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];

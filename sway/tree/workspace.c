@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
+#include <wlr/types/wlr_surface_suspension_v1.h>
 #include "stringop.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
@@ -561,6 +562,23 @@ struct sway_workspace *workspace_output_prev(
 	return workspace_output_prev_next_impl(current->output, -1, create);
 }
 
+static void set_surface_suspended_iterator(struct wlr_surface *surface,
+		int x, int y, void *data) {
+	bool *suspended = data;
+	wlr_surface_suspension_manager_v1_set_suspended(
+		server.surface_suspension_manager_v1, surface, *suspended);
+}
+
+static void set_container_suspended(struct sway_container *container,
+		void *data) {
+	if (!container->view || container_is_floating(container)) {
+		return;
+	}
+
+	view_for_each_surface(container->view,
+		set_surface_suspended_iterator, data);
+}
+
 bool workspace_switch(struct sway_workspace *workspace,
 		bool no_auto_back_and_forth) {
 	struct sway_seat *seat = input_manager_current_seat();
@@ -589,6 +607,15 @@ bool workspace_switch(struct sway_workspace *workspace,
 	}
 	seat_set_focus(seat, next);
 	arrange_workspace(workspace);
+
+	if (active_ws) {
+		bool suspended = true;
+		workspace_for_each_container(active_ws, set_container_suspended, &suspended);
+	}
+
+	bool suspended = false;
+	workspace_for_each_container(workspace, set_container_suspended, &suspended);
+
 	return true;
 }
 
