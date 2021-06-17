@@ -215,8 +215,10 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			ws = workspace_by_name(argv[0]);
 		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
 			ws = workspace_output_next(current, create);
+			no_auto_back_and_forth = true;
 		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
 			ws = workspace_output_prev(current, create);
+			no_auto_back_and_forth = true;
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
 			if (!seat->prev_workspace_name) {
 				return cmd_results_new(CMD_INVALID,
