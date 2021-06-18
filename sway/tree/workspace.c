@@ -572,12 +572,13 @@ struct sway_workspace *workspace_auto_back_and_forth(
 		active_ws = focus->sway_container->pending.workspace;
 	}
 
-	if (config->auto_back_and_forth && active_ws &&
-			active_ws == workspace && seat->prev_workspace_name) {
+	if (config->auto_back_and_forth && active_ws && active_ws == workspace &&
+			seat->prev_workspace_name) {
 		struct sway_workspace *new_ws =
-				workspace_by_name(seat->prev_workspace_name);
-		workspace = new_ws ? new_ws
-						   : workspace_create(NULL, seat->prev_workspace_name);
+			workspace_by_name(seat->prev_workspace_name);
+		workspace = new_ws ?
+			new_ws :
+			workspace_create(NULL, seat->prev_workspace_name);
 	}
 	return workspace;
 }
