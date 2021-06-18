@@ -209,16 +209,17 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				ws = workspace_create(NULL, name);
 				free(name);
 			}
+			if (ws && auto_back_and_forth) {
+				ws = workspace_auto_back_and_forth(ws);
+			}
 		} else if (strcasecmp(argv[0], "next") == 0 ||
 				strcasecmp(argv[0], "prev") == 0 ||
 				strcasecmp(argv[0], "current") == 0) {
 			ws = workspace_by_name(argv[0]);
 		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
 			ws = workspace_output_next(current, create);
-			auto_back_and_forth = false;
 		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
 			ws = workspace_output_prev(current, create);
-			auto_back_and_forth = false;
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
 			if (!seat->prev_workspace_name) {
 				return cmd_results_new(CMD_INVALID,
@@ -227,19 +228,18 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			if (!(ws = workspace_by_name(argv[0]))) {
 				ws = workspace_create(NULL, seat->prev_workspace_name);
 			}
-			auto_back_and_forth = false;
 		} else {
 			char *name = join_args(argv, argc);
 			if (!(ws = workspace_by_name(name))) {
 				ws = workspace_create(NULL, name);
 			}
 			free(name);
+			if (ws && auto_back_and_forth) {
+				ws = workspace_auto_back_and_forth(ws);
+			}
 		}
 		if (!ws) {
 			return cmd_results_new(CMD_FAILURE, "No workspace to switch to");
-		}
-		if(auto_back_and_forth){
-			ws = workspace_auto_back_and_forth(ws);
 		}
 		workspace_switch(ws);
 		seat_consider_warp_to_focus(seat);
