@@ -561,8 +561,8 @@ struct sway_workspace *workspace_output_prev(
 	return workspace_output_prev_next_impl(current->output, -1, create);
 }
 
-bool workspace_switch(struct sway_workspace *workspace,
-		bool no_auto_back_and_forth) {
+struct sway_workspace *workspace_auto_back_and_forth(
+		struct sway_workspace *workspace) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *active_ws = NULL;
 	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
@@ -572,14 +572,18 @@ bool workspace_switch(struct sway_workspace *workspace,
 		active_ws = focus->sway_container->pending.workspace;
 	}
 
-	if (!no_auto_back_and_forth && config->auto_back_and_forth && active_ws
-			&& active_ws == workspace && seat->prev_workspace_name) {
+	if (config->auto_back_and_forth && active_ws &&
+			active_ws == workspace && seat->prev_workspace_name) {
 		struct sway_workspace *new_ws =
-			workspace_by_name(seat->prev_workspace_name);
-		workspace = new_ws ?
-			new_ws :
-			workspace_create(NULL, seat->prev_workspace_name);
+				workspace_by_name(seat->prev_workspace_name);
+		workspace = new_ws ? new_ws
+						   : workspace_create(NULL, seat->prev_workspace_name);
 	}
+	return workspace;
+}
+
+bool workspace_switch(struct sway_workspace *workspace) {
+	struct sway_seat *seat = input_manager_current_seat();
 
 	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);

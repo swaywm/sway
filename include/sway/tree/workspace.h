@@ -60,8 +60,10 @@ void workspace_consider_destroy(struct sway_workspace *ws);
 
 char *workspace_next_name(const char *output_name);
 
-bool workspace_switch(struct sway_workspace *workspace,
-		bool no_auto_back_and_forth);
+struct sway_workspace *workspace_auto_back_and_forth(
+		struct sway_workspace *workspace);
+
+bool workspace_switch(struct sway_workspace *workspace);
 
 struct sway_workspace *workspace_by_number(const char* name);
 
