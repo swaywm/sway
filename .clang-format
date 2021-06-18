@@ -8,9 +8,11 @@ IndentCaseLabels: false
 SortIncludes: false
 ColumnLimit: 80
 AlignAfterOpenBracket: DontAlign
-BinPackParameters: false
-BinPackArguments: false
+BinPackParameters: true
+BinPackArguments: true
 ContinuationIndentWidth: 8
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortLoopsOnASingleLine: true
 ReflowComments: false
+AllowAllArgumentsOnNextLine: false
+AlignOperands: DontAlign
