@@ -30,12 +30,6 @@ int parse_movement_amount(int argc, char **argv,
 		struct movement_amount *amount);
 
 /**
- * Get the current time, in milliseconds.
- */
-
-uint32_t get_current_time_msec(void);
-
-/**
  * Wrap i into the range [0, max]
  */
 int wrap(int i, int max);
