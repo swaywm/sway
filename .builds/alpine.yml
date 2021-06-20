@@ -38,3 +38,10 @@ tasks:
       cd sway
       meson configure build -Dxwayland=disabled
       ninja -C build
+  - build-static: |
+      cd sway
+      mkdir subprojects
+      ln -s ../../wlroots subprojects/wlroots
+      rm -rf build
+      meson build --default-library=static --force-fallback-for=wlroots
+      ninja -C build
