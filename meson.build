@@ -128,7 +128,7 @@ conf_data.set10('HAVE_TRAY', have_tray)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
-	scdoc_prog = find_program(scdoc.get_pkgconfig_variable('scdoc'), native: true)
+	scdoc_prog = find_program(scdoc.get_variable(pkgconfig: 'scdoc'), native: true)
 	sh = find_program('sh', native: true)
 	mandir = get_option('mandir')
 	man_files = [
@@ -278,9 +278,9 @@ if get_option('bash-completions')
 		'completions/bash/swaymsg',
 	)
 	if bash_comp.found()
-		bash_install_dir = bash_comp.get_pkgconfig_variable(
-			'completionsdir',
-			define_variable: ['datadir', datadir]
+		bash_install_dir = bash_comp.get_variable(
+			pkgconfig: 'completionsdir',
+			pkgconfig_define: ['datadir', datadir]
 		)
 	else
 		bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
@@ -296,9 +296,9 @@ if get_option('fish-completions')
 		'completions/fish/swaynag.fish',
 	)
 	if fish_comp.found()
-		fish_install_dir = fish_comp.get_pkgconfig_variable(
-			'completionsdir',
-			define_variable: ['datadir', datadir]
+		fish_install_dir = fish_comp.get_variable(
+			pkgconfig: 'completionsdir',
+			pkgconfig_define: ['datadir', datadir]
 		)
 	else
 		fish_install_dir = join_paths(datadir, 'fish', 'vendor_completions.d')
