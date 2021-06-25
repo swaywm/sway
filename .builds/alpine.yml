@@ -30,7 +30,7 @@ tasks:
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build -Dauto_features=enabled -Dtray=disabled
+      meson build --fatal-meson-warnings -Dauto_features=enabled -Dtray=disabled
   - build: |
       cd sway
       ninja -C build
@@ -43,5 +43,5 @@ tasks:
       mkdir subprojects
       ln -s ../../wlroots subprojects/wlroots
       rm -rf build
-      meson build --default-library=static --force-fallback-for=wlroots
+      meson build --fatal-meson-warnings --default-library=static --force-fallback-for=wlroots
       ninja -C build

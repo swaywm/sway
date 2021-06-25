@@ -34,7 +34,7 @@ tasks:
     cd subprojects
     ln -s ../../wlroots wlroots
     cd ..
-    meson build -Dtray=enabled -Dsd-bus-provider=basu
+    meson build --fatal-meson-warnings -Dtray=enabled -Dsd-bus-provider=basu
 - build: |
     cd sway
     ninja -C build
