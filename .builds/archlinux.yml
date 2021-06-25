@@ -27,7 +27,7 @@ tasks:
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build -Dauto_features=enabled -Dsd-bus-provider=libsystemd
+      meson build --fatal-meson-warnings -Dauto_features=enabled -Dsd-bus-provider=libsystemd
   - build: |
       cd sway
       ninja -C build
