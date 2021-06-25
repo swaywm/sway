@@ -153,7 +153,7 @@ if scdoc.found()
 			input: filename,
 			output: output,
 			command: [
-				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc_prog.path(), output)
+				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc_prog.full_path(), output)
 			],
 			install: true,
 			install_dir: '@0@/man@1@'.format(mandir, section)
