@@ -1,6 +1,6 @@
 # sway
 
-**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Danish][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr]
+**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Dansk][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.libera.chat).
