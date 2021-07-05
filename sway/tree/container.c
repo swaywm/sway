@@ -320,10 +320,10 @@ static struct sway_container *view_container_content_at(struct sway_node *parent
 
 	struct sway_container *container = parent->sway_container;
 	struct wlr_box box = {
-			.x = container->pending.content_x,
-			.y = container->pending.content_y,
-			.width = container->pending.content_width,
-			.height = container->pending.content_height,
+		.x = container->pending.content_x,
+		.y = container->pending.content_y,
+		.width = container->pending.content_width,
+		.height = container->pending.content_height,
 	};
 
 	if (wlr_box_contains_point(&box, lx, ly)) {
@@ -343,10 +343,10 @@ static struct sway_container *view_container_at(struct sway_node *parent,
 
 	struct sway_container *container = parent->sway_container;
 	struct wlr_box box = {
-			.x = container->pending.x,
-			.y = container->pending.y,
-			.width = container->pending.width,
-			.height = container->pending.height,
+		.x = container->pending.x,
+		.y = container->pending.y,
+		.width = container->pending.width,
+		.height = container->pending.height,
 	};
 
 	if (wlr_box_contains_point(&box, lx, ly)) {
