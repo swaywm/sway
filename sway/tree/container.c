@@ -894,7 +894,7 @@ void container_set_geometry_from_content(struct sway_container *con) {
 	size_t border_width = 0;
 	size_t top = 0;
 
-	if (con->pending.border != B_CSD) {
+	if (con->pending.border != B_CSD && !con->pending.fullscreen_mode) {
 		border_width = con->pending.border_thickness * (con->pending.border != B_NONE);
 		top = con->pending.border == B_NORMAL ?
 			container_titlebar_height() : border_width;
