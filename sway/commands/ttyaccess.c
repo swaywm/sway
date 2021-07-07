@@ -8,7 +8,7 @@
 #include "stringop.h"
 #include "util.h"
 
-struct cmd_results *cmd_no_titlebars(int argc, char **argv) {
+struct cmd_results *cmd_ttyaccess(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "ttyaccess", EXPECTED_EQUAL_TO, 1);
 
 	if (error) {
