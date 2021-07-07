@@ -2,7 +2,6 @@
 #define _SWAY_CONTAINER_H
 #include <stdint.h>
 #include <sys/types.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_surface.h>
 #include "list.h"
 #include "sway/tree/node.h"

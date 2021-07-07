@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <time.h>
 #include <strings.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_pointer.h>

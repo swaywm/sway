@@ -1,8 +1,11 @@
+#include <ctype.h>
 #include <float.h>
 #include <json.h>
 #include <libevdev/libevdev.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <wlr/backend/libinput.h>
+#include <wlr/types/wlr_output.h>
+#include <xkbcommon/xkbcommon.h>
 #include "config.h"
 #include "log.h"
 #include "sway/config.h"
@@ -14,10 +17,6 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
-#include <wlr/backend/libinput.h>
-#include <wlr/types/wlr_box.h>
-#include <wlr/types/wlr_output.h>
-#include <xkbcommon/xkbcommon.h>
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 

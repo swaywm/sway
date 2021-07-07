@@ -5,7 +5,6 @@
 #include <time.h>
 #include <wayland-server-core.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_damage.h>
