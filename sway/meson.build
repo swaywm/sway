@@ -41,6 +41,7 @@ sway_sources = files(
 	'config/input.c',
 
 	'commands/assign.c',
+  'commands/ttyaccess.c',
 	'commands/bar.c',
 	'commands/bind.c',
 	'commands/border.c',

@@ -500,14 +500,22 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 
 	// Compositor bindings
 	if (!handled && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		if (config->ttyaccess) {
+			return;
+		} else {
 		handled = keyboard_execute_compositor_binding(
 				keyboard, keyinfo.translated_keysyms,
 				keyinfo.translated_modifiers, keyinfo.translated_keysyms_len);
+		}
 	}
 	if (!handled && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		if (config->ttyaccess) {
+			return;
+		} else {
 		handled = keyboard_execute_compositor_binding(
 				keyboard, keyinfo.raw_keysyms, keyinfo.raw_modifiers,
 				keyinfo.raw_keysyms_len);
+		}
 	}
 
 	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
@@ -970,10 +978,10 @@ static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 	wl_signal_add(&sway_group->wlr_group->keyboard.events.modifiers,
 			&sway_group->keyboard_modifiers);
 	sway_group->keyboard_modifiers.notify = handle_keyboard_group_modifiers;
-	
+
 	wl_signal_add(&sway_group->wlr_group->events.enter, &sway_group->enter);
 	sway_group->enter.notify = handle_keyboard_group_enter;
-	
+
 	wl_signal_add(&sway_group->wlr_group->events.leave, &sway_group->leave);
 	sway_group->leave.notify = handle_keyboard_group_leave;
 	return;

@@ -154,6 +154,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	is now. If no argument is given, it does the same as _toggle_. If _global_
 	is specified, the view will be fullscreen across all outputs.
 
+*ttyaccess* enable|disable
+	Do not switch VTs, block tty access.
+
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
 set|plus|minus <amount>
 	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
