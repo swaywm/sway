@@ -468,6 +468,13 @@ static void display_in(int fd, short mask, void *data) {
 
 static void ipc_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
+	if (mask & (POLLHUP | POLLERR)) {
+		if (mask & POLLERR) {
+			sway_log(SWAY_ERROR, "IPC poll error");
+		}
+		bar->running = false;
+		return;
+	}
 	if (handle_ipc_readable(bar)) {
 		set_bar_dirty(bar);
 	}
