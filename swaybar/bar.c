@@ -461,7 +461,15 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 
 static void display_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
+	if (mask & (POLLHUP | POLLERR)) {
+		if (mask & POLLERR) {
+			sway_log(SWAY_ERROR, "Wayland display poll error");
+		}
+		bar->running = false;
+		return;
+	}
 	if (wl_display_dispatch(bar->display) == -1) {
+		sway_log(SWAY_ERROR, "wl_display_dispatch failed");
 		bar->running = false;
 	}
 }
