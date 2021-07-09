@@ -495,7 +495,6 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 		pointer_motion(cursor, event->time_msec, event->device, dx, dy, dx, dy);
 		dispatch_cursor_button(cursor, event->device, event->time_msec,
 				BTN_LEFT, WLR_BUTTON_PRESSED);
-		wlr_seat_pointer_notify_frame(wlr_seat);
 	}
 }
 
@@ -511,7 +510,6 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 			cursor->simulating_pointer_from_touch = false;
 			dispatch_cursor_button(cursor, event->device, event->time_msec,
 					BTN_LEFT, WLR_BUTTON_RELEASED);
-			wlr_seat_pointer_notify_frame(wlr_seat);
 		}
 	} else {
 		wlr_seat_touch_notify_up(wlr_seat, event->time_msec, event->touch_id);
@@ -556,6 +554,19 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	} else if (surface) {
 		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
 			event->touch_id, sx, sy);
+	}
+}
+
+static void handle_touch_frame(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor =
+		wl_container_of(listener, cursor, touch_frame);
+
+	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
+
+	if (cursor->simulating_pointer_from_touch) {
+		wlr_seat_pointer_notify_frame(wlr_seat);
+	} else {
+		wlr_seat_touch_notify_frame(wlr_seat);
 	}
 }
 
@@ -1044,6 +1055,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->touch_down.link);
 	wl_list_remove(&cursor->touch_up.link);
 	wl_list_remove(&cursor->touch_motion.link);
+	wl_list_remove(&cursor->touch_frame.link);
 	wl_list_remove(&cursor->tool_axis.link);
 	wl_list_remove(&cursor->tool_tip.link);
 	wl_list_remove(&cursor->tool_button.link);
@@ -1118,6 +1130,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	wl_signal_add(&wlr_cursor->events.touch_motion,
 		&cursor->touch_motion);
 	cursor->touch_motion.notify = handle_touch_motion;
+
+	wl_signal_add(&wlr_cursor->events.touch_frame, &cursor->touch_frame);
+	cursor->touch_frame.notify = handle_touch_frame;
 
 	wl_signal_add(&wlr_cursor->events.tablet_tool_axis,
 		&cursor->tool_axis);
