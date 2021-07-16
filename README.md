@@ -29,4 +29,4 @@ Label: merge_req
 use it at your own risk. the risk of broken package or not work as you wanted.
 
 [block tty access]: https://github.com/swaywm/sway/pull/6375
-[archlinux aur]: https://aur.archlinux.org/packages/swea-git/
+[archlinux aur]: https://aur.archlinux.org/packages/swea-git
