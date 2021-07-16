@@ -1,13 +1,16 @@
 ---
 name: Enhancements
-about: New functionality
-labels: 'enhancement'
+about: What to merge
+title: ''
+labels: enhancement
+assignees: tmpm697
 
 ---
 
-### Please read the following before submitting:
-- We are not accepting any new window management features unless they get implemented by i3.
+Title: Merge fluix-dev/sway-borders
 
-### Please fill out the following:
-- **Description:**
-Please describe in plain English what the enhancement is and what the use case is.
+Content:
+Fork link: https://github.com/fluix-dev/sway-borders
+PRs link: https://github.com/swaywm/sway/pull/5639
+
+Tag: Enhancements

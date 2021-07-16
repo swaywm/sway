@@ -1,7 +1,9 @@
 ---
 name: Bugs
 about: Crashes and other bugs
-labels: 'bug'
+title: ''
+labels: bug
+assignees: ''
 
 ---
 
