@@ -13,4 +13,4 @@ Content:
 Fork link: https://github.com/fluix-dev/sway-borders
 PRs link: https://github.com/swaywm/sway/pull/5639
 
-Tag: Enhancements
+Label: merge_req
