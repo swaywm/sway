@@ -21,7 +21,12 @@ Label: merge_req
 ### merged list:
 * [block tty access]
 
+### package
+* archlinux aur
+
+
 ### Disclamer:
 use it at your own risk. the risk of broken package or not work as you wanted.
 
 [block tty access]: https://github.com/swaywm/sway/pull/6375
+[archlinux aur]: https://aur.archlinux.org/packages/swea-git/
