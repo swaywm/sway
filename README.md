@@ -22,7 +22,7 @@ Label: merge_req
 * [block tty access]
 
 ### package
-* archlinux aur
+* [archlinux aur]
 
 
 ### Disclamer:
