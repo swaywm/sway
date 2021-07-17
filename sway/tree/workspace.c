@@ -688,14 +688,18 @@ void workspace_detect_urgent(struct sway_workspace *workspace) {
 	}
 }
 
-void workspace_for_each_container(struct sway_workspace *ws,
+void workspace_for_each_tiling_container(struct sway_workspace *ws,
 		void (*f)(struct sway_container *con, void *data), void *data) {
-	// Tiling
 	for (int i = 0; i < ws->tiling->length; ++i) {
 		struct sway_container *container = ws->tiling->items[i];
 		f(container, data);
 		container_for_each_child(container, f, data);
 	}
+}
+
+void workspace_for_each_container(struct sway_workspace *ws,
+		void (*f)(struct sway_container *con, void *data), void *data) {
+	workspace_for_each_tiling_container(ws, f, data);
 	// Floating
 	for (int i = 0; i < ws->floating->length; ++i) {
 		struct sway_container *container = ws->floating->items[i];
