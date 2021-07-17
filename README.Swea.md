@@ -19,7 +19,8 @@ Label: merge_req
 ```
 
 ### merged list:
-* [block tty access]
+* [block tty access], current not working
+* [sway-borders]
 
 ### package
 * [archlinux aur]
@@ -30,3 +31,4 @@ use it at your own risk. the risk of broken package or not work as you wanted.
 
 [block tty access]: https://github.com/swaywm/sway/pull/6375
 [archlinux aur]: https://aur.archlinux.org/packages/swea-git
+[sway-borders]: https://github.com/fluix-dev/sway-borders
