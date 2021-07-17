@@ -559,6 +559,7 @@ static void update_title_texture(struct sway_container *con,
 			output->wlr_output->backend);
 	*texture = wlr_texture_from_pixels(
 			renderer, DRM_FORMAT_ARGB8888, stride, width, height, data);
+
 	cairo_surface_destroy(surface);
 	g_object_unref(pango);
 	cairo_destroy(cairo);
@@ -1034,6 +1035,14 @@ static bool find_urgent_iterator(struct sway_container *con, void *data) {
 
 bool container_has_urgent_child(struct sway_container *container) {
 	return container_find_child(container, find_urgent_iterator, NULL);
+}
+
+static bool find_focused_iterator(struct sway_container *con, void *data) {
+	return con->current.focused;
+}
+
+bool container_has_focused_child(struct sway_container *container) {
+	return container_find_child(container, find_focused_iterator, NULL);
 }
 
 void container_end_mouse_operation(struct sway_container *container) {
