@@ -111,6 +111,30 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* toggle
 	Cycles through the available border styles.
 
+*border_images.<class>* <path>
+	Configures the images used for borders. The _path_ is expected to be an
+	absolute path to an image with an odd width and height which will be scaled to
+	container sizes. The edges are expected to be 1 pixel in width for top and
+	bottom edges, and 1 pixel in height for left edges as they will be stretched
+	across container edges.
+
+	For the classes below, "container" refers to a container which has gaps
+	around it. The available classes are:
+
+	*border_images.focused*
+		The container which is focused or has a window that has focus.
+
+	*border_images.focused_inactive*
+		The container which has the most recently focused view within a container
+		which is not focused.
+
+	*border_images.unfocused*
+		A container with all of its views unfocused.
+
+	*border_images.urgent*
+		A container which has view with an urgency hint. *Note*: Native Wayland windows do not
+		support urgency. Urgency only works for Xwayland windows.
+
 *exit*
 	Exit sway and end your Wayland session.
 
@@ -154,8 +178,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	is now. If no argument is given, it does the same as _toggle_. If _global_
 	is specified, the view will be fullscreen across all outputs.
 
-*ttyaccess* enable|disable
+*ttyaccess* enable|disable|toggle
 	Do not switch VTs, block tty access.
+
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
 set|plus|minus <amount>
