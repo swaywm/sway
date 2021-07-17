@@ -1,9 +1,11 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
+#include <cairo.h>
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <wlr/render/wlr_texture.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/util/box.h>
@@ -397,6 +399,11 @@ struct border_colors {
 	float child_border[4];
 };
 
+struct border_textures {
+  cairo_surface_t *image_surface;
+  struct wlr_texture *texture;
+};
+
 enum edge_border_types {
 	E_NONE, /**< Don't hide edge borders */
 	E_VERTICAL, /**< hide vertical edge borders */
@@ -506,8 +513,8 @@ struct sway_config {
 	enum focus_follows_mouse_mode focus_follows_mouse;
 	enum mouse_warping_mode mouse_warping;
 	enum focus_wrapping_mode focus_wrapping;
-  bool ttyaccess;
 	bool active;
+	bool ttyaccess;
 	bool failed;
 	bool reloading;
 	bool reading;
@@ -547,6 +554,14 @@ struct sway_config {
 		struct border_colors placeholder;
 		float background[4];
 	} border_colors;
+
+	// border textures
+	struct {
+		struct border_textures focused;
+		struct border_textures focused_inactive;
+		struct border_textures unfocused;
+		struct border_textures urgent;
+	} border_textures;
 
 	// floating view
 	int32_t floating_maximum_width;

@@ -44,11 +44,15 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 /* Keep alphabetized */
 static const struct cmd_handler handlers[] = {
 	{ "assign", cmd_assign },
-  { "ttyaccess", cmd_ttyaccess },
+	{ "ttyaccess", cmd_ttyaccess },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindswitch", cmd_bindswitch },
 	{ "bindsym", cmd_bindsym },
+	{ "border_images.focused", cmd_border_images_focused },
+	{ "border_images.focused_inactive", cmd_border_images_focused_inactive },
+	{ "border_images.unfocused", cmd_border_images_unfocused },
+	{ "border_images.urgent", cmd_border_images_urgent },
 	{ "client.background", cmd_client_noop },
 	{ "client.focused", cmd_client_focused },
 	{ "client.focused_inactive", cmd_client_focused_inactive },
@@ -111,6 +115,10 @@ static const struct cmd_handler config_handlers[] = {
 /* Runtime-only commands. Keep alphabetized */
 static const struct cmd_handler command_handlers[] = {
 	{ "border", cmd_border },
+	{ "border_images.focused", cmd_border_images_focused },
+	{ "border_images.focused_inactive", cmd_border_images_focused_inactive },
+	{ "border_images.unfocused", cmd_border_images_unfocused },
+	{ "border_images.urgent", cmd_border_images_urgent },
 	{ "create_output", cmd_create_output },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
