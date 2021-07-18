@@ -40,6 +40,16 @@ must be separated by one space. For example:
 
 		output HDMI-A-1 mode 1920x1080@60Hz
 
+*output* <name> modeline <clock> <hdisplay> <hsync_start> <hsync_end> <htotal> <vdisplay> <vsync_start> <vsync_end> <vtotal> <hsync> <vsync>
+	Configures the specified output to use the given modeline. It can be
+	generated using *cvt*(1) and *gtf*(1) commands. See *xorg.conf*(5).
+	Only supported on DRM backend.
+
+	Example:
+
+		output HDMI-A-1 modeline 173.00 1920 2048 2248 2576 1080 1083 1088 1120 -hsync +vsync
+
+
 *output* <name> position|pos <X> <Y>
 	Places the specified output at the specific position in the global
 	coordinate space. The cursor may only be moved between immediately
