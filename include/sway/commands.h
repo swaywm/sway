@@ -282,6 +282,7 @@ sway_cmd output_cmd_dpms;
 sway_cmd output_cmd_enable;
 sway_cmd output_cmd_max_render_time;
 sway_cmd output_cmd_mode;
+sway_cmd output_cmd_modeline;
 sway_cmd output_cmd_position;
 sway_cmd output_cmd_scale;
 sway_cmd output_cmd_scale_filter;

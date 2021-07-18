@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/backend/drm.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
@@ -58,6 +59,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->width = oc->height = -1;
 	oc->refresh_rate = -1;
 	oc->custom_mode = -1;
+	oc->drm_mode.type = -1;
 	oc->x = oc->y = -1;
 	oc->scale = -1;
 	oc->scale_filter = SCALE_FILTER_DEFAULT;
@@ -98,6 +100,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->custom_mode != -1) {
 		dst->custom_mode = src->custom_mode;
+	}
+	if (src->drm_mode.type != (uint32_t) -1) {
+		memcpy(&dst->drm_mode, &src->drm_mode, sizeof(src->drm_mode));
 	}
 	if (src->transform != -1) {
 		dst->transform = src->transform;
@@ -271,6 +276,18 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	wlr_output_set_mode(output, best);
 }
 
+static void set_modeline(struct wlr_output *output, drmModeModeInfo *drm_mode) {
+	if (!wlr_output_is_drm(output)) {
+		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
+		return;
+	}
+	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
+	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
+	if (mode) {
+		wlr_output_set_mode(output, mode);
+	}
+}
+
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
  * size field. */
 static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
@@ -351,7 +368,11 @@ static void queue_output_config(struct output_config *oc,
 	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 	wlr_output_enable(wlr_output, true);
 
-	if (oc && oc->width > 0 && oc->height > 0) {
+	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
+		sway_log(SWAY_DEBUG, "Set %s modeline",
+			wlr_output->name);
+		set_modeline(wlr_output, &oc->drm_mode);
+	} else if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
 			wlr_output->name, oc->width, oc->height, oc->refresh_rate);
 		set_mode(wlr_output, oc->width, oc->height,
