@@ -155,7 +155,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	is specified, the view will be fullscreen across all outputs.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
-set|plus|minus <amount>
+set|plus|minus|toggle <amount>
 	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
 	_current_ workspace. _outer_ gaps can be altered per side with _top_,
 	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
