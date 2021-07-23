@@ -354,12 +354,14 @@ static char *config_path(const char *prefix, const char *config_folder) {
 static char *get_config_path(void) {
 	char *path = NULL;
 	const char *home = getenv("HOME");
-	size_t size_fallback = 1 + strlen(home) + strlen("/.config");
-	char *config_home_fallback = calloc(size_fallback, sizeof(char));
-	snprintf(config_home_fallback, size_fallback, "%s/.config", home);
+	char *config_home_fallback = NULL;
 
 	const char *config_home = getenv("XDG_CONFIG_HOME");
-	if (config_home == NULL || config_home[0] == '\0') {
+	if ((config_home == NULL || config_home[0] == '\0') && home != NULL) {
+		size_t size_fallback = 1 + strlen(home) + strlen("/.config");
+		config_home_fallback = calloc(size_fallback, sizeof(char));
+		if (config_home_fallback != NULL)
+			snprintf(config_home_fallback, size_fallback, "%s/.config", home);
 		config_home = config_home_fallback;
 	}
 
