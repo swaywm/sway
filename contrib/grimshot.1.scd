@@ -67,7 +67,7 @@ _window_
 _output_
 	Captures the currently active output.
 
-_selection_
+_anything_
 	Allows manually selection a single window (by clicking on it), an output (by
 	clicking outside of all windows, e.g. on the status bar), or an area (by
 	using click and drag).
