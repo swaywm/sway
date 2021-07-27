@@ -112,7 +112,6 @@ struct sway_view {
 #if HAVE_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 #endif
-		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
 
 	struct {
