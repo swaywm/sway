@@ -37,7 +37,6 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
-	wl_list_init(&view->saved_buffers);
 	view->allow_request_urgent = true;
 	view->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
 	wl_signal_init(&view->events.unmap);
@@ -57,9 +56,6 @@ void view_destroy(struct sway_view *view) {
 		return;
 	}
 	wl_list_remove(&view->events.unmap.listener_list);
-	if (!wl_list_empty(&view->saved_buffers)) {
-		view_remove_saved_buffer(view);
-	}
 	list_free(view->executed_criteria);
 
 	free(view->title_format);
@@ -1374,43 +1370,6 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 bool view_is_urgent(struct sway_view *view) {
 	return view->urgent.tv_sec || view->urgent.tv_nsec;
-}
-
-void view_remove_saved_buffer(struct sway_view *view) {
-	if (!sway_assert(!wl_list_empty(&view->saved_buffers), "Expected a saved buffer")) {
-		return;
-	}
-	struct sway_saved_buffer *saved_buf, *tmp;
-	wl_list_for_each_safe(saved_buf, tmp, &view->saved_buffers, link) {
-		wlr_buffer_unlock(&saved_buf->buffer->base);
-		wl_list_remove(&saved_buf->link);
-		free(saved_buf);
-	}
-}
-
-static void view_save_buffer_iterator(struct wlr_surface *surface,
-		int sx, int sy, void *data) {
-	struct sway_view *view = data;
-
-	if (surface && wlr_surface_has_buffer(surface)) {
-		wlr_buffer_lock(&surface->buffer->base);
-		struct sway_saved_buffer *saved_buffer = calloc(1, sizeof(struct sway_saved_buffer));
-		saved_buffer->buffer = surface->buffer;
-		saved_buffer->width = surface->current.width;
-		saved_buffer->height = surface->current.height;
-		saved_buffer->x = view->container->surface_x + sx;
-		saved_buffer->y = view->container->surface_y + sy;
-		saved_buffer->transform = surface->current.transform;
-		wlr_surface_get_buffer_source_box(surface, &saved_buffer->source_box);
-		wl_list_insert(&view->saved_buffers, &saved_buffer->link);
-	}
-}
-
-void view_save_buffer(struct sway_view *view) {
-	if (!sway_assert(wl_list_empty(&view->saved_buffers), "Didn't expect saved buffer")) {
-		view_remove_saved_buffer(view);
-	}
-	view_for_each_surface(view, view_save_buffer_iterator, view);
 }
 
 bool view_is_transient_for(struct sway_view *child,
