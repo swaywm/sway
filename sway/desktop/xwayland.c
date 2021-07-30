@@ -418,8 +418,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	if (view->container->node.instruction) {
-		transaction_notify_view_ready_by_geometry(view,
-				xsurface->x, xsurface->y, state->width, state->height);
+		transaction_notify_view_acked_by_geometry(view,
+			xsurface->x, xsurface->y, state->width, state->height);
+		transaction_notify_view_ready(view);
 	}
 
 	view_damage_from(view);

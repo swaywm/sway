@@ -35,20 +35,26 @@ void transaction_commit_dirty(void);
 void transaction_commit_dirty_client(void);
 
 /**
- * Notify the transaction system that a view is ready for the new layout.
- *
- * When all views in the transaction are ready, the layout will be applied.
+ * Notify the transaction system that a view has acknowledged a configure.
  */
-void transaction_notify_view_ready_by_serial(struct sway_view *view,
+void transaction_notify_view_acked_by_serial(struct sway_view *view,
 		uint32_t serial);
 
 /**
- * Notify the transaction system that a view is ready for the new layout, but
+ * Notify the transaction system that a view has acknowledged a configure, but
  * identifying the instruction by geometry rather than by serial.
  *
- * This is used by xwayland views, as they don't have serials.
+ * This is used by Xwayland views, as they don't have serials.
  */
-void transaction_notify_view_ready_by_geometry(struct sway_view *view,
+void transaction_notify_view_acked_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height);
+
+/**
+ * Notify the transaction system that a view is ready for the new layout. This
+ * call has no effect if the view hasn't acknowledged a configure yet.
+ *
+ * When all views in the transaction are ready, the layout will be applied.
+ */
+void transaction_notify_view_ready(struct sway_view *view);
 
 #endif

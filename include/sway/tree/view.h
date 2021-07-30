@@ -116,6 +116,7 @@ struct sway_view {
 struct sway_xdg_shell_view {
 	struct sway_view view;
 
+	struct wl_listener ack_configure;
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;

@@ -35,6 +35,8 @@ struct sway_transaction_instruction {
 		struct sway_container_state container_state;
 	};
 	uint32_t serial;
+	bool acked;
+	bool ready;
 	bool server_request;
 	bool waiting;
 };
@@ -444,6 +446,8 @@ static void set_instruction_ready(
 		struct sway_transaction_instruction *instruction) {
 	struct sway_transaction *transaction = instruction->transaction;
 
+	instruction->ready = true;
+
 	if (debug.txn_timings) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
@@ -468,16 +472,16 @@ static void set_instruction_ready(
 	transaction_progress();
 }
 
-void transaction_notify_view_ready_by_serial(struct sway_view *view,
+void transaction_notify_view_acked_by_serial(struct sway_view *view,
 		uint32_t serial) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
 	if (instruction != NULL && instruction->serial == serial) {
-		set_instruction_ready(instruction);
+		instruction->acked = true;
 	}
 }
 
-void transaction_notify_view_ready_by_geometry(struct sway_view *view,
+void transaction_notify_view_acked_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
@@ -486,7 +490,17 @@ void transaction_notify_view_ready_by_geometry(struct sway_view *view,
 			(int)instruction->container_state.content_y == (int)y &&
 			instruction->container_state.content_width == width &&
 			instruction->container_state.content_height == height) {
-		set_instruction_ready(instruction);
+		instruction->acked = true;
+	}
+}
+
+void transaction_notify_view_ready(struct sway_view *view) {
+	struct sway_transaction_instruction *instruction =
+		view->container->node.instruction;
+	if (instruction != NULL && !instruction->ready) {
+		if (instruction->acked) {
+			set_instruction_ready(instruction);
+		}
 	}
 }
 
