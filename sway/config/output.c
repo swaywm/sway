@@ -357,8 +357,26 @@ static void queue_output_config(struct output_config *oc,
 		set_mode(wlr_output, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-		wlr_output_set_mode(wlr_output, mode);
+		sway_log(SWAY_DEBUG, "Set preferred mode");
+		struct wlr_output_mode *preferred_mode =
+			wlr_output_preferred_mode(wlr_output);
+		wlr_output_set_mode(wlr_output, preferred_mode);
+
+		if (!wlr_output_test(wlr_output)) {
+			sway_log(SWAY_DEBUG, "Preferred mode rejected, "
+				"falling back to another mode");
+			struct wlr_output_mode *mode;
+			wl_list_for_each(mode, &wlr_output->modes, link) {
+				if (mode == preferred_mode) {
+					continue;
+				}
+
+				wlr_output_set_mode(wlr_output, mode);
+				if (wlr_output_test(wlr_output)) {
+					break;
+				}
+			}
+		}
 	}
 
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
