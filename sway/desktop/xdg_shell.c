@@ -290,6 +290,13 @@ static void handle_ack_configure(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void handle_cache(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, cache);
+	struct sway_view *view = &xdg_shell_view->view;
+	transaction_notify_view_ready(view);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, commit);
@@ -316,10 +323,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			view_center_surface(view);
 		}
 		desktop_damage_view(view);
-	}
-
-	if (view->container->node.instruction) {
-		transaction_notify_view_ready(view);
 	}
 
 	view_damage_from(view);
@@ -429,6 +432,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	view_unmap(view);
 
 	wl_list_remove(&xdg_shell_view->ack_configure.link);
+	wl_list_remove(&xdg_shell_view->cache.link);
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
@@ -472,6 +476,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->ack_configure.notify = handle_ack_configure;
 	wl_signal_add(&xdg_surface->events.ack_configure,
 		&xdg_shell_view->ack_configure);
+
+	xdg_shell_view->cache.notify = handle_cache;
+	wl_signal_add(&xdg_surface->surface->events.cache,
+		&xdg_shell_view->cache);
 
 	xdg_shell_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
