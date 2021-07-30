@@ -70,6 +70,9 @@ struct sway_view {
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
 
+	bool surface_locked;
+	uint32_t lock_seq;
+
 	char *title_format;
 
 	bool using_csd;
@@ -340,6 +343,10 @@ bool view_is_visible(struct sway_view *view);
 void view_set_urgent(struct sway_view *view, bool enable);
 
 bool view_is_urgent(struct sway_view *view);
+
+void view_lock_pending(struct sway_view *view);
+
+void view_unlock_cached(struct sway_view *view);
 
 bool view_is_transient_for(struct sway_view *child, struct sway_view *ancestor);
 

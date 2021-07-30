@@ -875,6 +875,11 @@ void view_unmap(struct sway_view *view) {
 	}
 
 	transaction_commit_dirty();
+
+	if (view->surface_locked) {
+		view_unlock_cached(view);
+	}
+
 	view->surface = NULL;
 }
 
@@ -1376,4 +1381,18 @@ bool view_is_transient_for(struct sway_view *child,
 		struct sway_view *ancestor) {
 	return child->impl->is_transient_for &&
 		child->impl->is_transient_for(child, ancestor);
+}
+
+void view_lock_pending(struct sway_view *view) {
+	sway_assert(!view->surface_locked, "Can't lock a locked view");
+	if (view->surface) {
+		view->surface_locked = true;
+		view->lock_seq = wlr_surface_lock_pending(view->surface);
+	}
+}
+
+void view_unlock_cached(struct sway_view *view) {
+	sway_assert(view->surface_locked, "Can't unlock an unlocked view");
+	view->surface_locked = false;
+	wlr_surface_unlock_cached(view->surface, view->lock_seq);
 }
