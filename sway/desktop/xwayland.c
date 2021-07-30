@@ -388,12 +388,21 @@ static void get_geometry(struct sway_view *view, struct wlr_box *box) {
 	}
 }
 
+static void handle_cache(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, cache);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	struct wlr_surface_state *cached = data;
+	transaction_notify_view_acked_by_geometry(view,
+		xsurface->x, xsurface->y, cached->width, cached->height);
+	transaction_notify_view_ready(view);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
-	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	struct wlr_surface_state *state = &xsurface->surface->current;
 
 	struct wlr_box new_geo;
 	get_geometry(view, &new_geo);
@@ -417,12 +426,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		desktop_damage_view(view);
 	}
 
-	if (view->container->node.instruction) {
-		transaction_notify_view_acked_by_geometry(view,
-			xsurface->x, xsurface->y, state->width, state->height);
-		transaction_notify_view_ready(view);
-	}
-
 	view_damage_from(view);
 }
 
@@ -434,6 +437,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	if (view->surface) {
 		view_unmap(view);
 		wl_list_remove(&xwayland_view->commit.link);
+		wl_list_remove(&xwayland_view->cache.link);
 	}
 
 	wl_list_remove(&xwayland_view->destroy.link);
@@ -467,6 +471,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	view_unmap(view);
 
 	wl_list_remove(&xwayland_view->commit.link);
+	wl_list_remove(&xwayland_view->cache.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -482,6 +487,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// the underlying wlr_surface
 	wl_signal_add(&xsurface->surface->events.commit, &xwayland_view->commit);
 	xwayland_view->commit.notify = handle_commit;
+
+	wl_signal_add(&xsurface->surface->events.cache, &xwayland_view->cache);
+	xwayland_view->cache.notify = handle_cache;
 
 	// Put it back into the tree
 	view_map(view, xsurface->surface, xsurface->fullscreen, NULL, false);
