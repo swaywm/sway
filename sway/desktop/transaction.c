@@ -216,7 +216,6 @@ static void transaction_add_node(struct sway_transaction *transaction,
 
 static void apply_output_state(struct sway_output *output,
 		struct sway_output_state *state) {
-	output_damage_whole(output);
 	list_free(output->current.workspaces);
 	memcpy(&output->current, state, sizeof(struct sway_output_state));
 	output_damage_whole(output);
@@ -224,7 +223,6 @@ static void apply_output_state(struct sway_output *output,
 
 static void apply_workspace_state(struct sway_workspace *ws,
 		struct sway_workspace_state *state) {
-	output_damage_whole(ws->current.output);
 	list_free(ws->current.floating);
 	list_free(ws->current.tiling);
 	memcpy(&ws->current, state, sizeof(struct sway_workspace_state));
@@ -282,6 +280,39 @@ static void transaction_apply(struct sway_transaction *transaction) {
 			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
 		sway_log(SWAY_DEBUG, "Transaction %p: %.1fms waiting "
 				"(%.1f frames if 60Hz)", transaction, ms, ms / (1000.0f / 60));
+	}
+
+	// Damage the old layout state
+	for (int i = 0; i < transaction->instructions->length; ++i) {
+		struct sway_transaction_instruction *instruction =
+			transaction->instructions->items[i];
+		struct sway_node *node = instruction->node;
+
+		switch (node->type) {
+		case N_ROOT:
+			break;
+		case N_OUTPUT:
+			output_damage_whole(node->sway_output);
+			break;
+		case N_WORKSPACE:
+			output_damage_whole(node->sway_workspace->output);
+			break;
+		case N_CONTAINER:
+			container_damage_whole(node->sway_container);
+			break;
+		}
+	}
+
+	// Unlock views to commit instruction states
+	for (int i = 0; i < transaction->instructions->length; ++i) {
+		struct sway_transaction_instruction *instruction =
+			transaction->instructions->items[i];
+		struct sway_node *node = instruction->node;
+
+		if (node->type == N_CONTAINER && node->sway_container->view &&
+				node->sway_container->view->surface_locked) {
+			view_unlock_cached(node->sway_container->view);
+		}
 	}
 
 	// Apply the instruction state to the node's current state
@@ -402,6 +433,10 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			wlr_surface_send_frame_done(
 					node->sway_container->view->surface, &now);
 		}
+		if (!hidden && node_is_view(node) &&
+				!node->sway_container->view->surface_locked) {
+			view_lock_pending(node->sway_container->view);
+		}
 		node->instruction = instruction;
 	}
 	transaction->num_configures = transaction->num_waiting;
@@ -500,6 +535,12 @@ void transaction_notify_view_ready(struct sway_view *view) {
 	if (instruction != NULL && !instruction->ready) {
 		if (instruction->acked) {
 			set_instruction_ready(instruction);
+		} else {
+			// If this is not the commit we needed, force the view
+			// to send another one as soon as possible.
+			struct timespec now;
+			clock_gettime(CLOCK_MONOTONIC, &now);
+			wlr_surface_send_frame_done(view->surface, &now);
 		}
 	}
 }
