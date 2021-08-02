@@ -373,6 +373,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			seat_set_focus_layer(seat, layer);
 			transaction_commit_dirty();
 		}
+		if (state == WLR_BUTTON_PRESSED) {
+			seatop_begin_down_on_layer_surface(seat, surface, time_msec, sx, sy);
+		}
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}

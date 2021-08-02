@@ -10,7 +10,8 @@
 
 struct seatop_down_event {
 	struct sway_container *con;
-	double ref_lx, ref_ly;         // cursor's x/y at start of op
+	struct wlr_surface *surface;
+	double ref_lx, ref_ly;		 // cursor's x/y at start of op
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 };
 
@@ -40,8 +41,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
-	struct sway_container *con = e->con;
-	if (seat_is_input_allowed(seat, con->view->surface)) {
+	if (seat_is_input_allowed(seat, e->surface)) {
 		double moved_x = seat->cursor->cursor->x - e->ref_lx;
 		double moved_y = seat->cursor->cursor->y - e->ref_ly;
 		double sx = e->ref_con_lx + moved_x;
@@ -62,8 +62,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 static void handle_tablet_tool_motion(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
-	struct sway_container *con = e->con;
-	if (seat_is_input_allowed(seat, con->view->surface)) {
+	if (seat_is_input_allowed(seat, e->surface)) {
 		double moved_x = seat->cursor->cursor->x - e->ref_lx;
 		double moved_y = seat->cursor->cursor->y - e->ref_ly;
 		double sx = e->ref_con_lx + moved_x;
@@ -99,6 +98,7 @@ void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 		return;
 	}
 	e->con = con;
+	e->surface = con->view->surface;
 	e->ref_lx = seat->cursor->cursor->x;
 	e->ref_ly = seat->cursor->cursor->y;
 	e->ref_con_lx = sx;
@@ -109,4 +109,24 @@ void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 
 	container_raise_floating(con);
 	transaction_commit_dirty();
+}
+
+void seatop_begin_down_on_layer_surface(struct sway_seat *seat,
+		struct wlr_surface *surface, uint32_t time_msec, double sx, double sy) {
+	seatop_end(seat);
+
+	struct seatop_down_event *e =
+		calloc(1, sizeof(struct seatop_down_event));
+	if (!e) {
+		return;
+	}
+	e->con = NULL;
+	e->surface = surface;
+	e->ref_lx = seat->cursor->cursor->x;
+	e->ref_ly = seat->cursor->cursor->y;
+	e->ref_con_lx = sx;
+	e->ref_con_ly = sy;
+
+	seat->seatop_impl = &seatop_impl;
+	seat->seatop_data = e;
 }
