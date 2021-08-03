@@ -40,7 +40,7 @@ runtime.
 *font* <font>
 	Specifies the font to be used in the bar. _font_ should be specified as a
 	pango font description. For more information on pango font descriptions,
-	see https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
+	see https://docs.gtk.org/Pango/type_func.FontDescription.from_string.html#description
 
 *gaps* <all> | <horizontal> <vertical> | <top> <right> <bottom> <left>
 	Sets the gaps from the edge of the screen for the bar. Gaps can either be
