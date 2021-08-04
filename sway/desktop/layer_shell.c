@@ -352,6 +352,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	if (sway_layer->layer_surface->mapped) {
 		unmap(sway_layer);
 	}
+	wl_signal_emit(&sway_layer->events.destroy, sway_layer);
 	wl_list_remove(&sway_layer->link);
 	wl_list_remove(&sway_layer->destroy.link);
 	wl_list_remove(&sway_layer->map.link);
@@ -420,16 +421,27 @@ static void subsurface_handle_commit(struct wl_listener *listener, void *data) {
 	subsurface_damage(subsurface, false);
 }
 
-static void subsurface_handle_destroy(struct wl_listener *listener,
-		void *data) {
-	struct sway_layer_subsurface *subsurface =
-			wl_container_of(listener, subsurface, destroy);
-
+static void subsurface_destroy(struct sway_layer_subsurface *subsurface) {
 	wl_list_remove(&subsurface->map.link);
 	wl_list_remove(&subsurface->unmap.link);
 	wl_list_remove(&subsurface->destroy.link);
 	wl_list_remove(&subsurface->commit.link);
+	wl_list_remove(&subsurface->surface_destroy.link);
 	free(subsurface);
+}
+
+static void subsurface_handle_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, destroy);
+	subsurface_destroy(subsurface);
+}
+
+static void subsurface_handle_surface_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, surface_destroy);
+	subsurface_destroy(subsurface);
 }
 
 static struct sway_layer_subsurface *create_subsurface(
@@ -452,6 +464,8 @@ static struct sway_layer_subsurface *create_subsurface(
 	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
 	subsurface->commit.notify = subsurface_handle_commit;
 	wl_signal_add(&wlr_subsurface->surface->events.commit, &subsurface->commit);
+	subsurface->surface_destroy.notify = subsurface_handle_surface_destroy;
+	wl_signal_add(&layer_surface->events.destroy, &subsurface->surface_destroy);
 
 	return subsurface;
 }
@@ -634,6 +648,8 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	if (!sway_layer) {
 		return;
 	}
+
+	wl_signal_init(&sway_layer->events.destroy);
 
 	sway_layer->surface_commit.notify = handle_surface_commit;
 	wl_signal_add(&layer_surface->surface->events.commit,

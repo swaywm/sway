@@ -21,6 +21,10 @@ struct sway_layer_surface {
 	struct wl_listener new_popup;
 	struct wl_listener new_subsurface;
 
+	struct {
+		struct wl_signal destroy;
+	} events;
+
 	struct wlr_box geo;
 	enum zwlr_layer_shell_v1_layer layer;
 };
@@ -47,6 +51,7 @@ struct sway_layer_subsurface {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener commit;
+	struct wl_listener surface_destroy;
 };
 
 struct sway_output;
