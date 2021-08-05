@@ -90,7 +90,7 @@ static const struct sway_seatop_impl seatop_impl = {
 };
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
-		uint32_t time_msec, int sx, int sy) {
+		uint32_t time_msec, double sx, double sy) {
 	seatop_end(seat);
 
 	struct seatop_down_event *e =
