@@ -66,6 +66,7 @@ sway (gdm is known to work fairly well).
 
 [en]: https://github.com/swaywm/sway#readme
 [ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
+[fa]: https://github.com/swaywm/sway/blob/master/README.fa.md
 [fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
 [uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
 [es]: https://github.com/swaywm/sway/blob/master/README.es.md
