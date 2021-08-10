@@ -1,6 +1,6 @@
 # sway
 
-**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Dansk][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr]
+**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Dansk][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr] - [فارسی][ir]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.libera.chat).
@@ -81,6 +81,7 @@ sway (gdm is known to work fairly well).
 [ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
 [hu]: https://github.com/swaywm/sway/blob/master/README.hu.md
 [tr]: https://github.com/swaywm/sway/blob/master/README.tr.md
+[ir]: https://github.com/swaywm/sway/blob/master/README.ir.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
