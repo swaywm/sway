@@ -443,12 +443,15 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	bool csd = false;
 
-	if (!view->xdg_decoration) {
+	if (view->xdg_decoration) {
+		enum wlr_xdg_toplevel_decoration_v1_mode mode =
+			view->xdg_decoration->wlr_xdg_decoration->client_pending_mode;
+		csd = mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+	} else {
 		struct sway_server_decoration *deco =
 				decoration_from_surface(xdg_surface->surface);
 		csd = !deco || deco->wlr_server_decoration->mode ==
 			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-
 	}
 
 	view_map(view, view->wlr_xdg_surface->surface,
