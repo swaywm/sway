@@ -10,7 +10,7 @@ static void xdg_decoration_handle_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_xdg_decoration *deco =
 		wl_container_of(listener, deco, destroy);
-	if(deco->view) {
+	if (deco->view) {
 		deco->view->xdg_decoration = NULL;
 	}
 	wl_list_remove(&deco->destroy.link);
@@ -23,8 +23,32 @@ static void xdg_decoration_handle_request_mode(struct wl_listener *listener,
 		void *data) {
 	struct sway_xdg_decoration *deco =
 		wl_container_of(listener, deco, request_mode);
+	struct sway_view *view = deco->view;
+	enum wlr_xdg_toplevel_decoration_v1_mode mode =
+		WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+	enum wlr_xdg_toplevel_decoration_v1_mode client_mode =
+		deco->wlr_xdg_decoration->client_pending_mode;
+
+	bool floating;
+	if (view->container) {
+		floating = container_is_floating(view->container);
+		bool csd = false;
+		csd = client_mode ==
+			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+		view_update_csd_from_client(view, csd);
+		arrange_container(view->container);
+		transaction_commit_dirty();
+	} else {
+		floating = view->impl->wants_floating &&
+			view->impl->wants_floating(view);
+	}
+
+	if (floating && client_mode) {
+		mode = client_mode;
+	}
+
 	wlr_xdg_toplevel_decoration_v1_set_mode(deco->wlr_xdg_decoration,
-			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+			mode);
 }
 
 void handle_xdg_decoration(struct wl_listener *listener, void *data) {
