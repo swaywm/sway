@@ -310,6 +310,15 @@ void view_destroy(struct sway_view *view);
 
 void view_begin_destroy(struct sway_view *view);
 
+/**
+ * Map a view, ie. make it visible in the tree.
+ *
+ * `fullscreen` should be set to true (and optionally `fullscreen_output`
+ * should be populated) if the view should be made fullscreen immediately.
+ *
+ * `decoration` should be set to true if the client prefers CSD. The client's
+ * preference may be ignored.
+ */
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
 
