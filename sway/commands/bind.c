@@ -560,8 +560,8 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
 				"Invalid %s command "
-				"(expected switch state: unknown state %d)",
-				bindtype, split->items[0]);
+				"(expected switch state: unknown state %s)",
+				bindtype, split->items[1]);
 	}
 	list_free_items_and_destroy(split);
 
