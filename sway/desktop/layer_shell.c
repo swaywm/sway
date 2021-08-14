@@ -162,9 +162,8 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM)) {
 			box.y -= state->margin.bottom;
 		}
-		if (box.width < 0 || box.height < 0) {
-			// TODO: Bubble up a protocol error?
-			wlr_layer_surface_v1_close(layer);
+		if (!sway_assert(box.width >= 0 && box.height >= 0,
+				"Expected layer surface to have positive size")) {
 			continue;
 		}
 		// Apply
@@ -287,7 +286,7 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	}
 
 	sway_layer->layer_surface->output = NULL;
-	wlr_layer_surface_v1_close(sway_layer->layer_surface);
+	wlr_layer_surface_v1_destroy(sway_layer->layer_surface);
 }
 
 static void handle_surface_commit(struct wl_listener *listener, void *data) {
@@ -623,7 +622,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 				sway_log(SWAY_ERROR,
 						"no output to auto-assign layer surface '%s' to",
 						layer_surface->namespace);
-				wlr_layer_surface_v1_close(layer_surface);
+				wlr_layer_surface_v1_destroy(layer_surface);
 				return;
 			}
 			output = root->outputs->items[0];
