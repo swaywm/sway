@@ -630,7 +630,7 @@ The default colors are:
 	should be used instead. Regardless of whether pango markup is enabled,
 	_font_ should be specified as a pango font description. For more
 	information on pango font descriptions, see
-	https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
+	https://docs.gtk.org/Pango/type_func.FontDescription.from_string.html#description
 
 *force_display_urgency_hint* <timeout> [ms]
 	If an application on another workspace sets an urgency hint, switching to this
