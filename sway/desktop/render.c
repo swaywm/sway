@@ -1084,7 +1084,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif
 	} else {
-		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 0.0f};
 
 		int nrects;
 		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
