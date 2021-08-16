@@ -215,7 +215,7 @@ set|plus|minus|toggle <amount>
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ptt]
+*move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ppt]
 	Moves the focused container to the specified position in the workspace.
 	The position can be specified in pixels or percentage points, omitting
 	the unit defaults to pixels. If	_absolute_ is used, the position is
