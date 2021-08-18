@@ -991,31 +991,11 @@ int workspace_output_cmp_workspace(const void *a, const void *b) {
 	return lenient_strcmp(wsa->workspace, wsb->workspace);
 }
 
-static void find_font_height_iterator(struct sway_container *con, void *data) {
-	size_t amount_below_baseline = con->title_height - con->title_baseline;
-	size_t extended_height = config->font_baseline + amount_below_baseline;
-	if (extended_height > config->font_height) {
-		config->font_height = extended_height;
-	}
-}
 
-static void find_baseline_iterator(struct sway_container *con, void *data) {
-	bool *recalculate = data;
-	if (*recalculate) {
-		container_calculate_title_height(con);
-	}
-	if (con->title_baseline > config->font_baseline) {
-		config->font_baseline = con->title_baseline;
-	}
-}
+void config_update_font_height(void) {
+	int prev_max_height = config->font_height;
 
-void config_update_font_height(bool recalculate) {
-	size_t prev_max_height = config->font_height;
-	config->font_height = 0;
-	config->font_baseline = 0;
-
-	root_for_each_container(find_baseline_iterator, &recalculate);
-	root_for_each_container(find_font_height_iterator, NULL);
+	get_text_metrics(config->font, &config->font_height, &config->font_baseline);
 
 	if (config->font_height != prev_max_height) {
 		arrange_root();

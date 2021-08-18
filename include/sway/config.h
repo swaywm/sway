@@ -486,8 +486,8 @@ struct sway_config {
 	enum sway_container_layout default_orientation;
 	enum sway_container_layout default_layout;
 	char *font;
-	size_t font_height;
-	size_t font_baseline;
+	int font_height;
+	int font_baseline;
 	bool pango_markup;
 	int titlebar_border_thickness;
 	int titlebar_h_padding;
@@ -696,14 +696,13 @@ void free_bar_binding(struct bar_binding *binding);
 void free_workspace_config(struct workspace_config *wsc);
 
 /**
- * Updates the value of config->font_height based on the max title height
- * reported by each container. If recalculate is true, the containers will
- * recalculate their heights before reporting.
- *
+ * Updates the value of config->font_height based on the metrics for title's
+ * font as reported by pango.
+ * 
  * If the height has changed, all containers will be rearranged to take on the
  * new size.
  */
-void config_update_font_height(bool recalculate);
+void config_update_font_height(void);
 
 /**
  * Convert bindsym into bindcode using the first configured layout.
