@@ -119,8 +119,6 @@ struct sway_container {
 	struct wlr_texture *title_focused_inactive;
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
-	size_t title_height;
-	size_t title_baseline;
 
 	list_t *marks; // char *
 	struct wlr_texture *marks_focused;
@@ -182,11 +180,6 @@ void container_reap_empty(struct sway_container *con);
 struct sway_container *container_flatten(struct sway_container *container);
 
 void container_update_title_textures(struct sway_container *container);
-
-/**
- * Calculate the container's title_height property.
- */
-void container_calculate_title_height(struct sway_container *container);
 
 size_t container_build_representation(enum sway_container_layout layout,
 		list_t *children, char *buffer);
