@@ -1618,6 +1618,26 @@ void seatop_pointer_axis(struct sway_seat *seat,
 	}
 }
 
+void seatop_touch_motion(struct sway_seat *seat, struct wlr_touch_motion_event *event,
+		double lx, double ly) {
+	if (seat->seatop_impl->touch_motion) {
+		seat->seatop_impl->touch_motion(seat, event, lx, ly);
+	}
+}
+
+void seatop_touch_up(struct sway_seat *seat, struct wlr_touch_up_event *event) {
+	if (seat->seatop_impl->touch_up) {
+		seat->seatop_impl->touch_up(seat, event);
+	}
+}
+
+void seatop_touch_down(struct sway_seat *seat, struct wlr_touch_down_event *event,
+		double lx, double ly) {
+	if (seat->seatop_impl->touch_down) {
+		seat->seatop_impl->touch_down(seat, event, lx, ly);
+	}
+}
+
 void seatop_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
 		enum wlr_tablet_tool_tip_state state) {

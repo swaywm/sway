@@ -261,7 +261,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 
 		// Handle tapping on a container surface
 		seat_set_focus_container(seat, cont);
-		seatop_begin_down(seat, node->sway_container, time_msec, sx, sy);
+		seatop_begin_down(seat, node->sway_container, sx, sy);
 	}
 #if HAVE_XWAYLAND
 	// Handle tapping on an xwayland unmanaged view
@@ -374,7 +374,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			transaction_commit_dirty();
 		}
 		if (state == WLR_BUTTON_PRESSED) {
-			seatop_begin_down_on_surface(seat, surface, time_msec, sx, sy);
+			seatop_begin_down_on_surface(seat, surface, sx, sy);
 		}
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
@@ -499,7 +499,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle mousedown on a container surface
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
-		seatop_begin_down(seat, cont, time_msec, sx, sy);
+		seatop_begin_down(seat, cont, sx, sy);
 		seat_pointer_notify_button(seat, time_msec, button, WLR_BUTTON_PRESSED);
 		return;
 	}
@@ -647,6 +647,36 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	}
 
 	e->previous_node = node;
+}
+
+static void handle_touch_down(struct sway_seat *seat,
+		struct wlr_touch_down_event *event, double lx, double ly) {
+	struct wlr_surface *surface = NULL;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
+	struct sway_cursor *cursor = seat->cursor;
+	double sx, sy;
+	node_at_coords(seat, seat->touch_x, seat->touch_y, &surface, &sx, &sy);
+
+	if (surface && wlr_surface_accepts_touch(wlr_seat, surface)) {
+		if (seat_is_input_allowed(seat, surface)) {
+			cursor->simulating_pointer_from_touch = false;
+			seatop_begin_touch_down(seat, surface, event, sx, sy, lx, ly);
+		}
+	} else if (!cursor->simulating_pointer_from_touch &&
+			(!surface || seat_is_input_allowed(seat, surface))) {
+		// Fallback to cursor simulation.
+		// The pointer_touch_id state is needed, so drags are not aborted when over
+		// a surface supporting touch and multi touch events don't interfere.
+		cursor->simulating_pointer_from_touch = true;
+		cursor->pointer_touch_id = seat->touch_id;
+		double dx, dy;
+		dx = seat->touch_x - cursor->cursor->x;
+		dy = seat->touch_y - cursor->cursor->y;
+		pointer_motion(cursor, event->time_msec, &event->touch->base, dx, dy,
+				dx, dy);
+		dispatch_cursor_button(cursor, &event->touch->base, event->time_msec,
+				BTN_LEFT, WLR_BUTTON_PRESSED);
+	}
 }
 
 /*----------------------------------------\
@@ -1096,6 +1126,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.swipe_begin = handle_swipe_begin,
 	.swipe_update = handle_swipe_update,
 	.swipe_end = handle_swipe_end,
+	.touch_down = handle_touch_down,
 	.rebase = handle_rebase,
 	.allow_set_cursor = true,
 };
