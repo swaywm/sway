@@ -364,7 +364,7 @@ void cursor_unhide(struct sway_cursor *cursor) {
 	wl_event_source_timer_update(cursor->hide_source, cursor_get_timeout(cursor));
 }
 
-static void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
+void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		struct wlr_input_device *device, double dx, double dy,
 		double dx_unaccel, double dy_unaccel) {
 	wlr_relative_pointer_manager_v1_send_relative_motion(
@@ -479,43 +479,16 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	cursor_hide(cursor);
 
 	struct sway_seat *seat = cursor->seat;
-	struct wlr_seat *wlr_seat = seat->wlr_seat;
-	struct wlr_surface *surface = NULL;
 
 	double lx, ly;
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, &event->touch->base,
 			event->x, event->y, &lx, &ly);
-	double sx, sy;
-	struct sway_node *focused_node = node_at_coords(seat, lx, ly, &surface, &sx, &sy);
 
 	seat->touch_id = event->touch_id;
 	seat->touch_x = lx;
 	seat->touch_y = ly;
 
-	if (surface && wlr_surface_accepts_touch(wlr_seat, surface)) {
-		if (seat_is_input_allowed(seat, surface)) {
-			wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
-					event->touch_id, sx, sy);
-
-			if (focused_node) {
-			    seat_set_focus(seat, focused_node);
-			}
-		}
-	} else if (!cursor->simulating_pointer_from_touch &&
-			(!surface || seat_is_input_allowed(seat, surface))) {
-		// Fallback to cursor simulation.
-		// The pointer_touch_id state is needed, so drags are not aborted when over
-		// a surface supporting touch and multi touch events don't interfere.
-		cursor->simulating_pointer_from_touch = true;
-		cursor->pointer_touch_id = seat->touch_id;
-		double dx, dy;
-		dx = lx - cursor->cursor->x;
-		dy = ly - cursor->cursor->y;
-		pointer_motion(cursor, event->time_msec, &event->touch->base, dx, dy,
-			dx, dy);
-		dispatch_cursor_button(cursor, &event->touch->base, event->time_msec,
-				BTN_LEFT, WLR_BUTTON_PRESSED);
-	}
+	seatop_touch_down(seat, event, lx, ly);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
@@ -523,7 +496,7 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct wlr_touch_up_event *event = data;
 	cursor_handle_activity_from_device(cursor, &event->touch->base);
 
-	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
+	struct sway_seat *seat = cursor->seat;
 
 	if (cursor->simulating_pointer_from_touch) {
 		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
@@ -532,7 +505,7 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 				event->time_msec, BTN_LEFT, WLR_BUTTON_RELEASED);
 		}
 	} else {
-		wlr_seat_touch_notify_up(wlr_seat, event->time_msec, event->touch_id);
+		seatop_touch_up(seat, event);
 	}
 }
 
@@ -543,19 +516,14 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	cursor_handle_activity_from_device(cursor, &event->touch->base);
 
 	struct sway_seat *seat = cursor->seat;
-	struct wlr_seat *wlr_seat = seat->wlr_seat;
-	struct wlr_surface *surface = NULL;
 
 	double lx, ly;
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, &event->touch->base,
 			event->x, event->y, &lx, &ly);
-	double sx, sy;
-	node_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
 
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;
 		seat->touch_y = ly;
-
 		struct sway_drag_icon *drag_icon;
 		wl_list_for_each(drag_icon, &root->drag_icons, link) {
 			if (drag_icon->seat == seat) {
@@ -572,9 +540,8 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 			pointer_motion(cursor, event->time_msec, &event->touch->base,
 				dx, dy, dx, dy);
 		}
-	} else if (surface) {
-		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
-			event->touch_id, sx, sy);
+	} else {
+		seatop_touch_motion(seat, event, lx, ly);
 	}
 }
 

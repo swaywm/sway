@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_keyboard_shortcuts_inhibit_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/types/wlr_touch.h>
 #include <wlr/util/edges.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
@@ -36,6 +37,12 @@ struct sway_seatop_impl {
 	void (*swipe_end)(struct sway_seat *seat,
 			struct wlr_pointer_swipe_end_event *event);
 	void (*rebase)(struct sway_seat *seat, uint32_t time_msec);
+	void (*touch_motion)(struct sway_seat *seat,
+			struct wlr_touch_motion_event *event, double lx, double ly);
+	void (*touch_up)(struct sway_seat *seat,
+			struct wlr_touch_up_event *event);
+	void (*touch_down)(struct sway_seat *seat,
+			struct wlr_touch_down_event *event, double lx, double ly);
 	void (*tablet_tool_motion)(struct sway_seat *seat,
 			struct sway_tablet_tool *tool, uint32_t time_msec);
 	void (*tablet_tool_tip)(struct sway_seat *seat, struct sway_tablet_tool *tool,
@@ -256,10 +263,13 @@ enum wlr_edges find_resize_edge(struct sway_container *cont,
 void seatop_begin_default(struct sway_seat *seat);
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
-		uint32_t time_msec, double sx, double sy);
+		double sx, double sy);
 
 void seatop_begin_down_on_surface(struct sway_seat *seat,
-		struct wlr_surface *surface, uint32_t time_msec, double sx, double sy);
+		struct wlr_surface *surface, double sx, double sy);
+
+void seatop_begin_touch_down(struct sway_seat *seat, struct wlr_surface *surface,
+		struct wlr_touch_down_event *event, double sx, double sy, double lx, double ly);
 
 void seatop_begin_move_floating(struct sway_seat *seat,
 		struct sway_container *con);
@@ -318,6 +328,15 @@ void seatop_swipe_update(struct sway_seat *seat,
 		struct wlr_pointer_swipe_update_event *event);
 void seatop_swipe_end(struct sway_seat *seat,
 		struct wlr_pointer_swipe_end_event *event);
+
+void seatop_touch_motion(struct sway_seat *seat,
+		struct wlr_touch_motion_event *event, double lx, double ly);
+
+void seatop_touch_up(struct sway_seat *seat,
+		struct wlr_touch_up_event *event);
+
+void seatop_touch_down(struct sway_seat *seat,
+		struct wlr_touch_down_event *event, double lx, double ly);
 
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec);
 
