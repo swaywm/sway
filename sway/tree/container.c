@@ -493,20 +493,9 @@ struct sway_output *container_get_effective_output(struct sway_container *con) {
 	return con->outputs->items[con->outputs->length - 1];
 }
 
-static void update_title_texture(struct sway_container *con,
-		struct wlr_texture **texture, struct border_colors *class) {
-	struct sway_output *output = container_get_effective_output(con);
-	if (!output) {
-		return;
-	}
-	if (*texture) {
-		wlr_texture_destroy(*texture);
-		*texture = NULL;
-	}
-	if (!con->formatted_title) {
-		return;
-	}
-
+static void render_titlebar_text_texture(struct sway_output *output,
+		struct sway_container *con, struct wlr_texture **texture,
+		struct border_colors *class, bool pango_markup, char *text) {
 	double scale = output->wlr_output->scale;
 	int width = 0;
 	int height = config->font_height * scale;
@@ -555,8 +544,7 @@ static void update_title_texture(struct sway_container *con,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, config->font_baseline * scale - baseline);
 
-	pango_printf(cairo, config->font, scale, config->pango_markup,
-			"%s", con->formatted_title);
+	pango_printf(cairo, config->font, scale, pango_markup, "%s", text);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
@@ -568,6 +556,24 @@ static void update_title_texture(struct sway_container *con,
 	cairo_surface_destroy(surface);
 	g_object_unref(pango);
 	cairo_destroy(cairo);
+}
+
+static void update_title_texture(struct sway_container *con,
+		struct wlr_texture **texture, struct border_colors *class) {
+	struct sway_output *output = container_get_effective_output(con);
+	if (!output) {
+		return;
+	}
+	if (*texture) {
+		wlr_texture_destroy(*texture);
+		*texture = NULL;
+	}
+	if (!con->formatted_title) {
+		return;
+	}
+
+	render_titlebar_text_texture(output, con, texture, class,
+		config->pango_markup, con->formatted_title);
 }
 
 void container_update_title_textures(struct sway_container *container) {
@@ -1615,48 +1621,8 @@ static void update_marks_texture(struct sway_container *con,
 	}
 	free(part);
 
-	double scale = output->wlr_output->scale;
-	int width = 0;
-	int height = config->font_height * scale;
-	int baseline;
+	render_titlebar_text_texture(output, con, texture, class, false, buffer);
 
-	cairo_t *c = cairo_create(NULL);
-	get_text_size(c, config->font, &width, NULL, &baseline, scale, false,
-			"%s", buffer);
-	cairo_destroy(c);
-
-	if (width == 0 || height == 0) {
-		return;
-	}
-
-	if (height > config->font_height) {
-		height = config->font_height;
-	}
-
-	cairo_surface_t *surface = cairo_image_surface_create(
-			CAIRO_FORMAT_ARGB32, width, height);
-	cairo_t *cairo = cairo_create(surface);
-	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
-			class->background[2], class->background[3]);
-	cairo_paint(cairo);
-	PangoContext *pango = pango_cairo_create_context(cairo);
-	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
-	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
-			class->text[2], class->text[3]);
-	cairo_move_to(cairo, 0, config->font_baseline * scale - baseline);
-
-	pango_printf(cairo, config->font, scale, false, "%s", buffer);
-
-	cairo_surface_flush(surface);
-	unsigned char *data = cairo_image_surface_get_data(surface);
-	int stride = cairo_image_surface_get_stride(surface);
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(
-			output->wlr_output->backend);
-	*texture = wlr_texture_from_pixels(
-			renderer, DRM_FORMAT_ARGB8888, stride, width, height, data);
-	cairo_surface_destroy(surface);
-	g_object_unref(pango);
-	cairo_destroy(cairo);
 	free(buffer);
 }
 
