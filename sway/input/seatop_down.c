@@ -10,8 +10,10 @@
 
 struct seatop_down_event {
 	struct sway_container *con;
+	struct sway_seat *seat;
+	struct wl_listener surface_destroy;
 	struct wlr_surface *surface;
-	double ref_lx, ref_ly;		 // cursor's x/y at start of op
+	double ref_lx, ref_ly;         // cursor's x/y at start of op
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 };
 
@@ -71,11 +73,24 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 	}
 }
 
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct seatop_down_event *e =
+		wl_container_of(listener, e, surface_destroy);
+	if (e) {
+		seatop_begin_default(e->seat);
+	}
+}
+
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 	struct seatop_down_event *e = seat->seatop_data;
 	if (e->con == con) {
 		seatop_begin_default(seat);
 	}
+}
+
+static void handle_end(struct sway_seat *seat) {
+	struct seatop_down_event *e = seat->seatop_data;
+	wl_list_remove(&e->surface_destroy.link);
 }
 
 static const struct sway_seatop_impl seatop_impl = {
@@ -85,33 +100,21 @@ static const struct sway_seatop_impl seatop_impl = {
 	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
 	.unref = handle_unref,
+	.end = handle_end,
 	.allow_set_cursor = true,
 };
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 		uint32_t time_msec, double sx, double sy) {
-	seatop_end(seat);
-
-	struct seatop_down_event *e =
-		calloc(1, sizeof(struct seatop_down_event));
-	if (!e) {
-		return;
-	}
+	seatop_begin_down_on_surface(seat, con->view->surface, time_msec, sx, sy);
+	struct seatop_down_event *e = seat->seatop_data;
 	e->con = con;
-	e->surface = con->view->surface;
-	e->ref_lx = seat->cursor->cursor->x;
-	e->ref_ly = seat->cursor->cursor->y;
-	e->ref_con_lx = sx;
-	e->ref_con_ly = sy;
-
-	seat->seatop_impl = &seatop_impl;
-	seat->seatop_data = e;
 
 	container_raise_floating(con);
 	transaction_commit_dirty();
 }
 
-void seatop_begin_down_on_layer_surface(struct sway_seat *seat,
+void seatop_begin_down_on_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, uint32_t time_msec, double sx, double sy) {
 	seatop_end(seat);
 
@@ -121,7 +124,10 @@ void seatop_begin_down_on_layer_surface(struct sway_seat *seat,
 		return;
 	}
 	e->con = NULL;
+	e->seat = seat;
 	e->surface = surface;
+	wl_signal_add(&e->surface->events.destroy, &e->surface_destroy);
+	e->surface_destroy.notify = handle_destroy;
 	e->ref_lx = seat->cursor->cursor->x;
 	e->ref_ly = seat->cursor->cursor->y;
 	e->ref_con_lx = sx;
