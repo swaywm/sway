@@ -241,7 +241,7 @@ void seatop_begin_default(struct sway_seat *seat);
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 		uint32_t time_msec, double sx, double sy);
 
-void seatop_begin_down_on_layer_surface(struct sway_seat *seat,
+void seatop_begin_down_on_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, uint32_t time_msec, double sx, double sy);
 
 void seatop_begin_move_floating(struct sway_seat *seat,
