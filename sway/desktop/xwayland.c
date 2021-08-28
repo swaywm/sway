@@ -254,6 +254,7 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 
 	wlr_xwayland_surface_activate(surface, activated);
+	wlr_xwayland_surface_restack(surface, NULL, XCB_STACK_MODE_ABOVE);
 }
 
 static void set_tiled(struct sway_view *view, bool tiled) {
