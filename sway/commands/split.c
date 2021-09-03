@@ -36,8 +36,8 @@ static struct cmd_results *do_unsplit() {
 	struct sway_container *con = config->handler_context.container;
 	struct sway_workspace *ws = config->handler_context.workspace;
 
-	if (con && con->parent && con->parent->children->length == 1) {
-		container_flatten(con->parent);
+	if (con && con->pending.parent && con->pending.parent->pending.children->length == 1) {
+		container_flatten(con->pending.parent);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "Can only flatten a child container with no siblings");
 	}
