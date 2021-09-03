@@ -247,6 +247,12 @@ enum scale_filter_mode {
 	SCALE_FILTER_SMART,
 };
 
+enum render_bit_depth {
+	RENDER_BIT_DEPTH_DEFAULT, // the default is currently 8
+	RENDER_BIT_DEPTH_8,
+	RENDER_BIT_DEPTH_10,
+};
+
 /**
  * Size and position configuration for a particular output.
  *
@@ -266,6 +272,7 @@ struct output_config {
 	enum wl_output_subpixel subpixel;
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
+	enum render_bit_depth render_bit_depth;
 
 	char *background;
 	char *background_option;

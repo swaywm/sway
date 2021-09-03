@@ -18,6 +18,7 @@ static const struct cmd_handler output_handlers[] = {
 	{ "modeline", output_cmd_modeline },
 	{ "pos", output_cmd_position },
 	{ "position", output_cmd_position },
+	{ "render_bit_depth", output_cmd_render_bit_depth },
 	{ "res", output_cmd_mode },
 	{ "resolution", output_cmd_mode },
 	{ "scale", output_cmd_scale },
