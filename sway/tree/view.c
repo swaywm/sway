@@ -1063,6 +1063,11 @@ static void view_child_handle_surface_map(struct wl_listener *listener,
 		wl_container_of(listener, child, surface_map);
 	child->mapped = true;
 	view_child_damage(child, true);
+
+	struct sway_workspace *workspace = child->view->container->pending.workspace;
+	if (workspace) {
+			wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+	}
 }
 
 static void view_child_handle_surface_unmap(struct wl_listener *listener,
@@ -1106,11 +1111,6 @@ void view_child_init(struct sway_view_child *child,
 
 	wl_signal_add(&view->events.unmap, &child->view_unmap);
 	child->view_unmap.notify = view_child_handle_view_unmap;
-
-	struct sway_workspace *workspace = child->view->container->pending.workspace;
-	if (workspace) {
-		wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
-	}
 
 	view_child_init_subsurfaces(child, surface);
 }
