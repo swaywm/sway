@@ -518,7 +518,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 	}
 	cairo_set_font_options(c, fo);
 	get_text_size(c, config->font, &width, NULL, &baseline, scale,
-			config->pango_markup, "%s", con->formatted_title);
+			config->pango_markup, "%s", text);
 	cairo_surface_destroy(dummy_surface);
 	cairo_destroy(c);
 
