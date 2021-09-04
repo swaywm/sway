@@ -166,14 +166,13 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	if (check_bindings(seat->bar, button, state)) {
-		return;
+	if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
+		if (process_hotspots(output, pointer->x, pointer->y, button)) {
+			return;
+		}
 	}
 
-	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
-		return;
-	}
-	process_hotspots(output, pointer->x, pointer->y, button);
+	check_bindings(seat->bar, button, state);
 }
 
 static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
@@ -222,15 +221,14 @@ static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
 static void process_discrete_scroll(struct swaybar_seat *seat,
 		struct swaybar_output *output, struct swaybar_pointer *pointer,
 		uint32_t axis, wl_fixed_t value) {
-	// If there is a button press binding, execute it, skip default behavior,
-	// and check button release bindings
 	uint32_t button = wl_axis_to_button(axis, value);
-	if (check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
-		check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
+	if (process_hotspots(output, pointer->x, pointer->y, button)) {
 		return;
 	}
 
-	if (process_hotspots(output, pointer->x, pointer->y, button)) {
+	// If there is a button press binding, execute it, and check button release bindings
+	if (check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
+		check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 		return;
 	}
 
