@@ -27,6 +27,7 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "wp-screenlocker-unstable-v1-protocol.h"
 
 struct render_data {
 	pixman_region32_t *damage;
@@ -140,6 +141,20 @@ static void render_surface_iterator(struct sway_output *output,
 
 	struct wlr_texture *texture = wlr_surface_get_texture(surface);
 	if (!texture) {
+		return;
+	}
+
+	struct wlr_screenlock_lock_surface *lock_surf;
+	uint32_t lock_mode = ZWP_SCREENLOCKER_VISIBILITY_V1_VISIBILITY_DEFAULT;
+	wl_list_for_each(lock_surf, &server.screenlock->lock_surfaces, link) {
+		if (surface == lock_surf->surface) {
+			lock_mode = lock_surf->current_mode;
+			break;
+		}
+	}
+	if (lock_mode == ZWP_SCREENLOCKER_VISIBILITY_V1_VISIBILITY_DEFAULT && server.screenlock->locked) {
+		return;
+	} else if (lock_mode == ZWP_SCREENLOCKER_VISIBILITY_V1_VISIBILITY_LOCK_ONLY && !server.screenlock->locked) {
 		return;
 	}
 
@@ -1048,6 +1063,39 @@ void output_render(struct sway_output *output, struct timespec *when,
 		wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
 	}
 
+	if (server.screenlock->locked) {
+		// repaint the background, to hide old data
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		if (!server.screenlock->lock_resource) {
+			// abandoned lock -> red BG
+			clear_color[0] = 1.f;
+		}
+		int nrects;
+		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			scissor_output(wlr_output, &rects[i]);
+			wlr_renderer_clear(renderer, clear_color);
+		}
+
+		if (!server.screenlock->lock_resource) {
+			// abandoned lock, show error message
+			wlr_renderer_scissor(renderer, NULL);
+
+			float matrix[9];
+			wlr_matrix_identity(matrix);
+			float x_expand = output->width / (float)server.permalock_message->width;
+			float y_expand = output->height / (float)server.permalock_message->height;
+			float expand = fmin(1.0, x_expand > y_expand ? y_expand : x_expand);
+
+			wlr_matrix_scale(matrix, expand, expand);
+			int x = output->width / 2 / expand - server.permalock_message->width / 2;
+			int y = output->height / 2 / expand - server.permalock_message->height / 2;
+
+			wlr_render_texture(renderer, server.permalock_message, matrix, x, y, 1.0);
+
+			goto render_overlay;
+		}
+	}
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto render_overlay;
 	}
@@ -1099,11 +1147,13 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_layer_toplevel(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-		render_workspace(output, damage, workspace, workspace->current.focused);
-		render_floating(output, damage);
+		if (!server.screenlock->locked) {
+			render_workspace(output, damage, workspace, workspace->current.focused);
+			render_floating(output, damage);
 #if HAVE_XWAYLAND
-		render_unmanaged(output, damage, &root->xwayland_unmanaged);
+			render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif
+		}
 		render_layer_toplevel(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 

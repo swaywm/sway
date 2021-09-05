@@ -162,6 +162,11 @@ bool server_init(struct sway_server *server) {
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
 
+	server->screenlock = wlr_screenlock_manager_v1_create(server->wl_display);
+	server->screenlock_set_mode.notify = handle_lock_set_mode;
+	wl_signal_add(&server->screenlock->events.change_request,
+		&server->screenlock_set_mode);
+
 	server->drm_lease_manager=
 		wlr_drm_lease_v1_manager_create(server->wl_display, server->backend);
 	if (server->drm_lease_manager) {

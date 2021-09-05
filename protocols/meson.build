@@ -19,6 +19,7 @@ protocols = [
 	['idle.xml'],
 	['wlr-input-inhibitor-unstable-v1.xml'],
 	['wlr-output-power-management-unstable-v1.xml'],
+	['wp-screenlocker-unstable-v1.xml'],
 ]
 
 client_protocols = [

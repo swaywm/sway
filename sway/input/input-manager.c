@@ -290,6 +290,11 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 			listener, input_manager, inhibit_deactivate);
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input_manager->seats, link) {
+		if (seat->exclusive_client != input_manager->inhibit->active_client)  {
+			// the permalock screen can also set exclusive clients,
+			// so don't undo its work.
+			continue;
+		}
 		seat_set_exclusive_client(seat, NULL);
 		struct sway_node *previous = seat_get_focus(seat);
 		if (previous) {
