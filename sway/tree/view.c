@@ -901,30 +901,19 @@ void view_center_surface(struct sway_view *view) {
 
 static const struct sway_view_child_impl subsurface_impl;
 
-static void subsurface_get_root_coords(struct sway_view_child *child,
-		int *root_sx, int *root_sy) {
+static void subsurface_get_view_coords(struct sway_view_child *child,
+		int *sx, int *sy) {
 	struct wlr_surface *surface = child->surface;
-	*root_sx = -child->view->geometry.x;
-	*root_sy = -child->view->geometry.y;
-
 	if (child->parent && child->parent->impl &&
-			child->parent->impl->get_root_coords) {
-		int sx, sy;
-		child->parent->impl->get_root_coords(child->parent, &sx, &sy);
-		*root_sx += sx;
-		*root_sy += sy;
+			child->parent->impl->get_view_coords) {
+		child->parent->impl->get_view_coords(child->parent, sx, sy);
 	} else {
-		while (surface && wlr_surface_is_subsurface(surface)) {
-			struct wlr_subsurface *subsurface =
-				wlr_subsurface_from_wlr_surface(surface);
-			if (subsurface == NULL) {
-				break;
-			}
-			*root_sx += subsurface->current.x;
-			*root_sy += subsurface->current.y;
-			surface = subsurface->parent;
-		}
+		*sx = *sy = 0;
 	}
+	struct wlr_subsurface *subsurface =
+		wlr_subsurface_from_wlr_surface(surface);
+	*sx += subsurface->current.x;
+	*sy += subsurface->current.y;
 }
 
 static void subsurface_destroy(struct sway_view_child *child) {
@@ -938,7 +927,7 @@ static void subsurface_destroy(struct sway_view_child *child) {
 }
 
 static const struct sway_view_child_impl subsurface_impl = {
-	.get_root_coords = subsurface_get_root_coords,
+	.get_view_coords = subsurface_get_view_coords,
 	.destroy = subsurface_destroy,
 };
 
@@ -1007,10 +996,12 @@ static void view_child_damage(struct sway_view_child *child, bool whole) {
 		return;
 	}
 	int sx, sy;
-	child->impl->get_root_coords(child, &sx, &sy);
+	child->impl->get_view_coords(child, &sx, &sy);
 	desktop_damage_surface(child->surface,
-			child->view->container->pending.content_x + sx,
-			child->view->container->pending.content_y + sy, whole);
+			child->view->container->pending.content_x -
+				child->view->geometry.x + sx,
+			child->view->container->pending.content_y -
+				child->view->geometry.y + sy, whole);
 }
 
 static void view_child_handle_surface_commit(struct wl_listener *listener,
