@@ -1,4 +1,4 @@
-wl_protocol_dir = wayland_protos.get_variable(pkgconfig: 'pkgdatadir')
+wl_protocol_dir = wayland_protos.get_variable('pkgdatadir')
 
 wayland_scanner_dep = dependency('wayland-scanner', required: false, native: true)
 if wayland_scanner_dep.found()
