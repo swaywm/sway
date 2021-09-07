@@ -1033,6 +1033,12 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
 
+	if (debug.damage == DAMAGE_RERENDER) {
+		int width, height;
+		wlr_output_transformed_resolution(wlr_output, &width, &height);
+		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
+	}
+
 	if (!pixman_region32_not_empty(damage)) {
 		// Output isn't damaged but needs buffer swap
 		goto renderer_end;
@@ -1040,10 +1046,6 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 	if (debug.damage == DAMAGE_HIGHLIGHT) {
 		wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
-	} else if (debug.damage == DAMAGE_RERENDER) {
-		int width, height;
-		wlr_output_transformed_resolution(wlr_output, &width, &height);
-		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 	}
 
 	if (output_has_opaque_overlay_layer_surface(output)) {
@@ -1144,7 +1146,7 @@ renderer_end:
 	wlr_region_transform(&frame_damage, &output->damage->current,
 		transform, width, height);
 
-	if (debug.damage == DAMAGE_HIGHLIGHT) {
+	if (debug.damage != DAMAGE_DEFAULT) {
 		pixman_region32_union_rect(&frame_damage, &frame_damage,
 			0, 0, wlr_output->width, wlr_output->height);
 	}
