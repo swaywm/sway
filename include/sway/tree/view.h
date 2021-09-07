@@ -183,7 +183,7 @@ struct sway_xwayland_unmanaged {
 struct sway_view_child;
 
 struct sway_view_child_impl {
-	void (*get_root_coords)(struct sway_view_child *child, int *sx, int *sy);
+	void (*get_view_coords)(struct sway_view_child *child, int *sx, int *sy);
 	void (*destroy)(struct sway_view_child *child);
 };
 
