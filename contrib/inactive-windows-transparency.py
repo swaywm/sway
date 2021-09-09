@@ -31,7 +31,7 @@ def on_window_focus(inactive_opacity, ipc, event):
         prev_workspace = workspace
 
 
-def remove_opacity(ipc):
+def remove_transparency(ipc):
     for workspace in ipc.get_tree().workspaces():
         for w in workspace:
             w.command("opacity 1")
@@ -64,6 +64,6 @@ if __name__ == "__main__":
         else:
             window.command("opacity " + args.opacity)
     for sig in [signal.SIGINT, signal.SIGTERM]:
-        signal.signal(sig, lambda signal, frame: remove_opacity(ipc))
+        signal.signal(sig, lambda signal, frame: remove_transparency(ipc))
     ipc.on("window::focus", partial(on_window_focus, args.opacity))
     ipc.main()
