@@ -11,7 +11,7 @@ import signal
 import sys
 from functools import partial
 
-def on_window_focus(inactive_opacity, ipc, event):
+def on_window_focus(inactive_opacity, allinactive, ipc, event):
     global prev_focused
     global prev_workspace
 
@@ -25,7 +25,9 @@ def on_window_focus(inactive_opacity, ipc, event):
 
     if focused.id != prev_focused.id:  # https://github.com/swaywm/sway/issues/2859
         focused.command("opacity 1")
-        if workspace == prev_workspace:
+        if allinactive:
+            prev_focused.command("opacity " + inactive_opacity)
+        elif workspace == prev_workspace:
             prev_focused.command("opacity " + inactive_opacity)
         prev_focused = focused
         prev_workspace = workspace
@@ -52,6 +54,13 @@ if __name__ == "__main__":
         default=transparency_val,
         help="set opacity value in range 0...1",
     )
+    parser.add_argument(
+        "--allinactive",
+        "-a",
+        dest="allinactive",
+        action="store_true",
+        help="Whether windows in the inactive workspace should also be made transparent.",
+    )
     args = parser.parse_args()
 
     ipc = i3ipc.Connection()
@@ -65,5 +74,5 @@ if __name__ == "__main__":
             window.command("opacity " + args.opacity)
     for sig in [signal.SIGINT, signal.SIGTERM]:
         signal.signal(sig, lambda signal, frame: remove_transparency(ipc))
-    ipc.on("window::focus", partial(on_window_focus, args.opacity))
+    ipc.on("window::focus", partial(on_window_focus, args.opacity, args.allinactive))
     ipc.main()
