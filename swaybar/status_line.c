@@ -168,6 +168,8 @@ struct status_line *status_line_init(char *cmd) {
 
 		char *const _cmd[] = { "sh", "-c", cmd, NULL, };
 		execvp(_cmd[0], _cmd);
+
+		sway_log(SWAY_ERROR, "Failed to start status command");
 		exit(1);
 	}
 
