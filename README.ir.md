@@ -3,8 +3,8 @@
 # sway
 
 sway یک کامپوزیتور الهام گرفته از [i3](https://i3wm.org/) بر روی [Wayland](http://wayland.freedesktop.org/) است. [سوال‌های متداول](https://github.com/swaywm/sway/wiki) را بخوانید. در [کانال
-IRC](http://webchat.freenode.net/?channels=sway&uio=d4) عضو شوید (#sway sur
-irc.freenode.net).
+IRC](http://web.libera.chat/?channels=sway&uio=d4) عضو شوید (#sway sur
+irc.libera.chat).
 
 برای حمایت از تیم توسعه sway به [صفحه
 Patreon با نام کاربری SirCmpwn](https://patreon.com/sircmpwn) مراجعه کنید.
