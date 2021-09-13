@@ -200,8 +200,8 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	double x = seat->pointer.x * swaynag->scale;
-	double y = seat->pointer.y * swaynag->scale;
+	double x = seat->pointer.x;
+	double y = seat->pointer.y;
 	for (int i = 0; i < swaynag->buttons->length; i++) {
 		struct swaynag_button *nagbutton = swaynag->buttons->items[i];
 		if (x >= nagbutton->x
