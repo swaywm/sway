@@ -22,7 +22,7 @@ static uint32_t render_message(cairo_t *cairo, struct swaynag *swaynag) {
 
 	cairo_set_source_u32(cairo, swaynag->type->text);
 	cairo_move_to(cairo, padding, (int)(ideal_height - text_height) / 2);
-	pango_printf(cairo, swaynag->type->font, 1, false,
+	render_text(cairo, swaynag->type->font, 1, false,
 			"%s", swaynag->message);
 
 	return ideal_surface_height;
@@ -50,7 +50,7 @@ static void render_details_scroll_button(cairo_t *cairo,
 	cairo_set_source_u32(cairo, swaynag->type->button_text);
 	cairo_move_to(cairo, button->x + border + padding,
 			button->y + border + (button->height - text_height) / 2);
-	pango_printf(cairo, swaynag->type->font, 1, true,
+	render_text(cairo, swaynag->type->font, 1, true,
 			"%s", button->text);
 }
 
@@ -201,7 +201,7 @@ static uint32_t render_button(cairo_t *cairo, struct swaynag *swaynag,
 
 	cairo_set_source_u32(cairo, swaynag->type->button_text);
 	cairo_move_to(cairo, button->x + padding, button->y + padding);
-	pango_printf(cairo, swaynag->type->font, 1, true,
+	render_text(cairo, swaynag->type->font, 1, true,
 			"%s", button->text);
 
 	*x = button->x - border;

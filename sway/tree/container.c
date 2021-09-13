@@ -544,7 +544,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, config->font_baseline * scale - baseline);
 
-	pango_printf(cairo, config->font, scale, pango_markup, "%s", text);
+	render_text(cairo, config->font, scale, pango_markup, "%s", text);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);

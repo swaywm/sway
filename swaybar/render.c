@@ -77,7 +77,7 @@ static uint32_t render_status_line_error(struct render_context *ctx, double *x) 
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_move_to(cairo, *x, (int)floor(text_y));
 	choose_text_aa_mode(ctx, 0xFF0000FF);
-	pango_printf(cairo, font, 1, false, "%s", error);
+	render_text(cairo, font, 1, false, "%s", error);
 	*x -= margin;
 	return output->height;
 }
@@ -114,7 +114,7 @@ static uint32_t render_status_line_text(struct render_context *ctx, double *x) {
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_move_to(cairo, *x, (int)floor(text_y));
 	choose_text_aa_mode(ctx, fontcolor);
-	pango_printf(cairo, config->font, 1, config->pango_markup, "%s", text);
+	render_text(cairo, config->font, 1, config->pango_markup, "%s", text);
 	*x -= margin;
 	return output->height;
 }
@@ -304,7 +304,7 @@ static uint32_t render_status_block(struct render_context *ctx,
 	color = block->urgent ? config->colors.urgent_workspace.text : color;
 	cairo_set_source_u32(cairo, color);
 	choose_text_aa_mode(ctx, color);
-	pango_printf(cairo, config->font, 1, block->markup, "%s", text);
+	render_text(cairo, config->font, 1, block->markup, "%s", text);
 	x_pos += width;
 
 	if (block->border && block->border_right > 0) {
@@ -326,7 +326,7 @@ static uint32_t render_status_block(struct render_context *ctx,
 			double sep_y = height / 2.0 - sep_height / 2.0;
 			cairo_move_to(cairo, offset, (int)floor(sep_y));
 			choose_text_aa_mode(ctx, color);
-			pango_printf(cairo, config->font, 1, false,
+			render_text(cairo, config->font, 1, false,
 					"%s", config->sep_symbol);
 		} else {
 			cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
@@ -587,7 +587,7 @@ static uint32_t render_binding_mode_indicator(struct render_context *ctx,
 	cairo_set_source_u32(cairo, config->colors.binding_mode.text);
 	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
 	choose_text_aa_mode(ctx, config->colors.binding_mode.text);
-	pango_printf(cairo, config->font, 1, output->bar->mode_pango_markup,
+	render_text(cairo, config->font, 1, output->bar->mode_pango_markup,
 			"%s", mode);
 	return output->height;
 }
@@ -661,7 +661,7 @@ static uint32_t render_workspace_button(struct render_context *ctx,
 	cairo_set_source_u32(cairo, box_colors.text);
 	cairo_move_to(cairo, *x + width / 2 - text_width / 2, (int)floor(text_y));
 	choose_text_aa_mode(ctx, box_colors.text);
-	pango_printf(cairo, config->font, 1, config->pango_markup,
+	render_text(cairo, config->font, 1, config->pango_markup,
 			"%s", ws->label);
 
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));

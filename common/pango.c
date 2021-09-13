@@ -127,7 +127,7 @@ void get_text_metrics(const char *font, int *height, int *baseline) {
 	cairo_destroy(cairo);
 }
 
-void pango_printf(cairo_t *cairo, const char *font,
+void render_text(cairo_t *cairo, const char *font,
 		double scale, bool markup, const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
