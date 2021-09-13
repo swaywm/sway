@@ -46,7 +46,7 @@ Run these commands:
     ninja -C build/
     sudo ninja -C build/ install
 
-On systems without logind, you need to suid the sway binary:
+On systems without logind nor seatd, you need to suid the sway binary:
 
     sudo chmod a+s /usr/local/bin/sway
 
