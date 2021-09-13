@@ -150,7 +150,12 @@ static void log_kernel(void) {
 
 
 static bool drop_permissions(void) {
+	if (getuid() == 0 || getgid() == 0) {
+		sway_log(SWAY_INFO, "Running as root user, this is dangerous");
+		return true;
+	}
 	if (getuid() != geteuid() || getgid() != getegid()) {
+		sway_log(SWAY_INFO, "setuid/setgid bit detected, dropping permissions");
 		// Set the gid and uid in the correct order.
 		if (setgid(getgid()) != 0) {
 			sway_log(SWAY_ERROR, "Unable to drop root group, refusing to start");
