@@ -2,7 +2,7 @@
 
 Sway це сумісний з [i3](https://i3wm.org/) композитор [Wayland](http://wayland.freedesktop.org/).
 Ознайомтесь з [ЧаПами](https://github.com/swaywm/sway/wiki). Приєднуйтесь до [спільноти в
-IRC](https://web.libera.chat/?channels=#sway) (#sway на
+IRC](https://web.libera.chat/gamja/?channels=#sway) (#sway на
 irc.libera.chat).
 
 ## Підтримка українською мовою
