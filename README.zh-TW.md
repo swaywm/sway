@@ -2,7 +2,7 @@
 
 sway 是一個與 [i3](https://i3wm.org/) 相容的 [Wayland](http://wayland.freedesktop.org/) compositor。
 閱讀 [FAQ](https://github.com/swaywm/sway/wiki)。 加入 [IRC
-頻道](https://web.libera.chat/?channels=#sway) (#sway on
+頻道](https://web.libera.chat/gamja/?channels=#sway) (#sway on
 irc.libera.chat)
 
 ## 發行簽章

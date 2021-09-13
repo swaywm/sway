@@ -2,7 +2,7 @@
 
 Swayは[i3](https://i3wm.org/)互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
-[IRC チャンネル](https://web.libera.chat/?channels=#sway) (irc.libera.chatの#sway)もあります。
+[IRC チャンネル](https://web.libera.chat/gamja/?channels=#sway) (irc.libera.chatの#sway)もあります。
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
