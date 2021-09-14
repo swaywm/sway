@@ -520,7 +520,7 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;
 	hotspot->y = 0;
-	hotspot->width = output->height;
+	hotspot->width = padded_surface_size;
 	hotspot->height = output->height;
 	hotspot->callback = icon_hotspot_callback;
 	hotspot->destroy = free;
