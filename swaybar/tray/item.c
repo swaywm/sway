@@ -454,7 +454,7 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 
 uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		struct swaybar_sni *sni) {
-	uint32_t height = output->height * output->scale;
+	uint32_t height = output->height * output->output_scale;
 	int padding = output->bar->config->tray_padding;
 	int target_size = height - 2*padding;
 	if (target_size != sni->target_size && sni_ready(sni)) {

@@ -69,14 +69,13 @@ struct swaybar_output {
 	bool focused;
 
 	uint32_t width, height;
-	int32_t scale;
-	enum wl_output_subpixel subpixel;
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
 	bool dirty;
 	bool frame_scheduled;
 
-	uint32_t output_height, output_width, output_x, output_y;
+	uint32_t output_height, output_width, output_x, output_y, output_scale;
+	enum wl_output_subpixel output_subpixel;
 };
 
 struct swaybar_workspace {

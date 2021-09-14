@@ -199,12 +199,17 @@ static void output_geometry(void *data, struct wl_output *wl_output, int32_t x,
 		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
 		const char *make, const char *model, int32_t transform) {
 	struct swaybar_output *output = data;
-	output->subpixel = subpixel;
+	output->output_x = x;
+	output->output_y = y;
+	output->output_subpixel = subpixel;
 }
 
 static void output_mode(void *data, struct wl_output *wl_output, uint32_t flags,
 		int32_t width, int32_t height, int32_t refresh) {
-	// Who cares
+	// Still unsure who cares
+	struct swaybar_output *output = data;
+	output->output_width = width;
+	output->output_height = height;
 }
 
 static void output_done(void *data, struct wl_output *wl_output) {
@@ -215,7 +220,7 @@ static void output_done(void *data, struct wl_output *wl_output) {
 static void output_scale(void *data, struct wl_output *wl_output,
 		int32_t factor) {
 	struct swaybar_output *output = data;
-	output->scale = factor;
+	output->output_scale = factor;
 
 	bool render = false;
 	struct swaybar_seat *seat;
@@ -246,6 +251,7 @@ static void xdg_output_handle_logical_position(void *data,
 
 static void xdg_output_handle_logical_size(void *data,
 		struct zxdg_output_v1 *xdg_output, int32_t width, int32_t height) {
+	// Who cares
 	struct swaybar_output *output = data;
 	output->output_height = height;
 	output->output_width = width;
@@ -353,7 +359,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 		output->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 3);
 		wl_output_add_listener(output->output, &output_listener, output);
-		output->scale = 1;
+		output->output_scale = 1;
 		output->wl_name = name;
 		wl_list_init(&output->workspaces);
 		wl_list_init(&output->hotspots);

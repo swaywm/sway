@@ -78,7 +78,7 @@ void update_cursor(struct swaybar_seat *seat) {
 			cursor_size = size;
 		}
 	}
-	int scale = pointer->current ? pointer->current->scale : 1;
+	int scale = pointer->current ? pointer->current->output_scale : 1;
 	pointer->cursor_theme = wl_cursor_theme_load(
 		cursor_theme, cursor_size * scale, seat->bar->shm);
 	struct wl_cursor *cursor;

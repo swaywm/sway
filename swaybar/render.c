@@ -764,7 +764,7 @@ void render_frame(struct swaybar_output *output) {
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
 	cairo_t *cairo = cairo_create(recorder);
-	cairo_scale(cairo, output->scale, output->scale);
+	cairo_scale(cairo, output->output_scale, output->output_scale);
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	ctx.cairo = cairo;
 
@@ -772,14 +772,14 @@ void render_frame(struct swaybar_output *output) {
 	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
 	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
 	ctx.textaa_safe = fo;
-	if (output->subpixel == WL_OUTPUT_SUBPIXEL_NONE) {
+	if (output->output_subpixel == WL_OUTPUT_SUBPIXEL_NONE) {
 		ctx.textaa_sharp = ctx.textaa_safe;
 	} else {
 		fo = cairo_font_options_create();
 		cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
 		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
 		cairo_font_options_set_subpixel_order(fo,
-			to_cairo_subpixel_order(output->subpixel));
+			to_cairo_subpixel_order(output->output_subpixel));
 		ctx.textaa_sharp = fo;
 	}
 
@@ -810,8 +810,8 @@ void render_frame(struct swaybar_output *output) {
 		// Replay recording into shm and send it off
 		output->current_buffer = get_next_buffer(output->bar->shm,
 				output->buffers,
-				output->width * output->scale,
-				output->height * output->scale);
+				output->width * output->output_scale,
+				output->height * output->output_scale);
 		if (!output->current_buffer) {
 			cairo_surface_destroy(recorder);
 			cairo_destroy(cairo);
@@ -827,7 +827,7 @@ void render_frame(struct swaybar_output *output) {
 		cairo_set_source_surface(shm, recorder, 0.0, 0.0);
 		cairo_paint(shm);
 
-		wl_surface_set_buffer_scale(output->surface, output->scale);
+		wl_surface_set_buffer_scale(output->surface, output->output_scale);
 		wl_surface_attach(output->surface,
 				output->current_buffer->buffer, 0, 0);
 		wl_surface_damage(output->surface, 0, 0,
