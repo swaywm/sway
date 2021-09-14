@@ -813,9 +813,7 @@ void render_frame(struct swaybar_output *output) {
 				output->width * output->scale,
 				output->height * output->scale);
 		if (!output->current_buffer) {
-			cairo_surface_destroy(recorder);
-			cairo_destroy(cairo);
-			return;
+			goto cleanup;
 		}
 		cairo_t *shm = output->current_buffer->cairo;
 
@@ -840,6 +838,7 @@ void render_frame(struct swaybar_output *output) {
 		wl_surface_commit(output->surface);
 	}
 
+cleanup:
 	if (ctx.textaa_sharp != ctx.textaa_safe) {
 		cairo_font_options_destroy(ctx.textaa_sharp);
 	}
