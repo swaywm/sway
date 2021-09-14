@@ -494,23 +494,34 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	}
 
 	int padded_size = icon_size + 2*padding;
-	*x -= padded_size;
-	int y = floor((height - padded_size) / 2.0);
+	double padded_surface_size = (double) padded_size / output->scale;
+	double buffer_x = (*x * output->scale) - padded_size;
+	int buffer_y = floor((height - padded_size) / 2.0);
+
+	// Reset scale to draw with prepared icon as source surface. Drawing with
+	// source surface directly with scale applied will end up blurry in HiDPI.
+	cairo_save(cairo);
+	cairo_identity_matrix(cairo);
 
 	cairo_operator_t op = cairo_get_operator(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
-	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
-	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
+	cairo_set_source_surface(cairo, icon, buffer_x + padding, buffer_y + padding);
+	cairo_rectangle(cairo, buffer_x, buffer_y, padded_size, padded_size);
 	cairo_fill(cairo);
 	cairo_set_operator(cairo, op);
+
+	// Restore scale
+	cairo_restore(cairo);
+
+	*x -= padded_surface_size;
 
 	cairo_surface_destroy(icon);
 
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;
 	hotspot->y = 0;
-	hotspot->width = height;
-	hotspot->height = height;
+	hotspot->width = output->height;
+	hotspot->height = output->height;
 	hotspot->callback = icon_hotspot_callback;
 	hotspot->destroy = free;
 	hotspot->data = strdup(sni->watcher_id);

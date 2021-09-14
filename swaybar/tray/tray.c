@@ -117,7 +117,7 @@ uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output, double *x) {
 	} // else display on all
 
 	if ((int) output->height*output->scale <= 2*config->tray_padding) {
-		return 2*config->tray_padding + 1;
+		return (2*config->tray_padding + 1) / output->scale;
 	}
 
 	uint32_t max_height = 0;
