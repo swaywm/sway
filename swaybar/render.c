@@ -307,7 +307,7 @@ static uint32_t render_status_block(struct render_context *ctx,
 	render_text(cairo, config->font, 1, block->markup, "%s", text);
 	x_pos += width;
 
-	if (block->border && block->border_right > 0) {
+	if (border_color && block->border_right > 0) {
 		x_pos += margin;
 		render_sharp_line(cairo, border_color, x_pos, y_pos,
 				block->border_right, render_height);
