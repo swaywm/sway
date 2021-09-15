@@ -19,6 +19,7 @@ struct i3bar_block {
 	// Airblader features
 	uint32_t background;
 	uint32_t border;
+	bool border_set;
 	int border_top;
 	int border_bottom;
 	int border_left;
