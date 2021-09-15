@@ -14,6 +14,7 @@
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
+#include "log.h"
 #if HAVE_TRAY
 #include "swaybar/tray/tray.h"
 #endif
@@ -215,11 +216,11 @@ static uint32_t render_status_block(struct render_context *ctx,
 	}
 
 	*x -= width;
-	if ((block->border || block->urgent) && block->border_left > 0) {
+	if ((block->border_set || block->urgent) && block->border_left > 0) {
 		*x -= (block->border_left + margin);
 		block_width += block->border_left + margin;
 	}
-	if ((block->border || block->urgent) && block->border_right > 0) {
+	if ((block->border_set || block->urgent) && block->border_right > 0) {
 		*x -= (block->border_right + margin);
 		block_width += block->border_right + margin;
 	}
@@ -273,18 +274,20 @@ static uint32_t render_status_block(struct render_context *ctx,
 
 	uint32_t border_color = block->urgent
 		? config->colors.urgent_workspace.border : block->border;
-	if (border_color && block->border_top > 0) {
-		render_sharp_line(cairo, border_color, x_pos, y_pos,
-				block_width, block->border_top);
-	}
-	if (border_color && block->border_bottom > 0) {
-		render_sharp_line(cairo, border_color, x_pos,
-				y_pos + render_height - block->border_bottom,
-				block_width, block->border_bottom);
-	}
-	if (border_color && block->border_left > 0) {
-		render_sharp_line(cairo, border_color, x_pos, y_pos,
-				block->border_left, render_height);
+	if (block->border_set || block->urgent) {
+		if (block->border_top > 0) {
+			render_sharp_line(cairo, border_color, x_pos, y_pos,
+					block_width, block->border_top);
+		}
+		if (block->border_bottom > 0) {
+			render_sharp_line(cairo, border_color, x_pos,
+					y_pos + render_height - block->border_bottom,
+					block_width, block->border_bottom);
+		}
+		if (block->border_left > 0) {
+			render_sharp_line(cairo, border_color, x_pos, y_pos,
+					block->border_left, render_height);
+		}
 		x_pos += block->border_left + margin;
 	}
 
@@ -307,10 +310,12 @@ static uint32_t render_status_block(struct render_context *ctx,
 	render_text(cairo, config->font, 1, block->markup, "%s", text);
 	x_pos += width;
 
-	if (border_color && block->border_right > 0) {
+	if (block->border_set || block->urgent) {
 		x_pos += margin;
-		render_sharp_line(cairo, border_color, x_pos, y_pos,
-				block->border_right, render_height);
+		if (block->border_right > 0) {
+			render_sharp_line(cairo, border_color, x_pos, y_pos,
+					block->border_right, render_height);
+		}
 		x_pos += block->border_right;
 	}
 
@@ -375,10 +380,10 @@ static void predict_status_block_pos(cairo_t *cairo,
 	}
 
 	*x -= width;
-	if ((block->border || block->urgent) && block->border_left > 0) {
+	if ((block->border_set || block->urgent) && block->border_left > 0) {
 		*x -= (block->border_left + margin);
 	}
-	if ((block->border || block->urgent) && block->border_right > 0) {
+	if ((block->border_set || block->urgent) && block->border_right > 0) {
 		*x -= (block->border_right + margin);
 	}
 
