@@ -452,8 +452,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	}
 
 	view_map(view, view->wlr_xdg_surface->surface,
-		xdg_surface->toplevel->client_pending.fullscreen,
-		xdg_surface->toplevel->client_pending.fullscreen_output,
+		xdg_surface->toplevel->requested.fullscreen,
+		xdg_surface->toplevel->requested.fullscreen_output,
 		csd);
 
 	transaction_commit_dirty();
