@@ -48,7 +48,6 @@ static void do_reload(void *data) {
 	}
 	list_free_items_and_destroy(bar_ids);
 
-	config_update_font_height();
 	root_for_each_container(rebuild_textures_iterator, NULL);
 
 	arrange_root();

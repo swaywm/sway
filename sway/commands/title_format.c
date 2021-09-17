@@ -23,6 +23,5 @@ struct cmd_results *cmd_title_format(int argc, char **argv) {
 	}
 	view->title_format = format;
 	view_update_title(view, true);
-	config_update_font_height();
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

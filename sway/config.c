@@ -237,6 +237,7 @@ static void config_defaults(struct sway_config *config) {
 	config->default_orientation = L_NONE;
 	if (!(config->font = strdup("monospace 10"))) goto cleanup;
 	config->font_height = 17; // height of monospace 10
+	config->font_baseline = 11; // baselint of monospace 10
 	config->urgent_timeout = 500;
 	config->focus_on_window_activation = FOWA_URGENT;
 	config->popup_during_fullscreen = POPUP_SMART;
