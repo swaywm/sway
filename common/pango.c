@@ -113,10 +113,8 @@ void get_text_metrics(const char *font, int *height, int *baseline) {
 	cairo_t *cairo = cairo_create(NULL);
 	PangoContext *pango = pango_cairo_create_context(cairo);
 	PangoFontDescription *description = pango_font_description_from_string(font);
-	PangoFontMetrics *metrics;
-
 	// When passing NULL as a language, pango uses the current locale.
-	metrics = pango_context_get_metrics(pango, description, NULL);
+	PangoFontMetrics *metrics = pango_context_get_metrics(pango, description, NULL);
 
 	*baseline = pango_font_metrics_get_ascent(metrics) / PANGO_SCALE;
 	*height = *baseline + pango_font_metrics_get_descent(metrics) / PANGO_SCALE;
