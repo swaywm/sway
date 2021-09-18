@@ -598,14 +598,14 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %" PRIu32
 			" size %" PRIu32 "x%" PRIu32 " margin %" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",",
 		layer_surface->namespace,
-		layer_surface->client_pending.layer,
-		layer_surface->client_pending.anchor,
-		layer_surface->client_pending.desired_width,
-		layer_surface->client_pending.desired_height,
-		layer_surface->client_pending.margin.top,
-		layer_surface->client_pending.margin.right,
-		layer_surface->client_pending.margin.bottom,
-		layer_surface->client_pending.margin.left);
+		layer_surface->pending.layer,
+		layer_surface->pending.anchor,
+		layer_surface->pending.desired_width,
+		layer_surface->pending.desired_height,
+		layer_surface->pending.margin.top,
+		layer_surface->pending.margin.right,
+		layer_surface->pending.margin.bottom,
+		layer_surface->pending.margin.left);
 
 	if (!layer_surface->output) {
 		// Assign last active output
@@ -659,13 +659,13 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_layer->output_destroy.notify = handle_output_destroy;
 	wl_signal_add(&output->events.destroy, &sway_layer->output_destroy);
 
-	wl_list_insert(&output->layers[layer_surface->client_pending.layer],
+	wl_list_insert(&output->layers[layer_surface->pending.layer],
 			&sway_layer->link);
 
-	// Temporarily set the layer's current state to client_pending
+	// Temporarily set the layer's current state to pending
 	// So that we can easily arrange it
 	struct wlr_layer_surface_v1_state old_state = layer_surface->current;
-	layer_surface->current = layer_surface->client_pending;
+	layer_surface->current = layer_surface->pending;
 	arrange_layers(output);
 	layer_surface->current = old_state;
 }
