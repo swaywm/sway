@@ -269,10 +269,15 @@ bool i3bar_handle_readable(struct status_line *status) {
 
 enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, double x, double y, double rx, double ry,
-		double w, double h, int scale, uint32_t button) {
+		double w, double h, int scale, uint32_t button, bool released) {
 	sway_log(SWAY_DEBUG, "block %s clicked", block->name);
 	if (!block->name || !status->click_events) {
 		return HOTSPOT_PROCESS;
+	}
+	if (released) {
+		// Since we handle the pressed event, also handle the released event
+		// to block it from falling through to a binding in the bar
+		return HOTSPOT_IGNORE;
 	}
 
 	struct json_object *event_json = json_object_new_object();
