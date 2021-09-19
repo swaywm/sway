@@ -294,7 +294,7 @@ following properties:
 Retrieve a JSON representation of the tree
 
 *REPLY*++
-An array of object the represent the current tree. Each object represents one
+An array of objects that represent the current tree. Each object represents one
 node and will have the following properties:
 
 [- *PROPERTY*
