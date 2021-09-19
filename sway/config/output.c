@@ -406,9 +406,16 @@ static void queue_output_config(struct output_config *oc,
 		wlr_output_set_subpixel(wlr_output, oc->subpixel);
 	}
 
+	enum wl_output_transform tr = WL_OUTPUT_TRANSFORM_NORMAL;
 	if (oc && oc->transform >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
-		wlr_output_set_transform(wlr_output, oc->transform);
+		tr = oc->transform;
+	} else if (wlr_output_is_drm(wlr_output)) {
+		tr = wlr_drm_connector_get_panel_orientation(wlr_output);
+		sway_log(SWAY_DEBUG, "Auto-detected output transform: %d", tr);
+	}
+	if (wlr_output->transform != tr) {
+		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, tr);
+		wlr_output_set_transform(wlr_output, tr);
 	}
 
 	// Apply the scale last before the commit, because the scale auto-detection
