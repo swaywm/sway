@@ -119,6 +119,7 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
+	bool noscanout;        // Disable direct scan-out
 
 	enum {
 		DAMAGE_DEFAULT,    // Default behaviour
