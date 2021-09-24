@@ -297,18 +297,19 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	if (wlr_output == NULL) {
 		return;
 	}
-	if (layer_surface->current.committed == 0) {
-		// The layer surface state didn't change
-		return;
-	}
 
 	struct sway_output *output = wlr_output->data;
 	struct wlr_box old_extent = layer->extent;
-	arrange_layers(output);
+	bool layer_changed =
+		layer_surface->current.committed & WLR_LAYER_SURFACE_V1_STATE_LAYER;
+	bool extent_changed = false;
+	if (layer_surface->current.committed != 0) {
+		arrange_layers(output);
 
-	bool extent_changed =
-		memcmp(&old_extent, &layer->extent, sizeof(struct wlr_box)) != 0;
-	bool layer_changed = layer->layer != layer_surface->current.layer;
+		extent_changed = memcmp(&old_extent, &layer->extent,
+			sizeof(struct wlr_box)) != 0;
+	}
+
 	if (layer_changed) {
 		wl_list_remove(&layer->link);
 		wl_list_insert(&output->layers[layer_surface->current.layer],
