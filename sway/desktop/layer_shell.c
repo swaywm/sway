@@ -297,6 +297,10 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	if (wlr_output == NULL) {
 		return;
 	}
+	if (layer_surface->current.committed == 0) {
+		// The layer surface state didn't change
+		return;
+	}
 
 	struct sway_output *output = wlr_output->data;
 	struct wlr_box old_extent = layer->extent;
