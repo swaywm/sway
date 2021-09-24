@@ -168,9 +168,6 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		}
 		// Apply
 		sway_layer->geo = box;
-		wlr_surface_get_extends(layer->surface, &sway_layer->extent);
-		sway_layer->extent.x += box.x;
-		sway_layer->extent.y += box.y;
 		apply_exclusive(usable_area, state->anchor, state->exclusive_zone,
 				state->margin.top, state->margin.right,
 				state->margin.bottom, state->margin.left);
@@ -297,24 +294,30 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	if (wlr_output == NULL) {
 		return;
 	}
-	if (layer_surface->current.committed == 0) {
-		// The layer surface state didn't change
-		return;
-	}
 
 	struct sway_output *output = wlr_output->data;
 	struct wlr_box old_extent = layer->extent;
-	arrange_layers(output);
+
+	bool layer_changed = false;
+	if (layer_surface->current.committed != 0
+			|| layer->mapped != layer_surface->mapped) {
+		layer->mapped = layer_surface->mapped;
+		layer_changed = layer->layer != layer_surface->current.layer;
+		if (layer_changed) {
+			wl_list_remove(&layer->link);
+			wl_list_insert(&output->layers[layer_surface->current.layer],
+				&layer->link);
+			layer->layer = layer_surface->current.layer;
+		}
+		arrange_layers(output);
+	}
+
+	wlr_surface_get_extends(layer_surface->surface, &layer->extent);
+	layer->extent.x += layer->geo.x;
+	layer->extent.y += layer->geo.y;
 
 	bool extent_changed =
 		memcmp(&old_extent, &layer->extent, sizeof(struct wlr_box)) != 0;
-	bool layer_changed = layer->layer != layer_surface->current.layer;
-	if (layer_changed) {
-		wl_list_remove(&layer->link);
-		wl_list_insert(&output->layers[layer_surface->current.layer],
-			&layer->link);
-		layer->layer = layer_surface->current.layer;
-	}
 	if (extent_changed || layer_changed) {
 		output_damage_box(output, &old_extent);
 		output_damage_surface(output, layer->geo.x, layer->geo.y,
