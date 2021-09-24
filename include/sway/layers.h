@@ -22,6 +22,7 @@ struct sway_layer_surface {
 	struct wl_listener new_subsurface;
 
 	struct wlr_box geo;
+	bool mapped;
 	struct wlr_box extent;
 	enum zwlr_layer_shell_v1_layer layer;
 };
