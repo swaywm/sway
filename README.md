@@ -16,9 +16,6 @@ Releases are signed with [E88F5E48] and published [on GitHub][GitHub releases].
 Sway is available in many distributions. Try installing the "sway" package for
 yours.
 
-If you're interested in packaging sway for your distribution, stop by the IRC
-channel or shoot an email to sir@cmpwn.com for advice.
-
 ### Compiling from Source
 
 Check out [this wiki page][Development setup] if you want to build the HEAD of
