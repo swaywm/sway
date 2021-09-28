@@ -38,7 +38,7 @@ Install dependencies:
 * [scdoc] (optional: man pages) \*
 * git (optional: version info) \*
 
-_\*Compile-time dep_
+_\* Compile-time dep_
 
 Run these commands:
 
