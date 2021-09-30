@@ -483,8 +483,8 @@ static struct sway_layer_surface *popup_get_layer(
 static void popup_damage(struct sway_layer_popup *layer_popup, bool whole) {
 	struct wlr_xdg_popup *popup = layer_popup->wlr_popup;
 	struct wlr_surface *surface = popup->base->surface;
-	int popup_sx = popup->geometry.x - popup->base->geometry.x;
-	int popup_sy = popup->geometry.y - popup->base->geometry.y;
+	int popup_sx = popup->geometry.x - popup->base->current.geometry.x;
+	int popup_sy = popup->geometry.y - popup->base->current.geometry.y;
 	int ox = popup_sx, oy = popup_sy;
 	struct sway_layer_surface *layer;
 	while (true) {
