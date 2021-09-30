@@ -27,8 +27,8 @@ static void popup_get_view_coords(struct sway_view_child *child,
 	struct wlr_xdg_surface *surface = popup->wlr_xdg_surface;
 
 	wlr_xdg_popup_get_toplevel_coords(surface->popup,
-		surface->popup->geometry.x - surface->geometry.x,
-		surface->popup->geometry.y - surface->geometry.y,
+		surface->popup->geometry.x - surface->current.geometry.x,
+		surface->popup->geometry.y - surface->current.geometry.y,
 		sx, sy);
 }
 
@@ -306,7 +306,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 
 	if (view->container->node.instruction) {
 		transaction_notify_view_ready_by_serial(view,
-				xdg_surface->configure_serial);
+				xdg_surface->current.configure_serial);
 	}
 
 	view_damage_from(view);
@@ -425,8 +425,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_surface *xdg_surface = view->wlr_xdg_surface;
 
-	view->natural_width = view->wlr_xdg_surface->geometry.width;
-	view->natural_height = view->wlr_xdg_surface->geometry.height;
+	view->natural_width = view->wlr_xdg_surface->current.geometry.width;
+	view->natural_height = view->wlr_xdg_surface->current.geometry.height;
 	if (!view->natural_width && !view->natural_height) {
 		view->natural_width = view->wlr_xdg_surface->surface->current.width;
 		view->natural_height = view->wlr_xdg_surface->surface->current.height;
