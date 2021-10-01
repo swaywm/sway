@@ -465,34 +465,6 @@ struct cmd_results *config_commands_command(char *exec) {
 		goto cleanup;
 	}
 
-	enum command_context context = 0;
-
-	struct {
-		char *name;
-		enum command_context context;
-	} context_names[] = {
-		{ "config", CONTEXT_CONFIG },
-		{ "binding", CONTEXT_BINDING },
-		{ "ipc", CONTEXT_IPC },
-		{ "criteria", CONTEXT_CRITERIA },
-		{ "all", CONTEXT_ALL },
-	};
-
-	for (int i = 1; i < argc; ++i) {
-		size_t j;
-		for (j = 0; j < sizeof(context_names) / sizeof(context_names[0]); ++j) {
-			if (strcmp(context_names[j].name, argv[i]) == 0) {
-				break;
-			}
-		}
-		if (j == sizeof(context_names) / sizeof(context_names[0])) {
-			results = cmd_results_new(CMD_INVALID,
-					"Invalid command context %s", argv[i]);
-			goto cleanup;
-		}
-		context |= context_names[j].context;
-	}
-
 	results = cmd_results_new(CMD_SUCCESS, NULL);
 
 cleanup:
