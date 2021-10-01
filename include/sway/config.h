@@ -418,14 +418,6 @@ enum sway_popup_during_fullscreen {
 	POPUP_LEAVE,
 };
 
-enum command_context {
-	CONTEXT_CONFIG = 1 << 0,
-	CONTEXT_BINDING = 1 << 1,
-	CONTEXT_IPC = 1 << 2,
-	CONTEXT_CRITERIA = 1 << 3,
-	CONTEXT_ALL = 0xFFFFFFFF,
-};
-
 enum focus_follows_mouse_mode {
 	FOLLOWS_NO,
 	FOLLOWS_YES,
