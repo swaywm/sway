@@ -233,7 +233,7 @@ correct seat.
 	not explicitly attached to another seat (similar to a "default" seat).
 
 *seat* <name> hide_cursor <timeout>|when-typing [enable|disable]
-	Hides the cursor image after the specified event occured.
+	Hides the cursor image after the specified event occurred.
 
 	If _timeout_ is specified, then the cursor will be hidden after _timeout_
 	(in milliseconds) has elapsed with no activity on the cursor. A timeout of 0
@@ -277,7 +277,7 @@ correct seat.
 	whether future inhibitors are honoured by default, i.e. activated
 	automatically, the default being _enable_. When used at runtime,
 	_disable_ also disables any currently active inhibitors. _activate_,
-	_deactivate_ and _toggle_ are only useable at runtime and change the
+	_deactivate_ and _toggle_ are only usable at runtime and change the
 	state of a potentially existing inhibitor on the currently focused
 	window. This can be used with the current seat alias (_-_) to affect
 	only the currently focused window of the current seat. Subcommand
