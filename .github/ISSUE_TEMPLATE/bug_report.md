@@ -18,6 +18,7 @@ labels: 'bug'
 - **Debug Log:**
   - Run `sway -d 2> ~/sway.log` from a TTY and upload it to a pastebin, such as gist.github.com.
   - This will record information about sway's activity. Please try to keep the reproduction as brief as possible and exit sway.
+  - Attach the **full** file, do not truncate it.
 
 - **Configuration File:**
   - Please try to produce with the default configuration.
