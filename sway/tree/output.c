@@ -56,8 +56,8 @@ static void restore_workspaces(struct sway_output *output) {
 	}
 
 	// Saved workspaces
-	while (root->noop_output->workspaces->length) {
-		struct sway_workspace *ws = root->noop_output->workspaces->items[0];
+	while (root->fallback_output->workspaces->length) {
+		struct sway_workspace *ws = root->fallback_output->workspaces->items[0];
 		workspace_detach(ws);
 		output_add_workspace(output, ws);
 
@@ -192,7 +192,7 @@ static void output_evacuate(struct sway_output *output) {
 			new_output = fallback_output;
 		}
 		if (!new_output) {
-			new_output = root->noop_output;
+			new_output = root->fallback_output;
 		}
 
 		struct sway_workspace *new_output_ws =
