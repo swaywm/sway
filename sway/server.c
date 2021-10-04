@@ -7,7 +7,6 @@
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
-#include <wlr/backend/noop.h>
 #include <wlr/backend/session.h>
 #include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
@@ -217,11 +216,6 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
-	server->noop_backend = wlr_noop_backend_create(server->wl_display);
-
-	struct wlr_output *wlr_output = wlr_noop_add_output(server->noop_backend);
-	root->noop_output = output_create(wlr_output);
-
 	server->headless_backend = wlr_headless_backend_create(server->wl_display);
 	if (!server->headless_backend) {
 		sway_log(SWAY_ERROR, "Failed to create secondary headless backend");
@@ -230,6 +224,10 @@ bool server_init(struct sway_server *server) {
 	} else {
 		wlr_multi_backend_add(server->backend, server->headless_backend);
 	}
+
+	struct wlr_output *wlr_output =
+			wlr_headless_add_output(server->headless_backend, 800, 600);
+	root->fallback_output = output_create(wlr_output);
 
 	// This may have been set already via -Dtxn-timeout
 	if (!server->txn_timeout_ms) {
@@ -287,6 +285,7 @@ bool server_start(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
+
 	return true;
 }
 

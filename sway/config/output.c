@@ -375,7 +375,7 @@ static const uint32_t *bit_depth_preferences[] = {
 
 static void queue_output_config(struct output_config *oc,
 		struct sway_output *output) {
-	if (output == root->noop_output) {
+	if (output == root->fallback_output) {
 		return;
 	}
 
@@ -478,7 +478,7 @@ static void queue_output_config(struct output_config *oc,
 }
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->noop_output) {
+	if (output == root->fallback_output) {
 		return false;
 	}
 
@@ -573,7 +573,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 }
 
 bool test_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->noop_output) {
+	if (output == root->fallback_output) {
 		return false;
 	}
 

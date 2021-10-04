@@ -733,7 +733,7 @@ static void update_output_manager_config(struct sway_server *server) {
 
 	struct sway_output *output;
 	wl_list_for_each(output, &root->all_outputs, link) {
-		if (output == root->noop_output) {
+		if (output == root->fallback_output) {
 			continue;
 		}
 		struct wlr_output_configuration_head_v1 *config_head =
@@ -838,6 +838,10 @@ static void handle_present(struct wl_listener *listener, void *data) {
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
+	if (wlr_output == root->fallback_output->wlr_output) {
+		return;
+	}
+
 	sway_log(SWAY_DEBUG, "New output %p: %s (non-desktop: %d)",
 			wlr_output, wlr_output->name, wlr_output->non_desktop);
 
