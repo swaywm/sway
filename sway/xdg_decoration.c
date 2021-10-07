@@ -27,7 +27,7 @@ static void xdg_decoration_handle_request_mode(struct wl_listener *listener,
 	enum wlr_xdg_toplevel_decoration_v1_mode mode =
 		WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
 	enum wlr_xdg_toplevel_decoration_v1_mode client_mode =
-		deco->wlr_xdg_decoration->client_pending_mode;
+		deco->wlr_xdg_decoration->requested_mode;
 
 	bool floating;
 	if (view->container) {
