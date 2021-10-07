@@ -436,7 +436,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	if (view->xdg_decoration) {
 		enum wlr_xdg_toplevel_decoration_v1_mode mode =
-			view->xdg_decoration->wlr_xdg_decoration->client_pending_mode;
+			view->xdg_decoration->wlr_xdg_decoration->requested_mode;
 		csd = mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
 	} else {
 		struct sway_server_decoration *deco =
