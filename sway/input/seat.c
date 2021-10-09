@@ -210,14 +210,13 @@ void seat_for_each_node(struct sway_seat *seat,
 
 struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 		struct sway_node *ancestor) {
-	if (ancestor->type == N_CONTAINER && ancestor->sway_container->view) {
+	if (node_is_view(ancestor)) {
 		return ancestor->sway_container;
 	}
 	struct sway_seat_node *current;
 	wl_list_for_each(current, &seat->focus_stack, link) {
 		struct sway_node *node = current->node;
-		if (node->type == N_CONTAINER && node->sway_container->view &&
-				node_has_ancestor(node, ancestor)) {
+		if (node_is_view(node) && node_has_ancestor(node, ancestor)) {
 			return node->sway_container;
 		}
 	}
