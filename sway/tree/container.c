@@ -861,7 +861,13 @@ void container_set_floating(struct sway_container *container, bool enable) {
 			if (reference->view) {
 				container_add_sibling(reference, container, 1);
 			} else {
-				container_add_child(reference, container);
+				struct sway_container *sibling =
+					seat_get_focus_inactive_view(seat, &reference->node);
+				if (sibling) {
+					container_add_sibling(sibling, container, 1);
+				} else {
+					container_add_child(reference, container);
+				}
 			}
 			container->pending.width = reference->pending.width;
 			container->pending.height = reference->pending.height;
