@@ -1346,7 +1346,7 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data) {
 	wl_signal_add(&constraint->events.destroy, &sway_constraint->destroy);
 
 	struct sway_node *focus = seat_get_focus(seat);
-	if (focus && focus->type == N_CONTAINER && focus->sway_container->view) {
+	if (focus && node_is_view(focus)) {
 		struct wlr_surface *surface = focus->sway_container->view->surface;
 		if (surface == constraint->surface) {
 			sway_cursor_constrain(seat->cursor, constraint);
