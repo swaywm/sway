@@ -821,8 +821,6 @@ void container_set_floating(struct sway_container *container, bool enable) {
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *workspace = container->pending.workspace;
-	struct sway_container *focus = seat_get_focused_container(seat);
-	bool set_focus = focus == container;
 
 	if (enable) {
 		struct sway_container *old_parent = container->pending.parent;
@@ -843,10 +841,6 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_floating_set_default_size(container);
 		container_floating_resize_and_center(container);
 		if (old_parent) {
-			if (set_focus) {
-				seat_set_raw_focus(seat, &old_parent->node);
-				seat_set_raw_focus(seat, &container->node);
-			}
 			container_reap_empty(old_parent);
 		}
 	} else {
