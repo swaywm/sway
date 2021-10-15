@@ -47,6 +47,11 @@ _swaymsg_ [options...] [message]
 
 	See *sway*(5) for a list of commands.
 
+	_swaymsg_ can return pretty printed (standalone-default) or JSON-formatted
+	(*--raw*) output. For detailed documentation on the returned JSON-data of
+	each message type listed below,	refer to *sway-ipc*(7). The JSON-format can
+	contain more information than the pretty print.
+
 	Tips:
 	- Command expansion is performed twice: once by swaymsg, and again by sway.
 	  If you have quoted multi-word strings in your command, enclose the entire
