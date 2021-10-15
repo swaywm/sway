@@ -827,7 +827,7 @@ static void handle_present(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, present);
 	struct wlr_output_event_present *output_event = data;
 
-	if (!output->enabled) {
+	if (!output->enabled || !output_event->presented) {
 		return;
 	}
 
