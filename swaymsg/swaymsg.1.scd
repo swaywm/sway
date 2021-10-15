@@ -21,6 +21,7 @@ _swaymsg_ [options...] [message]
 
 *-p, --pretty*
 	Use pretty output even when not using a tty.
+	Not available for all message types.
 
 *-q, --quiet*
 	Sends the IPC message but does not print the response from sway.
@@ -60,20 +61,20 @@ _swaymsg_ [options...] [message]
 	  _swaymsg -- mark --add test_ instead of _swaymsg mark --add test_.
 
 *get\_workspaces*
-	Gets a JSON-encoded list of workspaces and their status.
+	Gets a list of workspaces and their status.
 
 *get\_inputs*
-	Gets a JSON-encoded list of current inputs.
+	Gets a list of current inputs.
 
 *get\_outputs*
-	Gets a JSON-encoded list of current outputs.
+	Gets a list of current outputs.
 
 *get\_tree*
 	Gets a JSON-encoded layout tree of all open windows, containers, outputs,
 	workspaces, and so on.
 
 *get\_seats*
-	Gets a JSON-encoded list of all seats,
+	Gets a list of all seats,
 	its properties and all assigned devices.
 
 *get\_marks*
@@ -83,7 +84,7 @@ _swaymsg_ [options...] [message]
 	Get a JSON-encoded configuration for swaybar.
 
 *get\_version*
-	Get JSON-encoded version information for the running instance of sway.
+	Get version information for the running instance of sway.
 
 *get\_binding\_modes*
 	Gets a JSON-encoded list of currently configured binding modes.
@@ -92,7 +93,7 @@ _swaymsg_ [options...] [message]
 	Gets JSON-encoded info about the current binding state.
 
 *get\_config*
-	Gets a JSON-encoded copy of the current configuration.
+	Gets a copy of the current configuration. Doesn't expand includes.
 
 *send\_tick*
 	Sends a tick event to all subscribed clients.
