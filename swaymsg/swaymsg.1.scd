@@ -26,7 +26,7 @@ _swaymsg_ [options...] [message]
 	Sends the IPC message but does not print the response from sway.
 
 *-r, --raw*
-	Use raw output even if using a tty.
+	Use raw JSON output even if using a tty.
 
 *-s, --socket* <path>
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
