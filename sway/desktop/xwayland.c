@@ -111,10 +111,24 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 			return;
 		}
 
+        // Try to find another unmanaged surface from the same process to pass
+        // focus to. This is necessary because some applications (e.g. Jetbrains
+        // IDEs) represent their multi-level menus as unmanaged surfaces, and
+        // when closing a submenu, the main menu should get input focus.
+        struct sway_xwayland_unmanaged *current;
+        wl_list_for_each(current, &root->xwayland_unmanaged, link) {
+            struct wlr_xwayland_surface *prev_xsurface =
+                    current->wlr_xwayland_surface;
+            if (prev_xsurface->pid == xsurface->pid &&
+                    wlr_xwayland_or_surface_wants_focus(prev_xsurface)) {
+                seat_set_focus_surface(seat, prev_xsurface->surface, false);
+                return;
+            }
+        }
+
 		// Restore focus
 		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);
 		if (previous) {
-			// Hack to get seat to re-focus the return value of get_focus
 			seat_set_focus(seat, NULL);
 			seat_set_focus(seat, previous);
 		}
