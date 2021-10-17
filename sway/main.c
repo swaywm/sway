@@ -63,7 +63,7 @@ void detect_proprietary(int allow_unsupported_gpu) {
 				sway_log(SWAY_ERROR,
 					"Proprietary Nvidia drivers are NOT supported. "
 					"Use Nouveau. To launch sway anyway, launch with "
-					"--my-next-gpu-wont-be-nvidia and DO NOT report issues.");
+					"--unsupported-gpu and DO NOT report issues.");
 				exit(EXIT_FAILURE);
 			}
 			break;
@@ -220,7 +220,6 @@ int main(int argc, char **argv) {
 		{"verbose", no_argument, NULL, 'V'},
 		{"get-socketpath", no_argument, NULL, 'p'},
 		{"unsupported-gpu", no_argument, NULL, 'u'},
-		{"my-next-gpu-wont-be-nvidia", no_argument, NULL, 'u'},
 		{0, 0, 0, 0}
 	};
 
