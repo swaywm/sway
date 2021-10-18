@@ -688,6 +688,29 @@ static void handle_foreign_fullscreen_request(
 	transaction_commit_dirty();
 }
 
+static void handle_foreign_minimize(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(
+			listener, view, foreign_minimize);
+	struct wlr_foreign_toplevel_handle_v1_minimized_event *event = data;
+	struct sway_container *container = view->container;
+	if (!container->pending.workspace) {
+		while (container->pending.parent) {
+			container = container->pending.parent;
+		}
+	}
+	if(event->minimized) {
+		if (!container->scratchpad) {
+			root_scratchpad_add_container(container, NULL);
+		} else if (container->pending.workspace) {
+			root_scratchpad_hide(container);
+		}
+	} else {
+		if(container->scratchpad)
+			root_scratchpad_show(container);
+	}
+}
+
 static void handle_foreign_close_request(
 		struct wl_listener *listener, void *data) {
 	struct sway_view *view = wl_container_of(
@@ -748,6 +771,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	view->foreign_destroy.notify = handle_foreign_destroy;
 	wl_signal_add(&view->foreign_toplevel->events.destroy,
 			&view->foreign_destroy);
+	view->foreign_minimize.notify = handle_foreign_minimize;
+	wl_signal_add(&view->foreign_toplevel->events.request_minimize,
+			&view->foreign_minimize);
+
 
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
