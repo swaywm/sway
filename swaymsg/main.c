@@ -528,8 +528,8 @@ int main(int argc, char **argv) {
 				if (!quiet) {
 					sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
 						json_tokener_error_desc(err));
-					ret = 1;
 				}
+				ret = 1;
 				break;
 			} else if (quiet) {
 				json_object_put(obj);
