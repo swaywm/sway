@@ -483,12 +483,12 @@ int main(int argc, char **argv) {
 	// pretty print the json
 	json_tokener *tok = json_tokener_new_ex(INT_MAX);
 	json_object *obj = json_tokener_parse_ex(tok, resp, -1);
+	enum json_tokener_error err = json_tokener_get_error(tok);
 	json_tokener_free(tok);
-	if (obj == NULL) {
+	if (obj == NULL || err != json_tokener_success) {
 		if (!quiet) {
-			fprintf(stderr, "ERROR: Could not parse json response from ipc. "
-					"This is a bug in sway.");
-			printf("%s\n", resp);
+			sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+				json_tokener_error_desc(err));
 		}
 		ret = 1;
 	} else {
@@ -522,11 +522,12 @@ int main(int argc, char **argv) {
 
 			json_tokener *tok = json_tokener_new_ex(INT_MAX);
 			json_object *obj = json_tokener_parse_ex(tok, reply->payload, -1);
+			enum json_tokener_error err = json_tokener_get_error(tok);
 			json_tokener_free(tok);
-			if (obj == NULL) {
+			if (obj == NULL || err != json_tokener_success) {
 				if (!quiet) {
-					fprintf(stderr, "ERROR: Could not parse json response from"
-							" ipc. This is a bug in sway.");
+					sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+						json_tokener_error_desc(err));
 					ret = 1;
 				}
 				break;
