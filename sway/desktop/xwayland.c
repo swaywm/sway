@@ -436,6 +436,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_list_remove(&xwayland_view->commit.link);
 	}
 
+	xwayland_view->view.wlr_xwayland_surface = NULL;
+
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_configure.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
