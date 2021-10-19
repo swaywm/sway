@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200809L
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -481,7 +480,7 @@ int main(int argc, char **argv) {
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 
 	// pretty print the json
-	json_tokener *tok = json_tokener_new_ex(INT_MAX);
+	json_tokener *tok = json_tokener_new_ex(1024);
 	json_object *obj = json_tokener_parse_ex(tok, resp, -1);
 	enum json_tokener_error err = json_tokener_get_error(tok);
 	json_tokener_free(tok);
@@ -520,7 +519,7 @@ int main(int argc, char **argv) {
 				break;
 			}
 
-			json_tokener *tok = json_tokener_new_ex(INT_MAX);
+			json_tokener *tok = json_tokener_new_ex(1024);
 			json_object *obj = json_tokener_parse_ex(tok, reply->payload, -1);
 			enum json_tokener_error err = json_tokener_get_error(tok);
 			json_tokener_free(tok);
