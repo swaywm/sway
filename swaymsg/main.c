@@ -482,28 +482,33 @@ int main(int argc, char **argv) {
 
 	// pretty print the json
 	json_tokener *tok = json_tokener_new_ex(INT_MAX);
-	json_object *obj = json_tokener_parse_ex(tok, resp, -1);
-	enum json_tokener_error err = json_tokener_get_error(tok);
-	json_tokener_free(tok);
-	if (obj == NULL || err != json_tokener_success) {
-		if (!quiet) {
-			sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
-				json_tokener_error_desc(err));
-		}
+	if (tok == NULL) {
+		sway_log(SWAY_ERROR, "failed allocating json_tokener");
 		ret = 1;
 	} else {
-		if (!success(obj, true)) {
-			ret = 2;
-		}
-		if (!quiet && (type != IPC_SUBSCRIBE  || ret != 0)) {
-			if (raw) {
-				printf("%s\n", json_object_to_json_string_ext(obj,
-					JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
-			} else {
-				pretty_print(type, obj);
+		json_object *obj = json_tokener_parse_ex(tok, resp, -1);
+		enum json_tokener_error err = json_tokener_get_error(tok);
+		json_tokener_free(tok);
+		if (obj == NULL || err != json_tokener_success) {
+			if (!quiet) {
+				sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+					json_tokener_error_desc(err));
 			}
+			ret = 1;
+		} else {
+			if (!success(obj, true)) {
+				ret = 2;
+			}
+			if (!quiet && (type != IPC_SUBSCRIBE  || ret != 0)) {
+				if (raw) {
+					printf("%s\n", json_object_to_json_string_ext(obj,
+						JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+				} else {
+					pretty_print(type, obj);
+				}
+			}
+			json_object_put(obj);
 		}
-		json_object_put(obj);
 	}
 	free(command);
 	free(resp);
@@ -521,6 +526,11 @@ int main(int argc, char **argv) {
 			}
 
 			json_tokener *tok = json_tokener_new_ex(INT_MAX);
+			if (tok == NULL) {
+				sway_log(SWAY_ERROR, "failed allocating json_tokener");
+				ret = 1;
+				break;
+			}
 			json_object *obj = json_tokener_parse_ex(tok, reply->payload, -1);
 			enum json_tokener_error err = json_tokener_get_error(tok);
 			json_tokener_free(tok);
