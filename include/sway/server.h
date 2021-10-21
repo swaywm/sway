@@ -137,6 +137,8 @@ void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
 
+void restore_nofile_limit(void);
+
 void handle_compositor_new_surface(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);
 

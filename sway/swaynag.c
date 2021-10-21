@@ -64,6 +64,8 @@ bool swaynag_spawn(const char *swaynag_command,
 		sway_log(SWAY_ERROR, "Failed to create fork for swaynag");
 		goto failed;
 	} else if (pid == 0) {
+		restore_nofile_limit();
+
 		pid = fork();
 		if (pid < 0) {
 			sway_log_errno(SWAY_ERROR, "fork failed");

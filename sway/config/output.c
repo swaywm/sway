@@ -750,6 +750,8 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "fork failed");
 		return false;
 	} else if (pid == 0) {
+		restore_nofile_limit();
+
 		pid = fork();
 		if (pid < 0) {
 			sway_log_errno(SWAY_ERROR, "fork failed");
