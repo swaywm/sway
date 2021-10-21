@@ -1,4 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
+
+// arbitrary number, it's probably sufficient, higher number = more memory usage
+#define JSON_MAX_DEPTH 512
+
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -481,7 +485,7 @@ int main(int argc, char **argv) {
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 
 	// pretty print the json
-	json_tokener *tok = json_tokener_new_ex(INT_MAX);
+	json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
 	if (tok == NULL) {
 		sway_log(SWAY_ERROR, "failed allocating json_tokener");
 		ret = 1;
@@ -525,7 +529,7 @@ int main(int argc, char **argv) {
 				break;
 			}
 
-			json_tokener *tok = json_tokener_new_ex(INT_MAX);
+			json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
 			if (tok == NULL) {
 				sway_log(SWAY_ERROR, "failed allocating json_tokener");
 				ret = 1;
