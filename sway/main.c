@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -27,6 +28,7 @@
 
 static bool terminate_request = false;
 static int exit_value = 0;
+static struct rlimit original_nofile_rlimit = {0};
 struct sway_server server = {0};
 struct sway_debug debug = {0};
 
@@ -167,6 +169,33 @@ static bool drop_permissions(void) {
 		return false;
 	}
 	return true;
+}
+
+static void increase_nofile_limit(void) {
+	if (getrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to bump max open files limit: "
+			"getrlimit(NOFILE) failed");
+		return;
+	}
+
+	struct rlimit new_rlimit = original_nofile_rlimit;
+	new_rlimit.rlim_cur = new_rlimit.rlim_max;
+	if (setrlimit(RLIMIT_NOFILE, &new_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to bump max open files limit: "
+			"setrlimit(NOFILE) failed");
+		sway_log(SWAY_INFO, "Running with %d max open files",
+			(int)original_nofile_rlimit.rlim_cur);
+	}
+}
+
+void restore_nofile_limit(void) {
+	if (original_nofile_rlimit.rlim_cur == 0) {
+		return;
+	}
+	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
+			"setrlimit(NOFILE) failed");
+	}
 }
 
 void enable_debug_flag(const char *flag) {
@@ -348,6 +377,8 @@ int main(int argc, char **argv) {
 		server_fini(&server);
 		exit(EXIT_FAILURE);
 	}
+
+	increase_nofile_limit();
 
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);

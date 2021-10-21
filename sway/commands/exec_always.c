@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
@@ -53,6 +54,7 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	// Fork process
 	if ((pid = fork()) == 0) {
 		// Fork child process again
+		restore_nofile_limit();
 		setsid();
 		sigset_t set;
 		sigemptyset(&set);
