@@ -64,6 +64,7 @@ void container_destroy(struct sway_container *con) {
 	wlr_texture_destroy(con->title_focused_inactive);
 	wlr_texture_destroy(con->title_unfocused);
 	wlr_texture_destroy(con->title_urgent);
+	wlr_texture_destroy(con->title_focused_tab_title);
 	list_free(con->pending.children);
 	list_free(con->current.children);
 	list_free(con->outputs);
@@ -73,6 +74,7 @@ void container_destroy(struct sway_container *con) {
 	wlr_texture_destroy(con->marks_focused_inactive);
 	wlr_texture_destroy(con->marks_unfocused);
 	wlr_texture_destroy(con->marks_urgent);
+	wlr_texture_destroy(con->marks_focused_tab_title);
 
 	if (con->view) {
 		if (con->view->container == con) {
@@ -582,6 +584,8 @@ void container_update_title_textures(struct sway_container *container) {
 			&config->border_colors.unfocused);
 	update_title_texture(container, &container->title_urgent,
 			&config->border_colors.urgent);
+	update_title_texture(container, &container->title_focused_tab_title,
+			&config->border_colors.focused_tab_title);
 	container_damage_whole(container);
 }
 
@@ -1635,6 +1639,8 @@ void container_update_marks_textures(struct sway_container *con) {
 			&config->border_colors.unfocused);
 	update_marks_texture(con, &con->marks_urgent,
 			&config->border_colors.urgent);
+	update_marks_texture(con, &con->marks_focused_tab_title,
+			&config->border_colors.focused_tab_title);
 	container_damage_whole(con);
 }
 

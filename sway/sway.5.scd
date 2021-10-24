@@ -499,6 +499,12 @@ runtime.
 	*client.focused_inactive*
 		The most recently focused view within a container which is not focused.
 
+	*client.focused_tab_title*
+		A view that has focused descendant container.
+		Tab or stack container title that is the parent of the focused container
+		but is not directly focused. Defaults to focused_inactive if not
+		specified and does not use the indicator and child_border colors.
+
 	*client.placeholder*
 		Ignored (present for i3 compatibility).
 
@@ -554,6 +560,12 @@ The default colors are:
 :  #ffffff
 :  #484e50
 :  #5f676a
+|  *focused_tab_title*
+:  #4c7899
+:  #285577
+:  #ffffff
+:  n/a
+:  n/a
 |  *unfocused*
 :  #333333
 :  #222222
