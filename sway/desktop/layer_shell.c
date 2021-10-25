@@ -664,7 +664,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 
 	struct sway_output *output = layer_surface->output->data;
 	sway_layer->output_destroy.notify = handle_output_destroy;
-	wl_signal_add(&output->events.destroy, &sway_layer->output_destroy);
+	wl_signal_add(&output->events.disable, &sway_layer->output_destroy);
 
 	wl_list_insert(&output->layers[layer_surface->pending.layer],
 			&sway_layer->link);
