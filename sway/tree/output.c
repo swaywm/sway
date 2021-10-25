@@ -286,6 +286,7 @@ void output_begin_destroy(struct sway_output *output) {
 		return;
 	}
 	sway_log(SWAY_DEBUG, "Destroying output '%s'", output->wlr_output->name);
+	wl_signal_emit(&output->node.events.destroy, &output->node);
 
 	output->node.destroying = true;
 	node_set_dirty(&output->node);
