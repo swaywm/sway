@@ -1,8 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 
-// arbitrary number, it's probably sufficient, higher number = more memory usage
-#define JSON_MAX_DEPTH 512
-
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
