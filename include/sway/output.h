@@ -48,7 +48,7 @@ struct sway_output {
 	struct wl_listener damage_frame;
 
 	struct {
-		struct wl_signal destroy;
+		struct wl_signal disable;
 	} events;
 
 	struct timespec last_presentation;

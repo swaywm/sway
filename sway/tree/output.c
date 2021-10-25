@@ -95,7 +95,7 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	output->detected_subpixel = wlr_output->subpixel;
 	output->scale_filter = SCALE_FILTER_NEAREST;
 
-	wl_signal_init(&output->events.destroy);
+	wl_signal_init(&output->events.disable);
 
 	wl_list_insert(&root->all_outputs, &output->link);
 
@@ -262,7 +262,7 @@ void output_disable(struct sway_output *output) {
 	}
 
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
-	wl_signal_emit(&output->events.destroy, output);
+	wl_signal_emit(&output->events.disable, output);
 
 	output_evacuate(output);
 
@@ -289,10 +289,6 @@ void output_begin_destroy(struct sway_output *output) {
 
 	output->node.destroying = true;
 	node_set_dirty(&output->node);
-
-	wl_list_remove(&output->link);
-	output->wlr_output->data = NULL;
-	output->wlr_output = NULL;
 }
 
 struct sway_output *output_from_wlr_output(struct wlr_output *output) {
