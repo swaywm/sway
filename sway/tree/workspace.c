@@ -844,24 +844,36 @@ struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 	return con;
 }
 
+bool workspace_has_single_visible_container(struct sway_workspace *ws) {
+	struct sway_seat *seat = input_manager_get_default_seat();
+	struct sway_container *focus =
+		seat_get_focus_inactive_tiling(seat, ws);
+	if (focus && !focus->view) {
+		focus = seat_get_focus_inactive_view(seat, &focus->node);
+	}
+	return (focus && focus->view && view_ancestor_is_only_visible(focus->view));
+}
+
 void workspace_add_gaps(struct sway_workspace *ws) {
-	if (config->smart_gaps) {
-		struct sway_seat *seat = input_manager_get_default_seat();
-		struct sway_container *focus =
-			seat_get_focus_inactive_tiling(seat, ws);
-		if (focus && !focus->view) {
-			focus = seat_get_focus_inactive_view(seat, &focus->node);
-		}
-		if (focus && focus->view && view_ancestor_is_only_visible(focus->view)) {
-			ws->current_gaps.top = 0;
-			ws->current_gaps.right = 0;
-			ws->current_gaps.bottom = 0;
-			ws->current_gaps.left = 0;
-			return;
-		}
+	if (config->smart_gaps == SMART_GAPS_ON
+			&& workspace_has_single_visible_container(ws)) {
+		ws->current_gaps.top = 0;
+		ws->current_gaps.right = 0;
+		ws->current_gaps.bottom = 0;
+		ws->current_gaps.left = 0;
+		return;
 	}
 
-	ws->current_gaps = ws->gaps_outer;
+	if (config->smart_gaps == SMART_GAPS_INVERSE_OUTER
+			&& !workspace_has_single_visible_container(ws)) {
+		ws->current_gaps.top = 0;
+		ws->current_gaps.right = 0;
+		ws->current_gaps.bottom = 0;
+		ws->current_gaps.left = 0;
+	} else {
+		ws->current_gaps = ws->gaps_outer;
+	}
+
 	// Add inner gaps and make sure we don't turn out negative
 	ws->current_gaps.top = fmax(0, ws->current_gaps.top + ws->gaps_inner);
 	ws->current_gaps.right = fmax(0, ws->current_gaps.right + ws->gaps_inner);

@@ -283,6 +283,12 @@ struct side_gaps {
 	int left;
 };
 
+enum smart_gaps_mode {
+	SMART_GAPS_OFF,
+	SMART_GAPS_ON,
+	SMART_GAPS_INVERSE_OUTER,
+};
+
 /**
  * Stores configuration for a workspace, regardless of whether the workspace
  * exists.
@@ -512,7 +518,7 @@ struct sway_config {
 	bool tiling_drag;
 	int tiling_drag_threshold;
 
-	bool smart_gaps;
+	enum smart_gaps_mode smart_gaps;
 	int gaps_inner;
 	struct side_gaps gaps_outer;
 
