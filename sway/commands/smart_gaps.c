@@ -15,7 +15,12 @@ struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 		return error;
 	}
 
-	config->smart_gaps = parse_boolean(argv[0], config->smart_gaps);
+	if (strcmp(argv[0], "inverse_outer") == 0) {
+		config->smart_gaps = SMART_GAPS_INVERSE_OUTER;
+	} else {
+		config->smart_gaps = parse_boolean(argv[0], config->smart_gaps)
+			? SMART_GAPS_ON : SMART_GAPS_OFF;
+	}
 
 	arrange_root();
 

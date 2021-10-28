@@ -692,9 +692,10 @@ The default colors are:
 	borders will only be enabled if the workspace has more than one visible
 	child and gaps equal to zero.
 
-*smart_gaps* on|off
+*smart_gaps* on|off|toggle|inverse_outer
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
-	than one child.
+	than one child. If smart_gaps are _inverse_outer_ outer gaps will only
+	be enabled if a workspace has exactly one child.
 
 *mark* --add|--replace [--toggle] <identifier>
 	Marks are arbitrary labels that can be used to identify certain windows and
