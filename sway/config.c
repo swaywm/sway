@@ -289,6 +289,7 @@ static void config_defaults(struct sway_config *config) {
 	config->hide_edge_borders = E_NONE;
 	config->hide_edge_borders_smart = ESMART_OFF;
 	config->hide_lone_tab = false;
+	config->always_hide_tab = false;
 
 	// border colors
 	color_to_rgba(config->border_colors.focused.border, 0x4C7899FF);

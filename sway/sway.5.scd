@@ -369,6 +369,10 @@ set|plus|minus|toggle <amount>
 The following commands may be used either in the configuration file or at
 runtime.
 
+*always_hide_tab* yes|no
+	If *always_hide_tab* is yes, titles on tabbed and stacked windows will
+	be hidden.
+
 *assign* <criteria> [→] [workspace] [number] <workspace>
 	Assigns views matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is

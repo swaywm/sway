@@ -40,6 +40,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/always_hide_tab.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
