@@ -25,7 +25,7 @@ Sway 在許多發行版都有提供。請自己嘗試於你的發行版安裝 �
 相依套件:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre
