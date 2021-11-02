@@ -15,7 +15,7 @@ Falls du sway für deine eigene Distribution als Paket bereitstellen möchtest, 
 sway benötigt die folgenden Pakete:
 
 * meson\*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols\*
 * pcre

@@ -28,7 +28,7 @@ sway در بسته‌های رسمی توزیع‌های مختلف وجود د�
 بسته‌های مورد نیاز:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

@@ -21,7 +21,7 @@ packages:
   - xwayland
 sources:
   - https://github.com/swaywm/sway
-  - https://github.com/swaywm/wlroots
+  - https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
   - wlroots: |
       cd wlroots
