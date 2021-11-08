@@ -109,6 +109,9 @@ if [ "$ACTION" = "check" ] ; then
   check jq
   check notify-send
   exit
+elif [ "$(pgrep -u $USER grimshot)" != $$ ]; then
+  echo "An instance is already running"
+  exit 1
 elif [ "$SUBJECT" = "area" ] ; then
   GEOM=$(slurp -d)
   # Check if user exited slurp without selecting the area
