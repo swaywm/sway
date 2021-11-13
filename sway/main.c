@@ -342,7 +342,6 @@ int main(int argc, char **argv) {
 	log_kernel();
 	log_distro();
 	log_env();
-	detect_proprietary(allow_unsupported_gpu);
 
 	if (optind < argc) { // Behave as IPC client
 		if (optind != 1) {
@@ -368,6 +367,8 @@ int main(int argc, char **argv) {
 		free(command);
 		return 0;
 	}
+
+	detect_proprietary(allow_unsupported_gpu);
 
 	if (!server_privileged_prepare(&server)) {
 		return 1;
