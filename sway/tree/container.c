@@ -382,19 +382,17 @@ struct sway_container *tiling_container_at(struct sway_node *parent,
 }
 
 static bool surface_is_popup(struct wlr_surface *surface) {
-	if (wlr_surface_is_xdg_surface(surface)) {
-		struct wlr_xdg_surface *xdg_surface =
-			wlr_xdg_surface_from_wlr_surface(surface);
-		while (xdg_surface && xdg_surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
-			if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-				return true;
-			}
-			xdg_surface = xdg_surface->toplevel->parent;
+	while (!wlr_surface_is_xdg_surface(surface)) {
+		if (!wlr_surface_is_subsurface(surface)) {
+			return false;
 		}
-		return false;
+		struct wlr_subsurface *subsurface =
+			wlr_subsurface_from_wlr_surface(surface);
+		surface = subsurface->parent;
 	}
-
-	return false;
+	struct wlr_xdg_surface *xdg_surface =
+		wlr_xdg_surface_from_wlr_surface(surface);
+	return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
 }
 
 struct sway_container *container_at(struct sway_workspace *workspace,
