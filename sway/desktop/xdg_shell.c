@@ -148,7 +148,8 @@ static uint32_t configure(struct sway_view *view, double lx, double ly,
 	if (xdg_shell_view == NULL) {
 		return 0;
 	}
-	return wlr_xdg_toplevel_set_size(view->wlr_xdg_surface, width, height);
+	return wlr_xdg_toplevel_set_size(view->wlr_xdg_surface->toplevel,
+		width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -157,7 +158,7 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
 	if (surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
-		wlr_xdg_toplevel_set_activated(surface, activated);
+		wlr_xdg_toplevel_set_activated(surface->toplevel, activated);
 	}
 }
 
@@ -171,7 +172,7 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 		edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
 				WLR_EDGE_BOTTOM;
 	}
-	wlr_xdg_toplevel_set_tiled(surface, edges);
+	wlr_xdg_toplevel_set_tiled(surface->toplevel, edges);
 }
 
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
@@ -179,7 +180,7 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
-	wlr_xdg_toplevel_set_fullscreen(surface, fullscreen);
+	wlr_xdg_toplevel_set_fullscreen(surface->toplevel, fullscreen);
 }
 
 static void set_resizing(struct sway_view *view, bool resizing) {
@@ -187,7 +188,7 @@ static void set_resizing(struct sway_view *view, bool resizing) {
 		return;
 	}
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
-	wlr_xdg_toplevel_set_resizing(surface, resizing);
+	wlr_xdg_toplevel_set_resizing(surface->toplevel, resizing);
 }
 
 static bool wants_floating(struct sway_view *view) {
@@ -222,12 +223,12 @@ static bool is_transient_for(struct sway_view *child,
 	if (xdg_shell_view_from_view(child) == NULL) {
 		return false;
 	}
-	struct wlr_xdg_surface *surface = child->wlr_xdg_surface;
-	while (surface && surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
-		if (surface->toplevel->parent == ancestor->wlr_xdg_surface) {
+	struct wlr_xdg_toplevel *toplevel = child->wlr_xdg_surface->toplevel;
+	while (toplevel) {
+		if (toplevel->parent == ancestor->wlr_xdg_surface->toplevel) {
 			return true;
 		}
-		surface = surface->toplevel->parent;
+		toplevel = toplevel->parent;
 	}
 	return false;
 }
@@ -239,14 +240,14 @@ static void _close(struct sway_view *view) {
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
 	if (surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL
 			&& surface->toplevel) {
-		wlr_xdg_toplevel_send_close(surface);
+		wlr_xdg_toplevel_send_close(surface->toplevel);
 	}
 }
 
 static void close_popups(struct sway_view *view) {
 	struct wlr_xdg_popup *popup, *tmp;
 	wl_list_for_each_safe(popup, tmp, &view->wlr_xdg_surface->popups, link) {
-		wlr_xdg_popup_destroy(popup->base);
+		wlr_xdg_popup_destroy(popup);
 	}
 }
 
@@ -337,7 +338,6 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_fullscreen);
-	struct wlr_xdg_toplevel_set_fullscreen_event *e = data;
 	struct wlr_xdg_surface *xdg_surface =
 		xdg_shell_view->view.wlr_xdg_surface;
 	struct sway_view *view = &xdg_shell_view->view;
@@ -352,8 +352,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	}
 
 	struct sway_container *container = view->container;
-	if (e->fullscreen && e->output && e->output->data) {
-		struct sway_output *output = e->output->data;
+	struct wlr_xdg_toplevel_requested *req = &xdg_surface->toplevel->requested;
+	if (req->fullscreen && req->fullscreen_output && req->fullscreen_output->data) {
+		struct sway_output *output = req->fullscreen_output->data;
 		struct sway_workspace *ws = output_get_active_workspace(output);
 		if (ws && !container_is_scratchpad_hidden(container) &&
 				container->pending.workspace != ws) {
@@ -365,7 +366,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		}
 	}
 
-	container_set_fullscreen(container, e->fullscreen);
+	container_set_fullscreen(container, req->fullscreen);
 
 	arrange_root();
 	transaction_commit_dirty();
