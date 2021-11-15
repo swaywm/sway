@@ -855,7 +855,8 @@ The string contains one or more (space separated) attribute/value pairs. They
 are used by some commands to choose which views to execute actions on. All
 attributes must match for the criteria to match. Criteria is retained across
 commands separated by a *,*, but will be reset (and allow for new criteria, if
-desired) for commands separated by a *;*.
+desired) for commands separated by a *;*. The strings has to be quoted by *"*
+the simple quotes *'* are not supported.
 
 Criteria may be used with either the *for_window* or *assign* commands to
 specify operations to perform on new views. A criteria may also be used to
