@@ -73,12 +73,23 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
-	assert(renderer);
+	server->renderer = wlr_renderer_autocreate(server->backend);
+	if (!server->renderer) {
+		sway_log(SWAY_ERROR, "Failed to create renderer");
+		return false;
+	}
 
-	wlr_renderer_init_wl_display(renderer, server->wl_display);
+	wlr_renderer_init_wl_display(server->renderer, server->wl_display);
 
-	server->compositor = wlr_compositor_create(server->wl_display, renderer);
+	server->allocator = wlr_allocator_autocreate(server->backend,
+		server->renderer);
+	if (!server->allocator) {
+		sway_log(SWAY_ERROR, "Failed to create allocator");
+		return false;
+	}
+
+	server->compositor = wlr_compositor_create(server->wl_display,
+		server->renderer);
 	server->compositor_new_surface.notify = handle_compositor_new_surface;
 	wl_signal_add(&server->compositor->events.new_surface,
 		&server->compositor_new_surface);
@@ -212,7 +223,8 @@ bool server_init(struct sway_server *server) {
 	root->noop_output = output_create(wlr_output);
 
 	server->headless_backend =
-		wlr_headless_backend_create_with_renderer(server->wl_display, renderer);
+		wlr_headless_backend_create_with_renderer(server->wl_display, 
+			server->renderer);
 	if (!server->headless_backend) {
 		sway_log(SWAY_INFO, "Failed to create secondary headless backend, "
 			"starting without it");

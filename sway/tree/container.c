@@ -547,8 +547,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_image_surface_get_stride(surface);
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(
-			output->wlr_output->backend);
+	struct wlr_renderer *renderer = output->wlr_output->renderer;
 	*texture = wlr_texture_from_pixels(
 			renderer, DRM_FORMAT_ARGB8888, stride, width, height, data);
 	cairo_surface_destroy(surface);
