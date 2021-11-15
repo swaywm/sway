@@ -52,7 +52,7 @@ static int scale_length(int length, int offset, float scale) {
 
 static void scissor_output(struct wlr_output *wlr_output,
 		pixman_box32_t *rect) {
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer = wlr_output->renderer;
 	assert(renderer);
 
 	struct wlr_box box = {
@@ -100,8 +100,7 @@ static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
 		const float matrix[static 9], float alpha) {
-	struct wlr_renderer *renderer =
-		wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer = wlr_output->renderer;
 	struct sway_output *output = wlr_output->data;
 
 	pixman_region32_t damage;
@@ -218,8 +217,7 @@ void render_rect(struct sway_output *output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]) {
 	struct wlr_output *wlr_output = output->wlr_output;
-	struct wlr_renderer *renderer =
-		wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer = wlr_output->renderer;
 
 	struct wlr_box box;
 	memcpy(&box, _box, sizeof(struct wlr_box));
@@ -1013,13 +1011,7 @@ static void render_seatops(struct sway_output *output,
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
-
-	struct wlr_renderer *renderer =
-		wlr_backend_get_renderer(wlr_output->backend);
-	if (!sway_assert(renderer != NULL,
-			"expected the output backend to have a renderer")) {
-		return;
-	}
+	struct wlr_renderer *renderer = output->server->renderer;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
