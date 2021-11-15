@@ -653,7 +653,8 @@ The default colors are:
 
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
-	See *CRITERIA* for more details.
+	See *CRITERIA* for more details. Please note this configuration is not
+	reloaded on _reload_ action.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
