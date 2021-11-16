@@ -59,12 +59,16 @@ static void handle_workspace_manager_commit_request(struct wl_listener *listener
 	struct wlr_workspace_group_handle_v1 *group;
 	wl_list_for_each(group, &manager->groups, link) {
 		struct wlr_workspace_handle_v1 *workspace;
-		struct wlr_workspace_handle_v1 *next_active_workspace;
+		struct wlr_workspace_handle_v1 *next_active_workspace = NULL;
 		wl_list_for_each(workspace, &group->workspaces, link) {
 			if (workspace->current & WLR_WORKSPACE_HANDLE_V1_STATE_ACTIVE) {
 				next_active_workspace = workspace;
 			}
 		}
+		if (!next_active_workspace) {
+			continue;
+		}
+
 		struct sway_workspace *sw_workspace = workspace_by_name(next_active_workspace->name);
 		workspace_switch(sw_workspace, false);
 	}
