@@ -7,22 +7,27 @@
 #include <signal.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
 
-struct cmd_results *cmd_exec_always(int argc, char **argv) {
+struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (!config->active || config->validating) {
-		return cmd_results_new(CMD_DEFER, NULL);
-	}
 	if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	if (!config->active || config->validating) {
+		return cmd_results_new(CMD_DEFER, NULL);
+	}
+	return error;
+}
 
-	char *tmp = NULL;
+struct cmd_results *cmd_exec_process(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	char *cmd = NULL;
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
 		sway_log(SWAY_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		--argc; ++argv;
@@ -32,17 +37,12 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	}
 
 	if (argc == 1 && (argv[0][0] == '\'' || argv[0][0] == '"')) {
-		tmp = strdup(argv[0]);
-		strip_quotes(tmp);
+		cmd = strdup(argv[0]);
+		strip_quotes(cmd);
 	} else {
-		tmp = join_args(argv, argc);
+		cmd = join_args(argv, argc);
 	}
 
-	// Put argument into cmd array
-	char cmd[4096];
-	strncpy(cmd, tmp, sizeof(cmd) - 1);
-	cmd[sizeof(cmd) - 1] = 0;
-	free(tmp);
 	sway_log(SWAY_DEBUG, "Executing %s", cmd);
 
 	int fd[2];
@@ -54,15 +54,18 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	// Fork process
 	if ((pid = fork()) == 0) {
 		// Fork child process again
+		restore_nofile_limit();
 		setsid();
 		sigset_t set;
 		sigemptyset(&set);
 		sigprocmask(SIG_SETMASK, &set, NULL);
+		signal(SIGPIPE, SIG_DFL);
 		close(fd[0]);
 		if ((child = fork()) == 0) {
 			close(fd[1]);
-			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
-			_exit(0);
+			execlp("sh", "sh", "-c", cmd, (void *)NULL);
+			sway_log_errno(SWAY_ERROR, "execlp failed");
+			_exit(1);
 		}
 		ssize_t s = 0;
 		while ((size_t)s < sizeof(pid_t)) {
@@ -71,10 +74,12 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		close(fd[1]);
 		_exit(0); // Close child process
 	} else if (pid < 0) {
+		free(cmd);
 		close(fd[0]);
 		close(fd[1]);
 		return cmd_results_new(CMD_FAILURE, "fork() failed");
 	}
+	free(cmd);
 	close(fd[1]); // close write
 	ssize_t s = 0;
 	while ((size_t)s < sizeof(pid_t)) {
@@ -91,4 +96,12 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
+struct cmd_results *cmd_exec_always(int argc, char **argv) {
+	struct cmd_results *error;
+	if ((error = cmd_exec_validate(argc, argv))) {
+		return error;
+	}
+	return cmd_exec_process(argc, argv);
 }

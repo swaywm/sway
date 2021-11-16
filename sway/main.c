@@ -6,12 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
+#include <wlr/version.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
@@ -26,6 +28,7 @@
 
 static bool terminate_request = false;
 static int exit_value = 0;
+static struct rlimit original_nofile_rlimit = {0};
 struct sway_server server = {0};
 struct sway_debug debug = {0};
 
@@ -46,43 +49,6 @@ void sig_handler(int signal) {
 	sway_terminate(EXIT_SUCCESS);
 }
 
-void detect_raspi(void) {
-	bool raspi = false;
-	FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
-	if (!f) {
-		return;
-	}
-	char *line = NULL;
-	size_t line_size = 0;
-	while (getline(&line, &line_size, f) != -1) {
-		if (strstr(line, "Raspberry Pi")) {
-			raspi = true;
-			break;
-		}
-	}
-	fclose(f);
-	FILE *g = fopen("/proc/modules", "r");
-	if (!g) {
-		free(line);
-		return;
-	}
-	bool vc4 = false;
-	while (getline(&line, &line_size, g) != -1) {
-		if (strstr(line, "vc4")) {
-			vc4 = true;
-			break;
-		}
-	}
-	free(line);
-	fclose(g);
-	if (!vc4 && raspi) {
-		fprintf(stderr, "\x1B[1;31mWarning: You have a "
-				"Raspberry Pi, but the vc4 Module is "
-				"not loaded! Set 'dtoverlay=vc4-kms-v3d'"
-				"in /boot/config.txt and reboot.\x1B[0m\n");
-	}
-}
-
 void detect_proprietary(int allow_unsupported_gpu) {
 	FILE *f = fopen("/proc/modules", "r");
 	if (!f) {
@@ -99,7 +65,7 @@ void detect_proprietary(int allow_unsupported_gpu) {
 				sway_log(SWAY_ERROR,
 					"Proprietary Nvidia drivers are NOT supported. "
 					"Use Nouveau. To launch sway anyway, launch with "
-					"--my-next-gpu-wont-be-nvidia and DO NOT report issues.");
+					"--unsupported-gpu and DO NOT report issues.");
 				exit(EXIT_FAILURE);
 			}
 			break;
@@ -205,6 +171,33 @@ static bool drop_permissions(void) {
 	return true;
 }
 
+static void increase_nofile_limit(void) {
+	if (getrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to bump max open files limit: "
+			"getrlimit(NOFILE) failed");
+		return;
+	}
+
+	struct rlimit new_rlimit = original_nofile_rlimit;
+	new_rlimit.rlim_cur = new_rlimit.rlim_max;
+	if (setrlimit(RLIMIT_NOFILE, &new_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to bump max open files limit: "
+			"setrlimit(NOFILE) failed");
+		sway_log(SWAY_INFO, "Running with %d max open files",
+			(int)original_nofile_rlimit.rlim_cur);
+	}
+}
+
+void restore_nofile_limit(void) {
+	if (original_nofile_rlimit.rlim_cur == 0) {
+		return;
+	}
+	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
+			"setrlimit(NOFILE) failed");
+	}
+}
+
 void enable_debug_flag(const char *flag) {
 	if (strcmp(flag, "damage=highlight") == 0) {
 		debug.damage = DAMAGE_HIGHLIGHT;
@@ -218,15 +211,36 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_timings = true;
 	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
 		server.txn_timeout_ms = atoi(&flag[12]);
+	} else if (strcmp(flag, "noscanout") == 0) {
+		debug.noscanout = true;
 	} else {
 		sway_log(SWAY_ERROR, "Unknown debug flag: %s", flag);
 	}
 }
 
+static sway_log_importance_t convert_wlr_log_importance(
+		enum wlr_log_importance importance) {
+	switch (importance) {
+	case WLR_ERROR:
+		return SWAY_ERROR;
+	case WLR_INFO:
+		return SWAY_INFO;
+	default:
+		return SWAY_DEBUG;
+	}
+}
+
+static void handle_wlr_log(enum wlr_log_importance importance,
+		const char *fmt, va_list args) {
+	static char sway_fmt[1024];
+	snprintf(sway_fmt, sizeof(sway_fmt), "[wlr] %s", fmt);
+	_sway_vlog(convert_wlr_log_importance(importance), sway_fmt, args);
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
 
-	static struct option long_options[] = {
+	static const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
 		{"validate", no_argument, NULL, 'C'},
@@ -235,7 +249,6 @@ int main(int argc, char **argv) {
 		{"verbose", no_argument, NULL, 'V'},
 		{"get-socketpath", no_argument, NULL, 'p'},
 		{"unsupported-gpu", no_argument, NULL, 'u'},
-		{"my-next-gpu-wont-be-nvidia", no_argument, NULL, 'u'},
 		{0, 0, 0, 0}
 	};
 
@@ -262,7 +275,7 @@ int main(int argc, char **argv) {
 		}
 		switch (c) {
 		case 'h': // help
-			fprintf(stdout, "%s", usage);
+			printf("%s", usage);
 			exit(EXIT_SUCCESS);
 			break;
 		case 'c': // config
@@ -282,7 +295,7 @@ int main(int argc, char **argv) {
 			allow_unsupported_gpu = 1;
 			break;
 		case 'v': // version
-			fprintf(stdout, "sway version " SWAY_VERSION "\n");
+			printf("sway version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		case 'V': // verbose
@@ -290,7 +303,7 @@ int main(int argc, char **argv) {
 			break;
 		case 'p': ; // --get-socketpath
 			if (getenv("SWAYSOCK")) {
-				fprintf(stdout, "%s\n", getenv("SWAYSOCK"));
+				printf("%s\n", getenv("SWAYSOCK"));
 				exit(EXIT_SUCCESS);
 			} else {
 				fprintf(stderr, "sway socket not detected.\n");
@@ -315,21 +328,20 @@ int main(int argc, char **argv) {
 	// sway, we do not need to override it.
 	if (debug) {
 		sway_log_init(SWAY_DEBUG, sway_terminate);
-		wlr_log_init(WLR_DEBUG, NULL);
+		wlr_log_init(WLR_DEBUG, handle_wlr_log);
 	} else if (verbose) {
 		sway_log_init(SWAY_INFO, sway_terminate);
-		wlr_log_init(WLR_INFO, NULL);
+		wlr_log_init(WLR_INFO, handle_wlr_log);
 	} else {
 		sway_log_init(SWAY_ERROR, sway_terminate);
-		wlr_log_init(WLR_ERROR, NULL);
+		wlr_log_init(WLR_ERROR, handle_wlr_log);
 	}
 
 	sway_log(SWAY_INFO, "Sway version " SWAY_VERSION);
+	sway_log(SWAY_INFO, "wlroots version " WLR_VERSION_STR);
 	log_kernel();
 	log_distro();
 	log_env();
-	detect_proprietary(allow_unsupported_gpu);
-	detect_raspi();
 
 	if (optind < argc) { // Behave as IPC client
 		if (optind != 1) {
@@ -356,6 +368,8 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	detect_proprietary(allow_unsupported_gpu);
+
 	if (!server_privileged_prepare(&server)) {
 		return 1;
 	}
@@ -365,8 +379,11 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
+	increase_nofile_limit();
+
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
+	signal(SIGINT, sig_handler);
 
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);

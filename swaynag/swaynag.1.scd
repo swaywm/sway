@@ -48,6 +48,9 @@ _swaynag_ [options...]
 *-e, --edge* top|bottom
 	Set the edge to use.
 
+*-y, --layer* overlay|top|bottom|background
+	Set the layer to use.
+
 *-f, --font* <font>
 	Set the font to use.
 
@@ -97,11 +100,17 @@ _swaynag_ [options...]
 *--text* <RRGGBB[AA]>
 	Set the text color.
 
+*--button-text* <RRGGBB[AA]>
+	Set the button text color.
+
 *--border-bottom-size* <size>
 	Set the thickness of the bottom border.
 
 *--message-padding* <padding>
 	Set the padding for the message.
+
+*--details-background* <RRGGBB[AA]>
+	Set the color for the background for details.
 
 *--details-border-size* <size>
 	Set the thickness for the details border.

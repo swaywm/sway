@@ -21,12 +21,13 @@ _swaymsg_ [options...] [message]
 
 *-p, --pretty*
 	Use pretty output even when not using a tty.
+	Not available for all message types.
 
 *-q, --quiet*
 	Sends the IPC message but does not print the response from sway.
 
 *-r, --raw*
-	Use raw output even if using a tty.
+	Use raw JSON output even if using a tty.
 
 *-s, --socket* <path>
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
@@ -46,32 +47,39 @@ _swaymsg_ [options...] [message]
 
 	See *sway*(5) for a list of commands.
 
+	_swaymsg_ can return pretty printed (standalone-default) or JSON-formatted
+	(*--raw*) output. For detailed documentation on the returned JSON-data of
+	each message type listed below,	refer to *sway-ipc*(7). The JSON-format can
+	contain more information than the pretty print.
+
 	Tips:
 	- Command expansion is performed twice: once by swaymsg, and again by sway.
 	  If you have quoted multi-word strings in your command, enclose the entire
 	  command in single-quotes. For example, use
 	  _swaymsg 'output "Foobar Display" enable'_ instead of
-	  _swaymsg output "Foobar Display" enable_.
-	- If you are proving a command that contains a leading hyphen (_-_), insert
+	  _swaymsg output "Foobar Display" enable_. Furthermore, note that comma
+	  separated options also count as multi-word strings, because commas can be
+	  used to execute commands on the same line.
+	- If you are providing a command that contains a leading hyphen (_-_), insert
 	  two hyphens (_--_) before the command to signal to swaymsg not to parse
 	  anything beyond that point as an option. For example, use
 	  _swaymsg -- mark --add test_ instead of _swaymsg mark --add test_.
 
 *get\_workspaces*
-	Gets a JSON-encoded list of workspaces and their status.
+	Gets a list of workspaces and their status.
 
 *get\_inputs*
-	Gets a JSON-encoded list of current inputs.
+	Gets a list of current inputs.
 
 *get\_outputs*
-	Gets a JSON-encoded list of current outputs.
+	Gets a list of current outputs.
 
 *get\_tree*
 	Gets a JSON-encoded layout tree of all open windows, containers, outputs,
 	workspaces, and so on.
 
 *get\_seats*
-	Gets a JSON-encoded list of all seats,
+	Gets a list of all seats,
 	its properties and all assigned devices.
 
 *get\_marks*
@@ -81,7 +89,7 @@ _swaymsg_ [options...] [message]
 	Get a JSON-encoded configuration for swaybar.
 
 *get\_version*
-	Get JSON-encoded version information for the running instance of sway.
+	Get version information for the running instance of sway.
 
 *get\_binding\_modes*
 	Gets a JSON-encoded list of currently configured binding modes.
@@ -90,7 +98,7 @@ _swaymsg_ [options...] [message]
 	Gets JSON-encoded info about the current binding state.
 
 *get\_config*
-	Gets a JSON-encoded copy of the current configuration.
+	Gets a copy of the current configuration. Doesn't expand includes.
 
 *send\_tick*
 	Sends a tick event to all subscribed clients.

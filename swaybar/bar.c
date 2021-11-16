@@ -90,7 +90,7 @@ static void layer_surface_closed(void *_output,
 	swaybar_output_free(output);
 }
 
-struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.configure = layer_surface_configure,
 	.closed = layer_surface_closed,
 };
@@ -230,7 +230,7 @@ static void output_scale(void *data, struct wl_output *wl_output,
 	}
 }
 
-struct wl_output_listener output_listener = {
+static const struct wl_output_listener output_listener = {
 	.geometry = output_geometry,
 	.mode = output_mode,
 	.done = output_done,
@@ -307,7 +307,7 @@ static void xdg_output_handle_description(void *data,
 	}
 }
 
-struct zxdg_output_v1_listener xdg_output_listener = {
+static const struct zxdg_output_v1_listener xdg_output_listener = {
 	.logical_position = xdg_output_handle_logical_position,
 	.logical_size = xdg_output_handle_logical_size,
 	.done = xdg_output_handle_done,
@@ -461,13 +461,28 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 
 static void display_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
+	if (mask & (POLLHUP | POLLERR)) {
+		if (mask & POLLERR) {
+			sway_log(SWAY_ERROR, "Wayland display poll error");
+		}
+		bar->running = false;
+		return;
+	}
 	if (wl_display_dispatch(bar->display) == -1) {
+		sway_log(SWAY_ERROR, "wl_display_dispatch failed");
 		bar->running = false;
 	}
 }
 
 static void ipc_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
+	if (mask & (POLLHUP | POLLERR)) {
+		if (mask & POLLERR) {
+			sway_log(SWAY_ERROR, "IPC poll error");
+		}
+		bar->running = false;
+		return;
+	}
 	if (handle_ipc_readable(bar)) {
 		set_bar_dirty(bar);
 	}

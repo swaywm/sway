@@ -40,6 +40,16 @@ must be separated by one space. For example:
 
 		output HDMI-A-1 mode 1920x1080@60Hz
 
+*output* <name> modeline <clock> <hdisplay> <hsync_start> <hsync_end> <htotal> <vdisplay> <vsync_start> <vsync_end> <vtotal> <hsync> <vsync>
+	Configures the specified output to use the given modeline. It can be
+	generated using *cvt*(1) and *gtf*(1) commands. See *xorg.conf*(5).
+	Only supported on DRM backend.
+
+	Example:
+
+		output HDMI-A-1 modeline 173.00 1920 2048 2248 2576 1080 1083 1088 1120 -hsync +vsync
+
+
 *output* <name> position|pos <X> <Y>
 	Places the specified output at the specific position in the global
 	coordinate space. The cursor may only be moved between immediately
@@ -112,7 +122,7 @@ must be separated by one space. For example:
 *output* <name> toggle
 	Toggle the specified output.
 
-*output* <name> dpms on|off
+*output* <name> dpms on|off|toggle
 	Enables or disables the specified output via DPMS. To turn an output off
 	(ie. blank the screen but keep workspaces as-is), one can set DPMS to off.
 
@@ -142,7 +152,7 @@ must be separated by one space. For example:
 	Enables or disables adaptive synchronization (often referred to as Variable
 	Refresh Rate, or by the vendor-specific names FreeSync/G-Sync).
 
-	Adaptive sync allows clients to submit frames a little to late without
+	Adaptive sync allows clients to submit frames a little too late without
 	having to wait a whole refresh period to display it on screen. Enabling
 	adaptive sync can improve latency, but can cause flickering on some
 	hardware.

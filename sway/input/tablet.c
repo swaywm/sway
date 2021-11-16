@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_tablet_v2.h>
+#include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/types/wlr_tablet_pad.h>
 #include "log.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -138,6 +140,29 @@ void sway_tablet_tool_configure(struct sway_tablet *tablet,
 		calloc(1, sizeof(struct sway_tablet_tool));
 	if (!sway_assert(tool, "could not allocate sway tablet tool for tablet")) {
 		return;
+	}
+
+	switch (wlr_tool->type) {
+	case WLR_TABLET_TOOL_TYPE_LENS:
+	case WLR_TABLET_TOOL_TYPE_MOUSE:
+		tool->mode = SWAY_TABLET_TOOL_MODE_RELATIVE;
+		break;
+	default:
+		tool->mode = SWAY_TABLET_TOOL_MODE_ABSOLUTE;
+
+		struct input_config *ic = input_device_get_config(
+			tablet->seat_device->input_device);
+		if (!ic) {
+			break;
+		}
+
+		for (int i = 0; i < ic->tools->length; i++) {
+			struct input_config_tool *tool_config = ic->tools->items[i];
+			if (tool_config->type == wlr_tool->type) {
+				tool->mode = tool_config->mode;
+				break;
+			}
+		}
 	}
 
 	tool->seat = tablet->seat_device->sway_seat;

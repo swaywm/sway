@@ -29,6 +29,7 @@ struct seat_config *new_seat_config(const char* name) {
 		return NULL;
 	}
 	seat->hide_cursor_timeout = -1;
+	seat->hide_cursor_when_typing = HIDE_WHEN_TYPING_DEFAULT;
 	seat->allow_constrain = CONSTRAIN_DEFAULT;
 	seat->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
 	seat->keyboard_grouping = KEYBOARD_GROUP_DEFAULT;
@@ -149,6 +150,10 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 
 	if (source->hide_cursor_timeout != -1) {
 		dest->hide_cursor_timeout = source->hide_cursor_timeout;
+	}
+
+	if (source->hide_cursor_when_typing != HIDE_WHEN_TYPING_DEFAULT) {
+		dest->hide_cursor_when_typing = source->hide_cursor_when_typing;
 	}
 
 	if (source->allow_constrain != CONSTRAIN_DEFAULT) {

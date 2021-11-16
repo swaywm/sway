@@ -91,7 +91,7 @@ struct bar_config *default_bar_config(void) {
 	}
 	bar->outputs = NULL;
 	bar->position = strdup("bottom");
-	bar->pango_markup = false;
+	bar->pango_markup = PANGO_MARKUP_DEFAULT;
 	bar->swaybar_command = NULL;
 	bar->font = NULL;
 	bar->height = 0;
@@ -105,6 +105,7 @@ struct bar_config *default_bar_config(void) {
 	bar->modifier = get_modifier_mask_by_name("Mod4");
 	bar->status_padding = 1;
 	bar->status_edge_padding = 3;
+	bar->workspace_min_width = 0;
 	if (!(bar->mode = strdup("dock"))) {
 	       goto cleanup;
 	}
@@ -216,6 +217,9 @@ static void invoke_swaybar(struct bar_config *bar) {
 		sigset_t set;
 		sigemptyset(&set);
 		sigprocmask(SIG_SETMASK, &set, NULL);
+		signal(SIGPIPE, SIG_DFL);
+
+		restore_nofile_limit();
 
 		pid = fork();
 		if (pid < 0) {

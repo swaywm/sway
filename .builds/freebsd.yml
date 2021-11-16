@@ -1,5 +1,6 @@
 image: freebsd/latest
 packages:
+- devel/basu
 - devel/json-c
 - devel/libevdev
 - devel/meson
@@ -18,13 +19,14 @@ packages:
 - devel/libudev-devd
 - graphics/libdrm
 - graphics/mesa-libs
+- sysutils/seatd
 - x11/libinput
 - x11/libX11
 - x11/pixman
 - x11/xcb-util-wm
 sources:
 - https://github.com/swaywm/sway
-- https://github.com/swaywm/wlroots
+- https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
 - setup: |
     cd sway
@@ -32,7 +34,7 @@ tasks:
     cd subprojects
     ln -s ../../wlroots wlroots
     cd ..
-    meson build
+    meson build --fatal-meson-warnings -Dtray=enabled -Dsd-bus-provider=basu
 - build: |
     cd sway
     ninja -C build

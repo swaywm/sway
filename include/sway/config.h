@@ -5,12 +5,15 @@
 #include <string.h>
 #include <time.h>
 #include <wlr/interfaces/wlr_switch.h>
-#include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/util/box.h>
 #include <xkbcommon/xkbcommon.h>
+#include <xf86drmMode.h>
 #include "../include/config.h"
 #include "list.h"
 #include "swaynag.h"
 #include "tree/container.h"
+#include "sway/input/tablet.h"
 #include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
@@ -116,6 +119,11 @@ enum input_config_mapped_to {
 	MAPPED_TO_REGION,
 };
 
+struct input_config_tool {
+	enum wlr_tablet_tool_type type;
+	enum sway_tablet_tool_mode mode;
+};
+
 /**
  * options for input devices
  */
@@ -160,6 +168,8 @@ struct input_config {
 	char *mapped_to_output;
 	struct wlr_box *mapped_to_region;
 
+	list_t *tools;
+
 	bool capturable;
 	struct wlr_box region;
 };
@@ -170,6 +180,12 @@ struct input_config {
 struct seat_attachment_config {
 	char *identifier;
 	// TODO other things are configured here for some reason
+};
+
+enum seat_config_hide_cursor_when_typing {
+	HIDE_WHEN_TYPING_DEFAULT, // the default is currently disabled
+	HIDE_WHEN_TYPING_ENABLE,
+	HIDE_WHEN_TYPING_DISABLE,
 };
 
 enum seat_config_allow_constrain {
@@ -207,6 +223,7 @@ struct seat_config {
 	int fallback; // -1 means not set
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
+	enum seat_config_hide_cursor_when_typing hide_cursor_when_typing;
 	enum seat_config_allow_constrain allow_constrain;
 	enum seat_config_shortcuts_inhibit shortcuts_inhibit;
 	enum seat_keyboard_grouping keyboard_grouping;
@@ -241,6 +258,7 @@ struct output_config {
 	int width, height;
 	float refresh_rate;
 	int custom_mode;
+	drmModeModeInfo drm_mode;
 	int x, y;
 	float scale;
 	enum scale_filter_mode scale_filter;
@@ -265,6 +283,12 @@ struct side_gaps {
 	int left;
 };
 
+enum smart_gaps_mode {
+	SMART_GAPS_OFF,
+	SMART_GAPS_ON,
+	SMART_GAPS_INVERSE_OUTER,
+};
+
 /**
  * Stores configuration for a workspace, regardless of whether the workspace
  * exists.
@@ -274,6 +298,12 @@ struct workspace_config {
 	list_t *outputs;
 	int gaps_inner;
 	struct side_gaps gaps_outer;
+};
+
+enum pango_markup_config {
+	PANGO_MARKUP_DISABLED = false,
+	PANGO_MARKUP_ENABLED = true,
+	PANGO_MARKUP_DEFAULT // The default is font dependent ("pango:" prefix)
 };
 
 struct bar_config {
@@ -307,7 +337,7 @@ struct bar_config {
 	char *position;
 	list_t *bindings;
 	char *status_command;
-	bool pango_markup;
+	enum pango_markup_config pango_markup;
 	char *font;
 	int height; // -1 not defined
 	bool workspace_buttons;
@@ -320,6 +350,7 @@ struct bar_config {
 	struct side_gaps gaps;
 	int status_padding;
 	int status_edge_padding;
+	uint32_t workspace_min_width;
 	struct {
 		char *background;
 		char *statusline;
@@ -393,14 +424,6 @@ enum sway_popup_during_fullscreen {
 	POPUP_LEAVE,
 };
 
-enum command_context {
-	CONTEXT_CONFIG = 1 << 0,
-	CONTEXT_BINDING = 1 << 1,
-	CONTEXT_IPC = 1 << 2,
-	CONTEXT_CRITERIA = 1 << 3,
-	CONTEXT_ALL = 0xFFFFFFFF,
-};
-
 enum focus_follows_mouse_mode {
 	FOLLOWS_NO,
 	FOLLOWS_YES,
@@ -463,8 +486,8 @@ struct sway_config {
 	enum sway_container_layout default_orientation;
 	enum sway_container_layout default_layout;
 	char *font;
-	size_t font_height;
-	size_t font_baseline;
+	int font_height;
+	int font_baseline;
 	bool pango_markup;
 	int titlebar_border_thickness;
 	int titlebar_h_padding;
@@ -495,7 +518,7 @@ struct sway_config {
 	bool tiling_drag;
 	int tiling_drag_threshold;
 
-	bool smart_gaps;
+	enum smart_gaps_mode smart_gaps;
 	int gaps_inner;
 	struct side_gaps gaps_outer;
 
@@ -542,7 +565,7 @@ struct sway_config {
 		struct sway_node *node;
 		struct sway_container *container;
 		struct sway_workspace *workspace;
-		bool using_criteria;
+		bool node_overridden; // True if the node is selected by means other than focus
 		struct {
 			int argc;
 			char **argv;
@@ -673,14 +696,13 @@ void free_bar_binding(struct bar_binding *binding);
 void free_workspace_config(struct workspace_config *wsc);
 
 /**
- * Updates the value of config->font_height based on the max title height
- * reported by each container. If recalculate is true, the containers will
- * recalculate their heights before reporting.
- *
+ * Updates the value of config->font_height based on the metrics for title's
+ * font as reported by pango.
+ * 
  * If the height has changed, all containers will be rearranged to take on the
  * new size.
  */
-void config_update_font_height(bool recalculate);
+void config_update_font_height(void);
 
 /**
  * Convert bindsym into bindcode using the first configured layout.

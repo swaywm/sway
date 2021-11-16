@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/backend/drm.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
@@ -58,6 +59,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->width = oc->height = -1;
 	oc->refresh_rate = -1;
 	oc->custom_mode = -1;
+	oc->drm_mode.type = -1;
 	oc->x = oc->y = -1;
 	oc->scale = -1;
 	oc->scale_filter = SCALE_FILTER_DEFAULT;
@@ -98,6 +100,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->custom_mode != -1) {
 		dst->custom_mode = src->custom_mode;
+	}
+	if (src->drm_mode.type != (uint32_t) -1) {
+		memcpy(&dst->drm_mode, &src->drm_mode, sizeof(src->drm_mode));
 	}
 	if (src->transform != -1) {
 		dst->transform = src->transform;
@@ -237,7 +242,10 @@ struct output_config *store_output_config(struct output_config *oc) {
 
 static void set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate, bool custom) {
-	int mhz = (int)(refresh_rate * 1000);
+	// Not all floating point integers can be represented exactly
+	// as (int)(1000 * mHz / 1000.f)
+	// round() the result to avoid any error
+	int mhz = (int)round(refresh_rate * 1000);
 
 	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
@@ -266,6 +274,18 @@ static void set_mode(struct wlr_output *output, int width, int height,
 		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
 	}
 	wlr_output_set_mode(output, best);
+}
+
+static void set_modeline(struct wlr_output *output, drmModeModeInfo *drm_mode) {
+	if (!wlr_output_is_drm(output)) {
+		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
+		return;
+	}
+	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
+	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
+	if (mode) {
+		wlr_output_set_mode(output, mode);
+	}
 }
 
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
@@ -348,14 +368,36 @@ static void queue_output_config(struct output_config *oc,
 	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 	wlr_output_enable(wlr_output, true);
 
-	if (oc && oc->width > 0 && oc->height > 0) {
+	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
+		sway_log(SWAY_DEBUG, "Set %s modeline",
+			wlr_output->name);
+		set_modeline(wlr_output, &oc->drm_mode);
+	} else if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
 			wlr_output->name, oc->width, oc->height, oc->refresh_rate);
 		set_mode(wlr_output, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-		wlr_output_set_mode(wlr_output, mode);
+		sway_log(SWAY_DEBUG, "Set preferred mode");
+		struct wlr_output_mode *preferred_mode =
+			wlr_output_preferred_mode(wlr_output);
+		wlr_output_set_mode(wlr_output, preferred_mode);
+
+		if (!wlr_output_test(wlr_output)) {
+			sway_log(SWAY_DEBUG, "Preferred mode rejected, "
+				"falling back to another mode");
+			struct wlr_output_mode *mode;
+			wl_list_for_each(mode, &wlr_output->modes, link) {
+				if (mode == preferred_mode) {
+					continue;
+				}
+
+				wlr_output_set_mode(wlr_output, mode);
+				if (wlr_output_test(wlr_output)) {
+					break;
+				}
+			}
+		}
 	}
 
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
@@ -364,9 +406,16 @@ static void queue_output_config(struct output_config *oc,
 		wlr_output_set_subpixel(wlr_output, oc->subpixel);
 	}
 
+	enum wl_output_transform tr = WL_OUTPUT_TRANSFORM_NORMAL;
 	if (oc && oc->transform >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
-		wlr_output_set_transform(wlr_output, oc->transform);
+		tr = oc->transform;
+	} else if (wlr_output_is_drm(wlr_output)) {
+		tr = wlr_drm_connector_get_panel_orientation(wlr_output);
+		sway_log(SWAY_DEBUG, "Auto-detected output transform: %d", tr);
+	}
+	if (wlr_output->transform != tr) {
+		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, tr);
+		wlr_output_set_transform(wlr_output, tr);
 	}
 
 	// Apply the scale last before the commit, because the scale auto-detection
@@ -480,6 +529,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	// this output came online, and some config items (like map_to_output) are
 	// dependent on an output being present.
 	input_manager_configure_all_inputs();
+	// Reconfigure the cursor images, since the scale may have changed.
+	input_manager_configure_xcursor();
 	return true;
 }
 
@@ -699,6 +750,8 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "fork failed");
 		return false;
 	} else if (pid == 0) {
+		restore_nofile_limit();
+
 		pid = fork();
 		if (pid < 0) {
 			sway_log_errno(SWAY_ERROR, "fork failed");

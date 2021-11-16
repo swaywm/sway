@@ -28,7 +28,10 @@ struct sway_input_method_relay {
 
 	struct wl_listener input_method_new;
 	struct wl_listener input_method_commit;
+	struct wl_listener input_method_grab_keyboard;
 	struct wl_listener input_method_destroy;
+
+	struct wl_listener input_method_keyboard_grab_destroy;
 };
 
 struct sway_text_input {
@@ -52,6 +55,8 @@ struct sway_text_input {
 
 void sway_input_method_relay_init(struct sway_seat *seat,
 	struct sway_input_method_relay *relay);
+
+void sway_input_method_relay_finish(struct sway_input_method_relay *relay);
 
 // Updates currently focused surface. Surface must belong to the same seat.
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,

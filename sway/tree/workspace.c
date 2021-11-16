@@ -48,7 +48,7 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 	if (focus && focus->type == N_WORKSPACE) {
 		return focus->sway_workspace->output;
 	} else if (focus && focus->type == N_CONTAINER) {
-		return focus->sway_container->workspace->output;
+		return focus->sway_container->pending.workspace->output;
 	}
 	// Fallback to the first output or noop output for headless
 	return root->outputs->length ? root->outputs->items[0] : root->noop_output;
@@ -227,10 +227,8 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 		// not a command about workspaces
 		if (strcmp(_target, "next") == 0 ||
 				strcmp(_target, "prev") == 0 ||
-				strncmp(_target, "next_on_output",
-					strlen("next_on_output")) == 0 ||
-				strncmp(_target, "prev_on_output",
-					strlen("next_on_output")) == 0 ||
+				strcmp(_target, "next_on_output") == 0 ||
+				strcmp(_target, "prev_on_output") == 0 ||
 				strcmp(_target, "number") == 0 ||
 				strcmp(_target, "back_and_forth") == 0 ||
 				strcmp(_target, "current") == 0) {
@@ -368,11 +366,11 @@ struct sway_workspace *workspace_by_name(const char *name) {
 	if (current && strcmp(name, "prev") == 0) {
 		return workspace_prev(current);
 	} else if (current && strcmp(name, "prev_on_output") == 0) {
-		return workspace_output_prev(current, false);
+		return workspace_output_prev(current);
 	} else if (current && strcmp(name, "next") == 0) {
 		return workspace_next(current);
 	} else if (current && strcmp(name, "next_on_output") == 0) {
-		return workspace_output_next(current, false);
+		return workspace_output_next(current);
 	} else if (strcmp(name, "current") == 0) {
 		return current;
 	} else if (strcasecmp(name, "back_and_forth") == 0) {
@@ -387,13 +385,155 @@ struct sway_workspace *workspace_by_name(const char *name) {
 	}
 }
 
+static int workspace_get_number(struct sway_workspace *workspace) {
+	char *endptr = NULL;
+	errno = 0;
+	long long n = strtoll(workspace->name, &endptr, 10);
+	if (errno != 0 || n > INT32_MAX || n < 0 || endptr == workspace->name) {
+		n = -1;
+	}
+	return n;
+}
+
+struct sway_workspace *workspace_prev(struct sway_workspace *workspace) {
+	int n = workspace_get_number(workspace);
+	struct sway_workspace *prev = NULL, *last = NULL, *other = NULL;
+	bool found = false;
+	if (n < 0) {
+		// Find the prev named workspace
+		int othern = -1;
+		for (int i = root->outputs->length - 1; i >= 0; i--) {
+			struct sway_output *output = root->outputs->items[i];
+			for (int j = output->workspaces->length - 1; j >= 0; j--) {
+				struct sway_workspace *ws = output->workspaces->items[j];
+				int wsn = workspace_get_number(ws);
+				if (!last) {
+					// The first workspace in reverse order
+					last = ws;
+				}
+				if (!other || (wsn >= 0 && wsn > othern)) {
+					// The last (greatest) numbered workspace.
+					other = ws;
+					othern = workspace_get_number(other);
+				}
+				if (ws == workspace) {
+					found = true;
+				} else if (wsn < 0 && found) {
+					// Found a non-numbered workspace before current
+					return ws;
+				}
+			}
+		}
+	} else {
+		// Find the prev numbered workspace
+		int prevn = -1, lastn = -1;
+		for (int i = root->outputs->length - 1; i >= 0; i--) {
+			struct sway_output *output = root->outputs->items[i];
+			for (int j = output->workspaces->length - 1; j >= 0; j--) {
+				struct sway_workspace *ws = output->workspaces->items[j];
+				int wsn = workspace_get_number(ws);
+				if (!last || (wsn >= 0 && wsn > lastn)) {
+					// The greatest numbered (or last) workspace
+					last = ws;
+					lastn = workspace_get_number(last);
+				}
+				if (!other && wsn < 0) {
+					// The last named workspace
+					other = ws;
+				}
+				if (wsn < 0) {
+					// Haven't reached the numbered workspaces
+					continue;
+				}
+				if (wsn < n && (!prev || wsn > prevn)) {
+					// The closest workspace before the current
+					prev = ws;
+					prevn = workspace_get_number(prev);
+				}
+			}
+		}
+	}
+
+	if (!prev) {
+		prev = other ? other : last;
+	}
+	return prev;
+}
+
+struct sway_workspace *workspace_next(struct sway_workspace *workspace) {
+	int n = workspace_get_number(workspace);
+	struct sway_workspace *next = NULL, *first = NULL, *other = NULL;
+	bool found = false;
+	if (n < 0) {
+		// Find the next named workspace
+		int othern = -1;
+		for (int i = 0; i < root->outputs->length; i++) {
+			struct sway_output *output = root->outputs->items[i];
+			for (int j = 0; j < output->workspaces->length; j++) {
+				struct sway_workspace *ws = output->workspaces->items[j];
+				int wsn = workspace_get_number(ws);
+				if (!first) {
+					// The first named workspace
+					first = ws;
+				}
+				if (!other || (wsn >= 0 && wsn < othern)) {
+					// The first (least) numbered workspace
+					other = ws;
+					othern = workspace_get_number(other);
+				}
+				if (ws == workspace) {
+					found = true;
+				} else if (wsn < 0 && found) {
+					// The first non-numbered workspace after the current
+					return ws;
+				}
+			}
+		}
+	} else {
+		// Find the next numbered workspace
+		int nextn = -1, firstn = -1;
+		for (int i = 0; i < root->outputs->length; i++) {
+			struct sway_output *output = root->outputs->items[i];
+			for (int j = 0; j < output->workspaces->length; j++) {
+				struct sway_workspace *ws = output->workspaces->items[j];
+				int wsn = workspace_get_number(ws);
+				if (!first || (wsn >= 0 && wsn < firstn)) {
+					// The first (or least numbered) workspace
+					first = ws;
+					firstn = workspace_get_number(first);
+				}
+				if (!other && wsn < 0) {
+					// The first non-numbered workspace
+					other = ws;
+				}
+				if (wsn < 0) {
+					// Checked all the numbered workspaces
+					break;
+				}
+				if (n < wsn && (!next || wsn < nextn)) {
+					// The first workspace numerically after the current
+					next = ws;
+					nextn = workspace_get_number(next);
+				}
+			}
+		}
+	}
+
+	if (!next) {
+		// If there is no next workspace from the same category, return the
+		// first from this category.
+		next = other ? other : first;
+	}
+	return next;
+}
+
 /**
  * Get the previous or next workspace on the specified output. Wraps around at
  * the end and beginning.  If next is false, the previous workspace is returned,
  * otherwise the next one is returned.
  */
 static struct sway_workspace *workspace_output_prev_next_impl(
-		struct sway_output *output, int dir, bool create) {
+		struct sway_output *output, int dir) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *workspace = seat_get_focused_workspace(seat);
 	if (!workspace) {
@@ -403,59 +543,17 @@ static struct sway_workspace *workspace_output_prev_next_impl(
 	}
 
 	int index = list_find(output->workspaces, workspace);
-	if (!workspace_is_empty(workspace) && create &&
-			(index + dir < 0 || index + dir == output->workspaces->length)) {
-		struct sway_output *output = workspace->output;
-		char *next = workspace_next_name(output->wlr_output->name);
-		workspace_create(output, next);
-		free(next);
-	}
 	size_t new_index = wrap(index + dir, output->workspaces->length);
 	return output->workspaces->items[new_index];
 }
 
-/**
- * Get the previous or next workspace. If the first/last workspace on an output
- * is active, proceed to the previous/next output's previous/next workspace.
- */
-static struct sway_workspace *workspace_prev_next_impl(
-		struct sway_workspace *workspace, int dir) {
-	struct sway_output *output = workspace->output;
-	int index = list_find(output->workspaces, workspace);
-	int new_index = index + dir;
 
-	if (new_index >= 0 && new_index < output->workspaces->length) {
-		return output->workspaces->items[new_index];
-	}
-
-	// Look on a different output
-	int output_index = list_find(root->outputs, output);
-	new_index = wrap(output_index + dir, root->outputs->length);
-	output = root->outputs->items[new_index];
-
-	if (dir == 1) {
-		return output->workspaces->items[0];
-	} else {
-		return output->workspaces->items[output->workspaces->length - 1];
-	}
+struct sway_workspace *workspace_output_next(struct sway_workspace *current) {
+	return workspace_output_prev_next_impl(current->output, 1);
 }
 
-struct sway_workspace *workspace_output_next(
-		struct sway_workspace *current, bool create) {
-	return workspace_output_prev_next_impl(current->output, 1, create);
-}
-
-struct sway_workspace *workspace_next(struct sway_workspace *current) {
-	return workspace_prev_next_impl(current, 1);
-}
-
-struct sway_workspace *workspace_output_prev(
-		struct sway_workspace *current, bool create) {
-	return workspace_output_prev_next_impl(current->output, -1, create);
-}
-
-struct sway_workspace *workspace_prev(struct sway_workspace *current) {
-	return workspace_prev_next_impl(current, -1);
+struct sway_workspace *workspace_output_prev(struct sway_workspace *current) {
+	return workspace_output_prev_next_impl(current->output, -1);
 }
 
 static void set_active_current_and_diactivate_others(struct wlr_workspace_handle_v1 *workspace) {
@@ -468,25 +566,30 @@ static void set_active_current_and_diactivate_others(struct wlr_workspace_handle
 	}
 }
 
-bool workspace_switch(struct sway_workspace *workspace,
-		bool no_auto_back_and_forth) {
+struct sway_workspace *workspace_auto_back_and_forth(
+		struct sway_workspace *workspace) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *active_ws = NULL;
 	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	if (focus && focus->type == N_WORKSPACE) {
 		active_ws = focus->sway_workspace;
 	} else if (focus && focus->type == N_CONTAINER) {
-		active_ws = focus->sway_container->workspace;
+		active_ws = focus->sway_container->pending.workspace;
 	}
 
-	if (!no_auto_back_and_forth && config->auto_back_and_forth && active_ws
-			&& active_ws == workspace && seat->prev_workspace_name) {
+	if (config->auto_back_and_forth && active_ws && active_ws == workspace &&
+			seat->prev_workspace_name) {
 		struct sway_workspace *new_ws =
 			workspace_by_name(seat->prev_workspace_name);
 		workspace = new_ws ?
 			new_ws :
 			workspace_create(NULL, seat->prev_workspace_name);
 	}
+	return workspace;
+}
+
+bool workspace_switch(struct sway_workspace *workspace) {
+	struct sway_seat *seat = input_manager_current_seat();
 
 	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
@@ -516,7 +619,7 @@ bool workspace_is_empty(struct sway_workspace *ws) {
 	// Sticky views are not considered to be part of this workspace
 	for (int i = 0; i < ws->floating->length; ++i) {
 		struct sway_container *floater = ws->floating->items[i];
-		if (!floater->is_sticky) {
+		if (!container_is_sticky(floater)) {
 			return false;
 		}
 	}
@@ -645,16 +748,31 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
 	return NULL;
 }
 
+static void set_workspace(struct sway_container *container, void *data) {
+	container->pending.workspace = container->pending.parent->pending.workspace;
+}
+
+static void workspace_attach_tiling(struct sway_workspace *ws,
+		struct sway_container *con) {
+	list_add(ws->tiling, con);
+	con->pending.workspace = ws;
+	container_for_each_child(con, set_workspace, NULL);
+	container_handle_fullscreen_reparent(con);
+	workspace_update_representation(ws);
+	node_set_dirty(&ws->node);
+	node_set_dirty(&con->node);
+}
+
 struct sway_container *workspace_wrap_children(struct sway_workspace *ws) {
 	struct sway_container *fs = ws->fullscreen;
 	struct sway_container *middle = container_create(NULL);
-	middle->layout = ws->layout;
+	middle->pending.layout = ws->layout;
 	while (ws->tiling->length) {
 		struct sway_container *child = ws->tiling->items[0];
 		container_detach(child);
 		container_add_child(middle, child);
 	}
-	workspace_add_tiling(ws, middle);
+	workspace_attach_tiling(ws, middle);
 	ws->fullscreen = fs;
 	return middle;
 }
@@ -666,9 +784,9 @@ void workspace_unwrap_children(struct sway_workspace *ws,
 		return;
 	}
 
-	ws->layout = wrap->layout;
-	while (wrap->children->length) {
-		struct sway_container *child = wrap->children->items[0];
+	ws->layout = wrap->pending.layout;
+	while (wrap->pending.children->length) {
+		struct sway_container *child = wrap->pending.children->items[0];
 		container_detach(child);
 		workspace_add_tiling(ws, child);
 	}
@@ -686,47 +804,45 @@ void workspace_detach(struct sway_workspace *workspace) {
 	node_set_dirty(&output->node);
 }
 
-static void set_workspace(struct sway_container *container, void *data) {
-	container->workspace = container->parent->workspace;
-}
-
-void workspace_add_tiling(struct sway_workspace *workspace,
+struct sway_container *workspace_add_tiling(struct sway_workspace *workspace,
 		struct sway_container *con) {
-	if (con->workspace) {
+	if (con->pending.workspace) {
+		struct sway_container *old_parent = con->pending.parent;
 		container_detach(con);
+		if (old_parent) {
+			container_reap_empty(old_parent);
+		}
+	}
+	if (config->default_layout != L_NONE) {
+		con = container_split(con, config->default_layout);
 	}
 	list_add(workspace->tiling, con);
-	con->workspace = workspace;
+	con->pending.workspace = workspace;
 	container_for_each_child(con, set_workspace, NULL);
 	container_handle_fullscreen_reparent(con);
 	workspace_update_representation(workspace);
 	node_set_dirty(&workspace->node);
 	node_set_dirty(&con->node);
+	return con;
 }
 
 void workspace_add_floating(struct sway_workspace *workspace,
 		struct sway_container *con) {
-	if (con->workspace) {
+	if (con->pending.workspace) {
 		container_detach(con);
 	}
 	list_add(workspace->floating, con);
-	con->workspace = workspace;
+	con->pending.workspace = workspace;
 	container_for_each_child(con, set_workspace, NULL);
 	container_handle_fullscreen_reparent(con);
 	node_set_dirty(&workspace->node);
 	node_set_dirty(&con->node);
 }
 
-void workspace_insert_tiling(struct sway_workspace *workspace,
+void workspace_insert_tiling_direct(struct sway_workspace *workspace,
 		struct sway_container *con, int index) {
-	if (con->workspace) {
-		container_detach(con);
-	}
-	if (workspace->layout == L_STACKED || workspace->layout == L_TABBED) {
-		con = container_split(con, workspace->layout);
-	}
 	list_insert(workspace->tiling, index, con);
-	con->workspace = workspace;
+	con->pending.workspace = workspace;
 	container_for_each_child(con, set_workspace, NULL);
 	container_handle_fullscreen_reparent(con);
 	workspace_update_representation(workspace);
@@ -734,24 +850,48 @@ void workspace_insert_tiling(struct sway_workspace *workspace,
 	node_set_dirty(&con->node);
 }
 
+struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
+		struct sway_container *con, int index) {
+	if (con->pending.workspace) {
+		container_detach(con);
+	}
+	if (config->default_layout != L_NONE) {
+		con = container_split(con, config->default_layout);
+	}
+	workspace_insert_tiling_direct(workspace, con, index);
+	return con;
+}
+
+bool workspace_has_single_visible_container(struct sway_workspace *ws) {
+	struct sway_seat *seat = input_manager_get_default_seat();
+	struct sway_container *focus =
+		seat_get_focus_inactive_tiling(seat, ws);
+	if (focus && !focus->view) {
+		focus = seat_get_focus_inactive_view(seat, &focus->node);
+	}
+	return (focus && focus->view && view_ancestor_is_only_visible(focus->view));
+}
+
 void workspace_add_gaps(struct sway_workspace *ws) {
-	if (config->smart_gaps) {
-		struct sway_seat *seat = input_manager_get_default_seat();
-		struct sway_container *focus =
-			seat_get_focus_inactive_tiling(seat, ws);
-		if (focus && !focus->view) {
-			focus = seat_get_focus_inactive_view(seat, &focus->node);
-		}
-		if (focus && focus->view && view_ancestor_is_only_visible(focus->view)) {
-			ws->current_gaps.top = 0;
-			ws->current_gaps.right = 0;
-			ws->current_gaps.bottom = 0;
-			ws->current_gaps.left = 0;
-			return;
-		}
+	if (config->smart_gaps == SMART_GAPS_ON
+			&& workspace_has_single_visible_container(ws)) {
+		ws->current_gaps.top = 0;
+		ws->current_gaps.right = 0;
+		ws->current_gaps.bottom = 0;
+		ws->current_gaps.left = 0;
+		return;
 	}
 
-	ws->current_gaps = ws->gaps_outer;
+	if (config->smart_gaps == SMART_GAPS_INVERSE_OUTER
+			&& !workspace_has_single_visible_container(ws)) {
+		ws->current_gaps.top = 0;
+		ws->current_gaps.right = 0;
+		ws->current_gaps.bottom = 0;
+		ws->current_gaps.left = 0;
+	} else {
+		ws->current_gaps = ws->gaps_outer;
+	}
+
 	// Add inner gaps and make sure we don't turn out negative
 	ws->current_gaps.top = fmax(0, ws->current_gaps.top + ws->gaps_inner);
 	ws->current_gaps.right = fmax(0, ws->current_gaps.right + ws->gaps_inner);
@@ -794,7 +934,7 @@ struct sway_container *workspace_split(struct sway_workspace *workspace,
 	enum sway_container_layout old_layout = workspace->layout;
 	struct sway_container *middle = workspace_wrap_children(workspace);
 	workspace->layout = layout;
-	middle->layout = old_layout;
+	middle->pending.layout = old_layout;
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
@@ -834,4 +974,24 @@ size_t workspace_num_tiling_views(struct sway_workspace *ws) {
 	size_t count = 0;
 	workspace_for_each_container(ws, count_tiling_views, &count);
 	return count;
+}
+
+static void count_sticky_containers(struct sway_container *con, void *data) {
+	if (container_is_sticky(con)) {
+		size_t *count = data;
+		*count += 1;
+	}
+}
+
+size_t workspace_num_sticky_containers(struct sway_workspace *ws) {
+	size_t count = 0;
+	workspace_for_each_container(ws, count_sticky_containers, &count);
+	return count;
+}
+
+void workspace_squash(struct sway_workspace *workspace) {
+	for (int i = 0; i < workspace->tiling->length; i++) {
+		struct sway_container *child = workspace->tiling->items[i];
+		i += container_squash(child);
+	}
 }

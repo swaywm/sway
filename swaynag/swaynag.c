@@ -30,8 +30,8 @@ static bool terminal_execute(char *terminal, char *command) {
 	chmod(fname, S_IRUSR | S_IWUSR | S_IXUSR);
 	char *cmd = malloc(sizeof(char) * (strlen(terminal) + strlen(" -e ") + strlen(fname) + 1));
 	sprintf(cmd, "%s -e %s", terminal, fname);
-	execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-	sway_log_errno(SWAY_ERROR, "Failed to run command, execl() returned.");
+	execlp("sh", "sh", "-c", cmd, NULL);
+	sway_log_errno(SWAY_ERROR, "Failed to run command, execlp() returned.");
 	free(cmd);
 	return false;
 }
@@ -69,8 +69,8 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 						sway_log(SWAY_DEBUG,
 								"$TERMINAL not found. Running directly");
 					}
-					execl("/bin/sh", "/bin/sh", "-c", button->action, NULL);
-					sway_log_errno(SWAY_DEBUG, "execl failed");
+					execlp("sh", "sh", "-c", button->action, NULL);
+					sway_log_errno(SWAY_DEBUG, "execlp failed");
 					_exit(EXIT_FAILURE);
 				}
 			}
@@ -103,7 +103,7 @@ static void layer_surface_closed(void *data,
 	swaynag_destroy(swaynag);
 }
 
-static struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.configure = layer_surface_configure,
 	.closed = layer_surface_closed,
 };
@@ -124,7 +124,7 @@ static void surface_enter(void *data, struct wl_surface *surface,
 	};
 }
 
-static struct wl_surface_listener surface_listener = {
+static const struct wl_surface_listener surface_listener = {
 	.enter = surface_enter,
 	.leave = nop,
 };
@@ -178,6 +178,8 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaynag_seat *seat = data;
 	struct swaynag_pointer *pointer = &seat->pointer;
+	pointer->x = wl_fixed_to_int(surface_x);
+	pointer->y = wl_fixed_to_int(surface_y);
 	pointer->serial = serial;
 	update_cursor(seat);
 }
@@ -198,8 +200,8 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	double x = seat->pointer.x * swaynag->scale;
-	double y = seat->pointer.y * swaynag->scale;
+	double x = seat->pointer.x;
+	double y = seat->pointer.y;
 	for (int i = 0; i < swaynag->buttons->length; i++) {
 		struct swaynag_button *nagbutton = swaynag->buttons->items[i];
 		if (x >= nagbutton->x
@@ -263,7 +265,7 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	render_frame(swaynag);
 }
 
-static struct wl_pointer_listener pointer_listener = {
+static const struct wl_pointer_listener pointer_listener = {
 	.enter = wl_pointer_enter,
 	.leave = nop,
 	.motion = wl_pointer_motion,
@@ -289,7 +291,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	}
 }
 
-const struct wl_seat_listener seat_listener = {
+static const struct wl_seat_listener seat_listener = {
 	.capabilities = seat_handle_capabilities,
 	.name = nop,
 };
@@ -305,7 +307,7 @@ static void output_scale(void *data, struct wl_output *output,
 	}
 }
 
-static struct wl_output_listener output_listener = {
+static const struct wl_output_listener output_listener = {
 	.geometry = nop,
 	.mode = nop,
 	.done = nop,
@@ -327,7 +329,7 @@ static void xdg_output_handle_name(void *data,
 	swaynag_output->swaynag->querying_outputs--;
 }
 
-static struct zxdg_output_v1_listener xdg_output_listener = {
+static const struct zxdg_output_v1_listener xdg_output_listener = {
 	.logical_position = nop,
 	.logical_size = nop,
 	.done = nop,
@@ -474,7 +476,8 @@ void swaynag_setup(struct swaynag *swaynag) {
 	swaynag->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			swaynag->layer_shell, swaynag->surface,
 			swaynag->output ? swaynag->output->wl_output : NULL,
-			ZWLR_LAYER_SHELL_V1_LAYER_TOP, "swaynag");
+			swaynag->type->layer,
+			"swaynag");
 	assert(swaynag->layer_surface);
 	zwlr_layer_surface_v1_add_listener(swaynag->layer_surface,
 			&layer_surface_listener, swaynag);

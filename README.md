@@ -1,39 +1,30 @@
 # sway
 
-[**English**](https://github.com/swaywm/sway/blob/master/README.md#sway--) - [日本語](https://github.com/swaywm/sway/blob/master/README.ja.md#sway--) - [Français](https://github.com/swaywm/sway/blob/master/README.fr.md#sway--) - [Українська](https://github.com/swaywm/sway/blob/master/README.uk.md#sway--) - [Español](https://github.com/swaywm/sway/blob/master/README.es.md#sway--) - [Polski](https://github.com/swaywm/sway/blob/master/README.pl.md#sway--) - [中文-简体](https://github.com/swaywm/sway/blob/master/README.zh-CN.md#sway--) - [Deutsch](https://github.com/swaywm/sway/blob/master/README.de.md#sway--) - [Nederlands](https://github.com/swaywm/sway/blob/master/README.nl.md#sway--) - [Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--)- [中文-繁體](https://github.com/swaywm/sway/blob/master/README.zh-TW.md#sway--) - [Português](https://github.com/swaywm/sway/blob/master/README.pt.md#sway--) - [Danish](https://github.com/swaywm/sway/blob/master/README.dk.md#sway--) - [한국어](https://github.com/swaywm/sway/blob/master/README.ko.md#sway--) - [Română](https://github.com/swaywm/sway/blob/master/README.ro.md#sway--)
+**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Dansk][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr] - [فارسی][ir] - [Ελληνικά][gr]
 
-sway is an [i3](https://i3wm.org/)-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
-Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the [IRC
-channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
-irc.freenode.net).
-
-If you'd like to support sway development, please contribute to [SirCmpwn's
-Patreon page](https://patreon.com/sircmpwn).
+sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
+[IRC channel] \(#sway on irc.libera.chat).
 
 ## Release Signatures
 
-Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
-and published [on GitHub](https://github.com/swaywm/sway/releases).
+Releases are signed with [E88F5E48] and published [on GitHub][GitHub releases].
 
 ## Installation
 
 ### From Packages
 
 Sway is available in many distributions. Try installing the "sway" package for
-yours. If it's not available, check out [this wiki page](https://github.com/swaywm/sway/wiki/Unsupported-packages)
-for information on installation for your distributions.
-
-If you're interested in packaging sway for your distribution, stop by the IRC
-channel or shoot an email to sir@cmpwn.com for advice.
+yours.
 
 ### Compiling from Source
 
-Check out [this wiki page](https://github.com/swaywm/sway/wiki/Development-Setup) if you want to build the HEAD of sway and wlroots for testing or development.
+Check out [this wiki page][Development setup] if you want to build the HEAD of
+sway and wlroots for testing or development.
 
 Install dependencies:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots]
 * wayland
 * wayland-protocols \*
 * pcre
@@ -41,18 +32,18 @@ Install dependencies:
 * pango
 * cairo
 * gdk-pixbuf2 (optional: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
+* [scdoc] (optional: man pages) \*
 * git (optional: version info) \*
 
-_\*Compile-time dep_
+_\* Compile-time dep_
 
 Run these commands:
 
-    meson build
-    ninja -C build
-    sudo ninja -C build install
+    meson build/
+    ninja -C build/
+    sudo ninja -C build/ install
 
-On systems without logind, you need to suid the sway binary:
+On systems without logind nor seatd, you need to suid the sway binary:
 
     sudo chmod a+s /usr/local/bin/sway
 
@@ -69,3 +60,32 @@ Run `man 5 sway` for information on the configuration.
 
 Run `sway` from a TTY. Some display managers may work but are not supported by
 sway (gdm is known to work fairly well).
+
+[en]: https://github.com/swaywm/sway#readme
+[ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
+[fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
+[uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
+[es]: https://github.com/swaywm/sway/blob/master/README.es.md
+[pl]: https://github.com/swaywm/sway/blob/master/README.pl.md
+[zh-CN]: https://github.com/swaywm/sway/blob/master/README.zh-CN.md
+[de]: https://github.com/swaywm/sway/blob/master/README.de.md
+[nl]: https://github.com/swaywm/sway/blob/master/README.nl.md
+[ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
+[zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
+[pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
+[dk]: https://github.com/swaywm/sway/blob/master/README.dk.md
+[ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
+[ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
+[hu]: https://github.com/swaywm/sway/blob/master/README.hu.md
+[tr]: https://github.com/swaywm/sway/blob/master/README.tr.md
+[ir]: https://github.com/swaywm/sway/blob/master/README.ir.md
+[gr]: https://github.com/swaywm/sway/blob/master/README.gr.md
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc

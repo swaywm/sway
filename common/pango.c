@@ -1,4 +1,4 @@
-#include <cairo/cairo.h>
+#include <cairo.h>
 #include <pango/pangocairo.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cairo.h"
+#include "cairo_util.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -109,7 +109,23 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	free(buf);
 }
 
-void pango_printf(cairo_t *cairo, const char *font,
+void get_text_metrics(const char *font, int *height, int *baseline) {
+	cairo_t *cairo = cairo_create(NULL);
+	PangoContext *pango = pango_cairo_create_context(cairo);
+	PangoFontDescription *description = pango_font_description_from_string(font);
+	// When passing NULL as a language, pango uses the current locale.
+	PangoFontMetrics *metrics = pango_context_get_metrics(pango, description, NULL);
+
+	*baseline = pango_font_metrics_get_ascent(metrics) / PANGO_SCALE;
+	*height = *baseline + pango_font_metrics_get_descent(metrics) / PANGO_SCALE;
+
+	pango_font_metrics_unref(metrics);
+	pango_font_description_free(description);
+	g_object_unref(pango);
+	cairo_destroy(cairo);
+}
+
+void render_text(cairo_t *cairo, const char *font,
 		double scale, bool markup, const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);

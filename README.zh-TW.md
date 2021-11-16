@@ -2,15 +2,12 @@
 
 sway 是一個與 [i3](https://i3wm.org/) 相容的 [Wayland](http://wayland.freedesktop.org/) compositor。
 閱讀 [FAQ](https://github.com/swaywm/sway/wiki)。 加入 [IRC
-頻道](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
-irc.freenode.net)
-
-如果你想支持 sway 的開發，請到 [SirCmpwn's
-Patreon page](https://patreon.com/sircmpwn) 貢獻。
+頻道](https://web.libera.chat/gamja/?channels=#sway) (#sway on
+irc.libera.chat)
 
 ## 發行簽章
 
-所有發行的版本都會以 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 簽署
+所有發行的版本都會以 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) 簽署
 並發佈於 [GitHub](https://github.com/swaywm/sway/releases)
 
 ## 安裝
@@ -28,7 +25,7 @@ Sway 在許多發行版都有提供。請自己嘗試於你的發行版安裝 �
 相依套件:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

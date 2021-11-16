@@ -11,11 +11,17 @@ struct sway_tablet {
 	struct wlr_tablet_v2_tablet *tablet_v2;
 };
 
+enum sway_tablet_tool_mode {
+	SWAY_TABLET_TOOL_MODE_ABSOLUTE,
+	SWAY_TABLET_TOOL_MODE_RELATIVE,
+};
+
 struct sway_tablet_tool {
 	struct sway_seat *seat;
 	struct sway_tablet *tablet;
 	struct wlr_tablet_v2_tablet_tool *tablet_v2_tool;
 
+	enum sway_tablet_tool_mode mode;
 	double tilt_x, tilt_y;
 
 	struct wl_listener set_cursor;

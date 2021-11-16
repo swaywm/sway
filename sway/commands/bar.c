@@ -8,7 +8,7 @@
 #include "log.h"
 
 // Must be in alphabetical order for bsearch
-static struct cmd_handler bar_handlers[] = {
+static const struct cmd_handler bar_handlers[] = {
 	{ "bindcode", bar_cmd_bindcode },
 	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
 	{ "bindsym", bar_cmd_bindsym },
@@ -36,11 +36,12 @@ static struct cmd_handler bar_handlers[] = {
 	{ "unbindcode", bar_cmd_unbindcode },
 	{ "unbindsym", bar_cmd_unbindsym },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
+	{ "workspace_min_width", bar_cmd_workspace_min_width },
 	{ "wrap_scroll", bar_cmd_wrap_scroll },
 };
 
 // Must be in alphabetical order for bsearch
-static struct cmd_handler bar_config_handlers[] = {
+static const struct cmd_handler bar_config_handlers[] = {
 	{ "id", bar_cmd_id },
 	{ "swaybar_command", bar_cmd_swaybar_command },
 };
@@ -115,6 +116,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 	if (res && res->status != CMD_SUCCESS) {
 		if (id) {
 			free_bar_config(config->current_bar);
+			config->current_bar = NULL;
 			id = NULL;
 		}
 		return res;

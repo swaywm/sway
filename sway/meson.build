@@ -8,6 +8,7 @@ sway_sources = files(
 	'main.c',
 	'server.c',
 	'swaynag.c',
+	'xdg_activation_v1.c',
 	'xdg_decoration.c',
 
 	'desktop/desktop.c',
@@ -144,6 +145,7 @@ sway_sources = files(
 	'commands/bar/tray_output.c',
 	'commands/bar/tray_padding.c',
 	'commands/bar/workspace_buttons.c',
+	'commands/bar/workspace_min_width.c',
 	'commands/bar/wrap_scroll.c',
 
 	'commands/input/accel_profile.c',
@@ -167,6 +169,7 @@ sway_sources = files(
 	'commands/input/scroll_method.c',
 	'commands/input/tap.c',
 	'commands/input/tap_button_map.c',
+	'commands/input/tool_mode.c',
 	'commands/input/xkb_capslock.c',
 	'commands/input/xkb_file.c',
 	'commands/input/xkb_layout.c',
@@ -202,9 +205,11 @@ sway_sources = files(
 
 sway_deps = [
 	cairo,
+	drm,
 	jsonc,
 	libevdev,
 	libinput,
+	libudev,
 	math,
 	pango,
 	pcre,

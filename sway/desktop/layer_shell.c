@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
@@ -115,9 +114,10 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		// Horizontal axis
 		const uint32_t both_horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-		if ((state->anchor & both_horiz) && box.width == 0) {
+		if (box.width == 0) {
 			box.x = bounds.x;
-			box.width = bounds.width;
+		} else if ((state->anchor & both_horiz) == both_horiz) {
+			box.x = bounds.x + ((bounds.width / 2) - (box.width / 2));
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT)) {
 			box.x = bounds.x;
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT)) {
@@ -128,9 +128,10 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		// Vertical axis
 		const uint32_t both_vert = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
-		if ((state->anchor & both_vert) && box.height == 0) {
+		if (box.height == 0) {
 			box.y = bounds.y;
-			box.height = bounds.height;
+		} else if ((state->anchor & both_vert) == both_vert) {
+			box.y = bounds.y + ((bounds.height / 2) - (box.height / 2));
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP)) {
 			box.y = bounds.y;
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM)) {
@@ -139,25 +140,30 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 			box.y = bounds.y + ((bounds.height / 2) - (box.height / 2));
 		}
 		// Margin
-		if ((state->anchor & both_horiz) == both_horiz) {
+		if (box.width == 0) {
 			box.x += state->margin.left;
-			box.width -= state->margin.left + state->margin.right;
+			box.width = bounds.width -
+				(state->margin.left + state->margin.right);
+		} else if ((state->anchor & both_horiz) == both_horiz) {
+			// don't apply margins
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT)) {
 			box.x += state->margin.left;
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT)) {
 			box.x -= state->margin.right;
 		}
-		if ((state->anchor & both_vert) == both_vert) {
+		if (box.height == 0) {
 			box.y += state->margin.top;
-			box.height -= state->margin.top + state->margin.bottom;
+			box.height = bounds.height -
+				(state->margin.top + state->margin.bottom);
+		} else if ((state->anchor & both_vert) == both_vert) {
+			// don't apply margins
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP)) {
 			box.y += state->margin.top;
 		} else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM)) {
 			box.y -= state->margin.bottom;
 		}
-		if (box.width < 0 || box.height < 0) {
-			// TODO: Bubble up a protocol error?
-			wlr_layer_surface_v1_close(layer);
+		if (!sway_assert(box.width >= 0 && box.height >= 0,
+				"Expected layer surface to have positive size")) {
 			continue;
 		}
 		// Apply
@@ -191,7 +197,7 @@ void arrange_layers(struct sway_output *output) {
 		arrange_output(output);
 	}
 
-	// Arrange non-exlusive surfaces from top->bottom
+	// Arrange non-exclusive surfaces from top->bottom
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 			&usable_area, false);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
@@ -277,7 +283,7 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	}
 
 	sway_layer->layer_surface->output = NULL;
-	wlr_layer_surface_v1_close(sway_layer->layer_surface);
+	wlr_layer_surface_v1_destroy(sway_layer->layer_surface);
 }
 
 static void handle_surface_commit(struct wl_listener *listener, void *data) {
@@ -290,21 +296,30 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	}
 
 	struct sway_output *output = wlr_output->data;
-	struct wlr_box old_geo = layer->geo;
-	arrange_layers(output);
+	struct wlr_box old_extent = layer->extent;
 
-	bool geo_changed =
-		memcmp(&old_geo, &layer->geo, sizeof(struct wlr_box)) != 0;
-	bool layer_changed = layer->layer != layer_surface->current.layer;
-	if (layer_changed) {
-		wl_list_remove(&layer->link);
-		wl_list_insert(&output->layers[layer_surface->current.layer],
-			&layer->link);
-		layer->layer = layer_surface->current.layer;
+	bool layer_changed = false;
+	if (layer_surface->current.committed != 0
+			|| layer->mapped != layer_surface->mapped) {
+		layer->mapped = layer_surface->mapped;
+		layer_changed = layer->layer != layer_surface->current.layer;
+		if (layer_changed) {
+			wl_list_remove(&layer->link);
+			wl_list_insert(&output->layers[layer_surface->current.layer],
+				&layer->link);
+			layer->layer = layer_surface->current.layer;
+		}
+		arrange_layers(output);
 	}
-	if (geo_changed || layer_changed) {
-		output_damage_surface(output, old_geo.x, old_geo.y,
-			layer_surface->surface, true);
+
+	wlr_surface_get_extends(layer_surface->surface, &layer->extent);
+	layer->extent.x += layer->geo.x;
+	layer->extent.y += layer->geo.y;
+
+	bool extent_changed =
+		memcmp(&old_extent, &layer->extent, sizeof(struct wlr_box)) != 0;
+	if (extent_changed || layer_changed) {
+		output_damage_box(output, &old_extent);
 		output_damage_surface(output, layer->geo.x, layer->geo.y,
 			layer_surface->surface, true);
 	} else {
@@ -351,6 +366,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->unmap.link);
 	wl_list_remove(&sway_layer->surface_commit.link);
 	wl_list_remove(&sway_layer->new_popup.link);
+	wl_list_remove(&sway_layer->new_subsurface.link);
 	if (sway_layer->layer_surface->output != NULL) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
 		if (output != NULL) {
@@ -380,6 +396,82 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	unmap(sway_layer);
 }
 
+static void subsurface_damage(struct sway_layer_subsurface *subsurface,
+		bool whole) {
+	struct sway_layer_surface *layer = subsurface->layer_surface;
+	struct wlr_output *wlr_output = layer->layer_surface->output;
+	if (!wlr_output) {
+		return;
+	}
+	struct sway_output *output = wlr_output->data;
+	int ox = subsurface->wlr_subsurface->current.x + layer->geo.x;
+	int oy = subsurface->wlr_subsurface->current.y + layer->geo.y;
+	output_damage_surface(
+			output, ox, oy, subsurface->wlr_subsurface->surface, whole);
+}
+
+static void subsurface_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, unmap);
+	subsurface_damage(subsurface, true);
+}
+
+static void subsurface_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, map);
+	subsurface_damage(subsurface, true);
+}
+
+static void subsurface_handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, commit);
+	subsurface_damage(subsurface, false);
+}
+
+static void subsurface_handle_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_layer_subsurface *subsurface =
+			wl_container_of(listener, subsurface, destroy);
+
+	wl_list_remove(&subsurface->map.link);
+	wl_list_remove(&subsurface->unmap.link);
+	wl_list_remove(&subsurface->destroy.link);
+	wl_list_remove(&subsurface->commit.link);
+	free(subsurface);
+}
+
+static struct sway_layer_subsurface *create_subsurface(
+		struct wlr_subsurface *wlr_subsurface,
+		struct sway_layer_surface *layer_surface) {
+	struct sway_layer_subsurface *subsurface =
+			calloc(1, sizeof(struct sway_layer_subsurface));
+	if (subsurface == NULL) {
+		return NULL;
+	}
+
+	subsurface->wlr_subsurface = wlr_subsurface;
+	subsurface->layer_surface = layer_surface;
+
+	subsurface->map.notify = subsurface_handle_map;
+	wl_signal_add(&wlr_subsurface->events.map, &subsurface->map);
+	subsurface->unmap.notify = subsurface_handle_unmap;
+	wl_signal_add(&wlr_subsurface->events.unmap, &subsurface->unmap);
+	subsurface->destroy.notify = subsurface_handle_destroy;
+	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
+	subsurface->commit.notify = subsurface_handle_commit;
+	wl_signal_add(&wlr_subsurface->surface->events.commit, &subsurface->commit);
+
+	return subsurface;
+}
+
+static void handle_new_subsurface(struct wl_listener *listener, void *data) {
+	struct sway_layer_surface *sway_layer_surface =
+			wl_container_of(listener, sway_layer_surface, new_subsurface);
+	struct wlr_subsurface *wlr_subsurface = data;
+	create_subsurface(wlr_subsurface, sway_layer_surface);
+}
+
+
 static struct sway_layer_surface *popup_get_layer(
 		struct sway_layer_popup *popup) {
 	while (popup->parent_type == LAYER_PARENT_POPUP) {
@@ -391,8 +483,8 @@ static struct sway_layer_surface *popup_get_layer(
 static void popup_damage(struct sway_layer_popup *layer_popup, bool whole) {
 	struct wlr_xdg_popup *popup = layer_popup->wlr_popup;
 	struct wlr_surface *surface = popup->base->surface;
-	int popup_sx = popup->geometry.x - popup->base->geometry.x;
-	int popup_sy = popup->geometry.y - popup->base->geometry.y;
+	int popup_sx = popup->geometry.x - popup->base->current.geometry.x;
+	int popup_sy = popup->geometry.y - popup->base->current.geometry.y;
 	int ox = popup_sx, oy = popup_sy;
 	struct sway_layer_surface *layer;
 	while (true) {
@@ -513,14 +605,14 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %" PRIu32
 			" size %" PRIu32 "x%" PRIu32 " margin %" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",",
 		layer_surface->namespace,
-		layer_surface->client_pending.layer,
-		layer_surface->client_pending.anchor,
-		layer_surface->client_pending.desired_width,
-		layer_surface->client_pending.desired_height,
-		layer_surface->client_pending.margin.top,
-		layer_surface->client_pending.margin.right,
-		layer_surface->client_pending.margin.bottom,
-		layer_surface->client_pending.margin.left);
+		layer_surface->pending.layer,
+		layer_surface->pending.anchor,
+		layer_surface->pending.desired_width,
+		layer_surface->pending.desired_height,
+		layer_surface->pending.margin.top,
+		layer_surface->pending.margin.right,
+		layer_surface->pending.margin.bottom,
+		layer_surface->pending.margin.left);
 
 	if (!layer_surface->output) {
 		// Assign last active output
@@ -537,7 +629,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 				sway_log(SWAY_ERROR,
 						"no output to auto-assign layer surface '%s' to",
 						layer_surface->namespace);
-				wlr_layer_surface_v1_close(layer_surface);
+				wlr_layer_surface_v1_destroy(layer_surface);
 				return;
 			}
 			output = root->outputs->items[0];
@@ -563,6 +655,9 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&layer_surface->events.unmap, &sway_layer->unmap);
 	sway_layer->new_popup.notify = handle_new_popup;
 	wl_signal_add(&layer_surface->events.new_popup, &sway_layer->new_popup);
+	sway_layer->new_subsurface.notify = handle_new_subsurface;
+	wl_signal_add(&layer_surface->surface->events.new_subsurface,
+			&sway_layer->new_subsurface);
 
 	sway_layer->layer_surface = layer_surface;
 	layer_surface->data = sway_layer;
@@ -571,13 +666,13 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_layer->output_destroy.notify = handle_output_destroy;
 	wl_signal_add(&output->events.destroy, &sway_layer->output_destroy);
 
-	wl_list_insert(&output->layers[layer_surface->client_pending.layer],
+	wl_list_insert(&output->layers[layer_surface->pending.layer],
 			&sway_layer->link);
 
-	// Temporarily set the layer's current state to client_pending
+	// Temporarily set the layer's current state to pending
 	// So that we can easily arrange it
 	struct wlr_layer_surface_v1_state old_state = layer_surface->current;
-	layer_surface->current = layer_surface->client_pending;
+	layer_surface->current = layer_surface->pending;
 	arrange_layers(output);
 	layer_surface->current = old_state;
 }

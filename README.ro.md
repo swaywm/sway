@@ -1,13 +1,11 @@
 # sway
 
 sway este un compositor pentru [Wayland](http://wayland.freedesktop.org/) compatibil cu [i3](https://i3wm.org/).
-Citiți [FAQ](https://github.com/swaywm/sway/wiki)-ul. Connectați-vă la canalul nostru [IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway pe irc.freenode.net).
-
-Dacă doriți să contribuiți la dezvoltarea sway, vă rugăm contribuiți în [pagina de Patreon lui SirCmpwn](https://patreon.com/sircmpwn).
+Citiți [FAQ](https://github.com/swaywm/sway/wiki)-ul. Connectați-vă la canalul nostru [IRC](https://web.libera.chat/gamja/?channels=#sway) (#sway pe irc.libera.chat).
 
 ## Semnarea digitală
 
-Noile versiuni sunt semnate cu [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
+Noile versiuni sunt semnate cu [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)
 și postate [pe GitHub](https://github.com/swaywm/sway/releases).
 
 ## Instalare
@@ -24,7 +22,7 @@ Dacă sunteți interesați in a crea pachete pentru distribuția voastră, infor
 Dependențe pentru instalare:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

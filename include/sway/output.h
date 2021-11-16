@@ -3,7 +3,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_workspace_v1.h>
 #include "config.h"
@@ -44,9 +43,8 @@ struct sway_output {
 	struct sway_output_state current;
 
 	struct wl_listener destroy;
+	struct wl_listener commit;
 	struct wl_listener mode;
-	struct wl_listener transform;
-	struct wl_listener scale;
 	struct wl_listener present;
 	struct wl_listener damage_destroy;
 	struct wl_listener damage_frame;
@@ -77,8 +75,8 @@ struct sway_output *output_get_in_direction(struct sway_output *reference,
 void output_add_workspace(struct sway_output *output,
 		struct sway_workspace *workspace);
 
-typedef void (*sway_surface_iterator_func_t)(struct sway_output *output, struct sway_view *view,
-	struct wlr_surface *surface, struct wlr_box *box, float rotation,
+typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
+	struct sway_view *view, struct wlr_surface *surface, struct wlr_box *box,
 	void *user_data);
 
 void output_damage_whole(struct sway_output *output);
@@ -121,7 +119,7 @@ void output_view_for_each_surface(struct sway_output *output,
 	struct sway_view *view, sway_surface_iterator_func_t iterator,
 	void *user_data);
 
-void output_view_for_each_popup(struct sway_output *output,
+void output_view_for_each_popup_surface(struct sway_output *output,
 		struct sway_view *view, sway_surface_iterator_func_t iterator,
 		void *user_data);
 
@@ -129,11 +127,11 @@ void output_layer_for_each_surface(struct sway_output *output,
 	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 	void *user_data);
 
-void output_layer_for_each_surface_toplevel(struct sway_output *output,
+void output_layer_for_each_toplevel_surface(struct sway_output *output,
 	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 	void *user_data);
 
-void output_layer_for_each_surface_popup(struct sway_output *output,
+void output_layer_for_each_popup_surface(struct sway_output *output,
 	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 	void *user_data);
 

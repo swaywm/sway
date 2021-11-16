@@ -47,7 +47,7 @@ struct sway_view_impl {
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
-	void (*for_each_popup)(struct sway_view *view,
+	void (*for_each_popup_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	bool (*is_transient_for)(struct sway_view *child,
 			struct sway_view *ancestor);
@@ -99,7 +99,9 @@ struct sway_view {
 
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;
+	struct wl_listener foreign_fullscreen_request;
 	struct wl_listener foreign_close_request;
+	struct wl_listener foreign_destroy;
 
 	bool destroying;
 
@@ -110,7 +112,6 @@ struct sway_view {
 #if HAVE_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 #endif
-		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
 
 	struct {
@@ -130,7 +131,6 @@ struct sway_xdg_shell_view {
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
-	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
 	struct wl_listener set_title;
 	struct wl_listener set_app_id;
@@ -160,6 +160,7 @@ struct sway_xwayland_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
+	struct wl_listener override_redirect;
 };
 
 struct sway_xwayland_unmanaged {
@@ -171,15 +172,17 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
 	struct wl_listener commit;
+	struct wl_listener set_geometry;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
+	struct wl_listener override_redirect;
 };
 #endif
 struct sway_view_child;
 
 struct sway_view_child_impl {
-	void (*get_root_coords)(struct sway_view_child *child, int *sx, int *sy);
+	void (*get_view_coords)(struct sway_view_child *child, int *sx, int *sy);
 	void (*destroy)(struct sway_view_child *child);
 };
 
@@ -292,9 +295,9 @@ void view_for_each_surface(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 /**
- * Iterate all popups recursively.
+ * Iterate all popup surfaces of a view.
  */
-void view_for_each_popup(struct sway_view *view,
+void view_for_each_popup_surface(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation
@@ -306,12 +309,22 @@ void view_destroy(struct sway_view *view);
 
 void view_begin_destroy(struct sway_view *view);
 
+/**
+ * Map a view, ie. make it visible in the tree.
+ *
+ * `fullscreen` should be set to true (and optionally `fullscreen_output`
+ * should be populated) if the view should be made fullscreen immediately.
+ *
+ * `decoration` should be set to true if the client prefers CSD. The client's
+ * preference may be ignored.
+ */
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
 
 void view_unmap(struct sway_view *view);
 
-void view_update_size(struct sway_view *view, int width, int height);
+void view_update_size(struct sway_view *view);
+void view_center_surface(struct sway_view *view);
 
 void view_child_init(struct sway_view_child *child,
 	const struct sway_view_child_impl *impl, struct sway_view *view,

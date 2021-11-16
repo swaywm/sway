@@ -1,13 +1,11 @@
 # sway
 
 sway는 [i3](https://i3wm.org/)-호환 [Wayland](http://wayland.freedesktop.org/) 컴포지터입니다.
-[FAQ](https://github.com/swaywm/sway/wiki)를 읽어보세요. [IRC 채널](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)도 있습니다.
-
-sway 개발을 도우고 싶으시다면, [SirCmpwn의 Patreon 페이지](https://patreon.com/sircmpwn)에 기여해 주세요.
+[FAQ](https://github.com/swaywm/sway/wiki)를 읽어보세요. [IRC 채널](https://web.libera.chat/gamja/?channels=#sway) (#sway on irc.libera.chat)도 있습니다.
 
 ## 릴리즈 서명
 
-릴리즈는 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)에서 서명되고,
+릴리즈는 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)에서 서명되고,
 [GitHub에서](https://github.com/swaywm/sway/releases) 공개되고 있습니다.
 
 ## 설치
@@ -26,7 +24,7 @@ IRC 채널을 방문하거나 sir@cmpwn.com으로 이메일을 보내 상담 받
 다음 의존 패키지들을 설치해 주세요:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

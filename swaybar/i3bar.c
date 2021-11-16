@@ -28,6 +28,19 @@ void i3bar_block_unref(struct i3bar_block *block) {
 	}
 }
 
+static bool i3bar_parse_json_color(json_object *json, uint32_t *color) {
+	if (!json) {
+		return false;
+	}
+
+	const char *hexstring = json_object_get_string(json);
+	bool color_set = parse_color(hexstring, color);
+	if (!color_set) {
+		sway_log(SWAY_ERROR, "Ignoring invalid block hexadecimal color string: %s", hexstring);
+	}
+	return color_set;
+}
+
 static void i3bar_parse_json(struct status_line *status,
 		struct json_object *json_array) {
 	struct i3bar_block *block, *tmp;
@@ -68,13 +81,7 @@ static void i3bar_parse_json(struct status_line *status,
 			strdup(json_object_get_string(full_text)) : NULL;
 		block->short_text = short_text ?
 			strdup(json_object_get_string(short_text)) : NULL;
-		if (color) {
-			const char *hexstring = json_object_get_string(color);
-			block->color_set = parse_color(hexstring, &block->color);
-			if (!block->color_set) {
-				sway_log(SWAY_ERROR, "Invalid block color: %s", hexstring);
-			}
-		}
+		block->color_set = i3bar_parse_json_color(color, &block->color);
 		if (min_width) {
 			json_type type = json_object_get_type(min_width);
 			if (type == json_type_int) {
@@ -100,14 +107,8 @@ static void i3bar_parse_json(struct status_line *status,
 		block->separator_block_width = separator_block_width ?
 			json_object_get_int(separator_block_width) : 9;
 		// Airblader features
-		const char *hex = background ? json_object_get_string(background) : NULL;
-		if (hex && !parse_color(hex, &block->background)) {
-			sway_log(SWAY_ERROR, "Ignoring invalid block background: %s", hex);
-		}
-		hex = border ? json_object_get_string(border) : NULL;
-		if (hex && !parse_color(hex, &block->border)) {
-			sway_log(SWAY_ERROR, "Ignoring invalid block border: %s", hex);
-		}
+		i3bar_parse_json_color(background, &block->background);
+		block->border_set = i3bar_parse_json_color(border, &block->border);
 		block->border_top = border_top ? json_object_get_int(border_top) : 1;
 		block->border_bottom = border_bottom ?
 			json_object_get_int(border_bottom) : 1;

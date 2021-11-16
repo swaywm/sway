@@ -93,8 +93,10 @@ Parses and runs the payload as sway commands
 *REPLY*++
 An array of objects corresponding to each command that was parsed. Each object
 has the property _success_, which is a boolean indicating whether the command
-was successful. The object may also contain the property _error_, which is a
-human readable error message.
+was successful. The object may also contain the properties _error_ and _parse\_error_.
+The _error_ property is a human readable error message while _parse\_error_ is a
+boolean indicating whether the reason the command failed was because the command
+was unknown or not able to be parsed.
 
 *Example Reply:*
 ```
@@ -104,6 +106,7 @@ human readable error message.
 	},
 	{
 		"success": false,
+		"parse_error": true,
 		"error": "Invalid/unknown command"
 	}
 ]
@@ -291,7 +294,7 @@ following properties:
 Retrieve a JSON representation of the tree
 
 *REPLY*++
-An array of object the represent the current tree. Each object represents one
+An array of objects that represent the current tree. Each object represents one
 node and will have the following properties:
 
 [- *PROPERTY*
@@ -829,6 +832,9 @@ their value mean can be found in *sway-bar*(5):
 |- workspace_buttons
 :  boolean
 :  Whether to display the workspace buttons on the bar
+|- workspace_min_width
+:  integer
+:  Minimum width in px for the workspace buttons on the bar
 |- binding_mode_indicator
 :  boolean
 :  Whether to display the current binding mode on the bar
@@ -931,6 +937,7 @@ containing the _#RRGGBBAA_ representation of the color:
 	"status_padding": 1,
 	"status_edge_padding": 3,
 	"workspace_buttons": true,
+	"workspace_min_width": 0,
 	"binding_mode_indicator": true,
 	"verbose": false,
 	"pango_markup": false,
@@ -1124,6 +1131,9 @@ following properties:
 |- xkb_active_layout_index
 :  integer
 :  (Only keyboards) The index of the active keyboard layout in use
+|- scroll_factor
+:  floating
+:  (Only pointers) Multiplier applied on scroll event values.
 |- libinput
 :  object
 :  (Only libinput devices) An object describing the current device settings.

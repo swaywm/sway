@@ -2,10 +2,12 @@
 #define _SWAYBAR_TRAY_TRAY_H
 
 #include "config.h"
-#ifdef HAVE_SYSTEMD
+#if HAVE_LIBSYSTEMD
 #include <systemd/sd-bus.h>
-#elif HAVE_ELOGIND
+#elif HAVE_LIBELOGIND
 #include <elogind/sd-bus.h>
+#elif HAVE_BASU
+#include <basu/sd-bus.h>
 #endif
 #include <cairo.h>
 #include <stdint.h>

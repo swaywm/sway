@@ -14,7 +14,7 @@ static struct cmd_results *do_split(int layout) {
 	struct sway_workspace *ws = config->handler_context.workspace;
 	if (con) {
 		if (container_is_scratchpad_hidden_or_child(con) &&
-				con->fullscreen_mode != FULLSCREEN_GLOBAL) {
+				con->pending.fullscreen_mode != FULLSCREEN_GLOBAL) {
 			return cmd_results_new(CMD_FAILURE,
 					"Cannot split a hidden scratchpad container");
 		}
@@ -23,8 +23,23 @@ static struct cmd_results *do_split(int layout) {
 		workspace_split(ws, layout);
 	}
 
-	if (con && con->parent && con->parent->parent) {
-		container_flatten(con->parent->parent);
+	if (root->fullscreen_global) {
+		arrange_root();
+	} else {
+		arrange_workspace(ws);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
+static struct cmd_results *do_unsplit() {
+	struct sway_container *con = config->handler_context.container;
+	struct sway_workspace *ws = config->handler_context.workspace;
+
+	if (con && con->pending.parent && con->pending.parent->pending.children->length == 1) {
+		container_flatten(con->pending.parent);
+	} else {
+		return cmd_results_new(CMD_FAILURE, "Can only flatten a child container with no siblings");
 	}
 
 	if (root->fullscreen_global) {
@@ -32,7 +47,6 @@ static struct cmd_results *do_split(int layout) {
 	} else {
 		arrange_workspace(ws);
 	}
-
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
@@ -59,6 +73,9 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 		} else {
 			return do_split(L_VERT);
 		}
+	} else if (strcasecmp(argv[0], "n") == 0 ||
+			strcasecmp(argv[0], "none") == 0) {
+		return do_unsplit();
 	} else {
 		return cmd_results_new(CMD_FAILURE,
 			"Invalid split command (expected either horizontal or vertical).");

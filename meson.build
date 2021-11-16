@@ -1,9 +1,9 @@
 project(
 	'sway',
 	'c',
-	version: '1.5', #release_version
+	version: '1.6',
 	license: 'MIT',
-	meson_version: '>=0.53.0',
+	meson_version: '>=0.59.0',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -35,32 +35,33 @@ if is_freebsd
 	add_project_arguments('-D_C11_SOURCE', language: 'c')
 endif
 
-jsonc          = dependency('json-c', version: '>=0.13')
-pcre           = dependency('libpcre')
+jsonc = dependency('json-c', version: '>=0.13')
+pcre = dependency('libpcre')
 wayland_server = dependency('wayland-server')
 wayland_client = dependency('wayland-client')
 wayland_cursor = dependency('wayland-cursor')
-wayland_egl    = dependency('wayland-egl')
+wayland_egl = dependency('wayland-egl')
 wayland_protos = dependency('wayland-protocols', version: '>=1.14')
-xkbcommon      = dependency('xkbcommon')
-cairo          = dependency('cairo')
-pango          = dependency('pango')
-pangocairo     = dependency('pangocairo')
-gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
-pixman         = dependency('pixman-1')
-glesv2         = dependency('glesv2')
-libevdev       = dependency('libevdev')
-libinput       = dependency('libinput', version: '>=1.6.0')
-systemd        = dependency('libsystemd', version: '>=239', required: false)
-elogind        = dependency('libelogind', version: '>=239', required: false)
-xcb            = dependency('xcb', required: get_option('xwayland'))
-bash_comp      = dependency('bash-completion', required: false)
-fish_comp      = dependency('fish', required: false)
-math           = cc.find_library('m')
-rt             = cc.find_library('rt')
+xkbcommon = dependency('xkbcommon')
+cairo = dependency('cairo')
+pango = dependency('pango')
+pangocairo = dependency('pangocairo')
+gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
+pixman = dependency('pixman-1')
+glesv2 = dependency('glesv2')
+libevdev = dependency('libevdev')
+libinput = dependency('libinput', version: '>=1.6.0')
+xcb = dependency('xcb', required: get_option('xwayland'))
+drm_full = dependency('libdrm') # only needed for drm_fourcc.h
+drm = drm_full.partial_dependency(compile_args: true, includes: true)
+libudev = dependency('libudev')
+bash_comp = dependency('bash-completion', required: false)
+fish_comp = dependency('fish', required: false)
+math = cc.find_library('m')
+rt = cc.find_library('rt')
 
 # Try first to find wlroots as a subproject, then as a system dependency
-wlroots_version = ['>=0.11.0', '<0.12.0']
+wlroots_version = ['>=0.15.0', '<0.16.0']
 wlroots_proj = subproject(
 	'wlroots',
 	default_options: ['examples=false'],
@@ -69,21 +70,50 @@ wlroots_proj = subproject(
 )
 if wlroots_proj.found()
 	wlroots = wlroots_proj.get_variable('wlroots')
-	wlroots_conf = wlroots_proj.get_variable('conf_data')
-	wlroots_has_xwayland = wlroots_conf.get('WLR_HAS_XWAYLAND') == 1
 else
 	wlroots = dependency('wlroots', version: wlroots_version)
-	wlroots_has_xwayland = cc.get_define('WLR_HAS_XWAYLAND', prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
 endif
 
-if get_option('xwayland').enabled() and not wlroots_has_xwayland
+wlroots_features = {
+	'xwayland': false,
+}
+foreach name, _ : wlroots_features
+	var_name = 'have_' + name.underscorify()
+	have = wlroots.get_variable(pkgconfig: var_name, internal: var_name) == 'true'
+	wlroots_features += { name: have }
+endforeach
+
+if get_option('xwayland').enabled() and not wlroots_features['xwayland']
 	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
 endif
-have_xwayland = xcb.found() and wlroots_has_xwayland
+have_xwayland = xcb.found() and wlroots_features['xwayland']
 
-tray_deps_found = systemd.found() or elogind.found()
+if get_option('sd-bus-provider') == 'auto'
+	if not get_option('tray').disabled()
+		assert(get_option('auto_features').auto(), 'sd-bus-provider must not be set to auto since auto_features != auto')
+	endif
+	sdbus = dependency('libsystemd',
+		required: false,
+		version: '>=239',
+		not_found_message: 'libsystemd not found, trying libelogind',
+	)
+	if not sdbus.found()
+		sdbus = dependency('libelogind',
+			required: false,
+			version: '>=239',
+			not_found_message: 'libelogind not found, trying basu',
+		)
+	endif
+	if not sdbus.found()
+		sdbus = dependency('basu', required: false)
+	endif
+else
+	sdbus = dependency(get_option('sd-bus-provider'), required: get_option('tray'))
+endif
+
+tray_deps_found = sdbus.found()
 if get_option('tray').enabled() and not tray_deps_found
-	error('Building with -Dtray=enabled, but libsystemd and libelogind have not been not found')
+	error('Building with -Dtray=enabled, but sd-bus has not been not found')
 endif
 have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
@@ -91,14 +121,14 @@ conf_data = configuration_data()
 
 conf_data.set10('HAVE_XWAYLAND', have_xwayland)
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
-conf_data.set10('HAVE_SYSTEMD', systemd.found())
-conf_data.set10('HAVE_ELOGIND', elogind.found())
+conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd')
+conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
+conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
-	scdoc_prog = find_program(scdoc.get_pkgconfig_variable('scdoc'), native: true)
-	sh = find_program('sh', native: true)
+	scdoc_prog = find_program(scdoc.get_variable(pkgconfig: 'scdoc'), native: true)
 	mandir = get_option('mandir')
 	man_files = [
 		'sway/sway.1.scd',
@@ -109,9 +139,15 @@ if scdoc.found()
 		'sway/sway-output.5.scd',
 		'swaybar/swaybar-protocol.7.scd',
 		'swaymsg/swaymsg.1.scd',
-		'swaynag/swaynag.1.scd',
-		'swaynag/swaynag.5.scd',
 	]
+
+	if get_option('swaynag')
+		man_files += [
+			'swaynag/swaynag.1.scd',
+			'swaynag/swaynag.5.scd',
+		]
+	endif
+
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
 		section = filename.split('.')[-2]
@@ -121,10 +157,10 @@ if scdoc.found()
 			output,
 			input: filename,
 			output: output,
-			command: [
-				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc_prog.path(), output)
-			],
+			command: scdoc_prog,
 			install: true,
+			feed: true,
+			capture: true,
 			install_dir: '@0@/man@1@'.format(mandir, section)
 		)
 	endforeach
@@ -149,7 +185,7 @@ add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
 # Compute the relative path used by compiler invocations.
 source_root = meson.current_source_dir().split('/')
-build_root = meson.build_root().split('/')
+build_root = meson.global_build_root().split('/')
 relative_dir_parts = []
 i = 0
 in_prefix = true
@@ -193,9 +229,15 @@ subdir('common')
 subdir('sway')
 subdir('swaymsg')
 
-subdir('client')
-subdir('swaybar')
-subdir('swaynag')
+if get_option('swaybar') or get_option('swaynag')
+	subdir('client')
+endif
+if get_option('swaybar')
+	subdir('swaybar')
+endif
+if get_option('swaynag')
+	subdir('swaynag')
+endif
 
 config = configuration_data()
 config.set('datadir', join_paths(prefix, datadir))
@@ -243,13 +285,17 @@ endif
 if get_option('bash-completions')
 	bash_files = files(
 		'completions/bash/sway',
-		'completions/bash/swaybar',
 		'completions/bash/swaymsg',
 	)
+
+	if get_option('swaybar')
+		bash_files += files('completions/bash/swaybar')
+	endif
+
 	if bash_comp.found()
-		bash_install_dir = bash_comp.get_pkgconfig_variable(
-			'completionsdir',
-			define_variable: ['datadir', datadir]
+		bash_install_dir = bash_comp.get_variable(
+			pkgconfig: 'completionsdir',
+			pkgconfig_define: ['datadir', datadir]
 		)
 	else
 		bash_install_dir = join_paths(datadir, 'bash-completion', 'completions')
@@ -262,12 +308,16 @@ if get_option('fish-completions')
 	fish_files = files(
 		'completions/fish/sway.fish',
 		'completions/fish/swaymsg.fish',
-		'completions/fish/swaynag.fish',
 	)
+
+	if get_option('swaynag')
+		fish_files += files('completions/fish/swaynag.fish')
+	endif
+
 	if fish_comp.found()
-		fish_install_dir = fish_comp.get_pkgconfig_variable(
-			'completionsdir',
-			define_variable: ['datadir', datadir]
+		fish_install_dir = fish_comp.get_variable(
+			pkgconfig: 'completionsdir',
+			pkgconfig_define: ['datadir', datadir]
 		)
 	else
 		fish_install_dir = join_paths(datadir, 'fish', 'vendor_completions.d')
@@ -279,13 +329,7 @@ endif
 summary({
 	'xwayland': have_xwayland,
 	'gdk-pixbuf': gdk_pixbuf.found(),
-	'systemd': systemd.found(),
-	'elogind': elogind.found(),
 	'tray': have_tray,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
 
-if not systemd.found() and not elogind.found()
-	warning('The sway binary must be setuid when compiled without (e)logind')
-	warning('You must do this manually post-install: chmod a+s /path/to/sway')
-endif

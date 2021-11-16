@@ -5,10 +5,14 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/tree/view.h"
+#include "sway/desktop/transaction.h"
 #include "log.h"
 
 struct seatop_down_event {
 	struct sway_container *con;
+	struct sway_seat *seat;
+	struct wl_listener surface_destroy;
+	struct wlr_surface *surface;
 	double ref_lx, ref_ly;         // cursor's x/y at start of op
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 };
@@ -37,11 +41,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 }
 
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
-	struct sway_container *con = e->con;
-	if (seat_is_input_allowed(seat, con->view->surface)) {
+	if (seat_is_input_allowed(seat, e->surface)) {
 		double moved_x = seat->cursor->cursor->x - e->ref_lx;
 		double moved_y = seat->cursor->cursor->y - e->ref_ly;
 		double sx = e->ref_con_lx + moved_x;
@@ -60,15 +62,22 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 }
 
 static void handle_tablet_tool_motion(struct sway_seat *seat,
-		struct sway_tablet_tool *tool, uint32_t time_msec, double dx, double dy) {
+		struct sway_tablet_tool *tool, uint32_t time_msec) {
 	struct seatop_down_event *e = seat->seatop_data;
-	struct sway_container *con = e->con;
-	if (seat_is_input_allowed(seat, con->view->surface)) {
+	if (seat_is_input_allowed(seat, e->surface)) {
 		double moved_x = seat->cursor->cursor->x - e->ref_lx;
 		double moved_y = seat->cursor->cursor->y - e->ref_ly;
 		double sx = e->ref_con_lx + moved_x;
 		double sy = e->ref_con_ly + moved_y;
 		wlr_tablet_v2_tablet_tool_notify_motion(tool->tablet_v2_tool, sx, sy);
+	}
+}
+
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct seatop_down_event *e =
+		wl_container_of(listener, e, surface_destroy);
+	if (e) {
+		seatop_begin_default(e->seat);
 	}
 }
 
@@ -79,6 +88,11 @@ static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 	}
 }
 
+static void handle_end(struct sway_seat *seat) {
+	struct seatop_down_event *e = seat->seatop_data;
+	wl_list_remove(&e->surface_destroy.link);
+}
+
 static const struct sway_seatop_impl seatop_impl = {
 	.button = handle_button,
 	.pointer_motion = handle_pointer_motion,
@@ -86,11 +100,22 @@ static const struct sway_seatop_impl seatop_impl = {
 	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
 	.unref = handle_unref,
+	.end = handle_end,
 	.allow_set_cursor = true,
 };
 
 void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
-		uint32_t time_msec, int sx, int sy) {
+		uint32_t time_msec, double sx, double sy) {
+	seatop_begin_down_on_surface(seat, con->view->surface, time_msec, sx, sy);
+	struct seatop_down_event *e = seat->seatop_data;
+	e->con = con;
+
+	container_raise_floating(con);
+	transaction_commit_dirty();
+}
+
+void seatop_begin_down_on_surface(struct sway_seat *seat,
+		struct wlr_surface *surface, uint32_t time_msec, double sx, double sy) {
 	seatop_end(seat);
 
 	struct seatop_down_event *e =
@@ -98,7 +123,11 @@ void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 	if (!e) {
 		return;
 	}
-	e->con = con;
+	e->con = NULL;
+	e->seat = seat;
+	e->surface = surface;
+	wl_signal_add(&e->surface->events.destroy, &e->surface_destroy);
+	e->surface_destroy.notify = handle_destroy;
 	e->ref_lx = seat->cursor->cursor->x;
 	e->ref_ly = seat->cursor->cursor->y;
 	e->ref_con_lx = sx;
@@ -106,6 +135,4 @@ void seatop_begin_down(struct sway_seat *seat, struct sway_container *con,
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
-
-	container_raise_floating(con);
 }

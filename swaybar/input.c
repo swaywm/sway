@@ -101,6 +101,8 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaybar_seat *seat = data;
 	struct swaybar_pointer *pointer = &seat->pointer;
+	seat->pointer.x = wl_fixed_to_double(surface_x);
+	seat->pointer.y = wl_fixed_to_double(surface_y);
 	pointer->serial = serial;
 	struct swaybar_output *output;
 	wl_list_for_each(output, &seat->bar->outputs, link) {
@@ -140,13 +142,11 @@ static bool check_bindings(struct swaybar *bar, uint32_t button,
 
 static bool process_hotspots(struct swaybar_output *output,
 		double x, double y, uint32_t button) {
-	double px = x * output->scale;
-	double py = y * output->scale;
 	struct swaybar_hotspot *hotspot;
 	wl_list_for_each(hotspot, &output->hotspots, link) {
-		if (px >= hotspot->x && py >= hotspot->y
-				&& px < hotspot->x + hotspot->width
-				&& py < hotspot->y + hotspot->height) {
+		if (x >= hotspot->x && y >= hotspot->y
+				&& x < hotspot->x + hotspot->width
+				&& y < hotspot->y + hotspot->height) {
 			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot, x, y,
 					button, hotspot->data)) {
 				return true;
@@ -339,7 +339,7 @@ static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
 	seat->axis[axis].discrete_steps += abs(discrete);
 }
 
-static struct wl_pointer_listener pointer_listener = {
+static const struct wl_pointer_listener pointer_listener = {
 	.enter = wl_pointer_enter,
 	.leave = wl_pointer_leave,
 	.motion = wl_pointer_motion,

@@ -8,10 +8,10 @@ swaybar-protocol - JSON status line protocol for swaybar
 
 swaybar defines the following JSON protocol to specify what information is
 displayed in the status line on the right side of swaybar. The protocol
-comprises a header, that is a JSON object, followed by an infinite JSON
-array that represents the information to display. All communication is done by
-writing the status line to standard output and reading events from standard
-input.
+comprises a header, that is a JSON object, followed by a newline (*0x0A*),
+followed by an infinite JSON array that represents the information to display.
+All communication is done by writing the status line to standard output and
+reading events from standard input.
 
 # HEADER
 
@@ -257,12 +257,6 @@ the following properties:
 	"height": 18
 }
 ```
-
-# AUTHORS
-
-Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
-source contributors. For more information about swaybar development, see
-https://github.com/swaywm/sway.
 
 # SEE ALSO
 

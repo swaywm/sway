@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_workspace_v1.h>
+#include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
@@ -23,6 +24,8 @@
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif
+
+struct sway_transaction;
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -71,6 +74,9 @@ struct sway_server {
 	struct wl_listener xdg_decoration;
 	struct wl_list xdg_decorations; // sway_xdg_decoration::link
 
+	struct wlr_drm_lease_v1_manager *drm_lease_manager;
+	struct wl_listener drm_lease_request;
+
 	struct wlr_presentation *presentation;
 
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
@@ -88,8 +94,25 @@ struct sway_server {
 	struct wlr_workspace_manager_v1 *workspace_manager;
 	struct wl_listener workspace_manager_commit_request;
 
+	struct wlr_xdg_activation_v1 *xdg_activation_v1;
+	struct wl_listener xdg_activation_v1_request_activate;
+
+	// The timeout for transactions, after which a transaction is applied
+	// regardless of readiness.
 	size_t txn_timeout_ms;
-	list_t *transactions;
+
+	// Stores a transaction after it has been committed, but is waiting for
+	// views to ack the new dimensions before being applied. A queued
+	// transaction is frozen and must not have new instructions added to it.
+	struct sway_transaction *queued_transaction;
+
+	// Stores a pending transaction that will be committed once the existing
+	// queued transaction is applied and freed. The pending transaction can be
+	// updated with new instructions as needed.
+	struct sway_transaction *pending_transaction;
+
+	// Stores the nodes that have been marked as "dirty" and will be put into
+	// the pending transaction.
 	list_t *dirty_nodes;
 };
 
@@ -99,6 +122,7 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
+	bool noscanout;        // Disable direct scan-out
 
 	enum {
 		DAMAGE_DEFAULT,    // Default behaviour
@@ -116,6 +140,8 @@ void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
 
+void restore_nofile_limit(void);
+
 void handle_compositor_new_surface(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);
 
@@ -128,5 +154,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data);
 void handle_server_decoration(struct wl_listener *listener, void *data);
 void handle_xdg_decoration(struct wl_listener *listener, void *data);
 void handle_pointer_constraint(struct wl_listener *listener, void *data);
+void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
+	void *data);
 
 #endif

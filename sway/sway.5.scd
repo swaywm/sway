@@ -89,7 +89,7 @@ The following commands may only be used in the configuration file.
 	_swaynag\_command -_
 
 *workspace_layout* default|stacking|tabbed
-	Specifies the initial layout for new workspaces.
+	Specifies the initial layout for new containers in an empty workspace.
 
 *xwayland* enable|disable|force
 	Enables or disables Xwayland support, which allows X11 applications to be
@@ -140,10 +140,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* output <name>
 	Moves focus to the named output.
 
-*focus tiling*
+*focus* tiling
 	Sets focus to the last focused tiling container.
 
-*focus floating*
+*focus* floating
 	Sets focus to the last focused floating container.
 
 *focus* mode_toggle
@@ -155,7 +155,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	is specified, the view will be fullscreen across all outputs.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
-set|plus|minus <amount>
+set|plus|minus|toggle <amount>
 	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
 	_current_ workspace. _outer_ gaps can be altered per side with _top_,
 	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
@@ -215,7 +215,7 @@ set|plus|minus <amount>
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ptt]
+*move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ppt]
 	Moves the focused container to the specified position in the workspace.
 	The position can be specified in pixels or percentage points, omitting
 	the unit defaults to pixels. If	_absolute_ is used, the position is
@@ -278,7 +278,7 @@ set|plus|minus <amount>
 	located at path specified by the command line arguments when started,
 	otherwise according to the priority stated in *sway*(1).
 
-*rename workspace* [<old_name>] to <new_name>
+*rename* workspace [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
 
 *resize* shrink|grow width|height [<amount> [px|ppt]]
@@ -286,25 +286,25 @@ set|plus|minus <amount>
 	percentage points. If the units are omitted, floating containers are resized
 	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
 
-*resize set* height <height> [px|ppt]
+*resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _height_ is 0, the container
 	will not be resized.
 
-*resize set* [width] <width> [px|ppt]
+*resize* set [width] <width> [px|ppt]
 	Sets the width of the container to _width_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _width_ is 0, the container
 	will not be resized.
 
-*resize set* [width] <width> [px|ppt] [height] <height> [px|ppt]
+*resize* set [width] <width> [px|ppt] [height] <height> [px|ppt]
 	Sets the width and height of the container to _width_ and _height_,
 	specified in pixels or percentage points. If the units are omitted,
 	floating containers are resized in px and tiled containers by ppt. If
 	_width_ or _height_ is 0, the container will not be resized on that axis.
 
-*scratchpad show*
+*scratchpad* show
 	Shows a window from the scratchpad. Repeatedly using this command will
 	cycle through the windows in the scratchpad.
 
@@ -319,8 +319,10 @@ set|plus|minus <amount>
 	established by the *seat* subcommand of the same name. See
 	*sway-input*(5) for more ways to affect inhibitors.
 
-*split* vertical|v|horizontal|h|toggle|t
-	Splits the current container, vertically or horizontally. When _toggle_ is
+*split* vertical|v|horizontal|h|none|n|toggle|t
+	Splits the current container, vertically or horizontally. When _none_ is
+	specified, the effect of a previous split is undone if the current
+	container is the only child of a split parent. When _toggle_ is
 	specified, the current container is split opposite to the parent
 	container's layout.
 
@@ -404,7 +406,7 @@ runtime.
 	a keyboard shortcuts inhibitor is active for the currently focused
 	window. Such inhibitors are usually requested by remote desktop and
 	virtualization software to enable the user to send keyboard shortcuts
-	to the remote or virtual session. The _--inhibited_ flag allows to
+	to the remote or virtual session. The _--inhibited_ flag allows one to
 	define bindings which will be exempt from pass-through to such
 	software. The same preference logic as for _--locked_ applies.
 
@@ -630,7 +632,14 @@ The default colors are:
 	should be used instead. Regardless of whether pango markup is enabled,
 	_font_ should be specified as a pango font description. For more
 	information on pango font descriptions, see
-	https://developer.gnome.org/pango/stable/pango-Fonts.html#pango-font-description-from-string
+	https://docs.gtk.org/Pango/type_func.FontDescription.from_string.html#description
+
+*force_display_urgency_hint* <timeout> [ms]
+	If an application on another workspace sets an urgency hint, switching to this
+	workspace may lead to immediate focus of the application, which also means the
+	window decoration color would be immediately reset to *client.focused*. This
+	may make it unnecessarily hard to tell which window originally raised the
+	event. This option allows one to set a _timeout_ in ms to delay the urgency hint reset.
 
 *titlebar_border_thickness* <thickness>
 	Thickness of the titlebar border in pixels
@@ -683,9 +692,10 @@ The default colors are:
 	borders will only be enabled if the workspace has more than one visible
 	child and gaps equal to zero.
 
-*smart_gaps* on|off
+*smart_gaps* on|off|toggle|inverse_outer
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
-	than one child.
+	than one child. If smart_gaps are _inverse_outer_ outer gaps will only
+	be enabled if a workspace has exactly one child.
 
 *mark* --add|--replace [--toggle] <identifier>
 	Marks are arbitrary labels that can be used to identify certain windows and

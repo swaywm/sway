@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <wlr/types/wlr_cursor.h>
 #include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 
@@ -14,7 +15,8 @@ static void finalize_move(struct sway_seat *seat) {
 
 	// We "move" the container to its own location
 	// so it discovers its output again.
-	container_floating_move_to(e->con, e->con->x, e->con->y);
+	container_floating_move_to(e->con, e->con->pending.x, e->con->pending.y);
+	transaction_commit_dirty();
 
 	seatop_begin_default(seat);
 }
@@ -34,13 +36,13 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		finalize_move(seat);
 	}
 }
-static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec,
-		double dx, double dy) {
+static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_move_floating_event *e = seat->seatop_data;
 	struct wlr_cursor *cursor = seat->cursor->cursor;
 	desktop_damage_whole_container(e->con);
 	container_floating_move_to(e->con, cursor->x - e->dx, cursor->y - e->dy);
 	desktop_damage_whole_container(e->con);
+	transaction_commit_dirty();
 }
 
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
@@ -68,13 +70,14 @@ void seatop_begin_move_floating(struct sway_seat *seat,
 		return;
 	}
 	e->con = con;
-	e->dx = cursor->cursor->x - con->x;
-	e->dy = cursor->cursor->y - con->y;
+	e->dx = cursor->cursor->x - con->pending.x;
+	e->dy = cursor->cursor->y - con->pending.y;
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
 
 	container_raise_floating(con);
+	transaction_commit_dirty();
 
 	cursor_set_image(cursor, "grab", NULL);
 	wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);

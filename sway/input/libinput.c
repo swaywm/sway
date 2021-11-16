@@ -1,5 +1,6 @@
 #include <float.h>
 #include <libinput.h>
+#include <libudev.h>
 #include <limits.h>
 #include <wlr/backend/libinput.h>
 #include "log.h"
@@ -186,17 +187,23 @@ static bool set_calibration_matrix(struct libinput_device *dev, float mat[6]) {
 	return changed;
 }
 
-static bool config_libinput_pointer(struct libinput_device *device,
-		struct input_config *ic, const char *device_id) {
-	sway_log(SWAY_DEBUG, "config_libinput_pointer('%s' on  '%s')",
-			ic->identifier, device_id);
-	bool changed = false;
+void sway_input_configure_libinput_device(struct sway_input_device *input_device) {
+	struct input_config *ic = input_device_get_config(input_device);
+	if (!ic || !wlr_input_device_is_libinput(input_device->wlr_device)) {
+		return;
+	}
 
+	struct libinput_device *device =
+		wlr_libinput_get_device_handle(input_device->wlr_device);
+	sway_log(SWAY_DEBUG, "sway_input_configure_libinput_device('%s' on '%s')",
+			ic->identifier, input_device->identifier);
+
+	bool changed = false;
 	if (ic->mapped_to_output &&
 			!output_by_name_or_id(ic->mapped_to_output)) {
 		sway_log(SWAY_DEBUG,
-				"Pointer '%s' is mapped to offline output '%s'; disabling input",
-				ic->identifier, ic->mapped_to_output);
+				"%s '%s' is mapped to offline output '%s'; disabling input",
+				ic->input_type, ic->identifier, ic->mapped_to_output);
 		changed |= set_send_events(device,
 			LIBINPUT_CONFIG_SEND_EVENTS_DISABLED);
 	} else if (ic->send_events != INT_MIN) {
@@ -221,7 +228,6 @@ static bool config_libinput_pointer(struct libinput_device *device,
 	if (ic->drag_lock != INT_MIN) {
 		changed |= set_tap_drag_lock(device, ic->drag_lock);
 	}
-
 	if (ic->pointer_accel != FLT_MIN) {
 		changed |= set_accel_speed(device, ic->pointer_accel);
 	}
@@ -249,71 +255,26 @@ static bool config_libinput_pointer(struct libinput_device *device,
 	if (ic->dwt != INT_MIN) {
 		changed |= set_dwt(device, ic->dwt);
 	}
-	return changed;
-}
-
-static bool config_libinput_keyboard(struct libinput_device *device,
-		struct input_config *ic, const char *device_id) {
-	sway_log(SWAY_DEBUG, "config_libinput_keyboard('%s' on  '%s')",
-			ic->identifier, device_id);
-	if (ic->send_events != INT_MIN) {
-		return set_send_events(device, ic->send_events);
-	}
-	return false;
-}
-
-static bool config_libinput_switch(struct libinput_device *device,
-		struct input_config *ic, const char *device_id) {
-	sway_log(SWAY_DEBUG, "config_libinput_switch('%s' on  '%s')",
-			ic->identifier, device_id);
-	if (ic->send_events != INT_MIN) {
-		return set_send_events(device, ic->send_events);
-	}
-	return false;
-}
-
-static bool config_libinput_touch(struct libinput_device *device,
-		struct input_config *ic, const char *device_id) {
-	sway_log(SWAY_DEBUG, "config_libinput_touch('%s' on  '%s')",
-			ic->identifier, device_id);
-	bool changed = false;
-	if (ic->send_events != INT_MIN) {
-		changed |= set_send_events(device, ic->send_events);
-	}
 	if (ic->calibration_matrix.configured) {
 		changed |= set_calibration_matrix(device, ic->calibration_matrix.matrix);
 	}
-	return changed;
+
+	if (changed) {
+		ipc_event_input("libinput_config", input_device);
+	}
 }
 
-void sway_input_configure_libinput_device(struct sway_input_device *device) {
-	struct input_config *ic = input_device_get_config(device);
-	if (!ic || !wlr_input_device_is_libinput(device->wlr_device)) {
+void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
+	if (!wlr_input_device_is_libinput(input_device->wlr_device)) {
 		return;
 	}
-	bool changed = false;
-	const char *device_id = device->identifier;
-	struct libinput_device *libinput_device =
-		wlr_libinput_get_device_handle(device->wlr_device);
-	if (device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
-			device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
-		changed = config_libinput_pointer(libinput_device, ic, device_id);
-	} else if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
-		changed = config_libinput_keyboard(libinput_device, ic, device_id);
-	} else if (device->wlr_device->type == WLR_INPUT_DEVICE_SWITCH) {
-		changed = config_libinput_switch(libinput_device, ic, device_id);
-	} else if (device->wlr_device->type == WLR_INPUT_DEVICE_TOUCH) {
-		changed = config_libinput_touch(libinput_device, ic, device_id);
-	}
-	if (changed) {
-		ipc_event_input("libinput_config", device);
-	}
-}
 
-static bool reset_libinput_pointer(struct libinput_device *device,
-		const char *device_id) {
-	sway_log(SWAY_DEBUG, "reset_libinput_pointer(%s)", device_id);
+	struct libinput_device *device =
+		wlr_libinput_get_device_handle(input_device->wlr_device);
+	sway_log(SWAY_DEBUG, "sway_input_reset_libinput_device(%s)",
+		input_device->identifier);
 	bool changed = false;
+
 	changed |= set_send_events(device,
 		libinput_device_config_send_events_get_default_mode(device));
 	changed |= set_tap(device,
@@ -343,56 +304,41 @@ static bool reset_libinput_pointer(struct libinput_device *device,
 		libinput_device_config_scroll_get_default_button(device));
 	changed |= set_dwt(device,
 		libinput_device_config_dwt_get_default_enabled(device));
-	return changed;
-}
-
-static bool reset_libinput_keyboard(struct libinput_device *device,
-		const char *device_id) {
-	sway_log(SWAY_DEBUG, "reset_libinput_keyboard(%s)", device_id);
-	return set_send_events(device,
-		libinput_device_config_send_events_get_default_mode(device));
-}
-
-static bool reset_libinput_switch(struct libinput_device *device,
-		const char *device_id) {
-	sway_log(SWAY_DEBUG, "reset_libinput_switch(%s)", device_id);
-	return set_send_events(device,
-		libinput_device_config_send_events_get_default_mode(device));
-}
-
-static bool reset_libinput_touch(struct libinput_device *device,
-		const char *device_id) {
-	sway_log(SWAY_DEBUG, "reset_libinput_touch(%s)", device_id);
-	bool changed = false;
-
-	changed |= set_send_events(device,
-		libinput_device_config_send_events_get_default_mode(device));
 
 	float matrix[6];
 	libinput_device_config_calibration_get_default_matrix(device, matrix);
 	changed |= set_calibration_matrix(device, matrix);
 
-	return changed;
+	if (changed) {
+		ipc_event_input("libinput_config", input_device);
+	}
 }
 
-void sway_input_reset_libinput_device(struct sway_input_device *device) {
-	if (!wlr_input_device_is_libinput(device->wlr_device)) {
-		return;
+bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
+	if (!wlr_input_device_is_libinput(sway_device->wlr_device)) {
+		return false;
 	}
-	bool changed = false;
-	struct libinput_device *libinput_device =
-		wlr_libinput_get_device_handle(device->wlr_device);
-	if (device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
-			device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
-		changed = reset_libinput_pointer(libinput_device, device->identifier);
-	} else if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
-		changed = reset_libinput_keyboard(libinput_device, device->identifier);
-	} else if (device->wlr_device->type == WLR_INPUT_DEVICE_SWITCH) {
-		changed = reset_libinput_switch(libinput_device, device->identifier);
-	} else if (device->wlr_device->type == WLR_INPUT_DEVICE_TOUCH) {
-		changed = reset_libinput_touch(libinput_device, device->identifier);
+
+	struct libinput_device *device =
+		wlr_libinput_get_device_handle(sway_device->wlr_device);
+	struct udev_device *udev_device =
+		libinput_device_get_udev_device(device);
+	if (!udev_device) {
+		return false;
 	}
-	if (changed) {
-		ipc_event_input("libinput_config", device);
+
+	const char *id_path = udev_device_get_property_value(udev_device, "ID_PATH");
+	if (!id_path) {
+		return false;
 	}
+
+	const char prefix_platform[] = "platform-";
+	if (strncmp(id_path, prefix_platform, strlen(prefix_platform)) != 0) {
+		return false;
+	}
+
+	const char prefix_pci[] = "pci-";
+	const char infix_platform[] = "-platform-";
+	return (strncmp(id_path, prefix_pci, strlen(prefix_pci)) == 0) &&
+		strstr(id_path, infix_platform);
 }

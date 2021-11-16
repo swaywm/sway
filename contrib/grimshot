@@ -32,13 +32,13 @@ FILE=${3:-$(getTargetDirectory)/$(date -Ins).png}
 
 if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" ]; then
   echo "Usage:"
-  echo "  grimshot [--notify] (copy|save) [active|screen|output|area|window] [FILE]"
+  echo "  grimshot [--notify] (copy|save) [active|screen|output|area|window] [FILE|-]"
   echo "  grimshot check"
   echo "  grimshot usage"
   echo ""
   echo "Commands:"
   echo "  copy: Copy the screenshot data into the clipboard."
-  echo "  save: Save the screenshot to a regular file."
+  echo "  save: Save the screenshot to a regular file or '-' to pipe to STDOUT."
   echo "  check: Verify if required tools are installed and exit."
   echo "  usage: Show this message and exit."
   echo ""
@@ -113,7 +113,7 @@ elif [ "$SUBJECT" = "area" ] ; then
   GEOM=$(slurp -d)
   # Check if user exited slurp without selecting the area
   if [ -z "$GEOM" ]; then
-    exit
+    exit 1
   fi
   WHAT="Area"
 elif [ "$SUBJECT" = "active" ] ; then
@@ -132,7 +132,7 @@ elif [ "$SUBJECT" = "window" ] ; then
   GEOM=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp)
   # Check if user exited slurp without selecting the area
   if [ -z "$GEOM" ]; then
-   exit
+   exit 1
   fi
   WHAT="Window"
 else

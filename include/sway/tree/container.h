@@ -2,7 +2,6 @@
 #define _SWAY_CONTAINER_H
 #include <stdint.h>
 #include <sys/types.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_surface.h>
 #include "list.h"
 #include "sway/tree/node.h"
@@ -46,9 +45,9 @@ struct sway_container_state {
 
 	enum sway_fullscreen_mode fullscreen_mode;
 
-	struct sway_workspace *workspace;
-	struct sway_container *parent;
-	list_t *children;
+	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
+	struct sway_container *parent;    // NULL if container in root of workspace
+	list_t *children;                 // struct sway_container
 
 	struct sway_container *focused_inactive_child;
 	bool focused;
@@ -60,6 +59,7 @@ struct sway_container_state {
 	bool border_left;
 	bool border_right;
 
+	// These are in layout coordinates.
 	double content_x, content_y;
 	double content_width, content_height;
 };
@@ -68,25 +68,28 @@ struct sway_container {
 	struct sway_node node;
 	struct sway_view *view;
 
-	// The pending state is the main container properties, and the current state is in the below struct.
-	// This means most places of the code can refer to the main variables (pending state) and it'll just work.
 	struct sway_container_state current;
+	struct sway_container_state pending;
 
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
 
-	enum sway_container_layout layout;
 	enum sway_container_layout prev_split_layout;
 
+	// Whether stickiness has been enabled on this container. Use
+	// `container_is_sticky_[or_child]` rather than accessing this field
+	// directly; it'll also check that the container is floating.
 	bool is_sticky;
 
 	// For C_ROOT, this has no meaning
 	// For other types, this is the position in layout coordinates
 	// Includes borders
-	double x, y;
-	double width, height;
 	double saved_x, saved_y;
 	double saved_width, saved_height;
+
+	// Used when the view changes to CSD unexpectedly. This will be a non-B_CSD
+	// border which we use to restore when the view returns to SSD.
+	enum sway_container_border saved_border;
 
 	// The share of the space of parent container this container occupies
 	double width_fraction;
@@ -97,32 +100,10 @@ struct sway_container {
 	double child_total_width;
 	double child_total_height;
 
-	// These are in layout coordinates.
-	double content_x, content_y;
-	int content_width, content_height;
-
 	// In most cases this is the same as the content x and y, but if the view
 	// refuses to resize to the content dimensions then it can be smaller.
 	// These are in layout coordinates.
 	double surface_x, surface_y;
-
-	enum sway_fullscreen_mode fullscreen_mode;
-
-	enum sway_container_border border;
-
-	// Used when the view changes to CSD unexpectedly. This will be a non-B_CSD
-	// border which we use to restore when the view returns to SSD.
-	enum sway_container_border saved_border;
-
-	int border_thickness;
-	bool border_top;
-	bool border_bottom;
-	bool border_left;
-	bool border_right;
-
-	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
-	struct sway_container *parent;    // NULL if container in root of workspace
-	list_t *children;                 // struct sway_container
 
 	// Outputs currently being intersected
 	list_t *outputs; // struct sway_output
@@ -138,8 +119,6 @@ struct sway_container {
 	struct wlr_texture *title_focused_inactive;
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
-	size_t title_height;
-	size_t title_baseline;
 
 	list_t *marks; // char *
 	struct wlr_texture *marks_focused;
@@ -182,6 +161,11 @@ void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 /**
+ * Returns the fullscreen container obstructing this container if it exists.
+ */
+struct sway_container *container_obstructing_fullscreen_container(struct sway_container *container);
+
+/**
  * Returns true if the given container is an ancestor of this container.
  */
 bool container_has_ancestor(struct sway_container *container,
@@ -196,11 +180,6 @@ void container_reap_empty(struct sway_container *con);
 struct sway_container *container_flatten(struct sway_container *container);
 
 void container_update_title_textures(struct sway_container *container);
-
-/**
- * Calculate the container's title_height property.
- */
-void container_calculate_title_height(struct sway_container *container);
 
 size_t container_build_representation(enum sway_container_layout layout,
 		list_t *children, char *buffer);
@@ -228,8 +207,15 @@ void container_set_geometry_from_content(struct sway_container *con);
 /**
  * Determine if the given container is itself floating.
  * This will return false for any descendants of a floating container.
+ *
+ * Uses pending container state.
  */
 bool container_is_floating(struct sway_container *container);
+
+/**
+ * Same as above, but for current container state.
+ */
+bool container_is_current_floating(struct sway_container *container);
 
 /**
  * Get a container's box in layout coordinates.
@@ -296,6 +282,7 @@ bool container_is_fullscreen_or_child(struct sway_container *container);
 /**
  * Return the output which will be used for scale purposes.
  * This is the most recently entered output.
+ * If the container is not on any output, return NULL.
  */
 struct sway_output *container_get_effective_output(struct sway_container *con);
 
@@ -366,5 +353,22 @@ void container_raise_floating(struct sway_container *con);
 bool container_is_scratchpad_hidden(struct sway_container *con);
 
 bool container_is_scratchpad_hidden_or_child(struct sway_container *con);
+
+bool container_is_sticky(struct sway_container *con);
+
+bool container_is_sticky_or_child(struct sway_container *con);
+
+/**
+ * This will destroy pairs of redundant H/V splits
+ * e.g. H[V[H[app app]] app] -> H[app app app]
+ * The middle "V[H[" are eliminated by a call to container_squash
+ * on the V[ con. It's grandchildren are added to it's parent.
+ *
+ * This function is roughly equivalent to i3's tree_flatten here:
+ * https://github.com/i3/i3/blob/1f0c628cde40cf87371481041b7197344e0417c6/src/tree.c#L651
+ *
+ * Returns the number of new containers added to the parent
+ */
+int container_squash(struct sway_container *con);
 
 #endif

@@ -1,14 +1,12 @@
 # sway
 
 sway es un compositor de [Wayland](http://wayland.freedesktop.org/) compatible con [i3](https://i3wm.org/).
-Lea el [FAQ](https://github.com/swaywm/sway/wiki). Únase al [canal de IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
-irc.freenode.net).
-
-Si quiere apoyar el desarrollo de sway, por favor, contribuya en [la página de Patreon de SirCmpwn](https://patreon.com/sircmpwn).
+Lea el [FAQ](https://github.com/swaywm/sway/wiki). Únase al [canal de IRC](https://web.libera.chat/gamja/?channels=#sway) (#sway on
+irc.libera.chat).
 
 ## Firmas de las versiones
 
-Las distintas versiones están firmadas con [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
+Las distintas versiones están firmadas con [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)
 y publicadas [en GitHub](https://github.com/swaywm/sway/releases).
 
 ## Instalación
@@ -27,7 +25,7 @@ escriba un email a sir@cmpwn.com
 Instale las dependencias:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <cairo/cairo.h>
+#include <cairo.h>
 #include <pango/pangocairo.h>
 
 /**
@@ -17,7 +17,8 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 		const char *text, double scale, bool markup);
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 		int *baseline, double scale, bool markup, const char *fmt, ...);
-void pango_printf(cairo_t *cairo, const char *font,
+void get_text_metrics(const char *font, int *height, int *baseline);
+void render_text(cairo_t *cairo, const char *font,
 		double scale, bool markup, const char *fmt, ...);
 
 #endif

@@ -6,6 +6,7 @@ packages:
   - json-c-dev
   - libevdev-dev
   - libinput-dev
+  - libseat-dev
   - libxcb-dev
   - libxkbcommon-dev
   - mesa-dev
@@ -16,10 +17,11 @@ packages:
   - wayland-dev
   - wayland-protocols
   - xcb-util-image-dev
-  - xorg-server-xwayland
+  - xcb-util-wm-dev
+  - xwayland
 sources:
   - https://github.com/swaywm/sway
-  - https://github.com/swaywm/wlroots
+  - https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
   - wlroots: |
       cd wlroots
@@ -28,11 +30,18 @@ tasks:
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build -Dauto_features=enabled -Dtray=disabled
+      meson build --fatal-meson-warnings -Dauto_features=enabled -Dtray=disabled
   - build: |
       cd sway
       ninja -C build
   - build-no-xwayland: |
       cd sway
       meson configure build -Dxwayland=disabled
+      ninja -C build
+  - build-static: |
+      cd sway
+      mkdir subprojects
+      ln -s ../../wlroots subprojects/wlroots
+      rm -rf build
+      meson build --fatal-meson-warnings --default-library=static --force-fallback-for=wlroots
       ninja -C build

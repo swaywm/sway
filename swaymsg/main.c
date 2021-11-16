@@ -1,4 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
+
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,7 +216,7 @@ static void pretty_print_output(json_object *o) {
 	if (json_object_get_boolean(active)) {
 		printf(
 			"Output %s '%s %s %s'%s\n"
-			"  Current mode: %dx%d @ %f Hz\n"
+			"  Current mode: %dx%d @ %.3f Hz\n"
 			"  Position: %d,%d\n"
 			"  Scale factor: %f\n"
 			"  Scale filter: %s\n"
@@ -228,7 +230,7 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_boolean(focused) ? " (focused)" : "",
 			json_object_get_int(width),
 			json_object_get_int(height),
-			(float)json_object_get_int(refresh) / 1000,
+			(double)json_object_get_int(refresh) / 1000,
 			json_object_get_int(x), json_object_get_int(y),
 			json_object_get_double(scale),
 			json_object_get_string(scale_filter),
@@ -265,9 +267,9 @@ static void pretty_print_output(json_object *o) {
 			json_object_object_get_ex(mode, "height", &mode_height);
 			json_object_object_get_ex(mode, "refresh", &mode_refresh);
 
-			printf("    %dx%d @ %f Hz\n", json_object_get_int(mode_width),
+			printf("    %dx%d @ %.3f Hz\n", json_object_get_int(mode_width),
 				json_object_get_int(mode_height),
-				(float)json_object_get_int(mode_refresh) / 1000);
+				(double)json_object_get_int(mode_refresh) / 1000);
 		}
 	}
 
@@ -343,7 +345,7 @@ int main(int argc, char **argv) {
 
 	sway_log_init(SWAY_INFO, NULL);
 
-	static struct option long_options[] = {
+	static const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"monitor", no_argument, NULL, 'm'},
 		{"pretty", no_argument, NULL, 'p'},
@@ -396,7 +398,7 @@ int main(int argc, char **argv) {
 			cmdtype = strdup(optarg);
 			break;
 		case 'v':
-			fprintf(stdout, "swaymsg version " SWAY_VERSION "\n");
+			printf("swaymsg version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		default:
@@ -480,12 +482,20 @@ int main(int argc, char **argv) {
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 
 	// pretty print the json
-	json_object *obj = json_tokener_parse(resp);
-	if (obj == NULL) {
+	json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
+	if (tok == NULL) {
+		if (quiet) {
+			exit(EXIT_FAILURE);
+		}
+		sway_abort("failed allocating json_tokener");
+	}
+	json_object *obj = json_tokener_parse_ex(tok, resp, -1);
+	enum json_tokener_error err = json_tokener_get_error(tok);
+	json_tokener_free(tok);
+	if (obj == NULL || err != json_tokener_success) {
 		if (!quiet) {
-			fprintf(stderr, "ERROR: Could not parse json response from ipc. "
-					"This is a bug in sway.");
-			printf("%s\n", resp);
+			sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+				json_tokener_error_desc(err));
 		}
 		ret = 1;
 	} else {
@@ -517,13 +527,22 @@ int main(int argc, char **argv) {
 				break;
 			}
 
-			json_object *obj = json_tokener_parse(reply->payload);
-			if (obj == NULL) {
-				if (!quiet) {
-					fprintf(stderr, "ERROR: Could not parse json response from"
-							" ipc. This is a bug in sway.");
-					ret = 1;
+			json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
+			if (tok == NULL) {
+				if (quiet) {
+					exit(EXIT_FAILURE);
 				}
+				sway_abort("failed allocating json_tokener");
+			}
+			json_object *obj = json_tokener_parse_ex(tok, reply->payload, -1);
+			enum json_tokener_error err = json_tokener_get_error(tok);
+			json_tokener_free(tok);
+			if (obj == NULL || err != json_tokener_success) {
+				if (!quiet) {
+					sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+						json_tokener_error_desc(err));
+				}
+				ret = 1;
 				break;
 			} else if (quiet) {
 				json_object_put(obj);

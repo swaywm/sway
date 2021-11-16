@@ -2,15 +2,12 @@
 
 O sway é um compositor do [Wayland](http://wayland.freedesktop.org/) compatível com o [i3](https://i3wm.org/).
 Leia o [FAQ](https://github.com/swaywm/sway/wiki). Junte-se ao [canal do    
-IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway em
-irc.freenode.net).
-
-Se você gostaria de apoiar o desenvolvimento do sway, por favor, contribua na [página do patreon de
-SirCmpwn](https://patreon.com/sircmpwn).
+IRC](https://web.libera.chat/gamja/?channels=#sway) (#sway em
+irc.libera.chat).
 
 ## Assinatura das versões
 
-As versões são assinadas com [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
+As versões são assinadas com [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)
 e publicadas [no GitHub](https://github.com/swaywm/sway/releases).
 
 ## Instalação
@@ -25,19 +22,21 @@ ou mande um email para sir@cmpwn.com para obter informações.
 
 ### Compilando a partir do código-fonte
 
+Verifique [essa página da wiki](https://github.com/swaywm/sway/wiki/Development-Setup) se você quer compilar o HEAD do sway e o wlroots para testes ou desenvolvimento.
+
 Instale as dependências:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (optional: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (Opcional: man pages) \*
-* git \*
+* gdk-pixbuf2 (opcional: system tray)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (opcional: man pages) \*
+* git (opcional: informações de versão) \*
 
 _\*Dependência de tempo de compilação_
 
@@ -62,5 +61,5 @@ Execute `man 5 sway` para se informar sobre a configuração.
 
 ## Execução
 
-Execute o comando `sway` de um TTY. Alguns gerenciadores de display (ou gerenciadores de login) podem funcionar mas alguns não são suportaods
+Execute o comando `sway` de um TTY. Alguns gerenciadores de display (ou gerenciadores de login) podem funcionar mas alguns não são suportados
 pelo sway (o gdm é conhecido por funcionar bem).

@@ -42,6 +42,9 @@ colors can be set:
 *text=<color>*
 	The color of the text.
 
+*button-text=<color>*
+	The color of the button text.
+
 The following sizing options can also be set:
 
 *border-bottom-size=<size>*
@@ -49,6 +52,9 @@ The following sizing options can also be set:
 
 *message-padding=<padding>*
 	Set the padding for the message.
+
+*details-background=<color>*
+	The background color for the details.
 
 *details-border-size=<size>*
 	Set the thickness for the details border.
@@ -72,6 +78,9 @@ Additionally, the following options can be assigned a default per-type:
 
 *edge=top|bottom*
 	Set the edge to use.
+
+*layer=overlay|top|bottom|background*
+	Set the layer to use.
 
 *font=<font>*
 	Set the font to use.

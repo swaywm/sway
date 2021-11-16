@@ -64,6 +64,8 @@ bool swaynag_spawn(const char *swaynag_command,
 		sway_log(SWAY_ERROR, "Failed to create fork for swaynag");
 		goto failed;
 	} else if (pid == 0) {
+		restore_nofile_limit();
+
 		pid = fork();
 		if (pid < 0) {
 			sway_log_errno(SWAY_ERROR, "fork failed");
@@ -87,8 +89,8 @@ bool swaynag_spawn(const char *swaynag_command,
 			size_t length = strlen(swaynag_command) + strlen(swaynag->args) + 2;
 			char *cmd = malloc(length);
 			snprintf(cmd, length, "%s %s", swaynag_command, swaynag->args);
-			execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-			sway_log_errno(SWAY_ERROR, "execl failed");
+			execlp("sh", "sh", "-c", cmd, NULL);
+			sway_log_errno(SWAY_ERROR, "execlp failed");
 			_exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);

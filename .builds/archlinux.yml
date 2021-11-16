@@ -3,6 +3,7 @@ packages:
   - cairo
   - gdk-pixbuf2
   - json-c
+  - libegl
   - libinput
   - libxcb
   - libxkbcommon
@@ -12,10 +13,12 @@ packages:
   - wayland
   - wayland-protocols
   - xcb-util-image
-  - xorg-server-xwayland
+  - xcb-util-wm
+  - xorg-xwayland
+  - seatd
 sources:
   - https://github.com/swaywm/sway
-  - https://github.com/swaywm/wlroots
+  - https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
   - wlroots: |
       cd wlroots
@@ -24,7 +27,7 @@ tasks:
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build -Dauto_features=enabled
+      meson build --fatal-meson-warnings -Dauto_features=enabled -Dsd-bus-provider=libsystemd
   - build: |
       cd sway
       ninja -C build

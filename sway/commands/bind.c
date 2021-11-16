@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/ipc-server.h"
@@ -559,8 +560,8 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
 				"Invalid %s command "
-				"(expected switch state: unknown state %d)",
-				bindtype, split->items[0]);
+				"(expected switch state: unknown state %s)",
+				bindtype, split->items[1]);
 	}
 	list_free_items_and_destroy(split);
 
@@ -642,6 +643,8 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 	if (success) {
 		ipc_event_binding(binding);
 	}
+
+	transaction_commit_dirty();
 }
 
 /**
