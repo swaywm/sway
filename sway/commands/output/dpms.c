@@ -35,8 +35,11 @@ struct cmd_results *output_cmd_dpms(int argc, char **argv) {
 
 	if (parse_boolean(argv[0], current_dpms == DPMS_ON)) {
 		config->handler_context.output_config->dpms_state = DPMS_ON;
-	} else {
+	} else if (strcmp(argv[0], "off") == 0) {
 		config->handler_context.output_config->dpms_state = DPMS_OFF;
+	} else {
+		return cmd_results_new(CMD_INVALID,
+				"Invalid dpms argument: %s", argv[0]);
 	}
 
 	config->handler_context.leftovers.argc = argc - 1;
