@@ -390,7 +390,7 @@ static void set_workspace_coordinates(list_t *workspaces) {
 		struct wl_array coordinates;
 		wl_array_init(&coordinates);
 		*(int*)wl_array_add(&coordinates, sizeof(int)) = i + 1;
-		wlr_workspace_handle_v1_set_coordinates(
+		wlr_ext_workspace_handle_v1_set_coordinates(
 				((struct sway_workspace*)workspaces->items[i])
 						->workspace_handle, &coordinates);
 		wl_array_release(&coordinates);

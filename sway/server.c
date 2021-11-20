@@ -60,13 +60,13 @@ bool server_privileged_prepare(struct sway_server *server) {
 
 static void handle_workspace_manager_commit_request(struct wl_listener *listener, void *data) {
 	struct sway_server *_server = wl_container_of(listener, _server, workspace_manager_commit_request);
-	struct wlr_workspace_manager_v1 *manager = data;
-	struct wlr_workspace_group_handle_v1 *group;
+	struct wlr_ext_workspace_manager_v1 *manager = data;
+	struct wlr_ext_workspace_group_handle_v1 *group;
 	wl_list_for_each(group, &manager->groups, link) {
-		struct wlr_workspace_handle_v1 *workspace;
-		struct wlr_workspace_handle_v1 *next_active_workspace = NULL;
+		struct wlr_ext_workspace_handle_v1 *workspace;
+		struct wlr_ext_workspace_handle_v1 *next_active_workspace = NULL;
 		wl_list_for_each(workspace, &group->workspaces, link) {
-			if (workspace->current & WLR_WORKSPACE_HANDLE_V1_STATE_ACTIVE) {
+			if (workspace->current & WLR_EXT_WORKSPACE_HANDLE_V1_STATE_ACTIVE) {
 				next_active_workspace = workspace;
 			}
 		}
@@ -183,7 +183,7 @@ bool server_init(struct sway_server *server) {
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
 	server->workspace_manager =
-			wlr_workspace_manager_v1_create(server->wl_display);
+			wlr_ext_workspace_manager_v1_create(server->wl_display);
 	server->workspace_manager_commit_request.notify =
 			handle_workspace_manager_commit_request;
 	wl_signal_add(&server->workspace_manager->events.commit,
