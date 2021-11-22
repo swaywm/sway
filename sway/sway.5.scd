@@ -561,8 +561,8 @@ The default colors are:
 :  #484e50
 :  #5f676a
 |  *focused_tab_title*
-:  #4c7899
-:  #285577
+:  #333333
+:  #5f676a
 :  #ffffff
 :  n/a
 :  n/a
