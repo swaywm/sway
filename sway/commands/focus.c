@@ -451,7 +451,8 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "");
 	}
 	struct sway_node *next_focus = NULL;
-	if (container_is_floating(container)) {
+	if (container_is_floating(container) &&
+			container->pending.fullscreen_mode == FULLSCREEN_NONE) {
 		next_focus = node_get_in_direction_floating(container, seat, direction);
 	} else {
 		next_focus = node_get_in_direction_tiling(container, seat, direction, descend);
