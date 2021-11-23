@@ -54,7 +54,7 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	}
 
 	const char *state = argv[0];
-	if (config->reading) {
+	if (config->current_bar) {
 		error = bar_set_hidden_state(config->current_bar, state);
 	} else {
 		const char *id = argc == 2 ? argv[1] : NULL;
