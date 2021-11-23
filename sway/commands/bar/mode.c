@@ -58,7 +58,7 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 	}
 
 	const char *mode = argv[0];
-	if (config->reading) {
+	if (config->current_bar) {
 		error = bar_set_mode(config->current_bar, mode);
 	} else {
 		const char *id = argc == 2 ? argv[1] : NULL;
