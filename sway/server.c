@@ -222,12 +222,11 @@ bool server_init(struct sway_server *server) {
 	struct wlr_output *wlr_output = wlr_noop_add_output(server->noop_backend);
 	root->noop_output = output_create(wlr_output);
 
-	server->headless_backend =
-		wlr_headless_backend_create_with_renderer(server->wl_display, 
-			server->renderer);
+	server->headless_backend = wlr_headless_backend_create(server->wl_display);
 	if (!server->headless_backend) {
-		sway_log(SWAY_INFO, "Failed to create secondary headless backend, "
-			"starting without it");
+		sway_log(SWAY_ERROR, "Failed to create secondary headless backend");
+		wlr_backend_destroy(server->backend);
+		return false;
 	} else {
 		wlr_multi_backend_add(server->backend, server->headless_backend);
 	}
