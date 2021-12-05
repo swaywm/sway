@@ -606,3 +606,23 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	free_ipc_response(resp);
 	return bar_is_dirty;
 }
+
+json_object *ipc_get_keyboard_modifiers(struct status_line *status) {
+	uint32_t len = 0;
+	char *buf = ipc_single_command(status->bar->ipc_socketfd,
+			IPC_GET_INPUTS, NULL, &len);
+	json_object *inputs_json = json_tokener_parse(buf);
+	free(buf);
+	if (!inputs_json) {
+		return NULL;
+	}
+	for (size_t i = 0; i < json_object_array_length(inputs_json); i++) {
+		json_object *input_json = json_object_array_get_idx(inputs_json, i);
+		json_object *modifiers_json = NULL;
+		json_object_object_get_ex(input_json, "xkb_modifiers", &modifiers_json);
+		if (modifiers_json) {
+			return modifiers_json;
+		}
+	}
+	return NULL;
+}

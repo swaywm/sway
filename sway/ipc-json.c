@@ -17,6 +17,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
+#include "sway/input/keyboard.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 
@@ -999,6 +1000,20 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 				json_object_object_add(object, "xkb_active_layout_name",
 					layout ? json_object_new_string(layout) : NULL);
 			}
+		}
+
+		json_object *modifiers_json = json_object_new_array();
+		uint32_t keyboard_modifiers = wlr_keyboard_get_modifiers(keyboard);
+		for (int i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); i++) {
+			if (keyboard_modifiers & modifiers[i].mod) {
+				json_object_array_add(modifiers_json,
+						json_object_new_string(modifiers[i].name));
+			}
+		}
+		if (json_object_array_length(modifiers_json) > 0) {
+			json_object_object_add(object, "xkb_modifiers", modifiers_json);
+		} else {
+			json_object_put(modifiers_json);
 		}
 	}
 
