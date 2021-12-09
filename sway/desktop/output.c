@@ -5,6 +5,7 @@
 #include <time.h>
 #include <wayland-server-core.h>
 #include <wlr/backend/drm.h>
+#include <wlr/backend/headless.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
@@ -833,11 +834,20 @@ static void handle_present(struct wl_listener *listener, void *data) {
 	output->refresh_nsec = output_event->refresh;
 }
 
+static unsigned int last_headless_num = 0;
+
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
+
 	if (wlr_output == root->fallback_output->wlr_output) {
 		return;
+	}
+
+	if (wlr_output_is_headless(wlr_output)) {
+		char name[64];
+		snprintf(name, sizeof(name), "HEADLESS-%u", ++last_headless_num);
+		wlr_output_set_name(wlr_output, name);
 	}
 
 	sway_log(SWAY_DEBUG, "New output %p: %s (non-desktop: %d)",
