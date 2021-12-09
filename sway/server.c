@@ -227,6 +227,7 @@ bool server_init(struct sway_server *server) {
 
 	struct wlr_output *wlr_output =
 			wlr_headless_add_output(server->headless_backend, 800, 600);
+	wlr_output_set_name(wlr_output, "FALLBACK");
 	root->fallback_output = output_create(wlr_output);
 
 	// This may have been set already via -Dtxn-timeout
