@@ -51,6 +51,7 @@ static const struct cmd_handler handlers[] = {
 	{ "client.background", cmd_client_noop },
 	{ "client.focused", cmd_client_focused },
 	{ "client.focused_inactive", cmd_client_focused_inactive },
+	{ "client.focused_tab_title", cmd_client_focused_tab_title },
 	{ "client.placeholder", cmd_client_noop },
 	{ "client.unfocused", cmd_client_unfocused },
 	{ "client.urgent", cmd_client_urgent },

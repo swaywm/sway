@@ -762,6 +762,14 @@ static void render_containers_linear(struct sway_output *output,
 	}
 }
 
+static bool container_is_focused(struct sway_container *con, void *data) {
+	return con->current.focused;
+}
+
+static bool container_has_focused_child(struct sway_container *con) {
+	return container_find_child(con, container_is_focused, NULL);
+}
+
 /**
  * Render a container's children using the L_TABBED layout.
  */
@@ -793,6 +801,10 @@ static void render_containers_tabbed(struct sway_output *output,
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = child->marks_focused;
+		} else if (config->has_focused_tab_title && container_has_focused_child(child)) {
+			colors = &config->border_colors.focused_tab_title;
+			title_texture = child->title_focused_tab_title;
+			marks_texture = child->marks_focused_tab_title;
 		} else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
@@ -858,7 +870,11 @@ static void render_containers_stacked(struct sway_output *output,
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = child->marks_focused;
-		} else if (child == parent->active_child) {
+		} else if (config->has_focused_tab_title && container_has_focused_child(child)) {
+			colors = &config->border_colors.focused_tab_title;
+			title_texture = child->title_focused_tab_title;
+			marks_texture = child->marks_focused_tab_title;
+		 } else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = child->marks_focused_inactive;
