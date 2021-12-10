@@ -88,7 +88,11 @@ struct cmd_results *cmd_client_noop(int argc, char **argv) {
 }
 
 struct cmd_results *cmd_client_focused_tab_title(int argc, char **argv) {
-	config->has_focused_tab_title = true;
-	return handle_command(argc, argv, "client.focused_tab_title",
+	struct cmd_results *result =  handle_command(argc, argv,
+			"client.focused_tab_title",
 			&config->border_colors.focused_tab_title, "#2e9ef4ff");
+	if (result && result->status == CMD_SUCCESS) {
+		config->has_focused_tab_title = true;
+	}
+	return result;
 }
