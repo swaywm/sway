@@ -289,26 +289,24 @@ static void pretty_print_config(json_object *c) {
 }
 
 static void pretty_print(int type, json_object *resp) {
-	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
-			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
-			type != IPC_GET_VERSION && type != IPC_GET_SEATS &&
-			type != IPC_GET_CONFIG && type != IPC_SEND_TICK) {
-		printf("%s\n", json_object_to_json_string_ext(resp,
-			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+	switch (type) {
+	case IPC_SEND_TICK:
 		return;
-	}
-
-	if (type == IPC_SEND_TICK) {
-		return;
-	}
-
-	if (type == IPC_GET_VERSION) {
+	case IPC_GET_VERSION:
 		pretty_print_version(resp);
 		return;
-	}
-
-	if (type == IPC_GET_CONFIG) {
+	case IPC_GET_CONFIG:
 		pretty_print_config(resp);
+		return;
+	case IPC_COMMAND:
+	case IPC_GET_WORKSPACES:
+	case IPC_GET_INPUTS:
+	case IPC_GET_OUTPUTS:
+	case IPC_GET_SEATS:
+		break;
+	default:
+		printf("%s\n", json_object_to_json_string_ext(resp,
+			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
 	}
 
