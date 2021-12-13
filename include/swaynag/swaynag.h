@@ -5,7 +5,6 @@
 #include "list.h"
 #include "pool-buffer.h"
 #include "swaynag/types.h"
-#include "xdg-output-unstable-v1-client-protocol.h"
 
 #define SWAYNAG_MAX_HEIGHT 500
 
@@ -75,13 +74,11 @@ struct swaynag_details {
 
 struct swaynag {
 	bool run_display;
-	int querying_outputs;
 
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct wl_seat *seat;
 	struct wl_shm *shm;
-	struct zxdg_output_manager_v1 *xdg_output_manager;
 	struct wl_list outputs;  // swaynag_output::link
 	struct wl_list seats;  // swaynag_seat::link
 	struct swaynag_output *output;

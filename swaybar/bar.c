@@ -54,7 +54,6 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	if (output->input_region != NULL) {
 		wl_region_destroy(output->input_region);
 	}
-	zxdg_output_v1_destroy(output->xdg_output);
 	wl_output_destroy(output->output);
 	destroy_buffer(&output->buffers[0]);
 	destroy_buffer(&output->buffers[1]);

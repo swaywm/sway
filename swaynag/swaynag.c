@@ -307,33 +307,25 @@ static void output_scale(void *data, struct wl_output *output,
 	}
 }
 
+static void output_name(void *data, struct wl_output *output,
+		const char *name) {
+	struct swaynag_output *swaynag_output = data;
+	swaynag_output->name = strdup(name);
+
+	const char *outname = swaynag_output->swaynag->type->output;
+	if (!swaynag_output->swaynag->output && outname &&
+			strcmp(outname, name) == 0) {
+		sway_log(SWAY_DEBUG, "Using output %s", name);
+		swaynag_output->swaynag->output = swaynag_output;
+	}
+}
+
 static const struct wl_output_listener output_listener = {
 	.geometry = nop,
 	.mode = nop,
 	.done = nop,
 	.scale = output_scale,
-};
-
-static void xdg_output_handle_name(void *data,
-		struct zxdg_output_v1 *xdg_output, const char *name) {
-	struct swaynag_output *swaynag_output = data;
-	char *outname = swaynag_output->swaynag->type->output;
-	sway_log(SWAY_DEBUG, "Checking against output %s for %s", name, outname);
-	if (!swaynag_output->swaynag->output && outname && name
-			&& strcmp(outname, name) == 0) {
-		sway_log(SWAY_DEBUG, "Using output %s", name);
-		swaynag_output->swaynag->output = swaynag_output;
-	}
-	swaynag_output->name = strdup(name);
-	zxdg_output_v1_destroy(xdg_output);
-	swaynag_output->swaynag->querying_outputs--;
-}
-
-static const struct zxdg_output_v1_listener xdg_output_listener = {
-	.logical_position = nop,
-	.logical_size = nop,
-	.done = nop,
-	.name = xdg_output_handle_name,
+	.name = output_name,
 	.description = nop,
 };
 
@@ -361,33 +353,21 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		swaynag->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
-		if (!swaynag->output && swaynag->xdg_output_manager) {
-			swaynag->querying_outputs++;
+		if (!swaynag->output) {
 			struct swaynag_output *output =
 				calloc(1, sizeof(struct swaynag_output));
 			output->wl_output = wl_registry_bind(registry, name,
-					&wl_output_interface, 3);
+					&wl_output_interface, 4);
 			output->wl_name = name;
 			output->scale = 1;
 			output->swaynag = swaynag;
 			wl_list_insert(&swaynag->outputs, &output->link);
 			wl_output_add_listener(output->wl_output,
 					&output_listener, output);
-
-			struct zxdg_output_v1 *xdg_output;
-			xdg_output = zxdg_output_manager_v1_get_xdg_output(
-					swaynag->xdg_output_manager, output->wl_output);
-			zxdg_output_v1_add_listener(xdg_output,
-					&xdg_output_listener, output);
 		}
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		swaynag->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);
-	} else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0
-			&& version >= ZXDG_OUTPUT_V1_NAME_SINCE_VERSION) {
-		swaynag->xdg_output_manager = wl_registry_bind(registry, name,
-				&zxdg_output_manager_v1_interface,
-				ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
 	}
 }
 
@@ -453,12 +433,11 @@ void swaynag_setup(struct swaynag *swaynag) {
 
 	assert(swaynag->compositor && swaynag->layer_shell && swaynag->shm);
 
-	while (swaynag->querying_outputs > 0) {
-		if (wl_display_roundtrip(swaynag->display) < 0) {
-			sway_log(SWAY_ERROR, "Error during outputs init.");
-			swaynag_destroy(swaynag);
-			exit(EXIT_FAILURE);
-		}
+	// Second roundtrip to get wl_output properties
+	if (wl_display_roundtrip(swaynag->display) < 0) {
+		sway_log(SWAY_ERROR, "Error during outputs init.");
+		swaynag_destroy(swaynag);
+		exit(EXIT_FAILURE);
 	}
 
 	if (!swaynag->output && swaynag->type->output) {
