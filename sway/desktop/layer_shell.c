@@ -308,8 +308,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 			wl_list_insert(&output->layers[layer_surface->current.layer],
 				&layer->link);
 			layer->layer = layer_surface->current.layer;
+			arrange_layers(output);
 		}
-		arrange_layers(output);
 	}
 
 	wlr_surface_get_extends(layer_surface->surface, &layer->extent);
