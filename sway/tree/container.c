@@ -523,6 +523,8 @@ static void render_titlebar_text_texture(struct sway_output *output,
 	cairo_set_font_options(c, fo);
 	get_text_size(c, config->font, &width, NULL, &baseline, scale,
 			config->pango_markup, "%s", text);
+	int max_width = con->current.width - 2 * config->titlebar_h_padding;
+	width = width > max_width ? max_width : width;
 	cairo_surface_destroy(dummy_surface);
 	cairo_destroy(c);
 
@@ -535,7 +537,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 	}
 
 	cairo_surface_t *surface = cairo_image_surface_create(
-			CAIRO_FORMAT_ARGB32, width, height);
+		CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cairo = cairo_create(surface);
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	cairo_set_font_options(cairo, fo);
@@ -548,7 +550,8 @@ static void render_titlebar_text_texture(struct sway_output *output,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, config->font_baseline * scale - baseline);
 
-	render_text(cairo, config->font, scale, pango_markup, "%s", text);
+	render_text_ellipsize(cairo, config->font, scale, pango_markup, width, "%s",
+			text);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
@@ -807,6 +810,7 @@ void container_set_resizing(struct sway_container *con, bool resizing) {
 		return;
 	}
 
+	container_update_title_textures(con);
 	if (con->view) {
 		if (con->view->impl->set_resizing) {
 			con->view->impl->set_resizing(con->view, resizing);
