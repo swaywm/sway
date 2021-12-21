@@ -117,11 +117,11 @@ bool status_handle_readable(struct status_line *status) {
 		status->text = status->buffer;
 		// intentional fall-through
 	case PROTOCOL_TEXT:
-		errno = 0;
 		while (true) {
 			if (status->buffer[read_bytes - 1] == '\n') {
 				status->buffer[read_bytes - 1] = '\0';
 			}
+			errno = 0;
 			read_bytes = getline(&status->buffer,
 					&status->buffer_size, status->read);
 			if (errno == EAGAIN) {
