@@ -536,6 +536,13 @@ static void render_titlebar_text_texture(struct sway_output *output,
 
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
+	cairo_status_t status = cairo_surface_status(surface);
+	if (status != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "cairo_image_surface_create failed: %s",
+			cairo_status_to_string(status));
+		return;
+	}
+
 	cairo_t *cairo = cairo_create(surface);
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	cairo_set_font_options(cairo, fo);
