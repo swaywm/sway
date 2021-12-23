@@ -25,6 +25,8 @@ struct sway_layer_surface {
 	bool mapped;
 	struct wlr_box extent;
 	enum zwlr_layer_shell_v1_layer layer;
+
+	struct wl_list subsurfaces;
 };
 
 struct sway_layer_popup {
@@ -44,6 +46,7 @@ struct sway_layer_popup {
 struct sway_layer_subsurface {
 	struct wlr_subsurface *wlr_subsurface;
 	struct sway_layer_surface *layer_surface;
+	struct wl_list link;
 
 	struct wl_listener map;
 	struct wl_listener unmap;
