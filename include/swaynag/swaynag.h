@@ -96,6 +96,7 @@ struct swaynag {
 	char *message;
 	list_t *buttons;
 	struct swaynag_details details;
+	bool no_dock;
 };
 
 void swaynag_setup(struct swaynag *swaynag);
