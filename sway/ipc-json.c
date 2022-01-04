@@ -980,6 +980,11 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		struct wlr_keyboard *keyboard = device->wlr_device->keyboard;
 		struct xkb_keymap *keymap = keyboard->keymap;
 		struct xkb_state *state = keyboard->xkb_state;
+		
+		json_object_object_add(object, "repeat_delay", 
+			json_object_new_int(keyboard->repeat_info.delay));
+		json_object_object_add(object, "repeat_rate", 
+			json_object_new_int(keyboard->repeat_info.rate));
 
 		json_object *layouts_arr = json_object_new_array();
 		json_object_object_add(object, "xkb_layout_names", layouts_arr);
