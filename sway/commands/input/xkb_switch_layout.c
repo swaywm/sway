@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "log.h"
 
 static void switch_layout(struct wlr_keyboard *kbd, xkb_layout_index_t idx) {
@@ -66,20 +67,30 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 		relative = 0;
 	}
 
-	struct sway_input_device *dev;
-	wl_list_for_each(dev, &server.input->devices, link) {
-		if (strcmp(ic->identifier, "*") != 0 &&
-				strcmp(ic->identifier, "type:keyboard") != 0 &&
-				strcmp(ic->identifier, dev->identifier) != 0) {
-			continue;
-		}
-		if (dev->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
-			continue;
-		}
-		if (relative) {
-			switch_layout_relative(dev->wlr_device->keyboard, relative);
-		} else {
-			switch_layout(dev->wlr_device->keyboard, layout);
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		struct sway_seat_device *seat_dev;
+		struct sway_input_device *dev;
+		wl_list_for_each(seat_dev, &seat->devices, link) {
+			dev = seat_dev->input_device;
+			if (strcmp(ic->identifier, "*") != 0 &&
+					strcmp(ic->identifier, "type:keyboard") != 0 &&
+					strcmp(ic->identifier, dev->identifier) != 0) {
+				continue;
+			}
+			if (dev->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+				continue;
+			}
+			if (relative) {
+				switch_layout_relative(dev->wlr_device->keyboard, relative);
+			} else {
+				switch_layout(dev->wlr_device->keyboard, layout);
+			}
+			// If input devices in this seat are grouped, skip the
+			// other devices since the layout change will already be
+			// propagated automatically.
+			if (dev->wlr_device->keyboard->group)
+				break;
 		}
 	}
 
