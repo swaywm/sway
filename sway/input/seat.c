@@ -51,6 +51,16 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 static void seat_node_destroy(struct sway_seat_node *seat_node) {
 	wl_list_remove(&seat_node->destroy.link);
 	wl_list_remove(&seat_node->link);
+
+	/*
+	 * This is the only time we remove items from the focus stack without
+	 * immediately re-adding them. If we just removed the last thing,
+	 * mark that nothing has focus anymore.
+	 */
+	if (wl_list_empty(&seat_node->seat->focus_stack)) {
+		seat_node->seat->has_focus = false;
+	}
+
 	free(seat_node);
 }
 
@@ -1415,9 +1425,8 @@ struct sway_node *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
 	}
-	if (wl_list_empty(&seat->focus_stack)) {
-		return NULL;
-	}
+	sway_assert(!wl_list_empty(&seat->focus_stack),
+			"focus_stack is empty, but has_focus is true");
 	struct sway_seat_node *current =
 		wl_container_of(seat->focus_stack.next, current, link);
 	return current->node;
