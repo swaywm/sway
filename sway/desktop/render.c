@@ -162,6 +162,11 @@ static void render_surface_iterator(struct sway_output *output,
 	}
 	scale_box(&dst_box, wlr_output->scale);
 
+	if (view) {
+		memcpy(&view->last_destination, &dst_box, sizeof(struct wlr_box));
+		view->last_output = output;
+	}
+
 	render_texture(wlr_output, output_damage, texture,
 		&src_box, &dst_box, matrix, alpha);
 
@@ -272,7 +277,7 @@ static void render_view_toplevels(struct sway_view *view,
 		output->lx - view->geometry.x;
 	double oy = view->container->surface_y -
 		output->ly - view->geometry.y;
-	output_surface_for_each_surface(output, view->surface, ox, oy,
+	output_surface_for_each_surface(output, view, view->surface, ox, oy,
 			render_surface_iterator, &data);
 }
 

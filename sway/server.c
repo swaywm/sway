@@ -208,6 +208,8 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_activation_v1->events.request_activate,
 		&server->xdg_activation_v1_request_activate);
 
+	wl_list_init(&server->mirrors);
+
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
 	for (int i = 1; i <= 32; ++i) {

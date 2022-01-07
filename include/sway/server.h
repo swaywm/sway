@@ -12,6 +12,7 @@
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_mirror_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
@@ -97,6 +98,8 @@ struct sway_server {
 
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
+
+	struct wl_list mirrors; // sway_mirror::link
 
 	// The timeout for transactions, after which a transaction is applied
 	// regardless of readiness.

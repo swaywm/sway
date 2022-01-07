@@ -12,6 +12,7 @@
 #include <wlr/backend/drm.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
+#include "sway/mirror.h"
 #include "sway/output.h"
 #include "sway/tree/root.h"
 #include "log.h"
@@ -479,6 +480,13 @@ static void queue_output_config(struct output_config *oc,
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (output == root->fallback_output) {
+		return false;
+	}
+
+	// block changes to active mirror dsts; these will be applied during reclaim_output
+	if (mirror_output_is_mirror_dst(output)) {
+		sway_log(SWAY_DEBUG, "Not configuring mirror dst output %s",
+				output->wlr_output->name);
 		return false;
 	}
 

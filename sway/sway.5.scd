@@ -209,6 +209,50 @@ set|plus|minus|toggle <amount>
 	effect on the output the window is currently on. See *sway-output*(5) for
 	further details.
 
+*mirror* start <entire|container|box> <dst_name> <full|aspect|center> ...
+	Begins a mirror session. Multiple sessions may run concurrently.
+	The destination (_dst_) output will be vacated by sway and the mirrored
+	content displayed there.
+	See *sway-output*(5) for details on specifying the output name.
+
+	_full_: content will be stretched to fill _dst_, possibly distorting.
+
+	_aspect_: content will be stretched to fit to the width or height of
+	_dst_ without distortion.
+
+	_center_: content will be displayed at the center of _dst_ at a 1:1 ratio.
+
+*mirror* start _entire_ <dst_name> <full|aspect|center> <src_name> [show_cursor]
+	Mirrors the whole of the source (_src_) output on _dst_. The cursor on
+	_src_ is optionally shown.
+
+*mirror* start _box_ <dst_name> <full|aspect|center> <x> <y> <width> <height> [show_cursor]
+	Mirrors a fixed area (_box_) on the _dst_ output. The _box_ must be entirely
+	within a single output. _box_ is specified in the global coordinate space;
+	see *sway-output*(5) for further details. The cursor within the _box_ is
+	optionally shown.
+
+	A selection tool such as *slurp*(1) may facilitate easier _box_ selection
+	e.g.:
+		mirror start box eDP-1 aspect $(slurp -f "%x %y %w %h")
+
+*mirror* start _container_ <dst_name> <full|aspect|center> [con_id] [show_cursor]
+	Mirrors a single sway container on _dst_. The cursor within the container
+	is optionally shown. The currently focussed container will be used if
+	_con_id_ is not specified; see *CRITERIA* for details on _con_id_.
+
+	The container may be moved between outputs and may be resized, floated
+	and moved. _dst_ will be blanked when the container is not visible.
+
+	The mirror session will end if the container is destroyed.
+
+	In the case of a floating container spanning multiple outputs, the
+	portion of the container visible on the output of its current workspace
+	will be mirrored.
+
+*mirror* stop
+	Ceases all mirror sessions.
+
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. If the container,
 	the optional _px_ argument specifies how many pixels to move the container.

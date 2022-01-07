@@ -97,6 +97,10 @@ struct sway_view {
 	// when a transaction is applied.
 	struct wlr_box saved_geometry;
 
+	// The most recently rendered output and destination box.
+	struct sway_output *last_output;
+	struct wlr_box last_destination;
+
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;
 	struct wl_listener foreign_fullscreen_request;

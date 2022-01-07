@@ -108,8 +108,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 	pixman_region32_t *damage);
 
 void output_surface_for_each_surface(struct sway_output *output,
-		struct wlr_surface *surface, double ox, double oy,
-		sway_surface_iterator_func_t iterator, void *user_data);
+		struct sway_view *view, struct wlr_surface *surface,
+		double ox, double oy, sway_surface_iterator_func_t iterator,
+		void *user_data);
 
 void output_view_for_each_surface(struct sway_output *output,
 	struct sway_view *view, sway_surface_iterator_func_t iterator,
