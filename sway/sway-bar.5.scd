@@ -162,9 +162,10 @@ ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollU
 	action (Activate for button1, ContextMenu for button2 and SecondaryActivate
 	for button3).
 
-*tray_padding* <px> [px]
-	Sets the pixel padding of the system tray. This padding will surround the
-	tray on all sides and between each item. The default value for _px_ is 2.
+*tray_padding* <padding>
+	Sets the padding of the system tray. This padding will surround the tray on
+	all sides and between each item. This value will be multiplied by the output
+	scale. The default is _2_.
 
 *tray_output* none|<output>|\*
 	Restrict the tray to a certain output, can be specified multiple times. If

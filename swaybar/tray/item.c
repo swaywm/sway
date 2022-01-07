@@ -454,13 +454,13 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 
 uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		struct swaybar_sni *sni) {
-	uint32_t height = output->height * output->scale;
-	int padding = output->bar->config->tray_padding;
-	int target_size = height - 2*padding;
+	struct swaybar_config *config = output->bar->config;
+	// NOTE: SNI icon size (target_size, icon_size) is in scaled terms (device pixels)
+	int target_size = (output->height - 2 * config->tray_padding) * output->scale;
 	if (target_size != sni->target_size && sni_ready(sni)) {
-		// check if another icon should be loaded
+		// ensure the targetted size is within the SNI's specified range
 		if (target_size < sni->min_size || target_size > sni->max_size) {
-			reload_sni(sni, output->bar->config->icon_theme, target_size);
+			reload_sni(sni, config->icon_theme, target_size);
 		}
 
 		sni->target_size = target_size;
@@ -473,13 +473,13 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		icon_size = actual_size < target_size ?
 			actual_size*(target_size/actual_size) : target_size;
 		icon = cairo_image_surface_scale(sni->icon, icon_size, icon_size);
-	} else { // draw a :(
-		icon_size = target_size*0.8;
+	} else { // draw a red sad face :(
+		icon_size = target_size * 0.8;
 		icon = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, icon_size, icon_size);
 		cairo_t *cairo_icon = cairo_create(icon);
 		cairo_set_source_u32(cairo_icon, 0xFF0000FF);
-		cairo_translate(cairo_icon, icon_size/2, icon_size/2);
-		cairo_scale(cairo_icon, icon_size/2, icon_size/2);
+		cairo_translate(cairo_icon, icon_size / 2.0, icon_size / 2.0);
+		cairo_scale(cairo_icon, icon_size / 2.0, icon_size / 2.0);
 		cairo_arc(cairo_icon, 0, 0, 1, 0, 7);
 		cairo_fill(cairo_icon);
 		cairo_set_operator(cairo_icon, CAIRO_OPERATOR_CLEAR);
@@ -493,12 +493,9 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		cairo_destroy(cairo_icon);
 	}
 
-	double descaled_padding = (double)padding / output->scale;
-	double descaled_icon_size = (double)icon_size / output->scale;
-
-	int size = descaled_icon_size + 2 * descaled_padding;
-	*x -= size;
-	int icon_y = floor((output->height - size) / 2.0);
+	int padded_size = ceil(icon_size / (double)output->scale) + 2 * config->tray_padding;
+	*x -= padded_size;
+	int y = floor((output->height - padded_size) / 2.0);
 
 	cairo_operator_t op = cairo_get_operator(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
@@ -507,10 +504,10 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	cairo_pattern_t *icon_pattern = cairo_pattern_create_for_surface(icon);
 	// TODO: check cairo_pattern_status for "ENOMEM"
 	cairo_matrix_init_scale(&scale_matrix, output->scale, output->scale);
-	cairo_matrix_translate(&scale_matrix, -(*x + descaled_padding), -(icon_y + descaled_padding));
+	cairo_matrix_translate(&scale_matrix, -(*x + config->tray_padding), -(y + config->tray_padding));
 	cairo_pattern_set_matrix(icon_pattern, &scale_matrix);
 	cairo_set_source(cairo, icon_pattern);
-	cairo_rectangle(cairo, *x, icon_y, size, size);
+	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
 	cairo_fill(cairo);
 
 	cairo_set_operator(cairo, op);
@@ -521,7 +518,7 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;
 	hotspot->y = 0;
-	hotspot->width = size;
+	hotspot->width = padded_size;
 	hotspot->height = output->height;
 	hotspot->callback = icon_hotspot_callback;
 	hotspot->destroy = free;
