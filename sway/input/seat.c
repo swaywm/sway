@@ -565,6 +565,8 @@ struct sway_seat *seat_create(const char *seat_name) {
 	}
 	seat->wlr_seat->data = seat;
 
+	seat->floating_counter = 0;
+
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {
 		wlr_seat_destroy(seat->wlr_seat);

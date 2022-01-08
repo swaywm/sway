@@ -289,31 +289,49 @@ static struct sway_container *container_at_linear(struct sway_node *parent,
 	return NULL;
 }
 
+static int floating_order_compare (const void *a, const void *b) {
+	struct sway_container *a_container = *(struct sway_container **)a;
+	struct sway_container *b_container = *(struct sway_container **)b;
+
+	return a_container->floating_order - b_container->floating_order;
+}
+
 static struct sway_container *floating_container_at(double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	// For outputs with floating containers that overhang the output bounds,
-	// those at the end of the output list appear on top of floating
-	// containers from other outputs, so iterate the list in reverse.
-	for (int i = root->outputs->length - 1; i >= 0; --i) {
+	list_t *floating = create_list();
+
+	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
 		for (int j = 0; j < output->workspaces->length; ++j) {
 			struct sway_workspace *ws = output->workspaces->items[j];
 			if (!workspace_is_visible(ws)) {
 				continue;
 			}
-			// Items at the end of the list are on top, so iterate the list in
-			// reverse.
-			for (int k = ws->floating->length - 1; k >= 0; --k) {
+			for (int k = 0; k < ws->floating->length; ++k) {
 				struct sway_container *floater = ws->floating->items[k];
-				struct sway_container *container =
-					tiling_container_at(&floater->node, lx, ly, surface, sx, sy);
-				if (container) {
-					return container;
-				}
+				list_add(floating, floater);
 			}
 		}
 	}
-	return NULL;
+
+	list_qsort(floating, floating_order_compare);
+
+	struct sway_container *container = NULL;
+
+	// Items at the end of the list are on top, so iterate the list in
+	// reverse.
+	for (int i = floating->length - 1; i >= 0; --i) {
+		struct sway_container *floater = floating->items[i];
+		struct sway_container *current =
+			tiling_container_at(&floater->node, lx, ly, surface, sx, sy);
+		if (current) {
+			container = current;
+			break;
+		}
+	}
+
+	list_free(floating);
+	return container;
 }
 
 static struct sway_container *view_container_content_at(struct sway_node *parent,
@@ -837,6 +855,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 	if (enable) {
 		struct sway_container *old_parent = container->pending.parent;
 		container_detach(container);
+		container->floating_order = ++seat->floating_counter;
 		workspace_add_floating(workspace, container);
 		if (container->view) {
 			view_set_tiled(container->view, false);
@@ -1733,10 +1752,15 @@ void container_update_marks_textures(struct sway_container *con) {
 }
 
 void container_raise_floating(struct sway_container *con) {
+	struct sway_seat *seat = input_manager_current_seat();
 	// Bring container to front by putting it at the end of the floating list.
 	struct sway_container *floater = container_toplevel_ancestor(con);
 	if (container_is_floating(floater) && floater->pending.workspace) {
-		list_move_to_end(floater->pending.workspace->floating, floater);
+		// Don't raise if already on top
+		if (floater->floating_order != seat->floating_counter) {
+			floater->floating_order = ++seat->floating_counter;
+		}
+
 		node_set_dirty(&floater->pending.workspace->node);
 	}
 }

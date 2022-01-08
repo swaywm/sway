@@ -113,6 +113,12 @@ struct sway_container {
 	// Hidden scratchpad containers have a NULL parent.
 	bool scratchpad;
 
+	// Value specifing in which order floating windows should be shown
+	// higher values means that the floating window should appear
+	// ontop of others. This variable is undefined if this container is not
+	// floating.
+	uint32_t floating_order;
+
 	float alpha;
 
 	struct wlr_texture *title_focused;

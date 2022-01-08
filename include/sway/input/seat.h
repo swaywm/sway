@@ -113,6 +113,12 @@ struct sway_seat {
 				// sway_keyboard_shortcuts_inhibitor::link
 
 	struct wl_list link; // input_manager::seats
+
+	// Used by sway_container.floating_order. This value will increment as
+	// floating windows request to be shown on top, this makes sure that a
+	// value can be assigned to a floating window that is guaranteed
+	// to be highter (ignoring overflow) than other floating windows.
+	uint32_t floating_counter;
 };
 
 struct sway_pointer_constraint {

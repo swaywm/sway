@@ -996,8 +996,17 @@ static void render_floating_container(struct sway_output *soutput,
 	}
 }
 
+static int floating_order_compare (const void *a, const void *b) {
+	struct sway_container *a_container = *(struct sway_container **)a;
+	struct sway_container *b_container = *(struct sway_container **)b;
+
+	return a_container->floating_order - b_container->floating_order;
+}
+
 static void render_floating(struct sway_output *soutput,
 		pixman_region32_t *damage) {
+	list_t *floating = create_list();
+
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
 		for (int j = 0; j < output->current.workspaces->length; ++j) {
@@ -1010,10 +1019,19 @@ static void render_floating(struct sway_output *soutput,
 				if (floater->current.fullscreen_mode != FULLSCREEN_NONE) {
 					continue;
 				}
-				render_floating_container(soutput, damage, floater);
+				list_add(floating, floater);
 			}
 		}
 	}
+
+	list_qsort(floating, floating_order_compare);
+
+	for (int i = 0; i < floating->length; ++i) {
+		struct sway_container *floater = floating->items[i];
+		render_floating_container(soutput, damage, floater);
+	}
+
+	list_free(floating);
 }
 
 static void render_seatops(struct sway_output *output,

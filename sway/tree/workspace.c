@@ -813,6 +813,8 @@ void workspace_add_floating(struct sway_workspace *workspace,
 	if (con->pending.workspace) {
 		container_detach(con);
 	}
+	struct sway_seat *seat = input_manager_current_seat();
+	con->floating_order = ++seat->floating_counter;
 	list_add(workspace->floating, con);
 	con->pending.workspace = workspace;
 	container_for_each_child(con, set_workspace, NULL);
