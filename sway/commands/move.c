@@ -874,6 +874,10 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Invalid x position specified");
 	}
 
+	if (argc < 1) {
+		return cmd_results_new(CMD_FAILURE, expected_position_syntax);
+	}
+
 	struct movement_amount ly = { .amount = 0, .unit = MOVEMENT_UNIT_INVALID };
 	// Y direction
 	num_consumed_args = parse_movement_amount(argc, argv, &ly);
