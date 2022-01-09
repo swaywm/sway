@@ -80,6 +80,12 @@ enum movement_unit parse_movement_unit(const char *unit) {
 
 int parse_movement_amount(int argc, char **argv,
 		struct movement_amount *amount) {
+	if (!sway_assert(argc > 0, "Expected args in parse_movement_amount")) {
+		amount->amount = 0;
+		amount->unit = MOVEMENT_UNIT_INVALID;
+		return 0;
+	}
+
 	char *err;
 	amount->amount = (int)strtol(argv[0], &err, 10);
 	if (*err) {
