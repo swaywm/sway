@@ -92,15 +92,22 @@ if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
 		assert(get_option('auto_features').auto(), 'sd-bus-provider must not be set to auto since auto_features != auto')
 	endif
-	sdbus = dependency(['libsystemd', 'libelogind', 'basu'],
-		required: get_option('tray'),
+	sdbus = dependency(['libsystemd', 'libelogind'],
+		required: false,
 		version: '>=239',
 	)
+	if not sdbus.found()
+		sdbus = dependency('basu', required: false)
+	endif
 else
 	sdbus = dependency(get_option('sd-bus-provider'), required: get_option('tray'))
 endif
 
-have_tray = sdbus.found()
+tray_deps_found = sdbus.found()
+if get_option('tray').enabled() and not tray_deps_found
+	error('Building with -Dtray=enabled, but sd-bus has not been not found')
+endif
+have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
 conf_data = configuration_data()
 
