@@ -12,7 +12,7 @@
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
-#include <wlr/types/wlr_mirror_v1.h>
+#include <wlr/types/wlr_mirror.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>

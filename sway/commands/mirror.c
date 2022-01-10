@@ -60,11 +60,11 @@ bool build_dst_params(struct sway_mirror_params *params, char *dst_name_or_id,
 				"Invalid scale.");
 		return false;
 	} else if (strcmp(scale_str, "full") == 0) {
-		params->wlr_params.scale = WLR_MIRROR_V1_SCALE_FULL;
+		params->wlr_params.scale = WLR_MIRROR_SCALE_FULL;
 	} else if (strcmp(scale_str, "aspect") == 0) {
-		params->wlr_params.scale = WLR_MIRROR_V1_SCALE_ASPECT;
+		params->wlr_params.scale = WLR_MIRROR_SCALE_ASPECT;
 	} else if (strcmp(scale_str, "center") == 0) {
-		params->wlr_params.scale = WLR_MIRROR_V1_SCALE_CENTER;
+		params->wlr_params.scale = WLR_MIRROR_SCALE_CENTER;
 	} else {
 		snprintf(params_failure_message, sizeof(params_failure_message),
 				"Invalid scale '%s', expected <full|aspect|center>.", scale_str);

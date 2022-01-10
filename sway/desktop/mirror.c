@@ -77,7 +77,7 @@ static void handle_ready_entire(struct wl_listener *listener, void *data) {
 	struct wlr_box box_output = { 0 };
 	wlr_output_transformed_resolution(output, &box_output.width, &box_output.height);
 
-	wlr_mirror_v1_request_box(mirror->wlr_mirror_v1, output, box_output);
+	wlr_mirror_request_box(mirror->wlr_mirror, output, box_output);
 }
 
 static void handle_ready_box(struct wl_listener *listener, void *data) {
@@ -88,7 +88,7 @@ static void handle_ready_box(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	wlr_mirror_v1_request_box(mirror->wlr_mirror_v1, output, mirror->params.box);
+	wlr_mirror_request_box(mirror->wlr_mirror, output, mirror->params.box);
 }
 
 static void handle_ready_container(struct wl_listener *listener, void *data) {
@@ -99,14 +99,14 @@ static void handle_ready_container(struct wl_listener *listener, void *data) {
 	struct sway_container *container = root_find_container(test_con_id, &mirror->params.con_id);
 	if (!container) {
 		sway_log(SWAY_DEBUG, "Mirror container %ld destroyed, stopping", mirror->params.con_id);
-		wlr_mirror_v1_destroy(mirror->wlr_mirror_v1);
+		wlr_mirror_destroy(mirror->wlr_mirror);
 		return;
 	}
 
 	// is the container visible?
 	struct sway_view *view = container->view;
 	if (!view_is_visible(view)) {
-		wlr_mirror_v1_request_blank(mirror->wlr_mirror_v1);
+		wlr_mirror_request_blank(mirror->wlr_mirror);
 		return;
 	}
 
@@ -126,7 +126,7 @@ static void handle_ready_container(struct wl_listener *listener, void *data) {
 	struct wlr_box box_src_intersected;
 	wlr_box_intersection(&box_src_intersected, &view->last_destination, &box_output);
 
-	wlr_mirror_v1_request_box(mirror->wlr_mirror_v1, output, box_src_intersected);
+	wlr_mirror_request_box(mirror->wlr_mirror, output, box_src_intersected);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -167,7 +167,7 @@ bool mirror_create(struct sway_mirror_params *params) {
 	struct sway_mirror *mirror = calloc(1, sizeof(struct sway_mirror));
 
 	memcpy(&mirror->params, params, sizeof(struct sway_mirror_params));
-	struct wlr_mirror_v1_params *wlr_params = &mirror->params.wlr_params;
+	struct wlr_mirror_params *wlr_params = &mirror->params.wlr_params;
 	wl_array_init(&wlr_params->output_srcs);
 
 	switch (mirror->params.flavour) {
@@ -211,18 +211,18 @@ bool mirror_create(struct sway_mirror_params *params) {
 	}
 
 	// start the session
-	mirror->wlr_mirror_v1 = wlr_mirror_v1_create(&mirror->params.wlr_params);
-	if (!mirror->wlr_mirror_v1) {
+	mirror->wlr_mirror = wlr_mirror_create(&mirror->params.wlr_params);
+	if (!mirror->wlr_mirror) {
 		goto error_create;
 	}
 
 	vacate_output(output_dst);
 
 	// ready events from all srcs
-	wl_signal_add(&mirror->wlr_mirror_v1->events.ready, &mirror->ready);
+	wl_signal_add(&mirror->wlr_mirror->events.ready, &mirror->ready);
 
 	// mirror session end
-	wl_signal_add(&mirror->wlr_mirror_v1->events.destroy, &mirror->destroy);
+	wl_signal_add(&mirror->wlr_mirror->events.destroy, &mirror->destroy);
 	mirror->destroy.notify = handle_destroy;
 
 	// add to the global server list
@@ -243,7 +243,7 @@ void mirror_destroy(struct sway_mirror *mirror) {
 	}
 	sway_log(SWAY_DEBUG, "Mirror destroying dst '%s'", mirror->params.wlr_params.output_dst->name);
 
-	wlr_mirror_v1_destroy(mirror->wlr_mirror_v1);
+	wlr_mirror_destroy(mirror->wlr_mirror);
 }
 
 void mirror_destroy_all() {

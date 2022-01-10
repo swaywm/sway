@@ -1,7 +1,7 @@
 #ifndef _SWAY_MIRROR_H
 #define _SWAY_MIRROR_H
 
-#include <wlr/types/wlr_mirror_v1.h>
+#include <wlr/types/wlr_mirror.h>
 #include <wlr/util/box.h>
 #include "sway/output.h"
 
@@ -9,7 +9,7 @@
  * Allows mirroring: rendering some contents of one output (the src) on another
  * output (the dst). dst is fixed for the duration of the session, src may vary.
  *
- * See wlr_mirror_v1.h for full details.
+ * See wlr_mirror.h for full details.
  */
 
 enum sway_mirror_flavour {
@@ -35,7 +35,7 @@ enum sway_mirror_flavour {
  */
 struct sway_mirror_params {
 
-	struct wlr_mirror_v1_params wlr_params;
+	struct wlr_mirror_params wlr_params;
 
 	enum sway_mirror_flavour flavour;
 
@@ -62,7 +62,7 @@ struct sway_mirror {
 	 */
 	struct wl_listener destroy;
 
-	struct wlr_mirror_v1 *wlr_mirror_v1;
+	struct wlr_mirror *wlr_mirror;
 };
 
 /**
