@@ -153,6 +153,9 @@ static void log_kernel(void) {
 
 static bool drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
+		sway_log(SWAY_ERROR, "!!! DEPRECATION WARNING: "
+			"SUID privilege drop will be removed in a future release, please migrate to seatd-launch");
+
 		// Set the gid and uid in the correct order.
 		if (setgid(getgid()) != 0) {
 			sway_log(SWAY_ERROR, "Unable to drop root group, refusing to start");
