@@ -249,7 +249,7 @@ void mirror_destroy_all() {
 }
 
 bool mirror_output_is_mirror_dst(struct sway_output *output) {
-	return output && output->wlr_output && output->wlr_output->mirror_dst;
+	return wlr_mirror_v1_output_is_dst(output->wlr_output);
 }
 
 bool mirror_layout_box_within_output(struct wlr_box *box, struct wlr_output *output) {

@@ -34,8 +34,7 @@ bool build_src_params(struct sway_mirror_params *params, char *src_name_or_id) {
 	return true;
 }
 
-bool build_dst_params(struct sway_mirror_params *params, char *dst_name_or_id,
-		char *scale_str) {
+bool build_dst_params(struct sway_mirror_params *params, char *dst_name_or_id) {
 
 	struct sway_output *output_dst = all_output_by_name_or_id(dst_name_or_id);
 	if (!output_dst) {
@@ -53,23 +52,8 @@ bool build_dst_params(struct sway_mirror_params *params, char *dst_name_or_id,
 				"dst_name '%s' not enabled.", dst_name_or_id);
 		return false;
 	}
-	params->wlr_params.output_dst = output_dst->wlr_output;
 
-	if (!scale_str) {
-		snprintf(params_failure_message, sizeof(params_failure_message),
-				"Invalid scale.");
-		return false;
-	} else if (strcmp(scale_str, "full") == 0) {
-		params->wlr_params.scale = WLR_MIRROR_SCALE_FULL;
-	} else if (strcmp(scale_str, "aspect") == 0) {
-		params->wlr_params.scale = WLR_MIRROR_SCALE_ASPECT;
-	} else if (strcmp(scale_str, "center") == 0) {
-		params->wlr_params.scale = WLR_MIRROR_SCALE_CENTER;
-	} else {
-		snprintf(params_failure_message, sizeof(params_failure_message),
-				"Invalid scale '%s', expected <full|aspect|center>.", scale_str);
-		return false;
-	}
+	params->wlr_params.output_dst = output_dst->wlr_output;
 
 	return true;
 }
@@ -108,20 +92,20 @@ bool build_con_id_params(struct sway_mirror_params *params, char *str) {
 
 struct cmd_results *cmd_mirror_start_entire(int argc, char **argv) {
 	const char usage[] = "Expected 'mirror start entire "
-		"<dst_name> <full|aspect|center> <src_name> [show_cursor]'";
+		"<dst_name> <src_name> [show_cursor]'";
 
-	if (argc < 3 || argc > 4) {
+	if (argc < 2 || argc > 3) {
 		return cmd_results_new(CMD_INVALID, usage);
 	}
 
 	struct sway_mirror_params params = { 0 };
 	params.flavour = SWAY_MIRROR_FLAVOUR_ENTIRE;
 
-	if (!build_dst_params(&params, argv[0], argv[1])) {
+	if (!build_dst_params(&params, argv[0])) {
 		return cmd_results_new(CMD_FAILURE, params_failure_message);
 	}
 
-	if (!build_src_params(&params, argv[2])) {
+	if (!build_src_params(&params, argv[1])) {
 		return cmd_results_new(CMD_FAILURE, params_failure_message);
 	}
 
@@ -129,8 +113,8 @@ struct cmd_results *cmd_mirror_start_entire(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "src and dst must be different");
 	}
 
-	if (argc == 4) {
-		if (strcmp(argv[3], "show_cursor") != 0) {
+	if (argc == 3) {
+		if (strcmp(argv[2], "show_cursor") != 0) {
 			return cmd_results_new(CMD_FAILURE, usage);
 		}
 		params.wlr_params.overlay_cursor = true;
@@ -145,36 +129,35 @@ struct cmd_results *cmd_mirror_start_entire(int argc, char **argv) {
 
 struct cmd_results *cmd_mirror_start_box(int argc, char **argv) {
 	const char usage[] = "Expected 'mirror start box "
-		"<dst_name> <full|aspect|center> "
-		"<x> <y> <width> <height> [show_cursor]'";
+		"<dst_name> <x> <y> <width> <height> [show_cursor]'";
 
-	if (argc < 6 || argc > 7) {
+	if (argc < 5 || argc > 6) {
 		return cmd_results_new(CMD_INVALID, usage);
 	}
 
 	struct sway_mirror_params params = { 0 };
 	params.flavour = SWAY_MIRROR_FLAVOUR_BOX;
 
-	if (!build_dst_params(&params, argv[0], argv[1])) {
+	if (!build_dst_params(&params, argv[0])) {
 		return cmd_results_new(CMD_FAILURE, params_failure_message);
 	}
 
 	char *end;
-	params.box.x = strtol(argv[2], &end, 10);
+	params.box.x = strtol(argv[1], &end, 10);
 	if (end[0] != '\0' || params.box.x < 0) {
-		return cmd_results_new(CMD_FAILURE, "Invalid x '%s'.", argv[2]);
+		return cmd_results_new(CMD_FAILURE, "Invalid x '%s'.", argv[1]);
 	}
-	params.box.y = strtol(argv[3], &end, 10);
+	params.box.y = strtol(argv[2], &end, 10);
 	if (end[0] != '\0' || params.box.y < 0) {
-		return cmd_results_new(CMD_FAILURE, "Invalid y '%s'.", argv[3]);
+		return cmd_results_new(CMD_FAILURE, "Invalid y '%s'.", argv[2]);
 	}
-	params.box.width = strtol(argv[4], &end, 10);
+	params.box.width = strtol(argv[3], &end, 10);
 	if (end[0] != '\0' || params.box.width < 1) {
-		return cmd_results_new(CMD_FAILURE, "Invalid width '%s'.", argv[4]);
+		return cmd_results_new(CMD_FAILURE, "Invalid width '%s'.", argv[3]);
 	}
-	params.box.height = strtol(argv[5], &end, 10);
+	params.box.height = strtol(argv[4], &end, 10);
 	if (end[0] != '\0' || params.box.height < 1) {
-		return cmd_results_new(CMD_FAILURE, "Invalid height '%s'.", argv[5]);
+		return cmd_results_new(CMD_FAILURE, "Invalid height '%s'.", argv[4]);
 	}
 
 	// find the output for the origin of the box
@@ -194,8 +177,8 @@ struct cmd_results *cmd_mirror_start_box(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Box covers multiple outputs.");
 	}
 
-	if (argc == 7) {
-		if (strcmp(argv[6], "show_cursor") != 0) {
+	if (argc == 6) {
+		if (strcmp(argv[5], "show_cursor") != 0) {
 			return cmd_results_new(CMD_FAILURE, usage);
 		}
 		params.wlr_params.overlay_cursor = true;
@@ -210,40 +193,40 @@ struct cmd_results *cmd_mirror_start_box(int argc, char **argv) {
 
 struct cmd_results *cmd_mirror_start_container(int argc, char **argv) {
 	const char usage[] = "Expected 'mirror start container "
-		"<dst_name> <full|aspect|center> [con_id] [show_cursor]'";
+		"<dst_name> [con_id] [show_cursor]'";
 
-	if (argc < 2 || argc > 4) {
+	if (argc < 1 || argc > 3) {
 		return cmd_results_new(CMD_INVALID, usage);
 	}
 
 	struct sway_mirror_params params = { 0 };
 	params.flavour = SWAY_MIRROR_FLAVOUR_CONTAINER;
 
-	if (!build_dst_params(&params, argv[0], argv[1])) {
+	if (!build_dst_params(&params, argv[0])) {
 		return cmd_results_new(CMD_FAILURE, params_failure_message);
 	}
 
 	switch(argc) {
-		case 2:
+		case 1:
 			if (!build_focussed_params(&params)) {
 				return cmd_results_new(CMD_FAILURE, params_failure_message);
 			}
 			break;
-		case 3:
-			if (strcmp(argv[2], "show_cursor") == 0) {
+		case 2:
+			if (strcmp(argv[1], "show_cursor") == 0) {
 				params.wlr_params.overlay_cursor = true;
 				if (!build_focussed_params(&params)) {
 					return cmd_results_new(CMD_FAILURE, params_failure_message);
 				}
-			} else if (!build_con_id_params(&params, argv[2])) {
+			} else if (!build_con_id_params(&params, argv[1])) {
 				return cmd_results_new(CMD_FAILURE, params_failure_message);
 			}
 			break;
-		case 4:
-			if (!build_con_id_params(&params, argv[2])) {
+		case 3:
+			if (!build_con_id_params(&params, argv[1])) {
 				return cmd_results_new(CMD_FAILURE, params_failure_message);
 			}
-			if (strcmp(argv[3], "show_cursor") != 0) {
+			if (strcmp(argv[2], "show_cursor") != 0) {
 				return cmd_results_new(CMD_FAILURE, usage);
 			}
 			params.wlr_params.overlay_cursor = true;
