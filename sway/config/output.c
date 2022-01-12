@@ -483,13 +483,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		return false;
 	}
 
-	// block changes to active mirror dsts; these will be applied during reclaim_output
-	if (mirror_output_is_mirror_dst(output)) {
-		sway_log(SWAY_DEBUG, "Not configuring mirror dst output %s",
-				output->wlr_output->name);
-		return false;
-	}
-
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	// Flag to prevent the output mode event handler from calling us
@@ -545,24 +538,27 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		}
 	}
 
-	// Find position for it
-	if (oc && (oc->x != -1 || oc->y != -1)) {
-		sway_log(SWAY_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
-		wlr_output_layout_add(root->output_layout, wlr_output, oc->x, oc->y);
-	} else {
-		wlr_output_layout_add_auto(root->output_layout, wlr_output);
-	}
+	if (!mirror_output_is_mirror_dst(output)) {
 
-	// Update output->{lx, ly, width, height}
-	struct wlr_box *output_box =
-		wlr_output_layout_get_box(root->output_layout, wlr_output);
-	output->lx = output_box->x;
-	output->ly = output_box->y;
-	output->width = output_box->width;
-	output->height = output_box->height;
+		// Find position for it
+		if (oc && (oc->x != -1 || oc->y != -1)) {
+			sway_log(SWAY_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
+			wlr_output_layout_add(root->output_layout, wlr_output, oc->x, oc->y);
+		} else {
+			wlr_output_layout_add_auto(root->output_layout, wlr_output);
+		}
 
-	if (!output->enabled) {
-		output_enable(output);
+		// Update output->{lx, ly, width, height}
+		struct wlr_box *output_box =
+			wlr_output_layout_get_box(root->output_layout, wlr_output);
+		output->lx = output_box->x;
+		output->ly = output_box->y;
+		output->width = output_box->width;
+		output->height = output_box->height;
+
+		if (!output->enabled) {
+			output_enable(output);
+		}
 	}
 
 	if (oc && oc->max_render_time >= 0) {

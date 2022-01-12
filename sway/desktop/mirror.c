@@ -34,9 +34,7 @@ static struct wlr_output *container_output(struct sway_container *container) {
 void vacate_output(struct sway_output *output) {
 
 	// arranges root
-	if (output->enabled) {
-		output_disable(output);
-	}
+	output_disable(output);
 
 	// idempotent
 	wlr_output_layout_remove(root->output_layout, output->wlr_output);
@@ -44,15 +42,12 @@ void vacate_output(struct sway_output *output) {
 
 /**
  * Reclaim an output, arranging root as though it is a newly enabled output.
- *
- * Any "pending" changes that were blocked in apply_output_config during the
- * mirror session will be applied.
  */
 void reclaim_output(struct sway_output *output) {
 
 	struct output_config *oc = find_output_config(output);
 
-	// calls output_enable
+	// calls wlr_output_layout_add, output_enable
 	apply_output_config(oc, output);
 
 	free_output_config(oc);
