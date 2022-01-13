@@ -1,6 +1,6 @@
 #ifndef _SWAY_SURFACE_H
 #define _SWAY_SURFACE_H
-#include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_compositor.h>
 
 struct sway_surface {
 	struct wlr_surface *wlr_surface;
