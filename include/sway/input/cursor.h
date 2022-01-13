@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_pointer_gestures_v1.h>
-#include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_compositor.h>
 #include "sway/input/seat.h"
 #include "config.h"
 

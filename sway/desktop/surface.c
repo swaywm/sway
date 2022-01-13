@@ -1,7 +1,7 @@
 #define _POSIX_C_SOURCE 200112L
 #include <stdlib.h>
 #include <time.h>
-#include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_compositor.h>
 #include "sway/server.h"
 #include "sway/surface.h"
 

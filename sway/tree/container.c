@@ -9,6 +9,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/render/drm_format_set.h>
 #include "linux-dmabuf-unstable-v1-protocol.h"
 #include "cairo_util.h"
