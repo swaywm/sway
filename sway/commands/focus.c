@@ -54,7 +54,7 @@ static bool get_direction_from_next_prev(struct sway_container *container,
 	} else {
 		return false;
 	}
-	 
+
 	return true;
 }
 
