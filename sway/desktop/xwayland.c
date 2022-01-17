@@ -121,6 +121,20 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void unmanaged_handle_request_activate(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = data;
+	if (!xsurface->mapped) {
+		return;
+	}
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	if (focus && focus->view && focus->view->pid != xsurface->pid) {
+		return;
+	}
+
+	seat_set_focus_surface(seat, xsurface->surface, false);
+}
+
 static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, destroy);
@@ -129,6 +143,7 @@ static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->unmap.link);
 	wl_list_remove(&surface->destroy.link);
 	wl_list_remove(&surface->override_redirect.link);
+	wl_list_remove(&surface->request_activate.link);
 	free(surface);
 }
 
@@ -176,6 +191,8 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	surface->destroy.notify = unmanaged_handle_destroy;
 	wl_signal_add(&xsurface->events.set_override_redirect, &surface->override_redirect);
 	surface->override_redirect.notify = unmanaged_handle_override_redirect;
+	wl_signal_add(&xsurface->events.request_activate, &surface->request_activate);
+	surface->request_activate.notify = unmanaged_handle_request_activate;
 
 	return surface;
 }
