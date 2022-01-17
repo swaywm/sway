@@ -958,6 +958,7 @@ static void handle_pointer_swipe_begin(struct wl_listener *listener, void *data)
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, swipe_begin);
 	struct wlr_event_pointer_swipe_begin *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_swipe_begin(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
