@@ -402,7 +402,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_node *node = instruction->node;
-		bool hidden = node_is_view(node) &&
+		bool hidden = node_is_view(node) && !node->destroying &&
 			!view_is_visible(node->sway_container->view);
 		if (should_configure(node, instruction)) {
 			instruction->serial = view_configure(node->sway_container->view,
