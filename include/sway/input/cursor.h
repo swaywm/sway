@@ -42,6 +42,8 @@ struct sway_cursor {
 	struct wl_listener swipe_begin;
 	struct wl_listener swipe_update;
 	struct wl_listener swipe_end;
+	struct wl_listener hold_begin;
+	struct wl_listener hold_end;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;
