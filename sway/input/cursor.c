@@ -984,6 +984,26 @@ static void handle_pointer_swipe_end(struct wl_listener *listener, void *data) {
 			event->time_msec, event->cancelled);
 }
 
+static void handle_pointer_hold_begin(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(
+			listener, cursor, hold_begin);
+	struct wlr_event_pointer_hold_begin *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
+	wlr_pointer_gestures_v1_send_hold_begin(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->fingers);
+}
+
+static void handle_pointer_hold_end(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(
+			listener, cursor, hold_end);
+	struct wlr_event_pointer_hold_end *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
+	wlr_pointer_gestures_v1_send_hold_end(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->cancelled);
+}
+
 static void handle_image_surface_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_cursor *cursor =
@@ -1061,6 +1081,8 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->swipe_begin.link);
 	wl_list_remove(&cursor->swipe_update.link);
 	wl_list_remove(&cursor->swipe_end.link);
+	wl_list_remove(&cursor->hold_begin.link);
+	wl_list_remove(&cursor->hold_end.link);
 	wl_list_remove(&cursor->motion.link);
 	wl_list_remove(&cursor->motion_absolute.link);
 	wl_list_remove(&cursor->button.link);
@@ -1117,6 +1139,10 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	wl_signal_add(&wlr_cursor->events.swipe_update, &cursor->swipe_update);
 	cursor->swipe_end.notify = handle_pointer_swipe_end;
 	wl_signal_add(&wlr_cursor->events.swipe_end, &cursor->swipe_end);
+	cursor->hold_begin.notify = handle_pointer_hold_begin;
+	wl_signal_add(&wlr_cursor->events.hold_begin, &cursor->hold_begin);
+	cursor->hold_end.notify = handle_pointer_hold_end;
+	wl_signal_add(&wlr_cursor->events.hold_end, &cursor->hold_end);
 
 	// input events
 	wl_signal_add(&wlr_cursor->events.motion, &cursor->motion);
