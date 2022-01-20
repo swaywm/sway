@@ -35,6 +35,15 @@ if is_freebsd
 	add_project_arguments('-D_C11_SOURCE', language: 'c')
 endif
 
+# Execute the wlroots subproject, if any
+wlroots_version = ['>=0.16.0', '<0.17.0']
+subproject(
+	'wlroots',
+	default_options: ['examples=false'],
+	required: false,
+	version: wlroots_version,
+)
+
 jsonc = dependency('json-c', version: '>=0.13')
 pcre = dependency('libpcre')
 wayland_server = dependency('wayland-server', version: '>=1.20.0')
@@ -42,6 +51,7 @@ wayland_client = dependency('wayland-client')
 wayland_cursor = dependency('wayland-cursor')
 wayland_egl = dependency('wayland-egl')
 wayland_protos = dependency('wayland-protocols', version: '>=1.24')
+wlroots = dependency('wlroots', version: wlroots_version)
 xkbcommon = dependency('xkbcommon')
 cairo = dependency('cairo')
 pango = dependency('pango')
@@ -59,20 +69,6 @@ bash_comp = dependency('bash-completion', required: false)
 fish_comp = dependency('fish', required: false)
 math = cc.find_library('m')
 rt = cc.find_library('rt')
-
-# Try first to find wlroots as a subproject, then as a system dependency
-wlroots_version = ['>=0.16.0', '<0.17.0']
-wlroots_proj = subproject(
-	'wlroots',
-	default_options: ['examples=false'],
-	required: false,
-	version: wlroots_version,
-)
-if wlroots_proj.found()
-	wlroots = wlroots_proj.get_variable('wlroots')
-else
-	wlroots = dependency('wlroots', version: wlroots_version)
-endif
 
 wlroots_features = {
 	'xwayland': false,
@@ -92,15 +88,22 @@ if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
 		assert(get_option('auto_features').auto(), 'sd-bus-provider must not be set to auto since auto_features != auto')
 	endif
-	sdbus = dependency(['libsystemd', 'libelogind', 'basu'],
-		required: get_option('tray'),
+	sdbus = dependency(['libsystemd', 'libelogind'],
+		required: false,
 		version: '>=239',
 	)
+	if not sdbus.found()
+		sdbus = dependency('basu', required: false)
+	endif
 else
 	sdbus = dependency(get_option('sd-bus-provider'), required: get_option('tray'))
 endif
 
-have_tray = sdbus.found()
+tray_deps_found = sdbus.found()
+if get_option('tray').enabled() and not tray_deps_found
+	error('Building with -Dtray=enabled, but sd-bus has not been not found')
+endif
+have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
 conf_data = configuration_data()
 
@@ -156,8 +159,8 @@ add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir
 version = '"@0@"'.format(meson.project_version())
 git = find_program('git', native: true, required: false)
 if git.found()
-	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'])
-	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'])
+	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'], check: false)
+	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'], check: false)
 	if git_commit.returncode() == 0 and git_branch.returncode() == 0
 		version = '"@0@-@1@ (" __DATE__ ", branch \'@2@\')"'.format(
 			meson.project_version(),

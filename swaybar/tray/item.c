@@ -466,6 +466,11 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		sni->target_size = target_size;
 	}
 
+	// Passive
+	if (sni->status && sni->status[0] == 'P') {
+		return 0;
+	}
+
 	int icon_size;
 	cairo_surface_t *icon;
 	if (sni->icon) {
@@ -493,24 +498,36 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		cairo_destroy(cairo_icon);
 	}
 
-	int padded_size = icon_size + 2*padding;
-	*x -= padded_size;
-	int y = floor((height - padded_size) / 2.0);
+	double descaled_padding = (double)padding / output->scale;
+	double descaled_icon_size = (double)icon_size / output->scale;
+
+	int size = descaled_icon_size + 2 * descaled_padding;
+	*x -= size;
+	int icon_y = floor((output->height - size) / 2.0);
 
 	cairo_operator_t op = cairo_get_operator(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
-	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
-	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
+
+	cairo_matrix_t scale_matrix;
+	cairo_pattern_t *icon_pattern = cairo_pattern_create_for_surface(icon);
+	// TODO: check cairo_pattern_status for "ENOMEM"
+	cairo_matrix_init_scale(&scale_matrix, output->scale, output->scale);
+	cairo_matrix_translate(&scale_matrix, -(*x + descaled_padding), -(icon_y + descaled_padding));
+	cairo_pattern_set_matrix(icon_pattern, &scale_matrix);
+	cairo_set_source(cairo, icon_pattern);
+	cairo_rectangle(cairo, *x, icon_y, size, size);
 	cairo_fill(cairo);
+
 	cairo_set_operator(cairo, op);
 
+	cairo_pattern_destroy(icon_pattern);
 	cairo_surface_destroy(icon);
 
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;
 	hotspot->y = 0;
-	hotspot->width = height;
-	hotspot->height = height;
+	hotspot->width = size;
+	hotspot->height = output->height;
 	hotspot->callback = icon_hotspot_callback;
 	hotspot->destroy = free;
 	hotspot->data = strdup(sni->watcher_id);
