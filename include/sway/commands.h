@@ -202,6 +202,7 @@ sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_xwayland;
 
 sway_cmd bar_cmd_bindcode;
+sway_cmd bar_cmd_bindgesture;
 sway_cmd bar_cmd_binding_mode_indicator;
 sway_cmd bar_cmd_bindsym;
 sway_cmd bar_cmd_colors;
@@ -228,6 +229,7 @@ sway_cmd bar_cmd_tray_bindsym;
 sway_cmd bar_cmd_tray_output;
 sway_cmd bar_cmd_tray_padding;
 sway_cmd bar_cmd_unbindcode;
+sway_cmd bar_cmd_unbindgesture;
 sway_cmd bar_cmd_unbindsym;
 sway_cmd bar_cmd_wrap_scroll;
 sway_cmd bar_cmd_workspace_buttons;

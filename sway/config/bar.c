@@ -27,6 +27,14 @@ void free_bar_binding(struct bar_binding *binding) {
 	free(binding);
 }
 
+void free_bar_gesture(struct bar_gesture *gesture) {
+	if (!gesture) {
+		return;
+	}
+	free(gesture->command);
+	free(gesture);
+}
+
 void free_bar_config(struct bar_config *bar) {
 	if (!bar) {
 		return;
@@ -45,6 +53,12 @@ void free_bar_config(struct bar_config *bar) {
 		}
 	}
 	list_free(bar->bindings);
+	if (bar->gestures) {
+		for (int i = 0; i < bar->gestures->length; i++) {
+			free_bar_gesture(bar->gestures->items[i]);
+		}
+	}
+	list_free(bar->gestures);
 	list_free_items_and_destroy(bar->outputs);
 	if (bar->client != NULL) {
 		wl_client_destroy(bar->client);
@@ -113,6 +127,9 @@ struct bar_config *default_bar_config(void) {
 		goto cleanup;
 	}
 	if (!(bar->bindings = create_list())) {
+		goto cleanup;
+	}
+	if (!(bar->gestures = create_list())) {
 		goto cleanup;
 	}
 	// set default colors

@@ -1241,6 +1241,25 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 		json_object_object_add(json, "bindings", bindings);
 	}
 
+	if (bar->gestures->length > 0) {
+		json_object *gestures = json_object_new_array();
+		for (int i = 0; i < bar->gestures->length; ++i) {
+			struct bar_gesture *binding = bar->gestures->items[i];
+			struct gesture *gesture = &binding->gesture;
+			json_object *bind = json_object_new_object();
+			json_object_object_add(bind, "type",
+					json_object_new_int(gesture->type));
+			json_object_object_add(bind, "fingers",
+					json_object_new_int(gesture->fingers));
+			json_object_object_add(bind, "directions",
+					json_object_new_int(gesture->directions));
+			json_object_object_add(bind, "command",
+					json_object_new_string(binding->command));
+			json_object_array_add(gestures, bind);
+		}
+		json_object_object_add(json, "gestures", gestures);
+	}
+
 	// Add outputs if defined
 	if (bar->outputs && bar->outputs->length > 0) {
 		json_object *outputs = json_object_new_array();
