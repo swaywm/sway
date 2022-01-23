@@ -511,13 +511,8 @@ void swaynag_destroy(struct swaynag *swaynag) {
 		swaynag_seat_destroy(seat);
 	}
 
-	if (&swaynag->buffers[0]) {
-		destroy_buffer(&swaynag->buffers[0]);
-	}
-
-	if (&swaynag->buffers[1]) {
-		destroy_buffer(&swaynag->buffers[1]);
-	}
+	destroy_buffer(&swaynag->buffers[0]);
+	destroy_buffer(&swaynag->buffers[1]);
 
 	if (swaynag->outputs.prev || swaynag->outputs.next) {
 		struct swaynag_output *output, *temp;
