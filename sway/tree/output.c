@@ -301,10 +301,10 @@ struct sway_output *output_get_in_direction(struct sway_output *reference,
 	if (!sway_assert(direction, "got invalid direction: %d", direction)) {
 		return NULL;
 	}
-	struct wlr_box *output_box =
-		wlr_output_layout_get_box(root->output_layout, reference->wlr_output);
-	int lx = output_box->x + output_box->width / 2;
-	int ly = output_box->y + output_box->height / 2;
+	struct wlr_box output_box;
+	wlr_output_layout_get_box(root->output_layout, reference->wlr_output, &output_box);
+	int lx = output_box.x + output_box.width / 2;
+	int ly = output_box.y + output_box.height / 2;
 	struct wlr_output *wlr_adjacent = wlr_output_layout_adjacent_output(
 			root->output_layout, direction, reference->wlr_output, lx, ly);
 	if (!wlr_adjacent) {

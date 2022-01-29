@@ -737,14 +737,15 @@ static void update_output_manager_config(struct sway_server *server) {
 		}
 		struct wlr_output_configuration_head_v1 *config_head =
 			wlr_output_configuration_head_v1_create(config, output->wlr_output);
-		struct wlr_box *output_box = wlr_output_layout_get_box(
-			root->output_layout, output->wlr_output);
+		struct wlr_box output_box;
+		wlr_output_layout_get_box(root->output_layout,
+			output->wlr_output, &output_box);
 		// We mark the output enabled even if it is switched off by DPMS
 		config_head->state.enabled = output->current_mode != NULL && output->enabled;
 		config_head->state.mode = output->current_mode;
-		if (output_box) {
-			config_head->state.x = output_box->x;
-			config_head->state.y = output_box->y;
+		if (!wlr_box_empty(&output_box)) {
+			config_head->state.x = output_box.x;
+			config_head->state.y = output_box.y;
 		}
 	}
 

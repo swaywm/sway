@@ -546,12 +546,12 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	// Update output->{lx, ly, width, height}
-	struct wlr_box *output_box =
-		wlr_output_layout_get_box(root->output_layout, wlr_output);
-	output->lx = output_box->x;
-	output->ly = output_box->y;
-	output->width = output_box->width;
-	output->height = output_box->height;
+	struct wlr_box output_box;
+	wlr_output_layout_get_box(root->output_layout, wlr_output, &output_box);
+	output->lx = output_box.x;
+	output->ly = output_box.y;
+	output->width = output_box.width;
+	output->height = output_box.height;
 
 	if (!output->enabled) {
 		output_enable(output);
