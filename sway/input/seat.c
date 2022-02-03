@@ -1198,8 +1198,10 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 
 	// emit ipc events
 	set_workspace(seat, new_workspace);
-	if (container && container->view) {
+	if (container) {
 		ipc_event_window(container, "focus");
+	} else if(last_workspace == new_workspace) {
+		ipc_event_workspace(NULL, new_workspace, "focus");
 	}
 
 	// Move sticky containers to new workspace
