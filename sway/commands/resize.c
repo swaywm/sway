@@ -80,61 +80,46 @@ void container_resize_tiled(struct sway_container *con,
 	}
 
 	// For HORIZONTAL or VERTICAL, we are growing in two directions so select
-	// both adjacent siblings. For RIGHT or DOWN, just select the next sibling.
-	// For LEFT or UP, convert it to a RIGHT or DOWN resize and reassign con to
-	// the previous sibling.
-	struct sway_container *prev = NULL;
-	struct sway_container *next = NULL;
+	// all adjacent siblings. For RIGHT or DOWN or LEFT or UP select just the
+	// previous or next sibling.
+	list_t *resize = create_list();
 	list_t *siblings = container_get_siblings(con);
 	int index = container_sibling_index(con);
 
 	if (axis == AXIS_HORIZONTAL || axis == AXIS_VERTICAL) {
-		if (index == 0) {
-			next = siblings->items[1];
-		} else if (index == siblings->length - 1) {
-			// Convert edge to top/left
-			next = con;
-			con = siblings->items[index - 1];
-			amount = -amount;
-		} else {
-			prev = siblings->items[index - 1];
-			next = siblings->items[index + 1];
-		}
+		list_cat(resize, siblings);
 	} else if (axis == WLR_EDGE_TOP || axis == WLR_EDGE_LEFT) {
 		if (!sway_assert(index > 0, "Didn't expect first child")) {
-			return;
+			goto cleanup;
 		}
-		next = con;
-		con = siblings->items[index - 1];
-		amount = -amount;
+		list_add(resize, siblings->items[index - 1]);
+		list_add(resize, con);
 	} else {
 		if (!sway_assert(index < siblings->length - 1,
 					"Didn't expect last child")) {
-			return;
+			goto cleanup;
 		}
-		next = siblings->items[index + 1];
+		list_add(resize, con);
+		list_add(resize, siblings->items[index + 1]);
 	}
 
 	// Apply new dimensions
-	int sibling_amount = prev ? ceil((double)amount / 2.0) : amount;
+	int sibling_amount = ceil((double)amount / (double)(resize->length - 1));
 
 	if (is_horizontal(axis)) {
-		if (con->pending.width + amount < MIN_SANE_W) {
-			return;
-		}
-		if (next->pending.width - sibling_amount < MIN_SANE_W) {
-			return;
-		}
-		if (prev && prev->pending.width - sibling_amount < MIN_SANE_W) {
-			return;
+		for (int i = 0; i < resize->length; i++) {
+			struct sway_container *sibling = resize->items[i];
+			double change = sibling == con ? amount : -sibling_amount;
+			if (sibling->pending.width + change < MIN_SANE_W) {
+				goto cleanup;
+			}
 		}
 		if (con->child_total_width <= 0) {
-			return;
+			goto cleanup;
 		}
 
 		// We're going to resize so snap all the width fractions to full pixels
 		// to avoid rounding issues
-		list_t *siblings = container_get_siblings(con);
 		for (int i = 0; i < siblings->length; ++i) {
 			struct sway_container *con = siblings->items[i];
 			con->width_fraction = con->pending.width / con->child_total_width;
@@ -142,30 +127,27 @@ void container_resize_tiled(struct sway_container *con,
 
 		double amount_fraction = (double)amount / con->child_total_width;
 		double sibling_amount_fraction =
-			prev ? amount_fraction / 2.0 : amount_fraction;
+			amount_fraction / (double)(resize->length - 1);
 
-		con->width_fraction += amount_fraction;
-		next->width_fraction -= sibling_amount_fraction;
-		if (prev) {
-			prev->width_fraction -= sibling_amount_fraction;
+		for (int i = 0; i < resize->length; i++) {
+			struct sway_container *sibling = resize->items[i];
+			sibling->width_fraction +=
+				sibling == con ? amount_fraction : -sibling_amount_fraction;
 		}
 	} else {
-		if (con->pending.height + amount < MIN_SANE_H) {
-			return;
-		}
-		if (next->pending.height - sibling_amount < MIN_SANE_H) {
-			return;
-		}
-		if (prev && prev->pending.height - sibling_amount < MIN_SANE_H) {
-			return;
+		for (int i = 0; i < resize->length; i++) {
+			struct sway_container *sibling = resize->items[i];
+			double change = sibling == con ? amount : -sibling_amount;
+			if (sibling->pending.height + change < MIN_SANE_H) {
+				goto cleanup;
+			}
 		}
 		if (con->child_total_height <= 0) {
-			return;
+			goto cleanup;
 		}
 
 		// We're going to resize so snap all the height fractions to full pixels
 		// to avoid rounding issues
-		list_t *siblings = container_get_siblings(con);
 		for (int i = 0; i < siblings->length; ++i) {
 			struct sway_container *con = siblings->items[i];
 			con->height_fraction = con->pending.height / con->child_total_height;
@@ -173,12 +155,12 @@ void container_resize_tiled(struct sway_container *con,
 
 		double amount_fraction = (double)amount / con->child_total_height;
 		double sibling_amount_fraction =
-			prev ? amount_fraction / 2.0 : amount_fraction;
+			amount_fraction / (double)(resize->length - 1);
 
-		con->height_fraction += amount_fraction;
-		next->height_fraction -= sibling_amount_fraction;
-		if (prev) {
-			prev->height_fraction -= sibling_amount_fraction;
+		for (int i = 0; i < resize->length; i++) {
+			struct sway_container *sibling = resize->items[i];
+			sibling->height_fraction +=
+				sibling == con ? amount_fraction : -sibling_amount_fraction;
 		}
 	}
 
@@ -187,6 +169,9 @@ void container_resize_tiled(struct sway_container *con,
 	} else {
 		arrange_workspace(con->pending.workspace);
 	}
+
+cleanup:
+	list_free(resize);
 }
 
 /**
