@@ -620,11 +620,11 @@ The default colors are:
 	after switching between workspaces.
 
 *focus_on_window_activation* smart|urgent|focus|none
-	This option determines what to do when an xwayland client requests
-	window activation. If set to _urgent_, the urgent state will be set
-	for that window. If set to _focus_, the window will become focused.
-	If set to _smart_, the window will become focused only if it is already
-	visible, otherwise the urgent state will be set. Default is _urgent_.
+	This option determines what to do when a client requests window activation.
+	If set to _urgent_, the urgent state will be set for that window. If set to
+	_focus_, the window will become focused. If set to _smart_, the window will
+	become focused only if it is already visible, otherwise the urgent state 
+	will be set. Default is _urgent_.
 
 *focus_wrapping* yes|no|force|workspace
 	This option determines what to do when attempting to focus over the edge
