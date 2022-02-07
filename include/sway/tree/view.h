@@ -217,7 +217,7 @@ struct sway_subsurface {
 struct sway_xdg_popup {
 	struct sway_view_child child;
 
-	struct wlr_xdg_surface *wlr_xdg_surface;
+	struct wlr_xdg_popup *wlr_xdg_popup;
 
 	struct wl_listener new_popup;
 	struct wl_listener destroy;
