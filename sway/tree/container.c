@@ -194,7 +194,7 @@ static struct sway_container *surface_at_view(struct sway_container *con, double
 #endif
 	case SWAY_VIEW_XDG_SHELL:
 		_surface = wlr_xdg_surface_surface_at(
-				view->wlr_xdg_surface,
+				view->wlr_xdg_toplevel->base,
 				view_sx, view_sy, &_sx, &_sy);
 		break;
 	}
