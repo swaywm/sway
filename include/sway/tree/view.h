@@ -108,7 +108,7 @@ struct sway_view {
 	list_t *executed_criteria; // struct criteria *
 
 	union {
-		struct wlr_xdg_surface *wlr_xdg_surface;
+		struct wlr_xdg_toplevel *wlr_xdg_toplevel;
 #if HAVE_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 #endif
