@@ -1,6 +1,6 @@
 # sway
 
-**[English][en]** - [日本語][ja] - [Français][fr] - [Українська][uk] - [Español][es] - [Polski][pl] - [中文-简体][zh-CN] - [Deutsch][de] - [Nederlands][nl] - [Русский][ru] - [中文-繁體][zh-TW] - [Português][pt] - [Dansk][dk] - [한국어][ko] - [Română][ro] - [Magyar][hu] - [Türkçe][tr] - [فارسی][ir] - [Ελληνικά][gr] - [Italiano][it]
+**[English][en]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [Magyar][hu] - [ﻑﺍﺮﺳی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.libera.chat).
@@ -62,25 +62,25 @@ Run `sway` from a TTY. Some display managers may work but are not supported by
 sway (gdm is known to work fairly well).
 
 [en]: https://github.com/swaywm/sway#readme
-[ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
-[fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
-[uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
-[es]: https://github.com/swaywm/sway/blob/master/README.es.md
-[pl]: https://github.com/swaywm/sway/blob/master/README.pl.md
-[zh-CN]: https://github.com/swaywm/sway/blob/master/README.zh-CN.md
 [de]: https://github.com/swaywm/sway/blob/master/README.de.md
-[nl]: https://github.com/swaywm/sway/blob/master/README.nl.md
-[ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
-[zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
-[pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
 [dk]: https://github.com/swaywm/sway/blob/master/README.dk.md
-[ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
-[ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
-[hu]: https://github.com/swaywm/sway/blob/master/README.hu.md
-[tr]: https://github.com/swaywm/sway/blob/master/README.tr.md
-[ir]: https://github.com/swaywm/sway/blob/master/README.ir.md
+[es]: https://github.com/swaywm/sway/blob/master/README.es.md
+[fr]: https://github.com/swaywm/sway/blob/master/README.fr.md
 [gr]: https://github.com/swaywm/sway/blob/master/README.gr.md
+[hu]: https://github.com/swaywm/sway/blob/master/README.hu.md
+[ir]: https://github.com/swaywm/sway/blob/master/README.ir.md
 [it]: https://github.com/swaywm/sway/blob/master/README.it.md
+[ja]: https://github.com/swaywm/sway/blob/master/README.ja.md
+[ko]: https://github.com/swaywm/sway/blob/master/README.ko.md
+[nl]: https://github.com/swaywm/sway/blob/master/README.nl.md
+[pl]: https://github.com/swaywm/sway/blob/master/README.pl.md
+[pt]: https://github.com/swaywm/sway/blob/master/README.pt.md
+[ro]: https://github.com/swaywm/sway/blob/master/README.ro.md
+[ru]: https://github.com/swaywm/sway/blob/master/README.ru.md
+[tr]: https://github.com/swaywm/sway/blob/master/README.tr.md
+[uk]: https://github.com/swaywm/sway/blob/master/README.uk.md
+[zh-CN]: https://github.com/swaywm/sway/blob/master/README.zh-CN.md
+[zh-TW]: https://github.com/swaywm/sway/blob/master/README.zh-TW.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
