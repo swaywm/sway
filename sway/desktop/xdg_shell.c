@@ -24,11 +24,11 @@ static const struct sway_view_child_impl popup_impl;
 static void popup_get_view_coords(struct sway_view_child *child,
 		int *sx, int *sy) {
 	struct sway_xdg_popup *popup = (struct sway_xdg_popup *)child;
-	struct wlr_xdg_surface *surface = popup->wlr_xdg_surface;
+	struct wlr_xdg_popup *wlr_popup = popup->wlr_xdg_popup;
 
-	wlr_xdg_popup_get_toplevel_coords(surface->popup,
-		surface->popup->geometry.x - surface->current.geometry.x,
-		surface->popup->geometry.y - surface->current.geometry.y,
+	wlr_xdg_popup_get_toplevel_coords(wlr_popup,
+		wlr_popup->geometry.x - wlr_popup->base->current.geometry.x,
+		wlr_popup->geometry.y - wlr_popup->base->current.geometry.y,
 		sx, sy);
 }
 
@@ -65,7 +65,7 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 
 static void popup_unconstrain(struct sway_xdg_popup *popup) {
 	struct sway_view *view = popup->child.view;
-	struct wlr_xdg_popup *wlr_popup = popup->wlr_xdg_surface->popup;
+	struct wlr_xdg_popup *wlr_popup = popup->wlr_xdg_popup;
 
 	struct sway_output *output = view->container->pending.workspace->output;
 
@@ -91,7 +91,7 @@ static struct sway_xdg_popup *popup_create(
 		return NULL;
 	}
 	view_child_init(&popup->child, &popup_impl, view, xdg_surface->surface);
-	popup->wlr_xdg_surface = xdg_surface;
+	popup->wlr_xdg_popup = xdg_surface->popup;
 
 	wl_signal_add(&xdg_surface->events.new_popup, &popup->new_popup);
 	popup->new_popup.notify = popup_handle_new_popup;
