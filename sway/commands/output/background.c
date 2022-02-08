@@ -112,7 +112,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 						"Unable to allocate resources");
 			}
 
-			sprintf(src, "%s/%s", conf_path, rel_path);
+			snprintf(src, strlen(conf_path) + strlen(src) + 2, "%s/%s", conf_path, rel_path);
 			free(rel_path);
 			free(conf);
 		}
