@@ -414,8 +414,8 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 			}
 			free(name);
 		} else {
-			char *flag = malloc(sizeof(char) * (nread + 3));
-			sprintf(flag, "--%s", line);
+			char *flag = malloc(nread + 3);
+			snprintf(flag, nread + 3, "--%s", line);
 			char *argv[] = {"swaynag", flag};
 			result = swaynag_parse_options(2, argv, swaynag, types, type,
 					NULL, NULL);

@@ -28,8 +28,9 @@ static bool terminal_execute(char *terminal, char *command) {
 	fprintf(tmp, "#!/bin/sh\nrm %s\n%s", fname, command);
 	fclose(tmp);
 	chmod(fname, S_IRUSR | S_IWUSR | S_IXUSR);
-	char *cmd = malloc(sizeof(char) * (strlen(terminal) + strlen(" -e ") + strlen(fname) + 1));
-	sprintf(cmd, "%s -e %s", terminal, fname);
+	size_t cmd_size = strlen(terminal) + strlen(" -e ") + strlen(fname) + 1;
+	char *cmd = malloc(cmd_size);
+	snprintf(cmd, cmd_size, "%s -e %s", terminal, fname);
 	execlp("sh", "sh", "-c", cmd, NULL);
 	sway_log_errno(SWAY_ERROR, "Failed to run command, execlp() returned.");
 	free(cmd);
