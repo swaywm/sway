@@ -1706,7 +1706,7 @@ static void update_marks_texture(struct sway_container *con,
 	for (int i = 0; i < con->marks->length; ++i) {
 		char *mark = con->marks->items[i];
 		if (mark[0] != '_') {
-			sprintf(part, "[%s]", mark);
+			snprintf(part, len + 1, "[%s]", mark);
 			strcat(buffer, part);
 		}
 	}

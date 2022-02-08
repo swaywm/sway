@@ -209,7 +209,7 @@ static pid_t get_parent_pid(pid_t child) {
 	FILE *stat = NULL;
 	size_t buf_size = 0;
 
-	sprintf(file_name, "/proc/%d/stat", child);
+	snprintf(file_name, sizeof(file_name), "/proc/%d/stat", child);
 
 	if ((stat = fopen(file_name, "r"))) {
 		if (getline(&buffer, &buf_size, stat) != -1) {
