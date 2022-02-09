@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <wlr/interfaces/wlr_keyboard.h>
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
