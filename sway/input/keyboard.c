@@ -950,7 +950,7 @@ static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 		goto cleanup;
 	}
 	sway_group->seat_device->input_device->wlr_device =
-		sway_group->wlr_group->input_device;
+		&sway_group->wlr_group->keyboard.base;
 
 	if (!sway_keyboard_create(seat, sway_group->seat_device)) {
 		sway_log(SWAY_ERROR, "Failed to allocate sway_keyboard for group");
