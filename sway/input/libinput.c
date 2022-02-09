@@ -1,6 +1,5 @@
 #include <float.h>
 #include <libinput.h>
-#include <libudev.h>
 #include <limits.h>
 #include <wlr/backend/libinput.h>
 #include "log.h"
@@ -8,6 +7,10 @@
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/ipc-server.h"
+
+#if HAVE_UDEV
+#include <libudev.h>
+#endif
 
 static void log_status(enum libinput_config_status status) {
 	if (status != LIBINPUT_CONFIG_STATUS_SUCCESS) {
@@ -315,6 +318,7 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 }
 
 bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
+#if HAVE_UDEV
 	if (!wlr_input_device_is_libinput(sway_device->wlr_device)) {
 		return false;
 	}
@@ -341,4 +345,7 @@ bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
 	const char infix_platform[] = "-platform-";
 	return (strncmp(id_path, prefix_pci, strlen(prefix_pci)) == 0) &&
 		strstr(id_path, infix_platform);
+#else
+	return false;
+#endif
 }

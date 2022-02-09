@@ -64,7 +64,7 @@ libinput = dependency('libinput', version: '>=1.6.0')
 xcb = dependency('xcb', required: get_option('xwayland'))
 drm_full = dependency('libdrm') # only needed for drm_fourcc.h
 drm = drm_full.partial_dependency(compile_args: true, includes: true)
-libudev = dependency('libudev')
+libudev = dependency('libudev', required: get_option('udev'))
 bash_comp = dependency('bash-completion', required: false)
 fish_comp = dependency('fish', required: false)
 math = cc.find_library('m')
@@ -113,6 +113,7 @@ conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
+conf_data.set10('HAVE_UDEV', libudev.found())
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
