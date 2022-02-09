@@ -377,7 +377,7 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input_manager =
 		wl_container_of(listener, input_manager, virtual_keyboard_new);
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
-	struct wlr_input_device *device = &keyboard->input_device;
+	struct wlr_input_device *device = &keyboard->keyboard.base;
 
 	// TODO: Amend protocol to allow NULL seat
 	struct sway_seat *seat = keyboard->seat ?
@@ -410,7 +410,7 @@ void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, input_manager, virtual_pointer_new);
 	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
 	struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
-	struct wlr_input_device *device = &pointer->input_device;
+	struct wlr_input_device *device = &pointer->pointer.base;
 
 	struct sway_seat *seat = event->suggested_seat ?
 		input_manager_sway_seat_from_wlr_seat(event->suggested_seat) :
