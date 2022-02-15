@@ -25,7 +25,8 @@ static const char expected_syntax[] =
 	"Expected 'move <left|right|up|down> <[px] px>' or "
 	"'move [--no-auto-back-and-forth] <container|window> [to] workspace <name>' or "
 	"'move <container|window|workspace> [to] output <name|direction>' or "
-	"'move <container|window> [to] mark <mark>'";
+	"'move <container|window> [to] mark <mark>' or "
+	"'move <container|window> [to] con_id <con_id>'";
 
 static struct sway_output *output_in_direction(const char *direction_string,
 		struct sway_output *reference, int ref_lx, int ref_ly) {
@@ -520,6 +521,14 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 					"Mark '%s' not found", argv[1]);
 		}
 		destination = &dest_con->node;
+	} else if (strcasecmp(argv[0], "con_id") == 0) {
+		size_t con_id = atoi(argv[1]);
+		struct sway_container *dest_con = container_find_con_id(&con_id);
+		if (dest_con == NULL) {
+			return cmd_results_new(CMD_FAILURE,
+					"No container with con_id '%s' found", argv[1]);
+		}
+		destination = &dest_con->node;
 	} else {
 		return cmd_results_new(CMD_INVALID, expected_syntax);
 	}
@@ -982,6 +991,7 @@ static const char expected_full_syntax[] = "Expected "
 	"  <name>|next|prev|next_on_output|prev_on_output|current|(number <num>)'"
 	" or 'move [window|container] [to] output <name/id>|left|right|up|down'"
 	" or 'move [window|container] [to] mark <mark>'"
+	" or 'move [window|container] [to] con_id <con_id>'"
 	" or 'move [window|container] [to] scratchpad'"
 	" or 'move workspace to [output] <name/id>|left|right|up|down'"
 	" or 'move [window|container] [to] [absolute] position <x> [px] <y> [px]'"
@@ -1040,7 +1050,8 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 
 	if (strcasecmp(argv[0], "workspace") == 0 ||
 			strcasecmp(argv[0], "output") == 0 ||
-			strcasecmp(argv[0], "mark") == 0) {
+			strcasecmp(argv[0], "mark") == 0 ||
+			strcasecmp(argv[0], "con_id") == 0) {
 		return cmd_move_container(no_auto_back_and_forth, argc, argv);
 	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
 		return cmd_move_to_scratchpad();

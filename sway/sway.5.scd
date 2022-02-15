@@ -231,6 +231,10 @@ set|plus|minus|toggle <amount>
 *move* [container|window] [to] mark <mark>
 	Moves the focused container to the specified mark.
 
+*move* [container|window] [to] con_id <con_id>
+	Moves the focused container to become a direct descendant of the specified
+	con_id. If the destination can't have descendants, the command does nothing.
+
 *move* [--no-auto-back-and-forth] [container|window] [to] workspace [number] <name>
 	Moves the focused container to the specified workspace. The string _number_
 	is optional and is used to match a workspace with the same number, even if

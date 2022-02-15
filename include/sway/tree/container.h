@@ -373,4 +373,9 @@ bool container_is_sticky_or_child(struct sway_container *con);
  */
 int container_squash(struct sway_container *con);
 
+bool container_has_con_id(struct sway_container *con, size_t *con_id);
+
+/** Returns a container with the given con_id */
+struct sway_container *container_find_con_id(size_t *con_id);
+
 #endif

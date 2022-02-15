@@ -1821,3 +1821,16 @@ int container_squash(struct sway_container *con) {
 	}
 	return change;
 }
+
+bool container_has_con_id(struct sway_container *con, size_t *con_id) {
+	return con->node.id == *con_id;
+}
+
+static bool find_by_con_id(struct sway_container *con, void *data) {
+	size_t *con_id = data;
+	return con->node.id == *con_id;
+}
+
+struct sway_container *container_find_con_id(size_t *con_id) {
+	return root_find_container(find_by_con_id, con_id);
+}
