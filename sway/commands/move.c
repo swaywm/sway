@@ -232,7 +232,6 @@ static void container_move_to_workspace(struct sway_container *container,
 static void container_move_to_container(struct sway_container *container,
 		struct sway_container *destination) {
 	if (container == destination
-			|| container_has_ancestor(container, destination)
 			|| container_has_ancestor(destination, container)) {
 		return;
 	}
