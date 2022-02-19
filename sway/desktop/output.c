@@ -824,6 +824,13 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		transaction_commit_dirty();
 
 		update_output_manager_config(output->server);
+
+		if (event->committed & WLR_OUTPUT_STATE_SCALE) {
+			struct sway_seat *seat;
+			wl_list_for_each(seat, &server.input->seats, link) {
+				seat_configure_xcursor(seat);
+			}
+		}
 	}
 }
 
