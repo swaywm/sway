@@ -284,14 +284,6 @@ void output_destroy(struct sway_output *output) {
 	free(output);
 }
 
-static void untrack_output(struct sway_container *con, void *data) {
-	struct sway_output *output = data;
-	int index = list_find(con->outputs, output);
-	if (index != -1) {
-		list_del(con->outputs, index);
-	}
-}
-
 void output_disable(struct sway_output *output) {
 	if (!sway_assert(output->enabled, "Expected an enabled output")) {
 		return;
@@ -305,8 +297,6 @@ void output_disable(struct sway_output *output) {
 	wl_signal_emit(&output->events.disable, output);
 
 	output_evacuate(output);
-
-	root_for_each_container(untrack_output, output);
 
 	list_del(root->outputs, index);
 

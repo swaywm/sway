@@ -250,10 +250,6 @@ static void apply_container_state(struct sway_container *container,
 			view_center_surface(view);
 		}
 	}
-
-	if (!container->node.destroying) {
-		container_discover_outputs(container);
-	}
 }
 
 /**
