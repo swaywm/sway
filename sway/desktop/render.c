@@ -973,13 +973,6 @@ static void render_floating(struct render_context *ctx) {
 	}
 }
 
-static void render_seatops(struct render_context *ctx) {
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		seatop_render(seat, ctx);
-	}
-}
-
 void output_render(struct render_context *ctx) {
 	struct wlr_output *wlr_output = ctx->output->wlr_output;
 	struct sway_output *output = ctx->output;
@@ -1071,8 +1064,6 @@ void output_render(struct render_context *ctx) {
 		render_layer_popups(ctx,
 			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
-
-	render_seatops(ctx);
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);

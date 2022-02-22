@@ -1691,12 +1691,6 @@ void seatop_end(struct sway_seat *seat) {
 	seat->seatop_impl = NULL;
 }
 
-void seatop_render(struct sway_seat *seat, struct render_context *ctx) {
-	if (seat->seatop_impl->render) {
-		seat->seatop_impl->render(seat, ctx);
-	}
-}
-
 bool seatop_allows_set_cursor(struct sway_seat *seat) {
 	return seat->seatop_impl->allow_set_cursor;
 }
