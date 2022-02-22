@@ -245,7 +245,7 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		seat_node_destroy(seat_node);
 		// If an unmanaged or layer surface is focused when an output gets
 		// disabled and an empty workspace on the output was focused by the
-		// seat, the seat needs to refocus it's focus inactive to update the
+		// seat, the seat needs to refocus its focus inactive to update the
 		// value of seat->workspace.
 		if (seat->workspace == node->sway_workspace) {
 			struct sway_node *node = seat_get_focus_inactive(seat, &root->node);

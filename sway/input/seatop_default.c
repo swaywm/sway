@@ -474,7 +474,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			seat_set_focus(seat, node);
 		}
 
-		// If moving a container by it's title bar, use a threshold for the drag
+		// If moving a container by its title bar, use a threshold for the drag
 		if (!mod_pressed && config->tiling_drag_threshold > 0) {
 			seatop_begin_move_tiling_threshold(seat, cont);
 		} else {
