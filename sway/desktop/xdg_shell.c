@@ -149,6 +149,13 @@ static bool configure(struct sway_view *view, uint32_t *serial,
 		return false;
 	}
 
+	// avoid same size configures as clients may not ack & commit them
+	struct wlr_xdg_toplevel *top = view->wlr_xdg_toplevel;
+	if ((int) top->pending.width == width &&
+			(int) top->pending.height == height) {
+		return false;
+	}
+
 	*serial = wlr_xdg_toplevel_set_size(top, width, height);
 	return true;
 }

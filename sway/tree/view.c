@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <strings.h>
+#include <math.h>
 #include <wayland-server-core.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
@@ -166,6 +167,14 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 
 bool view_configure(struct sway_view *view, uint32_t *serial,
 		double lx, double ly, int width, int height) {
+	// Many clients don't play nicely if you try to reconfigure them out of
+	// their specified constraints. Clamp the values.
+	double minw, maxw, minh, maxh;
+	view_get_constraints(view, &minw, &maxw, &minh, &maxh);
+
+	width = fmax(fmin(width, maxw), minw);
+	height = fmax(fmin(height, maxh), minh);
+
 	if (view->impl->configure) {
 		return view->impl->configure(view, serial, lx, ly, width, height);
 	}
