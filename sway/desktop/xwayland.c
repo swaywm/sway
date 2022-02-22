@@ -594,7 +594,8 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	if (!container_is_floating(view->container)) {
+	if (!container_is_floating(view->container) ||
+			view->container->pending.fullscreen_mode) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat();
