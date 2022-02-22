@@ -364,7 +364,7 @@ bool container_is_sticky_or_child(struct sway_container *con);
  * This will destroy pairs of redundant H/V splits
  * e.g. H[V[H[app app]] app] -> H[app app app]
  * The middle "V[H[" are eliminated by a call to container_squash
- * on the V[ con. It's grandchildren are added to it's parent.
+ * on the V[ con. It's grandchildren are added to its parent.
  *
  * This function is roughly equivalent to i3's tree_flatten here:
  * https://github.com/i3/i3/blob/1f0c628cde40cf87371481041b7197344e0417c6/src/tree.c#L651
