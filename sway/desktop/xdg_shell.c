@@ -141,15 +141,16 @@ static const char *get_string_prop(struct sway_view *view,
 	}
 }
 
-static uint32_t configure(struct sway_view *view, double lx, double ly,
-		int width, int height) {
+static bool configure(struct sway_view *view, uint32_t *serial,
+		double lx, double ly, int width, int height) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		xdg_shell_view_from_view(view);
 	if (xdg_shell_view == NULL) {
-		return 0;
+		return false;
 	}
-	return wlr_xdg_toplevel_set_size(view->wlr_xdg_toplevel,
-		width, height);
+
+	*serial = wlr_xdg_toplevel_set_size(top, width, height);
+	return true;
 }
 
 static void set_activated(struct sway_view *view, bool activated) {

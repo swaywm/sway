@@ -164,12 +164,13 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 	}
 }
 
-uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+bool view_configure(struct sway_view *view, uint32_t *serial,
+		double lx, double ly, int width, int height) {
 	if (view->impl->configure) {
-		return view->impl->configure(view, lx, ly, width, height);
+		return view->impl->configure(view, serial, lx, ly, width, height);
 	}
-	return 0;
+
+	return false;
 }
 
 bool view_inhibit_idle(struct sway_view *view) {

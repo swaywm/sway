@@ -246,18 +246,18 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static uint32_t configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+static bool configure(struct sway_view *view, uint32_t *serial,
+		double lx, double ly, int width, int height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
-		return 0;
+		return false;
 	}
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
 	wlr_xwayland_surface_configure(xsurface, lx, ly, width, height);
 
 	// xwayland doesn't give us a serial for the configure
-	return 0;
+	return true;
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -544,13 +544,17 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		view->natural_height = ev->height;
 		container_floating_resize_and_center(view->container);
 
-		configure(view, view->container->pending.content_x,
+		bool successful = configure(view, NULL,
+				view->container->pending.content_x,
 				view->container->pending.content_y,
 				view->container->pending.content_width,
 				view->container->pending.content_height);
-		node_set_dirty(&view->container->node);
+
+		if (successful) {
+			node_set_dirty(&view->container->node);
+		}
 	} else {
-		configure(view, view->container->current.content_x,
+		configure(view, NULL, view->container->current.content_x,
 				view->container->current.content_y,
 				view->container->current.content_width,
 				view->container->current.content_height);

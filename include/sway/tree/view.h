@@ -38,8 +38,8 @@ struct sway_view_impl {
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
-	uint32_t (*configure)(struct sway_view *view, double lx, double ly,
-			int width, int height);
+	bool (*configure)(struct sway_view *view, uint32_t *serial,
+			double lx, double ly, int width, int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
@@ -244,8 +244,8 @@ const char *view_get_shell(struct sway_view *view);
 void view_get_constraints(struct sway_view *view, double *min_width,
 		double *max_width, double *min_height, double *max_height);
 
-uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
-	int height);
+bool view_configure(struct sway_view *view, uint32_t *serial,
+		double lx, double ly, int width, int height);
 
 bool view_inhibit_idle(struct sway_view *view);
 
