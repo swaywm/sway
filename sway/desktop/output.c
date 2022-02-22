@@ -286,11 +286,12 @@ static void update_output_manager_config(struct sway_server *server) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
 	struct sway_server *server = output->server;
-	output_begin_destroy(output);
 
 	if (output->enabled) {
 		output_disable(output);
 	}
+	
+	output_begin_destroy(output);
 
 	wl_list_remove(&output->link);
 
