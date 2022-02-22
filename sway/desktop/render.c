@@ -1006,14 +1006,6 @@ static void render_floating(struct sway_output *soutput,
 	}
 }
 
-static void render_seatops(struct sway_output *output,
-		pixman_region32_t *damage) {
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		seatop_render(seat, output, damage);
-	}
-}
-
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -1112,8 +1104,6 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_layer_popups(output, damage,
 			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
-
-	render_seatops(output, damage);
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
