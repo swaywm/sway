@@ -30,6 +30,10 @@ static bool terminal_execute(char *terminal, char *command) {
 	chmod(fname, S_IRUSR | S_IWUSR | S_IXUSR);
 	size_t cmd_size = strlen(terminal) + strlen(" -e ") + strlen(fname) + 1;
 	char *cmd = malloc(cmd_size);
+	if (!cmd) {
+		perror("malloc");
+		return false;
+	}
 	snprintf(cmd, cmd_size, "%s -e %s", terminal, fname);
 	execlp("sh", "sh", "-c", cmd, NULL);
 	sway_log_errno(SWAY_ERROR, "Failed to run command, execlp() returned.");
@@ -340,6 +344,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 		struct swaynag_seat *seat =
 			calloc(1, sizeof(struct swaynag_seat));
 		if (!seat) {
+			perror("calloc");
 			return;
 		}
 
@@ -357,6 +362,10 @@ static void handle_global(void *data, struct wl_registry *registry,
 		if (!swaynag->output) {
 			struct swaynag_output *output =
 				calloc(1, sizeof(struct swaynag_output));
+			if (!output) {
+				perror("calloc");
+				return;
+			}
 			output->wl_output = wl_registry_bind(registry, name,
 					&wl_output_interface, 4);
 			output->wl_name = name;
