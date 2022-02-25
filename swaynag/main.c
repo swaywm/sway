@@ -32,12 +32,20 @@ int main(int argc, char **argv) {
 
 	struct swaynag_button *button_close =
 		calloc(sizeof(struct swaynag_button), 1);
+	if (!button_close) {
+		perror("calloc");
+		return EXIT_FAILURE;
+	}
 	button_close->text = strdup("X");
 	button_close->type = SWAYNAG_ACTION_DISMISS;
 	list_add(swaynag.buttons, button_close);
 
 	swaynag.details.button_details =
 		calloc(sizeof(struct swaynag_button), 1);
+	if (!swaynag.details.button_details) {
+		perror("calloc");
+		return EXIT_FAILURE;
+	}
 	swaynag.details.button_details->text = strdup("Toggle details");
 	swaynag.details.button_details->type = SWAYNAG_ACTION_EXPAND;
 
