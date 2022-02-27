@@ -381,6 +381,8 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	wlr_scene_set_presentation(root->root_scene, server.presentation);
+
 	if (validate) {
 		bool valid = load_main_config(config_path, false, true);
 		free(config_path);
