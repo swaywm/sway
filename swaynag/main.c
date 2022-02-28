@@ -20,7 +20,7 @@ void sway_terminate(int code) {
 }
 
 int main(int argc, char **argv) {
-	int exit_code = EXIT_SUCCESS;
+	int status = EXIT_SUCCESS;
 
 	list_t *types = create_list();
 	swaynag_types_add_default(types);
@@ -31,10 +31,9 @@ int main(int argc, char **argv) {
 
 	char *config_path = NULL;
 	bool debug = false;
-	int launch_status = swaynag_parse_options(argc, argv, NULL, NULL, NULL,
+	status = swaynag_parse_options(argc, argv, NULL, NULL, NULL,
 			&config_path, &debug);
-	if (launch_status != 0)  {
-		exit_code = launch_status;
+	if (status != 0)  {
 		goto cleanup;
 	}
 	sway_log_init(debug ? SWAY_DEBUG : SWAY_ERROR, NULL);
@@ -44,10 +43,8 @@ int main(int argc, char **argv) {
 	}
 	if (config_path) {
 		sway_log(SWAY_DEBUG, "Loading config file: %s", config_path);
-		int config_status = swaynag_load_config(config_path, &swaynag, types);
-		free(config_path);
-		if (config_status != 0) {
-			exit_code = config_status;
+		status = swaynag_load_config(config_path, &swaynag, types);
+		if (status != 0) {
 			goto cleanup;
 		}
 	}
@@ -59,17 +56,16 @@ int main(int argc, char **argv) {
 		struct swaynag_type *type_args = swaynag_type_new("<args>");
 		list_add(types, type_args);
 
-		int result = swaynag_parse_options(argc, argv, &swaynag, types,
+		status = swaynag_parse_options(argc, argv, &swaynag, types,
 				type_args, NULL, NULL);
-		if (result != 0) {
-			exit_code = result;
+		if (status != 0) {
 			goto cleanup;
 		}
 	}
 
 	if (!swaynag.message) {
 		sway_log(SWAY_ERROR, "No message passed. Please provide --message/-m");
-		exit_code = EXIT_FAILURE;
+		status = EXIT_FAILURE;
 		goto cleanup;
 	}
 
@@ -113,11 +109,11 @@ int main(int argc, char **argv) {
 
 	swaynag_setup(&swaynag);
 	swaynag_run(&swaynag);
-	return exit_code;
+	return status;
 
 cleanup:
 	swaynag_types_free(types);
 	free(swaynag.details.button_details.text);
 	swaynag_destroy(&swaynag);
-	return exit_code;
+	return status;
 }
