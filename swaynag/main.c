@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
 	list_t *types = create_list();
 	swaynag_types_add_default(types);
 
-	memset(&swaynag, 0, sizeof(swaynag));
 	swaynag.buttons = create_list();
 	wl_list_init(&swaynag.outputs);
 	wl_list_init(&swaynag.seats);
