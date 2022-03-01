@@ -347,10 +347,10 @@ static void output_for_each_surface(struct sway_output *output,
 #endif
 	} else {
 		output_layer_for_each_surface(output,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 			iterator, user_data);
 		output_layer_for_each_surface(output,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
 			iterator, user_data);
 
 		workspace_for_each_container(workspace,
@@ -361,13 +361,13 @@ static void output_for_each_surface(struct sway_output *output,
 			iterator, user_data);
 #endif
 		output_layer_for_each_surface(output,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
 			iterator, user_data);
 	}
 
 overlay:
 	output_layer_for_each_surface(output,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 		iterator, user_data);
 	output_drag_icons_for_each_surface(output, &root->drag_icons,
 		iterator, user_data);
@@ -399,7 +399,7 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 	struct sway_layer_surface *sway_layer_surface;
 	wl_list_for_each(sway_layer_surface,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
 		struct wlr_surface *wlr_surface = sway_layer_surface->layer_surface->surface;
 		pixman_box32_t output_box = {
 			.x2 = output->width,
@@ -488,7 +488,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	}
 #endif
 
-	if (!wl_list_empty(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY])) {
+	if (!wl_list_empty(&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY])) {
 		return false;
 	}
 	if (!wl_list_empty(&root->drag_icons)) {

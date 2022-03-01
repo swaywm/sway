@@ -1098,9 +1098,9 @@ void output_render(struct render_context *ctx) {
 		});
 
 		render_layer_toplevel(ctx,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer_toplevel(ctx,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 		render_workspace(ctx, workspace, workspace->current.focused);
 		render_floating(ctx);
@@ -1108,14 +1108,14 @@ void output_render(struct render_context *ctx) {
 		render_unmanaged(ctx, &root->xwayland_unmanaged);
 #endif
 		render_layer_toplevel(ctx,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 
 		render_layer_popups(ctx,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer_popups(ctx,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 		render_layer_popups(ctx,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
 
 	render_seatops(ctx);
@@ -1128,9 +1128,9 @@ void output_render(struct render_context *ctx) {
 
 render_overlay:
 	render_layer_toplevel(ctx,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_layer_popups(ctx,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_drag_icons(ctx, &root->drag_icons);
 
 renderer_end:

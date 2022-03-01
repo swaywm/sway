@@ -115,7 +115,7 @@ struct sway_node *node_at_coords(
 
 	// layer surfaces on the overlay layer are rendered on top
 	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}
@@ -176,22 +176,22 @@ struct sway_node *node_at_coords(
 		return NULL;
 	}
 	if ((*surface = layer_surface_popup_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}
 	if ((*surface = layer_surface_popup_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}
 	if ((*surface = layer_surface_popup_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}
 	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}
@@ -202,12 +202,12 @@ struct sway_node *node_at_coords(
 	}
 
 	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}
 	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 				ox, oy, sx, sy))) {
 		return NULL;
 	}

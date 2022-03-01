@@ -23,7 +23,7 @@ struct sway_output {
 	struct sway_server *server;
 	struct wl_list link;
 
-	struct wl_list layers[4]; // sway_layer_surface::link
+	struct wl_list shell_layers[4]; // sway_layer_surface::link
 	struct wlr_box usable_area;
 
 	struct timespec last_frame;

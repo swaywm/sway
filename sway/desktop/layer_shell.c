@@ -218,13 +218,13 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area.width, &usable_area.height);
 
 	// Arrange exclusive surfaces from top->bottom
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 			&usable_area, true);
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
 			&usable_area, true);
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
 			&usable_area, true);
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 			&usable_area, true);
 
 	if (memcmp(&usable_area, &output->usable_area,
@@ -235,13 +235,13 @@ void arrange_layers(struct sway_output *output) {
 	}
 
 	// Arrange non-exclusive surfaces from top->bottom
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 			&usable_area, false);
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
 			&usable_area, false);
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
 			&usable_area, false);
-	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
+	arrange_layer(output, &output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 			&usable_area, false);
 
 	// Find topmost keyboard interactive layer, if such a layer exists
@@ -253,9 +253,8 @@ void arrange_layers(struct sway_output *output) {
 	struct sway_layer_surface *layer, *topmost = NULL;
 	for (size_t i = 0; i < nlayers; ++i) {
 		wl_list_for_each_reverse(layer,
-				&output->layers[layers_above_shell[i]], link) {
-			if (layer->layer_surface->current.keyboard_interactive
-					== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
+				&output->shell_layers[layers_above_shell[i]], link) {
+			if (layer->layer_surface->current.keyboard_interactive &&
 					layer->layer_surface->surface->mapped) {
 				topmost = layer;
 				break;
@@ -289,7 +288,7 @@ static struct sway_layer_surface *find_mapped_layer_by_client(
 		// For now we'll only check the overlay layer
 		struct sway_layer_surface *lsurface;
 		wl_list_for_each(lsurface,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
+				&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
 			struct wl_resource *resource = lsurface->layer_surface->resource;
 			if (wl_resource_get_client(resource) == client
 					&& lsurface->layer_surface->surface->mapped) {
@@ -343,7 +342,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		layer_changed = layer->layer != layer_surface->current.layer;
 		if (layer_changed) {
 			wl_list_remove(&layer->link);
-			wl_list_insert(&output->layers[layer_surface->current.layer],
+			wl_list_insert(&output->shell_layers[layer_surface->current.layer],
 				&layer->link);
 			layer->layer = layer_surface->current.layer;
 		}
@@ -716,6 +715,6 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_layer->output_destroy.notify = handle_output_destroy;
 	wl_signal_add(&output->events.disable, &sway_layer->output_destroy);
 
-	wl_list_insert(&output->layers[layer_surface->pending.layer],
+	wl_list_insert(&output->shell_layers[layer_surface->pending.layer],
 			&sway_layer->link);
 }
