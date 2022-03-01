@@ -414,17 +414,6 @@ static const struct sway_view_impl view_impl = {
 	.destroy = destroy,
 };
 
-static void get_geometry(struct sway_view *view, struct wlr_box *box) {
-	box->x = box->y = 0;
-	if (view->surface) {
-		box->width = view->surface->current.width;
-		box->height = view->surface->current.height;
-	} else {
-		box->width = 0;
-		box->height = 0;
-	}
-}
-
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, commit);
@@ -432,12 +421,12 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	struct wlr_surface_state *state = &xsurface->surface->current;
 
-	struct wlr_box new_geo;
-	get_geometry(view, &new_geo);
+	struct wlr_box new_geo = {0};
+	new_geo.width = state->width;
+	new_geo.height = state->height;
+
 	bool new_size = new_geo.width != view->geometry.width ||
-			new_geo.height != view->geometry.height ||
-			new_geo.x != view->geometry.x ||
-			new_geo.y != view->geometry.y;
+			new_geo.height != view->geometry.height;
 
 	if (new_size) {
 		// The client changed its surface size in this commit. For floating
