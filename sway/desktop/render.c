@@ -1138,9 +1138,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 		}
 
 		render_layer_toplevel(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer_toplevel(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 		render_workspace(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
@@ -1148,14 +1148,14 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif
 		render_layer_toplevel(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 
 		render_layer_popups(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer_popups(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 		render_layer_popups(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
 
 	render_seatops(output, damage);
@@ -1168,9 +1168,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 render_overlay:
 	render_layer_toplevel(output, damage,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_layer_popups(output, damage,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_drag_icons(output, damage, &root->drag_icons);
 
 renderer_end:
