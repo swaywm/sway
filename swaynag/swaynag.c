@@ -63,7 +63,7 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 			} else if (pid == 0) {
 				// Child of the child. Will be reparented to the init process
 				char *terminal = getenv("TERMINAL");
-				if (button->terminal && terminal && strlen(terminal)) {
+				if (button->terminal && terminal && *terminal) {
 					sway_log(SWAY_DEBUG, "Found $TERMINAL: %s", terminal);
 					if (!terminal_execute(terminal, button->action)) {
 						swaynag_destroy(swaynag);
@@ -143,7 +143,7 @@ static void update_cursor(struct swaynag_seat *seat) {
 	const char *cursor_theme = getenv("XCURSOR_THEME");
 	unsigned cursor_size = 24;
 	const char *env_cursor_size = getenv("XCURSOR_SIZE");
-	if (env_cursor_size && strlen(env_cursor_size) > 0) {
+	if (env_cursor_size && *env_cursor_size) {
 		errno = 0;
 		char *end;
 		unsigned size = strtoul(env_cursor_size, &end, 10);
