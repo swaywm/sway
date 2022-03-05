@@ -334,6 +334,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	if (!toplevel->base->mapped) {
 		return;
 	}
+	
+	struct wlr_xdg_toplevel_state_request *request = data;
+	wlr_xdg_toplevel_state_request_ack(request);
 
 	struct sway_container *container = view->container;
 	struct wlr_xdg_toplevel_requested *req = &toplevel->requested;
