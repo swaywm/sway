@@ -796,7 +796,10 @@ struct sway_xwayland_view *create_xwayland_view(struct wlr_xwayland_surface *xsu
 		return NULL;
 	}
 
-	view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl);
+	if (!view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl)) {
+		free(xwayland_view);
+		return NULL;
+	}
 	xwayland_view->view.wlr_xwayland_surface = xsurface;
 
 	wl_signal_add(&xsurface->events.destroy, &xwayland_view->destroy);

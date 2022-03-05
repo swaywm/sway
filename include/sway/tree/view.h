@@ -311,7 +311,7 @@ void view_for_each_popup_surface(struct sway_view *view,
 
 // view implementation
 
-void view_init(struct sway_view *view, enum sway_view_type type,
+bool view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
 
 void view_destroy(struct sway_view *view);

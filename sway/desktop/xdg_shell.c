@@ -548,7 +548,10 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	view_init(&xdg_shell_view->view, SWAY_VIEW_XDG_SHELL, &view_impl);
+	if (!view_init(&xdg_shell_view->view, SWAY_VIEW_XDG_SHELL, &view_impl)) {
+		free(xdg_shell_view);
+		return;
+	}
 	xdg_shell_view->view.wlr_xdg_toplevel = xdg_toplevel;
 
 	xdg_shell_view->map.notify = handle_map;

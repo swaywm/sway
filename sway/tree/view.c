@@ -35,7 +35,7 @@
 #include "pango.h"
 #include "stringop.h"
 
-void view_init(struct sway_view *view, enum sway_view_type type,
+bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	view->type = type;
 	view->impl = impl;
@@ -44,6 +44,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->allow_request_urgent = true;
 	view->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
 	wl_signal_init(&view->events.unmap);
+	return true;
 }
 
 void view_destroy(struct sway_view *view) {
