@@ -499,16 +499,18 @@ static void set_instruction_ready(
 	transaction_progress();
 }
 
-void transaction_notify_view_ready_by_serial(struct sway_view *view,
+bool transaction_notify_view_ready_by_serial(struct sway_view *view,
 		uint32_t serial) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
 	if (instruction != NULL && instruction->serial == serial) {
 		set_instruction_ready(instruction);
+		return true;
 	}
+	return false;
 }
 
-void transaction_notify_view_ready_by_geometry(struct sway_view *view,
+bool transaction_notify_view_ready_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
@@ -518,7 +520,9 @@ void transaction_notify_view_ready_by_geometry(struct sway_view *view,
 			instruction->container_state.content_width == width &&
 			instruction->container_state.content_height == height) {
 		set_instruction_ready(instruction);
+		return true;
 	}
+	return false;
 }
 
 static void _transaction_commit_dirty(bool server_request) {
