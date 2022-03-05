@@ -42,6 +42,7 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	sway_keyboard_destroy(seat_device->keyboard);
 	sway_tablet_destroy(seat_device->tablet);
 	sway_tablet_pad_destroy(seat_device->tablet_pad);
+	sway_switch_destroy(seat_device->switch_device);
 	wlr_cursor_detach_input_device(seat_device->sway_seat->cursor->cursor,
 		seat_device->input_device->wlr_device);
 	wl_list_remove(&seat_device->link);
