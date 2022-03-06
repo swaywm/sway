@@ -399,7 +399,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle tiling resize via mod
 	bool mod_pressed = modifiers & config->floating_mod;
-	if (cont && !is_floating_or_child && mod_pressed &&
+	if (cont && !is_floating_or_child && !is_fullscreen_or_child && mod_pressed &&
 			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
