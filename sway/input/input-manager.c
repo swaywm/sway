@@ -236,7 +236,6 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	apply_input_type_config(input_device);
 
-	sway_input_configure_libinput_device(input_device);
 
 	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
 	input_device->device_destroy.notify = handle_device_destroy;
@@ -266,6 +265,8 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 			}
 		}
 	}
+	
+	sway_input_configure_libinput_device(input_device);
 
 	if (!added) {
 		sway_log(SWAY_DEBUG,
