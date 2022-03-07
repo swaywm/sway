@@ -45,7 +45,6 @@ struct sway_output {
 	struct wlr_box usable_area;
 
 	struct timespec last_frame;
-	struct wlr_output_damage *damage;
 
 	int lx, ly; // layout coords
 	int width, height; // transformed buffer size
@@ -63,8 +62,6 @@ struct sway_output {
 	struct wl_listener commit;
 	struct wl_listener mode;
 	struct wl_listener present;
-	struct wl_listener damage_destroy;
-	struct wl_listener damage_frame;
 	struct wl_listener frame_request;
 
 	struct {
@@ -101,19 +98,6 @@ typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
 	struct sway_view *view, struct wlr_surface *surface, struct wlr_box *box,
 	void *user_data);
 
-void output_damage_whole(struct sway_output *output);
-
-void output_damage_surface(struct sway_output *output, double ox, double oy,
-	struct wlr_surface *surface, bool whole);
-
-void output_damage_from_view(struct sway_output *output,
-	struct sway_view *view);
-
-void output_damage_box(struct sway_output *output, struct wlr_box *box);
-
-void output_damage_whole_container(struct sway_output *output,
-	struct sway_container *con);
-
 // this ONLY includes the enabled outputs
 struct sway_output *output_by_name_or_id(const char *name_or_id);
 
@@ -127,21 +111,6 @@ void output_enable(struct sway_output *output);
 void output_disable(struct sway_output *output);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
-
-void output_render(struct sway_output *output, struct timespec *when,
-	pixman_region32_t *damage);
-
-void output_surface_for_each_surface(struct sway_output *output,
-		struct wlr_surface *surface, double ox, double oy,
-		sway_surface_iterator_func_t iterator, void *user_data);
-
-void output_view_for_each_surface(struct sway_output *output,
-	struct sway_view *view, sway_surface_iterator_func_t iterator,
-	void *user_data);
-
-void output_view_for_each_popup_surface(struct sway_output *output,
-		struct sway_view *view, sway_surface_iterator_func_t iterator,
-		void *user_data);
 
 void output_for_each_workspace(struct sway_output *output,
 		void (*f)(struct sway_workspace *ws, void *data), void *data);
@@ -159,8 +128,6 @@ void output_get_box(struct sway_output *output, struct wlr_box *box);
 
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
-
-void scale_box(struct wlr_box *box, float scale);
 
 enum wlr_direction opposite_direction(enum wlr_direction d);
 

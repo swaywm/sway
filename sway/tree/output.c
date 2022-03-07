@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
-#include <wlr/types/wlr_output_damage.h>
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"

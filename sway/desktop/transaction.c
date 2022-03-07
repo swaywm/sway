@@ -5,7 +5,6 @@
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
 #include "sway/config.h"
-#include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
@@ -214,19 +213,15 @@ static void transaction_add_node(struct sway_transaction *transaction,
 
 static void apply_output_state(struct sway_output *output,
 		struct sway_output_state *state) {
-	output_damage_whole(output);
 	list_free(output->current.workspaces);
 	memcpy(&output->current, state, sizeof(struct sway_output_state));
-	output_damage_whole(output);
 }
 
 static void apply_workspace_state(struct sway_workspace *ws,
 		struct sway_workspace_state *state) {
-	output_damage_whole(ws->current.output);
 	list_free(ws->current.floating);
 	list_free(ws->current.tiling);
 	memcpy(&ws->current, state, sizeof(struct sway_workspace_state));
-	output_damage_whole(ws->current.output);
 }
 
 static void apply_container_state(struct sway_container *container,
@@ -254,19 +249,6 @@ static void apply_container_state(struct sway_container *container,
 		if (view->surface) {
 			view_center_surface(view);
 		}
-	}
-
-	// Damage the new location
-	desktop_damage_whole_container(container);
-	if (view && view->surface) {
-		struct wlr_surface *surface = view->surface;
-		struct wlr_box box = {
-			.x = container->current.content_x - view->geometry.x,
-			.y = container->current.content_y - view->geometry.y,
-			.width = surface->current.width,
-			.height = surface->current.height,
-		};
-		desktop_damage_box(&box);
 	}
 
 	if (!container->node.destroying) {
