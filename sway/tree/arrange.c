@@ -209,6 +209,34 @@ static void arrange_floating(list_t *floating) {
 
 static void arrange_children(list_t *children,
 		enum sway_container_layout layout, struct wlr_box *parent) {
+
+	// Don't include fullscreen containers. If we do, we run the risk
+	// of overwriting properties as if this container was tiled/floating
+	// but should still be fullscreen.
+	bool has_fullscreen = false;
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+
+		if (child->pending.fullscreen_mode != FULLSCREEN_NONE) {
+			has_fullscreen = true;
+			break;
+		}
+	}
+
+	if (has_fullscreen) {
+		list_t *fs_purged = create_list();
+
+		for (int i = 0; i < children->length; ++i) {
+			struct sway_container *child = children->items[i];
+
+			if (child->pending.fullscreen_mode == FULLSCREEN_NONE) {
+				list_add(fs_purged, child);
+			}
+		}
+
+		children = fs_purged;
+	}
+
 	// Calculate x, y, width and height of children
 	switch (layout) {
 	case L_HORIZ:
@@ -232,6 +260,10 @@ static void arrange_children(list_t *children,
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
 		arrange_container(child);
+	}
+
+	if (has_fullscreen) {
+		list_free(children);
 	}
 }
 
