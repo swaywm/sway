@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_tablet_v2.h>
+#include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "config.h"
 #include "list.h"
@@ -725,14 +726,25 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		ic == NULL ? MAPPED_TO_DEFAULT : ic->mapped_to;
 
 	switch (mapped_to) {
-	case MAPPED_TO_DEFAULT:
+	case MAPPED_TO_DEFAULT:;
 		/*
 		 * If the wlroots backend provides an output name, use that.
 		 *
-		 * Otherwise, try to map built-in touch and tablet tool devices to the
+		 * Otherwise, try to map built-in touch and pointer devices to the
 		 * built-in output.
 		 */
-		mapped_to_output = sway_device->input_device->wlr_device->output_name;
+		struct wlr_input_device *dev = sway_device->input_device->wlr_device;
+		switch (dev->type) {
+		case WLR_INPUT_DEVICE_POINTER:
+			mapped_to_output = dev->pointer->output_name;
+			break;
+		case WLR_INPUT_DEVICE_TOUCH:
+			mapped_to_output = dev->touch->output_name;
+			break;
+		default:
+			mapped_to_output = NULL;
+			break;
+		}
 		if (mapped_to_output == NULL && is_touch_or_tablet_tool(sway_device) &&
 				sway_libinput_device_is_builtin(sway_device->input_device)) {
 			mapped_to_output = get_builtin_output_name();
