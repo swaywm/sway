@@ -70,12 +70,18 @@ struct sway_mouse_binding {
 	char *command;
 };
 
+enum sway_switch_trigger {
+	SWAY_SWITCH_TRIGGER_OFF,
+	SWAY_SWITCH_TRIGGER_ON,
+	SWAY_SWITCH_TRIGGER_TOGGLE,
+};
+
 /**
  * A laptop switch binding and an associated command.
  */
 struct sway_switch_binding {
 	enum wlr_switch_type type;
-	enum wlr_switch_state state;
+	enum sway_switch_trigger trigger;
 	uint32_t flags;
 	char *command;
 };

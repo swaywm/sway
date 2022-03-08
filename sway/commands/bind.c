@@ -47,7 +47,7 @@ static bool binding_switch_compare(struct sway_switch_binding *binding_a,
 	if (binding_a->type != binding_b->type) {
 		return false;
 	}
-	if (binding_a->state != binding_b->state) {
+	if (binding_a->trigger != binding_b->trigger) {
 		return false;
 	}
 	if ((binding_a->flags & BINDING_LOCKED) !=
@@ -551,11 +551,11 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 				"unknown switch %s)", bindtype, split->items[0]);
 	}
 	if (strcmp(split->items[1], "on") == 0) {
-		binding->state = WLR_SWITCH_STATE_ON;
+		binding->trigger = SWAY_SWITCH_TRIGGER_ON;
 	} else if (strcmp(split->items[1], "off") == 0) {
-		binding->state = WLR_SWITCH_STATE_OFF;
+		binding->trigger = SWAY_SWITCH_TRIGGER_OFF;
 	} else if (strcmp(split->items[1], "toggle") == 0) {
-		binding->state = WLR_SWITCH_STATE_TOGGLE;
+		binding->trigger = SWAY_SWITCH_TRIGGER_TOGGLE;
 	} else {
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
