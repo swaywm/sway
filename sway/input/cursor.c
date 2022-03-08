@@ -591,14 +591,15 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 	double x1 = region->x1, x2 = region->x2;
 	double y1 = region->y1, y2 = region->y2;
 
-	if (region->mm) {
-		if (device->width_mm == 0 || device->height_mm == 0) {
+	if (region->mm && device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
+		struct wlr_tablet *tablet = device->tablet;
+		if (tablet->width_mm == 0 || tablet->height_mm == 0) {
 			return;
 		}
-		x1 /= device->width_mm;
-		x2 /= device->width_mm;
-		y1 /= device->height_mm;
-		y2 /= device->height_mm;
+		x1 /= tablet->width_mm;
+		x2 /= tablet->width_mm;
+		y1 /= tablet->height_mm;
+		y2 /= tablet->height_mm;
 	}
 
 	*x = apply_mapping_from_coord(x1, x2, *x);
