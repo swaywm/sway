@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
+#include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_text_input_v3.h>
 #include <wlr/types/wlr_xdg_shell.h>
@@ -89,6 +90,19 @@ struct sway_server {
 	struct wl_listener output_manager_apply;
 	struct wl_listener output_manager_test;
 
+	struct {
+		bool locked;
+		struct wlr_session_lock_manager_v1 *manager;
+
+		struct wlr_session_lock_v1 *lock;
+		struct wl_listener lock_new_surface;
+		struct wl_listener lock_unlock;
+		struct wl_listener lock_destroy;
+
+		struct wl_listener new_lock;
+		struct wl_listener manager_destroy;
+	} session_lock;
+
 	struct wlr_output_power_manager_v1 *output_power_manager_v1;
 	struct wl_listener output_power_manager_set_mode;
 	struct wlr_input_method_manager_v2 *input_method;
@@ -148,6 +162,7 @@ void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
+void sway_session_lock_init(void);
 void handle_xdg_shell_surface(struct wl_listener *listener, void *data);
 #if HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

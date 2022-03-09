@@ -212,6 +212,15 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 	}
 }
 
+void sway_force_focus(struct wlr_surface *surface) {
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		seat_keyboard_notify_enter(seat, surface);
+		seat_tablet_pads_notify_enter(seat, surface);
+		sway_input_method_relay_set_focus(&seat->im_relay, surface);
+	}
+}
+
 void seat_for_each_node(struct sway_seat *seat,
 		void (*f)(struct sway_node *node, void *data), void *data) {
 	struct sway_seat_node *current = NULL;
@@ -814,11 +823,13 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device->keyboard);
-	struct sway_node *focus = seat_get_focus(seat);
-	if (focus && node_is_view(focus)) {
-		// force notify reenter to pick up the new configuration
+
+	// force notify reenter to pick up the new configuration.  This reuses
+	// the current focused surface to avoid breaking input grabs.
+	struct wlr_surface *surface = seat->wlr_seat->keyboard_state.focused_surface;
+	if (surface) {
 		wlr_seat_keyboard_notify_clear_focus(seat->wlr_seat);
-		seat_keyboard_notify_enter(seat, focus->sway_container->view->surface);
+		seat_keyboard_notify_enter(seat, surface);
 	}
 }
 
@@ -1070,7 +1081,8 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 bool seat_is_input_allowed(struct sway_seat *seat,
 		struct wlr_surface *surface) {
 	struct wl_client *client = wl_resource_get_client(surface->resource);
-	return !seat->exclusive_client || seat->exclusive_client == client;
+	return seat->exclusive_client == client ||
+		(seat->exclusive_client == NULL && !server.session_lock.locked);
 }
 
 static void send_unfocus(struct sway_container *con, void *data) {
@@ -1168,6 +1180,11 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 
 	// Deny setting focus to a workspace node when using fullscreen global
 	if (root->fullscreen_global && !container && new_workspace) {
+		return;
+	}
+
+	// Deny setting focus when an input grab or lockscreen is active
+	if (container && !seat_is_input_allowed(seat, container->view->surface)) {
 		return;
 	}
 

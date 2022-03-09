@@ -185,6 +185,10 @@ struct sway_workspace *seat_get_last_known_workspace(struct sway_seat *seat);
 
 struct sway_container *seat_get_focused_container(struct sway_seat *seat);
 
+// Force focus to a particular surface that is not part of the workspace
+// hierarchy (used for lockscreen)
+void sway_force_focus(struct wlr_surface *surface);
+
 /**
  * Return the last container to be focused for the seat (or the most recently
  * opened if no container has received focused) that is a child of the given
