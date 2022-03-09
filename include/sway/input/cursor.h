@@ -112,7 +112,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	enum wlr_button_state state);
 
 void dispatch_cursor_axis(struct sway_cursor *cursor,
-		struct wlr_event_pointer_axis *event);
+		struct wlr_pointer_axis_event *event);
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	struct wl_client *client);
