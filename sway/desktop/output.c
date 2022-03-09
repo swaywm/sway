@@ -275,6 +275,25 @@ static void for_each_surface_container_iterator(struct sway_container *con,
 
 static void output_for_each_surface(struct sway_output *output,
 		sway_surface_iterator_func_t iterator, void *user_data) {
+	if (server.session_lock.locked) {
+		if (server.session_lock.lock == NULL) {
+			return;
+		}
+		struct wlr_session_lock_surface_v1 *lock_surface;
+		wl_list_for_each(lock_surface, &server.session_lock.lock->surfaces, link) {
+			if (lock_surface->output != output->wlr_output) {
+				continue;
+			}
+			if (!lock_surface->mapped) {
+				continue;
+			}
+
+			output_surface_for_each_surface(output, lock_surface->surface,
+				0.0, 0.0, iterator, user_data);
+		}
+		return;
+	}
+
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto overlay;
 	}
