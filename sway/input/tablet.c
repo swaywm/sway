@@ -196,7 +196,7 @@ static void handle_tablet_pad_attach(struct wl_listener *listener,
 
 static void handle_tablet_pad_ring(struct wl_listener *listener, void *data) {
 	struct sway_tablet_pad *pad = wl_container_of(listener, pad, ring);
-	struct wlr_event_tablet_pad_ring *event = data;
+	struct wlr_tablet_pad_ring_event *event = data;
 
 	if (!pad->current_surface) {
 		return;
@@ -210,7 +210,7 @@ static void handle_tablet_pad_ring(struct wl_listener *listener, void *data) {
 
 static void handle_tablet_pad_strip(struct wl_listener *listener, void *data) {
 	struct sway_tablet_pad *pad = wl_container_of(listener, pad, strip);
-	struct wlr_event_tablet_pad_strip *event = data;
+	struct wlr_tablet_pad_strip_event *event = data;
 
 	if (!pad->current_surface) {
 		return;
@@ -224,7 +224,7 @@ static void handle_tablet_pad_strip(struct wl_listener *listener, void *data) {
 
 static void handle_tablet_pad_button(struct wl_listener *listener, void *data) {
 	struct sway_tablet_pad *pad = wl_container_of(listener, pad, button);
-	struct wlr_event_tablet_pad_button *event = data;
+	struct wlr_tablet_pad_button_event *event = data;
 
 	if (!pad->current_surface) {
 		return;

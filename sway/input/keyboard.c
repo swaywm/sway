@@ -401,7 +401,7 @@ static struct wlr_input_method_keyboard_grab_v2 *keyboard_get_im_grab(
 }
 
 static void handle_key_event(struct sway_keyboard *keyboard,
-		struct wlr_event_keyboard_key *event) {
+		struct wlr_keyboard_key_event *event) {
 	struct sway_seat *seat = keyboard->seat_device->sway_seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
