@@ -36,13 +36,13 @@ foreach p : protocols
 	xml = join_paths(p)
 	wl_protos_src += custom_target(
 		xml.underscorify() + '_server_c',
-		input: xml,
+		input: files(xml),
 		output: '@BASENAME@-protocol.c',
 		command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
 	)
 	wl_protos_headers += custom_target(
 		xml.underscorify() + '_server_h',
-		input: xml,
+		input: files(xml),
 		output: '@BASENAME@-protocol.h',
 		command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
 	)
@@ -52,7 +52,7 @@ foreach p : client_protocols
 	xml = join_paths(p)
 	wl_protos_headers += custom_target(
 		xml.underscorify() + '_client_h',
-		input: xml,
+		input: files(xml),
 		output: '@BASENAME@-client-protocol.h',
 		command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
 	)
