@@ -1562,7 +1562,7 @@ void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 }
 
 void seatop_pointer_axis(struct sway_seat *seat,
-		struct wlr_event_pointer_axis *event) {
+		struct wlr_pointer_axis_event *event) {
 	if (seat->seatop_impl->pointer_axis) {
 		seat->seatop_impl->pointer_axis(seat, event);
 	}

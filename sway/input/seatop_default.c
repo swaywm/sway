@@ -645,7 +645,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
  * Functions used by handle_pointer_axis  /
  *--------------------------------------*/
 
-static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
+static uint32_t wl_axis_to_button(struct wlr_pointer_axis_event *event) {
 	switch (event->orientation) {
 	case WLR_AXIS_ORIENTATION_VERTICAL:
 		return event->delta < 0 ? SWAY_SCROLL_UP : SWAY_SCROLL_DOWN;
@@ -658,9 +658,9 @@ static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
 }
 
 static void handle_pointer_axis(struct sway_seat *seat,
-		struct wlr_event_pointer_axis *event) {
+		struct wlr_pointer_axis_event *event) {
 	struct sway_input_device *input_device =
-		event->device ? event->device->data : NULL;
+		event->pointer ? event->pointer->base.data : NULL;
 	struct input_config *ic =
 		input_device ? input_device_get_config(input_device) : NULL;
 	struct sway_cursor *cursor = seat->cursor;

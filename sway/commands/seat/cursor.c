@@ -111,8 +111,8 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 			: WLR_AXIS_ORIENTATION_HORIZONTAL;
 		double delta = (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_LEFT)
 			? -1 : 1;
-		struct wlr_event_pointer_axis event = {
-			.device = NULL,
+		struct wlr_pointer_axis_event event = {
+			.pointer = NULL,
 			.time_msec = 0,
 			.source = WLR_AXIS_SOURCE_WHEEL,
 			.orientation = orientation,
