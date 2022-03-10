@@ -27,7 +27,7 @@ IRC 채널을 방문하거나 sir@cmpwn.com으로 이메일을 보내 상담 받
 * [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo

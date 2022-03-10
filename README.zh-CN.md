@@ -28,7 +28,7 @@ Sway 在很多发行版中可用. 尝试在你的发行版中安装 "sway" 包.
 * [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo

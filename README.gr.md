@@ -28,7 +28,7 @@ sway και wlroots γιά τεστάρισμα ή development.
 * [wlroots]
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo

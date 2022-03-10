@@ -29,7 +29,7 @@ sway и wlroots для тестирования или разработки.
 * [wlroots]
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo
