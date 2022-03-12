@@ -39,7 +39,7 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo

@@ -28,7 +28,7 @@ Telepítsd a függőségeket:
 * [wlroots]
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo

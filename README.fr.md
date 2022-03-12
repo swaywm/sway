@@ -35,7 +35,7 @@ Installez les dépendances :
 * [wlroots]
 * wayland
 * wayland-protocols \*
-* pcre
+* pcre2
 * json-c
 * pango
 * cairo
