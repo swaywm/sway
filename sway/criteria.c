@@ -161,7 +161,7 @@ static bool criteria_matches_container(struct criteria *criteria,
 		bool exists = false;
 		struct sway_container *con = container;
 		for (int i = 0; i < con->marks->length; ++i) {
-			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) == 0) {
+			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) >= 0) {
 				exists = true;
 				break;
 			}
@@ -199,7 +199,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(title, criteria->title->regex) != 0) {
+			if (regex_cmp(title, criteria->title->regex) < 0) {
 				return false;
 			}
 			break;
@@ -219,7 +219,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(shell, criteria->shell->regex) != 0) {
+			if (regex_cmp(shell, criteria->shell->regex) < 0) {
 				return false;
 			}
 			break;
@@ -239,7 +239,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(app_id, criteria->app_id->regex) != 0) {
+			if (regex_cmp(app_id, criteria->app_id->regex) < 0) {
 				return false;
 			}
 			break;
@@ -271,7 +271,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(class, criteria->class->regex) != 0) {
+			if (regex_cmp(class, criteria->class->regex) < 0) {
 				return false;
 			}
 			break;
@@ -291,7 +291,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(instance, criteria->instance->regex) != 0) {
+			if (regex_cmp(instance, criteria->instance->regex) < 0) {
 				return false;
 			}
 			break;
@@ -311,7 +311,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(window_role, criteria->window_role->regex) != 0) {
+			if (regex_cmp(window_role, criteria->window_role->regex) < 0) {
 				return false;
 			}
 			break;
@@ -370,7 +370,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			}
 			break;
 		case PATTERN_PCRE2:
-			if (regex_cmp(ws->name, criteria->workspace->regex) != 0) {
+			if (regex_cmp(ws->name, criteria->workspace->regex) < 0) {
 				return false;
 			}
 			break;
