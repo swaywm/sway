@@ -51,9 +51,6 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	if (output->surface != NULL) {
 		wl_surface_destroy(output->surface);
 	}
-	if (output->input_region != NULL) {
-		wl_region_destroy(output->input_region);
-	}
 	wl_output_destroy(output->output);
 	destroy_buffer(&output->buffers[0]);
 	destroy_buffer(&output->buffers[1]);
@@ -113,10 +110,9 @@ static void add_layer_surface(struct swaybar_output *output) {
 
 	if (overlay) {
 		// Empty input region
-		output->input_region = wl_compositor_create_region(bar->compositor);
-		assert(output->input_region);
-
-		wl_surface_set_input_region(output->surface, output->input_region);
+		struct wl_region *region = wl_compositor_create_region(bar->compositor);
+		wl_surface_set_input_region(output->surface, region);
+		wl_region_destroy(region);
 	}
 
 	zwlr_layer_surface_v1_set_anchor(output->layer_surface, config->position);
