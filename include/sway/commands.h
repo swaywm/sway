@@ -164,6 +164,7 @@ sway_cmd cmd_no_focus;
 sway_cmd cmd_output;
 sway_cmd cmd_permit;
 sway_cmd cmd_popup_during_fullscreen;
+sway_cmd cmd_primary_selection;
 sway_cmd cmd_reject;
 sway_cmd cmd_reload;
 sway_cmd cmd_rename;

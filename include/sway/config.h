@@ -130,6 +130,7 @@ struct input_config_tool {
 	enum sway_tablet_tool_mode mode;
 };
 
+
 /**
  * options for input devices
  */
@@ -468,6 +469,12 @@ enum xwayland_mode {
 	XWAYLAND_MODE_IMMEDIATE,
 };
 
+enum config_primary_selection {
+	PRIMARY_SELECTION_DEFAULT,
+	PRIMARY_SELECTION_DISABLED,
+	PRIMARY_SELECTION_ENABLED,
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -527,6 +534,7 @@ struct sway_config {
 	bool auto_back_and_forth;
 	bool show_marks;
 	enum alignment title_align;
+	enum config_primary_selection primary_selection;
 
 	bool tiling_drag;
 	int tiling_drag_threshold;

@@ -746,6 +746,9 @@ The default colors are:
 	dialog will not be rendered. If _leave_fullscreen_, the view will exit
 	fullscreen mode and the dialog will be rendered.
 
+*primary_selection* enabled|disabled
+	Enable or disable the primary selection clipboard.
+
 *set* $<name> <value>
 	Sets variable $_name_ to _value_. You can use the new variable in the
 	arguments of future commands. When the variable is used, it can be escaped

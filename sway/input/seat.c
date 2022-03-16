@@ -531,7 +531,14 @@ static void handle_request_set_primary_selection(struct wl_listener *listener,
 	struct sway_seat *seat =
 		wl_container_of(listener, seat, request_set_primary_selection);
 	struct wlr_seat_request_set_primary_selection_event *event = data;
-	wlr_seat_set_primary_selection(seat->wlr_seat, event->source, event->serial);
+	struct wlr_primary_selection_source *source;
+
+	if (config->primary_selection == PRIMARY_SELECTION_DISABLED) {
+		source = NULL;
+	} else {
+		source = event->source;
+	}
+	wlr_seat_set_primary_selection(seat->wlr_seat, source, event->serial);
 }
 
 static void collect_focus_iter(struct sway_node *node, void *data) {
