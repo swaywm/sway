@@ -530,6 +530,7 @@ struct sway_config {
 	bool auto_back_and_forth;
 	bool show_marks;
 	enum alignment title_align;
+	bool primary_selection;
 
 	bool tiling_drag;
 	int tiling_drag_threshold;
@@ -719,7 +720,7 @@ void free_workspace_config(struct workspace_config *wsc);
 /**
  * Updates the value of config->font_height based on the metrics for title's
  * font as reported by pango.
- * 
+ *
  * If the height has changed, all containers will be rearranged to take on the
  * new size.
  */
