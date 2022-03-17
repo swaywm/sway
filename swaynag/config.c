@@ -11,28 +11,40 @@
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-static char *read_from_stdin(void) {
-	char *buffer = NULL;
-	size_t buffer_len = 0;
-	char *line = NULL;
-	size_t line_size = 0;
-	ssize_t nread;
-	while ((nread = getline(&line, &line_size, stdin)) != -1) {
+static char *read_and_trim_stdin(void) {
+	char *buffer = NULL, *line = NULL;
+	size_t buffer_len = 0, line_size = 0;
+	while (1) {
+		ssize_t nread = getline(&line, &line_size, stdin);
+		if (nread == -1) {
+			if (feof(stdin)) {
+				break;
+			} else {
+				perror("getline");
+				goto freeline;
+			}
+		}
 		buffer = realloc(buffer, buffer_len + nread + 1);
 		if (!buffer) {
 			perror("realloc");
-			return NULL;
+			goto freebuf;
 		}
-		snprintf(&buffer[buffer_len], nread + 1, "%s", line);
+		memcpy(&buffer[buffer_len], line, nread + 1);
 		buffer_len += nread;
 	}
 	free(line);
 
-	while (buffer && buffer[buffer_len - 1] == '\n') {
+	while (buffer_len && buffer[buffer_len - 1] == '\n') {
 		buffer[--buffer_len] = '\0';
 	}
 
 	return buffer;
+
+freeline:
+	free(line);
+freebuf:
+	free(buffer);
+	return NULL;
 }
 
 int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
@@ -222,7 +234,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		case 'l': // Detailed Message
 			if (swaynag) {
 				free(swaynag->details.message);
-				swaynag->details.message = read_from_stdin();
+				swaynag->details.message = read_and_trim_stdin();
 				if (!swaynag->details.message) {
 					return EXIT_FAILURE;
 				}
