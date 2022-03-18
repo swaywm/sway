@@ -56,6 +56,9 @@ static bool edge_is_external(struct sway_container *cont, enum wlr_edges edge) {
 	while (cont) {
 		if (container_parent_layout(cont) == layout) {
 			list_t *siblings = container_get_siblings(cont);
+			if (!siblings) {
+				return false;
+			}
 			int index = list_find(siblings, cont);
 			if (index > 0 && (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_TOP)) {
 				return false;
