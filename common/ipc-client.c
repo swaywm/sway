@@ -13,6 +13,25 @@ static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
 #define IPC_HEADER_SIZE (sizeof(ipc_magic) + 8)
 
+int query_for_swaypid(char *xdg_runtime_dir) {
+	if (xdg_runtime_dir != NULL) {
+		char pidline[1024];
+		char *pid;
+		FILE *fp = popen("pidof sway", "r");
+		fgets(pidline, 1024, fp);
+		pid = strtok(pidline, " ");
+		int sway_pid = atoi(pid);
+		if (strtok(NULL, " ") != NULL) {
+			return -1;
+		} else {
+			return sway_pid;
+		}
+	} else {
+		exit(EXIT_FAILURE);
+	};
+}
+
+
 char *get_socketpath(void) {
 	const char *swaysock = getenv("SWAYSOCK");
 	if (swaysock) {
@@ -46,10 +65,28 @@ char *get_socketpath(void) {
 			if (line[nret - 1] == '\n') {
 				line[nret - 1] = '\0';
 			}
+			free(line);
 			return line;
 		}
 	}
 	free(line);
+
+	if (getenv("XDG_RUNTIME_DIR") && getuid()) {
+		int swaypid = query_for_swaypid(getenv("XDG_RUNTIME_DIR"));
+		if (swaypid > 0) {
+			size_t path_sz = snprintf(NULL, 0, "%s/sway-ipc.%u.%i.sock", getenv("XDG_RUNTIME_DIR"), getuid(), swaypid);
+			char *swaysock_runtime = malloc(path_sz+1);
+			snprintf(swaysock_runtime, path_sz+1, "%s/sway-ipc.%u.%i.sock", getenv("XDG_RUNTIME_DIR"), getuid(), swaypid);
+			if (access(swaysock_runtime, F_OK) != -1) {
+				return strdup(swaysock_runtime);
+			} else {
+				fprintf(stderr, "sway socket not detected.\n"); // found a pid, but no socket file
+			}
+		} else {
+			fprintf(stderr, "Found more than one sway instance running.\n");
+			exit(EXIT_FAILURE);
+		}
+	}
 	return NULL;
 }
 

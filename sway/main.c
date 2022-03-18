@@ -87,24 +87,6 @@ void detect_proprietary(int allow_unsupported_gpu) {
 	fclose(f);
 }
 
-int query_for_swaypid(char *xdg_runtime_dir) {
-	if (xdg_runtime_dir != NULL) {
-		char pidline[1024];
-		char *pid;
-		FILE *fp = popen("pidof sway", "r");
-		fgets(pidline, 1024, fp);
-		pid = strtok(pidline, " ");
-		int sway_pid = atoi(pid);
-		if (strtok(NULL, " ") != NULL) {
-			return -1;
-		} else {
-			return sway_pid;
-		}
-	} else {
-		exit(EXIT_FAILURE);
-	};
-}
-
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -324,27 +306,14 @@ int main(int argc, char **argv) {
 			verbose = true;
 			break;
 		case 'p': ; // --get-socketpath
-			if (getenv("SWAYSOCK")) {
-				printf("%s\n", getenv("SWAYSOCK"));
-			} else if (getenv("XDG_RUNTIME_DIR") && getuid()) {
-				int swaypid = query_for_swaypid(getenv("XDG_RUNTIME_DIR"));
-				char *swaysock = {0};
-				if (swaypid > 0) {
-					sprintf(swaysock, "%s/sway-ipc.%u.%i.sock", getenv("XDG_RUNTIME_DIR"), getuid(), swaypid);
-					if (access(swaysock, F_OK) != -1) {
-						printf("%s\n", swaysock);
-					} else {
-						fprintf(stderr, "sway socket not detected.\n"); // found a pid, but no socket file
-					}
-				} else {
-					fprintf(stderr, "Found more than one sway instance running.\n");
-					exit(EXIT_FAILURE);
-				}
+			char *swaysock = get_socketpath();
+			if (swaysock != NULL) {
+				printf("%s\n", swaysock);
+				exit(EXIT_SUCCESS);
 			} else {
 				fprintf(stderr, "sway socket not detected.\n");
 				exit(EXIT_FAILURE);
 			}
-			break;
 		default:
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
