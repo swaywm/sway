@@ -422,24 +422,17 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 
 		if (line[0] == '[') {
 			char *close = strchr(line, ']');
-			if (!close) {
-				fprintf(stderr, "Closing bracket not found on line %d\n",
-						line_number);
+			if (!close || close != &line[nread - 2] || nread <= 3) {
+				fprintf(stderr, "Line %d is malformed\n", line_number);
 				result = 1;
 				break;
 			}
-			char *name = calloc(1, close - line);
-			if (!name) {
-				perror("calloc");
-				return EXIT_FAILURE;
-			}
-			strncat(name, line + 1, close - line - 1);
-			type = swaynag_type_get(types, name);
+			*close = '\0';
+			type = swaynag_type_get(types, &line[1]);
 			if (!type) {
-				type = swaynag_type_new(name);
+				type = swaynag_type_new(&line[1]);
 				list_add(types, type);
 			}
-			free(name);
 		} else {
 			char *flag = malloc(nread + 3);
 			if (!flag) {
