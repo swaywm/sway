@@ -31,6 +31,7 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	bool use_wl_socket = false;
+	bool retain_workspace = false;
 	int skip_argc = 0;
 	char *cmd = NULL;
 	char *label = NULL;
@@ -38,6 +39,9 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	while (skip_argc < argc && strncmp(argv[skip_argc], "--", 2) == 0) {
 		if (strcmp(argv[skip_argc], "--no-startup-id") == 0) {
 			sway_log(SWAY_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+			skip_argc++;
+		} else if (strcmp(argv[skip_argc], "--no-retain-workspace") == 0) {
+			retain_workspace = false;
 			skip_argc++;
 		} else if (strcmp(argv[skip_argc], "--use-wayland-socket") == 0) {
 			use_wl_socket = true;
@@ -146,7 +150,9 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	waitpid(pid, NULL, 0);
 	if (child > 0) {
 		sway_log(SWAY_DEBUG, "Child process created with pid %d", child);
-		root_record_workspace_pid(child);
+		if (retain_workspace) {
+			root_record_workspace_pid(child);
+		}
 	} else {
 		return cmd_results_new(CMD_FAILURE, "Second fork() failed");
 	}
