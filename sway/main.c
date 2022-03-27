@@ -240,34 +240,34 @@ static void handle_wlr_log(enum wlr_log_importance importance,
 	_sway_vlog(convert_wlr_log_importance(importance), sway_fmt, args);
 }
 
+static const struct option long_options[] = {
+	{"help", no_argument, NULL, 'h'},
+	{"config", required_argument, NULL, 'c'},
+	{"validate", no_argument, NULL, 'C'},
+	{"debug", no_argument, NULL, 'd'},
+	{"version", no_argument, NULL, 'v'},
+	{"verbose", no_argument, NULL, 'V'},
+	{"get-socketpath", no_argument, NULL, 'p'},
+	{"unsupported-gpu", no_argument, NULL, 'u'},
+	{0, 0, 0, 0}
+};
+
+static const char usage[] =
+	"Usage: sway [options] [command]\n"
+	"\n"
+	"  -h, --help             Show help message and quit.\n"
+	"  -c, --config <config>  Specify a config file.\n"
+	"  -C, --validate         Check the validity of the config file, then exit.\n"
+	"  -d, --debug            Enables full logging, including debug information.\n"
+	"  -v, --version          Show the version number and quit.\n"
+	"  -V, --verbose          Enables more verbose logging.\n"
+	"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
+	"\n";
+
 int main(int argc, char **argv) {
 	static bool verbose = false, debug = false, validate = false, allow_unsupported_gpu = false;
 
-	static const struct option long_options[] = {
-		{"help", no_argument, NULL, 'h'},
-		{"config", required_argument, NULL, 'c'},
-		{"validate", no_argument, NULL, 'C'},
-		{"debug", no_argument, NULL, 'd'},
-		{"version", no_argument, NULL, 'v'},
-		{"verbose", no_argument, NULL, 'V'},
-		{"get-socketpath", no_argument, NULL, 'p'},
-		{"unsupported-gpu", no_argument, NULL, 'u'},
-		{0, 0, 0, 0}
-	};
-
 	char *config_path = NULL;
-
-	const char* usage =
-		"Usage: sway [options] [command]\n"
-		"\n"
-		"  -h, --help             Show help message and quit.\n"
-		"  -c, --config <config>  Specify a config file.\n"
-		"  -C, --validate         Check the validity of the config file, then exit.\n"
-		"  -d, --debug            Enables full logging, including debug information.\n"
-		"  -v, --version          Show the version number and quit.\n"
-		"  -V, --verbose          Enables more verbose logging.\n"
-		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
-		"\n";
 
 	int c;
 	while (1) {
