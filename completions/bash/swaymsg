@@ -2,7 +2,7 @@
 
 _swaymsg()
 {
-  local cur prev
+  local cur prev types short long
   _get_comp_words_by_ref cur prev
 
   types=(
