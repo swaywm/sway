@@ -441,17 +441,21 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 
-	// Execute stored release binding once no longer active
-	if (keyboard->held_binding && binding_released != keyboard->held_binding &&
+	// Execute stored release binding when the key is released
+	if (keyboard->held_binding && 
+			keyinfo.keycode == keyboard->held_keycode &&
 			event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
 		seat_execute_command(seat, keyboard->held_binding);
 		handled = true;
 	}
-	if (binding_released != keyboard->held_binding) {
+	if (handled ||
+			(binding_released && binding_released != keyboard->held_binding)) {
 		keyboard->held_binding = NULL;
+		keyboard->held_keycode = 0;
 	}
 	if (binding_released && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		keyboard->held_binding = binding_released;
+		keyboard->held_keycode = keyinfo.keycode;
 	}
 
 	// Identify and execute active pressed binding

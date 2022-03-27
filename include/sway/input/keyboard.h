@@ -65,6 +65,7 @@ struct sway_keyboard {
 	struct sway_shortcut_state state_keycodes;
 	struct sway_shortcut_state state_pressed_sent;
 	struct sway_binding *held_binding;
+	uint32_t held_keycode;
 
 	struct wl_event_source *key_repeat_source;
 	struct sway_binding *repeat_binding;
