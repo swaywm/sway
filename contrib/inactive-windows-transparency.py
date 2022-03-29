@@ -11,6 +11,10 @@ import signal
 import sys
 from functools import partial
 
+def ignored(window):
+    global ignore
+    return window.app_id in ignore
+
 def on_window_focus(inactive_opacity, ipc, event):
     global prev_focused
     global prev_workspace
@@ -26,7 +30,8 @@ def on_window_focus(inactive_opacity, ipc, event):
     if focused.id != prev_focused.id:  # https://github.com/swaywm/sway/issues/2859
         focused.command("opacity 1")
         if workspace == prev_workspace:
-            prev_focused.command("opacity " + inactive_opacity)
+            if not ignored(prev_focused):
+                prev_focused.command("opacity " + inactive_opacity)
         prev_focused = focused
         prev_workspace = workspace
 
@@ -52,7 +57,16 @@ if __name__ == "__main__":
         default=transparency_val,
         help="set opacity value in range 0...1",
     )
+    parser.add_argument(
+        "--ignore",
+        "-i",
+        type=str,
+        default=[],
+        help="List of ignored processes.",
+        nargs="+"
+    )
     args = parser.parse_args()
+    ignore = args.ignore
 
     ipc = i3ipc.Connection()
     prev_focused = None
@@ -61,7 +75,7 @@ if __name__ == "__main__":
     for window in ipc.get_tree():
         if window.focused:
             prev_focused = window
-        else:
+        elif not ignored(window):
             window.command("opacity " + args.opacity)
     for sig in [signal.SIGINT, signal.SIGTERM]:
         signal.signal(sig, lambda signal, frame: remove_opacity(ipc))
