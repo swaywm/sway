@@ -668,12 +668,12 @@ The default colors are:
 	See *CRITERIA* for more details.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
-	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
-	affects spacing around each view and outer affects the spacing around each
-	workspace. Outer gaps are in addition to inner gaps. To reduce or remove
-	outer gaps, outer gaps can be set to a negative value. _outer_ gaps can
-	also be specified per side with _top_, _right_, _bottom_, and _left_ or
-	per direction with _horizontal_ and _vertical_.
+	Sets the default _amount_ of pixels for the _inner_ or _outer_ gaps, where _inner_
+	affects spacing around each view and _outer _affects spacing around each
+	workspace. Values for outer gaps may serve to increase or reduce those for inner gaps. To reduce or remove
+	gaps around views or workspaces, outer gaps can be set to a negative value. _Outer_ gaps can
+	also be specified per side with _top_, _right_, _bottom_, or _left_, or
+	directionally with _horizontal_ or _vertical_.
 
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps ...).
