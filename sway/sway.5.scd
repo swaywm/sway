@@ -284,7 +284,7 @@ set|plus|minus|toggle <amount>
 *resize* shrink|grow width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are resized
-	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
+	in px and tiled containers by ppt. _Amount_ will default to 10 if omitted.
 
 *resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
