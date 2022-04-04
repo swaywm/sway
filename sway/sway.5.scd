@@ -284,7 +284,7 @@ set|plus|minus|toggle <amount>
 *resize* shrink|grow width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are resized
-	in px and tiled containers by ppt. _Amount_ will default to 10 if omitted.
+	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
 
 *resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
@@ -669,9 +669,9 @@ The default colors are:
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets the default _amount_ of pixels for the _inner_ or _outer_ gaps, where _inner_
-	affects spacing around each view and _outer _affects spacing around each
+	affects spacing around each view and _outer_ affects spacing around each
 	workspace. Values for outer gaps may serve to increase or reduce those for inner gaps. To reduce or remove
-	gaps around views or workspaces, outer gaps can be set to a negative value. _Outer_ gaps can
+	gaps around views or workspaces, outer gaps can be set to a negative value. _outer_ gaps can
 	also be specified per side with _top_, _right_, _bottom_, or _left_, or
 	directionally with _horizontal_ or _vertical_.
 
