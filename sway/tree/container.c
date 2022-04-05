@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <sys/stat.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -1325,6 +1326,7 @@ static void surface_send_enter_iterator(struct wlr_surface *surface,
 		int x, int y, void *data) {
 	struct wlr_output *wlr_output = data;
 	wlr_surface_send_enter(surface, wlr_output);
+	wlr_fractional_scale_v1_notify_scale(surface, wlr_output->scale);
 }
 
 static void surface_send_leave_iterator(struct wlr_surface *surface,

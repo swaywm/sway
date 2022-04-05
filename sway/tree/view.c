@@ -4,6 +4,7 @@
 #include <wayland-server-core.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -1120,6 +1121,7 @@ void view_child_init(struct sway_view_child *child,
 		struct sway_workspace *workspace = container->pending.workspace;
 		if (workspace) {
 			wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+			wlr_fractional_scale_v1_notify_scale(child->surface, workspace->output->wlr_output->scale);
 		}
 	}
 
