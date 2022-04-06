@@ -1,0 +1,39 @@
+#!/bin/sh -eu
+
+# term-menu: reads a list of newline-separated choices from stdin, asks the
+# user to pick one with fzf, prints it to stdout
+#
+# Best used with the following Sway config snippet:
+#
+#     for_window [app_id="^term-menu$"] floating enable, border none
+#
+# Example usage to launch a command:
+#
+#     dmenu_path | term-menu | xargs swaymsg exec
+
+in_pipe="$XDG_RUNTIME_DIR/menu-in.$$.pipe"
+out_pipe="$XDG_RUNTIME_DIR/menu-out.$$.pipe"
+
+mkfifo "$in_pipe" "$out_pipe"
+trap "rm -f $in_pipe $out_pipe" EXIT
+
+app_id=term-menu
+chooser="fzf <$in_pipe >$out_pipe"
+
+case "$TERM" in
+alacritty)
+	alacritty --class "$app_id" --command sh -c "$chooser" &
+	;;
+foot)
+	foot --app-id "$app_id" -- sh -c "$chooser" &
+	;;
+termite)
+	termite --name "$app_id" -e "sh -c '$chooser'" &
+	;;
+*)
+	echo >&2 "term-menu: unsupported terminal: $TERM"
+	exit 1
+esac
+
+cat >"$in_pipe"
+cat <"$out_pipe"
