@@ -213,8 +213,8 @@ bool server_init(struct sway_server *server) {
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
-	for (int i = 1; i <= 32; ++i) {
-		snprintf(name_candidate, sizeof(name_candidate), "wayland-%d", i);
+	for (unsigned int i = 1; i <= 32; ++i) {
+		snprintf(name_candidate, sizeof(name_candidate), "wayland-%u", i);
 		if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
 			server->socket = strdup(name_candidate);
 			break;
