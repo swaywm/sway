@@ -5,7 +5,7 @@ sway 是和 [i3](https://i3wm.org/) 兼容的 [Wayland](http://wayland.freedeskt
 
 ## 发行签名
 
-发行以 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) 签名并发布在 [GitHub](https://github.com/swaywm/sway/releases)上。
+每个发布版本都以 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) 的密钥签名并发布在 [GitHub](https://github.com/swaywm/sway/releases)上。
 
 ## 安装
 
