@@ -93,7 +93,7 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 			wl_list_for_each_safe(action, tmp, &actions, link) {
 				free(action);
 			}
-			return cmd_results_new(CMD_FAILURE, "Unable to allocate mode");
+			return cmd_results_new(CMD_FAILURE, "Unable to allocate action");
 		}
 
 		action->keyboard = dev->wlr_device->keyboard;
