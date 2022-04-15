@@ -5,6 +5,12 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+struct xkb_switch_layout_action {
+	struct wl_list link;
+	struct wlr_keyboard *keyboard;
+	xkb_layout_index_t layout;
+};
+
 static void switch_layout(struct wlr_keyboard *kbd, xkb_layout_index_t idx) {
 	xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(kbd->keymap);
 	if (idx >= num_layouts) {
@@ -28,10 +34,10 @@ static xkb_layout_index_t get_current_layout_index(struct wlr_keyboard *kbd) {
 	return layout_idx;
 }
 
-static void switch_layout_relative(struct wlr_keyboard *kbd, int dir) {
+static xkb_layout_index_t get_layout_relative(struct wlr_keyboard *kbd, int dir) {
 	xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(kbd->keymap);
 	xkb_layout_index_t idx = get_current_layout_index(kbd);
-	switch_layout(kbd, (idx + num_layouts + dir) % num_layouts);
+	return  (idx + num_layouts + dir) % num_layouts;
 }
 
 struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
@@ -66,6 +72,9 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 		relative = 0;
 	}
 
+	struct wl_list actions;
+	wl_list_init(&actions);
+
 	struct sway_input_device *dev;
 	wl_list_for_each(dev, &server.input->devices, link) {
 		if (strcmp(ic->identifier, "*") != 0 &&
@@ -76,11 +85,32 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 		if (dev->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
 			continue;
 		}
-		if (relative) {
-			switch_layout_relative(dev->wlr_device->keyboard, relative);
-		} else {
-			switch_layout(dev->wlr_device->keyboard, layout);
+
+		struct xkb_switch_layout_action *action =
+			calloc(1, sizeof(struct xkb_switch_layout_action));
+		if (!action) {
+			struct xkb_switch_layout_action *tmp;
+			wl_list_for_each_safe(action, tmp, &actions, link) {
+				free(action);
+			}
+			return cmd_results_new(CMD_FAILURE, "Unable to allocate mode");
 		}
+
+		action->keyboard = dev->wlr_device->keyboard;
+		if (relative) {
+			action->layout = get_layout_relative(
+				dev->wlr_device->keyboard, relative);
+		} else {
+			action->layout = layout;
+		}
+
+		wl_list_insert(&actions, &action->link);
+	}
+
+	struct xkb_switch_layout_action *action, *tmp;
+	wl_list_for_each_safe(action, tmp, &actions, link) {
+		switch_layout(action->keyboard, action->layout);
+		free(action);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
