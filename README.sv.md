@@ -50,7 +50,7 @@ Sway kommer att överge sina root-privilegier kort efter uppstart.
 ## Konfiguration
 
 Ifall du redan använder i3 så kan du kopiera din konfigurationsfil till `~/.config/sway/config` och det kommer då att fungera som det ska.
-Kopiera annars exemplarkonfiguratiofilen till `~/.config/sway/config`. Den ligger oftast i `/etc/sway/config`.
+Kopiera annars exemplarkonfigurationsfilen till `~/.config/sway/config`. Den ligger oftast i `/etc/sway/config`.
 Kör `man 5 sway` för mer information kring konfigurationen.
 
 ## Att köra sway
