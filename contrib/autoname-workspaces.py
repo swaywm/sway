@@ -68,15 +68,18 @@ def parse_workspace_name(name):
 def construct_workspace_name(parts):
     new_name = str(parts["num"])
     if parts["shortname"] or parts["icons"]:
-        new_name += ":"
+        icon_count = len(parts["icons"].split())
+        
+        if icon_count != 0 or parts["shortname"]:
+            new_name += ":"
 
         if parts["shortname"]:
             new_name += parts["shortname"]
 
-        if parts["icons"]:
+        if parts["icons"] and icon_count != 0:
             new_name += " " + parts["icons"]
 
-    return new_name
+    return new_name 
 
 
 if __name__ == "__main__":
