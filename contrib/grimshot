@@ -129,7 +129,10 @@ elif [ "$SUBJECT" = "output" ] ; then
   OUTPUT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused)' | jq -r '.name')
   WHAT="$OUTPUT"
 elif [ "$SUBJECT" = "window" ] ; then
-  GEOM=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp)
+  GEOM=$(swaymsg -t get_tree | jq -r \
+    '.. | select(.pid? and .visible?)
+    | "\(.rect.x),\(.rect.y - .deco_rect.height) \(.rect.width)x\(.rect.height + .deco_rect.height)"' \
+    | slurp)
   # Check if user exited slurp without selecting the area
   if [ -z "$GEOM" ]; then
    exit 1
