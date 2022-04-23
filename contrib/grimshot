@@ -131,10 +131,9 @@ elif [ "$SUBJECT" = "area" ] ; then
   fi
   WHAT="Area"
 elif [ "$SUBJECT" = "active" ] ; then
-  FOCUSED=$(swaymsg -t get_tree | jq -r 'recurse(.nodes[]?, .floating_nodes[]?) | select(.focused)')
-  GEOM=$(echo "$FOCUSED" | jq -r '.rect | "\(.x),\(.y) \(.width)x\(.height)"')
-  APP_ID=$(echo "$FOCUSED" | jq -r '.app_id')
-  WHAT="$APP_ID window"
+    eval "$( swaymsg -t get_tree |\
+        jq -r '..|try select(.focused == true)|
+                "GEOM=\"\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)\"\nAPP_ID=\"\(.app_id)\"\nWHAT=\"\(.app_id) window\""' )"
 elif [ "$SUBJECT" = "screen" ] ; then
   GEOM=""
   WHAT="Screen"
