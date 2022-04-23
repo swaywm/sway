@@ -19,7 +19,7 @@ grimshot - a helper for screenshots within sway
 	Include cursors in the screenshot.
 
 *save*
-	Save the screenshot into a regular file. Grimshot will write images
+	Save the screenshot into a regular file. Grimshot will write image
 	files to *XDG_SCREENSHOTS_DIR* if this is set (or defined
 	in *user-dirs.dir*), or otherwise fall back to *XDG_PICTURES_DIR*.
 	Set FILE to '-' to pipe the output to STDOUT.
