@@ -1614,6 +1614,62 @@ void seatop_tablet_tool_motion(struct sway_seat *seat,
 	}
 }
 
+void seatop_hold_begin(struct sway_seat *seat,
+		struct wlr_pointer_hold_begin_event *event) {
+	if (seat->seatop_impl->hold_begin) {
+		seat->seatop_impl->hold_begin(seat, event);
+	}
+}
+
+void seatop_hold_end(struct sway_seat *seat,
+		struct wlr_pointer_hold_end_event *event) {
+	if (seat->seatop_impl->hold_end) {
+		seat->seatop_impl->hold_end(seat, event);
+	}
+}
+
+void seatop_pinch_begin(struct sway_seat *seat,
+		struct wlr_pointer_pinch_begin_event *event) {
+	if (seat->seatop_impl->pinch_begin) {
+		seat->seatop_impl->pinch_begin(seat, event);
+	}
+}
+
+void seatop_pinch_update(struct sway_seat *seat,
+		struct wlr_pointer_pinch_update_event *event) {
+	if (seat->seatop_impl->pinch_update) {
+		seat->seatop_impl->pinch_update(seat, event);
+	}
+}
+
+void seatop_pinch_end(struct sway_seat *seat,
+		struct wlr_pointer_pinch_end_event *event) {
+	if (seat->seatop_impl->pinch_end) {
+		seat->seatop_impl->pinch_end(seat, event);
+	}
+}
+
+void seatop_swipe_begin(struct sway_seat *seat,
+		struct wlr_pointer_swipe_begin_event *event) {
+	if (seat->seatop_impl->swipe_begin) {
+		seat->seatop_impl->swipe_begin(seat, event);
+	}
+}
+
+void seatop_swipe_update(struct sway_seat *seat,
+		struct wlr_pointer_swipe_update_event *event) {
+	if (seat->seatop_impl->swipe_update) {
+		seat->seatop_impl->swipe_update(seat, event);
+	}
+}
+
+void seatop_swipe_end(struct sway_seat *seat,
+		struct wlr_pointer_swipe_end_event *event) {
+	if (seat->seatop_impl->swipe_end) {
+		seat->seatop_impl->swipe_end(seat, event);
+	}
+}
+
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	if (seat->seatop_impl->rebase) {
 		seat->seatop_impl->rebase(seat, time_msec);

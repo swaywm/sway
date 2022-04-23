@@ -36,14 +36,14 @@ struct sway_cursor {
 	bool active_confine_requires_warp;
 
 	struct wlr_pointer_gestures_v1 *pointer_gestures;
+	struct wl_listener hold_begin;
+	struct wl_listener hold_end;
 	struct wl_listener pinch_begin;
 	struct wl_listener pinch_update;
 	struct wl_listener pinch_end;
 	struct wl_listener swipe_begin;
 	struct wl_listener swipe_update;
 	struct wl_listener swipe_end;
-	struct wl_listener hold_begin;
-	struct wl_listener hold_end;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;

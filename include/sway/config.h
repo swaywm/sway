@@ -10,6 +10,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xf86drmMode.h>
 #include "../include/config.h"
+#include "gesture.h"
 #include "list.h"
 #include "swaynag.h"
 #include "tree/container.h"
@@ -32,7 +33,8 @@ enum binding_input_type {
 	BINDING_KEYSYM,
 	BINDING_MOUSECODE,
 	BINDING_MOUSESYM,
-	BINDING_SWITCH
+	BINDING_SWITCH, // dummy, only used to call seat_execute_command
+	BINDING_GESTURE // dummy, only used to call seat_execute_command
 };
 
 enum binding_flags {
@@ -45,6 +47,7 @@ enum binding_flags {
 	BINDING_RELOAD = 1 << 6, // switch only; (re)trigger binding on reload
 	BINDING_INHIBITED = 1 << 7, // keyboard only: ignore shortcut inhibitor
 	BINDING_NOREPEAT = 1 << 8, // keyboard only; do not trigger when repeating a held key
+	BINDING_EXACT = 1 << 9, // gesture only; only trigger on exact match
 };
 
 /**
@@ -79,6 +82,16 @@ struct sway_switch_binding {
 };
 
 /**
+ * A gesture binding and an associated command.
+ */
+struct sway_gesture_binding {
+	char *input;
+	uint32_t flags;
+	struct gesture gesture;
+	char *command;
+};
+
+/**
  * Focus on window activation.
  */
 enum sway_fowa {
@@ -97,6 +110,7 @@ struct sway_mode {
 	list_t *keycode_bindings;
 	list_t *mouse_bindings;
 	list_t *switch_bindings;
+	list_t *gesture_bindings;
 	bool pango;
 };
 
@@ -688,6 +702,8 @@ int workspace_output_cmp_workspace(const void *a, const void *b);
 void free_sway_binding(struct sway_binding *sb);
 
 void free_switch_binding(struct sway_switch_binding *binding);
+
+void free_gesture_binding(struct sway_gesture_binding *binding);
 
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 

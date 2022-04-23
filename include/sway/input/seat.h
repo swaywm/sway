@@ -19,6 +19,22 @@ struct sway_seatop_impl {
 	void (*pointer_motion)(struct sway_seat *seat, uint32_t time_msec);
 	void (*pointer_axis)(struct sway_seat *seat,
 			struct wlr_pointer_axis_event *event);
+	void (*hold_begin)(struct sway_seat *seat,
+			struct wlr_pointer_hold_begin_event *event);
+	void (*hold_end)(struct sway_seat *seat,
+			struct wlr_pointer_hold_end_event *event);
+	void (*pinch_begin)(struct sway_seat *seat,
+			struct wlr_pointer_pinch_begin_event *event);
+	void (*pinch_update)(struct sway_seat *seat,
+			struct wlr_pointer_pinch_update_event *event);
+	void (*pinch_end)(struct sway_seat *seat,
+			struct wlr_pointer_pinch_end_event *event);
+	void (*swipe_begin)(struct sway_seat *seat,
+			struct wlr_pointer_swipe_begin_event *event);
+	void (*swipe_update)(struct sway_seat *seat,
+			struct wlr_pointer_swipe_update_event *event);
+	void (*swipe_end)(struct sway_seat *seat,
+			struct wlr_pointer_swipe_end_event *event);
 	void (*rebase)(struct sway_seat *seat, uint32_t time_msec);
 	void (*tablet_tool_motion)(struct sway_seat *seat,
 			struct sway_tablet_tool *tool, uint32_t time_msec);
@@ -286,6 +302,25 @@ void seatop_tablet_tool_tip(struct sway_seat *seat,
 
 void seatop_tablet_tool_motion(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec);
+
+void seatop_hold_begin(struct sway_seat *seat,
+		struct wlr_pointer_hold_begin_event *event);
+void seatop_hold_end(struct sway_seat *seat,
+		struct wlr_pointer_hold_end_event *event);
+
+void seatop_pinch_begin(struct sway_seat *seat,
+		struct wlr_pointer_pinch_begin_event *event);
+void seatop_pinch_update(struct sway_seat *seat,
+		struct wlr_pointer_pinch_update_event *event);
+void seatop_pinch_end(struct sway_seat *seat,
+		struct wlr_pointer_pinch_end_event *event);
+
+void seatop_swipe_begin(struct sway_seat *seat,
+		struct wlr_pointer_swipe_begin_event *event);
+void seatop_swipe_update(struct sway_seat *seat,
+		struct wlr_pointer_swipe_update_event *event);
+void seatop_swipe_end(struct sway_seat *seat,
+		struct wlr_pointer_swipe_end_event *event);
 
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec);
 
