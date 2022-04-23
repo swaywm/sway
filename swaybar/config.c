@@ -37,6 +37,7 @@ struct swaybar_config *init_config(void) {
 	config->workspace_buttons = true;
 	config->workspace_min_width = 0;
 	config->bindings = create_list();
+	config->gestures = create_list();
 	wl_list_init(&config->outputs);
 	config->status_padding = 1;
 	config->status_edge_padding = 3;
@@ -93,6 +94,14 @@ void free_binding(struct swaybar_binding *binding) {
 	free(binding);
 }
 
+void free_gesture(struct swaybar_gesture *gesture) {
+	if (!gesture) {
+		return;
+	}
+	free(gesture->command);
+	free(gesture);
+}
+
 #if HAVE_TRAY
 void free_tray_binding(struct tray_binding *binding) {
 	if (!binding) {
@@ -114,6 +123,11 @@ void free_config(struct swaybar_config *config) {
 		free_binding(binding);
 	}
 	list_free(config->bindings);
+	for (int i = 0; i < config->gestures->length; i++) {
+		struct swaybar_gesture *gesture = config->gestures->items[i];
+		free_gesture(gesture);
+	}
+	list_free(config->gestures);
 	struct config_output *coutput, *tmp;
 	wl_list_for_each_safe(coutput, tmp, &config->outputs, link) {
 		wl_list_remove(&coutput->link);

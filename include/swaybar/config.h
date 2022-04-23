@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <wayland-client.h>
 #include "../include/config.h"
+#include "gesture.h"
 #include "list.h"
 #include "util.h"
 
@@ -24,6 +25,11 @@ struct swaybar_binding {
 	bool release;
 };
 
+struct swaybar_gesture {
+	struct gesture gesture;
+	char *command;
+};
+
 struct swaybar_config {
 	char *status_command;
 	bool pango_markup;
@@ -40,6 +46,7 @@ struct swaybar_config {
 	bool workspace_buttons;
 	uint32_t workspace_min_width;
 	list_t *bindings;
+	list_t *gestures;
 	struct wl_list outputs; // config_output::link
 	int height;
 	int status_padding;
@@ -90,5 +97,6 @@ struct swaybar_config *init_config(void);
 void free_config(struct swaybar_config *config);
 uint32_t parse_position(const char *position);
 void free_binding(struct swaybar_binding *binding);
+void free_gesture(struct swaybar_gesture *gesture);
 
 #endif

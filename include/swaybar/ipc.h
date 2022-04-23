@@ -8,5 +8,6 @@ bool handle_ipc_readable(struct swaybar *bar);
 bool ipc_get_workspaces(struct swaybar *bar);
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws);
 void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind);
+void ipc_execute_gesture(struct swaybar *bar, struct swaybar_gesture *gest);
 
 #endif

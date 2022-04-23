@@ -140,6 +140,30 @@ static bool ipc_parse_config(
 		}
 	}
 
+	json_object *gestures = json_object_object_get(bar_config, "gestures");
+	while (config->gestures->length) {
+		struct swaybar_gesture *binding = config->gestures->items[0];
+		list_del(config->gestures, 0);
+		free_gesture(binding);
+	}
+	if (gestures) {
+		int length = json_object_array_length(gestures);
+		for (int i = 0; i < length; ++i) {
+			json_object *bindobj = json_object_array_get_idx(gestures, i);
+			struct swaybar_gesture *binding =
+				calloc(1, sizeof(struct swaybar_gesture));
+			binding->gesture.type = json_object_get_int(
+				json_object_object_get(bindobj, "type"));
+			binding->gesture.fingers = json_object_get_int(
+				json_object_object_get(bindobj, "fingers"));
+			binding->gesture.directions = json_object_get_int(
+				json_object_object_get(bindobj, "directions"));
+			binding->command = strdup(json_object_get_string(
+				json_object_object_get(bindobj, "command")));
+			list_add(config->gestures, binding);
+		}
+	}
+
 	json_object *colors = json_object_object_get(bar_config, "colors");
 	if (colors) {
 		ipc_parse_colors(config, colors);
@@ -409,6 +433,16 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
 	sway_log(SWAY_DEBUG, "Executing binding for button %u (release=%d): `%s`",
 			bind->button, bind->release, bind->command);
+	uint32_t len = strlen(bind->command);
+	free(ipc_single_command(bar->ipc_socketfd,
+			IPC_COMMAND, bind->command, &len));
+}
+
+void ipc_execute_gesture(struct swaybar *bar, struct swaybar_gesture *bind) {
+	char *description = gesture_to_string(&bind->gesture);
+	sway_log(SWAY_DEBUG, "Executing binding for gesture %s: `%s`",
+			description, bind->command);
+	free(description);
 	uint32_t len = strlen(bind->command);
 	free(ipc_single_command(bar->ipc_socketfd,
 			IPC_COMMAND, bind->command, &len));
