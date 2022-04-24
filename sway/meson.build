@@ -220,6 +220,7 @@ sway_deps = [
 	wayland_server,
 	wlroots,
 	xkbcommon,
+	xcb_icccm,
 ]
 
 if have_xwayland
