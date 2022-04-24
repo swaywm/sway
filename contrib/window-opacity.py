@@ -117,5 +117,5 @@ if __name__ == "__main__":
         set_opacity(window, opts, active=False)
     for sig in [signal.SIGINT, signal.SIGTERM]:
         signal.signal(sig, lambda signal, frame: remove_opacity(ipc))
-        ipc.on("window::focus", partial(on_window_focus, opts))
-        ipc.main()
+    ipc.on("window::focus", partial(on_window_focus, opts))
+    ipc.main()
