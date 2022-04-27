@@ -5,6 +5,7 @@
 #include <time.h>
 #include <wayland-server-core.h>
 #include <wlr/backend/drm.h>
+#include <wlr/backend/headless.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
@@ -633,21 +634,19 @@ static void damage_surface_iterator(struct sway_output *output,
 	struct wlr_box box = *_box;
 	scale_box(&box, output->wlr_output->scale);
 
-	if (pixman_region32_not_empty(&surface->buffer_damage)) {
-		pixman_region32_t damage;
-		pixman_region32_init(&damage);
-		wlr_surface_get_effective_damage(surface, &damage);
-		wlr_region_scale(&damage, &damage, output->wlr_output->scale);
-		if (ceil(output->wlr_output->scale) > surface->current.scale) {
-			// When scaling up a surface, it'll become blurry so we need to
-			// expand the damage region
-			wlr_region_expand(&damage, &damage,
-				ceil(output->wlr_output->scale) - surface->current.scale);
-		}
-		pixman_region32_translate(&damage, box.x, box.y);
-		wlr_output_damage_add(output->damage, &damage);
-		pixman_region32_fini(&damage);
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	wlr_surface_get_effective_damage(surface, &damage);
+	wlr_region_scale(&damage, &damage, output->wlr_output->scale);
+	if (ceil(output->wlr_output->scale) > surface->current.scale) {
+		// When scaling up a surface, it'll become blurry so we need to
+		// expand the damage region
+		wlr_region_expand(&damage, &damage,
+			ceil(output->wlr_output->scale) - surface->current.scale);
 	}
+	pixman_region32_translate(&damage, box.x, box.y);
+	wlr_output_damage_add(output->damage, &damage);
+	pixman_region32_fini(&damage);
 
 	if (whole) {
 		wlr_output_damage_add_box(output->damage, &box);
@@ -733,7 +732,7 @@ static void update_output_manager_config(struct sway_server *server) {
 
 	struct sway_output *output;
 	wl_list_for_each(output, &root->all_outputs, link) {
-		if (output == root->noop_output) {
+		if (output == root->fallback_output) {
 			continue;
 		}
 		struct wlr_output_configuration_head_v1 *config_head =
@@ -755,17 +754,21 @@ static void update_output_manager_config(struct sway_server *server) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
 	struct sway_server *server = output->server;
-	wl_signal_emit(&output->events.destroy, output);
+	output_begin_destroy(output);
 
 	if (output->enabled) {
 		output_disable(output);
 	}
-	output_begin_destroy(output);
+
+	wl_list_remove(&output->link);
 
 	wl_list_remove(&output->destroy.link);
 	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->mode.link);
 	wl_list_remove(&output->present.link);
+
+	output->wlr_output->data = NULL;
+	output->wlr_output = NULL;
 
 	transaction_commit_dirty();
 
@@ -835,9 +838,22 @@ static void handle_present(struct wl_listener *listener, void *data) {
 	output->refresh_nsec = output_event->refresh;
 }
 
+static unsigned int last_headless_num = 0;
+
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
+
+	if (wlr_output == root->fallback_output->wlr_output) {
+		return;
+	}
+
+	if (wlr_output_is_headless(wlr_output)) {
+		char name[64];
+		snprintf(name, sizeof(name), "HEADLESS-%u", ++last_headless_num);
+		wlr_output_set_name(wlr_output, name);
+	}
+
 	sway_log(SWAY_DEBUG, "New output %p: %s (non-desktop: %d)",
 			wlr_output, wlr_output->name, wlr_output->non_desktop);
 
@@ -847,6 +863,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
 					wlr_output);
 		}
+		return;
+	}
+
+	if (!wlr_output_init_render(wlr_output, server->allocator,
+			server->renderer)) {
+		sway_log(SWAY_ERROR, "Failed to init output render");
 		return;
 	}
 

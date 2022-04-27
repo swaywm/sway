@@ -117,11 +117,11 @@ bool status_handle_readable(struct status_line *status) {
 		status->text = status->buffer;
 		// intentional fall-through
 	case PROTOCOL_TEXT:
-		errno = 0;
 		while (true) {
 			if (status->buffer[read_bytes - 1] == '\n') {
 				status->buffer[read_bytes - 1] = '\0';
 			}
+			errno = 0;
 			read_bytes = getline(&status->buffer,
 					&status->buffer_size, status->read);
 			if (errno == EAGAIN) {
@@ -157,7 +157,12 @@ struct status_line *status_line_init(char *cmd) {
 	assert(!getenv("WAYLAND_SOCKET") && "display must be initialized before "
 		" starting `status-command`; WAYLAND_SOCKET should not be set");
 	status->pid = fork();
-	if (status->pid == 0) {
+	if (status->pid < 0) {
+		sway_log_errno(SWAY_ERROR, "fork failed");
+		exit(1);
+	} else if (status->pid == 0) {
+		setpgid(0, 0);
+
 		dup2(pipe_read_fd[1], STDOUT_FILENO);
 		close(pipe_read_fd[0]);
 		close(pipe_read_fd[1]);
@@ -185,8 +190,8 @@ struct status_line *status_line_init(char *cmd) {
 
 void status_line_free(struct status_line *status) {
 	status_line_close_fds(status);
-	kill(status->pid, status->cont_signal);
-	kill(status->pid, SIGTERM);
+	kill(-status->pid, status->cont_signal);
+	kill(-status->pid, SIGTERM);
 	waitpid(status->pid, NULL, 0);
 	if (status->protocol == PROTOCOL_I3BAR) {
 		struct i3bar_block *block, *tmp;

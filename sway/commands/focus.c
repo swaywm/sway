@@ -267,6 +267,11 @@ static struct cmd_results *focus_mode(struct sway_workspace *ws,
 		new_focus = seat_get_focus_inactive_tiling(seat, ws);
 	}
 	if (new_focus) {
+		struct sway_container *new_focus_view =
+			seat_get_focus_inactive_view(seat, &new_focus->node);
+		if (new_focus_view) {
+			new_focus = new_focus_view;
+		}
 		seat_set_focus_container(seat, new_focus);
 
 		// If we're on the floating layer and the floating container area
@@ -446,7 +451,8 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "");
 	}
 	struct sway_node *next_focus = NULL;
-	if (container_is_floating(container)) {
+	if (container_is_floating(container) &&
+			container->pending.fullscreen_mode == FULLSCREEN_NONE) {
 		next_focus = node_get_in_direction_floating(container, seat, direction);
 	} else {
 		next_focus = node_get_in_direction_tiling(container, seat, direction, descend);

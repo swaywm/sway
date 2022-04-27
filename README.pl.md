@@ -25,7 +25,7 @@ adres sir@cmpwn.com w celu uzyskania wskazówek.
 Zainstaluj zależności:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

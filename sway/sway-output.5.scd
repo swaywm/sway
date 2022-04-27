@@ -157,6 +157,21 @@ must be separated by one space. For example:
 	adaptive sync can improve latency, but can cause flickering on some
 	hardware.
 
+*output* <name> render_bit_depth 8|10
+	Controls the color channel bit depth at which frames are rendered; the
+	default is currently 8 bits per channel.
+
+	Setting higher values will not have an effect if hardware and software lack
+	support for such bit depths. Successfully increasing the render bit depth
+	will not necessarily increase the bit depth of the frames sent to a display.
+	An increased render bit depth may provide smoother rendering of gradients,
+	and screenshots which can more precisely store the colors of programs
+	which display high bit depth colors.
+
+	Warnings: this can break screenshot/screencast programs which have not been
+	updated to work with different bit depths. This command is experimental,
+	and may be removed or changed in the future.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)

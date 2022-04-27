@@ -126,10 +126,10 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 	}
 
 	enum sway_fullscreen_mode fs1 = con1->pending.fullscreen_mode;
-	enum sway_fullscreen_mode fs2 = con2->pending.fullscreen_mode;
 	if (fs1) {
 		container_fullscreen_disable(con1);
 	}
+	enum sway_fullscreen_mode fs2 = con2->pending.fullscreen_mode;
 	if (fs2) {
 		container_fullscreen_disable(con2);
 	}
@@ -247,6 +247,9 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	} else if (!current) {
 		error = cmd_results_new(CMD_FAILURE,
 				"Can only swap with containers and views");
+	} else if (current == other) {
+		error = cmd_results_new(CMD_FAILURE,
+				"Cannot swap a container with itself");
 	} else if (container_has_ancestor(current, other)
 			|| container_has_ancestor(other, current)) {
 		error = cmd_results_new(CMD_FAILURE,

@@ -52,7 +52,7 @@ static int scale_length(int length, int offset, float scale) {
 
 static void scissor_output(struct wlr_output *wlr_output,
 		pixman_box32_t *rect) {
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer = wlr_output->renderer;
 	assert(renderer);
 
 	struct wlr_box box = {
@@ -100,8 +100,7 @@ static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
 		const float matrix[static 9], float alpha) {
-	struct wlr_renderer *renderer =
-		wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer = wlr_output->renderer;
 	struct sway_output *output = wlr_output->data;
 
 	pixman_region32_t damage;
@@ -218,8 +217,7 @@ void render_rect(struct sway_output *output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]) {
 	struct wlr_output *wlr_output = output->wlr_output;
-	struct wlr_renderer *renderer =
-		wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer = wlr_output->renderer;
 
 	struct wlr_box box;
 	memcpy(&box, _box, sizeof(struct wlr_box));
@@ -764,6 +762,14 @@ static void render_containers_linear(struct sway_output *output,
 	}
 }
 
+static bool container_is_focused(struct sway_container *con, void *data) {
+	return con->current.focused;
+}
+
+static bool container_has_focused_child(struct sway_container *con) {
+	return container_find_child(con, container_is_focused, NULL);
+}
+
 /**
  * Render a container's children using the L_TABBED layout.
  */
@@ -795,6 +801,10 @@ static void render_containers_tabbed(struct sway_output *output,
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = child->marks_focused;
+		} else if (config->has_focused_tab_title && container_has_focused_child(child)) {
+			colors = &config->border_colors.focused_tab_title;
+			title_texture = child->title_focused_tab_title;
+			marks_texture = child->marks_focused_tab_title;
 		} else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
@@ -860,7 +870,11 @@ static void render_containers_stacked(struct sway_output *output,
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = child->marks_focused;
-		} else if (child == parent->active_child) {
+		} else if (config->has_focused_tab_title && container_has_focused_child(child)) {
+			colors = &config->border_colors.focused_tab_title;
+			title_texture = child->title_focused_tab_title;
+			marks_texture = child->marks_focused_tab_title;
+		 } else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = child->marks_focused_inactive;
@@ -1013,13 +1027,7 @@ static void render_seatops(struct sway_output *output,
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
-
-	struct wlr_renderer *renderer =
-		wlr_backend_get_renderer(wlr_output->backend);
-	if (!sway_assert(renderer != NULL,
-			"expected the output backend to have a renderer")) {
-		return;
-	}
+	struct wlr_renderer *renderer = output->server->renderer;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {

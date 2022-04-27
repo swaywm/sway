@@ -72,8 +72,8 @@ static void popup_unconstrain(struct sway_xdg_popup *popup) {
 	// the output box expressed in the coordinate system of the toplevel parent
 	// of the popup
 	struct wlr_box output_toplevel_sx_box = {
-		.x = output->lx - view->container->pending.content_x,
-		.y = output->ly - view->container->pending.content_y,
+		.x = output->lx - view->container->pending.content_x + view->geometry.x,
+		.y = output->ly - view->container->pending.content_y + view->geometry.y,
 		.width = output->width,
 		.height = output->height,
 	};

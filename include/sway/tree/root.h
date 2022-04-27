@@ -31,7 +31,7 @@ struct sway_root {
 	list_t *scratchpad; // struct sway_container
 
 	// For when there's no connected outputs
-	struct sway_output *noop_output;
+	struct sway_output *fallback_output;
 
 	struct sway_container *fullscreen_global;
 

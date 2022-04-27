@@ -4,6 +4,7 @@
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
+#include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
@@ -32,12 +33,15 @@ struct sway_server {
 	const char *socket;
 
 	struct wlr_backend *backend;
-	struct wlr_backend *noop_backend;
 	// secondary headless backend used for creating virtual outputs on-the-fly
 	struct wlr_backend *headless_backend;
+	struct wlr_renderer *renderer;
+	struct wlr_allocator *allocator;
 
 	struct wlr_compositor *compositor;
 	struct wl_listener compositor_new_surface;
+
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
 	struct wlr_data_device_manager *data_device_manager;
 
@@ -136,6 +140,8 @@ bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
+
+void restore_nofile_limit(void);
 
 void handle_compositor_new_surface(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);

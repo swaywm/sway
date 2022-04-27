@@ -83,7 +83,28 @@ static struct wlr_surface *layer_surface_popup_at(struct sway_output *output,
 struct sway_node *node_at_coords(
 		struct sway_seat *seat, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	// check for unmanaged views first
+	// find the output the cursor is on
+	struct wlr_output *wlr_output = wlr_output_layout_output_at(
+			root->output_layout, lx, ly);
+	if (wlr_output == NULL) {
+		return NULL;
+	}
+	struct sway_output *output = wlr_output->data;
+	if (!output || !output->enabled) {
+		// output is being destroyed or is being enabled
+		return NULL;
+	}
+	double ox = lx, oy = ly;
+	wlr_output_layout_output_coords(root->output_layout, wlr_output, &ox, &oy);
+
+	// layer surfaces on the overlay layer are rendered on top
+	if ((*surface = layer_surface_at(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+				ox, oy, sx, sy))) {
+		return NULL;
+	}
+
+	// check for unmanaged views
 #if HAVE_XWAYLAND
 	struct wl_list *unmanaged = &root->xwayland_unmanaged;
 	struct sway_xwayland_unmanaged *unmanaged_surface;
@@ -101,19 +122,6 @@ struct sway_node *node_at_coords(
 		}
 	}
 #endif
-	// find the output the cursor is on
-	struct wlr_output *wlr_output = wlr_output_layout_output_at(
-			root->output_layout, lx, ly);
-	if (wlr_output == NULL) {
-		return NULL;
-	}
-	struct sway_output *output = wlr_output->data;
-	if (!output || !output->enabled) {
-		// output is being destroyed or is being enabled
-		return NULL;
-	}
-	double ox = lx, oy = ly;
-	wlr_output_layout_output_coords(root->output_layout, wlr_output, &ox, &oy);
 
 	if (root->fullscreen_global) {
 		// Try fullscreen container
@@ -131,11 +139,6 @@ struct sway_node *node_at_coords(
 		return NULL;
 	}
 
-	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
 	if (ws->fullscreen) {
 		// Try transient containers
 		for (int i = 0; i < ws->floating->length; ++i) {
@@ -924,6 +927,7 @@ static void handle_pointer_pinch_begin(struct wl_listener *listener, void *data)
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, pinch_begin);
 	struct wlr_event_pointer_pinch_begin *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_pinch_begin(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
@@ -933,6 +937,7 @@ static void handle_pointer_pinch_update(struct wl_listener *listener, void *data
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, pinch_update);
 	struct wlr_event_pointer_pinch_update *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_pinch_update(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->dx, event->dy,
@@ -943,6 +948,7 @@ static void handle_pointer_pinch_end(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, pinch_end);
 	struct wlr_event_pointer_pinch_end *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_pinch_end(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->cancelled);
@@ -952,6 +958,7 @@ static void handle_pointer_swipe_begin(struct wl_listener *listener, void *data)
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, swipe_begin);
 	struct wlr_event_pointer_swipe_begin *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_swipe_begin(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
@@ -961,6 +968,7 @@ static void handle_pointer_swipe_update(struct wl_listener *listener, void *data
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, swipe_update);
 	struct wlr_event_pointer_swipe_update *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_swipe_update(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->dx, event->dy);
@@ -970,6 +978,7 @@ static void handle_pointer_swipe_end(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(
 			listener, cursor, swipe_end);
 	struct wlr_event_pointer_swipe_end *event = data;
+	cursor_handle_activity_from_device(cursor, event->device);
 	wlr_pointer_gestures_v1_send_swipe_end(
 			cursor->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->cancelled);

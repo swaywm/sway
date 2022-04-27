@@ -7,17 +7,18 @@
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
-#include <wlr/backend/noop.h>
 #include <wlr/backend/session.h>
 #include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
+#include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
@@ -73,12 +74,29 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
-	assert(renderer);
+	server->renderer = wlr_renderer_autocreate(server->backend);
+	if (!server->renderer) {
+		sway_log(SWAY_ERROR, "Failed to create renderer");
+		return false;
+	}
 
-	wlr_renderer_init_wl_display(renderer, server->wl_display);
+	wlr_renderer_init_wl_shm(server->renderer, server->wl_display);
 
-	server->compositor = wlr_compositor_create(server->wl_display, renderer);
+	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer) != NULL) {
+		wlr_drm_create(server->wl_display, server->renderer);
+		server->linux_dmabuf_v1 =
+			wlr_linux_dmabuf_v1_create(server->wl_display, server->renderer);
+	}
+
+	server->allocator = wlr_allocator_autocreate(server->backend,
+		server->renderer);
+	if (!server->allocator) {
+		sway_log(SWAY_ERROR, "Failed to create allocator");
+		return false;
+	}
+
+	server->compositor = wlr_compositor_create(server->wl_display,
+		server->renderer);
 	server->compositor_new_surface.notify = handle_compositor_new_surface;
 	wl_signal_add(&server->compositor->events.new_surface,
 		&server->compositor_new_surface);
@@ -206,19 +224,19 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
-	server->noop_backend = wlr_noop_backend_create(server->wl_display);
-
-	struct wlr_output *wlr_output = wlr_noop_add_output(server->noop_backend);
-	root->noop_output = output_create(wlr_output);
-
-	server->headless_backend =
-		wlr_headless_backend_create_with_renderer(server->wl_display, renderer);
+	server->headless_backend = wlr_headless_backend_create(server->wl_display);
 	if (!server->headless_backend) {
-		sway_log(SWAY_INFO, "Failed to create secondary headless backend, "
-			"starting without it");
+		sway_log(SWAY_ERROR, "Failed to create secondary headless backend");
+		wlr_backend_destroy(server->backend);
+		return false;
 	} else {
 		wlr_multi_backend_add(server->backend, server->headless_backend);
 	}
+
+	struct wlr_output *wlr_output =
+			wlr_headless_add_output(server->headless_backend, 800, 600);
+	wlr_output_set_name(wlr_output, "FALLBACK");
+	root->fallback_output = output_create(wlr_output);
 
 	// This may have been set already via -Dtxn-timeout
 	if (!server->txn_timeout_ms) {
@@ -276,6 +294,7 @@ bool server_start(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
+
 	return true;
 }
 

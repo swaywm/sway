@@ -266,7 +266,7 @@ static void config_defaults(struct sway_config *config) {
 	config->tiling_drag = true;
 	config->tiling_drag_threshold = 9;
 
-	config->smart_gaps = false;
+	config->smart_gaps = SMART_GAPS_OFF;
 	config->gaps_inner = 0;
 	config->gaps_outer.top = 0;
 	config->gaps_outer.right = 0;
@@ -289,6 +289,8 @@ static void config_defaults(struct sway_config *config) {
 	config->hide_edge_borders = E_NONE;
 	config->hide_edge_borders_smart = ESMART_OFF;
 	config->hide_lone_tab = false;
+
+	config->has_focused_tab_title = false;
 
 	// border colors
 	color_to_rgba(config->border_colors.focused.border, 0x4C7899FF);

@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <drm_fourcc.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -67,6 +68,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
+	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
 	return oc;
 }
 
@@ -112,6 +114,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->adaptive_sync != -1) {
 		dst->adaptive_sync = src->adaptive_sync;
+	}
+	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
+		dst->render_bit_depth = src->render_bit_depth;
 	}
 	if (src->background) {
 		free(dst->background);
@@ -351,9 +356,26 @@ static int compute_default_scale(struct wlr_output *output) {
 	return 2;
 }
 
+/* Lists of formats to try, in order, when a specific render bit depth has
+ * been asked for. The second to last format in each list should always
+ * be XRGB8888, as a reliable backup in case the others are not available;
+ * the last should be DRM_FORMAT_INVALID, to indicate the end of the list. */
+static const uint32_t *bit_depth_preferences[] = {
+	[RENDER_BIT_DEPTH_8] = (const uint32_t []){
+		DRM_FORMAT_XRGB8888,
+		DRM_FORMAT_INVALID,
+	},
+	[RENDER_BIT_DEPTH_10] = (const uint32_t []){
+		DRM_FORMAT_XRGB2101010,
+		DRM_FORMAT_XBGR2101010,
+		DRM_FORMAT_XRGB8888,
+		DRM_FORMAT_INVALID,
+	},
+};
+
 static void queue_output_config(struct output_config *oc,
 		struct sway_output *output) {
-	if (output == root->noop_output) {
+	if (output == root->fallback_output) {
 		return;
 	}
 
@@ -437,10 +459,26 @@ static void queue_output_config(struct output_config *oc,
 			oc->adaptive_sync);
 		wlr_output_enable_adaptive_sync(wlr_output, oc->adaptive_sync == 1);
 	}
+
+	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
+		const uint32_t *fmts = bit_depth_preferences[oc->render_bit_depth];
+		assert(fmts);
+
+		for (size_t i = 0; fmts[i] != DRM_FORMAT_INVALID; i++) {
+			wlr_output_set_render_format(wlr_output, fmts[i]);
+			if (wlr_output_test(wlr_output)) {
+				break;
+			}
+
+			sway_log(SWAY_DEBUG, "Preferred output format 0x%08x "
+				"failed to work, falling back to next in "
+				"list, 0x%08x", fmts[i], fmts[i + 1]);
+		}
+	}
 }
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->noop_output) {
+	if (output == root->fallback_output) {
 		return false;
 	}
 
@@ -535,7 +573,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 }
 
 bool test_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->noop_output) {
+	if (output == root->fallback_output) {
 		return false;
 	}
 
@@ -750,6 +788,8 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "fork failed");
 		return false;
 	} else if (pid == 0) {
+		restore_nofile_limit();
+
 		pid = fork();
 		if (pid < 0) {
 			sway_log_errno(SWAY_ERROR, "fork failed");

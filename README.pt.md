@@ -27,7 +27,7 @@ Verifique [essa página da wiki](https://github.com/swaywm/sway/wiki/Development
 Instale as dependências:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

@@ -1,4 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
+
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -480,12 +482,20 @@ int main(int argc, char **argv) {
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 
 	// pretty print the json
-	json_object *obj = json_tokener_parse(resp);
-	if (obj == NULL) {
+	json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
+	if (tok == NULL) {
+		if (quiet) {
+			exit(EXIT_FAILURE);
+		}
+		sway_abort("failed allocating json_tokener");
+	}
+	json_object *obj = json_tokener_parse_ex(tok, resp, -1);
+	enum json_tokener_error err = json_tokener_get_error(tok);
+	json_tokener_free(tok);
+	if (obj == NULL || err != json_tokener_success) {
 		if (!quiet) {
-			fprintf(stderr, "ERROR: Could not parse json response from ipc. "
-					"This is a bug in sway.");
-			printf("%s\n", resp);
+			sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+				json_tokener_error_desc(err));
 		}
 		ret = 1;
 	} else {
@@ -517,13 +527,22 @@ int main(int argc, char **argv) {
 				break;
 			}
 
-			json_object *obj = json_tokener_parse(reply->payload);
-			if (obj == NULL) {
-				if (!quiet) {
-					fprintf(stderr, "ERROR: Could not parse json response from"
-							" ipc. This is a bug in sway.");
-					ret = 1;
+			json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
+			if (tok == NULL) {
+				if (quiet) {
+					exit(EXIT_FAILURE);
 				}
+				sway_abort("failed allocating json_tokener");
+			}
+			json_object *obj = json_tokener_parse_ex(tok, reply->payload, -1);
+			enum json_tokener_error err = json_tokener_get_error(tok);
+			json_tokener_free(tok);
+			if (obj == NULL || err != json_tokener_success) {
+				if (!quiet) {
+					sway_log(SWAY_ERROR, "failed to parse payload as json: %s",
+						json_tokener_error_desc(err));
+				}
+				ret = 1;
 				break;
 			} else if (quiet) {
 				json_object_put(obj);

@@ -247,6 +247,12 @@ enum scale_filter_mode {
 	SCALE_FILTER_SMART,
 };
 
+enum render_bit_depth {
+	RENDER_BIT_DEPTH_DEFAULT, // the default is currently 8
+	RENDER_BIT_DEPTH_8,
+	RENDER_BIT_DEPTH_10,
+};
+
 /**
  * Size and position configuration for a particular output.
  *
@@ -266,6 +272,7 @@ struct output_config {
 	enum wl_output_subpixel subpixel;
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
+	enum render_bit_depth render_bit_depth;
 
 	char *background;
 	char *background_option;
@@ -281,6 +288,12 @@ struct side_gaps {
 	int right;
 	int bottom;
 	int left;
+};
+
+enum smart_gaps_mode {
+	SMART_GAPS_OFF,
+	SMART_GAPS_ON,
+	SMART_GAPS_INVERSE_OUTER,
 };
 
 /**
@@ -512,7 +525,7 @@ struct sway_config {
 	bool tiling_drag;
 	int tiling_drag_threshold;
 
-	bool smart_gaps;
+	enum smart_gaps_mode smart_gaps;
 	int gaps_inner;
 	struct side_gaps gaps_outer;
 
@@ -535,11 +548,14 @@ struct sway_config {
 	struct {
 		struct border_colors focused;
 		struct border_colors focused_inactive;
+		struct border_colors focused_tab_title;
 		struct border_colors unfocused;
 		struct border_colors urgent;
 		struct border_colors placeholder;
 		float background[4];
 	} border_colors;
+
+	bool has_focused_tab_title;
 
 	// floating view
 	int32_t floating_maximum_width;

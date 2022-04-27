@@ -24,7 +24,7 @@ IRC 채널을 방문하거나 sir@cmpwn.com으로 이메일을 보내 상담 받
 다음 의존 패키지들을 설치해 주세요:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

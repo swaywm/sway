@@ -27,7 +27,7 @@ Swayは沢山のディストリビューションで提供されています。"
 次の依存パッケージをインストールしてください:
 
 * meson \*
-* [wlroots](https://github.com/swaywm/wlroots)
+* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
 * wayland
 * wayland-protocols \*
 * pcre

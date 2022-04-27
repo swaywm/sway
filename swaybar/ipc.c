@@ -550,7 +550,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	// The default depth of 32 is too small to represent some nested layouts, but
 	// we can't pass INT_MAX here because json-c (as of this writing) prefaults
 	// all the memory for its stack.
-	json_tokener *tok = json_tokener_new_ex(256);
+	json_tokener *tok = json_tokener_new_ex(JSON_MAX_DEPTH);
 	if (!tok) {
 		sway_log_errno(SWAY_ERROR, "failed to create tokener");
 		free_ipc_response(resp);

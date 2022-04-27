@@ -1,9 +1,9 @@
 project(
 	'sway',
 	'c',
-	version: '1.6',
+	version: '1.7',
 	license: 'MIT',
-	meson_version: '>=0.59.0',
+	meson_version: '>=0.60.0',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -37,11 +37,11 @@ endif
 
 jsonc = dependency('json-c', version: '>=0.13')
 pcre = dependency('libpcre')
-wayland_server = dependency('wayland-server')
+wayland_server = dependency('wayland-server', version: '>=1.20.0')
 wayland_client = dependency('wayland-client')
 wayland_cursor = dependency('wayland-cursor')
 wayland_egl = dependency('wayland-egl')
-wayland_protos = dependency('wayland-protocols', version: '>=1.14')
+wayland_protos = dependency('wayland-protocols', version: '>=1.24')
 xkbcommon = dependency('xkbcommon')
 cairo = dependency('cairo')
 pango = dependency('pango')
@@ -92,18 +92,10 @@ if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
 		assert(get_option('auto_features').auto(), 'sd-bus-provider must not be set to auto since auto_features != auto')
 	endif
-	sdbus = dependency('libsystemd',
+	sdbus = dependency(['libsystemd', 'libelogind'],
 		required: false,
 		version: '>=239',
-		not_found_message: 'libsystemd not found, trying libelogind',
 	)
-	if not sdbus.found()
-		sdbus = dependency('libelogind',
-			required: false,
-			version: '>=239',
-			not_found_message: 'libelogind not found, trying basu',
-		)
-	endif
 	if not sdbus.found()
 		sdbus = dependency('basu', required: false)
 	endif
@@ -171,8 +163,8 @@ add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir
 version = '"@0@"'.format(meson.project_version())
 git = find_program('git', native: true, required: false)
 if git.found()
-	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'])
-	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'])
+	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'], check: false)
+	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'], check: false)
 	if git_commit.returncode() == 0 and git_branch.returncode() == 0
 		version = '"@0@-@1@ (" __DATE__ ", branch \'@2@\')"'.format(
 			meson.project_version(),

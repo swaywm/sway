@@ -18,6 +18,12 @@ static struct cmd_results *handle_command(int argc, char **argv, char *cmd_name,
 		return error;
 	}
 
+	if (argc > 3 && strcmp(cmd_name, "client.focused_tab_title") == 0) {
+		sway_log(SWAY_ERROR,
+				"Warning: indicator and child_border colors have no effect for %s",
+				cmd_name);
+	}
+
 	struct border_colors colors = {0};
 	const char *ind_hex = argc > 3 ? argv[3] : default_indicator;
 	const char *child_hex = argc > 4 ? argv[4] : argv[1];  // def to background
@@ -79,4 +85,14 @@ struct cmd_results *cmd_client_urgent(int argc, char **argv) {
 struct cmd_results *cmd_client_noop(int argc, char **argv) {
 	sway_log(SWAY_INFO, "Warning: %s is ignored by sway", argv[-1]);
 	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
+struct cmd_results *cmd_client_focused_tab_title(int argc, char **argv) {
+	struct cmd_results *result =  handle_command(argc, argv,
+			"client.focused_tab_title",
+			&config->border_colors.focused_tab_title, "#2e9ef4ff");
+	if (result && result->status == CMD_SUCCESS) {
+		config->has_focused_tab_title = true;
+	}
+	return result;
 }

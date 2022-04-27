@@ -752,10 +752,29 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_node *node = ws ? seat_get_focus_inactive(seat, &ws->node)
-		: seat_get_focus_inactive(seat, &root->node);
-	struct sway_container *target_sibling = node->type == N_CONTAINER ?
-		node->sway_container : NULL;
+	struct sway_node *node =
+		seat_get_focus_inactive(seat, ws ? &ws->node : &root->node);
+	struct sway_container *target_sibling = NULL;
+	if (node && node->type == N_CONTAINER) {
+		if (container_is_floating(node->sway_container)) {
+			// If we're about to launch the view into the floating container, then
+			// launch it as a tiled view instead.
+			if (ws) {
+				target_sibling = seat_get_focus_inactive_tiling(seat, ws);
+				if (target_sibling) {
+					struct sway_container *con =
+						seat_get_focus_inactive_view(seat, &target_sibling->node);
+					if (con)  {
+						target_sibling = con;
+					}
+				}
+			} else {
+				ws = seat_get_last_known_workspace(seat);
+			}
+		} else {
+			target_sibling = node->sway_container;
+		}
+	}
 
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
@@ -775,13 +794,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	wl_signal_add(&view->foreign_toplevel->events.request_minimize,
 			&view->foreign_minimize);
 
-
-	// If we're about to launch the view into the floating container, then
-	// launch it as a tiled view in the root of the workspace instead.
-	if (target_sibling && container_is_floating(target_sibling)) {
-		target_sibling = NULL;
-		ws = seat_get_last_known_workspace(seat);
-	}
 
 	struct sway_container *container = view->container;
 	if (target_sibling) {
@@ -1129,9 +1141,12 @@ void view_child_init(struct sway_view_child *child,
 	wl_signal_add(&view->events.unmap, &child->view_unmap);
 	child->view_unmap.notify = view_child_handle_view_unmap;
 
-	struct sway_workspace *workspace = child->view->container->pending.workspace;
-	if (workspace) {
-		wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+	struct sway_container *container = child->view->container;
+	if (container != NULL) {
+		struct sway_workspace *workspace = container->pending.workspace;
+		if (workspace) {
+			wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+		}
 	}
 
 	view_child_init_subsurfaces(child, surface);

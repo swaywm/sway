@@ -374,8 +374,8 @@ void root_for_each_container(void (*f)(struct sway_container *con, void *data),
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->noop_output->workspaces->length; ++i) {
-		struct sway_workspace *ws = root->noop_output->workspaces->items[i];
+	for (int i = 0; i < root->fallback_output->workspaces->length; ++i) {
+		struct sway_workspace *ws = root->fallback_output->workspaces->items[i];
 		workspace_for_each_container(ws, f, data);
 	}
 }
@@ -427,8 +427,8 @@ struct sway_container *root_find_container(
 	}
 
 	// Saved workspaces
-	for (int i = 0; i < root->noop_output->workspaces->length; ++i) {
-		struct sway_workspace *ws = root->noop_output->workspaces->items[i];
+	for (int i = 0; i < root->fallback_output->workspaces->length; ++i) {
+		struct sway_workspace *ws = root->fallback_output->workspaces->items[i];
 		if ((result = workspace_find_container(ws, test, data))) {
 			return result;
 		}

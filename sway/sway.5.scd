@@ -499,6 +499,12 @@ runtime.
 	*client.focused_inactive*
 		The most recently focused view within a container which is not focused.
 
+	*client.focused_tab_title*
+		A view that has focused descendant container.
+		Tab or stack container title that is the parent of the focused container
+		but is not directly focused. Defaults to focused_inactive if not
+		specified and does not use the indicator and child_border colors.
+
 	*client.placeholder*
 		Ignored (present for i3 compatibility).
 
@@ -554,6 +560,12 @@ The default colors are:
 :  #ffffff
 :  #484e50
 :  #5f676a
+|  *focused_tab_title*
+:  #333333
+:  #5f676a
+:  #ffffff
+:  n/a
+:  n/a
 |  *unfocused*
 :  #333333
 :  #222222
@@ -692,9 +704,10 @@ The default colors are:
 	borders will only be enabled if the workspace has more than one visible
 	child and gaps equal to zero.
 
-*smart_gaps* on|off
+*smart_gaps* on|off|toggle|inverse_outer
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
-	than one child.
+	than one child. If smart_gaps are _inverse_outer_ outer gaps will only
+	be enabled if a workspace has exactly one child.
 
 *mark* --add|--replace [--toggle] <identifier>
 	Marks are arbitrary labels that can be used to identify certain windows and
