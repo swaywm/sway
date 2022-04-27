@@ -24,6 +24,7 @@
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -100,6 +101,8 @@ bool server_init(struct sway_server *server) {
 	server->compositor_new_surface.notify = handle_compositor_new_surface;
 	wl_signal_add(&server->compositor->events.new_surface,
 		&server->compositor_new_surface);
+
+	wlr_subcompositor_create(server->wl_display);
 
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
@@ -210,8 +213,8 @@ bool server_init(struct sway_server *server) {
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
-	for (int i = 1; i <= 32; ++i) {
-		sprintf(name_candidate, "wayland-%d", i);
+	for (unsigned int i = 1; i <= 32; ++i) {
+		snprintf(name_candidate, sizeof(name_candidate), "wayland-%u", i);
 		if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
 			server->socket = strdup(name_candidate);
 			break;

@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <strings.h>
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 #include "sway/criteria.h"
 #include "sway/tree/container.h"
 #include "sway/config.h"
@@ -40,17 +41,19 @@ bool criteria_is_empty(struct criteria *criteria) {
 char *error = NULL;
 
 // Returns error string on failure or NULL otherwise.
-static bool generate_regex(pcre **regex, char *value) {
-	const char *reg_err;
-	int offset;
+static bool generate_regex(pcre2_code **regex, char *value) {
+	int errorcode;
+	PCRE2_SIZE offset;
 
-	*regex = pcre_compile(value, PCRE_UTF8 | PCRE_UCP, &reg_err, &offset, NULL);
-
+	*regex = pcre2_compile((PCRE2_SPTR)value, PCRE2_ZERO_TERMINATED, PCRE2_UTF | PCRE2_UCP, &errorcode, &offset, NULL);
 	if (!*regex) {
+		PCRE2_UCHAR buffer[256];
+		pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
+
 		const char *fmt = "Regex compilation for '%s' failed: %s";
-		int len = strlen(fmt) + strlen(value) + strlen(reg_err) - 3;
+		int len = strlen(fmt) + strlen(value) + strlen((char*) buffer) - 3;
 		error = malloc(len);
-		snprintf(error, len, fmt, value, reg_err);
+		snprintf(error, len, fmt, value, buffer);
 		return false;
 	}
 
@@ -66,7 +69,7 @@ static bool pattern_create(struct pattern **pattern, char *value) {
 	if (strcmp(value, "__focused__") == 0) {
 		(*pattern)->match_type = PATTERN_FOCUSED;
 	} else {
-		(*pattern)->match_type = PATTERN_PCRE;
+		(*pattern)->match_type = PATTERN_PCRE2;
 		if (!generate_regex(&(*pattern)->regex, value)) {
 			return false;
 		};
@@ -77,7 +80,7 @@ static bool pattern_create(struct pattern **pattern, char *value) {
 static void pattern_destroy(struct pattern *pattern) {
 	if (pattern) {
 		if (pattern->regex) {
-			pcre_free(pattern->regex);
+			pcre2_code_free(pattern->regex);
 		}
 		free(pattern);
 	}
@@ -99,8 +102,11 @@ void criteria_destroy(struct criteria *criteria) {
 	free(criteria);
 }
 
-static int regex_cmp(const char *item, const pcre *regex) {
-	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+static int regex_cmp(const char *item, const pcre2_code *regex) {
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+	int result = pcre2_match(regex, (PCRE2_SPTR)item, strlen(item), 0, 0, match_data, NULL);
+	pcre2_match_data_free(match_data);
+	return result;
 }
 
 #if HAVE_XWAYLAND
@@ -155,7 +161,7 @@ static bool criteria_matches_container(struct criteria *criteria,
 		bool exists = false;
 		struct sway_container *con = container;
 		for (int i = 0; i < con->marks->length; ++i) {
-			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) == 0) {
+			if (regex_cmp(con->marks->items[i], criteria->con_mark->regex) >= 0) {
 				exists = true;
 				break;
 			}
@@ -192,8 +198,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(title, criteria->title->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(title, criteria->title->regex) < 0) {
 				return false;
 			}
 			break;
@@ -212,8 +218,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(shell, criteria->shell->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(shell, criteria->shell->regex) < 0) {
 				return false;
 			}
 			break;
@@ -232,8 +238,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(app_id, criteria->app_id->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(app_id, criteria->app_id->regex) < 0) {
 				return false;
 			}
 			break;
@@ -264,8 +270,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(class, criteria->class->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(class, criteria->class->regex) < 0) {
 				return false;
 			}
 			break;
@@ -284,8 +290,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(instance, criteria->instance->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(instance, criteria->instance->regex) < 0) {
 				return false;
 			}
 			break;
@@ -304,8 +310,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(window_role, criteria->window_role->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(window_role, criteria->window_role->regex) < 0) {
 				return false;
 			}
 			break;
@@ -363,8 +369,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		case PATTERN_PCRE:
-			if (regex_cmp(ws->name, criteria->workspace->regex) != 0) {
+		case PATTERN_PCRE2:
+			if (regex_cmp(ws->name, criteria->workspace->regex) < 0) {
 				return false;
 			}
 			break;

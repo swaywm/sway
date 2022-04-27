@@ -6,6 +6,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/xwayland.h>
+#include <xcb/xcb_icccm.h>
 #include "log.h"
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
@@ -121,6 +122,20 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void unmanaged_handle_request_activate(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = data;
+	if (!xsurface->mapped) {
+		return;
+	}
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	if (focus && focus->view && focus->view->pid != xsurface->pid) {
+		return;
+	}
+
+	seat_set_focus_surface(seat, xsurface->surface, false);
+}
+
 static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, destroy);
@@ -129,6 +144,7 @@ static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->unmap.link);
 	wl_list_remove(&surface->destroy.link);
 	wl_list_remove(&surface->override_redirect.link);
+	wl_list_remove(&surface->request_activate.link);
 	free(surface);
 }
 
@@ -176,6 +192,8 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	surface->destroy.notify = unmanaged_handle_destroy;
 	wl_signal_add(&xsurface->events.set_override_redirect, &surface->override_redirect);
 	surface->override_redirect.notify = unmanaged_handle_override_redirect;
+	wl_signal_add(&xsurface->events.request_activate, &surface->request_activate);
+	surface->request_activate.notify = unmanaged_handle_request_activate;
 
 	return surface;
 }
@@ -294,7 +312,7 @@ static bool wants_floating(struct sway_view *view) {
 		}
 	}
 
-	struct wlr_xwayland_surface_size_hints *size_hints = surface->size_hints;
+	xcb_size_hints_t *size_hints = surface->size_hints;
 	if (size_hints != NULL &&
 			size_hints->min_width > 0 && size_hints->min_height > 0 &&
 			(size_hints->max_width == size_hints->min_width ||
@@ -348,7 +366,7 @@ static void destroy(struct sway_view *view) {
 static void get_constraints(struct sway_view *view, double *min_width,
 		double *max_width, double *min_height, double *max_height) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
-	struct wlr_xwayland_surface_size_hints *size_hints = surface->size_hints;
+	xcb_size_hints_t *size_hints = surface->size_hints;
 
 	if (size_hints == NULL) {
 		*min_width = DBL_MIN;
@@ -577,7 +595,8 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	if (!container_is_floating(view->container)) {
+	if (!container_is_floating(view->container) ||
+			view->container->pending.fullscreen_mode) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat();
@@ -666,14 +685,15 @@ static void handle_set_hints(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	if (!xsurface->hints_urgency && view->urgent_timer) {
+	const bool hints_urgency = xcb_icccm_wm_hints_get_urgency(xsurface->hints);
+	if (!hints_urgency && view->urgent_timer) {
 		// The view is in the timeout period. We'll ignore the request to
 		// unset urgency so that the view remains urgent until the timer clears
 		// it.
 		return;
 	}
 	if (view->allow_request_urgent) {
-		view_set_urgent(view, (bool)xsurface->hints_urgency);
+		view_set_urgent(view, hints_urgency);
 	}
 }
 

@@ -401,7 +401,7 @@ static struct wlr_input_method_keyboard_grab_v2 *keyboard_get_im_grab(
 }
 
 static void handle_key_event(struct sway_keyboard *keyboard,
-		struct wlr_event_keyboard_key *event) {
+		struct wlr_keyboard_key_event *event) {
 	struct sway_seat *seat = keyboard->seat_device->sway_seat;
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
@@ -517,7 +517,7 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 			&keyboard->state_pressed_sent, event->keycode,
 			event->state, keyinfo.keycode, 0);
 		if (pressed_sent) {
-			wlr_seat_set_keyboard(wlr_seat, wlr_device);
+			wlr_seat_set_keyboard(wlr_seat, wlr_device->keyboard);
 			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 				event->keycode, event->state);
 			handled = true;
@@ -542,7 +542,7 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		update_shortcut_state(
 			&keyboard->state_pressed_sent, event->keycode, event->state,
 			keyinfo.keycode, 0);
-		wlr_seat_set_keyboard(wlr_seat, wlr_device);
+		wlr_seat_set_keyboard(wlr_seat, wlr_device->keyboard);
 		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 				event->keycode, event->state);
 	}
@@ -670,7 +670,7 @@ static void handle_modifier_event(struct sway_keyboard *keyboard) {
 					&wlr_device->keyboard->modifiers);
 		} else {
 			struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
-			wlr_seat_set_keyboard(wlr_seat, wlr_device);
+			wlr_seat_set_keyboard(wlr_seat, wlr_device->keyboard);
 			wlr_seat_keyboard_notify_modifiers(wlr_seat,
 					&wlr_device->keyboard->modifiers);
 		}
@@ -950,7 +950,7 @@ static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 		goto cleanup;
 	}
 	sway_group->seat_device->input_device->wlr_device =
-		sway_group->wlr_group->input_device;
+		&sway_group->wlr_group->keyboard.base;
 
 	if (!sway_keyboard_create(seat, sway_group->seat_device)) {
 		sway_log(SWAY_ERROR, "Failed to allocate sway_keyboard for group");
@@ -1086,7 +1086,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	}
 
 	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
-	wlr_seat_set_keyboard(seat, wlr_device);
+	wlr_seat_set_keyboard(seat, wlr_device->keyboard);
 
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_signal_add(&wlr_device->keyboard->events.key, &keyboard->keyboard_key);

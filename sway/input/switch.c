@@ -19,6 +19,19 @@ struct sway_switch *sway_switch_create(struct sway_seat *seat,
 	return switch_device;
 }
 
+static bool sway_switch_trigger_test(enum sway_switch_trigger trigger,
+		enum wlr_switch_state state) {
+	switch (trigger) {
+	case SWAY_SWITCH_TRIGGER_ON:
+		return state == WLR_SWITCH_STATE_ON;
+	case SWAY_SWITCH_TRIGGER_OFF:
+		return state == WLR_SWITCH_STATE_OFF;
+	case SWAY_SWITCH_TRIGGER_TOGGLE:
+		return true;
+	}
+	abort(); // unreachable
+}
+
 static void execute_binding(struct sway_switch *sway_switch) {
 	struct sway_seat* seat = sway_switch->seat_device->sway_seat;
 	bool input_inhibited = seat->exclusive_client != NULL;
@@ -30,11 +43,10 @@ static void execute_binding(struct sway_switch *sway_switch) {
 		if (binding->type != sway_switch->type) {
 			continue;
 		}
-		if (binding->state != WLR_SWITCH_STATE_TOGGLE &&
-				binding->state != sway_switch->state) {
+		if (!sway_switch_trigger_test(binding->trigger, sway_switch->state)) {
 			continue;
 		}
-		if (config->reloading && (binding->state == WLR_SWITCH_STATE_TOGGLE
+		if (config->reloading && (binding->trigger == SWAY_SWITCH_TRIGGER_TOGGLE
 				|| (binding->flags & BINDING_RELOAD) == 0)) {
 			continue;
 		}
@@ -65,7 +77,7 @@ static void execute_binding(struct sway_switch *sway_switch) {
 static void handle_switch_toggle(struct wl_listener *listener, void *data) {
 	struct sway_switch *sway_switch =
 			wl_container_of(listener, sway_switch, switch_toggle);
-	struct wlr_event_switch_toggle *event = data;
+	struct wlr_switch_toggle_event *event = data;
 	struct sway_seat *seat = sway_switch->seat_device->sway_seat;
 	seat_idle_notify_activity(seat, IDLE_SOURCE_SWITCH);
 

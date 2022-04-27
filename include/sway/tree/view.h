@@ -1,7 +1,7 @@
 #ifndef _SWAY_VIEW_H
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
-#include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_compositor.h>
 #include "config.h"
 #if HAVE_XWAYLAND
 #include <wlr/xwayland.h>
@@ -109,7 +109,7 @@ struct sway_view {
 	list_t *executed_criteria; // struct criteria *
 
 	union {
-		struct wlr_xdg_surface *wlr_xdg_surface;
+		struct wlr_xdg_toplevel *wlr_xdg_toplevel;
 #if HAVE_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 #endif
@@ -170,6 +170,7 @@ struct sway_xwayland_unmanaged {
 
 	int lx, ly;
 
+	struct wl_listener request_activate;
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
 	struct wl_listener commit;
@@ -217,7 +218,7 @@ struct sway_subsurface {
 struct sway_xdg_popup {
 	struct sway_view_child child;
 
-	struct wlr_xdg_surface *wlr_xdg_surface;
+	struct wlr_xdg_popup *wlr_xdg_popup;
 
 	struct wl_listener new_popup;
 	struct wl_listener destroy;

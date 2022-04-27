@@ -9,6 +9,7 @@ packages:
   - libxkbcommon
   - meson
   - pango
+  - pcre2
   - scdoc
   - wayland
   - wayland-protocols

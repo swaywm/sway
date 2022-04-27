@@ -4,6 +4,7 @@ packages:
 - devel/json-c
 - devel/libevdev
 - devel/meson
+- devel/pcre2
 - devel/pkgconf
 - graphics/cairo
 - graphics/gdk-pixbuf2
