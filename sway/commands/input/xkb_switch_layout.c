@@ -81,6 +81,9 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Unable to allocate actions");
 	}
 
+	/* Calculate new indexes first because switching a layout in one
+	   keyboard may result in a change on other keyboards as well because
+	   of keyboard groups. */
 	struct sway_input_device *dev;
 	wl_list_for_each(dev, &server.input->devices, link) {
 		if (strcmp(ic->identifier, "*") != 0 &&
