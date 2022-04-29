@@ -1184,7 +1184,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 
 	// Deny setting focus when an input grab or lockscreen is active
-	if (container && !seat_is_input_allowed(seat, container->view->surface)) {
+	if (container && container->view && !seat_is_input_allowed(seat, container->view->surface)) {
 		return;
 	}
 
