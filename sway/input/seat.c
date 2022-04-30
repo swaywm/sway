@@ -1134,15 +1134,7 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 }
 
-void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
-	if (seat->focused_layer) {
-		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
-		seat_set_focus_layer(seat, NULL);
-		seat_set_focus(seat, node);
-		seat_set_focus_layer(seat, layer);
-		return;
-	}
-
+static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *node) {
 	struct sway_node *last_focus = seat_get_focus(seat);
 	if (last_focus == node) {
 		return;
@@ -1173,11 +1165,6 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 
 	// Deny setting focus to a workspace node when using fullscreen global
 	if (root->fullscreen_global && !container && new_workspace) {
-		return;
-	}
-
-	// Deny setting focus when an input grab or lockscreen is active
-	if (container && container->view && !seat_is_input_allowed(seat, container->view->surface)) {
 		return;
 	}
 
@@ -1277,6 +1264,20 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		// When smart gaps is on, gaps may change when the focus changes so
 		// the workspace needs to be arranged
 		arrange_workspace(new_workspace);
+	}
+}
+
+void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
+	if (seat->focused_layer) {
+		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+		seat_set_focus_layer(seat, NULL);
+		seat_set_workspace_focus(seat, node);
+		seat_set_focus_layer(seat, layer);
+	} else {
+		seat_set_workspace_focus(seat, node);
+	}
+	if (server.session_lock.locked) {
+		seat_set_focus_surface(seat, server.session_lock.focused, false);
 	}
 }
 
