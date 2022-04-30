@@ -154,11 +154,7 @@ void restore_nofile_limit(void) {
 }
 
 void enable_debug_flag(const char *flag) {
-	if (strcmp(flag, "damage=highlight") == 0) {
-		debug.damage = DAMAGE_HIGHLIGHT;
-	} else if (strcmp(flag, "damage=rerender") == 0) {
-		debug.damage = DAMAGE_RERENDER;
-	} else if (strcmp(flag, "noatomic") == 0) {
+	if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
 	} else if (strcmp(flag, "txn-wait") == 0) {
 		debug.txn_wait = true;
@@ -166,8 +162,6 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_timings = true;
 	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
 		server.txn_timeout_ms = atoi(&flag[12]);
-	} else if (strcmp(flag, "noscanout") == 0) {
-		debug.noscanout = true;
 	} else {
 		sway_log(SWAY_ERROR, "Unknown debug flag: %s", flag);
 	}
