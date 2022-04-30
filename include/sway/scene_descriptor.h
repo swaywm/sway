@@ -4,6 +4,7 @@
 
 enum sway_scene_descriptor_type {
 	SWAY_SCENE_DESC_BUFFER_TIMER,
+	SWAY_SCENE_DESC_DRAG_ICON,
 };
 
 struct sway_scene_descriptor {

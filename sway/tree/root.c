@@ -63,7 +63,6 @@ struct sway_root *root_create(void) {
 #if HAVE_XWAYLAND
 	wl_list_init(&root->xwayland_unmanaged);
 #endif
-	wl_list_init(&root->drag_icons);
 	wl_signal_init(&root->events.new_node);
 	root->outputs = create_list();
 	root->non_desktop_outputs = create_list();

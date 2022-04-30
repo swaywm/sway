@@ -201,16 +201,6 @@ static void render_unmanaged(struct sway_output *output,
 }
 #endif
 
-static void render_drag_icons(struct sway_output *output,
-		pixman_region32_t *damage, struct wl_list *drag_icons) {
-	struct render_data data = {
-		.damage = damage,
-		.alpha = 1.0f,
-	};
-	output_drag_icons_for_each_surface(output, drag_icons,
-		render_surface_iterator, &data);
-}
-
 // _box.x and .y are expected to be layout-local
 // _box.width and .height are expected to be output-buffer-local
 void render_rect(struct sway_output *output,
@@ -1171,7 +1161,6 @@ render_overlay:
 		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_layer_popups(output, damage,
 		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
-	render_drag_icons(output, damage, &root->drag_icons);
 
 renderer_end:
 	wlr_renderer_scissor(renderer, NULL);
