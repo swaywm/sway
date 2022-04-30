@@ -96,6 +96,7 @@ struct sway_server {
 		struct wlr_session_lock_manager_v1 *manager;
 
 		struct wlr_session_lock_v1 *lock;
+		struct wlr_surface *focused;
 		struct wl_listener lock_new_surface;
 		struct wl_listener lock_unlock;
 		struct wl_listener lock_destroy;

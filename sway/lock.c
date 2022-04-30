@@ -17,9 +17,20 @@ struct sway_session_lock_surface {
 	struct wl_listener output_commit;
 };
 
+static void set_lock_focused_surface(struct wlr_surface *focused) {
+	server.session_lock.focused = focused;
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		seat_set_focus_surface(seat, focused, false);
+	}
+}
+
 static void handle_surface_map(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_surface *surf = wl_container_of(listener, surf, map);
-	sway_force_focus(surf->surface);
+	if (server.session_lock.focused == NULL) {
+		set_lock_focused_surface(surf->surface);
+	}
 	output_damage_whole(surf->output);
 }
 
@@ -48,6 +59,21 @@ static void handle_output_commit(struct wl_listener *listener, void *data) {
 
 static void handle_surface_destroy(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_surface *surf = wl_container_of(listener, surf, destroy);
+
+	// Move the seat focus to another surface if one is available
+	if (server.session_lock.focused == surf->surface) {
+		struct wlr_surface *next_focus = NULL;
+
+		struct wlr_session_lock_surface_v1 *other;
+		wl_list_for_each(other, &server.session_lock.lock->surfaces, link) {
+			if (other != surf->lock_surface && other->mapped) {
+				next_focus = other->surface;
+				break;
+			}
+		}
+		set_lock_focused_surface(next_focus);
+	}
+
 	wl_list_remove(&surf->map.link);
 	wl_list_remove(&surf->destroy.link);
 	wl_list_remove(&surf->surface_commit.link);
@@ -88,6 +114,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "session unlocked");
 	server.session_lock.locked = false;
 	server.session_lock.lock = NULL;
+	server.session_lock.focused = NULL;
 
 	wl_list_remove(&server.session_lock.lock_new_surface.link);
 	wl_list_remove(&server.session_lock.lock_unlock.link);
@@ -115,6 +142,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 static void handle_abandon(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_INFO, "session lock abandoned");
 	server.session_lock.lock = NULL;
+	server.session_lock.focused = NULL;
 
 	wl_list_remove(&server.session_lock.lock_new_surface.link);
 	wl_list_remove(&server.session_lock.lock_unlock.link);

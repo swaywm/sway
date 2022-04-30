@@ -214,15 +214,6 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 	}
 }
 
-void sway_force_focus(struct wlr_surface *surface) {
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		seat_keyboard_notify_enter(seat, surface);
-		seat_tablet_pads_notify_enter(seat, surface);
-		sway_input_method_relay_set_focus(&seat->im_relay, surface);
-	}
-}
-
 void seat_for_each_node(struct sway_seat *seat,
 		void (*f)(struct sway_node *node, void *data), void *data) {
 	struct sway_seat_node *current = NULL;
