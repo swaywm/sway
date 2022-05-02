@@ -133,7 +133,9 @@ elif [ "$SUBJECT" = "area" ] ; then
 elif [ "$SUBJECT" = "active" ] ; then
     eval "$( swaymsg -t get_tree |\
         jq -r '..|try select(.focused == true)|
-                "GEOM=\"\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)\"\nAPP_ID=\"\(.app_id)\"\nWHAT=\"\(.app_id) window\""' )"
+                "GEOM=\"\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)\"
+                APP_ID=\"\(.app_id)\"
+                WHAT=\"\(.app_id) window\""' )"
 elif [ "$SUBJECT" = "screen" ] ; then
   GEOM=""
   WHAT="Screen"
