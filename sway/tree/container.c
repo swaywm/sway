@@ -1505,6 +1505,10 @@ void container_detach(struct sway_container *child) {
 		if (index != -1) {
 			list_del(siblings, index);
 		}
+    // if con has one sibling which is split, deleting con leaves redundant splits. squash them
+    if (siblings->length == 1 && old_parent) {
+        container_flatten(old_parent);
+      }
 	}
 	child->pending.parent = NULL;
 	child->pending.workspace = NULL;
