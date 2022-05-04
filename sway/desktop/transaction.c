@@ -732,8 +732,6 @@ static void transaction_apply(struct sway_transaction *transaction) {
 
 		node->instruction = NULL;
 	}
-
-	cursor_rebase_all();
 }
 
 static void transaction_commit_pending(void);
@@ -747,6 +745,7 @@ static void transaction_progress(void) {
 	}
 	transaction_apply(server.queued_transaction);
 	arrange_root(root);
+	cursor_rebase_all();
 	transaction_destroy(server.queued_transaction);
 	server.queued_transaction = NULL;
 
