@@ -120,7 +120,7 @@ void seat_idle_notify_activity(struct sway_seat *seat,
  */
 static void seat_send_activate(struct sway_node *node, struct sway_seat *seat) {
 	if (node_is_view(node)) {
-		if (!seat_is_input_allowed(seat, node->sway_container->view->surface)) {
+		if (!seat_is_focus_allowed(seat, node->sway_container->view->surface)) {
 			sway_log(SWAY_DEBUG, "Refusing to set focus, input is inhibited");
 			return;
 		}
@@ -193,7 +193,7 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 	struct sway_view *view = node->type == N_CONTAINER ?
 		node->sway_container->view : NULL;
 
-	if (view && seat_is_input_allowed(seat, view->surface)) {
+	if (view && seat_is_focus_allowed(seat, view->surface)) {
 #if HAVE_XWAYLAND
 		if (view->type == SWAY_VIEW_XWAYLAND) {
 			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
@@ -1078,11 +1078,19 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-bool seat_is_input_allowed(struct sway_seat *seat,
+bool seat_is_focus_allowed(struct sway_seat *seat,
 		struct wlr_surface *surface) {
-	struct wl_client *client = wl_resource_get_client(surface->resource);
-	return seat->exclusive_client == client ||
-		(seat->exclusive_client == NULL && !server.session_lock.locked);
+	if (seat->exclusive_client != NULL) {
+		if (surface == NULL) {
+			return false;
+		}
+		if (seat->exclusive_client != wl_resource_get_client(surface)) {
+			return false;
+		}
+	} else if (server.session_lock.locked) {
+		return false;
+	}
+	return true;
 }
 
 static void send_unfocus(struct sway_container *con, void *data) {
@@ -1172,6 +1180,8 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		node->sway_workspace : node->sway_container->pending.workspace;
 	struct sway_container *container = node->type == N_CONTAINER ?
 		node->sway_container : NULL;
+	struct wlr_surface *surface = node_is_view(node) ?
+		node->sway_container->view->surface : NULL;
 
 	// Deny setting focus to a view which is hidden by a fullscreen container or global
 	if (container && container_obstructing_fullscreen_container(container)) {
@@ -1184,7 +1194,7 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 
 	// Deny setting focus when an input grab or lockscreen is active
-	if (container && !seat_is_input_allowed(seat, container->view->surface)) {
+	if (!seat_is_focus_allowed(seat, surface)) {
 		return;
 	}
 
