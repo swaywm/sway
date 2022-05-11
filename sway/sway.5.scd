@@ -176,6 +176,12 @@ set|plus|minus|toggle <amount>
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
 
+	When using the _stacking_ layout, only the focused window in the container is
+	displayed, with the opened windows' list on the top of the container.
+
+	The _tabbed_ layout is similar to _stacking_, but the windows’ list is vertically
+	split.
+
 *layout* toggle [split|all]
 	Cycles the layout mode of the focused container though a preset list of
 	layouts. If no argument is given, then it cycles through stacking, tabbed
