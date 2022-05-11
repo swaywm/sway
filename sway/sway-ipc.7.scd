@@ -370,7 +370,7 @@ node and will have the following properties:
    that can be used as an aid in submitting reproduction steps for bug reports
 |- fullscreen_mode
 :  integer
-:  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means 
+:  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means
    full workspace, and 2 means global fullscreen
 |- app_id
 :  string
