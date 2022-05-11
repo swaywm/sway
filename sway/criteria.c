@@ -682,7 +682,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 		}
 		name = calloc(head - namestart + 1, 1);
 		if (head != namestart) {
-			strncpy(name, namestart, head - namestart);
+			memcpy(name, namestart, head - namestart);
 		}
 		// Parse token value
 		skip_spaces(&head);
@@ -709,7 +709,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 				}
 			}
 			value = calloc(head - valuestart + 1, 1);
-			strncpy(value, valuestart, head - valuestart);
+			memcpy(value, valuestart, head - valuestart);
 			if (in_quotes) {
 				++head;
 				in_quotes = false;
@@ -740,7 +740,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	++head;
 	int len = head - raw;
 	criteria->raw = calloc(len + 1, 1);
-	strncpy(criteria->raw, raw, len);
+	memcpy(criteria->raw, raw, len);
 	return criteria;
 
 cleanup:
