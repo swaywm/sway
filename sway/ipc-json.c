@@ -989,20 +989,22 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		json_object *layouts_arr = json_object_new_array();
 		json_object_object_add(object, "xkb_layout_names", layouts_arr);
 
-		xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(keymap);
-		xkb_layout_index_t layout_idx;
-		for (layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
-			const char *layout = xkb_keymap_layout_get_name(keymap, layout_idx);
-			json_object_array_add(layouts_arr,
-				layout ? json_object_new_string(layout) : NULL);
-
-			bool is_active = xkb_state_layout_index_is_active(state,
-				layout_idx, XKB_STATE_LAYOUT_EFFECTIVE);
-			if (is_active) {
-				json_object_object_add(object, "xkb_active_layout_index",
-					json_object_new_int(layout_idx));
-				json_object_object_add(object, "xkb_active_layout_name",
+		if (keymap) {
+			xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(keymap);
+			xkb_layout_index_t layout_idx;
+			for (layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
+				const char *layout = xkb_keymap_layout_get_name(keymap, layout_idx);
+				json_object_array_add(layouts_arr,
 					layout ? json_object_new_string(layout) : NULL);
+
+				bool is_active = xkb_state_layout_index_is_active(state,
+					layout_idx, XKB_STATE_LAYOUT_EFFECTIVE);
+				if (is_active) {
+					json_object_object_add(object, "xkb_active_layout_index",
+						json_object_new_int(layout_idx));
+					json_object_object_add(object, "xkb_active_layout_name",
+						layout ? json_object_new_string(layout) : NULL);
+				}
 			}
 		}
 	}
