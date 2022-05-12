@@ -58,7 +58,25 @@ void detect_proprietary(int allow_unsupported_gpu) {
 	size_t line_size = 0;
 	while (getline(&line, &line_size, f) != -1) {
 		if (strncmp(line, "nvidia ", 7) == 0) {
-			if (allow_unsupported_gpu) {
+			FILE *taint_info = fopen("/sys/module/nvidia/taint", "r");
+			int taints_kernel = 1;
+			if (taint_info) {
+				char *flags = NULL;
+				size_t flag_len = 0;
+				if(getline(&flags, &flag_len, taint_info) != -1){
+					taints_kernel = strchr(flags, 'P') ? 1 : 0;
+				}
+				free(flags);
+				fclose(taint_info);
+			} else {
+				sway_log(SWAY_ERROR,
+						"Could not get Nvidia module taint information. "
+						"Assuming proprietary drivers are in use.");
+			}
+			if (!taints_kernel) {
+				sway_log(SWAY_INFO,
+						"Open source Nvidia drivers are in use. Bugs may still occour.");
+			} else if (allow_unsupported_gpu) {
 				sway_log(SWAY_ERROR,
 						"!!! Proprietary Nvidia drivers are in use !!!");
 			} else {
