@@ -173,4 +173,6 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data);
 void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 	void *data);
 
+void set_rr_scheduling(void);
+
 #endif
