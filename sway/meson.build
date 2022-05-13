@@ -7,6 +7,7 @@ sway_sources = files(
 	'ipc-server.c',
 	'lock.c',
 	'main.c',
+	'rtkit.c',
 	'server.c',
 	'swaynag.c',
 	'xdg_activation_v1.c',
@@ -227,6 +228,10 @@ sway_deps = [
 if have_xwayland
 	sway_sources += 'desktop/xwayland.c'
 	sway_deps += xcb
+endif
+
+if have_rtkit
+	sway_deps += sdbus
 endif
 
 executable(

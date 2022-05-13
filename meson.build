@@ -106,6 +106,12 @@ if get_option('tray').enabled() and not tray_deps_found
 endif
 have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
+rt_deps_found = sdbus.found()
+if get_option('rtkit').enabled() and not rt_deps_found
+	error('Building with -Drtkit=enabled, but sd-bus has not been not found')
+endif
+have_rtkit = (not get_option('rtkit').disabled()) and rt_deps_found
+
 conf_data = configuration_data()
 
 conf_data.set10('HAVE_XWAYLAND', have_xwayland)
@@ -114,6 +120,7 @@ conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
+conf_data.set10('HAVE_RTKIT', have_rtkit)
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
@@ -319,6 +326,7 @@ summary({
 	'xwayland': have_xwayland,
 	'gdk-pixbuf': gdk_pixbuf.found(),
 	'tray': have_tray,
+	'rtkit': have_rtkit,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
 

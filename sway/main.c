@@ -413,6 +413,8 @@ int main(int argc, char **argv) {
 		goto shutdown;
 	}
 
+	gain_realtime();
+
 	if (!server_start(&server)) {
 		sway_terminate(EXIT_FAILURE);
 		goto shutdown;
