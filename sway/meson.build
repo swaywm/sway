@@ -229,6 +229,10 @@ if have_xwayland
 	sway_deps += xcb
 endif
 
+if sdbus.found()
+	sway_deps += sdbus
+endif
+
 executable(
 	'sway',
 	sway_sources,

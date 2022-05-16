@@ -6,6 +6,11 @@
 #include "sway/output.h"
 #include "sway/server.h"
 
+#include "../include/config.h"
+#if HAVE_LIBSYSTEMD
+#include <systemd/sd-bus.h>
+#endif
+
 struct sway_session_lock_surface {
 	struct wlr_session_lock_surface_v1 *lock_surface;
 	struct sway_output *output;
@@ -84,6 +89,30 @@ static void handle_new_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&output->wlr_output->events.commit, &surf->output_commit);
 }
 
+static void set_session_lock_hint(int is_locked) {
+#if HAVE_LIBSYSTEMD
+	sd_bus *bus = NULL;
+	sd_bus_error err = SD_BUS_ERROR_NULL;
+	int ret = sd_bus_default_system(&bus);
+	if (ret < 0) {
+		sway_log(SWAY_DEBUG, "Failed to set lock hint: Could not get bus: (%d)", ret);
+		return;
+	}
+	ret = sd_bus_call_method(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktop/login1/session/self",
+			"org.freedesktop.login1.Session",
+			"SetLockedHint",
+			&err, NULL, "b", is_locked);
+	if (ret < 0) {
+		sway_log(SWAY_DEBUG, "Failed to set lock hint: Method call failed: %s: %s",
+			err.name, err.message);
+	}
+	sd_bus_error_free(&err);
+	sd_bus_unref(bus);
+#endif
+}
+
 static void handle_unlock(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "session unlocked");
 	server.session_lock.locked = false;
@@ -110,6 +139,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		output_damage_whole(output);
 	}
+	set_session_lock_hint(false);
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
@@ -130,6 +160,7 @@ static void handle_abandon(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		output_damage_whole(output);
 	}
+	set_session_lock_hint(false);
 }
 
 static void handle_session_lock(struct wl_listener *listener, void *data) {
@@ -161,6 +192,7 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		output_damage_whole(output);
 	}
+	set_session_lock_hint(true);
 }
 
 static void handle_session_lock_destroy(struct wl_listener *listener, void *data) {
