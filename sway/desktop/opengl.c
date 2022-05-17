@@ -13,9 +13,84 @@
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/util/box.h>
 #include "log.h"
-#include "sway/desktop/renderer/opengl.h"
+#include "sway/desktop/opengl.h"
 
-// TODO: update to hyprland shaders (add sup for rounded corners + add blur shaders
+// TODO: update to hyprland shaders (add sup for rounded corners + add blur shaders)
+
+/************************
+  Shaders
+*************************/
+
+// Colored quads
+const GLchar quad_vertex_src[] =
+"uniform mat3 proj;\n"
+"uniform vec4 color;\n"
+"attribute vec2 pos;\n"
+"attribute vec2 texcoord;\n"
+"varying vec4 v_color;\n"
+"varying vec2 v_texcoord;\n"
+"\n"
+"void main() {\n"
+"	gl_Position = vec4(proj * vec3(pos, 1.0), 1.0);\n"
+"	v_color = color;\n"
+"	v_texcoord = texcoord;\n"
+"}\n";
+
+const GLchar quad_fragment_src[] =
+"precision mediump float;\n"
+"varying vec4 v_color;\n"
+"varying vec2 v_texcoord;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = v_color;\n"
+"}\n";
+
+// Textured quads
+const GLchar tex_vertex_src[] =
+"uniform mat3 proj;\n"
+"attribute vec2 pos;\n"
+"attribute vec2 texcoord;\n"
+"varying vec2 v_texcoord;\n"
+"\n"
+"void main() {\n"
+"	gl_Position = vec4(proj * vec3(pos, 1.0), 1.0);\n"
+"	v_texcoord = texcoord;\n"
+"}\n";
+
+const GLchar tex_fragment_src_rgba[] =
+"precision mediump float;\n"
+"varying vec2 v_texcoord;\n"
+"uniform sampler2D tex;\n"
+"uniform float alpha;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = texture2D(tex, v_texcoord) * alpha;\n"
+"}\n";
+
+const GLchar tex_fragment_src_rgbx[] =
+"precision mediump float;\n"
+"varying vec2 v_texcoord;\n"
+"uniform sampler2D tex;\n"
+"uniform float alpha;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = vec4(texture2D(tex, v_texcoord).rgb, 1.0) * alpha;\n"
+"}\n";
+
+const GLchar tex_fragment_src_external[] =
+"#extension GL_OES_EGL_image_external : require\n\n"
+"precision mediump float;\n"
+"varying vec2 v_texcoord;\n"
+"uniform samplerExternalOES texture0;\n"
+"uniform float alpha;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = texture2D(texture0, v_texcoord) * alpha;\n"
+"}\n";
+
+/************************
+  Matrix Consts
+*************************/
 
 static const GLfloat flip_180[] = {
 	1.0f, 0.0f, 0.0f,
@@ -29,6 +104,10 @@ static const GLfloat verts[] = {
 	1, 1, // bottom right
 	0, 1, // bottom left
 };
+
+/************************
+  General Functions
+*************************/
 
 static GLuint compile_shader(GLuint type, const GLchar *src) {
 	GLuint shader = glCreateShader(type);
@@ -120,7 +199,7 @@ struct gles2_renderer *gles2_renderer_create(struct wlr_backend *backend) {
 	// init shaders
 	GLuint prog;
 
-	prog = link_program(renderer, quad_vertex_src, quad_fragment_src);
+	prog = link_program(quad_vertex_src, quad_fragment_src);
 	renderer->shaders.quad.program = prog;
 	if (!renderer->shaders.quad.program) {
 		goto error;
@@ -129,7 +208,7 @@ struct gles2_renderer *gles2_renderer_create(struct wlr_backend *backend) {
 	renderer->shaders.quad.color = glGetUniformLocation(prog, "color");
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
-	prog = link_program(renderer, tex_vertex_src, tex_fragment_src_rgba);
+	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
 	renderer->shaders.tex_rgba.program = prog;
 	if (!renderer->shaders.tex_rgba.program) {
 		goto error;
@@ -140,7 +219,7 @@ struct gles2_renderer *gles2_renderer_create(struct wlr_backend *backend) {
 	renderer->shaders.tex_rgba.pos_attrib = glGetAttribLocation(prog, "pos");
 	renderer->shaders.tex_rgba.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
-	prog = link_program(renderer, tex_vertex_src, tex_fragment_src_rgbx);
+	prog = link_program(tex_vertex_src, tex_fragment_src_rgbx);
 	renderer->shaders.tex_rgbx.program = prog;
 	if (!renderer->shaders.tex_rgbx.program) {
 		goto error;
@@ -151,7 +230,7 @@ struct gles2_renderer *gles2_renderer_create(struct wlr_backend *backend) {
 	renderer->shaders.tex_rgbx.pos_attrib = glGetAttribLocation(prog, "pos");
 	renderer->shaders.tex_rgbx.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
-	prog = link_program(renderer, tex_vertex_src, tex_fragment_src_external);
+	prog = link_program(tex_vertex_src, tex_fragment_src_external);
 	renderer->shaders.tex_ext.program = prog;
 	if (!renderer->shaders.tex_ext.program) {
 		goto error;
@@ -209,8 +288,7 @@ static void gles2_render_rect(struct gles2_renderer *renderer, const struct wlr_
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
 	wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
 
-	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
-	// to GL_FALSE
+	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set to GL_FALSE
 	wlr_matrix_transpose(gl_matrix, gl_matrix);
 
 	if (color[3] == 1.0) {
@@ -224,8 +302,7 @@ static void gles2_render_rect(struct gles2_renderer *renderer, const struct wlr_
 	glUniformMatrix3fv(renderer->shaders.quad.proj, 1, GL_FALSE, gl_matrix);
 	glUniform4f(renderer->shaders.quad.color, color[0], color[1], color[2], color[3]);
 
-	glVertexAttribPointer(renderer->shaders.quad.pos_attrib, 2, GL_FLOAT, GL_FALSE,
-			0, verts);
+	glVertexAttribPointer(renderer->shaders.quad.pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, verts);
 
 	glEnableVertexAttribArray(renderer->shaders.quad.pos_attrib);
 

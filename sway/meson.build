@@ -14,14 +14,12 @@ sway_sources = files(
 	'desktop/desktop.c',
 	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
+	'desktop/opengl.c',
 	'desktop/output.c',
 	'desktop/render.c',
 	'desktop/surface.c',
 	'desktop/transaction.c',
 	'desktop/xdg_shell.c',
-
-	'desktop/renderer/opengl.c',
-	'desktop/renderer/shaders.c',
 
 	'input/input-manager.c',
 	'input/cursor.c',
