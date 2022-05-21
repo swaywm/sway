@@ -86,6 +86,11 @@ struct sway_node *node_at_coords(
 					struct sway_container *con = popup->child.view->container;
 					return &con->node;
 				}
+#if HAVE_XWAYLAND
+				else if (desc->type == SWAY_SCENE_DESC_XWAYLAND_UNMANAGED) {
+					return NULL;
+				}
+#endif
 			}
 
 			if (!current->parent) {
