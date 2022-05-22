@@ -453,6 +453,10 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
+	if (server.session_lock.locked) {
+		return false;
+	}
+
 	if (!wl_list_empty(&view->saved_buffers)) {
 		return false;
 	}
