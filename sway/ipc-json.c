@@ -248,11 +248,11 @@ static void ipc_json_describe_output(struct sway_output *output,
 
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "make",
-			json_object_new_string(wlr_output->make));
+			json_object_new_string(wlr_output->make ? wlr_output->make : "Unknown"));
 	json_object_object_add(object, "model",
-			json_object_new_string(wlr_output->model));
+			json_object_new_string(wlr_output->model ? wlr_output->model : "Unknown"));
 	json_object_object_add(object, "serial",
-			json_object_new_string(wlr_output->serial));
+			json_object_new_string(wlr_output->serial ? wlr_output->serial : "Unknown"));
 
 	json_object *modes_array = json_object_new_array();
 	struct wlr_output_mode *mode;
