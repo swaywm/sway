@@ -27,8 +27,10 @@ int output_name_cmp(const void *item, const void *data) {
 void output_get_identifier(char *identifier, size_t len,
 		struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
-	snprintf(identifier, len, "%s %s %s", wlr_output->make, wlr_output->model,
-		wlr_output->serial);
+	snprintf(identifier, len, "%s %s %s",
+		wlr_output->make ? wlr_output->make : "Unknown",
+		wlr_output->model ? wlr_output->model : "Unknown",
+		wlr_output->serial ? wlr_output->serial : "Unknown");
 }
 
 const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filter) {
