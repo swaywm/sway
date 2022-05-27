@@ -60,7 +60,7 @@ Sway अपने root अनुमतियां शुरू होने क
 अगर आप पहले से ही i3 का उप्योग करते हैं तो अपने i3 config को
 `~/.config/sway/config` में copy कर लीजिये और वह बिना किसी अन्य मेहनत के काम
 करेगा। अन्यथा, नमूने configuration file को `~/.config/sway/config` में copy
-कर लीजिये। यह अधिकतर समय `~/etc/sway/config` में पाया जाता है। `man 5
+कर लीजिये। यह अधिकतर समय `/etc/sway/config` में पाया जाता है। `man 5
 sway` से आप configuration के बारे में जानकारी प्राप्त कर सकते हैं।
 
 ## चलाना
