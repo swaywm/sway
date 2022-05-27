@@ -68,7 +68,7 @@ sway (gdm is known to work fairly well).
 [fr]: README.fr.md
 [sv]: README.sv.md
 [gr]: README.gr.md
-[hi]: README.hn.md
+[hi]: README.hi.md
 [hu]: README.hu.md
 [ir]: README.ir.md
 [it]: README.it.md
