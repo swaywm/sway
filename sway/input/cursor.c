@@ -818,7 +818,34 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	node_at_coords(cursor->seat, cursor->cursor->x, cursor->cursor->y,
 		&surface, &sx, &sy);
 
-	if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+	// TODO: floating resize should support graphics tablet events
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(cursor->seat->wlr_seat);
+	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+	bool mod_pressed = modifiers & config->floating_mod;
+
+	bool surface_supports_tablet_events =
+		surface && wlr_surface_accepts_tablet_v2(tablet_v2, surface);
+
+	// Simulate pointer when:
+	// 1. The modifier key is pressed, OR
+	// 2. The surface under the cursor does not support tablet events.
+	bool should_simulate_pointer = mod_pressed || !surface_supports_tablet_events;
+
+	// Similar to tool tip, we need to selectively simulate mouse events, but we
+	// want to make sure that it is always consistent. Because all tool buttons
+	// currently map to BTN_RIGHT, we need to keep count of how many tool
+	// buttons are currently pressed down so we can send consistent events.
+	//
+	// The logic follows:
+	// - If we are already simulating the pointer, we should continue to do so
+	//   until at least no tool button is held down.
+	// - If we should simulate the pointer and no tool button is currently held
+	//   down, begin simulating the pointer.
+	// - If neither of the above are true, send the tablet events.
+	if ((cursor->tool_buttons > 0 && cursor->simulating_pointer_from_tool_button)
+		|| (cursor->tool_buttons == 0 && should_simulate_pointer)) {
+		cursor->simulating_pointer_from_tool_button = true;
+
 		// TODO: the user may want to configure which tool buttons are mapped to
 		// which simulated pointer buttons
 		switch (event->state) {
@@ -827,22 +854,35 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 				dispatch_cursor_button(cursor, &event->tablet->base,
 						event->time_msec, BTN_RIGHT, event->state);
 			}
-			cursor->tool_buttons++;
 			break;
 		case WLR_BUTTON_RELEASED:
-			if (cursor->tool_buttons == 1) {
+			if (cursor->tool_buttons <= 1) {
 				dispatch_cursor_button(cursor, &event->tablet->base,
 						event->time_msec, BTN_RIGHT, event->state);
 			}
-			cursor->tool_buttons--;
 			break;
 		}
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-		return;
+	} else {
+		cursor->simulating_pointer_from_tool_button = false;
+
+		wlr_tablet_v2_tablet_tool_notify_button(sway_tool->tablet_v2_tool,
+			event->button, (enum zwp_tablet_pad_v2_button_state)event->state);
 	}
 
-	wlr_tablet_v2_tablet_tool_notify_button(sway_tool->tablet_v2_tool,
-		event->button, (enum zwp_tablet_pad_v2_button_state)event->state);
+	// Update tool button count.
+	switch (event->state) {
+	case WLR_BUTTON_PRESSED:
+		cursor->tool_buttons++;
+		break;
+	case WLR_BUTTON_RELEASED:
+		if (cursor->tool_buttons == 0) {
+			sway_log(SWAY_ERROR, "inconsistent tablet tool button events");
+		} else {
+			cursor->tool_buttons--;
+		}
+		break;
+	}
 }
 
 static void check_constraint_region(struct sway_cursor *cursor) {
