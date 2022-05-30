@@ -70,6 +70,7 @@ fish_comp = dependency('fish', required: false)
 math = cc.find_library('m')
 rt = cc.find_library('rt')
 xcb_icccm = dependency('xcb-icccm', required: get_option('xwayland'))
+threads = dependency('threads') # for pthread_setschedparam
 
 wlroots_features = {
 	'xwayland': false,

@@ -220,6 +220,7 @@ sway_deps = [
 	glesv2,
 	pixman,
 	server_protos,
+	threads,
 	wayland_server,
 	wlroots,
 	xkbcommon,
