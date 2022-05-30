@@ -150,7 +150,6 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	(void) fd;
 	struct sway_server *server = data;
-	sway_log(SWAY_DEBUG, "Event on IPC listening socket");
 	assert(mask == WL_EVENT_READABLE);
 
 	int client_fd = accept(ipc_socket, NULL, NULL);
@@ -211,12 +210,9 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	}
 
 	if (mask & WL_EVENT_HANGUP) {
-		sway_log(SWAY_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
 	}
-
-	sway_log(SWAY_DEBUG, "Client %d readable", client->fd);
 
 	int read_available;
 	if (ioctl(client_fd, FIONREAD, &read_available) == -1) {
@@ -523,7 +519,6 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	}
 
 	if (mask & WL_EVENT_HANGUP) {
-		sway_log(SWAY_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -531,8 +526,6 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	if (client->write_buffer_len <= 0) {
 		return 0;
 	}
-
-	sway_log(SWAY_DEBUG, "Client %d writable", client->fd);
 
 	ssize_t written = write(client->fd, client->write_buffer, client->write_buffer_len);
 
@@ -955,7 +948,5 @@ bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_typ
 				ipc_client_handle_writable, client);
 	}
 
-	sway_log(SWAY_DEBUG, "Added IPC reply of type 0x%x to client %d queue: %s",
-		payload_type, client->fd, payload);
 	return true;
 }
