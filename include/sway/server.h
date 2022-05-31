@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
@@ -108,6 +109,8 @@ struct sway_server {
 	struct wlr_input_method_manager_v2 *input_method;
 	struct wlr_text_input_manager_v3 *text_input;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
+	struct wlr_ext_workspace_manager_v1 *workspace_manager;
+	struct wl_listener workspace_manager_commit_request;
 
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
