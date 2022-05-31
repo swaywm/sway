@@ -8,6 +8,7 @@
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
@@ -48,6 +49,12 @@ struct sway_root *root_create(void) {
 	for (size_t i = 0; i < num_layers; i++) {
 		((struct wlr_scene_tree **) &root->layers)[i] =
 			alloc_scene_tree(&root_scene->tree, &alloc_failure);
+	}
+
+	scene_descriptor_assign(&root->layers.seat->node,
+		SWAY_SCENE_DESC_NON_INTERACTIVE, NULL);
+	if (!root->layers.seat->node.data) {
+		alloc_failure = true;
 	}
 
 	if (alloc_failure) {

@@ -20,6 +20,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
+#include "sway/scene_descriptor.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
@@ -86,6 +87,21 @@ struct sway_container *container_create(struct sway_view *view) {
 	} else {
 		c->pending.children = create_list();
 		c->current.children = create_list();
+	}
+
+	scene_descriptor_assign(c->scene_node, SWAY_SCENE_DESC_CONTAINER, c);
+	if (!c->scene_node->data) {
+		alloc_failure = true;
+	}
+
+	// also assign the scene descriptor to the view. On fullscreen clients
+	// the container will not be part of the scene graph, only the view itself
+	// So to not confuse input logic, we need to assign this.
+	if (view) {
+		scene_descriptor_assign(view->scene_node, SWAY_SCENE_DESC_CONTAINER, c);
+		if (!view->scene_node->data) {
+			alloc_failure = true;
+		}
 	}
 
 	if (alloc_failure) {
