@@ -148,8 +148,6 @@ struct sway_debug {
 
 extern struct sway_debug debug;
 
-/* Prepares an unprivileged server_init by performing all privileged operations in advance */
-bool server_privileged_prepare(struct sway_server *server);
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
