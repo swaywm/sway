@@ -47,19 +47,6 @@
 #include "sway/xwayland.h"
 #endif
 
-bool server_privileged_prepare(struct sway_server *server) {
-	sway_log(SWAY_DEBUG, "Preparing Wayland server initialization");
-	server->wl_display = wl_display_create();
-	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display);
-
-	if (!server->backend) {
-		sway_log(SWAY_ERROR, "Unable to create backend");
-		return false;
-	}
-	return true;
-}
-
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	/* We only offer non-desktop outputs, but in the future we might want to do
 	 * more logic here. */
@@ -76,6 +63,14 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
+	server->wl_display = wl_display_create();
+	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
+	server->backend = wlr_backend_autocreate(server->wl_display);
+
+	if (!server->backend) {
+		sway_log(SWAY_ERROR, "Unable to create backend");
+		return false;
+	}
 
 	server->renderer = wlr_renderer_autocreate(server->backend);
 	if (!server->renderer) {
