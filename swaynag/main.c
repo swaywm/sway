@@ -29,6 +29,11 @@ int main(int argc, char **argv) {
 	wl_list_init(&swaynag.outputs);
 	wl_list_init(&swaynag.seats);
 
+	struct swaynag_button button_close = { 0 };
+	button_close.text = strdup("X");
+	button_close.type = SWAYNAG_ACTION_DISMISS;
+	list_add(swaynag.buttons, &button_close);
+
 	char *config_path = NULL;
 	bool debug = false;
 	status = swaynag_parse_options(argc, argv, NULL, NULL, NULL,
@@ -84,11 +89,6 @@ int main(int argc, char **argv) {
 	swaynag.type = type;
 
 	swaynag_types_free(types);
-
-	struct swaynag_button button_close = { 0 };
-	button_close.text = strdup("X");
-	button_close.type = SWAYNAG_ACTION_DISMISS;
-	list_add(swaynag.buttons, &button_close);
 
 	if (swaynag.details.message) {
 		list_add(swaynag.buttons, &swaynag.details.button_details);
