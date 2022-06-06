@@ -86,14 +86,14 @@ if __name__ == "__main__":
         description="This script automatically changes the workspace name in sway depending on your open applications."
     )
     parser.add_argument(
-        "--duplicates",
         "-d",
+        "--duplicates",
         action="store_true",
         help="Set it when you want an icon for each instance of the same application per workspace.",
     )
     parser.add_argument(
-        "--logfile",
         "-l",
+        "--logfile",
         type=str,
         default="/tmp/sway-autoname-workspaces.log",
         help="Path for the logfile.",
