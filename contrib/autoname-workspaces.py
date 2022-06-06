@@ -44,7 +44,9 @@ def rename_workspaces(ipc):
                 if not ARGUMENTS.duplicates and icon in icon_tuple:
                     continue
                 icon_tuple += (icon,)
-        name_parts["icons"] = "  ".join(icon_tuple) + " "
+        name_parts["icons"] = "  ".join(icon_tuple)
+        if name_parts["icons"]:
+            name_parts["icons"] += " "
         new_name = construct_workspace_name(name_parts)
         ipc.command('rename workspace "%s" to "%s"' % (workspace.name, new_name))
 
