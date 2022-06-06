@@ -45,7 +45,7 @@ def rename_workspaces(ipc):
                     continue
                 icon_tuple += (icon,)
         name_parts["icons"] = "  ".join(icon_tuple)
-        if name_parts["icons"]:
+        if not ARGUMENTS.remove_whitespace and name_parts["icons"]:
             name_parts["icons"] += " "
         new_name = construct_workspace_name(name_parts)
         ipc.command('rename workspace "%s" to "%s"' % (workspace.name, new_name))
@@ -97,6 +97,12 @@ if __name__ == "__main__":
         type=str,
         default="/tmp/sway-autoname-workspaces.log",
         help="Path for the logfile.",
+    )
+    parser.add_argument(
+        "-rw",
+        "--remove-whitespace",
+        action="store_true",
+        help="Set it to remove the trailing whitespace after the icons in the workspace's name."
     )
     args = parser.parse_args()
     global ARGUMENTS
