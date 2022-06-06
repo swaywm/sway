@@ -26,7 +26,7 @@ def icon_for_window(window):
     if window.app_id is not None and len(window.app_id) > 0:
         name = window.app_id.lower()
     elif window.window_class is not None and len(window.window_class) > 0:
-        name =  window.window_class.lower()
+        name = window.window_class.lower()
 
     if name in WINDOW_ICONS:
         return WINDOW_ICONS[name]
