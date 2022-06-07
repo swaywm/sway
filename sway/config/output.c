@@ -247,8 +247,8 @@ struct output_config *store_output_config(struct output_config *oc) {
 	return oc;
 }
 
-static void set_mode(struct wlr_output *output, int width, int height,
-		float refresh_rate, bool custom) {
+static void set_mode(struct wlr_output *output, struct wlr_output_state *pending,
+		int width, int height, float refresh_rate, bool custom) {
 	// Not all floating point integers can be represented exactly
 	// as (int)(1000 * mHz / 1000.f)
 	// round() the result to avoid any error
@@ -256,7 +256,7 @@ static void set_mode(struct wlr_output *output, int width, int height,
 
 	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
-		wlr_output_set_custom_mode(output, width, height,
+		wlr_output_state_set_custom_mode(pending, width, height,
 			refresh_rate > 0 ? mhz : 0);
 		return;
 	}
@@ -280,10 +280,11 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	} else {
 		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
 	}
-	wlr_output_set_mode(output, best);
+	wlr_output_state_set_mode(pending, best);
 }
 
-static void set_modeline(struct wlr_output *output, drmModeModeInfo *drm_mode) {
+static void set_modeline(struct wlr_output *output,
+		struct wlr_output_state *pending, drmModeModeInfo *drm_mode) {
 	if (!wlr_output_is_drm(output)) {
 		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 		return;
@@ -291,7 +292,7 @@ static void set_modeline(struct wlr_output *output, drmModeModeInfo *drm_mode) {
 	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
 	if (mode) {
-		wlr_output_set_mode(output, mode);
+		wlr_output_state_set_mode(pending, mode);
 	}
 }
 
@@ -313,23 +314,24 @@ static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
 // 1 inch = 25.4 mm
 #define MM_PER_INCH 25.4
 
-static int compute_default_scale(struct wlr_output *output) {
+static int compute_default_scale(struct wlr_output *output,
+		struct wlr_output_state *pending) {
 	struct wlr_box box = { .width = output->width, .height = output->height };
-	if (output->pending.committed & WLR_OUTPUT_STATE_MODE) {
-		switch (output->pending.mode_type) {
+	if (pending->committed & WLR_OUTPUT_STATE_MODE) {
+		switch (pending->mode_type) {
 		case WLR_OUTPUT_STATE_MODE_FIXED:
-			box.width = output->pending.mode->width;
-			box.height = output->pending.mode->height;
+			box.width = pending->mode->width;
+			box.height = pending->mode->height;
 			break;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
-			box.width = output->pending.custom_mode.width;
-			box.height = output->pending.custom_mode.height;
+			box.width = pending->custom_mode.width;
+			box.height = pending->custom_mode.height;
 			break;
 		}
 	}
 	enum wl_output_transform transform = output->transform;
-	if (output->pending.committed & WLR_OUTPUT_STATE_TRANSFORM) {
-		transform = output->pending.transform;
+	if (pending->committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		transform = pending->transform;
 	}
 	wlr_box_transform(&box, &box, transform, box.width, box.height);
 
@@ -376,7 +378,7 @@ static const uint32_t *bit_depth_preferences[] = {
 };
 
 static void queue_output_config(struct output_config *oc,
-		struct sway_output *output) {
+		struct sway_output *output, struct wlr_output_state *pending) {
 	if (output == root->fallback_output) {
 		return;
 	}
@@ -385,29 +387,29 @@ static void queue_output_config(struct output_config *oc,
 
 	if (oc && (!oc->enabled || oc->dpms_state == DPMS_OFF)) {
 		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
-		wlr_output_enable(wlr_output, false);
+		wlr_output_state_set_enabled(pending, false);
 		return;
 	}
 
 	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
-	wlr_output_enable(wlr_output, true);
+	wlr_output_state_set_enabled(pending, true);
 
 	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
 		sway_log(SWAY_DEBUG, "Set %s modeline",
 			wlr_output->name);
-		set_modeline(wlr_output, &oc->drm_mode);
+		set_modeline(wlr_output, pending, &oc->drm_mode);
 	} else if (oc && oc->width > 0 && oc->height > 0) {
 		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
 			wlr_output->name, oc->width, oc->height, oc->refresh_rate);
-		set_mode(wlr_output, oc->width, oc->height,
+		set_mode(wlr_output, pending, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
 		sway_log(SWAY_DEBUG, "Set preferred mode");
 		struct wlr_output_mode *preferred_mode =
 			wlr_output_preferred_mode(wlr_output);
-		wlr_output_set_mode(wlr_output, preferred_mode);
+		wlr_output_state_set_mode(pending, preferred_mode);
 
-		if (!wlr_output_test(wlr_output)) {
+		if (!wlr_output_test_state(wlr_output, pending)) {
 			sway_log(SWAY_DEBUG, "Preferred mode rejected, "
 				"falling back to another mode");
 			struct wlr_output_mode *mode;
@@ -416,8 +418,8 @@ static void queue_output_config(struct output_config *oc,
 					continue;
 				}
 
-				wlr_output_set_mode(wlr_output, mode);
-				if (wlr_output_test(wlr_output)) {
+				wlr_output_state_set_mode(pending, mode);
+				if (wlr_output_test_state(wlr_output, pending)) {
 					break;
 				}
 			}
@@ -427,7 +429,7 @@ static void queue_output_config(struct output_config *oc,
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
 		sway_log(SWAY_DEBUG, "Set %s subpixel to %s", oc->name,
 			sway_wl_output_subpixel_to_string(oc->subpixel));
-		wlr_output_set_subpixel(wlr_output, oc->subpixel);
+		wlr_output_state_set_subpixel(pending, oc->subpixel);
 	}
 
 	enum wl_output_transform tr = WL_OUTPUT_TRANSFORM_NORMAL;
@@ -439,7 +441,7 @@ static void queue_output_config(struct output_config *oc,
 	}
 	if (wlr_output->transform != tr) {
 		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, tr);
-		wlr_output_set_transform(wlr_output, tr);
+		wlr_output_state_set_transform(pending, tr);
 	}
 
 	// Apply the scale last before the commit, because the scale auto-detection
@@ -448,18 +450,18 @@ static void queue_output_config(struct output_config *oc,
 	if (oc && oc->scale > 0) {
 		scale = oc->scale;
 	} else {
-		scale = compute_default_scale(wlr_output);
+		scale = compute_default_scale(wlr_output, pending);
 		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
 	}
 	if (scale != wlr_output->scale) {
 		sway_log(SWAY_DEBUG, "Set %s scale to %f", wlr_output->name, scale);
-		wlr_output_set_scale(wlr_output, scale);
+		wlr_output_state_set_scale(pending, scale);
 	}
 
 	if (oc && oc->adaptive_sync != -1) {
 		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
 			oc->adaptive_sync);
-		wlr_output_enable_adaptive_sync(wlr_output, oc->adaptive_sync == 1);
+		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
 	}
 
 	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
@@ -467,8 +469,8 @@ static void queue_output_config(struct output_config *oc,
 		assert(fmts);
 
 		for (size_t i = 0; fmts[i] != DRM_FORMAT_INVALID; i++) {
-			wlr_output_set_render_format(wlr_output, fmts[i]);
-			if (wlr_output_test(wlr_output)) {
+			wlr_output_state_set_render_format(pending, fmts[i]);
+			if (wlr_output_test_state(wlr_output, pending)) {
 				break;
 			}
 
@@ -489,14 +491,15 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	// Flag to prevent the output mode event handler from calling us
 	output->enabling = (!oc || oc->enabled);
 
-	queue_output_config(oc, output);
+	struct wlr_output_state pending = {0};
+	queue_output_config(oc, output, &pending);
 
 	if (!oc || oc->dpms_state != DPMS_OFF) {
-		output->current_mode = wlr_output->pending.mode;
+		output->current_mode = pending.mode;
 	}
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
-	if (!wlr_output_commit(wlr_output)) {
+	if (!wlr_output_commit_state(wlr_output, &pending)) {
 		// Failed to commit output changes, maybe the output is missing a CRTC.
 		// Leave the output disabled for now and try again when the output gets
 		// the mode we asked for.
@@ -579,10 +582,9 @@ bool test_output_config(struct output_config *oc, struct sway_output *output) {
 		return false;
 	}
 
-	queue_output_config(oc, output);
-	bool ok = wlr_output_test(output->wlr_output);
-	wlr_output_rollback(output->wlr_output);
-	return ok;
+	struct wlr_output_state pending = {0};
+	queue_output_config(oc, output, &pending);
+	return wlr_output_test_state(output->wlr_output, &pending);
 }
 
 static void default_output_config(struct output_config *oc,
