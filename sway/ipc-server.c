@@ -685,6 +685,12 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 						ipc_json_describe_disabled_output(output));
 			}
 		}
+
+		for (int i = 0; i < root->non_desktop_outputs->length; i++) {
+			struct sway_output_non_desktop *non_desktop_output = root->non_desktop_outputs->items[i];
+			json_object_array_add(outputs, ipc_json_describe_non_desktop_output(non_desktop_output));
+		}
+
 		const char *json_string = json_object_to_json_string(outputs);
 		ipc_send_reply(client, payload_type, json_string,
 			(uint32_t)strlen(json_string));
