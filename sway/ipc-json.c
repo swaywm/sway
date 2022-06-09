@@ -240,10 +240,7 @@ static json_object *ipc_json_create_node(int id, const char* type, char *name,
 	return object;
 }
 
-static void ipc_json_describe_output(struct sway_output *output,
-		json_object *object) {
-	struct wlr_output *wlr_output = output->wlr_output;
-
+static void ipc_json_describe_wlr_output(struct wlr_output *wlr_output, json_object *object) {
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "make",
 			json_object_new_string(wlr_output->make ? wlr_output->make : "Unknown"));
@@ -267,11 +264,17 @@ static void ipc_json_describe_output(struct sway_output *output,
 	json_object_object_add(object, "modes", modes_array);
 }
 
+static void ipc_json_describe_output(struct sway_output *output,
+		json_object *object) {
+	ipc_json_describe_wlr_output(output->wlr_output, object);
+}
+
 static void ipc_json_describe_enabled_output(struct sway_output *output,
 		json_object *object) {
 	ipc_json_describe_output(output, object);
 
 	struct wlr_output *wlr_output = output->wlr_output;
+	json_object_object_add(object, "non_desktop", json_object_new_boolean(false));
 	json_object_object_add(object, "active", json_object_new_boolean(true));
 	json_object_object_add(object, "dpms",
 			json_object_new_boolean(wlr_output->enabled));
@@ -349,6 +352,7 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 
 	ipc_json_describe_output(output, object);
 
+	json_object_object_add(object, "non_desktop", json_object_new_boolean(false));
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "name",
 			json_object_new_string(wlr_output->name));
@@ -366,6 +370,21 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 	json_object_object_add(object, "rect", rect_object);
 
 	json_object_object_add(object, "percent", NULL);
+
+	return object;
+}
+
+json_object *ipc_json_describe_non_desktop_output(struct sway_output_non_desktop *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	json_object *object = json_object_new_object();
+
+	ipc_json_describe_wlr_output(wlr_output, object);
+
+	json_object_object_add(object, "non_desktop", json_object_new_boolean(true));
+	json_object_object_add(object, "type", json_object_new_string("output"));
+	json_object_object_add(object, "name",
+				json_object_new_string(wlr_output->name));
 
 	return object;
 }
