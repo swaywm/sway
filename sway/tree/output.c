@@ -9,6 +9,7 @@
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
+#include "sway/server.h"
 #include "log.h"
 #include "util.h"
 
@@ -388,6 +389,33 @@ void output_get_box(struct sway_output *output, struct wlr_box *box) {
 	box->y = output->ly;
 	box->width = output->width;
 	box->height = output->height;
+}
+
+static void handle_destroy_non_desktop(struct wl_listener *listener, void *data) {
+	struct sway_output_non_desktop *output =
+		wl_container_of(listener, output, destroy);
+
+	sway_log(SWAY_DEBUG, "Destroying non-desktop output '%s'", output->wlr_output->name);
+
+	int index = list_find(root->non_desktop_outputs, output);
+	list_del(root->non_desktop_outputs, index);
+
+	wl_list_remove(&output->destroy.link);
+
+	free(output);
+}
+
+struct sway_output_non_desktop *output_non_desktop_create(
+		struct wlr_output *wlr_output) {
+	struct sway_output_non_desktop *output =
+		calloc(1, sizeof(struct sway_output_non_desktop));
+
+	output->wlr_output = wlr_output;
+
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	output->destroy.notify = handle_destroy_non_desktop;
+
+	return output;
 }
 
 enum sway_container_layout output_get_default_layout(
