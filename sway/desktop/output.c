@@ -6,6 +6,7 @@
 #include <wayland-server-core.h>
 #include <wlr/backend/drm.h>
 #include <wlr/backend/headless.h>
+#include <wlr/render/gles2.h> // TODO: remove if no egl needed to init custom renderer
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
@@ -31,6 +32,8 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+
+#include "sway/desktop/opengl.h"
 
 struct sway_output *output_by_name_or_id(const char *name_or_id) {
 	for (int i = 0; i < root->outputs->length; ++i) {
@@ -841,6 +844,8 @@ static void handle_present(struct wl_listener *listener, void *data) {
 
 static unsigned int last_headless_num = 0;
 
+// TODO: rm comment
+// hyprland Monitors.cpp: listener_newOutput
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
@@ -871,6 +876,14 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 			server->renderer)) {
 		sway_log(SWAY_ERROR, "Failed to init output render");
 		return;
+	}
+
+	// TODO: move me to proper spot
+	// TODO: reference wlroots render/wlr_renderer.c: wlr_renderer_autocreate
+	struct wlr_egl *egl = wlr_gles2_renderer_get_egl(server->renderer);
+	struct gles2_renderer *test = gles2_renderer_create(egl);
+	if (!test) {
+		printf("gles2_renderer is null");
 	}
 
 	struct sway_output *output = output_create(wlr_output);

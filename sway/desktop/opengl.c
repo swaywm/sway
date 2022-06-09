@@ -8,8 +8,7 @@
 #include <assert.h>
 #include <GLES2/gl2.h>
 #include <stdlib.h>
-#include <wlr/backend.h> // TODO: remove if removed from renderer_init
-#include <wlr/render/egl.h> // TODO: remove if removed from renderer_init
+#include <wlr/render/egl.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/util/box.h>
 #include "log.h"
@@ -91,7 +90,7 @@ const GLchar tex_fragment_src_external[] =
 /************************
   Matrix Consts
 *************************/
-
+/*
 static const GLfloat flip_180[] = {
 	1.0f, 0.0f, 0.0f,
 	0.0f, -1.0f, 0.0f,
@@ -104,7 +103,7 @@ static const GLfloat verts[] = {
 	1, 1, // bottom right
 	0, 1, // bottom left
 };
-
+*/
 /************************
   General Functions
 *************************/
@@ -159,11 +158,12 @@ error:
 	return 0;
 }
 
-struct gles2_renderer *gles2_renderer_create(struct wlr_backend *backend) {
+struct gles2_renderer *gles2_renderer_create(struct wlr_egl *egl) {
 	// TODO: Hyprland way?
 	// TODO: handle case of no drm_fd?
-	int drm_fd = wlr_backend_get_drm_fd(backend);
-	struct wlr_egl *egl = wlr_egl_create_with_drm_fd(drm_fd);
+	//struct wlr_egl *egl = wlr_egl_create_with_drm_fd(drm_fd);
+	//struct wlr_egl *egl = wlr_egl_create_with_context(${1:EGLDisplay display}, ${2:EGLContext context});
+
 	if (egl == NULL) {
 		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not initialize EGL");
 		return NULL;
@@ -260,22 +260,41 @@ error:
 	return NULL;
 }
 
+/*
+
 // TODO: is gles2_get_renderer_in_context(wlr_renderer) implementation needed?
-static void gles2_begin(struct gles2_renderer *renderer, uint32_t width, uint32_t height) {
-	glViewport(0, 0, width, height);
-	renderer->viewport_width = width;
-	renderer->viewport_height = height;
+static void gles2_begin(struct gles2_renderer *renderer, uint32_t width,
+uint32_t height) { glViewport(0, 0, width, height); renderer->viewport_width =
+width; renderer->viewport_height = height;
 
-	// refresh projection matrix
-	wlr_matrix_projection(renderer->projection, width, height, WL_OUTPUT_TRANSFORM_NORMAL);
+		// refresh projection matrix
+		wlr_matrix_projection(renderer->projection, width, height,
+WL_OUTPUT_TRANSFORM_NORMAL);
 
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 }
+
+static void gles2_clear(const float color[static 4]) {
+		glClearColor(color[0], color[1], color[2], color[3]);
+		glClear(GL_COLOR_BUFFER_BIT);
+}
+
+static void gles2_scissor(struct wlr_box *box) {
+		if (box) {
+				glScissor(box->x, box->y, box->width, box->height);
+				glEnable(GL_SCISSOR_TEST);
+		} else {
+				glDisable(GL_SCISSOR_TEST);
+		}
+}
+
+*/
 
 /************************
   Rendering Functions
 *************************/
 
+/*
 static void gles2_render_rect(struct gles2_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
 	if (box->width == 0 || box->height == 0) {
 		return;
@@ -310,3 +329,5 @@ static void gles2_render_rect(struct gles2_renderer *renderer, const struct wlr_
 
 	glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
 }
+
+*/

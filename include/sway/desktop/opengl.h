@@ -14,7 +14,9 @@ struct gles2_tex_shader {
 
 struct gles2_renderer {
 	struct wlr_egl *egl;
+
 	float projection[9];
+
 	uint32_t viewport_width;
 	uint32_t viewport_height;
 
@@ -31,5 +33,7 @@ struct gles2_renderer {
 		struct gles2_tex_shader tex_ext;
 	} shaders;
 };
+
+struct gles2_renderer *gles2_renderer_create(struct wlr_egl *egl);
 
 #endif
