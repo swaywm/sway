@@ -57,6 +57,12 @@ struct sway_output {
 	struct wl_event_source *repaint_timer;
 };
 
+struct sway_output_non_desktop {
+	struct wlr_output *wlr_output;
+
+	struct wl_listener destroy;
+};
+
 struct sway_output *output_create(struct wlr_output *wlr_output);
 
 void output_destroy(struct sway_output *output);
@@ -176,5 +182,7 @@ void handle_output_manager_test(struct wl_listener *listener, void *data);
 
 void handle_output_power_manager_set_mode(struct wl_listener *listener,
 	void *data);
+
+struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr_output);
 
 #endif

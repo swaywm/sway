@@ -883,10 +883,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	if (wlr_output->non_desktop) {
 		sway_log(SWAY_DEBUG, "Not configuring non-desktop output");
+		struct sway_output_non_desktop *non_desktop = output_non_desktop_create(wlr_output);
 		if (server->drm_lease_manager) {
 			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
 					wlr_output);
 		}
+		list_add(root->non_desktop_outputs, non_desktop);
 		return;
 	}
 

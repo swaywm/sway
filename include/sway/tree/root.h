@@ -28,6 +28,7 @@ struct sway_root {
 	double width, height;
 
 	list_t *outputs; // struct sway_output
+	list_t *non_desktop_outputs; // struct sway_output_non_desktop
 	list_t *scratchpad; // struct sway_container
 
 	// For when there's no connected outputs
