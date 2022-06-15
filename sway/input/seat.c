@@ -1326,7 +1326,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 			seat_set_focus(seat, previous);
 		}
 		return;
-	} else if (!layer || seat->focused_layer == layer) {
+	} else if (!layer || seat->focused_layer == layer || !seat_is_input_allowed(seat, layer->surface)) {
 		return;
 	}
 	assert(layer->mapped);
@@ -1362,7 +1362,12 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 	}
 	if (seat->wlr_seat->pointer_state.focused_client) {
 		if (seat->wlr_seat->pointer_state.focused_client->client != client) {
-			wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
+			wlr_seat_pointer_clear_focus(seat->wlr_seat);
+		}
+	}
+	if (seat->wlr_seat->keyboard_state.focused_client) {
+		if (seat->wlr_seat->keyboard_state.focused_client->client != client) {
+			wlr_seat_keyboard_clear_focus(seat->wlr_seat);
 		}
 	}
 	struct timespec now;
