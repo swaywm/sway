@@ -50,6 +50,7 @@ struct sway_shortcut_state {
 
 struct sway_keyboard {
 	struct sway_seat_device *seat_device;
+	struct wlr_keyboard *wlr;
 
 	struct xkb_keymap *keymap;
 	xkb_layout_index_t effective_layout;

@@ -979,10 +979,11 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 			input_device_get_type(device)));
 
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
-		struct wlr_keyboard *keyboard = device->wlr_device->keyboard;
+		struct wlr_keyboard *keyboard =
+			wlr_keyboard_from_input_device(device->wlr_device);
 		struct xkb_keymap *keymap = keyboard->keymap;
 		struct xkb_state *state = keyboard->xkb_state;
-		
+
 		json_object_object_add(object, "repeat_delay", 
 			json_object_new_int(keyboard->repeat_info.delay));
 		json_object_object_add(object, "repeat_rate", 
@@ -1012,11 +1013,11 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 		struct input_config *ic = input_device_get_config(device);
 		float scroll_factor = 1.0f;
-		if (ic != NULL && !isnan(ic->scroll_factor) && 
+		if (ic != NULL && !isnan(ic->scroll_factor) &&
 				ic->scroll_factor != FLT_MIN) {
 			scroll_factor = ic->scroll_factor;
 		}
-		json_object_object_add(object, "scroll_factor", 
+		json_object_object_add(object, "scroll_factor",
 				json_object_new_double(scroll_factor));
 	}
 
