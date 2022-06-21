@@ -98,10 +98,9 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 		struct xkb_switch_layout_action *action =
 			&actions[actions_len++];
 
-		action->keyboard = dev->wlr_device->keyboard;
+		action->keyboard = wlr_keyboard_from_input_device(dev->wlr_device);
 		if (relative) {
-			action->layout = get_layout_relative(
-				dev->wlr_device->keyboard, relative);
+			action->layout = get_layout_relative(action->keyboard, relative);
 		} else {
 			action->layout = layout;
 		}
