@@ -191,6 +191,7 @@ sway_sources = files(
 	'commands/output/max_render_time.c',
 	'commands/output/mode.c',
 	'commands/output/position.c',
+	'commands/output/power.c',
 	'commands/output/render_bit_depth.c',
 	'commands/output/scale.c',
 	'commands/output/scale_filter.c',
