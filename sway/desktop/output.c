@@ -763,7 +763,7 @@ static void update_output_manager_config(struct sway_server *server) {
 		struct wlr_box output_box;
 		wlr_output_layout_get_box(root->output_layout,
 			output->wlr_output, &output_box);
-		// We mark the output enabled even if it is switched off by DPMS
+		// We mark the output enabled when it's switched off but not disabled
 		config_head->state.enabled = output->current_mode != NULL && output->enabled;
 		config_head->state.mode = output->current_mode;
 		if (!wlr_box_empty(&output_box)) {
@@ -1028,10 +1028,10 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 	struct output_config *oc = new_output_config(output->wlr_output->name);
 	switch (event->mode) {
 	case ZWLR_OUTPUT_POWER_V1_MODE_OFF:
-		oc->dpms_state = DPMS_OFF;
+		oc->power = 0;
 		break;
 	case ZWLR_OUTPUT_POWER_V1_MODE_ON:
-		oc->dpms_state = DPMS_ON;
+		oc->power = 1;
 		break;
 	}
 	oc = store_output_config(oc);

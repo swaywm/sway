@@ -71,6 +71,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	oc->power = -1;
 	return oc;
 }
 
@@ -132,8 +133,8 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 		free(dst->background_fallback);
 		dst->background_fallback = strdup(src->background_fallback);
 	}
-	if (src->dpms_state != 0) {
-		dst->dpms_state = src->dpms_state;
+	if (src->power != -1) {
+		dst->power = src->power;
 	}
 }
 
@@ -192,11 +193,11 @@ static void merge_id_on_name(struct output_config *oc) {
 			list_add(config->output_configs, ion_oc);
 			sway_log(SWAY_DEBUG, "Generated id on name output config \"%s\""
 				" (enabled: %d) (%dx%d@%fHz position %d,%d scale %f "
-				"transform %d) (bg %s %s) (dpms %d) (max render time: %d)",
+				"transform %d) (bg %s %s) (power %d) (max render time: %d)",
 				ion_oc->name, ion_oc->enabled, ion_oc->width, ion_oc->height,
 				ion_oc->refresh_rate, ion_oc->x, ion_oc->y, ion_oc->scale,
 				ion_oc->transform, ion_oc->background,
-				ion_oc->background_option, ion_oc->dpms_state,
+				ion_oc->background_option, ion_oc->power,
 				ion_oc->max_render_time);
 		}
 	}
@@ -237,11 +238,11 @@ struct output_config *store_output_config(struct output_config *oc) {
 	}
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (dpms %d) "
+		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
 		"(max render time: %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
-		oc->transform, oc->background, oc->background_option, oc->dpms_state,
+		oc->transform, oc->background, oc->background_option, oc->power,
 		oc->max_render_time);
 
 	return oc;
@@ -385,7 +386,7 @@ static void queue_output_config(struct output_config *oc,
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (oc && (!oc->enabled || oc->dpms_state == DPMS_OFF)) {
+	if (oc && (!oc->enabled || oc->power == 0)) {
 		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
 		wlr_output_state_set_enabled(pending, false);
 		return;
@@ -494,7 +495,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
-	if (!oc || oc->dpms_state != DPMS_OFF) {
+	if (!oc || oc->power != 0) {
 		output->current_mode = pending.mode;
 	}
 
@@ -590,6 +591,7 @@ bool test_output_config(struct output_config *oc, struct sway_output *output) {
 static void default_output_config(struct output_config *oc,
 		struct wlr_output *wlr_output) {
 	oc->enabled = 1;
+	oc->power = 1;
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
 	if (mode != NULL) {
 		oc->width = mode->width;
@@ -602,7 +604,6 @@ static void default_output_config(struct output_config *oc,
 	struct sway_output *output = wlr_output->data;
 	oc->subpixel = output->detected_subpixel;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	oc->dpms_state = DPMS_ON;
 	oc->max_render_time = 0;
 }
 
@@ -657,10 +658,10 @@ static struct output_config *get_output_config(char *identifier,
 
 		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
 			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
-			" (dpms %d) (max render time: %d)", result->name, result->enabled,
+			" (power %d) (max render time: %d)", result->name, result->enabled,
 			result->width, result->height, result->refresh_rate,
 			result->x, result->y, result->scale, result->transform,
-			result->background, result->background_option, result->dpms_state,
+			result->background, result->background_option, result->power,
 			result->max_render_time);
 	} else if (oc_name) {
 		// No identifier config, just return a copy of the name config
