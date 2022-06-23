@@ -213,7 +213,10 @@ following properties:
 :  Whether this output is active/enabled
 |- dpms
 :  boolean
-:  Whether this output is on/off (via DPMS)
+:  (Deprecated, use _power_ instead) Whether this output is on/off (via DPMS)
+|- power
+:  boolean
+:  Whether this output is on/off
 |- primary
 :  boolean
 :  For i3 compatibility, this will be false. It does not make sense in Wayland
