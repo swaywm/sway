@@ -12,7 +12,7 @@ struct cmd_results *output_cmd_power(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Missing power argument");
 	}
 
-	enum config_dpms current_dpms = DPMS_ON;
+	bool current = true;
 	if (strcasecmp(argv[0], "toggle") == 0) {
 		const char *oc_name = config->handler_context.output_config->name;
 		if (strcmp(oc_name, "*") == 0) {
@@ -27,14 +27,14 @@ struct cmd_results *output_cmd_power(int argc, char **argv) {
 		}
 
 		if (sway_output->enabled && !sway_output->wlr_output->enabled) {
-			current_dpms = DPMS_OFF;
+			current = false;
 		}
 	}
 
-	if (parse_boolean(argv[0], current_dpms == DPMS_ON)) {
-		config->handler_context.output_config->dpms_state = DPMS_ON;
+	if (parse_boolean(argv[0], current)) {
+		config->handler_context.output_config->power = 1;
 	} else {
-		config->handler_context.output_config->dpms_state = DPMS_OFF;
+		config->handler_context.output_config->power = 0;
 	}
 
 	config->handler_context.leftovers.argc = argc - 1;

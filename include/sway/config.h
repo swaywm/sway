@@ -246,12 +246,6 @@ struct seat_config {
 	} xcursor_theme;
 };
 
-enum config_dpms {
-	DPMS_IGNORE,
-	DPMS_ON,
-	DPMS_OFF,
-};
-
 enum scale_filter_mode {
 	SCALE_FILTER_DEFAULT, // the default is currently smart
 	SCALE_FILTER_LINEAR,
@@ -273,6 +267,7 @@ enum render_bit_depth {
 struct output_config {
 	char *name;
 	int enabled;
+	int power;
 	int width, height;
 	float refresh_rate;
 	int custom_mode;
@@ -289,7 +284,6 @@ struct output_config {
 	char *background;
 	char *background_option;
 	char *background_fallback;
-	enum config_dpms dpms_state;
 };
 
 /**
