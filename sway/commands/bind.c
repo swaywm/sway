@@ -372,6 +372,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 					strlen("--input-device=")) == 0) {
 			free(binding->input);
 			binding->input = strdup(argv[0] + strlen("--input-device="));
+			strip_quotes(binding->input);
 		} else if (strcmp("--no-warn", argv[0]) == 0) {
 			warn = false;
 		} else if (strcmp("--no-repeat", argv[0]) == 0) {
