@@ -744,8 +744,8 @@ The default colors are:
 	Hides window borders adjacent to the screen edges. Default is _none_. The
 	_--i3_ option enables i3-compatible behavior to hide the title bar on
 	tabbed and stacked containers with one child. The _smart_|_smart_no_gaps_
-	options are equivalent to setting _smart_borders_ smart|no_gaps and
-	_hide_edge_borders_ none.
+	options are equivalent to setting smart_borders _on_|_no_gaps_ and
+	hide_edge_borders _none_.
 
 *input* <input_device> <input-subcommands...>
 	For details on input subcommands, see *sway-input*(5).
