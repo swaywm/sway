@@ -463,6 +463,10 @@ static void queue_output_config(struct output_config *oc,
 		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
 			oc->adaptive_sync);
 		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
+		if (oc->adaptive_sync == 1 && !wlr_output_test_state(wlr_output, pending)) {
+			sway_log(SWAY_DEBUG, "Adaptive sync failed, ignoring");
+			wlr_output_state_set_adaptive_sync_enabled(pending, false);
+		}
 	}
 
 	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
