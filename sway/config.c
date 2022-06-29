@@ -243,6 +243,7 @@ static void config_defaults(struct sway_config *config) {
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	if (!(config->font = strdup("monospace 10"))) goto cleanup;
+	config->font_description = pango_font_description_from_string(config->font);
 	config->urgent_timeout = 500;
 	config->focus_on_window_activation = FOWA_URGENT;
 	config->popup_during_fullscreen = POPUP_SMART;
@@ -1006,7 +1007,7 @@ int workspace_output_cmp_workspace(const void *a, const void *b) {
 void config_update_font_height(void) {
 	int prev_max_height = config->font_height;
 
-	get_text_metrics(config->font, &config->font_height, &config->font_baseline);
+	get_text_metrics(config->font_description, &config->font_height, &config->font_baseline);
 
 	if (config->font_height != prev_max_height) {
 		arrange_root();
