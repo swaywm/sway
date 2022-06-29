@@ -16,12 +16,12 @@ struct cmd_results *cmd_font(int argc, char **argv) {
 	if (strncmp(font, "pango:", 6) == 0) {
 		config->pango_markup = true;
 		config->font = strdup(font + 6);
+		free(font);
 	} else {
 		config->pango_markup = false;
-		config->font = strdup(font);
+		config->font = font;
 	}
 
-	free(font);
 	config_update_font_height();
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
