@@ -17,6 +17,7 @@
 #include "sway/input/tablet.h"
 #include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include <pango/pangocairo.h>
 
 // TODO: Refactor this shit
 
@@ -504,7 +505,8 @@ struct sway_config {
 	char *floating_scroll_right_cmd;
 	enum sway_container_layout default_orientation;
 	enum sway_container_layout default_layout;
-	char *font;
+	char *font; // Use mostly for IPC.
+	PangoFontDescription *font_description; // Used internally for rendering and validating.
 	int font_height;
 	int font_baseline;
 	bool pango_markup;
