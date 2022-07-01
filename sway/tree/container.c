@@ -520,7 +520,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 			to_cairo_subpixel_order(output->wlr_output->subpixel));
 	}
 	cairo_set_font_options(c, fo);
-	get_text_size(c, config->font, &width, NULL, &baseline, scale,
+	get_text_size(c, config->font_description, &width, NULL, &baseline, scale,
 			config->pango_markup, "%s", text);
 	cairo_surface_destroy(dummy_surface);
 	cairo_destroy(c);
@@ -554,7 +554,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, config->font_baseline * scale - baseline);
 
-	render_text(cairo, config->font, scale, pango_markup, "%s", text);
+	render_text(cairo, config->font_description, scale, pango_markup, "%s", text);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);

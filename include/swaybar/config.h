@@ -6,6 +6,7 @@
 #include "../include/config.h"
 #include "list.h"
 #include "util.h"
+#include <pango/pangocairo.h>
 
 struct box_colors {
 	uint32_t border;
@@ -28,7 +29,7 @@ struct swaybar_config {
 	char *status_command;
 	bool pango_markup;
 	uint32_t position; // zwlr_layer_surface_v1_anchor
-	char *font;
+	PangoFontDescription *font_description;
 	char *sep_symbol;
 	char *mode;
 	char *hidden_state;
