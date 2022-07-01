@@ -227,7 +227,9 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		case 'f': // Font
 			if (type) {
 				free(type->font);
+				pango_font_description_free(type->font_description);
 				type->font = strdup(optarg);
+				type->font_description = pango_font_description_from_string(type->font);
 			}
 			break;
 		case 'l': // Detailed Message
