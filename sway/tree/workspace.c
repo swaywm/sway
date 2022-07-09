@@ -56,6 +56,8 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 
 struct sway_workspace *workspace_create(struct sway_output *output,
 		const char *name) {
+	sway_assert(name, "NULL name given to workspace_create");
+
 	if (output == NULL) {
 		output = workspace_get_initial_output(name);
 	}
@@ -69,7 +71,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 		return NULL;
 	}
 	node_init(&ws->node, N_WORKSPACE, ws);
-	ws->name = name ? strdup(name) : NULL;
+	ws->name = strdup(name);
 	ws->prev_split_layout = L_NONE;
 	ws->layout = output_get_default_layout(output);
 	ws->floating = create_list();
