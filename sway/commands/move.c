@@ -826,24 +826,13 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		absolute = true;
 		--argc;
 		++argv;
-	}
-	if (!argc) {
-		return cmd_results_new(CMD_INVALID, expected_position_syntax);
-	}
-	if (strcmp(argv[0], "position") == 0) {
+	}else if (strcmp(argv[0], "position") == 0) {
 		--argc;
 		++argv;
-	}
-	if (!argc) {
-		return cmd_results_new(CMD_INVALID, expected_position_syntax);
-	}
-	if (strcmp(argv[0], "cursor") == 0 || strcmp(argv[0], "mouse") == 0 ||
+    }else if (strcmp(argv[0], "cursor") == 0 || strcmp(argv[0], "mouse") == 0 ||
 			strcmp(argv[0], "pointer") == 0) {
-		if (absolute) {
-			return cmd_results_new(CMD_INVALID, expected_position_syntax);
-		}
 		return cmd_move_to_position_pointer(container);
-	} else if (strcmp(argv[0], "center") == 0) {
+    }else if(strcmp(argv[0], "centor") == 0) {
 		double lx, ly;
 		if (absolute) {
 			lx = root->x + (root->width - container->pending.width) / 2;
@@ -859,6 +848,10 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 		}
 		container_floating_move_to(container, lx, ly);
 		return cmd_results_new(CMD_SUCCESS, NULL);
+    }
+
+	if (!argc) {
+		return cmd_results_new(CMD_INVALID, expected_position_syntax);
 	}
 
 	if (argc < 2) {
@@ -866,6 +859,7 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	}
 
 	struct movement_amount lx = { .amount = 0, .unit = MOVEMENT_UNIT_INVALID };
+
 	// X direction
 	int num_consumed_args = parse_movement_amount(argc, argv, &lx);
 	argc -= num_consumed_args;
@@ -879,10 +873,12 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	}
 
 	struct movement_amount ly = { .amount = 0, .unit = MOVEMENT_UNIT_INVALID };
+
 	// Y direction
 	num_consumed_args = parse_movement_amount(argc, argv, &ly);
+
 	argc -= num_consumed_args;
-	argv += num_consumed_args;
+
 	if (argc > 0) {
 		return cmd_results_new(CMD_INVALID, expected_position_syntax);
 	}
