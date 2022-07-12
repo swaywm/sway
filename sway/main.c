@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
 		case 'V': // verbose
 			verbose = true;
 			break;
-		case 'p': ; // --get-socketpath
+		case 'p': // --get-socketpath
 			if (getenv("SWAYSOCK")) {
 				printf("%s\n", getenv("SWAYSOCK"));
 				exit(EXIT_SUCCESS);
