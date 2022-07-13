@@ -464,7 +464,8 @@ runtime.
 	switches. Valid values for _state_ are _on_, _off_ and _toggle_. These
 	switches are on when the device lid is shut and when tablet mode is active
 	respectively. _toggle_ is also supported to run a command both when the
-	switch is toggled on or off.
+	switch is toggled on or off. _toggle_ is always dispatched before
+	dispatching _on_ and _off_.
 
 	Unless the flag _--locked_ is set, the command will not be run when a
 	screen locking program is active. If there is a matching binding with

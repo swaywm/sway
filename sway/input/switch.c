@@ -20,7 +20,12 @@ struct sway_switch *sway_switch_create(struct sway_seat *seat,
 	return switch_device;
 }
 
-static bool sway_switch_trigger_test(enum sway_switch_trigger trigger,
+static bool sway_switch_trigger_is_toggle(enum sway_switch_trigger trigger,
+		enum wlr_switch_state /*state*/) {
+	return trigger == SWAY_SWITCH_TRIGGER_TOGGLE;
+}
+
+static bool sway_switch_trigger_equals_state(enum sway_switch_trigger trigger,
 		enum wlr_switch_state state) {
 	switch (trigger) {
 	case SWAY_SWITCH_TRIGGER_ON:
@@ -28,12 +33,13 @@ static bool sway_switch_trigger_test(enum sway_switch_trigger trigger,
 	case SWAY_SWITCH_TRIGGER_OFF:
 		return state == WLR_SWITCH_STATE_OFF;
 	case SWAY_SWITCH_TRIGGER_TOGGLE:
-		return true;
+		return false;
 	}
 	abort(); // unreachable
 }
 
-static void execute_binding(struct sway_switch *sway_switch) {
+static void execute_binding_matching(struct sway_switch* sway_switch,
+		bool (*sway_switch_trigger_test)(enum sway_switch_trigger, enum wlr_switch_state)) {
 	struct sway_seat* seat = sway_switch->seat_device->sway_seat;
 	bool input_inhibited = seat->exclusive_client != NULL ||
 		server.session_lock.locked;
@@ -76,6 +82,11 @@ static void execute_binding(struct sway_switch *sway_switch) {
 	}
 }
 
+static void execute_bindings(struct sway_switch *sway_switch) {
+	execute_binding_matching(sway_switch, sway_switch_trigger_is_toggle);
+	execute_binding_matching(sway_switch, sway_switch_trigger_equals_state);
+}
+
 static void handle_switch_toggle(struct wl_listener *listener, void *data) {
 	struct sway_switch *sway_switch =
 			wl_container_of(listener, sway_switch, switch_toggle);
@@ -92,7 +103,7 @@ static void handle_switch_toggle(struct wl_listener *listener, void *data) {
 
 	sway_switch->type = event->switch_type;
 	sway_switch->state = event->switch_state;
-	execute_binding(sway_switch);
+	execute_bindings(sway_switch);
 }
 
 void sway_switch_configure(struct sway_switch *sway_switch) {
@@ -120,7 +131,7 @@ void sway_switch_retrigger_bindings_for_all(void) {
 			if (input_device->wlr_device->type != WLR_INPUT_DEVICE_SWITCH) {
 				continue;
 			}
-			execute_binding(seat_device->switch_device);
+			execute_bindings(seat_device->switch_device);
 		};
 	}
 }
