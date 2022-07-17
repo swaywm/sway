@@ -32,9 +32,12 @@ def on_window_focus(inactive_opacity, ipc, event):
 
 
 def remove_opacity(ipc):
-    for workspace in ipc.get_tree().workspaces():
+    tree = ipc.get_tree()
+    for workspace in tree.workspaces():
         for w in workspace:
             w.command("opacity 1")
+    for w in tree.scratchpad():
+        w.command("opacity 1")
     ipc.main_quit()
     sys.exit(0)
 
