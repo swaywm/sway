@@ -376,6 +376,11 @@ static const uint32_t *bit_depth_preferences[] = {
 		DRM_FORMAT_XRGB8888,
 		DRM_FORMAT_INVALID,
 	},
+	[RENDER_BIT_DEPTH_16F] = (const uint32_t []){
+		DRM_FORMAT_XBGR16161616F,
+		DRM_FORMAT_XRGB8888,
+		DRM_FORMAT_INVALID,
+	},
 };
 
 static void queue_output_config(struct output_config *oc,

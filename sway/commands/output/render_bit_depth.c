@@ -17,9 +17,12 @@ struct cmd_results *output_cmd_render_bit_depth(int argc, char **argv) {
 	} else if (strcmp(*argv, "10") == 0) {
 		config->handler_context.output_config->render_bit_depth =
 			RENDER_BIT_DEPTH_10;
+	} else if (strcmp(*argv, "16f") == 0 || strcmp(*argv, "16F") == 0) {
+		config->handler_context.output_config->render_bit_depth =
+			RENDER_BIT_DEPTH_16F;
 	} else {
 		return cmd_results_new(CMD_INVALID,
-			"Invalid bit depth. Must be a value in (8|10).");
+			"Invalid bit depth. Must be a value in (8|10|16f).");
 	}
 
 	config->handler_context.leftovers.argc = argc - 1;

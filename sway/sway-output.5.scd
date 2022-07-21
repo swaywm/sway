@@ -165,9 +165,10 @@ must be separated by one space. For example:
 	adaptive sync can improve latency, but can cause flickering on some
 	hardware.
 
-*output* <name> render_bit_depth 8|10
+*output* <name> render_bit_depth 8|10|16f
 	Controls the color channel bit depth at which frames are rendered; the
-	default is currently 8 bits per channel.
+	default is currently 8 bits per channel. The "16f" option requests
+	color channels encoded in half-precision floating point format.
 
 	Setting higher values will not have an effect if hardware and software lack
 	support for such bit depths. Successfully increasing the render bit depth
