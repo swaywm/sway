@@ -995,7 +995,7 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		json_object *layouts_arr = json_object_new_array();
 		json_object_object_add(object, "xkb_layout_names", layouts_arr);
 
-		xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(keymap);
+		xkb_layout_index_t num_layouts = keymap ? xkb_keymap_num_layouts(keymap) : 0;
 		xkb_layout_index_t layout_idx;
 		for (layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
 			const char *layout = xkb_keymap_layout_get_name(keymap, layout_idx);
