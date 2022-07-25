@@ -458,7 +458,9 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 
 static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	enum sway_container_layout parent_layout = container_parent_layout(c);
-	bool tab_or_stack = parent_layout == L_TABBED || parent_layout == L_STACKED;
+	list_t *siblings = container_get_siblings(c);
+	bool tab_or_stack = (parent_layout == L_TABBED || parent_layout == L_STACKED)
+		&& ((siblings && siblings->length > 1) || !config->hide_lone_tab);
 	if (((!tab_or_stack || container_is_floating(c)) &&
 				c->current.border != B_NORMAL) ||
 			c->pending.fullscreen_mode != FULLSCREEN_NONE ||
