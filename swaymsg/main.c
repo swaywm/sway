@@ -331,6 +331,15 @@ static void pretty_print_tree(json_object *obj, int indent) {
 	for (size_t i = 0; i < len; i++) {
 		pretty_print_tree(json_object_array_get_idx(nodes_obj, i), indent + 1);
 	}
+
+	json_object *floating_nodes_obj;
+	json_bool floating_nodes = json_object_object_get_ex(obj, "floating_nodes", &floating_nodes_obj);
+	if (floating_nodes) {
+		size_t len = json_object_array_length(floating_nodes_obj);
+		for (size_t i = 0; i < len; i++) {
+			pretty_print_tree(json_object_array_get_idx(floating_nodes_obj, i), indent + 1);
+		}
+	}
 }
 
 static void pretty_print(int type, json_object *resp) {
