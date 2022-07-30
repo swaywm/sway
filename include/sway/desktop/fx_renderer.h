@@ -12,7 +12,7 @@ struct gles2_tex_shader {
 	GLint tex_attrib;
 };
 
-struct gles2_renderer {
+struct fx_renderer {
 	struct wlr_egl *egl;
 
 	float projection[9];
@@ -34,6 +34,7 @@ struct gles2_renderer {
 	} shaders;
 };
 
-struct gles2_renderer *gles2_renderer_create(struct wlr_egl *egl);
+struct fx_renderer *fx_renderer_create(struct wlr_egl *egl);
 
 #endif
+

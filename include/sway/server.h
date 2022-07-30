@@ -36,6 +36,7 @@ struct sway_server {
 	// secondary headless backend used for creating virtual outputs on-the-fly
 	struct wlr_backend *headless_backend;
 	struct wlr_renderer *renderer;
+	struct fx_renderer *fx_renderer;
 	struct wlr_allocator *allocator;
 
 	struct wlr_compositor *compositor;

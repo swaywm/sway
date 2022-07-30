@@ -12,7 +12,7 @@
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/util/box.h>
 #include "log.h"
-#include "sway/desktop/opengl.h"
+#include "sway/desktop/fx_renderer.h"
 
 // TODO: update to hyprland shaders (add sup for rounded corners + add blur shaders)
 
@@ -158,7 +158,7 @@ error:
 	return 0;
 }
 
-struct gles2_renderer *gles2_renderer_create(struct wlr_egl *egl) {
+struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	// TODO: Hyprland way?
 	// TODO: handle case of no drm_fd?
 	//struct wlr_egl *egl = wlr_egl_create_with_drm_fd(drm_fd);
@@ -180,7 +180,7 @@ struct gles2_renderer *gles2_renderer_create(struct wlr_egl *egl) {
 		return NULL;
 	}
 
-	struct gles2_renderer *renderer = calloc(1, sizeof(struct gles2_renderer));
+	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
 	if (renderer == NULL) {
 		return NULL;
 	}
@@ -263,7 +263,7 @@ error:
 /*
 
 // TODO: is gles2_get_renderer_in_context(wlr_renderer) implementation needed?
-static void gles2_begin(struct gles2_renderer *renderer, uint32_t width,
+static void fx_begin(struct fx_renderer *renderer, uint32_t width,
 uint32_t height) { glViewport(0, 0, width, height); renderer->viewport_width =
 width; renderer->viewport_height = height;
 
@@ -295,7 +295,7 @@ static void gles2_scissor(struct wlr_box *box) {
 *************************/
 
 /*
-static void gles2_render_rect(struct gles2_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
+static void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
 	if (box->width == 0 || box->height == 0) {
 		return;
 	}

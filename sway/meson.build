@@ -12,9 +12,9 @@ sway_sources = files(
 	'xdg_decoration.c',
 
 	'desktop/desktop.c',
+	'desktop/fx_renderer.c',
 	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
-	'desktop/opengl.c',
 	'desktop/output.c',
 	'desktop/render.c',
 	'desktop/surface.c',

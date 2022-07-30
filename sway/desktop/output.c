@@ -33,7 +33,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 
-#include "sway/desktop/opengl.h"
+#include "sway/desktop/fx_renderer.h"
 
 struct sway_output *output_by_name_or_id(const char *name_or_id) {
 	for (int i = 0; i < root->outputs->length; ++i) {
@@ -878,12 +878,13 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	// TODO: move me to proper spot
+	// TODO: need different egl?
+	// TODO: init fx_renderer same way as wlr_renderer?
 	// TODO: reference wlroots render/wlr_renderer.c: wlr_renderer_autocreate
 	struct wlr_egl *egl = wlr_gles2_renderer_get_egl(server->renderer);
-	struct gles2_renderer *test = gles2_renderer_create(egl);
-	if (!test) {
-		printf("gles2_renderer is null");
+	server->fx_renderer = fx_renderer_create(egl);
+	if (!server->fx_renderer) {
+		printf("fx_renderer is null");
 	}
 
 	struct sway_output *output = output_create(wlr_output);

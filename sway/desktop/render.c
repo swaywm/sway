@@ -17,7 +17,7 @@
 #include "log.h"
 #include "config.h"
 #include "sway/config.h"
-#include "sway/desktop/opengl.h"
+#include "sway/desktop/fx_renderer.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -1028,7 +1028,13 @@ static void render_seatops(struct sway_output *output,
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
+	// TODO: replace with swayfx_renderer
 	struct wlr_renderer *renderer = output->server->renderer;
+	struct fx_renderer *fx_renderer = output->server->fx_renderer;
+	// TODO: remove this check
+	if (!fx_renderer) {
+		printf("swayfx_renderer is null");
+	}
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
