@@ -113,6 +113,9 @@ void workspace_detach(struct sway_workspace *workspace);
 struct sway_container *workspace_add_tiling(struct sway_workspace *workspace,
 		struct sway_container *con);
 
+void workspace_attach_tiling(struct sway_workspace *ws,
+		struct sway_container *con);
+
 void workspace_add_floating(struct sway_workspace *workspace,
 		struct sway_container *con);
 

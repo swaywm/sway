@@ -734,7 +734,7 @@ static void set_workspace(struct sway_container *container, void *data) {
 	container->pending.workspace = container->pending.parent->pending.workspace;
 }
 
-static void workspace_attach_tiling(struct sway_workspace *ws,
+void workspace_attach_tiling(struct sway_workspace *ws,
 		struct sway_container *con) {
 	list_add(ws->tiling, con);
 	con->pending.workspace = ws;
