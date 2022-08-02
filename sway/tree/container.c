@@ -1412,6 +1412,9 @@ list_t *container_get_siblings(struct sway_container *container) {
 	if (container_is_scratchpad_hidden(container)) {
 		return NULL;
 	}
+	if (!container->pending.workspace) {
+		return NULL;
+	}
 	if (list_find(container->pending.workspace->tiling, container) != -1) {
 		return container->pending.workspace->tiling;
 	}
