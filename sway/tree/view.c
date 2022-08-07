@@ -1282,20 +1282,22 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	free(view->container->title);
 	free(view->container->formatted_title);
-	if (title) {
-		size_t len = parse_title_format(view, NULL);
+
+	size_t len = parse_title_format(view, NULL);
+
+	if (len) {
 		char *buffer = calloc(len + 1, sizeof(char));
 		if (!sway_assert(buffer, "Unable to allocate title string")) {
 			return;
 		}
-		parse_title_format(view, buffer);
 
-		view->container->title = strdup(title);
+		parse_title_format(view, buffer);
 		view->container->formatted_title = buffer;
 	} else {
-		view->container->title = NULL;
 		view->container->formatted_title = NULL;
 	}
+
+	view->container->title = title ? strdup(title) : NULL;
 
 	// Update title after the global font height is updated
 	container_update_title_textures(view->container);
