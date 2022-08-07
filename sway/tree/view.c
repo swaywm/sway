@@ -1259,6 +1259,12 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 		} else if (strncmp(next, "%app_id", 7) == 0) {
 			len += append_prop(buffer, view_get_app_id(view));
 			format += 7;
+		} else if (strncmp(next, "%sandbox_app_id", 15) == 0) {
+			len += append_prop(buffer, view_get_sandbox_app_id(view));
+			format += 15;
+		} else if (strncmp(next, "%sandbox_engine", 15) == 0) {
+			len += append_prop(buffer, view_get_sandbox_engine(view));
+			format += 15;
 		} else if (strncmp(next, "%class", 6) == 0) {
 			len += append_prop(buffer, view_get_class(view));
 			format += 6;

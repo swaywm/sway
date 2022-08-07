@@ -362,6 +362,10 @@ set|plus|minus|toggle <amount>
 		%instance - The X11 instance (applicable to xwayland windows only) ++
 		%shell - The protocol the window is using (typically xwayland or
 			xdg_shell)
+		%sandbox_app_id - The app ID of this window, as passed in by the
+			sandboxing engine (this may differ from %app_id)
+		%sandbox_engine - The name of the engine that the client of this
+			window is sandboxed with
 
 	This command is typically used with *for_window* criteria. For example:
 
