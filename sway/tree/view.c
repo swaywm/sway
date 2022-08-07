@@ -97,6 +97,20 @@ const char *view_get_app_id(struct sway_view *view) {
 	return NULL;
 }
 
+const char *view_get_sandbox_app_id(struct sway_view *view) {
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_SANDBOX_APP_ID);
+	}
+	return NULL;
+}
+
+const char *view_get_sandbox_engine(struct sway_view *view) {
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_SANDBOX_ENGINE);
+	}
+	return NULL;
+}
+
 const char *view_get_class(struct sway_view *view) {
 	if (view->impl->get_string_prop) {
 		return view->impl->get_string_prop(view, VIEW_PROP_CLASS);
