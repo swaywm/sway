@@ -53,6 +53,9 @@ struct criteria {
 	char urgent; // 'l' for latest or 'o' for oldest
 	struct pattern *workspace;
 	pid_t pid;
+	struct pattern *sandbox_engine;
+	struct pattern *sandbox_app_id;
+	struct pattern *sandbox_instance_id;
 };
 
 bool criteria_is_empty(struct criteria *criteria);
