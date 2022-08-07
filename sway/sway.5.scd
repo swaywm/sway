@@ -1026,6 +1026,17 @@ The following attributes may be matched with:
 	expression. If the value is \_\_focused\_\_, then all the views on the
 	currently focused workspace matches.
 
+*sandbox_app_id*
+	Compare against the sandboxed app id for this view. Can be a regular
+	expression. If the value is \_\_focused\_\_, then the sandboxed app id must
+	be the same as that of the currently focused window.
+
+*sandbox_engine*
+	Compare against the sandbox engine for this view. Can be a regular
+	expression. If the value is \_\_focused\_\_, then the sandbox engine must be
+	the same as that of the currently focused window.
+
+
 # SEE ALSO
 
 *sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)
