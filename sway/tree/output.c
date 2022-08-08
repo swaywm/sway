@@ -146,11 +146,6 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
 
-	size_t len = sizeof(output->shell_layers) / sizeof(output->shell_layers[0]);
-	for (size_t i = 0; i < len; ++i) {
-		wl_list_init(&output->shell_layers[i]);
-	}
-
 	return output;
 }
 

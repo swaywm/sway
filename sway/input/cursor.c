@@ -77,6 +77,10 @@ struct sway_node *node_at_coords(
 				if (desc->type == SWAY_SCENE_DESC_CONTAINER) {
 					struct sway_container *con = desc->data;
 					return &con->node;
+				} else if (desc->type == SWAY_SCENE_DESC_LAYER_SHELL) {
+					// We don't want to feed through the current workspace on
+					// layer shells
+					return NULL;
 				}
 			}
 
