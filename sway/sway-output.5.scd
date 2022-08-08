@@ -24,7 +24,7 @@ must be separated by one space. For example:
 
 # COMMANDS
 
-*output* <name> mode|resolution|res [--custom] <WIDTHxHEIGHT>[@<RATE>Hz]
+*output* <name> mode|resolution|res [--custom] <width>x<height>[@<rate>Hz]
 	Configures the specified output to use the given mode. Modes are a
 	combination of width and height (in pixels) and a refresh rate that your
 	display can be configured to use. For a list of available modes for each
