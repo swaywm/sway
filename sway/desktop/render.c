@@ -53,7 +53,8 @@ static int scale_length(int length, int offset, float scale) {
 
 static void scissor_output(struct wlr_output *wlr_output,
 		pixman_box32_t *rect) {
-	struct wlr_renderer *renderer = wlr_output->renderer;
+	struct sway_output *output = wlr_output->data;
+	struct fx_renderer *renderer = output->server->renderer;
 	assert(renderer);
 
 	struct wlr_box box = {
@@ -70,7 +71,7 @@ static void scissor_output(struct wlr_output *wlr_output,
 		wlr_output_transform_invert(wlr_output->transform);
 	wlr_box_transform(&box, &box, transform, ow, oh);
 
-	wlr_renderer_scissor(renderer, &box);
+	fx_renderer_scissor(&box);
 }
 
 static void set_scale_filter(struct wlr_output *wlr_output,
@@ -101,8 +102,8 @@ static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
 		const float matrix[static 9], float alpha) {
-	struct wlr_renderer *renderer = wlr_output->renderer;
 	struct sway_output *output = wlr_output->data;
+	struct fx_renderer *renderer = output->server->renderer;
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
@@ -120,9 +121,9 @@ static void render_texture(struct wlr_output *wlr_output,
 		scissor_output(wlr_output, &rects[i]);
 		set_scale_filter(wlr_output, texture, output->scale_filter);
 		if (src_box != NULL) {
-			wlr_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha);
+			fx_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha);
 		} else {
-			wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
+			fx_render_texture_with_matrix(renderer, texture, matrix, alpha);
 		}
 	}
 
@@ -163,8 +164,9 @@ static void render_surface_iterator(struct sway_output *output,
 	}
 	scale_box(&dst_box, wlr_output->scale);
 
-	render_texture(wlr_output, output_damage, texture,
-		&src_box, &dst_box, matrix, alpha);
+	render_texture(wlr_output, output_damage, texture, &src_box, &dst_box, matrix, alpha);
+	//render_texture(wlr_output, output_damage, texture,
+	//	&src_box, &dst_box, matrix, alpha);
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
@@ -1028,13 +1030,7 @@ static void render_seatops(struct sway_output *output,
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
-	// TODO: replace with swayfx_renderer
-	struct wlr_renderer *renderer = output->server->renderer;
-	struct fx_renderer *fx_renderer = output->server->fx_renderer;
-	// TODO: remove this check
-	if (!fx_renderer) {
-		printf("swayfx_renderer is null");
-	}
+	struct wlr_renderer *renderer = output->server->renderer->wlr_renderer;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {

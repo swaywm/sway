@@ -6,8 +6,6 @@
 #include <wayland-server-core.h>
 #include <wlr/backend/drm.h>
 #include <wlr/backend/headless.h>
-#include <wlr/render/gles2.h> // TODO: remove if no egl needed to init custom renderer
-#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_matrix.h>
@@ -873,18 +871,9 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	}
 
 	if (!wlr_output_init_render(wlr_output, server->allocator,
-			server->renderer)) {
+			server->renderer->wlr_renderer)) {
 		sway_log(SWAY_ERROR, "Failed to init output render");
 		return;
-	}
-
-	// TODO: need different egl?
-	// TODO: init fx_renderer same way as wlr_renderer?
-	// TODO: reference wlroots render/wlr_renderer.c: wlr_renderer_autocreate
-	struct wlr_egl *egl = wlr_gles2_renderer_get_egl(server->renderer);
-	server->fx_renderer = fx_renderer_create(egl);
-	if (!server->fx_renderer) {
-		printf("fx_renderer is null");
 	}
 
 	struct sway_output *output = output_create(wlr_output);

@@ -11,11 +11,13 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/render/drm_format_set.h>
+#include <wlr/render/wlr_renderer.h>
 #include "linux-dmabuf-unstable-v1-protocol.h"
 #include "cairo_util.h"
 #include "pango.h"
 #include "sway/config.h"
 #include "sway/desktop.h"
+#include "sway/desktop/fx_renderer.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -1103,10 +1105,10 @@ static void set_fullscreen(struct sway_container *con, bool enable) {
 	// TODO: add wlroots helpers for all of this stuff
 
 	const struct wlr_drm_format_set *renderer_formats =
-		wlr_renderer_get_dmabuf_texture_formats(server.renderer);
+		wlr_renderer_get_dmabuf_texture_formats(server.renderer->wlr_renderer);
 	assert(renderer_formats);
 
-	int renderer_drm_fd = wlr_renderer_get_drm_fd(server.renderer);
+	int renderer_drm_fd = wlr_renderer_get_drm_fd(server.renderer->wlr_renderer);
 	int backend_drm_fd = wlr_backend_get_drm_fd(wlr_output->backend);
 	if (renderer_drm_fd < 0 || backend_drm_fd < 0) {
 		return;

@@ -8,11 +8,15 @@
 #include <assert.h>
 #include <GLES2/gl2.h>
 #include <stdlib.h>
+#include <wlr/render/gles2.h>
 #include <wlr/render/egl.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/util/box.h>
 #include "log.h"
 #include "sway/desktop/fx_renderer.h"
+#include "sway/output.h"
+#include "sway/server.h"
 
 // TODO: update to hyprland shaders (add sup for rounded corners + add blur shaders)
 
@@ -96,6 +100,7 @@ static const GLfloat flip_180[] = {
 	0.0f, -1.0f, 0.0f,
 	0.0f, 0.0f, 1.0f,
 };
+*/
 
 static const GLfloat verts[] = {
 	1, 0, // top right
@@ -103,7 +108,7 @@ static const GLfloat verts[] = {
 	1, 1, // bottom right
 	0, 1, // bottom left
 };
-*/
+
 /************************
   General Functions
 *************************/
@@ -158,20 +163,30 @@ error:
 	return 0;
 }
 
-struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
-	// TODO: Hyprland way?
-	// TODO: handle case of no drm_fd?
-	//struct wlr_egl *egl = wlr_egl_create_with_drm_fd(drm_fd);
-	//struct wlr_egl *egl = wlr_egl_create_with_context(${1:EGLDisplay display}, ${2:EGLContext context});
-
-	if (egl == NULL) {
-		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not initialize EGL");
+// TODO: Hyprland way?
+struct fx_renderer *fx_renderer_create(struct sway_server *server) {
+	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
+	if (renderer == NULL) {
 		return NULL;
 	}
+	renderer->current = NULL;
+
+	renderer->wlr_renderer = wlr_renderer_autocreate(server->backend);
+
+	renderer->wlr_renderer = wlr_renderer_autocreate(server->backend);
+	assert(renderer->wlr_renderer);
+	// TODO: needed?
+	wlr_renderer_init_wl_display(renderer->wlr_renderer, server->wl_display);
+
+	struct wlr_egl *egl = wlr_gles2_renderer_get_egl(renderer->wlr_renderer);
+	// TODO: wlr_egl_make_current or eglMakeCurrent?
+	// TODO: assert instead of conditional statement?
 	if (!wlr_egl_make_current(egl)) {
 		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not make EGL current");
 		return NULL;
 	}
+	// TODO: needed?
+	renderer->egl = egl;
 
 	// get extensions
 	const char *exts_str = (const char *)glGetString(GL_EXTENSIONS);
@@ -180,15 +195,7 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 		return NULL;
 	}
 
-	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
-	if (renderer == NULL) {
-		return NULL;
-	}
-
-	// TODO: needed?
-	renderer->egl = egl;
-
-	sway_log(SWAY_INFO, "Creating GLES2 renderer");
+	sway_log(SWAY_INFO, "Creating swayfx GLES2 renderer");
 	sway_log(SWAY_INFO, "Using %s", glGetString(GL_VERSION));
 	sway_log(SWAY_INFO, "GL vendor: %s", glGetString(GL_VENDOR));
 	sway_log(SWAY_INFO, "GL renderer: %s", glGetString(GL_RENDERER));
@@ -241,6 +248,7 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.tex_ext.pos_attrib = glGetAttribLocation(prog, "pos");
 	renderer->shaders.tex_ext.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
+	// TODO: if remove renderer->egl, replace below with r->egl
 	wlr_egl_unset_current(renderer->egl);
 
 	sway_log(SWAY_INFO, "GLES2 RENDERER: Shaders Initialized Successfully");
@@ -254,32 +262,36 @@ error:
 
 	wlr_egl_unset_current(renderer->egl);
 
+	// TODO: more freeing?
 	free(renderer);
 
 	sway_log(SWAY_ERROR, "GLES2 RENDERER: Error Initializing Shaders");
 	return NULL;
 }
 
-/*
-
-// TODO: is gles2_get_renderer_in_context(wlr_renderer) implementation needed?
-static void fx_begin(struct fx_renderer *renderer, uint32_t width,
-uint32_t height) { glViewport(0, 0, width, height); renderer->viewport_width =
-width; renderer->viewport_height = height;
-
-		// refresh projection matrix
-		wlr_matrix_projection(renderer->projection, width, height,
-WL_OUTPUT_TRANSFORM_NORMAL);
-
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+// TODO: handle without wlr_renderer?
+void fx_renderer_begin(struct fx_renderer *renderer, struct sway_output *output) {
+	wlr_renderer_begin(renderer->wlr_renderer, output->wlr_output->width, output->wlr_output->height);
+	renderer->current = output;
 }
 
+// TODO: handle without wlr_renderer?
+void fx_renderer_end(struct fx_renderer *renderer, pixman_region32_t* damage, struct sway_output* output) {
+	wlr_renderer_scissor(renderer->wlr_renderer, NULL);
+	wlr_output_render_software_cursors(output->wlr_output, damage);
+	wlr_renderer_end(renderer->wlr_renderer);
+
+	renderer->current = NULL;
+}
+
+/*
 static void gles2_clear(const float color[static 4]) {
 		glClearColor(color[0], color[1], color[2], color[3]);
 		glClear(GL_COLOR_BUFFER_BIT);
 }
+*/
 
-static void gles2_scissor(struct wlr_box *box) {
+void fx_renderer_scissor(struct wlr_box *box) {
 		if (box) {
 				glScissor(box->x, box->y, box->width, box->height);
 				glEnable(GL_SCISSOR_TEST);
@@ -288,46 +300,146 @@ static void gles2_scissor(struct wlr_box *box) {
 		}
 }
 
-*/
-
 /************************
   Rendering Functions
 *************************/
 
 /*
-static void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
-	if (box->width == 0 || box->height == 0) {
-		return;
+static void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box
+*box, const float color[static 4], const float projection[static 9]) { if
+(box->width == 0 || box->height == 0) { return;
+		}
+		assert(box->width > 0 && box->height > 0);
+		float matrix[9];
+		wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
+projection);
+
+		float gl_matrix[9];
+		wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
+		wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
+
+		// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be
+set to GL_FALSE wlr_matrix_transpose(gl_matrix, gl_matrix);
+
+		if (color[3] == 1.0) {
+				glDisable(GL_BLEND);
+		} else {
+				glEnable(GL_BLEND);
+		}
+
+		glUseProgram(renderer->shaders.quad.program);
+
+		glUniformMatrix3fv(renderer->shaders.quad.proj, 1, GL_FALSE, gl_matrix);
+		glUniform4f(renderer->shaders.quad.color, color[0], color[1], color[2],
+color[3]);
+
+		glVertexAttribPointer(renderer->shaders.quad.pos_attrib, 2, GL_FLOAT,
+GL_FALSE, 0, verts);
+
+		glEnableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+}
+*/
+
+bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
+		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
+		const float matrix[static 9], float alpha) {
+
+	assert(wlr_texture_is_gles2(wlr_texture));
+	struct wlr_gles2_texture_attribs texture_attrs;
+	wlr_gles2_texture_get_attribs(wlr_texture, &texture_attrs);
+
+	struct gles2_tex_shader *shader = NULL;
+
+	switch (texture_attrs.target) {
+	case GL_TEXTURE_2D:
+		if (texture_attrs.has_alpha) {
+			shader = &renderer->shaders.tex_rgba;
+		} else {
+			shader = &renderer->shaders.tex_rgbx;
+		}
+		break;
+	// TODO?
+	/*
+	case GL_TEXTURE_EXTERNAL_OES:
+		shader = &renderer->shaders.tex_ext;
+
+		// TODO: ADD ME ONCE EXTS ADDED TO RENDERER
+		if (!renderer->exts.OES_egl_image_external) {
+			sway_log(SWAY_ERROR, "Failed to render texture: "
+				"GL_TEXTURE_EXTERNAL_OES not supported");
+			return false;
+		}
+		break;
+	*/
+	default:
+		abort();
 	}
-	assert(box->width > 0 && box->height > 0);
-	float matrix[9];
-	wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0, projection);
 
 	float gl_matrix[9];
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
-	wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
 
-	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set to GL_FALSE
+	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
+	// to GL_FALSE
 	wlr_matrix_transpose(gl_matrix, gl_matrix);
 
-	if (color[3] == 1.0) {
+	// push_gles2_debug(renderer);
+
+	if (!texture_attrs.has_alpha && alpha == 1.0) {
 		glDisable(GL_BLEND);
 	} else {
 		glEnable(GL_BLEND);
 	}
 
-	glUseProgram(renderer->shaders.quad.program);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(texture_attrs.target, texture_attrs.tex);
 
-	glUniformMatrix3fv(renderer->shaders.quad.proj, 1, GL_FALSE, gl_matrix);
-	glUniform4f(renderer->shaders.quad.color, color[0], color[1], color[2], color[3]);
+	glTexParameteri(texture_attrs.target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glVertexAttribPointer(renderer->shaders.quad.pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, verts);
+	glUseProgram(shader->program);
 
-	glEnableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+	glUniformMatrix3fv(shader->proj, 1, GL_FALSE, gl_matrix);
+	glUniform1i(shader->tex, 0);
+	glUniform1f(shader->alpha, alpha);
+
+	const GLfloat x1 = box->x / wlr_texture->width;
+	const GLfloat y1 = box->y / wlr_texture->height;
+	const GLfloat x2 = (box->x + box->width) / wlr_texture->width;
+	const GLfloat y2 = (box->y + box->height) / wlr_texture->height;
+	const GLfloat texcoord[] = {
+		x2, y1, // top right
+		x1, y1, // top left
+		x2, y2, // bottom right
+		x1, y2, // bottom left
+	};
+
+	glVertexAttribPointer(shader->pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, verts);
+	glVertexAttribPointer(shader->tex_attrib, 2, GL_FLOAT, GL_FALSE, 0, texcoord);
+
+	glEnableVertexAttribArray(shader->pos_attrib);
+	glEnableVertexAttribArray(shader->tex_attrib);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+	glDisableVertexAttribArray(shader->pos_attrib);
+	glDisableVertexAttribArray(shader->tex_attrib);
+
+	glBindTexture(texture_attrs.target, 0);
+
+	// pop_gles2_debug(renderer);
+	return true;
 }
 
-*/
+bool fx_render_texture_with_matrix(struct fx_renderer *renderer,
+		struct wlr_texture *wlr_texture, const float matrix[static 9], float alpha) {
+	struct wlr_fbox box = {
+		.x = 0,
+		.y = 0,
+		.width = wlr_texture->width,
+		.height = wlr_texture->height,
+	};
+	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &box, matrix, alpha);
+}

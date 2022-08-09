@@ -38,6 +38,7 @@
 #include "list.h"
 #include "log.h"
 #include "sway/config.h"
+#include "sway/desktop/fx_renderer.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
 #include "sway/output.h"
@@ -75,29 +76,29 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 
-	server->renderer = wlr_renderer_autocreate(server->backend);
+	server->renderer = fx_renderer_create(server);
 	if (!server->renderer) {
 		sway_log(SWAY_ERROR, "Failed to create renderer");
 		return false;
 	}
 
-	wlr_renderer_init_wl_shm(server->renderer, server->wl_display);
+	wlr_renderer_init_wl_shm(server->renderer->wlr_renderer, server->wl_display);
 
-	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer) != NULL) {
-		wlr_drm_create(server->wl_display, server->renderer);
+	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer->wlr_renderer) != NULL) {
+		wlr_drm_create(server->wl_display, server->renderer->wlr_renderer);
 		server->linux_dmabuf_v1 =
-			wlr_linux_dmabuf_v1_create(server->wl_display, server->renderer);
+			wlr_linux_dmabuf_v1_create(server->wl_display, server->renderer->wlr_renderer);
 	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
-		server->renderer);
+		server->renderer->wlr_renderer);
 	if (!server->allocator) {
 		sway_log(SWAY_ERROR, "Failed to create allocator");
 		return false;
 	}
 
 	server->compositor = wlr_compositor_create(server->wl_display,
-		server->renderer);
+		server->renderer->wlr_renderer);
 	server->compositor_new_surface.notify = handle_compositor_new_surface;
 	wl_signal_add(&server->compositor->events.new_surface,
 		&server->compositor_new_surface);
