@@ -216,15 +216,14 @@ set|plus|minus|toggle <amount>
 	further details.
 
 *move* left|right|up|down [<px> px]
-	Moves the focused container in the direction specified. If the container,
-	the optional _px_ argument specifies how many pixels to move the container.
-	If unspecified, the default is 10 pixels. Pixels are ignored when moving
-	tiled containers.
+	Moves the focused container in the direction specified. The optional _px_
+	argument specifies how many pixels to move the container. If unspecified,
+	the default is 10 pixels. Pixels are ignored when moving tiled containers.
 
 *move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ppt]
 	Moves the focused container to the specified position in the workspace.
 	The position can be specified in pixels or percentage points, omitting
-	the unit defaults to pixels. If	_absolute_ is used, the position is
+	the unit defaults to pixels. If _absolute_ is used, the position is
 	relative to all outputs. _absolute_ can not be used with percentage points.
 
 *move* [absolute] position center
