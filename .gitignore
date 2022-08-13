@@ -2,6 +2,7 @@ install_manifest.txt
 *.swp
 *.o
 *.a
+.cache/
 bin/
 test/
 build/
