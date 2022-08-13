@@ -2,7 +2,6 @@
 #define _SWAY_OPENGL_H
 
 #include <GLES2/gl2.h>
-#include "sway/server.h"
 
 struct gles2_tex_shader {
 	GLuint program;
@@ -14,14 +13,9 @@ struct gles2_tex_shader {
 };
 
 struct fx_renderer {
-	// for simple rendering
-	struct wlr_renderer* wlr_renderer;
-
 	struct wlr_egl *egl;
 
 	float projection[9];
-
-	struct sway_output *current;
 
 	// Shaders
 	struct {
@@ -37,11 +31,13 @@ struct fx_renderer {
 	} shaders;
 };
 
-struct fx_renderer *fx_renderer_create(struct sway_server *server);
+struct fx_renderer *fx_renderer_create(struct wlr_egl *egl);
 
-void fx_renderer_begin(struct fx_renderer *renderer, struct sway_output *output);
+void fx_renderer_begin(struct fx_renderer *renderer, uint32_t width, uint32_t height);
 
-void fx_renderer_end(struct fx_renderer *renderer, pixman_region32_t* damage, struct sway_output* output);
+void fx_renderer_end();
+
+void fx_renderer_clear(const float color[static 4]);
 
 void fx_renderer_scissor(struct wlr_box *box);
 

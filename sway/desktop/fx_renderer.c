@@ -8,9 +8,9 @@
 #include <assert.h>
 #include <GLES2/gl2.h>
 #include <stdlib.h>
-#include <wlr/render/gles2.h>
+#include <wlr/backend.h>
 #include <wlr/render/egl.h>
-#include <wlr/render/wlr_renderer.h>
+#include <wlr/render/gles2.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/util/box.h>
 #include "log.h"
@@ -164,21 +164,13 @@ error:
 }
 
 // TODO: Hyprland way?
-struct fx_renderer *fx_renderer_create(struct sway_server *server) {
+// TODO: instead of server, have param be server->backend like wlr_renderer_autocreate
+struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
 	if (renderer == NULL) {
 		return NULL;
 	}
-	renderer->current = NULL;
 
-	renderer->wlr_renderer = wlr_renderer_autocreate(server->backend);
-
-	renderer->wlr_renderer = wlr_renderer_autocreate(server->backend);
-	assert(renderer->wlr_renderer);
-	// TODO: needed?
-	wlr_renderer_init_wl_display(renderer->wlr_renderer, server->wl_display);
-
-	struct wlr_egl *egl = wlr_gles2_renderer_get_egl(renderer->wlr_renderer);
 	// TODO: wlr_egl_make_current or eglMakeCurrent?
 	// TODO: assert instead of conditional statement?
 	if (!wlr_egl_make_current(egl)) {
@@ -269,27 +261,29 @@ error:
 	return NULL;
 }
 
-// TODO: handle without wlr_renderer?
-void fx_renderer_begin(struct fx_renderer *renderer, struct sway_output *output) {
-	wlr_renderer_begin(renderer->wlr_renderer, output->wlr_output->width, output->wlr_output->height);
-	renderer->current = output;
+void fx_renderer_begin(struct fx_renderer *renderer, uint32_t width, uint32_t height) {
+	//push_gles2_debug(renderer);
+
+	glViewport(0, 0, width, height);
+
+	// refresh projection matrix
+	wlr_matrix_projection(renderer->projection, width, height,
+		WL_OUTPUT_TRANSFORM_FLIPPED_180);
+
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	//pop_gles2_debug(renderer);
+
 }
 
-// TODO: handle without wlr_renderer?
-void fx_renderer_end(struct fx_renderer *renderer, pixman_region32_t* damage, struct sway_output* output) {
-	wlr_renderer_scissor(renderer->wlr_renderer, NULL);
-	wlr_output_render_software_cursors(output->wlr_output, damage);
-	wlr_renderer_end(renderer->wlr_renderer);
+void fx_renderer_end() {
 
-	renderer->current = NULL;
 }
 
-/*
-static void gles2_clear(const float color[static 4]) {
+void fx_renderer_clear(const float color[static 4]) {
 		glClearColor(color[0], color[1], color[2], color[3]);
 		glClear(GL_COLOR_BUFFER_BIT);
 }
-*/
 
 void fx_renderer_scissor(struct wlr_box *box) {
 		if (box) {
@@ -362,7 +356,6 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 			shader = &renderer->shaders.tex_rgbx;
 		}
 		break;
-	// TODO?
 	/*
 	case GL_TEXTURE_EXTERNAL_OES:
 		shader = &renderer->shaders.tex_ext;
@@ -374,8 +367,9 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 			return false;
 		}
 		break;
-	*/
+		*/
 	default:
+		sway_log(SWAY_ERROR, "Aborting render");
 		abort();
 	}
 

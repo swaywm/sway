@@ -1105,10 +1105,10 @@ static void set_fullscreen(struct sway_container *con, bool enable) {
 	// TODO: add wlroots helpers for all of this stuff
 
 	const struct wlr_drm_format_set *renderer_formats =
-		wlr_renderer_get_dmabuf_texture_formats(server.renderer->wlr_renderer);
+		wlr_renderer_get_dmabuf_texture_formats(server.wlr_renderer);
 	assert(renderer_formats);
 
-	int renderer_drm_fd = wlr_renderer_get_drm_fd(server.renderer->wlr_renderer);
+	int renderer_drm_fd = wlr_renderer_get_drm_fd(server.wlr_renderer);
 	int backend_drm_fd = wlr_backend_get_drm_fd(wlr_output->backend);
 	if (renderer_drm_fd < 0 || backend_drm_fd < 0) {
 		return;
