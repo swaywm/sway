@@ -18,8 +18,6 @@
 #include "sway/output.h"
 #include "sway/server.h"
 
-// TODO: update to hyprland shaders (add sup for rounded corners + add blur shaders)
-
 /************************
   Shaders
 *************************/
@@ -297,46 +295,6 @@ void fx_renderer_scissor(struct wlr_box *box) {
 /************************
   Rendering Functions
 *************************/
-
-/*
-static void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box
-*box, const float color[static 4], const float projection[static 9]) { if
-(box->width == 0 || box->height == 0) { return;
-		}
-		assert(box->width > 0 && box->height > 0);
-		float matrix[9];
-		wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
-projection);
-
-		float gl_matrix[9];
-		wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
-		wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
-
-		// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be
-set to GL_FALSE wlr_matrix_transpose(gl_matrix, gl_matrix);
-
-		if (color[3] == 1.0) {
-				glDisable(GL_BLEND);
-		} else {
-				glEnable(GL_BLEND);
-		}
-
-		glUseProgram(renderer->shaders.quad.program);
-
-		glUniformMatrix3fv(renderer->shaders.quad.proj, 1, GL_FALSE, gl_matrix);
-		glUniform4f(renderer->shaders.quad.color, color[0], color[1], color[2],
-color[3]);
-
-		glVertexAttribPointer(renderer->shaders.quad.pos_attrib, 2, GL_FLOAT,
-GL_FALSE, 0, verts);
-
-		glEnableVertexAttribArray(renderer->shaders.quad.pos_attrib);
-
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-		glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
-}
-*/
 
 bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
