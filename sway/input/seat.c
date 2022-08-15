@@ -11,7 +11,6 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_tablet_v2.h>
-#include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "config.h"
 #include "list.h"
@@ -43,7 +42,6 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	sway_keyboard_destroy(seat_device->keyboard);
 	sway_tablet_destroy(seat_device->tablet);
 	sway_tablet_pad_destroy(seat_device->tablet_pad);
-	sway_switch_destroy(seat_device->switch_device);
 	wlr_cursor_detach_input_device(seat_device->sway_seat->cursor->cursor,
 		seat_device->input_device->wlr_device);
 	wl_list_remove(&seat_device->link);
@@ -247,7 +245,7 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		seat_node_destroy(seat_node);
 		// If an unmanaged or layer surface is focused when an output gets
 		// disabled and an empty workspace on the output was focused by the
-		// seat, the seat needs to refocus its focus inactive to update the
+		// seat, the seat needs to refocus it's focus inactive to update the
 		// value of seat->workspace.
 		if (seat->workspace == node->sway_workspace) {
 			struct sway_node *node = seat_get_focus_inactive(seat, &root->node);
@@ -380,8 +378,8 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 	case WLR_DRAG_GRAB_KEYBOARD:
 		return;
 	case WLR_DRAG_GRAB_KEYBOARD_POINTER:
-		icon->x = cursor->x + wlr_icon->surface->sx;
-		icon->y = cursor->y + wlr_icon->surface->sy;
+		icon->x = cursor->x;
+		icon->y = cursor->y;
 		break;
 	case WLR_DRAG_GRAB_KEYBOARD_TOUCH:;
 		struct wlr_touch_point *point =
@@ -389,8 +387,8 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 		if (point == NULL) {
 			return;
 		}
-		icon->x = seat->touch_x + wlr_icon->surface->sx;
-		icon->y = seat->touch_y + wlr_icon->surface->sy;
+		icon->x = seat->touch_x;
+		icon->y = seat->touch_y;
 	}
 
 	drag_icon_damage_whole(icon);
@@ -726,25 +724,14 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		ic == NULL ? MAPPED_TO_DEFAULT : ic->mapped_to;
 
 	switch (mapped_to) {
-	case MAPPED_TO_DEFAULT:;
+	case MAPPED_TO_DEFAULT:
 		/*
 		 * If the wlroots backend provides an output name, use that.
 		 *
-		 * Otherwise, try to map built-in touch and pointer devices to the
+		 * Otherwise, try to map built-in touch and tablet tool devices to the
 		 * built-in output.
 		 */
-		struct wlr_input_device *dev = sway_device->input_device->wlr_device;
-		switch (dev->type) {
-		case WLR_INPUT_DEVICE_POINTER:
-			mapped_to_output = dev->pointer->output_name;
-			break;
-		case WLR_INPUT_DEVICE_TOUCH:
-			mapped_to_output = dev->touch->output_name;
-			break;
-		default:
-			mapped_to_output = NULL;
-			break;
-		}
+		mapped_to_output = sway_device->input_device->wlr_device->output_name;
 		if (mapped_to_output == NULL && is_touch_or_tablet_tool(sway_device) &&
 				sway_libinput_device_is_builtin(sway_device->input_device)) {
 			mapped_to_output = get_builtin_output_name();
@@ -813,7 +800,7 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	}
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
-			seat_device->input_device->wlr_device->keyboard);
+			seat_device->input_device->wlr_device);
 	struct sway_node *focus = seat_get_focus(seat);
 	if (focus && node_is_view(focus)) {
 		// force notify reenter to pick up the new configuration
@@ -1574,7 +1561,7 @@ void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 }
 
 void seatop_pointer_axis(struct sway_seat *seat,
-		struct wlr_pointer_axis_event *event) {
+		struct wlr_event_pointer_axis *event) {
 	if (seat->seatop_impl->pointer_axis) {
 		seat->seatop_impl->pointer_axis(seat, event);
 	}

@@ -831,15 +831,6 @@ void render_frame(struct swaybar_output *output) {
 		wl_surface_damage(output->surface, 0, 0,
 				output->width, output->height);
 
-		uint32_t bg_alpha = ctx.background_color & 0xFF;
-		if (bg_alpha == 0xFF) {
-			struct wl_region *region =
-				wl_compositor_create_region(output->bar->compositor);
-			wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
-			wl_surface_set_opaque_region(output->surface, region);
-			wl_region_destroy(region);
-		}
-
 		struct wl_callback *frame_callback = wl_surface_frame(output->surface);
 		wl_callback_add_listener(frame_callback, &output_frame_listener, output);
 		output->frame_scheduled = true;

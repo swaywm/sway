@@ -102,19 +102,19 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			}
 
 			char *conf_path = dirname(conf);
-			char *real_src = malloc(strlen(conf_path) + strlen(src) + 2);
-			if (!real_src) {
-				free(src);
+			char *rel_path = src;
+			src = malloc(strlen(conf_path) + strlen(src) + 2);
+			if (!src) {
+				free(rel_path);
 				free(conf);
 				sway_log(SWAY_ERROR, "Unable to allocate memory");
 				return cmd_results_new(CMD_FAILURE,
 						"Unable to allocate resources");
 			}
 
-			snprintf(real_src, strlen(conf_path) + strlen(src) + 2, "%s/%s", conf_path, src);
-			free(src);
+			sprintf(src, "%s/%s", conf_path, rel_path);
+			free(rel_path);
 			free(conf);
-			src = real_src;
 		}
 
 		bool can_access = access(src, F_OK) != -1;

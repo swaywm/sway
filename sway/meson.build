@@ -214,14 +214,13 @@ sway_deps = [
 	libudev,
 	math,
 	pango,
-	pcre2,
+	pcre,
 	glesv2,
 	pixman,
 	server_protos,
 	wayland_server,
 	wlroots,
 	xkbcommon,
-	xcb_icccm,
 ]
 
 if have_xwayland

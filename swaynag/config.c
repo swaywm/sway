@@ -19,10 +19,6 @@ static char *read_from_stdin(void) {
 	ssize_t nread;
 	while ((nread = getline(&line, &line_size, stdin)) != -1) {
 		buffer = realloc(buffer, buffer_len + nread + 1);
-		if (!buffer) {
-			perror("realloc");
-			return NULL;
-		}
 		snprintf(&buffer[buffer_len], nread + 1, "%s", line);
 		buffer_len += nread;
 	}
@@ -156,10 +152,6 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 				}
 				struct swaynag_button *button;
 				button = calloc(sizeof(struct swaynag_button), 1);
-				if (!button) {
-					perror("calloc");
-					return EXIT_FAILURE;
-				}
 				button->text = strdup(optarg);
 				button->type = SWAYNAG_ACTION_COMMAND;
 				button->action = strdup(argv[optind]);
@@ -223,17 +215,14 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			if (swaynag) {
 				free(swaynag->details.message);
 				swaynag->details.message = read_from_stdin();
-				if (!swaynag->details.message) {
-					return EXIT_FAILURE;
-				}
 				swaynag->details.button_up.text = strdup("▲");
 				swaynag->details.button_down.text = strdup("▼");
 			}
 			break;
 		case 'L': // Detailed Button Text
 			if (swaynag) {
-				free(swaynag->details.button_details.text);
-				swaynag->details.button_details.text = strdup(optarg);
+				free(swaynag->details.button_details->text);
+				swaynag->details.button_details->text = strdup(optarg);
 			}
 			break;
 		case 'm': // Message
@@ -417,10 +406,6 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 				break;
 			}
 			char *name = calloc(1, close - line);
-			if (!name) {
-				perror("calloc");
-				return EXIT_FAILURE;
-			}
 			strncat(name, line + 1, close - line - 1);
 			type = swaynag_type_get(types, name);
 			if (!type) {
@@ -429,12 +414,8 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 			}
 			free(name);
 		} else {
-			char *flag = malloc(nread + 3);
-			if (!flag) {
-				perror("calloc");
-				return EXIT_FAILURE;
-			}
-			snprintf(flag, nread + 3, "--%s", line);
+			char *flag = malloc(sizeof(char) * (nread + 3));
+			sprintf(flag, "--%s", line);
 			char *argv[] = {"swaynag", flag};
 			result = swaynag_parse_options(2, argv, swaynag, types, type,
 					NULL, NULL);

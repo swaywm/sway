@@ -20,20 +20,33 @@ void sway_terminate(int code) {
 }
 
 int main(int argc, char **argv) {
-	int status = EXIT_SUCCESS;
+	int exit_code = EXIT_SUCCESS;
 
 	list_t *types = create_list();
 	swaynag_types_add_default(types);
 
+	memset(&swaynag, 0, sizeof(swaynag));
 	swaynag.buttons = create_list();
 	wl_list_init(&swaynag.outputs);
 	wl_list_init(&swaynag.seats);
 
+	struct swaynag_button *button_close =
+		calloc(sizeof(struct swaynag_button), 1);
+	button_close->text = strdup("X");
+	button_close->type = SWAYNAG_ACTION_DISMISS;
+	list_add(swaynag.buttons, button_close);
+
+	swaynag.details.button_details =
+		calloc(sizeof(struct swaynag_button), 1);
+	swaynag.details.button_details->text = strdup("Toggle details");
+	swaynag.details.button_details->type = SWAYNAG_ACTION_EXPAND;
+
 	char *config_path = NULL;
 	bool debug = false;
-	status = swaynag_parse_options(argc, argv, NULL, NULL, NULL,
+	int launch_status = swaynag_parse_options(argc, argv, NULL, NULL, NULL,
 			&config_path, &debug);
-	if (status != 0)  {
+	if (launch_status != 0)  {
+		exit_code = launch_status;
 		goto cleanup;
 	}
 	sway_log_init(debug ? SWAY_DEBUG : SWAY_ERROR, NULL);
@@ -43,29 +56,29 @@ int main(int argc, char **argv) {
 	}
 	if (config_path) {
 		sway_log(SWAY_DEBUG, "Loading config file: %s", config_path);
-		status = swaynag_load_config(config_path, &swaynag, types);
-		if (status != 0) {
+		int config_status = swaynag_load_config(config_path, &swaynag, types);
+		free(config_path);
+		if (config_status != 0) {
+			exit_code = config_status;
 			goto cleanup;
 		}
 	}
-
-	swaynag.details.button_details.text = strdup("Toggle details");
-	swaynag.details.button_details.type = SWAYNAG_ACTION_EXPAND;
 
 	if (argc > 1) {
 		struct swaynag_type *type_args = swaynag_type_new("<args>");
 		list_add(types, type_args);
 
-		status = swaynag_parse_options(argc, argv, &swaynag, types,
+		int result = swaynag_parse_options(argc, argv, &swaynag, types,
 				type_args, NULL, NULL);
-		if (status != 0) {
+		if (result != 0) {
+			exit_code = result;
 			goto cleanup;
 		}
 	}
 
 	if (!swaynag.message) {
 		sway_log(SWAY_ERROR, "No message passed. Please provide --message/-m");
-		status = EXIT_FAILURE;
+		exit_code = EXIT_FAILURE;
 		goto cleanup;
 	}
 
@@ -85,13 +98,11 @@ int main(int argc, char **argv) {
 
 	swaynag_types_free(types);
 
-	struct swaynag_button button_close = { 0 };
-	button_close.text = strdup("X");
-	button_close.type = SWAYNAG_ACTION_DISMISS;
-	list_add(swaynag.buttons, &button_close);
-
 	if (swaynag.details.message) {
-		list_add(swaynag.buttons, &swaynag.details.button_details);
+		list_add(swaynag.buttons, swaynag.details.button_details);
+	} else {
+		free(swaynag.details.button_details->text);
+		free(swaynag.details.button_details);
 	}
 
 	sway_log(SWAY_DEBUG, "Output: %s", swaynag.type->output);
@@ -109,11 +120,12 @@ int main(int argc, char **argv) {
 
 	swaynag_setup(&swaynag);
 	swaynag_run(&swaynag);
-	return status;
+	return exit_code;
 
 cleanup:
 	swaynag_types_free(types);
-	free(swaynag.details.button_details.text);
+	free(swaynag.details.button_details->text);
+	free(swaynag.details.button_details);
 	swaynag_destroy(&swaynag);
-	return status;
+	return exit_code;
 }

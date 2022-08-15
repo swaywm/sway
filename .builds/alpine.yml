@@ -12,7 +12,6 @@ packages:
   - mesa-dev
   - meson
   - pango-dev
-  - pcre2-dev
   - pixman-dev
   - scdoc
   - wayland-dev
