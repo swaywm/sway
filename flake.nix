@@ -22,7 +22,7 @@
           ];
 
           buildInputs = with pkgs; [
-            wayland libxkbcommon pcre2 json_c libevdev pango cairo libinput libcap pam gdk-pixbuf librsvg
+            wayland libxkbcommon pcre json_c libevdev pango cairo libinput libcap pam gdk-pixbuf librsvg
             wayland-protocols libdrm wlroots dbus xwayland
             # wlroots
             libGL pixman xorg.xcbutilwm xorg.libX11 libcap xorg.xcbutilimage xorg.xcbutilerrors mesa
