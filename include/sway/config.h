@@ -466,6 +466,9 @@ enum xwayland_mode {
  * The configuration struct. The result of loading a config file.
  */
 struct sway_config {
+	// SwayFX config options
+	int corner_radius;
+
 	char *swaynag_command;
 	struct swaynag_instance swaynag_config_errors;
 	list_t *symbols;
@@ -708,7 +711,7 @@ void free_workspace_config(struct workspace_config *wsc);
 /**
  * Updates the value of config->font_height based on the metrics for title's
  * font as reported by pango.
- * 
+ *
  * If the height has changed, all containers will be rearranged to take on the
  * new size.
  */

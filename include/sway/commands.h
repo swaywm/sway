@@ -17,9 +17,9 @@ struct cmd_handler {
  * Indicates the result of a command's execution.
  */
 enum cmd_status {
-	CMD_SUCCESS, 		/**< The command was successful */
+	CMD_SUCCESS,		/**< The command was successful */
 	CMD_FAILURE,		/**< The command resulted in an error */
-	CMD_INVALID, 		/**< Unknown command or parser error */
+	CMD_INVALID,		/**< Unknown command or parser error */
 	CMD_DEFER,		/**< Command execution deferred */
 	CMD_BLOCK,
 	CMD_BLOCK_COMMANDS,
@@ -118,6 +118,7 @@ sway_cmd cmd_client_urgent;
 sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
 sway_cmd cmd_commands;
+sway_cmd cmd_corner_radius;
 sway_cmd cmd_create_output;
 sway_cmd cmd_default_border;
 sway_cmd cmd_default_floating_border;

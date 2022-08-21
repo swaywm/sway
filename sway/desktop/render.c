@@ -32,6 +32,7 @@
 struct render_data {
 	pixman_region32_t *damage;
 	float alpha;
+	int corner_radius;
 	struct wlr_box *clip_box;
 };
 
@@ -101,7 +102,7 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
-		const float matrix[static 9], float alpha) {
+		const float matrix[static 9], float alpha, int corner_radius) {
 	struct sway_output *output = wlr_output->data;
 	struct fx_renderer *renderer = output->server->renderer;
 
@@ -121,9 +122,9 @@ static void render_texture(struct wlr_output *wlr_output,
 		scissor_output(wlr_output, &rects[i]);
 		set_scale_filter(wlr_output, texture, output->scale_filter);
 		if (src_box != NULL) {
-			fx_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha);
+			fx_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha, corner_radius);
 		} else {
-			fx_render_texture_with_matrix(renderer, texture, matrix, alpha);
+			fx_render_texture_with_matrix(renderer, texture, matrix, alpha, corner_radius);
 		}
 	}
 
@@ -138,6 +139,7 @@ static void render_surface_iterator(struct sway_output *output,
 	struct wlr_output *wlr_output = output->wlr_output;
 	pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
+	int corner_radius = data->corner_radius;
 
 	struct wlr_texture *texture = wlr_surface_get_texture(surface);
 	if (!texture) {
@@ -164,7 +166,7 @@ static void render_surface_iterator(struct sway_output *output,
 	}
 	scale_box(&dst_box, wlr_output->scale);
 
-	render_texture(wlr_output, output_damage, texture, &src_box, &dst_box, matrix, alpha);
+	render_texture(wlr_output, output_damage, texture, &src_box, &dst_box, matrix, alpha, corner_radius);
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
@@ -175,6 +177,7 @@ static void render_layer_toplevel(struct sway_output *output,
 	struct render_data data = {
 		.damage = damage,
 		.alpha = 1.0f,
+		.corner_radius = 0,
 	};
 	output_layer_for_each_toplevel_surface(output, layer_surfaces,
 		render_surface_iterator, &data);
@@ -185,6 +188,7 @@ static void render_layer_popups(struct sway_output *output,
 	struct render_data data = {
 		.damage = damage,
 		.alpha = 1.0f,
+		.corner_radius = 0,
 	};
 	output_layer_for_each_popup_surface(output, layer_surfaces,
 		render_surface_iterator, &data);
@@ -196,6 +200,7 @@ static void render_unmanaged(struct sway_output *output,
 	struct render_data data = {
 		.damage = damage,
 		.alpha = 1.0f,
+		.corner_radius = 0,
 	};
 	output_unmanaged_for_each_surface(output, unmanaged,
 		render_surface_iterator, &data);
@@ -207,6 +212,7 @@ static void render_drag_icons(struct sway_output *output,
 	struct render_data data = {
 		.damage = damage,
 		.alpha = 1.0f,
+		.corner_radius = 0,
 	};
 	output_drag_icons_for_each_surface(output, drag_icons,
 		render_surface_iterator, &data);
@@ -255,10 +261,11 @@ void premultiply_alpha(float color[4], float opacity) {
 }
 
 static void render_view_toplevels(struct sway_view *view,
-		struct sway_output *output, pixman_region32_t *damage, float alpha) {
+		struct sway_output *output, pixman_region32_t *damage, float alpha, int corner_radius) {
 	struct render_data data = {
 		.damage = damage,
 		.alpha = alpha,
+		.corner_radius = corner_radius,
 	};
 	struct wlr_box clip_box;
 	if (!container_is_current_floating(view->container)) {
@@ -282,13 +289,14 @@ static void render_view_popups(struct sway_view *view,
 	struct render_data data = {
 		.damage = damage,
 		.alpha = alpha,
+		.corner_radius = config->corner_radius,
 	};
 	output_view_for_each_popup_surface(output, view,
 		render_surface_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view,
-		struct sway_output *output, pixman_region32_t *damage, float alpha) {
+		struct sway_output *output, pixman_region32_t *damage, float alpha, int corner_radius) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	if (wl_list_empty(&view->saved_buffers)) {
@@ -340,7 +348,7 @@ static void render_saved_view(struct sway_view *view,
 		scale_box(&dst_box, wlr_output->scale);
 
 		render_texture(wlr_output, damage, saved_buf->buffer->texture,
-			&saved_buf->source_box, &dst_box, matrix, alpha);
+			&saved_buf->source_box, &dst_box, matrix, alpha, corner_radius);
 	}
 
 	// FIXME: we should set the surface that this saved buffer originates from
@@ -355,9 +363,9 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->view;
 	if (!wl_list_empty(&view->saved_buffers)) {
-		render_saved_view(view, output, damage, view->container->alpha);
+		render_saved_view(view, output, damage, view->container->alpha, config->corner_radius);
 	} else if (view->surface) {
-		render_view_toplevels(view, output, damage, view->container->alpha);
+		render_view_toplevels(view, output, damage, view->container->alpha, config->corner_radius);
 	}
 
 	if (con->current.border == B_NONE || con->current.border == B_CSD) {
@@ -521,7 +529,7 @@ static void render_titlebar(struct sway_output *output,
 			texture_box.width = ob_inner_width;
 		}
 		render_texture(output->wlr_output, output_damage, marks_texture,
-			NULL, &texture_box, matrix, con->alpha);
+			NULL, &texture_box, matrix, con->alpha, 0);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
@@ -597,7 +605,7 @@ static void render_titlebar(struct sway_output *output,
 		}
 
 		render_texture(output->wlr_output, output_damage, title_texture,
-			NULL, &texture_box, matrix, con->alpha);
+			NULL, &texture_box, matrix, con->alpha, 0);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
@@ -1073,10 +1081,10 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		if (fullscreen_con->view) {
 			if (!wl_list_empty(&fullscreen_con->view->saved_buffers)) {
-				render_saved_view(fullscreen_con->view, output, damage, 1.0f);
+				render_saved_view(fullscreen_con->view, output, damage, 1.0f, 0);
 			} else if (fullscreen_con->view->surface) {
 				render_view_toplevels(fullscreen_con->view,
-						output, damage, 1.0f);
+					output, damage, 1.0f, 0);
 			}
 		} else {
 			render_container(output, damage, fullscreen_con,
