@@ -20,6 +20,14 @@ set $term foot
 # on the original workspace that the command was run on.
 set $menu dmenu_path | dmenu | xargs swaymsg exec --
 
+### Appearance
+# window corner radius in px
+corner_radius 10
+
+# if corner_radius is set (above 0), avoid using titlebars / borders until https://github.com/WillPower3309/swayfx/issues/15 is fixed
+default_border none
+default_floating_border none
+
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in @datadir@/backgrounds/sway/)

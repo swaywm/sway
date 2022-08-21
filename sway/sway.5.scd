@@ -585,6 +585,8 @@ The default colors are:
 :  #000000
 :  #0c0c0c
 
+*corner_radius* <radius>
+	Set corner radius for new windows.
 
 *default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.
