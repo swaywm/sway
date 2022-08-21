@@ -92,13 +92,6 @@ const GLchar tex_fragment_src_external[] =
 /************************
   Matrix Consts
 *************************/
-/*
-static const GLfloat flip_180[] = {
-	1.0f, 0.0f, 0.0f,
-	0.0f, -1.0f, 0.0f,
-	0.0f, 0.0f, 1.0f,
-};
-*/
 
 static const GLfloat verts[] = {
 	1, 0, // top right
@@ -162,7 +155,6 @@ error:
 }
 
 // TODO: Hyprland way?
-// TODO: instead of server, have param be server->backend like wlr_renderer_autocreate
 struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
 	if (renderer == NULL) {
@@ -260,8 +252,6 @@ error:
 }
 
 void fx_renderer_begin(struct fx_renderer *renderer, uint32_t width, uint32_t height) {
-	//push_gles2_debug(renderer);
-
 	glViewport(0, 0, width, height);
 
 	// refresh projection matrix
@@ -269,9 +259,6 @@ void fx_renderer_begin(struct fx_renderer *renderer, uint32_t width, uint32_t he
 		WL_OUTPUT_TRANSFORM_FLIPPED_180);
 
 	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-	//pop_gles2_debug(renderer);
-
 }
 
 void fx_renderer_end() {
@@ -338,8 +325,6 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 	// to GL_FALSE
 	wlr_matrix_transpose(gl_matrix, gl_matrix);
 
-	// push_gles2_debug(renderer);
-
 	if (!texture_attrs.has_alpha && alpha == 1.0) {
 		glDisable(GL_BLEND);
 	} else {
@@ -381,7 +366,6 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 
 	glBindTexture(texture_attrs.target, 0);
 
-	// pop_gles2_debug(renderer);
 	return true;
 }
 
@@ -395,3 +379,41 @@ bool fx_render_texture_with_matrix(struct fx_renderer *renderer,
 	};
 	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &box, matrix, alpha);
 }
+
+void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
+	if (box->width == 0 || box->height == 0) {
+		return;
+	}
+	assert(box->width > 0 && box->height > 0);
+	float matrix[9];
+	wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0, projection);
+
+	float gl_matrix[9];
+	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
+
+    // TODO: investigate why matrix is flipped prior to this cmd
+	// wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
+
+	wlr_matrix_transpose(gl_matrix, gl_matrix);
+
+	if (color[3] == 1.0) {
+		glDisable(GL_BLEND);
+	} else {
+		glEnable(GL_BLEND);
+	}
+
+	glUseProgram(renderer->shaders.quad.program);
+
+	glUniformMatrix3fv(renderer->shaders.quad.proj, 1, GL_FALSE, gl_matrix);
+	glUniform4f(renderer->shaders.quad.color, color[0], color[1], color[2], color[3]);
+
+	glVertexAttribPointer(renderer->shaders.quad.pos_attrib, 2, GL_FLOAT, GL_FALSE,
+			0, verts);
+
+	glEnableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+}
+

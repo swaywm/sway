@@ -218,7 +218,7 @@ void render_rect(struct sway_output *output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]) {
 	struct wlr_output *wlr_output = output->wlr_output;
-	struct wlr_renderer *renderer = wlr_output->renderer;
+	struct fx_renderer *renderer = output->server->renderer;
 
 	struct wlr_box box;
 	memcpy(&box, _box, sizeof(struct wlr_box));
@@ -239,7 +239,7 @@ void render_rect(struct sway_output *output,
 	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
 	for (int i = 0; i < nrects; ++i) {
 		scissor_output(wlr_output, &rects[i]);
-		wlr_render_rect(renderer, &box, color,
+		fx_render_rect(renderer, &box, color,
 			wlr_output->transform_matrix);
 	}
 
@@ -1028,7 +1028,6 @@ static void render_seatops(struct sway_output *output,
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
-	struct wlr_renderer *wlr_renderer = output->server->wlr_renderer;
 	struct fx_renderer *renderer = output->server->renderer;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
@@ -1141,6 +1140,7 @@ render_overlay:
 	render_drag_icons(output, damage, &root->drag_icons);
 
 renderer_end:
+	struct wlr_renderer *wlr_renderer = output->server->wlr_renderer;
 	fx_renderer_scissor(NULL);
 	wlr_renderer_begin(wlr_renderer, wlr_output->width, wlr_output->height);
 	wlr_output_render_software_cursors(wlr_output, damage);
