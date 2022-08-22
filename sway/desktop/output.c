@@ -793,6 +793,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
+	free(output);
 
 	transaction_commit_dirty();
 
