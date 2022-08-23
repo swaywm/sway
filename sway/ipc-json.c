@@ -1000,6 +1000,19 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		json_object_object_add(object, "dwt", json_object_new_string(dwt));
 	}
 
+	if (libinput_device_config_dwtp_is_available(device)) {
+		const char *dwtp = "unknown";
+		switch (libinput_device_config_dwtp_get_enabled(device)) {
+		case LIBINPUT_CONFIG_DWTP_ENABLED:
+			dwtp = "enabled";
+			break;
+		case LIBINPUT_CONFIG_DWTP_DISABLED:
+			dwtp = "disabled";
+			break;
+		}
+		json_object_object_add(object, "dwtp", json_object_new_string(dwtp));
+	}
+
 	if (libinput_device_config_calibration_has_matrix(device)) {
 		float matrix[6];
 		libinput_device_config_calibration_get_matrix(device, matrix);

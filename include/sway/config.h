@@ -150,6 +150,7 @@ struct input_config {
 	int drag;
 	int drag_lock;
 	int dwt;
+	int dwtp;
 	int left_handed;
 	int middle_emulation;
 	int natural_scroll;

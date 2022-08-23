@@ -157,6 +157,7 @@ sway_sources = files(
 	'commands/input/drag.c',
 	'commands/input/drag_lock.c',
 	'commands/input/dwt.c',
+	'commands/input/dwtp.c',
 	'commands/input/events.c',
 	'commands/input/left_handed.c',
 	'commands/input/map_from_region.c',

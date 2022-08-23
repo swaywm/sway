@@ -25,6 +25,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->drag = INT_MIN;
 	input->drag_lock = INT_MIN;
 	input->dwt = INT_MIN;
+	input->dwtp = INT_MIN;
 	input->send_events = INT_MIN;
 	input->click_method = INT_MIN;
 	input->middle_emulation = INT_MIN;
@@ -60,6 +61,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 	if (src->dwt != INT_MIN) {
 		dst->dwt = src->dwt;
+	}
+	if (src->dwtp != INT_MIN) {
+		dst->dwtp = src->dwtp;
 	}
 	if (src->left_handed != INT_MIN) {
 		dst->left_handed = src->left_handed;
