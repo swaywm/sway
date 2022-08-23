@@ -60,7 +60,7 @@ gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 glesv2 = dependency('glesv2')
 libevdev = dependency('libevdev')
-libinput = dependency('libinput', version: '>=1.6.0')
+libinput = dependency('libinput', version: '>=1.21.0')
 xcb = dependency('xcb', required: get_option('xwayland'))
 drm_full = dependency('libdrm') # only needed for drm_fourcc.h
 drm = drm_full.partial_dependency(compile_args: true, includes: true)

@@ -1197,6 +1197,10 @@ following properties will be included for devices that support them:
 |- dwt
 :  string
 :  Whether disable-while-typing is enabled. It can be _enabled_ or _disabled_
+|- dwtp
+:  string
+:  Whether disable-while-trackpointing is enabled. It can be _enabled_ or
+  _disabled_
 |- calibration_matrix
 :  array
 :  An array of 6 floats representing the calibration matrix for absolute
@@ -1236,7 +1240,8 @@ following properties will be included for devices that support them:
 			"click_method": "button_areas",
 			"middle_emulation": "disabled",
 			"scroll_method": "edge",
-			"dwt": "enabled"
+			"dwt": "enabled",
+			"dwtp": "enabled"
 		}
 	},
 	{
@@ -1363,7 +1368,8 @@ one seat. Each object has the following properties:
 					"click_method": "button_areas",
 					"middle_emulation": "disabled",
 					"scroll_method": "edge",
-					"dwt": "enabled"
+					"dwt": "enabled",
+					"dwtp": "enabled"
 				}
 			},
 			{

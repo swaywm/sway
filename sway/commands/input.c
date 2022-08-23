@@ -14,6 +14,7 @@ static const struct cmd_handler input_handlers[] = {
 	{ "drag", input_cmd_drag },
 	{ "drag_lock", input_cmd_drag_lock },
 	{ "dwt", input_cmd_dwt },
+	{ "dwtp", input_cmd_dwtp },
 	{ "events", input_cmd_events },
 	{ "left_handed", input_cmd_left_handed },
 	{ "map_from_region", input_cmd_map_from_region },
