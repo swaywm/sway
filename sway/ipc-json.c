@@ -112,8 +112,6 @@ static const char *ipc_json_output_adaptive_sync_status_description(
 		return "disabled";
 	case WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED:
 		return "enabled";
-	case WLR_OUTPUT_ADAPTIVE_SYNC_UNKNOWN:
-		return "unknown";
 	}
 	return NULL;
 }
