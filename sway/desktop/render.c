@@ -122,9 +122,9 @@ static void render_texture(struct wlr_output *wlr_output,
 		scissor_output(wlr_output, &rects[i]);
 		set_scale_filter(wlr_output, texture, output->scale_filter);
 		if (src_box != NULL) {
-			fx_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha, corner_radius);
+			fx_render_subtexture_with_matrix(renderer, texture, src_box, dst_box, matrix, alpha, corner_radius);
 		} else {
-			fx_render_texture_with_matrix(renderer, texture, matrix, alpha, corner_radius);
+			fx_render_texture_with_matrix(renderer, texture, dst_box, matrix, alpha, corner_radius);
 		}
 	}
 

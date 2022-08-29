@@ -140,7 +140,10 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.tex_rgba.alpha = glGetUniformLocation(prog, "alpha");
 	renderer->shaders.tex_rgba.pos_attrib = glGetAttribLocation(prog, "pos");
 	renderer->shaders.tex_rgba.tex_attrib = glGetAttribLocation(prog, "texcoord");
-	renderer->shaders.tex_rgba.discardOpaque = glGetUniformLocation(prog, "discardOpaque");
+	renderer->shaders.tex_rgba.width = glGetUniformLocation(prog, "width");
+	renderer->shaders.tex_rgba.height = glGetUniformLocation(prog, "height");
+	renderer->shaders.tex_rgba.position = glGetUniformLocation(prog, "position");
+	renderer->shaders.tex_rgba.radius = glGetUniformLocation(prog, "radius");
 
 	prog = link_program(tex_vertex_src, tex_fragment_src_rgbx);
 	renderer->shaders.tex_rgbx.program = prog;
@@ -152,7 +155,10 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.tex_rgbx.alpha = glGetUniformLocation(prog, "alpha");
 	renderer->shaders.tex_rgbx.pos_attrib = glGetAttribLocation(prog, "pos");
 	renderer->shaders.tex_rgbx.tex_attrib = glGetAttribLocation(prog, "texcoord");
-	renderer->shaders.tex_rgbx.discardOpaque = glGetUniformLocation(prog, "discardOpaque");
+	renderer->shaders.tex_rgbx.width = glGetUniformLocation(prog, "width");
+	renderer->shaders.tex_rgbx.height = glGetUniformLocation(prog, "height");
+	renderer->shaders.tex_rgbx.position = glGetUniformLocation(prog, "position");
+	renderer->shaders.tex_rgbx.radius = glGetUniformLocation(prog, "radius");
 
 	prog = link_program(tex_vertex_src, tex_fragment_src_external);
 	renderer->shaders.tex_ext.program = prog;
@@ -164,7 +170,11 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.tex_ext.alpha = glGetUniformLocation(prog, "alpha");
 	renderer->shaders.tex_ext.pos_attrib = glGetAttribLocation(prog, "pos");
 	renderer->shaders.tex_ext.tex_attrib = glGetAttribLocation(prog, "texcoord");
-	renderer->shaders.tex_ext.discardOpaque = glGetUniformLocation(prog, "discardOpaque");
+	renderer->shaders.tex_ext.width = glGetUniformLocation(prog, "width");
+	renderer->shaders.tex_ext.height = glGetUniformLocation(prog, "height");
+	renderer->shaders.tex_ext.position = glGetUniformLocation(prog, "position");
+	renderer->shaders.tex_ext.radius = glGetUniformLocation(prog, "radius");
+	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
 
 	wlr_egl_unset_current(renderer->egl);
 
@@ -218,9 +228,9 @@ void fx_renderer_scissor(struct wlr_box *box) {
   Rendering Functions
 *************************/
 
-bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
-		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
-		const float matrix[static 9], float alpha, int radius) {
+bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
+		const struct wlr_fbox *src_box, const struct wlr_box *dst_box, const float matrix[static 9],
+		float alpha, int radius) {
 
 	assert(wlr_texture_is_gles2(wlr_texture));
 	struct wlr_gles2_texture_attribs texture_attrs;
@@ -260,7 +270,8 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 	// to GL_FALSE
 	wlr_matrix_transpose(gl_matrix, gl_matrix);
 
-	if (!texture_attrs.has_alpha && alpha == 1.0) {
+	// if there's no opacity or rounded corners we don't need to blend
+	if (!texture_attrs.has_alpha && alpha == 1.0 && !radius) {
 		glDisable(GL_BLEND);
 	} else {
 		glEnable(GL_BLEND);
@@ -276,35 +287,23 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 	glUniformMatrix3fv(shader->proj, 1, GL_FALSE, gl_matrix);
 	glUniform1i(shader->tex, 0);
 	glUniform1f(shader->alpha, alpha);
-	glUniform1i(shader->discardOpaque, 0); // TODO
 
-	const GLfloat x1 = box->x / wlr_texture->width;
-	const GLfloat y1 = box->y / wlr_texture->height;
-	const GLfloat x2 = (box->x + box->width) / wlr_texture->width;
-	const GLfloat y2 = (box->y + box->height) / wlr_texture->height;
+	// rounded corners
+	glUniform1f(shader->width, dst_box->width);
+	glUniform1f(shader->height, dst_box->height);
+	glUniform2f(shader->position, dst_box->x, dst_box->y);
+	glUniform1f(shader->radius, radius);
+
+	const GLfloat x1 = src_box->x / wlr_texture->width;
+	const GLfloat y1 = src_box->y / wlr_texture->height;
+	const GLfloat x2 = (src_box->x + src_box->width) / wlr_texture->width;
+	const GLfloat y2 = (src_box->y + src_box->height) / wlr_texture->height;
 	const GLfloat texcoord[] = {
 		x2, y1, // top right
 		x1, y1, // top left
 		x2, y2, // bottom right
 		x1, y2, // bottom left
 	};
-
-	glUniform2f(
-		glGetUniformLocation(shader->program, "topLeft"),
-		radius,
-		radius
-	);
-	glUniform2f(
-		glGetUniformLocation(shader->program, "bottomRight"),
-		wlr_texture->width - radius,
-		wlr_texture->height - radius
-	);
-	glUniform2f(
-		glGetUniformLocation(shader->program, "fullSize"),
-		wlr_texture->width,
-		wlr_texture->height
-	);
-	glUniform1f(glGetUniformLocation(shader->program, "radius"), radius);
 
 	glVertexAttribPointer(shader->pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, verts);
 	glVertexAttribPointer(shader->tex_attrib, 2, GL_FLOAT, GL_FALSE, 0, texcoord);
@@ -322,15 +321,15 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer,
 	return true;
 }
 
-bool fx_render_texture_with_matrix(struct fx_renderer *renderer,
-		struct wlr_texture *wlr_texture, const float matrix[static 9], float alpha, int radius) {
-	struct wlr_fbox box = {
+bool fx_render_texture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
+		const struct wlr_box *dst_box, const float matrix[static 9], float alpha, int radius) {
+	struct wlr_fbox src_box = {
 		.x = 0,
 		.y = 0,
 		.width = wlr_texture->width,
 		.height = wlr_texture->height,
 	};
-	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &box, matrix, alpha, radius);
+	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box, dst_box, matrix, alpha, radius);
 }
 
 void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
@@ -344,7 +343,7 @@ void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, con
 	float gl_matrix[9];
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
 
-    // TODO: investigate why matrix is flipped prior to this cmd
+	// TODO: investigate why matrix is flipped prior to this cmd
 	// wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
 
 	wlr_matrix_transpose(gl_matrix, gl_matrix);
@@ -369,4 +368,3 @@ void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, con
 
 	glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
 }
-
