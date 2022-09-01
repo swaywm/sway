@@ -81,6 +81,10 @@ struct sway_node *node_at_coords(
 					// We don't want to feed through the current workspace on
 					// layer shells
 					return NULL;
+				} else if (desc->type == SWAY_SCENE_DESC_POPUP) {
+					struct sway_xdg_popup *popup = desc->data;
+					struct sway_container *con = popup->child.view->container;
+					return &con->node;
 				}
 			}
 

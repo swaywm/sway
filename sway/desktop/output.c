@@ -273,7 +273,20 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 
 	while (true) {
 		if (current->data) {
-			
+			struct sway_scene_descriptor *desc = current->data;
+
+			if (desc->type == SWAY_SCENE_DESC_CONTAINER) {
+				struct sway_container *con = desc->data;
+
+				// We can be dealing with a title bar without owned by a
+				// container without a view. This will happen if you have a
+				// nested tabbed view for example.
+				if (con->view) {
+					view_max_render_time = con->view->max_render_time;
+				}
+
+				break;
+			}
 		}
 
 		if (!current->parent) {
