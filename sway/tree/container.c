@@ -30,6 +30,23 @@
 #include "log.h"
 #include "stringop.h"
 
+static struct wlr_scene_rect *alloc_rect_node(struct wlr_scene_tree *parent,
+		bool *failed) {
+	if (*failed) {
+		return NULL;
+	}
+
+	// just pass in random values. These can and will be overwritten when
+	// they need to be used.
+	struct wlr_scene_rect *rect = wlr_scene_rect_create(
+		parent, 0, 0, (float[4]){0.f, 0.f, 0.f, 1});
+	if (!rect) {
+		*failed = true;
+	}
+
+	return rect;
+}
+
 struct sway_container *container_create(struct sway_view *view) {
 	struct sway_container *c = calloc(1, sizeof(struct sway_container));
 	if (!c) {
@@ -37,14 +54,49 @@ struct sway_container *container_create(struct sway_view *view) {
 		return NULL;
 	}
 	node_init(&c->node, N_CONTAINER, c);
-	c->pending.layout = L_NONE;
-	c->view = view;
-	c->alpha = 1.0f;
 
-	if (!view) {
+	// Container tree structure
+	// - scene tree
+	//   - title bar
+	//     - border
+	//     - background
+	//     - title text
+	//     - marks text
+	//   - border
+	//     - border top/bottom/left/right
+	//     - content_tree (we put the content node here so when we disable the
+	//       border everything gets disabled. We only render the content iff there
+	//       is a border as well)
+	bool alloc_failure = false;
+	c->scene_tree = alloc_scene_tree(root->staging, &alloc_failure);
+
+	c->title_bar.tree = alloc_scene_tree(c->scene_node, &alloc_failure);
+	c->title_bar.border = alloc_rect_node(c->title_bar.node, &alloc_failure);
+	c->title_bar.background = alloc_rect_node(c->title_bar.node, &alloc_failure);
+
+	c->border.tree = alloc_scene_tree(c->scene_node, &alloc_failure);
+	c->content_tree = alloc_scene_tree(c->border.node, &alloc_failure);
+
+	if (view) {
+		// only containers with views can have borders
+		c->border.top = alloc_rect_node(c->border.tree, &alloc_failure);
+		c->border.bottom = alloc_rect_node(c->border.tree, &alloc_failure);
+		c->border.left = alloc_rect_node(c->border.tree, &alloc_failure);
+		c->border.right = alloc_rect_node(c->border.tree, &alloc_failure);
+	} else {
 		c->pending.children = create_list();
 		c->current.children = create_list();
 	}
+
+	if (alloc_failure) {
+		wlr_scene_node_destroy(&c->scene_tree->node);
+		free(c);
+		return NULL;
+	}
+
+	c->pending.layout = L_NONE;
+	c->view = view;
+	c->alpha = 1.0f;
 	c->marks = create_list();
 	c->outputs = create_list();
 
@@ -88,6 +140,8 @@ void container_destroy(struct sway_container *con) {
 		}
 	}
 
+	scene_node_disown_children(con->content_node);
+	wlr_scene_node_destroy(con->scene_node);
 	free(con);
 }
 

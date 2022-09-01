@@ -88,10 +88,53 @@ static void restore_workspaces(struct sway_output *output) {
 	output_sort_workspaces(output);
 }
 
+static void destroy_scene_layers(struct sway_output *output) {
+	wlr_scene_node_destroy(&output->fullscreen_background->node);
+
+	scene_node_disown_children(output->layers.tiling);
+	scene_node_disown_children(output->layers.fullscreen);
+
+	size_t num_layers = sizeof(output->layers) / sizeof(struct wlr_scene_node *);
+	for (size_t i = 0; i < num_layers; i++) {
+		struct wlr_scene_tree *tree =
+			((struct wlr_scene_tree **) &output->layers)[i];
+
+		if (tree) {
+			wlr_scene_node_destroy(&tree->node);
+		}
+	}
+}
+
 struct sway_output *output_create(struct wlr_output *wlr_output) {
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	node_init(&output->node, N_OUTPUT, output);
+
+	bool alloc_failure = false;
+	size_t num_layers = sizeof(output->layers) / sizeof(struct wlr_scene_node *);
+	for (size_t i = 0; i < num_layers; i++) {
+		((struct wlr_scene_tree **) &output->layers)[i] =
+			alloc_scene_tree(root->staging, &alloc_failure);
+	}
+
+	if (!alloc_failure) {
+		output->fullscreen_background = wlr_scene_rect_create(
+			output->layers.fullscreen, 0, 0, (float[4]){0., 0., 0., 1.});
+
+		if (!output->fullscreen_background) {
+			sway_log(SWAY_ERROR, "Unable to allocate a background rect");
+			alloc_failure = true;
+		}
+	}
+
+	if (alloc_failure) {
+		destroy_scene_layers(output);
+		wlr_scene_output_destroy(output->scene_output);
+		free(output);
+		return NULL;
+	}
+
 	output->wlr_output = wlr_output;
+	
 	wlr_output->data = output;
 	output->detected_subpixel = wlr_output->subpixel;
 	output->scale_filter = SCALE_FILTER_NEAREST;
@@ -239,6 +282,8 @@ void output_destroy(struct sway_output *output) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+
+	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
 	wl_event_source_remove(output->repaint_timer);

@@ -2,6 +2,7 @@
 #define _SWAY_WORKSPACE_H
 
 #include <stdbool.h>
+#include <wlr/types/wlr_scene.h>
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
 
@@ -22,6 +23,12 @@ struct sway_workspace_state {
 
 struct sway_workspace {
 	struct sway_node node;
+
+	struct {
+		struct wlr_scene_tree *tiling;
+		struct wlr_scene_tree *fullscreen;
+	} layers;
+
 	struct sway_container *fullscreen;
 
 	char *name;

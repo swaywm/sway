@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_scene.h>
 #include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
@@ -29,7 +30,34 @@ struct sway_root *root_create(void) {
 		sway_log(SWAY_ERROR, "Unable to allocate sway_root");
 		return NULL;
 	}
+
+	struct wlr_scene *root_scene = wlr_scene_create();
+	if (!root_scene) {
+		sway_log(SWAY_ERROR, "Unable to allocate root scene node");
+		free(root);
+		return NULL;
+	}
+
 	node_init(&root->node, N_ROOT, root);
+	root->root_scene = root_scene;
+
+	bool alloc_failure = false;
+	root->staging = alloc_scene_tree(&root_scene->tree, &alloc_failure);
+
+	size_t num_layers = sizeof(root->layers) / sizeof(struct wlr_scene_tree *);
+	for (size_t i = 0; i < num_layers; i++) {
+		((struct wlr_scene_tree **) &root->layers)[i] =
+			alloc_scene_tree(&root_scene->tree, &alloc_failure);
+	}
+
+	if (alloc_failure) {
+		wlr_scene_node_destroy(&root_scene->tree.node);
+		free(root);
+		return NULL;
+	}
+
+	wlr_scene_node_set_enabled(&root->staging->node, false);
+
 	root->output_layout = wlr_output_layout_create();
 	wl_list_init(&root->all_outputs);
 #if HAVE_XWAYLAND
@@ -51,6 +79,7 @@ void root_destroy(struct sway_root *root) {
 	wl_list_remove(&root->output_layout_change.link);
 	list_free(root->scratchpad);
 	list_free(root->outputs);
+	wlr_scene_node_destroy(&root->root_scene->tree.node);
 	wlr_output_layout_destroy(root->output_layout);
 	free(root);
 }
