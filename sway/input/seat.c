@@ -1080,7 +1080,7 @@ bool seat_is_input_allowed(struct sway_seat *seat,
 		struct wlr_surface *surface) {
 	struct wl_client *client = wl_resource_get_client(surface->resource);
 	return seat->exclusive_client == client ||
-		(seat->exclusive_client == NULL && !server.session_lock.locked);
+		(seat->exclusive_client == NULL && !server.session_lock.lock);
 }
 
 static void send_unfocus(struct sway_container *con, void *data) {
@@ -1281,8 +1281,8 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	} else {
 		seat_set_workspace_focus(seat, node);
 	}
-	if (server.session_lock.locked) {
-		seat_set_focus_surface(seat, server.session_lock.focused, false);
+	if (server.session_lock.lock) {
+		seat_set_focus_surface(seat, server.session_lock.lock->focused, false);
 	}
 }
 
