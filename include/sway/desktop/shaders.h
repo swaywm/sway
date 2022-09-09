@@ -101,47 +101,4 @@ const GLchar tex_fragment_src_external[] =
 "   }\n"
 "}\n";
 
-const GLchar frag_blur_1[] =
-"precision mediump float;\n"
-"varying mediump vec2 v_texcoord; // is in 0-1\n"
-"uniform sampler2D tex;\n"
-"\n"
-"uniform float radius;\n"
-"uniform vec2 halfpixel;\n"
-"\n"
-"void main() {\n"
-"	vec2 uv = v_texcoord * 2.0;\n"
-"\n"
-"    vec4 sum = texture2D(tex, uv) * 4.0;\n"
-"    sum += texture2D(tex, uv - halfpixel.xy * radius);\n"
-"    sum += texture2D(tex, uv + halfpixel.xy * radius);\n"
-"    sum += texture2D(tex, uv + vec2(halfpixel.x, -halfpixel.y) * radius);\n"
-"    sum += texture2D(tex, uv - vec2(halfpixel.x, -halfpixel.y) * radius);\n"
-"    gl_FragColor = sum / 8.0;\n"
-"}\n";
-
-const GLchar frag_blur_2[] =
-"precision mediump float;\n"
-"varying mediump vec2 v_texcoord; // is in 0-1\n"
-"uniform sampler2D tex;\n"
-"\n"
-"uniform float radius;\n"
-"uniform vec2 halfpixel;\n"
-"\n"
-"void main() {\n"
-"	vec2 uv = v_texcoord / 2.0;\n"
-"\n"
-"    vec4 sum = texture2D(tex, uv + vec2(-halfpixel.x * 2.0, 0.0) * radius);\n"
-"\n"
-"    sum += texture2D(tex, uv + vec2(-halfpixel.x, halfpixel.y) * radius) * 2.0;\n"
-"    sum += texture2D(tex, uv + vec2(0.0, halfpixel.y * 2.0) * radius);\n"
-"    sum += texture2D(tex, uv + vec2(halfpixel.x, halfpixel.y) * radius) * 2.0;\n"
-"    sum += texture2D(tex, uv + vec2(halfpixel.x * 2.0, 0.0) * radius);\n"
-"    sum += texture2D(tex, uv + vec2(halfpixel.x, -halfpixel.y) * radius) * 2.0;\n"
-"    sum += texture2D(tex, uv + vec2(0.0, -halfpixel.y * 2.0) * radius);\n"
-"    sum += texture2D(tex, uv + vec2(-halfpixel.x, -halfpixel.y) * radius) * 2.0;\n"
-"\n"
-"    gl_FragColor = sum / 12.0;\n"
-"}\n";
-
 #endif
