@@ -11,6 +11,9 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_from_wlr_surface(event->surface);
+	if (xdg_surface == NULL) {
+		return;
+	}
 	struct sway_view *view = xdg_surface->data;
 	if (!xdg_surface->mapped || view == NULL) {
 		return;
