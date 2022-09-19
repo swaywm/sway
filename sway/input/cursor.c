@@ -1372,12 +1372,9 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data) {
 	sway_constraint->destroy.notify = handle_constraint_destroy;
 	wl_signal_add(&constraint->events.destroy, &sway_constraint->destroy);
 
-	struct sway_node *focus = seat_get_focus(seat);
-	if (focus && node_is_view(focus)) {
-		struct wlr_surface *surface = focus->sway_container->view->surface;
-		if (surface == constraint->surface) {
-			sway_cursor_constrain(seat->cursor, constraint);
-		}
+	struct wlr_surface *surface = seat_get_focused_surface(seat);
+	if (surface == constraint->surface) {
+		sway_cursor_constrain(seat->cursor, constraint);
 	}
 }
 
