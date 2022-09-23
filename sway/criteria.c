@@ -189,7 +189,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->title) {
 		const char *title = view_get_title(view);
 		if (!title) {
-			return false;
+			title = "";
 		}
 
 		switch (criteria->title->match_type) {
