@@ -55,6 +55,14 @@ struct sway_output {
 	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
 	struct wl_event_source *repaint_timer;
+
+	struct timespec render_begin_time;
+	struct wlr_render_timestamp *render_end_ts;
+
+	int auto_max_render_time; // in milliseconds
+	// TODO: Make this adjustable:
+	uint8_t render_time_window[60];
+	int render_time_window_index;
 };
 
 struct sway_output_non_desktop {

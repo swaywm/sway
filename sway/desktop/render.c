@@ -1024,6 +1024,59 @@ static void render_seatops(struct sway_output *output,
 	}
 }
 
+uint8_t aggregate_render_times(struct sway_output *output, uint8_t in)
+{
+	int len = sizeof(output->render_time_window);
+
+	int i = output->render_time_window_index++;
+	if (output->render_time_window_index >= len) {
+		output->render_time_window_index = 0;
+	}
+	output->render_time_window[i] = in;
+
+	uint8_t max = 0;
+	for (int i = 0; i < len; ++i) {
+		uint8_t t = output->render_time_window[i];
+		if (t > max) {
+			max = t;
+		}
+	}
+
+	return max;
+}
+
+static void calculate_max_render_time(struct sway_output *output)
+{
+	struct timespec ts;
+	if (!wlr_render_timestamp_get_time(output->render_end_ts, &ts)) {
+		return;
+	}
+
+	uint64_t end_time_us = ts.tv_sec * UINT64_C(1000000) +
+		ts.tv_nsec / UINT64_C(1000);
+
+	uint64_t begin_time_us =
+		output->render_begin_time.tv_sec * UINT64_C(1000000) +
+		output->render_begin_time.tv_nsec / UINT64_C(1000);
+
+	if (begin_time_us > end_time_us) {
+		// rollover
+		return;
+	}
+
+	uint64_t duration_us = end_time_us - begin_time_us;
+
+	int dt_ms = ceil(duration_us / 1e3);
+	int max = aggregate_render_times(output, dt_ms);
+
+	if (max != output->auto_max_render_time) {
+		output->auto_max_render_time = max;
+
+		sway_log(SWAY_DEBUG,
+			"Adjusted output max_render_time to %d ms", max);
+	}
+}
+
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -1039,7 +1092,14 @@ void output_render(struct sway_output *output, struct timespec *when,
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
+	if (output->max_render_time == -1 && output->render_end_ts) {
+		calculate_max_render_time(output);
+		wlr_render_timestamp_destroy(output->render_end_ts);
+		output->render_end_ts = NULL;
+	}
+
 	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
+	wlr_renderer_get_time(renderer, &output->render_begin_time);
 
 	if (debug.damage == DAMAGE_RERENDER) {
 		int width, height;
@@ -1176,6 +1236,7 @@ render_overlay:
 renderer_end:
 	wlr_renderer_scissor(renderer, NULL);
 	wlr_output_render_software_cursors(wlr_output, damage);
+	output->render_end_ts = wlr_renderer_create_timestamp(renderer);
 	wlr_renderer_end(renderer);
 
 	int width, height;
