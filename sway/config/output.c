@@ -571,6 +571,10 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
 			oc->name, oc->max_render_time);
 		output->max_render_time = oc->max_render_time;
+	} else if (oc && oc->max_render_time == MAX_RENDER_TIME_AUTO) {
+		sway_log(SWAY_DEBUG, "Set %s max render time to auto",
+			oc->name);
+		output->max_render_time = -1;
 	}
 
 	// Reconfigure all devices, since input config may have been applied before
@@ -608,7 +612,7 @@ static void default_output_config(struct output_config *oc,
 	struct sway_output *output = wlr_output->data;
 	oc->subpixel = output->detected_subpixel;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	oc->max_render_time = 0;
+	oc->max_render_time = MAX_RENDER_TIME_OFF;
 }
 
 static struct output_config *get_output_config(char *identifier,
