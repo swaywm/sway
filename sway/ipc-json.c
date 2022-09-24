@@ -342,7 +342,14 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 
-	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
+	int max_render_time;
+	if (output->max_render_time == -1) {
+		max_render_time = -output->auto_max_render_time;
+	} else {
+		max_render_time = output->max_render_time;
+	}
+	json_object_object_add(object, "max_render_time",
+		json_object_new_int(max_render_time));
 }
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
