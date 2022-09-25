@@ -965,7 +965,8 @@ The following attributes may be matched with:
 *class*
 	Compare value against the window class. Can be a regular expression. If
 	value is \_\_focused\_\_, then the window class must be the same as that of
-	the currently focused window. _class_ are specific to X11 applications.
+	the currently focused window. _class_ are specific to X11 applications and
+	require XWayland.
 
 *con_id*
 	Compare against the internal container ID, which you can find via IPC. If
@@ -979,12 +980,14 @@ The following attributes may be matched with:
 	Matches floating windows.
 
 *id*
-	Compare value against the X11 window ID. Must be numeric.
+	Compare value against the X11 window ID. Must be numeric. id is specific to
+	X11 applications and requires XWayland.
 
 *instance*
 	Compare value against the window instance. Can be a regular expression. If
 	value is \_\_focused\_\_, then the window instance must be the same as that
-	of the currently focused window.
+	of the currently focused window. instance is specific to X11 applications and
+	requires XWayland.
 
 *pid*
 	Compare value against the window's process ID. Must be numeric.
@@ -1009,12 +1012,14 @@ The following attributes may be matched with:
 *window_role*
 	Compare against the window role (WM_WINDOW_ROLE). Can be a regular
 	expression. If value is \_\_focused\_\_, then the window role must be the
-	same as that of the currently focused window.
+	same as that of the currently focused window. window_role is specific to X11
+	applications and requires XWayland.
 
 *window_type*
 	Compare against the window type (\_NET_WM_WINDOW_TYPE). Possible values
 	are normal, dialog, utility, toolbar, splash, menu, dropdown_menu,
-	popup_menu, tooltip and notification.
+	popup_menu, tooltip and notification. window_type is specific to X11
+	applications and requires XWayland.
 
 *workspace*
 	Compare against the workspace name for this view. Can be a regular
