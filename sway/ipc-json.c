@@ -541,6 +541,14 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "inhibit_idle",
 		json_object_new_boolean(view_inhibit_idle(c->view)));
 
+	const char *sandbox_engine = view_get_sandbox_engine(c->view);
+	json_object_object_add(object, "sandbox_engine",
+			sandbox_engine ? json_object_new_string(sandbox_engine) : NULL);
+
+	const char *sandbox_app_id = view_get_sandbox_app_id(c->view);
+	json_object_object_add(object, "sandbox_app_id",
+			sandbox_app_id ? json_object_new_string(sandbox_app_id) : NULL);
+
 	json_object *idle_inhibitors = json_object_new_object();
 
 	struct sway_idle_inhibitor_v1 *user_inhibitor =
