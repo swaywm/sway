@@ -403,6 +403,16 @@ node and will have the following properties:
 :  (Only views) An object containing the state of the _application_ and _user_ idle inhibitors.
     _application_ can be _enabled_ or _none_.
     _user_ can be _focus_, _fullscreen_, _open_, _visible_ or _none_.
+|- sandbox_engine
+:  string
+:  (Only views) The associated sandbox engine (or _null_)
+|- sandbox_app_id
+:  string
+:  (Only views) The app ID provided by the associated sandbox engine (or _null_)
+|- sandbox_instance_id
+:  string
+:  (Only views) The instance ID provided by the associated sandbox engine (or
+   _null_)
 |- window
 :  integer
 :  (Only xwayland views) The X11 window ID for the xwayland view
