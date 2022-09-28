@@ -271,14 +271,22 @@ static void pretty_print_output(json_object *o) {
 		for (size_t i = 0; i < modes_len; ++i) {
 			json_object *mode = json_object_array_get_idx(modes, i);
 
-			json_object *mode_width, *mode_height, *mode_refresh;
+			json_object *mode_width, *mode_height, *mode_refresh,
+				*mode_picture_aspect_ratio;
 			json_object_object_get_ex(mode, "width", &mode_width);
 			json_object_object_get_ex(mode, "height", &mode_height);
 			json_object_object_get_ex(mode, "refresh", &mode_refresh);
+			json_object_object_get_ex(mode, "picture_aspect_ratio",
+				&mode_picture_aspect_ratio);
 
-			printf("    %dx%d @ %.3f Hz\n", json_object_get_int(mode_width),
+			printf("    %dx%d @ %.3f Hz", json_object_get_int(mode_width),
 				json_object_get_int(mode_height),
 				(double)json_object_get_int(mode_refresh) / 1000);
+			if (mode_picture_aspect_ratio &&
+					strcmp("none", json_object_get_string(mode_picture_aspect_ratio)) != 0) {
+				printf(" (%s)", json_object_get_string(mode_picture_aspect_ratio));
+			}
+			printf("\n");
 		}
 	}
 
