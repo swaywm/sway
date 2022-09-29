@@ -27,6 +27,7 @@ static const struct cmd_handler output_handlers[] = {
 	{ "subpixel", output_cmd_subpixel },
 	{ "toggle", output_cmd_toggle },
 	{ "transform", output_cmd_transform },
+	{ "unplug", output_cmd_unplug },
 };
 
 struct cmd_results *cmd_output(int argc, char **argv) {

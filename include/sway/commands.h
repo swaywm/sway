@@ -294,6 +294,7 @@ sway_cmd output_cmd_scale_filter;
 sway_cmd output_cmd_subpixel;
 sway_cmd output_cmd_toggle;
 sway_cmd output_cmd_transform;
+sway_cmd output_cmd_unplug;
 
 sway_cmd seat_cmd_attach;
 sway_cmd seat_cmd_cursor;
