@@ -24,8 +24,8 @@
 #include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/server.h"
-#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
@@ -262,104 +262,6 @@ void output_drag_icons_for_each_surface(struct sway_output *output,
 	}
 }
 
-static void for_each_surface_container_iterator(struct sway_container *con,
-		void *_data) {
-	if (!con->view || !view_is_visible(con->view)) {
-		return;
-	}
-
-	struct surface_iterator_data *data = _data;
-	output_view_for_each_surface(data->output, con->view,
-		data->user_iterator, data->user_data);
-}
-
-static void output_for_each_surface(struct sway_output *output,
-		sway_surface_iterator_func_t iterator, void *user_data) {
-	if (server.session_lock.locked) {
-		if (server.session_lock.lock == NULL) {
-			return;
-		}
-		struct wlr_session_lock_surface_v1 *lock_surface;
-		wl_list_for_each(lock_surface, &server.session_lock.lock->surfaces, link) {
-			if (lock_surface->output != output->wlr_output) {
-				continue;
-			}
-			if (!lock_surface->mapped) {
-				continue;
-			}
-
-			output_surface_for_each_surface(output, lock_surface->surface,
-				0.0, 0.0, iterator, user_data);
-		}
-		return;
-	}
-
-	if (output_has_opaque_overlay_layer_surface(output)) {
-		goto overlay;
-	}
-
-	struct surface_iterator_data data = {
-		.user_iterator = iterator,
-		.user_data = user_data,
-		.output = output,
-		.view = NULL,
-	};
-
-	struct sway_workspace *workspace = output_get_active_workspace(output);
-	struct sway_container *fullscreen_con = root->fullscreen_global;
-	if (!fullscreen_con) {
-		if (!workspace) {
-			return;
-		}
-		fullscreen_con = workspace->current.fullscreen;
-	}
-	if (fullscreen_con) {
-		for_each_surface_container_iterator(fullscreen_con, &data);
-		container_for_each_child(fullscreen_con,
-			for_each_surface_container_iterator, &data);
-
-		// TODO: Show transient containers for fullscreen global
-		if (fullscreen_con == workspace->current.fullscreen) {
-			for (int i = 0; i < workspace->current.floating->length; ++i) {
-				struct sway_container *floater =
-					workspace->current.floating->items[i];
-				if (container_is_transient_for(floater, fullscreen_con)) {
-					for_each_surface_container_iterator(floater, &data);
-				}
-			}
-		}
-#if HAVE_XWAYLAND
-		output_unmanaged_for_each_surface(output, &root->xwayland_unmanaged,
-			iterator, user_data);
-#endif
-	} else {
-		output_layer_for_each_surface(output,
-			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
-			iterator, user_data);
-		output_layer_for_each_surface(output,
-			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
-			iterator, user_data);
-
-		workspace_for_each_container(workspace,
-			for_each_surface_container_iterator, &data);
-
-#if HAVE_XWAYLAND
-		output_unmanaged_for_each_surface(output, &root->xwayland_unmanaged,
-			iterator, user_data);
-#endif
-		output_layer_for_each_surface(output,
-			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
-			iterator, user_data);
-	}
-
-overlay:
-	output_layer_for_each_surface(output,
-		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
-		iterator, user_data);
-	output_drag_icons_for_each_surface(output, &root->drag_icons,
-		iterator, user_data);
-}
-
 static int scale_length(int length, int offset, float scale) {
 	return round((offset + length) * scale) - round(offset * scale);
 }
@@ -411,173 +313,114 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 struct send_frame_done_data {
 	struct timespec when;
 	int msec_until_refresh;
+	struct sway_output *output;
 };
 
-static void send_frame_done_iterator(struct sway_output *output,
-		struct sway_view *view, struct wlr_surface *surface,
-		struct wlr_box *box, void *user_data) {
-	int view_max_render_time = 0;
-	if (view != NULL) {
-		view_max_render_time = view->max_render_time;
+struct buffer_timer {
+	struct wl_listener destroy;
+	struct wl_event_source *frame_done_timer;
+};
+
+static int handle_buffer_timer(void *data) {
+	struct wlr_scene_buffer *buffer = data;
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	wlr_scene_buffer_send_frame_done(buffer, &now);
+	return 0;
+}
+
+static void handle_buffer_timer_destroy(struct wl_listener *listener,
+		void *data) {
+	struct buffer_timer *timer = wl_container_of(listener, timer, destroy);
+
+	wl_list_remove(&timer->destroy.link);
+	wl_event_source_remove(timer->frame_done_timer);
+	free(timer);
+}
+
+static struct buffer_timer *buffer_timer_assign(struct wlr_scene_buffer *buffer) {
+	struct buffer_timer *timer = calloc(1, sizeof(struct buffer_timer));
+	if (!timer) {
+		return NULL;
 	}
 
+	timer->frame_done_timer = wl_event_loop_add_timer(server.wl_event_loop,
+		handle_buffer_timer, buffer);
+	if (!timer->frame_done_timer) {
+		free(timer);
+		return NULL;
+	}
+
+	scene_descriptor_assign(&buffer->node, SWAY_SCENE_DESC_BUFFER_TIMER, timer);
+
+	timer->destroy.notify = handle_buffer_timer_destroy;
+	wl_signal_add(&buffer->node.events.destroy, &timer->destroy);
+
+	return timer;
+}
+
+static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
+		int x, int y, void *user_data) {
 	struct send_frame_done_data *data = user_data;
+	struct sway_output *output = data->output;
+	int view_max_render_time = 0;
+
+	if (buffer->primary_output != data->output->scene_output) {
+		return;
+	}
+
+	struct wlr_scene_node *current = &buffer->node;
+
+	while (true) {
+		if (current->data) {
+			
+		}
+
+		if (!current->parent) {
+			break;
+		}
+
+		current = &current->parent->node;
+	}
 
 	int delay = data->msec_until_refresh - output->max_render_time
 			- view_max_render_time;
 
-	if (output->max_render_time == 0 || view_max_render_time == 0 || delay < 1) {
-		wlr_surface_send_frame_done(surface, &data->when);
-	} else {
-		struct sway_surface *sway_surface = surface->data;
-		wl_event_source_timer_update(sway_surface->frame_done_timer, delay);
-	}
-}
+	struct buffer_timer *timer = NULL;
 
-static void send_frame_done(struct sway_output *output, struct send_frame_done_data *data) {
-	output_for_each_surface(output, send_frame_done_iterator, data);
-}
-
-static void count_surface_iterator(struct sway_output *output,
-		struct sway_view *view, struct wlr_surface *surface,
-		struct wlr_box *box, void *data) {
-	size_t *n = data;
-	(*n)++;
-}
-
-static bool scan_out_fullscreen_view(struct sway_output *output,
-		struct sway_view *view) {
-	struct wlr_output *wlr_output = output->wlr_output;
-	struct sway_workspace *workspace = output->current.active_workspace;
-	if (!sway_assert(workspace, "Expected an active workspace")) {
-		return false;
-	}
-
-	if (server.session_lock.locked) {
-		return false;
-	}
-
-	if (!wl_list_empty(&view->saved_buffers)) {
-		return false;
-	}
-
-	for (int i = 0; i < workspace->current.floating->length; ++i) {
-		struct sway_container *floater =
-			workspace->current.floating->items[i];
-		if (container_is_transient_for(floater, view->container)) {
-			return false;
+	if (output->max_render_time != 0 && view_max_render_time != 0 && delay > 0) {
+		if (buffer->node.data) {
+			struct sway_scene_descriptor *desc = buffer->node.data;
+			sway_assert(desc->type == SWAY_SCENE_DESC_BUFFER_TIMER,
+				"Corrupted scene tree: expected a buffer timer");
+			timer = desc->data;
+		}else{
+			timer = buffer_timer_assign(buffer);
 		}
 	}
 
-#if HAVE_XWAYLAND
-	if (!wl_list_empty(&root->xwayland_unmanaged)) {
-		return false;
-	}
-#endif
-
-	if (!wl_list_empty(&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY])) {
-		return false;
-	}
-	if (!wl_list_empty(&root->drag_icons)) {
-		return false;
-	}
-
-	struct wlr_surface *surface = view->surface;
-	if (surface == NULL) {
-		return false;
-	}
-	size_t n_surfaces = 0;
-	output_view_for_each_surface(output, view,
-		count_surface_iterator, &n_surfaces);
-	if (n_surfaces != 1) {
-		return false;
-	}
-
-	if (surface->buffer == NULL) {
-		return false;
-	}
-
-	if ((float)surface->current.scale != wlr_output->scale ||
-			surface->current.transform != wlr_output->transform) {
-		return false;
-	}
-
-	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
-	if (!wlr_output_test(wlr_output)) {
-		return false;
-	}
-
-	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
-		wlr_output);
-
-	return wlr_output_commit(wlr_output);
+	if (timer) {
+		wl_event_source_timer_update(timer->frame_done_timer, delay);
+	} else {
+		wlr_scene_buffer_send_frame_done(buffer, &data->when);
+	}		
 }
 
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
-	if (output->wlr_output == NULL) {
-		return 0;
+
+	if (output->enabled) {
+		output->wlr_output->frame_pending = false;
+		wlr_scene_output_commit(output->scene_output);
 	}
-
-	output->wlr_output->frame_pending = false;
-
-	struct sway_workspace *workspace = output->current.active_workspace;
-	if (workspace == NULL) {
-		return 0;
-	}
-
-	struct sway_container *fullscreen_con = root->fullscreen_global;
-	if (!fullscreen_con) {
-		fullscreen_con = workspace->current.fullscreen;
-	}
-
-	if (fullscreen_con && fullscreen_con->view && !debug.noscanout) {
-		// Try to scan-out the fullscreen view
-		static bool last_scanned_out = false;
-		bool scanned_out =
-			scan_out_fullscreen_view(output, fullscreen_con->view);
-
-		if (scanned_out && !last_scanned_out) {
-			sway_log(SWAY_DEBUG, "Scanning out fullscreen view on %s",
-				output->wlr_output->name);
-		}
-		if (last_scanned_out && !scanned_out) {
-			sway_log(SWAY_DEBUG, "Stopping fullscreen view scan out on %s",
-				output->wlr_output->name);
-			output_damage_whole(output);
-		}
-		last_scanned_out = scanned_out;
-
-		if (scanned_out) {
-			return 0;
-		}
-	}
-
-	bool needs_frame;
-	pixman_region32_t damage;
-	pixman_region32_init(&damage);
-	if (!wlr_output_damage_attach_render(output->damage,
-			&needs_frame, &damage)) {
-		return 0;
-	}
-
-	if (needs_frame) {
-		struct timespec now;
-		clock_gettime(CLOCK_MONOTONIC, &now);
-
-		output_render(output, &now, &damage);
-	} else {
-		wlr_output_rollback(output->wlr_output);
-	}
-
-	pixman_region32_fini(&damage);
 
 	return 0;
 }
 
-static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
+static void handle_frame_request(struct wl_listener *listener, void *user_data) {
 	struct sway_output *output =
-		wl_container_of(listener, output, damage_frame);
+		wl_container_of(listener, output, frame_request);
 	if (!output->enabled || !output->wlr_output->enabled) {
 		return;
 	}
@@ -637,7 +480,8 @@ static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
 	struct send_frame_done_data data = {0};
 	clock_gettime(CLOCK_MONOTONIC, &data.when);
 	data.msec_until_refresh = msec_until_refresh;
-	send_frame_done(output, &data);
+	data.output = output;
+	wlr_scene_output_for_each_buffer(output->scene_output, send_frame_done_iterator, &data);
 }
 
 void output_damage_whole(struct sway_output *output) {
@@ -790,6 +634,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->mode.link);
 	wl_list_remove(&output->present.link);
+	wl_list_remove(&output->frame_request.link);
 
 	wlr_scene_output_destroy(output->scene_output);
 	output->scene_output = NULL;
@@ -928,8 +773,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
-	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
-	output->damage_frame.notify = damage_handle_frame;
+	wl_signal_add(&wlr_output->events.frame, &output->frame_request);
+	output->frame_request.notify = handle_frame_request;
 	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
 	output->damage_destroy.notify = damage_handle_destroy;
 

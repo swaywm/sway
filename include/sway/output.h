@@ -61,6 +61,7 @@ struct sway_output {
 	struct wl_listener present;
 	struct wl_listener damage_destroy;
 	struct wl_listener damage_frame;
+	struct wl_listener frame_request;
 
 	struct {
 		struct wl_signal disable;

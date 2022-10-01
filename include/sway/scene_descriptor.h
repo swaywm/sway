@@ -3,6 +3,7 @@
 #include <wlr/types/wlr_scene.h>
 
 enum sway_scene_descriptor_type {
+	SWAY_SCENE_DESC_BUFFER_TIMER,
 };
 
 struct sway_scene_descriptor {
