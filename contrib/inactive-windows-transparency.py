@@ -13,7 +13,6 @@ from functools import partial
 
 def on_window_focus(inactive_opacity, ipc, event):
     global prev_focused
-    global prev_workspace
 
     focused_workspace = ipc.get_tree().find_focused()
 
@@ -21,14 +20,13 @@ def on_window_focus(inactive_opacity, ipc, event):
         return
 
     focused = event.container
-    workspace = focused_workspace.workspace().num
 
-    if focused.id != prev_focused.id:  # https://github.com/swaywm/sway/issues/2859
+    # on_window_focus not called only when focused is changed,
+    # but also when a window is moved
+    if focused.id != prev_focused.id:
         focused.command("opacity 1")
-        if workspace == prev_workspace:
-            prev_focused.command("opacity " + inactive_opacity)
+        prev_focused.command("opacity " + inactive_opacity)
         prev_focused = focused
-        prev_workspace = workspace
 
 
 def remove_opacity(ipc):
@@ -59,7 +57,6 @@ if __name__ == "__main__":
 
     ipc = i3ipc.Connection()
     prev_focused = None
-    prev_workspace = ipc.get_tree().find_focused().workspace().num
 
     for window in ipc.get_tree():
         if window.focused:
