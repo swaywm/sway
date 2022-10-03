@@ -9,6 +9,7 @@
 #include "swaybar/config.h"
 #include "swaybar/input.h"
 #include "swaybar/ipc.h"
+#include "pointer-gestures-unstable-v1-client-protocol.h"
 
 void free_hotspots(struct wl_list *list) {
 	struct swaybar_hotspot *hotspot, *tmp;
@@ -118,6 +119,11 @@ static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface) {
 	struct swaybar_seat *seat = data;
 	seat->pointer.current = NULL;
+
+	// Cancel any ongoing gesture if pointer leaves bar
+	if(!gesture_tracker_check(&seat->gestures, GESTURE_TYPE_NONE)) {
+		gesture_tracker_cancel(&seat->gestures);
+	}
 }
 
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
@@ -461,6 +467,174 @@ static const struct wl_touch_listener touch_listener = {
 	.orientation = wl_touch_orientation,
 };
 
+
+static bool gesture_on_bar(struct swaybar_seat *seat,
+		struct wl_surface *surface) {
+	struct swaybar_output *output;
+
+	wl_list_for_each(output, &seat->bar->outputs, link) {
+		if (output->surface == surface) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Check if bar has any binding for gesture
+static bool bar_gestures_check(struct swaybar *bar,
+		enum gesture_type type, uint8_t fingers) {
+	for (int i = 0; i < bar->config->gestures->length; i++) {
+		struct swaybar_gesture *binding = bar->config->gestures->items[i];
+		if (gesture_check(&binding->gesture, type, fingers)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Check bar gesture binding for match
+static struct swaybar_gesture *bar_gestures_match(struct swaybar *bar,
+		struct gesture *gesture) {
+	struct swaybar_gesture *current = NULL;
+
+	for (int i = 0; i < bar->config->gestures->length; i++) {
+		struct swaybar_gesture *binding = bar->config->gestures->items[i];
+		if (gesture_match(&binding->gesture, gesture, false)) {
+			if (current &&
+					gesture_compare(&current->gesture, &binding->gesture) < 0) {
+				continue;
+			}
+			current = binding;
+		}
+	}
+
+	return current;
+}
+
+static void gesture_begin(struct swaybar_seat* seat, struct wl_surface *surface,
+		enum gesture_type type, uint8_t fingers) {
+	// We only want to respond to holds on a bar surface
+	if (!gesture_on_bar(seat, surface)) {
+		return;
+	}
+
+	// Ensure there is a binding for this gesture
+	if (!bar_gestures_check(seat->bar, type, fingers)) {
+		sway_log(SWAY_DEBUG, "Ignore tracking gesture without binding: %s:%u:any",
+			gesture_type_string(type), fingers);
+		return;
+	}
+
+	gesture_tracker_begin(&seat->gestures, type, fingers);
+}
+
+static void gesture_end(struct swaybar_seat* seat, enum gesture_type type,
+		bool cancelled) {
+
+	if (!gesture_tracker_check(&seat->gestures, type)) {
+		return;
+	}
+
+	if (cancelled) {
+		gesture_tracker_cancel(&seat->gestures);
+		return;
+	}
+
+	struct gesture *gesture = gesture_tracker_end(&seat->gestures);
+	struct swaybar_gesture* binding = bar_gestures_match(seat->bar, gesture);
+
+	if (binding) {
+		ipc_execute_gesture(seat->bar, binding);
+	}
+}
+
+static void hold_begin(void *data, struct zwp_pointer_gesture_hold_v1 *wl_hold,
+		uint32_t serial, uint32_t time,struct wl_surface *surface,
+		uint32_t fingers) {
+	struct swaybar_seat *seat = data;
+	gesture_begin(seat, surface, GESTURE_TYPE_HOLD, fingers);
+}
+
+static void hold_end(void *data,
+		struct zwp_pointer_gesture_hold_v1 *wl_hold,
+		uint32_t serial, uint32_t time, int32_t cancelled) {
+	struct swaybar_seat *seat = data;
+	gesture_end(seat, GESTURE_TYPE_HOLD, cancelled);
+}
+
+static const struct zwp_pointer_gesture_hold_v1_listener hold_listener = {
+	.begin = hold_begin,
+	.end = hold_end,
+};
+
+static void pinch_begin(void *data,
+		struct zwp_pointer_gesture_pinch_v1 *wl_pinch, uint32_t serial,
+		uint32_t time, struct wl_surface *surface, uint32_t fingers) {
+	struct swaybar_seat *seat = data;
+	gesture_begin(seat, surface, GESTURE_TYPE_PINCH, fingers);
+}
+
+static void pinch_update(void *data,
+		struct zwp_pointer_gesture_pinch_v1 *wl_pinch,
+		uint32_t time, wl_fixed_t dx, wl_fixed_t dy,
+		wl_fixed_t scale, wl_fixed_t rotation) {
+	struct swaybar_seat *seat = data;
+	if (gesture_tracker_check(&seat->gestures, GESTURE_TYPE_PINCH)) {
+		gesture_tracker_update(&seat->gestures,
+			wl_fixed_to_double(dx), wl_fixed_to_double(dy),
+			wl_fixed_to_double(scale),
+			wl_fixed_to_double(rotation));
+	}
+}
+
+static void pinch_end(void *data,
+		struct zwp_pointer_gesture_pinch_v1 *wl_pinch,
+		uint32_t serial, uint32_t time, int32_t cancelled) {
+	struct swaybar_seat *seat = data;
+	gesture_end(seat, GESTURE_TYPE_PINCH, cancelled);
+}
+
+static const struct zwp_pointer_gesture_pinch_v1_listener pinch_listener = {
+	.begin = pinch_begin,
+	.update = pinch_update,
+	.end = pinch_end,
+};
+
+static void swipe_begin(void *data,
+		struct zwp_pointer_gesture_swipe_v1 *wl_swipe,
+		uint32_t serial, uint32_t time,
+		struct wl_surface *surface, uint32_t fingers) {
+	struct swaybar_seat *seat = data;
+	gesture_begin(seat, surface, GESTURE_TYPE_SWIPE, fingers);
+}
+
+static void swipe_update(void *data,
+		struct zwp_pointer_gesture_swipe_v1 *wl_swipe,
+		uint32_t time, wl_fixed_t dx, wl_fixed_t dy) {
+	struct swaybar_seat *seat = data;
+	if (gesture_tracker_check(&seat->gestures, GESTURE_TYPE_SWIPE)) {
+		gesture_tracker_update(&seat->gestures,
+			wl_fixed_to_double(dx), wl_fixed_to_double(dy),
+			NAN, NAN);
+	}
+}
+
+static void swipe_end(void *data,
+		struct zwp_pointer_gesture_swipe_v1 *zwp_pointer_gesture_swipe_v1,
+		uint32_t serial, uint32_t time, int32_t cancelled) {
+	struct swaybar_seat *seat = data;
+	gesture_end(seat, GESTURE_TYPE_SWIPE, cancelled);
+}
+
+static const struct zwp_pointer_gesture_swipe_v1_listener swipe_listener = {
+	.begin = swipe_begin,
+	.update = swipe_update,
+	.end = swipe_end,
+};
+
+
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		enum wl_seat_capability caps) {
 	struct swaybar_seat *seat = data;
@@ -479,6 +653,21 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 			assert(seat->pointer.cursor_surface);
 		}
 		wl_pointer_add_listener(seat->pointer.pointer, &pointer_listener, seat);
+
+		seat->hold = zwp_pointer_gestures_v1_get_hold_gesture(
+			seat->bar->pointer_gestures, seat->pointer.pointer);
+		zwp_pointer_gesture_hold_v1_add_listener(seat->hold,
+			&hold_listener, seat);
+
+		seat->pinch = zwp_pointer_gestures_v1_get_pinch_gesture(
+			seat->bar->pointer_gestures, seat->pointer.pointer);
+		zwp_pointer_gesture_pinch_v1_add_listener(seat->pinch,
+			&pinch_listener, seat);
+
+		seat->swipe = zwp_pointer_gestures_v1_get_swipe_gesture(
+			seat->bar->pointer_gestures, seat->pointer.pointer);
+		zwp_pointer_gesture_swipe_v1_add_listener(seat->swipe,
+			&swipe_listener, seat);
 	}
 	if (!have_touch && seat->touch.touch != NULL) {
 		wl_touch_release(seat->touch.touch);
@@ -514,6 +703,15 @@ void swaybar_seat_free(struct swaybar_seat *seat) {
 	}
 	if (seat->touch.touch != NULL) {
 		wl_touch_release(seat->touch.touch);
+	}
+	if (seat->hold != NULL) {
+		zwp_pointer_gesture_hold_v1_destroy(seat->hold);
+	}
+	if (seat->pinch != NULL) {
+		zwp_pointer_gesture_pinch_v1_destroy(seat->pinch);
+	}
+	if (seat->swipe != NULL) {
+		zwp_pointer_gesture_swipe_v1_destroy(seat->swipe);
 	}
 	wl_seat_destroy(seat->wl_seat);
 	wl_list_remove(&seat->link);

@@ -27,6 +27,14 @@ runtime.
 	an event code, which can be obtaining from *libinput debug-events*. To
 	disable the default behavior for a button, use the command _nop_.
 
+*bindgesture* <gesture>[:<fingers>][:directions] <command>
+	Executes _command_ when the _gesture_ has been detected. _gesture_ can be
+	_hold_, _pinch_ or _swipe_. The optional _fingers_ allows you to limit the
+	binding to gestures with only a certain number of finger. The optional
+	_directions_ allows you to limit the binding to a gesture in a certain
+	direction, i.e. either _up_, _down_, _left_ or _right_ as well as
+	_inward_, _outward_, _clockwise_ and _counterclockwise_.
+
 *bindsym* [--release] button[1-9]|<event-name> <command>
 	Executes _command_ when the mouse button has been pressed (or if _released_
 	is given, when the button has been released). The buttons can be given as a
@@ -127,6 +135,9 @@ runtime.
 
 *unbindcode* [--release] <event-code>
 	Removes the binding with the given <event-code>.
+
+*unbindgesture* <gesture>[:<fingers>][:directions]
+	Removes the gesture binding with the given <gesture>, etc.
 
 *unbindsym* [--release] button[1-9]|<event-name>
 	Removes the binding with the given <button> or <event-name>.

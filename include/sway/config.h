@@ -350,6 +350,7 @@ struct bar_config {
 	list_t *outputs;
 	char *position;
 	list_t *bindings;
+	list_t *gestures;
 	char *status_command;
 	enum pango_markup_config pango_markup;
 	char *font;
@@ -400,6 +401,11 @@ struct bar_config {
 struct bar_binding {
 	uint32_t button;
 	bool release;
+	char *command;
+};
+
+struct bar_gesture {
+	struct gesture gesture;
 	char *command;
 };
 
@@ -712,6 +718,8 @@ struct bar_config *default_bar_config(void);
 void free_bar_config(struct bar_config *bar);
 
 void free_bar_binding(struct bar_binding *binding);
+
+void free_bar_gesture(struct bar_gesture *binding);
 
 void free_workspace_config(struct workspace_config *wsc);
 

@@ -3,6 +3,7 @@
 
 #include <wayland-client.h>
 #include <stdbool.h>
+#include "gesture.h"
 #include "list.h"
 
 #define SWAY_SCROLL_UP KEY_MAX + 1
@@ -66,6 +67,10 @@ struct swaybar_seat {
 	struct wl_seat *wl_seat;
 	struct swaybar_pointer pointer;
 	struct swaybar_touch touch;
+	struct zwp_pointer_gesture_hold_v1 *hold;
+	struct zwp_pointer_gesture_pinch_v1 *pinch;
+	struct zwp_pointer_gesture_swipe_v1 *swipe;
+	struct gesture_tracker gestures;
 	struct wl_list link; // swaybar_seat:link
 	struct swaybar_scroll_axis axis[2];
 };
