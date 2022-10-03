@@ -19,11 +19,19 @@ def on_window_focus(args, ipc, event):
 
     focused = event.container
 
+
     # on_window_focus not called only when focused is changed,
     # but also when a window is moved
     if focused.id != prev_focused.id:
-        focused.command("opacity " + args.active_opacity)
-        prev_focused.command("opacity " + args.inactive_opacity)
+        if prev_focused.app_id in args.ignore:
+            prev_focused.command("opacity 1")
+        else:
+            prev_focused.command("opacity " + args.inactive_opacity)
+
+        if focused.app_id in args.ignore:
+            focused.command("opacity 1")
+        else: 
+            focused.command("opacity " + args.active_opacity)
         prev_focused = focused
 
 
@@ -58,6 +66,13 @@ if __name__ == "__main__":
         type=str,
         default=default_active_opacity,
         help="value between 0 and 1 denoting opacity for active windows",
+    )
+    parser.add_argument(
+        "--ignore",
+        type=str,
+        default=[],
+        help="List of applications to be ignored.",
+        nargs="+"
     )
     args = parser.parse_args()
 
