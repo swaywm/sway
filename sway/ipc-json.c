@@ -4,6 +4,7 @@
 #include <libevdev/libevdev.h>
 #include <stdio.h>
 #include <wlr/backend/libinput.h>
+#include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <xkbcommon/xkbcommon.h>
 #include "config.h"
@@ -197,6 +198,20 @@ static const char *ipc_json_user_idle_inhibitor_description(enum sway_idle_inhib
 		return "visible";
 	case INHIBIT_IDLE_APPLICATION:
 		return NULL;
+	}
+	return NULL;
+}
+
+static const char *ipc_json_content_type_description(enum wp_content_type_v1_type type) {
+	switch (type) {
+	case WP_CONTENT_TYPE_V1_TYPE_NONE:
+		return "none";
+	case WP_CONTENT_TYPE_V1_TYPE_PHOTO:
+		return "photo";
+	case WP_CONTENT_TYPE_V1_TYPE_VIDEO:
+		return "video";
+	case WP_CONTENT_TYPE_V1_TYPE_GAME:
+		return "game";
 	}
 	return NULL;
 }
@@ -601,6 +616,16 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	}
 
 	json_object_object_add(object, "idle_inhibitors", idle_inhibitors);
+
+	enum wp_content_type_v1_type content_type = WP_CONTENT_TYPE_V1_TYPE_NONE;
+	if (c->view->surface != NULL) {
+		content_type = wlr_surface_get_content_type_v1(server.content_type_manager_v1,
+			c->view->surface);
+	}
+	if (content_type != WP_CONTENT_TYPE_V1_TYPE_NONE) {
+		json_object_object_add(object, "content_type",
+			json_object_new_string(ipc_json_content_type_description(content_type)));
+	}
 
 #if HAVE_XWAYLAND
 	if (c->view->type == SWAY_VIEW_XWAYLAND) {
