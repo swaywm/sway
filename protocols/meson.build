@@ -11,29 +11,28 @@ else
 endif
 
 protocols = [
-	[wl_protocol_dir, 'stable/xdg-shell/xdg-shell.xml'],
-	[wl_protocol_dir, 'unstable/xdg-output/xdg-output-unstable-v1.xml'],
-	[wl_protocol_dir, 'unstable/pointer-constraints/pointer-constraints-unstable-v1.xml'],
-	[wl_protocol_dir, 'unstable/tablet/tablet-unstable-v2.xml'],
-	[wl_protocol_dir, 'unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml'],
-	['wlr-layer-shell-unstable-v1.xml'],
-	['idle.xml'],
-	['wlr-input-inhibitor-unstable-v1.xml'],
-	['wlr-output-power-management-unstable-v1.xml'],
+	wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
+	wl_protocol_dir / 'unstable/xdg-output/xdg-output-unstable-v1.xml',
+	wl_protocol_dir / 'unstable/pointer-constraints/pointer-constraints-unstable-v1.xml',
+	wl_protocol_dir / 'unstable/tablet/tablet-unstable-v2.xml',
+	wl_protocol_dir / 'unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml',
+	'wlr-layer-shell-unstable-v1.xml',
+	'idle.xml',
+	'wlr-input-inhibitor-unstable-v1.xml',
+	'wlr-output-power-management-unstable-v1.xml',
 ]
 
 client_protocols = [
-	[wl_protocol_dir, 'stable/xdg-shell/xdg-shell.xml'],
-	[wl_protocol_dir, 'unstable/xdg-output/xdg-output-unstable-v1.xml'],
-	['wlr-layer-shell-unstable-v1.xml'],
-	['wlr-input-inhibitor-unstable-v1.xml'],
+	wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
+	wl_protocol_dir / 'unstable/xdg-output/xdg-output-unstable-v1.xml',
+	'wlr-layer-shell-unstable-v1.xml',
+	'wlr-input-inhibitor-unstable-v1.xml',
 ]
 
 wl_protos_src = []
 wl_protos_headers = []
 
-foreach p : protocols
-	xml = join_paths(p)
+foreach xml : protocols
 	wl_protos_src += custom_target(
 		xml.underscorify() + '_server_c',
 		input: xml,
@@ -48,8 +47,7 @@ foreach p : protocols
 	)
 endforeach
 
-foreach p : client_protocols
-	xml = join_paths(p)
+foreach xml : client_protocols
 	wl_protos_headers += custom_target(
 		xml.underscorify() + '_client_h',
 		input: xml,
