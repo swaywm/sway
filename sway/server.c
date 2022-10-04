@@ -17,6 +17,7 @@
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
@@ -116,6 +117,7 @@ bool server_init(struct sway_server *server) {
 	wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
 
 	server->idle = wlr_idle_create(server->wl_display);
+	server->idle_notifier_v1 = wlr_idle_notifier_v1_create(server->wl_display);
 	server->idle_inhibit_manager_v1 =
 		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
 
