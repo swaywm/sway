@@ -362,6 +362,10 @@ set|plus|minus|toggle <amount>
 		%instance - The X11 instance (applicable to xwayland windows only) ++
 		%shell - The protocol the window is using (typically xwayland or
 			xdg_shell)
+		%sandbox_app_id - The app ID of this window, as passed in by the
+			sandboxing engine (this may differ from %app_id)
+		%sandbox_engine - The name of the engine that the client of this
+			window is sandboxed with
 
 	This command is typically used with *for_window* criteria. For example:
 
@@ -1025,6 +1029,17 @@ The following attributes may be matched with:
 	Compare against the workspace name for this view. Can be a regular
 	expression. If the value is \_\_focused\_\_, then all the views on the
 	currently focused workspace matches.
+
+*sandbox_app_id*
+	Compare against the sandboxed app id for this view. Can be a regular
+	expression. If the value is \_\_focused\_\_, then the sandboxed app id must
+	be the same as that of the currently focused window.
+
+*sandbox_engine*
+	Compare against the sandbox engine for this view. Can be a regular
+	expression. If the value is \_\_focused\_\_, then the sandbox engine must be
+	the same as that of the currently focused window.
+
 
 # SEE ALSO
 

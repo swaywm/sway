@@ -30,6 +30,8 @@ enum sway_view_prop {
 	VIEW_PROP_X11_WINDOW_ID,
 	VIEW_PROP_X11_PARENT_ID,
 #endif
+	VIEW_PROP_SANDBOX_APP_ID,
+	VIEW_PROP_SANDBOX_ENGINE,
 };
 
 struct sway_view_impl {
@@ -231,6 +233,10 @@ const char *view_get_app_id(struct sway_view *view);
 const char *view_get_class(struct sway_view *view);
 
 const char *view_get_instance(struct sway_view *view);
+
+const char *view_get_sandbox_app_id(struct sway_view *view);
+
+const char *view_get_sandbox_engine(struct sway_view *view);
 
 uint32_t view_get_x11_window_id(struct sway_view *view);
 

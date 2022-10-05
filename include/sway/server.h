@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
+#include <wlr/types/wlr_security_context_v1.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_text_input_v3.h>
@@ -77,6 +78,8 @@ struct sway_server {
 	struct wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
 	struct wl_listener xdg_decoration;
 	struct wl_list xdg_decorations; // sway_xdg_decoration::link
+
+	struct wlr_security_context_manager_v1 *security_context_manager;
 
 	struct wlr_drm_lease_v1_manager *drm_lease_manager;
 	struct wl_listener drm_lease_request;

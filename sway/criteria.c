@@ -33,7 +33,9 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->tiling
 		&& !criteria->urgent
 		&& !criteria->workspace
-		&& !criteria->pid;
+		&& !criteria->pid
+		&& !criteria->sandbox_app_id
+		&& !criteria->sandbox_engine;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -96,6 +98,8 @@ void criteria_destroy(struct criteria *criteria) {
 	pattern_destroy(criteria->window_role);
 #endif
 	pattern_destroy(criteria->con_mark);
+	pattern_destroy(criteria->sandbox_app_id);
+	pattern_destroy(criteria->sandbox_engine);
 	free(criteria->workspace);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -240,6 +244,46 @@ static bool criteria_matches_view(struct criteria *criteria,
 			break;
 		case PATTERN_PCRE2:
 			if (regex_cmp(app_id, criteria->app_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_app_id) {
+		const char *sandbox_app_id = view_get_sandbox_app_id(view);
+		if (!sandbox_app_id) {
+			return false;
+		}
+
+		switch (criteria->sandbox_app_id->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(sandbox_app_id, view_get_sandbox_app_id(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_app_id, criteria->sandbox_app_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_engine) {
+		const char *sandbox_engine = view_get_sandbox_engine(view);
+		if (!sandbox_engine) {
+			return false;
+		}
+
+		switch (criteria->sandbox_engine->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(sandbox_engine, view_get_sandbox_engine(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_engine, criteria->sandbox_engine->regex) < 0) {
 				return false;
 			}
 			break;
@@ -472,6 +516,8 @@ enum criteria_token {
 	T_URGENT,
 	T_WORKSPACE,
 	T_PID,
+	T_SANDBOX_APP_ID,
+	T_SANDBOX_ENGINE,
 
 	T_INVALID,
 };
@@ -509,6 +555,10 @@ static enum criteria_token token_from_name(char *name) {
 		return T_FLOATING;
 	} else if (strcmp(name, "pid") == 0) {
 		return T_PID;
+	} else if (strcmp(name, "sandbox_app_id") == 0) {
+		return T_SANDBOX_APP_ID;
+	} else if (strcmp(name, "sandbox_engine") == 0) {
+		return T_SANDBOX_ENGINE;
 	}
 	return T_INVALID;
 }
@@ -608,6 +658,12 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		if (*endptr != 0) {
 			error = strdup("The value for 'pid' should be numeric");
 		}
+		break;
+	case T_SANDBOX_APP_ID:
+		pattern_create(&criteria->sandbox_app_id, value);
+		break;
+	case T_SANDBOX_ENGINE:
+		pattern_create(&criteria->sandbox_engine, value);
 		break;
 	case T_INVALID:
 		break;

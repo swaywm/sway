@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_security_context_v1.h>
 #include <wlr/util/edges.h>
 #include "log.h"
 #include "sway/decoration.h"
@@ -136,6 +137,24 @@ static const char *get_string_prop(struct sway_view *view,
 		return view->wlr_xdg_toplevel->title;
 	case VIEW_PROP_APP_ID:
 		return view->wlr_xdg_toplevel->app_id;
+	case VIEW_PROP_SANDBOX_APP_ID: {
+		struct wl_client *client = wl_resource_get_client(view->surface->resource);
+		const struct wlr_security_context_v1_state *state = wlr_security_context_manager_v1_lookup_client(server.security_context_manager, client);
+		if (state == NULL) {
+			return NULL;
+		}
+
+		return state->app_id;
+	}
+	case VIEW_PROP_SANDBOX_ENGINE: {
+		struct wl_client *client = wl_resource_get_client(view->surface->resource);
+		const struct wlr_security_context_v1_state *state = wlr_security_context_manager_v1_lookup_client(server.security_context_manager, client);
+		if (state == NULL) {
+			return NULL;
+		}
+
+		return state->sandbox_engine;
+	}
 	default:
 		return NULL;
 	}
