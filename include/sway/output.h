@@ -69,6 +69,8 @@ void output_destroy(struct sway_output *output);
 
 void output_begin_destroy(struct sway_output *output);
 
+void output_init(struct sway_output *output, struct sway_server *server);
+
 struct sway_output *output_from_wlr_output(struct wlr_output *output);
 
 struct sway_output *output_get_in_direction(struct sway_output *reference,

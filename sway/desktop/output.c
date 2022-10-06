@@ -864,6 +864,43 @@ static void handle_present(struct wl_listener *listener, void *data) {
 
 static unsigned int last_headless_num = 0;
 
+void output_init(struct sway_output *output, struct sway_server *server) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	if (!wlr_output_init_render(wlr_output, server->allocator,
+			server->renderer)) {
+		sway_log(SWAY_ERROR, "Failed to init output render");
+		return;
+	}
+
+	output->server = server;
+	output->damage = wlr_output_damage_create(wlr_output);
+
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	output->destroy.notify = handle_destroy;
+	wl_signal_add(&wlr_output->events.commit, &output->commit);
+	output->commit.notify = handle_commit;
+	wl_signal_add(&wlr_output->events.mode, &output->mode);
+	output->mode.notify = handle_mode;
+	wl_signal_add(&wlr_output->events.present, &output->present);
+	output->present.notify = handle_present;
+	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
+	output->damage_frame.notify = damage_handle_frame;
+	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
+	output->damage_destroy.notify = damage_handle_destroy;
+
+	output->repaint_timer = wl_event_loop_add_timer(server->wl_event_loop,
+		output_repaint_timer_handler, output);
+
+	struct output_config *oc = find_output_config(output);
+	apply_output_config(oc, output);
+	free_output_config(oc);
+
+	transaction_commit_dirty();
+
+	update_output_manager_config(server);
+}
+
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
@@ -892,42 +929,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!wlr_output_init_render(wlr_output, server->allocator,
-			server->renderer)) {
-		sway_log(SWAY_ERROR, "Failed to init output render");
-		return;
-	}
-
 	struct sway_output *output = output_create(wlr_output);
 	if (!output) {
 		return;
 	}
-	output->server = server;
-	output->damage = wlr_output_damage_create(wlr_output);
 
-	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
-	output->destroy.notify = handle_destroy;
-	wl_signal_add(&wlr_output->events.commit, &output->commit);
-	output->commit.notify = handle_commit;
-	wl_signal_add(&wlr_output->events.mode, &output->mode);
-	output->mode.notify = handle_mode;
-	wl_signal_add(&wlr_output->events.present, &output->present);
-	output->present.notify = handle_present;
-	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
-	output->damage_frame.notify = damage_handle_frame;
-	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
-	output->damage_destroy.notify = damage_handle_destroy;
-
-	output->repaint_timer = wl_event_loop_add_timer(server->wl_event_loop,
-		output_repaint_timer_handler, output);
-
-	struct output_config *oc = find_output_config(output);
-	apply_output_config(oc, output);
-	free_output_config(oc);
-
-	transaction_commit_dirty();
-
-	update_output_manager_config(server);
+	output_init(output, server);
 }
 
 void handle_output_layout_change(struct wl_listener *listener,
