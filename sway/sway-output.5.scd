@@ -180,6 +180,11 @@ must be separated by one space. For example:
 	updated to work with different bit depths. This command is experimental,
 	and may be removed or changed in the future.
 
+*output* <name> non_desktop on|off
+	Enables or disables the non-desktop property of a given output. When
+	enabled, the output is disabled and offered to the drm-lease-manager
+	interface if it is available.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)
