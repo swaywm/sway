@@ -904,6 +904,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	}
 	output->server = server;
 	output->damage = wlr_output_damage_create(wlr_output);
+	output->leased = false;
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
