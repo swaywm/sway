@@ -35,7 +35,7 @@ struct sway_output {
 	// last applied mode when the output is powered off
 	struct wlr_output_mode *current_mode;
 
-	bool enabling, enabled, leased;
+	bool enabling, enabled, leasing;
 	list_t *workspaces;
 
 	struct sway_output_state current;
