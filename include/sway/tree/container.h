@@ -120,6 +120,9 @@ struct sway_container {
 	struct wlr_texture *title_focused_tab_title;
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
+	struct wlr_texture *title_sticky;
+	struct wlr_texture *title_sticky_inactive;
+	struct wlr_texture *title_sticky_unfocused;
 
 	list_t *marks; // char *
 	struct wlr_texture *marks_focused;

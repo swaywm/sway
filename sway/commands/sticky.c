@@ -44,6 +44,7 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 			workspace_consider_destroy(old_workspace);
 		}
 	}
+	container_update_representation(container);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

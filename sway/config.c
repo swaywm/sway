@@ -331,6 +331,10 @@ static void config_defaults(struct sway_config *config) {
 	color_to_rgba(config->border_colors.placeholder.indicator, 0x000000FF);
 	color_to_rgba(config->border_colors.placeholder.child_border, 0x0C0C0CFF);
 
+	config->border_colors.sticky_is_set = false;
+	config->border_colors.sticky_inactive_is_set = false;
+	config->border_colors.sticky_inactive_is_set = false;
+
 	color_to_rgba(config->border_colors.background, 0xFFFFFFFF);
 
 	// The keysym to keycode translation
@@ -341,6 +345,24 @@ static void config_defaults(struct sway_config *config) {
 	return;
 cleanup:
 	sway_abort("Unable to allocate config structures");
+}
+
+static void config_copy_missing(struct sway_config *config) {
+	if (!config->border_colors.sticky_is_set) {
+		memcpy(&config->border_colors.sticky,
+			&config->border_colors.focused,
+			sizeof(struct border_colors));
+	}
+	if (!config->border_colors.sticky_inactive_is_set) {
+		memcpy(&config->border_colors.sticky_inactive,
+			&config->border_colors.focused_inactive,
+			sizeof(struct border_colors));
+	}
+	if (!config->border_colors.sticky_inactive_is_set) {
+		memcpy(&config->border_colors.sticky_unfocused,
+			&config->border_colors.unfocused,
+			sizeof(struct border_colors));
+	}
 }
 
 static bool file_exists(const char *path) {
@@ -543,6 +565,9 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 	success = success && load_config(path, config,
 			&config->swaynag_config_errors);
+
+	// Needed for compatibility with i3
+	config_copy_missing(config);
 
 	if (validating) {
 		free_config(config);

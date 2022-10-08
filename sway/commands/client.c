@@ -82,6 +82,24 @@ struct cmd_results *cmd_client_urgent(int argc, char **argv) {
 			&config->border_colors.urgent, "#900000ff");
 }
 
+struct cmd_results *cmd_client_sticky(int argc, char **argv) {
+	config->border_colors.sticky_is_set = true;
+	return handle_command(argc, argv, "client.sticky",
+			&config->border_colors.sticky, "#2e9ef4ff");
+}
+
+struct cmd_results *cmd_client_sticky_inactive(int argc, char **argv) {
+	config->border_colors.sticky_inactive_is_set = true;
+	return handle_command(argc, argv, "client.sticky_inactive",
+			&config->border_colors.sticky_inactive, "#484e50ff");
+}
+
+struct cmd_results *cmd_client_sticky_unfocused(int argc, char **argv) {
+	config->border_colors.sticky_unfocused_is_set = true;
+	return handle_command(argc, argv, "client.sticky_unfocused",
+			&config->border_colors.sticky_unfocused, "#292d2eff");
+}
+
 struct cmd_results *cmd_client_noop(int argc, char **argv) {
 	sway_log(SWAY_INFO, "Warning: %s is ignored by sway", argv[-1]);
 	return cmd_results_new(CMD_SUCCESS, NULL);

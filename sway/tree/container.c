@@ -69,6 +69,9 @@ void container_destroy(struct sway_container *con) {
 	wlr_texture_destroy(con->title_focused_inactive);
 	wlr_texture_destroy(con->title_unfocused);
 	wlr_texture_destroy(con->title_urgent);
+	wlr_texture_destroy(con->title_sticky);
+	wlr_texture_destroy(con->title_sticky_inactive);
+	wlr_texture_destroy(con->title_sticky_unfocused);
 	wlr_texture_destroy(con->title_focused_tab_title);
 	list_free(con->pending.children);
 	list_free(con->current.children);
@@ -594,6 +597,12 @@ void container_update_title_textures(struct sway_container *container) {
 			&config->border_colors.unfocused);
 	update_title_texture(container, &container->title_urgent,
 			&config->border_colors.urgent);
+	update_title_texture(container, &container->title_sticky,
+			&config->border_colors.sticky);
+	update_title_texture(container, &container->title_sticky_inactive,
+			&config->border_colors.sticky_inactive);
+	update_title_texture(container, &container->title_sticky_unfocused,
+			&config->border_colors.sticky_unfocused);
 	update_title_texture(container, &container->title_focused_tab_title,
 			&config->border_colors.focused_tab_title);
 	container_damage_whole(container);

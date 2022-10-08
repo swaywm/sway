@@ -560,6 +560,12 @@ struct sway_config {
 		struct border_colors unfocused;
 		struct border_colors urgent;
 		struct border_colors placeholder;
+		struct border_colors sticky;
+		bool sticky_is_set;
+		struct border_colors sticky_inactive;
+		bool sticky_inactive_is_set;
+		struct border_colors sticky_unfocused;
+		bool sticky_unfocused_is_set;
 		float background[4];
 	} border_colors;
 
