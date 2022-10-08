@@ -192,8 +192,6 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 
 struct sway_node *seat_get_focus(struct sway_seat *seat);
 
-struct wlr_surface *seat_get_focused_surface(struct sway_seat *seat);
-
 struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat);
 
 // If a scratchpad container is fullscreen global, this can be used to try to

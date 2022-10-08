@@ -1462,17 +1462,6 @@ struct sway_node *seat_get_focus(struct sway_seat *seat) {
 	return current->node;
 }
 
-struct wlr_surface *seat_get_focused_surface(struct sway_seat *seat) {
-	struct sway_node *focus = seat_get_focus(seat);
-	if (focus && node_is_view(focus)) {
-		return focus->sway_container->view->surface;
-	}
-	struct wlr_layer_surface_v1 *layer = seat->focused_layer;
-	if (layer && layer->surface)
-		return layer->surface;
-	return NULL;
-}
-
 struct sway_workspace *seat_get_focused_workspace(struct sway_seat *seat) {
 	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	if (!focus) {
