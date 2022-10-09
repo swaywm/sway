@@ -4,7 +4,6 @@ Sway is an incredible window manager, and certainly one of the most well establi
 
 + **Anti-aliased rounded corners and borders**
 + **Scratchpad treated as minimize**: Allows docks, or panels with a taskbar, to correctly interpret minimize / unminimize requests ([thanks to LCBCrion](https://github.com/swaywm/sway/issues/6457))
-+ **Default to not compiling swaybar**: Many users replace swaybar with the far more capable [waybar](https://github.com/Alexays/Waybar), SwayFX cuts out the bloat by not including swaybar by default
 + **Add a nix flake to the repo**: Allows nixos users to easily contribute to and test this project
 
 ## Configuration
