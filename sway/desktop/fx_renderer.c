@@ -130,6 +130,25 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.quad.color = glGetUniformLocation(prog, "color");
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
+	// Border corners
+	prog = link_program(quad_vertex_src, corner_fragment_src);
+	renderer->shaders.corner.program = prog;
+	if (!renderer->shaders.corner.program) {
+		goto error;
+	}
+	renderer->shaders.corner.proj = glGetUniformLocation(prog, "proj");
+	renderer->shaders.corner.color = glGetUniformLocation(prog, "color");
+	renderer->shaders.corner.pos_attrib = glGetAttribLocation(prog, "pos");
+	renderer->shaders.corner.is_top_left = glGetUniformLocation(prog, "is_top_left");
+	renderer->shaders.corner.is_top_right = glGetUniformLocation(prog, "is_top_right");
+	renderer->shaders.corner.is_bottom_left = glGetUniformLocation(prog, "is_bottom_left");
+	renderer->shaders.corner.is_bottom_right = glGetUniformLocation(prog, "is_bottom_right");
+	renderer->shaders.corner.width = glGetUniformLocation(prog, "width");
+	renderer->shaders.corner.height = glGetUniformLocation(prog, "height");
+	renderer->shaders.corner.position = glGetUniformLocation(prog, "position");
+	renderer->shaders.corner.radius = glGetUniformLocation(prog, "radius");
+	renderer->shaders.corner.thickness = glGetUniformLocation(prog, "thickness");
+
 	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
 	renderer->shaders.tex_rgba.program = prog;
 	if (!renderer->shaders.tex_rgba.program) {
@@ -183,6 +202,7 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 
 error:
 	glDeleteProgram(renderer->shaders.quad.program);
+	glDeleteProgram(renderer->shaders.corner.program);
 	glDeleteProgram(renderer->shaders.tex_rgba.program);
 	glDeleteProgram(renderer->shaders.tex_rgbx.program);
 	glDeleteProgram(renderer->shaders.tex_ext.program);
@@ -332,7 +352,8 @@ bool fx_render_texture_with_matrix(struct fx_renderer *renderer, struct wlr_text
 	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box, dst_box, matrix, alpha, radius);
 }
 
-void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, const float color[static 4], const float projection[static 9]) {
+void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box,
+		const float color[static 4], const float projection[static 9]) {
 	if (box->width == 0 || box->height == 0) {
 		return;
 	}
@@ -367,4 +388,70 @@ void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box, con
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	glDisableVertexAttribArray(renderer->shaders.quad.pos_attrib);
+}
+
+void fx_render_border_corner(struct fx_renderer *renderer, const struct wlr_box *box,
+		const float color[static 4], const float projection[static 9],
+		enum corner_location corner_location, int radius, int border_thickness) {
+	if (box->width == 0 || box->height == 0) {
+		return;
+	}
+	assert(box->width > 0 && box->height > 0);
+	float matrix[9];
+	wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0, projection);
+
+	float gl_matrix[9];
+	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
+
+	// TODO: investigate why matrix is flipped prior to this cmd
+	// wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
+
+	wlr_matrix_transpose(gl_matrix, gl_matrix);
+
+	if (color[3] == 1.0 && !radius) {
+		glDisable(GL_BLEND);
+	} else {
+		glEnable(GL_BLEND);
+	}
+
+	glUseProgram(renderer->shaders.corner.program);
+
+	glUniformMatrix3fv(renderer->shaders.corner.proj, 1, GL_FALSE, gl_matrix);
+	glUniform4f(renderer->shaders.corner.color, color[0], color[1], color[2], color[3]);
+
+	glUniform1f(renderer->shaders.corner.is_top_left, false);
+	glUniform1f(renderer->shaders.corner.is_top_right, false);
+	glUniform1f(renderer->shaders.corner.is_bottom_left, false);
+	glUniform1f(renderer->shaders.corner.is_bottom_right, false);
+	switch (corner_location) {
+		case TOP_LEFT:
+			glUniform1f(renderer->shaders.corner.is_top_left, true);
+			break;
+		case TOP_RIGHT:
+			glUniform1f(renderer->shaders.corner.is_top_right, true);
+			break;
+		case BOTTOM_LEFT:
+			glUniform1f(renderer->shaders.corner.is_bottom_left, true);
+			break;
+		case BOTTOM_RIGHT:
+			glUniform1f(renderer->shaders.corner.is_bottom_right, true);
+			break;
+		default:
+			return;
+	}
+
+	glUniform1f(renderer->shaders.corner.width, box->width);
+	glUniform1f(renderer->shaders.corner.height, box->height);
+	glUniform2f(renderer->shaders.corner.position, box->x, box->y);
+	glUniform1f(renderer->shaders.corner.radius, radius);
+	glUniform1f(renderer->shaders.corner.thickness, border_thickness);
+
+	glVertexAttribPointer(renderer->shaders.corner.pos_attrib, 2, GL_FLOAT, GL_FALSE,
+			0, verts);
+
+	glEnableVertexAttribArray(renderer->shaders.corner.pos_attrib);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableVertexAttribArray(renderer->shaders.corner.pos_attrib);
 }
