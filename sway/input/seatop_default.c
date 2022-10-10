@@ -446,6 +446,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			state == WLR_BUTTON_PRESSED) {
 		// Via border
 		if (button == BTN_LEFT && resize_edge != WLR_EDGE_NONE) {
+			seat_set_focus_container(seat, cont);
 			seatop_begin_resize_floating(seat, cont, resize_edge);
 			return;
 		}
@@ -460,6 +461,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
 			edge |= cursor->cursor->y > floater->pending.y + floater->pending.height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+			seat_set_focus_container(seat, floater);
 			seatop_begin_resize_floating(seat, floater, edge);
 			return;
 		}
