@@ -710,6 +710,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	// Scrolling on a tabbed or stacked title bar (handled as press event)
 	if (!handled && (on_titlebar || on_titlebar_border)) {
+		struct sway_node *new_focus;
 		enum sway_container_layout layout = container_parent_layout(cont);
 		if (layout == L_TABBED || layout == L_STACKED) {
 			struct sway_node *tabcontainer = node_get_parent(node);
@@ -726,14 +727,16 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 			struct sway_container *new_sibling_con = siblings->items[desired];
 			struct sway_node *new_sibling = &new_sibling_con->node;
-			struct sway_node *new_focus =
-				seat_get_focus_inactive(seat, new_sibling);
 			// Use the focused child of the tabbed/stacked container, not the
 			// container the user scrolled on.
-			seat_set_focus(seat, new_focus);
-			transaction_commit_dirty();
-			handled = true;
+			new_focus = seat_get_focus_inactive(seat, new_sibling);
+		} else {
+			new_focus = seat_get_focus_inactive(seat, &cont->node);
 		}
+
+		seat_set_focus(seat, new_focus);
+		transaction_commit_dirty();
+		handled = true;
 	}
 
 	// Handle mouse bindings - x11 mouse buttons 4-7 - release event
