@@ -916,10 +916,13 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	apply_output_config(oc, output);
 	free_output_config(oc);
 
+	/* TODO read from config for leasing new outputs */
 	if (wlr_output->non_desktop) {
-		sway_log(SWAY_DEBUG, "Disabling non-desktop output");
-		output_disable(output);
-		wlr_output_layout_remove(root->output_layout, wlr_output);
+		if (output->enabled) {
+			sway_log(SWAY_DEBUG, "Disabling non-desktop output");
+			output_disable(output);
+			wlr_output_layout_remove(root->output_layout, wlr_output);
+		}
 
 		if (server->drm_lease_manager) {
 			output->leasing = true;
