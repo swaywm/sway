@@ -13,6 +13,7 @@ static const struct cmd_handler output_handlers[] = {
 	{ "disable", output_cmd_disable },
 	{ "dpms", output_cmd_dpms },
 	{ "enable", output_cmd_enable },
+	{ "leasing", output_cmd_leasing },
 	{ "max_render_time", output_cmd_max_render_time },
 	{ "mode", output_cmd_mode },
 	{ "modeline", output_cmd_modeline },
