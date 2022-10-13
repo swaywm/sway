@@ -97,7 +97,6 @@ void criteria_destroy(struct criteria *criteria) {
 #endif
 	pattern_destroy(criteria->con_mark);
 	pattern_destroy(criteria->workspace);
-	free(criteria->workspace);
 	free(criteria->target);
 	free(criteria->cmdlist);
 	free(criteria->raw);
