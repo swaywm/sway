@@ -87,6 +87,24 @@ error:
 	return 0;
 }
 
+// initializes a provided fragment shader and returns false if unsuccessful
+bool init_frag_shader(struct gles2_tex_shader *shader, GLuint prog) {
+	shader->program = prog;
+	if (!shader->program) {
+		return false;
+	}
+	shader->proj = glGetUniformLocation(prog, "proj");
+	shader->tex = glGetUniformLocation(prog, "tex");
+	shader->alpha = glGetUniformLocation(prog, "alpha");
+	shader->pos_attrib = glGetAttribLocation(prog, "pos");
+	shader->tex_attrib = glGetAttribLocation(prog, "texcoord");
+	shader->width = glGetUniformLocation(prog, "width");
+	shader->height = glGetUniformLocation(prog, "height");
+	shader->position = glGetUniformLocation(prog, "position");
+	shader->radius = glGetUniformLocation(prog, "radius");
+	return true;
+}
+
 // TODO: Hyprland way?
 struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
@@ -149,51 +167,19 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.corner.radius = glGetUniformLocation(prog, "radius");
 	renderer->shaders.corner.thickness = glGetUniformLocation(prog, "thickness");
 
+	// fragment shaders
 	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
-	renderer->shaders.tex_rgba.program = prog;
-	if (!renderer->shaders.tex_rgba.program) {
+	if (!init_frag_shader(&renderer->shaders.tex_rgba, prog)) {
 		goto error;
 	}
-	renderer->shaders.tex_rgba.proj = glGetUniformLocation(prog, "proj");
-	renderer->shaders.tex_rgba.tex = glGetUniformLocation(prog, "tex");
-	renderer->shaders.tex_rgba.alpha = glGetUniformLocation(prog, "alpha");
-	renderer->shaders.tex_rgba.pos_attrib = glGetAttribLocation(prog, "pos");
-	renderer->shaders.tex_rgba.tex_attrib = glGetAttribLocation(prog, "texcoord");
-	renderer->shaders.tex_rgba.width = glGetUniformLocation(prog, "width");
-	renderer->shaders.tex_rgba.height = glGetUniformLocation(prog, "height");
-	renderer->shaders.tex_rgba.position = glGetUniformLocation(prog, "position");
-	renderer->shaders.tex_rgba.radius = glGetUniformLocation(prog, "radius");
-
 	prog = link_program(tex_vertex_src, tex_fragment_src_rgbx);
-	renderer->shaders.tex_rgbx.program = prog;
-	if (!renderer->shaders.tex_rgbx.program) {
+	if (!init_frag_shader(&renderer->shaders.tex_rgbx, prog)) {
 		goto error;
 	}
-	renderer->shaders.tex_rgbx.proj = glGetUniformLocation(prog, "proj");
-	renderer->shaders.tex_rgbx.tex = glGetUniformLocation(prog, "tex");
-	renderer->shaders.tex_rgbx.alpha = glGetUniformLocation(prog, "alpha");
-	renderer->shaders.tex_rgbx.pos_attrib = glGetAttribLocation(prog, "pos");
-	renderer->shaders.tex_rgbx.tex_attrib = glGetAttribLocation(prog, "texcoord");
-	renderer->shaders.tex_rgbx.width = glGetUniformLocation(prog, "width");
-	renderer->shaders.tex_rgbx.height = glGetUniformLocation(prog, "height");
-	renderer->shaders.tex_rgbx.position = glGetUniformLocation(prog, "position");
-	renderer->shaders.tex_rgbx.radius = glGetUniformLocation(prog, "radius");
-
 	prog = link_program(tex_vertex_src, tex_fragment_src_external);
-	renderer->shaders.tex_ext.program = prog;
-	if (!renderer->shaders.tex_ext.program) {
+	if (!init_frag_shader(&renderer->shaders.tex_ext, prog)) {
 		goto error;
 	}
-	renderer->shaders.tex_ext.proj = glGetUniformLocation(prog, "proj");
-	renderer->shaders.tex_ext.tex = glGetUniformLocation(prog, "tex");
-	renderer->shaders.tex_ext.alpha = glGetUniformLocation(prog, "alpha");
-	renderer->shaders.tex_ext.pos_attrib = glGetAttribLocation(prog, "pos");
-	renderer->shaders.tex_ext.tex_attrib = glGetAttribLocation(prog, "texcoord");
-	renderer->shaders.tex_ext.width = glGetUniformLocation(prog, "width");
-	renderer->shaders.tex_ext.height = glGetUniformLocation(prog, "height");
-	renderer->shaders.tex_ext.position = glGetUniformLocation(prog, "position");
-	renderer->shaders.tex_ext.radius = glGetUniformLocation(prog, "radius");
-	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
 
 	wlr_egl_unset_current(renderer->egl);
 
