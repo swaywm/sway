@@ -1,8 +1,5 @@
-/*
-  primarily stolen from:
-  - https://gitlab.freedesktop.org/wlroots/wlroots/-/tree/master/render/gles2
-  - https://github.com/vaxerski/Hyprland/blob/main/src/render/OpenGL.cpp
-*/
+// The original wlr_renderer was heavily referenced in making this project
+// https://gitlab.freedesktop.org/wlroots/wlroots/-/tree/master/render/gles2
 
 // TODO: add push / pop_gles2_debug(renderer)?
 
@@ -21,21 +18,12 @@
 #include "sway/output.h"
 #include "sway/server.h"
 
-
-/************************
-  Matrix Consts
-*************************/
-
 static const GLfloat verts[] = {
 	1, 0, // top right
 	0, 0, // top left
 	1, 1, // bottom right
 	0, 1, // bottom left
 };
-
-/************************
-  General Functions
-*************************/
 
 static GLuint compile_shader(GLuint type, const GLchar *src) {
 	GLuint shader = glCreateShader(type);
@@ -105,7 +93,6 @@ bool init_frag_shader(struct gles2_tex_shader *shader, GLuint prog) {
 	return true;
 }
 
-// TODO: Hyprland way?
 struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
 	if (renderer == NULL) {
@@ -229,10 +216,6 @@ void fx_renderer_scissor(struct wlr_box *box) {
 				glDisable(GL_SCISSOR_TEST);
 		}
 }
-
-/************************
-  Rendering Functions
-*************************/
 
 bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box, const float matrix[static 9],
