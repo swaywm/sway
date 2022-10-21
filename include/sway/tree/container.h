@@ -115,6 +115,8 @@ struct sway_container {
 
 	float alpha;
 
+	int corner_radius;
+
 	struct wlr_texture *title_focused;
 	struct wlr_texture *title_focused_inactive;
 	struct wlr_texture *title_focused_tab_title;
