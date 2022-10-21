@@ -405,26 +405,10 @@ void fx_render_border_corner(struct fx_renderer *renderer, const struct wlr_box 
 	glUniformMatrix3fv(renderer->shaders.corner.proj, 1, GL_FALSE, gl_matrix);
 	glUniform4f(renderer->shaders.corner.color, color[0], color[1], color[2], color[3]);
 
-	glUniform1f(renderer->shaders.corner.is_top_left, false);
-	glUniform1f(renderer->shaders.corner.is_top_right, false);
-	glUniform1f(renderer->shaders.corner.is_bottom_left, false);
-	glUniform1f(renderer->shaders.corner.is_bottom_right, false);
-	switch (corner_location) {
-		case TOP_LEFT:
-			glUniform1f(renderer->shaders.corner.is_top_left, true);
-			break;
-		case TOP_RIGHT:
-			glUniform1f(renderer->shaders.corner.is_top_right, true);
-			break;
-		case BOTTOM_LEFT:
-			glUniform1f(renderer->shaders.corner.is_bottom_left, true);
-			break;
-		case BOTTOM_RIGHT:
-			glUniform1f(renderer->shaders.corner.is_bottom_right, true);
-			break;
-		default:
-			return;
-	}
+	glUniform1f(renderer->shaders.corner.is_top_left, corner_location == TOP_LEFT);
+	glUniform1f(renderer->shaders.corner.is_top_right, corner_location == TOP_RIGHT);
+	glUniform1f(renderer->shaders.corner.is_bottom_left, corner_location == BOTTOM_LEFT);
+	glUniform1f(renderer->shaders.corner.is_bottom_right, corner_location == BOTTOM_RIGHT);
 
 	glUniform1f(renderer->shaders.corner.width, box->width);
 	glUniform1f(renderer->shaders.corner.height, box->height);
