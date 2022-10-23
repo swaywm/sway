@@ -187,10 +187,10 @@ static bool set_calibration_matrix(struct libinput_device *dev, float mat[6]) {
 	return changed;
 }
 
-void sway_input_configure_libinput_device(struct sway_input_device *input_device) {
+bool sway_input_configure_libinput_device(struct sway_input_device *input_device) {
 	struct input_config *ic = input_device_get_config(input_device);
 	if (!ic || !wlr_input_device_is_libinput(input_device->wlr_device)) {
-		return;
+		return false;
 	}
 
 	struct libinput_device *device =
@@ -259,9 +259,7 @@ void sway_input_configure_libinput_device(struct sway_input_device *input_device
 		changed |= set_calibration_matrix(device, ic->calibration_matrix.matrix);
 	}
 
-	if (changed) {
-		ipc_event_input("libinput_config", input_device);
-	}
+	return changed;
 }
 
 void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
