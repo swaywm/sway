@@ -41,11 +41,10 @@ struct fx_renderer {
 			GLint is_top_right;
 			GLint is_bottom_left;
 			GLint is_bottom_right;
-			GLint width;
-			GLint height;
 			GLint position;
 			GLint radius;
-			GLint thickness;
+			GLint half_size;
+			GLint half_thickness;
 		} corner;
 		struct gles2_tex_shader tex_rgba;
 		struct gles2_tex_shader tex_rgbx;

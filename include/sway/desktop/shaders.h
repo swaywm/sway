@@ -113,11 +113,10 @@ const GLchar corner_fragment_src[] =
 "uniform bool is_bottom_left;\n"
 "uniform bool is_bottom_right;\n"
 "\n"
-"uniform float width;\n"
-"uniform float height;\n"
 "uniform vec2 position;\n"
 "uniform float radius;\n"
-"uniform float thickness;\n"
+"uniform vec2 half_size;\n"
+"uniform float half_thickness;\n"
 "\n"
 "float roundedBoxSDF(vec2 center, vec2 size, float radius) {\n"
 "	return length(max(abs(center) - size + radius, 0.0)) - radius;\n"
@@ -125,36 +124,23 @@ const GLchar corner_fragment_src[] =
 "\n"
 "void main() {\n"
 "	gl_FragColor = v_color;\n"
-"	vec2 size = vec2(width, height);\n"
-"	vec2 pos = vec2(position.x - (width + thickness) * 0.5, position.y -\n"
-"       (width + thickness) * 0.5);\n"
-"	vec2 rel_pos = gl_FragCoord.xy - pos - size - thickness * 0.5;\n"
-"\n"
-"	float distance = roundedBoxSDF(\n"
-"       rel_pos,\n" // Center
-"		(size - thickness) * 0.5,\n" // Size
-"		radius + thickness * 0.5\n" // Radius
-"    );\n"
-"\n"
-"	float smoothedAlphaOuter = 1.0 - smoothstep(-1.0, 1.0, distance - thickness * 0.5);\n"
-	// Creates a inner circle that isn't as anti-aliased as the outer ring
-"	float smoothedAlphaInner = 1.0 - smoothstep(-1.0, 0.5, distance + thickness * 0.5);\n"
+"	vec2 center = gl_FragCoord.xy - position - half_size;\n"
+"	float distance = roundedBoxSDF(center, half_size - half_thickness, radius + half_thickness);\n"
+"	float smoothedAlphaOuter = 1.0 - smoothstep(-1.0, 1.0, distance - half_thickness);\n"
+// Create an inner circle that isn't as anti-aliased as the outer ring
+"	float smoothedAlphaInner = 1.0 - smoothstep(-1.0, 0.5, distance + half_thickness);\n"
 "	gl_FragColor = mix(vec4(0), gl_FragColor, smoothedAlphaOuter - smoothedAlphaInner);\n"
 "\n"
-// top left
-"	if (is_top_left && (rel_pos.y > 0.0 || rel_pos.x > 0.0)) {\n"
+"	if (is_top_left && (center.y > 0.0 || center.x > 0.0)) {\n"
 "		discard;\n"
 "	}\n"
-// top right
-"	else if (is_top_right && (rel_pos.y > 0.0 || rel_pos.x < 0.0)) {\n"
+"	else if (is_top_right && (center.y > 0.0 || center.x < 0.0)) {\n"
 "		discard;\n"
 "	}\n"
-// bottom left
-"	else if (is_bottom_left && (rel_pos.y < 0.0 || rel_pos.x > 0.0)) {\n"
+"	else if (is_bottom_left && (center.y < 0.0 || center.x > 0.0)) {\n"
 "		discard;\n"
 "	}\n"
-// bottom right
-"	else if (is_bottom_right && (rel_pos.y < 0.0 || rel_pos.x < 0.0)) {\n"
+"	else if (is_bottom_right && (center.y < 0.0 || center.x < 0.0)) {\n"
 "		discard;\n"
 "	}\n"
 "}\n";

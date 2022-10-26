@@ -148,11 +148,10 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.corner.is_top_right = glGetUniformLocation(prog, "is_top_right");
 	renderer->shaders.corner.is_bottom_left = glGetUniformLocation(prog, "is_bottom_left");
 	renderer->shaders.corner.is_bottom_right = glGetUniformLocation(prog, "is_bottom_right");
-	renderer->shaders.corner.width = glGetUniformLocation(prog, "width");
-	renderer->shaders.corner.height = glGetUniformLocation(prog, "height");
 	renderer->shaders.corner.position = glGetUniformLocation(prog, "position");
 	renderer->shaders.corner.radius = glGetUniformLocation(prog, "radius");
-	renderer->shaders.corner.thickness = glGetUniformLocation(prog, "thickness");
+	renderer->shaders.corner.half_size = glGetUniformLocation(prog, "half_size");
+	renderer->shaders.corner.half_thickness = glGetUniformLocation(prog, "half_thickness");
 
 	// fragment shaders
 	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
@@ -393,11 +392,10 @@ void fx_render_border_corner(struct fx_renderer *renderer, const struct wlr_box 
 	glUniform1f(renderer->shaders.corner.is_bottom_left, corner_location == BOTTOM_LEFT);
 	glUniform1f(renderer->shaders.corner.is_bottom_right, corner_location == BOTTOM_RIGHT);
 
-	glUniform1f(renderer->shaders.corner.width, box->width);
-	glUniform1f(renderer->shaders.corner.height, box->height);
 	glUniform2f(renderer->shaders.corner.position, box->x, box->y);
 	glUniform1f(renderer->shaders.corner.radius, radius);
-	glUniform1f(renderer->shaders.corner.thickness, border_thickness);
+	glUniform2f(renderer->shaders.corner.half_size, box->width / 2.0, box->height / 2.0);
+	glUniform1f(renderer->shaders.corner.half_thickness, border_thickness / 2.0);
 
 	glVertexAttribPointer(renderer->shaders.corner.pos_attrib, 2, GL_FLOAT, GL_FALSE,
 			0, verts);
