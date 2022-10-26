@@ -13,8 +13,7 @@ struct gles2_tex_shader {
 	GLint alpha;
 	GLint pos_attrib;
 	GLint tex_attrib;
-	GLint width;
-	GLint height;
+	GLint size;
 	GLint position;
 	GLint radius;
 };

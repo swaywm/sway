@@ -86,8 +86,7 @@ bool init_frag_shader(struct gles2_tex_shader *shader, GLuint prog) {
 	shader->alpha = glGetUniformLocation(prog, "alpha");
 	shader->pos_attrib = glGetAttribLocation(prog, "pos");
 	shader->tex_attrib = glGetAttribLocation(prog, "texcoord");
-	shader->width = glGetUniformLocation(prog, "width");
-	shader->height = glGetUniformLocation(prog, "height");
+	shader->size = glGetUniformLocation(prog, "size");
 	shader->position = glGetUniformLocation(prog, "position");
 	shader->radius = glGetUniformLocation(prog, "radius");
 	return true;
@@ -277,8 +276,7 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 	glUniform1f(shader->alpha, alpha);
 
 	// rounded corners
-	glUniform1f(shader->width, dst_box->width);
-	glUniform1f(shader->height, dst_box->height);
+	glUniform2f(shader->size, dst_box->width, dst_box->height);
 	glUniform2f(shader->position, dst_box->x, dst_box->y);
 	glUniform1f(shader->radius, radius);
 
