@@ -16,10 +16,7 @@
 #include "sway/ipc-server.h"
 #include "log.h"
 
-static struct modifier_key {
-	char *name;
-	uint32_t mod;
-} modifiers[] = {
+struct modifier_key modifiers[] = {
 	{ XKB_MOD_NAME_SHIFT, WLR_MODIFIER_SHIFT },
 	{ XKB_MOD_NAME_CAPS, WLR_MODIFIER_CAPS },
 	{ XKB_MOD_NAME_CTRL, WLR_MODIFIER_CTRL },

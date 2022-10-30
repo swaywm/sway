@@ -9,6 +9,7 @@
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
+#include "swaybar/ipc.h"
 #include "swaybar/input.h"
 #include "swaybar/status_line.h"
 
@@ -286,6 +287,10 @@ enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 	json_object_object_add(event_json, "button",
 			json_object_new_int(event_to_x11_button(button)));
 	json_object_object_add(event_json, "event", json_object_new_int(button));
+	json_object *modifiers_json = ipc_get_keyboard_modifiers(status);
+	if (modifiers_json) {
+		json_object_object_add(event_json, "modifiers", modifiers_json);
+	}
 	if (status->float_event_coords) {
 		json_object_object_add(event_json, "x", json_object_new_double(x));
 		json_object_object_add(event_json, "y", json_object_new_double(y));

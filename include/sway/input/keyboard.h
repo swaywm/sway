@@ -5,6 +5,13 @@
 
 #define SWAY_KEYBOARD_PRESSED_KEYS_CAP 32
 
+struct modifier_key {
+	char *name;
+	uint32_t mod;
+};
+
+extern struct modifier_key modifiers[10];
+
 /**
  * Get modifier mask from modifier name.
  *
