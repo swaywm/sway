@@ -3,7 +3,6 @@
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/render/wlr_texture.h>
 #include <wlr/types/wlr_scene.h>
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
