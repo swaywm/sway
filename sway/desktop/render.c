@@ -1266,11 +1266,10 @@ render_overlay:
 	render_drag_icons(output, damage, &root->drag_icons);
 
 renderer_end:
-	struct wlr_renderer *wlr_renderer = output->server->wlr_renderer;
 	fx_renderer_scissor(NULL);
-	wlr_renderer_begin(wlr_renderer, wlr_output->width, wlr_output->height);
+	wlr_renderer_begin(output->server->wlr_renderer, wlr_output->width, wlr_output->height);
 	wlr_output_render_software_cursors(wlr_output, damage);
-	wlr_renderer_end(wlr_renderer);
+	wlr_renderer_end(output->server->wlr_renderer);
 	fx_renderer_end();
 
 	int width, height;
