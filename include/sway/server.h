@@ -34,6 +34,7 @@ struct sway_server {
 	const char *socket;
 
 	struct wlr_backend *backend;
+	struct wlr_session *session;
 	// secondary headless backend used for creating virtual outputs on-the-fly
 	struct wlr_backend *headless_backend;
 	struct wlr_renderer *renderer;
