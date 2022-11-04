@@ -210,7 +210,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->shell) {
 		const char *shell = view_get_shell(view);
 		if (!shell) {
-			return false;
+			shell = "";
 		}
 
 		switch (criteria->shell->match_type) {
@@ -230,7 +230,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->app_id) {
 		const char *app_id = view_get_app_id(view);
 		if (!app_id) {
-			return false;
+			app_id = "";
 		}
 
 		switch (criteria->app_id->match_type) {
@@ -262,7 +262,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->class) {
 		const char *class = view_get_class(view);
 		if (!class) {
-			return false;
+			class = "";
 		}
 
 		switch (criteria->class->match_type) {
@@ -282,7 +282,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->instance) {
 		const char *instance = view_get_instance(view);
 		if (!instance) {
-			return false;
+			instance = "";
 		}
 
 		switch (criteria->instance->match_type) {
@@ -302,7 +302,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->window_role) {
 		const char *window_role = view_get_window_role(view);
 		if (!window_role) {
-			return false;
+			window_role = "";
 		}
 
 		switch (criteria->window_role->match_type) {
