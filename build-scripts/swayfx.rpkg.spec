@@ -61,6 +61,29 @@ Recommends:		grim
 %description
 SwayFX: Sway, but with eye candy!
 
+# The artwork is heavy and we don't use it with our default config
+%package        wallpapers
+Summary:        Wallpapers for Sway
+BuildArch:      noarch
+License:        CC0
+
+%description    wallpapers
+Wallpaper collection provided with Sway
+
+
+%package -n     grimshot
+Summary:        Helper for screenshots within sway
+Requires:       grim
+Requires:       jq
+Requires:       slurp
+Requires:       /usr/bin/wl-copy
+Recommends:     /usr/bin/notify-send
+
+%description -n grimshot
+Grimshot is an easy to use screenshot tool for sway. It relies on grim,
+slurp and jq to do the heavy lifting, and mostly provides an easy to use
+interface.
+
 %prep
 {{{ git_dir_setup_macro }}}
 
@@ -73,13 +96,50 @@ SwayFX: Sway, but with eye candy!
 
 %install
 %meson_install
+# Set Fedora background as default background
+sed -i "s|^output \* bg .*|output * bg /usr/share/backgrounds/default.png fill|" %{buildroot}%{_sysconfdir}/sway/config
+# Create directory for extra config snippets
+install -d -m755 -pv %{buildroot}%{_sysconfdir}/sway/config.d
+
+# install python scripts from contrib
+install -D -m644 -pv -t %{buildroot}%{_datadir}/sway/contrib contrib/*.py
+
+# install contrib/grimshot tool
+scdoc <contrib/grimshot.1.scd >%{buildroot}%{_mandir}/man1/grimshot.1
+install -D -m755 -pv contrib/grimshot %{buildroot}%{_bindir}/grimshot
 
 %files
 %license LICENSE
 %doc README.md
-%{_bindir}/sway-git
-%{_bindir}/swaybar-git
-%{_datadir}/wayland-sessions/sway-git.desktop
+%dir %{_sysconfdir}/sway
+%dir %{_sysconfdir}/sway/config.d
+%config(noreplace) %{_sysconfdir}/sway/config
+%{_mandir}/man1/sway*
+%{_mandir}/man5/*
+%{_mandir}/man7/*
+%{_bindir}/sway
+%{_bindir}/swaybar
+%{_bindir}/swaymsg
+%{_bindir}/swaynag
+%{_datadir}/sway
+%{_datadir}/wayland-sessions/sway.desktop
+%dir %{_datadir}/zsh
+%dir %{_datadir}/zsh/site-functions
+%{_datadir}/zsh/site-functions/_sway*
+%dir %{_datadir}/bash-completion
+%dir %{_datadir}/bash-completion/completions
+%{_datadir}/bash-completion/completions/sway*
+%dir %{_datadir}/fish
+%dir %{_datadir}/fish/vendor_completions.d
+%{_datadir}/fish/vendor_completions.d/sway*
+
+%files wallpapers
+%license assets/LICENSE
+%{_datadir}/backgrounds/sway
+
+%files -n grimshot
+%{_bindir}/grimshot
+%{_mandir}/man1/grimshot.1*
 
 # Changelog will be empty until you make first annotated Git tag.
 %changelog
