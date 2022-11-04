@@ -1,0 +1,43 @@
+name: Package for Fedora Copr repo
+
+on:
+  release:
+    types: [published]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  package:
+    container: fedora:latest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install API token for copr-cli
+        env:
+          # To generate a new token: https://copr.fedorainfracloud.org/api/.
+          API_TOKEN_CONTENT: ${{ secrets.COPR_API_TOKEN }}
+        run: |
+          mkdir -p "$HOME/.config"
+          echo "$API_TOKEN_CONTENT" > "$HOME/.config/copr"
+
+      - name: Install tooling for source RPM build
+        run: |
+          dnf -y install copr-cli rpkg git
+
+      # It is necessary to checkout into sub-directory, because of some weird ownership problems cause by using containers
+      - name: Check out sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: swayfx
+
+      - name: Copy spec into root dir
+        run: |
+          cd swayfx
+          cp ./build-scripts/swayfx.rpkg.spec ./
+
+      - name: Submit the build to copr
+        run: |
+          cd swayfx
+          rpkg -v copr-build -w ${{ secrets.COPR_REPO_NAME }}
