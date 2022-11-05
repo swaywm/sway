@@ -180,6 +180,11 @@ must be separated by one space. For example:
 	updated to work with different bit depths. This command is experimental,
 	and may be removed or changed in the future.
 
+*output* <name> leasing on|off
+	Enables or disables DRM leasing on a given output, the DRM lease
+	interface must be active when calling this command. Outputs offered to
+	leasing will be disabled until taken off from leasing.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)

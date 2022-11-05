@@ -881,17 +881,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_DEBUG, "New output %p: %s (non-desktop: %d)",
 			wlr_output, wlr_output->name, wlr_output->non_desktop);
 
-	if (wlr_output->non_desktop) {
-		sway_log(SWAY_DEBUG, "Not configuring non-desktop output");
-		struct sway_output_non_desktop *non_desktop = output_non_desktop_create(wlr_output);
-		if (server->drm_lease_manager) {
-			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
-					wlr_output);
-		}
-		list_add(root->non_desktop_outputs, non_desktop);
-		return;
-	}
-
 	if (!wlr_output_init_render(wlr_output, server->allocator,
 			server->renderer)) {
 		sway_log(SWAY_ERROR, "Failed to init output render");
@@ -904,6 +893,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	}
 	output->server = server;
 	output->damage = wlr_output_damage_create(wlr_output);
+	output->leasing = false;
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
@@ -922,8 +912,25 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		output_repaint_timer_handler, output);
 
 	struct output_config *oc = find_output_config(output);
+	
 	apply_output_config(oc, output);
 	free_output_config(oc);
+
+	/* TODO read from config for leasing new outputs */
+	if (wlr_output->non_desktop) {
+		if (output->enabled) {
+			sway_log(SWAY_DEBUG, "Disabling non-desktop output");
+			output_disable(output);
+			wlr_output_layout_remove(root->output_layout, wlr_output);
+		}
+
+		if (server->drm_lease_manager) {
+			output->leasing = true;
+			sway_log(SWAY_DEBUG, "Offering output for leasing");
+			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
+					wlr_output);
+		}
+	}
 
 	transaction_commit_dirty();
 

@@ -185,13 +185,15 @@ static void pretty_print_seat(json_object *i) {
 }
 
 static void pretty_print_output(json_object *o) {
-	json_object *name, *rect, *focused, *active, *ws, *current_mode, *non_desktop;
+	json_object *name, *rect, *focused, *active, *ws, *current_mode,
+		*non_desktop, *leasing;
 	json_object_object_get_ex(o, "name", &name);
 	json_object_object_get_ex(o, "rect", &rect);
 	json_object_object_get_ex(o, "focused", &focused);
 	json_object_object_get_ex(o, "active", &active);
 	json_object_object_get_ex(o, "current_workspace", &ws);
 	json_object_object_get_ex(o, "non_desktop", &non_desktop);
+	json_object_object_get_ex(o, "leasing", &leasing);
 	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
 		*transform, *max_render_time, *adaptive_sync_status;
 	json_object_object_get_ex(o, "make", &make);
@@ -214,18 +216,11 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(current_mode, "height", &height);
 	json_object_object_get_ex(current_mode, "refresh", &refresh);
 
-	if (json_object_get_boolean(non_desktop)) {
-		printf(
-			"Output %s '%s %s %s' (non-desktop)\n",
-			json_object_get_string(name),
-			json_object_get_string(make),
-			json_object_get_string(model),
-			json_object_get_string(serial)
-		);
-	} else if (json_object_get_boolean(active)) {
+	if (json_object_get_boolean(active)) {
 		printf(
 			"Output %s '%s %s %s'%s\n"
 			"  Current mode: %dx%d @ %.3f Hz\n"
+			"  Non-desktop: %s\n"
 			"  Position: %d,%d\n"
 			"  Scale factor: %f\n"
 			"  Scale filter: %s\n"
@@ -240,6 +235,7 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_int(width),
 			json_object_get_int(height),
 			(double)json_object_get_int(refresh) / 1000,
+			json_object_get_string(non_desktop),
 			json_object_get_int(x), json_object_get_int(y),
 			json_object_get_double(scale),
 			json_object_get_string(scale_filter),
@@ -256,11 +252,15 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_string(adaptive_sync_status));
 	} else {
 		printf(
-			"Output %s '%s %s %s' (inactive)\n",
+			"Output %s '%s %s %s' (inactive)\n"
+			"  Non-desktop: %s\n"
+			"  Leasing: %s\n",
 			json_object_get_string(name),
 			json_object_get_string(make),
 			json_object_get_string(model),
-			json_object_get_string(serial)
+			json_object_get_string(serial),
+			json_object_get_string(non_desktop),
+			json_object_get_string(leasing)
 		);
 	}
 
