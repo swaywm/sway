@@ -2,6 +2,7 @@
 #define _SWAY_WORKSPACE_H
 
 #include <stdbool.h>
+#include "sway/config.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
 

@@ -1,5 +1,6 @@
 #ifndef _SWAY_NODE_H
 #define _SWAY_NODE_H
+#include <wayland-server-core.h>
 #include <stdbool.h>
 #include "list.h"
 
