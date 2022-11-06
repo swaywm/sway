@@ -2,7 +2,7 @@
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
-#include "config.h"
+#include "sway/config.h"
 #if HAVE_XWAYLAND
 #include <wlr/xwayland.h>
 #endif

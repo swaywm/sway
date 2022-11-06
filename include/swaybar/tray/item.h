@@ -4,6 +4,7 @@
 #include <cairo.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <wayland-util.h>
 #include "swaybar/tray/tray.h"
 #include "list.h"
 

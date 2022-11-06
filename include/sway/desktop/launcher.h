@@ -2,6 +2,7 @@
 #define _SWAY_LAUNCHER_H
 
 #include <stdlib.h>
+#include <wayland-server-core.h>
 
 struct launcher_ctx {
 	pid_t pid;
