@@ -232,8 +232,8 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static uint32_t configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+static uint32_t configure(struct sway_view *view, double lx, double ly,
+		double width, double height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
 		return 0;

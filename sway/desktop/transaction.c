@@ -599,7 +599,7 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 				arrange_fullscreen(child->layers.fullscreen, fs, child,
 					width, height);
 			} else {
-				struct wlr_box *area = &output->usable_area;
+				struct wlr_fbox *area = &output->usable_area;
 				struct side_gaps *gaps = &child->current_gaps;
 
 				wlr_scene_node_set_position(&child->layers.tiling->node,
@@ -631,7 +631,7 @@ static void arrange_popup(struct wlr_scene_tree *popup) {
 			struct sway_xdg_popup *popup = desc->data;
 			struct wlr_scene_tree *tree = popup->child.view->content_tree;
 
-			int lx, ly;
+			double lx, ly;
 			wlr_scene_node_coords(&tree->node, &lx, &ly);
 			wlr_scene_node_set_position(&popup->child.scene_tree->node, lx, ly);
 		}

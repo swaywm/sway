@@ -19,8 +19,8 @@
 #include "sway/tree/workspace.h"
 #include <wlr/types/wlr_scene.h>
 
-static void arrange_surface(struct sway_output *output, const struct wlr_box *full_area,
-		struct wlr_box *usable_area, struct wlr_scene_tree *tree) {
+static void arrange_surface(struct sway_output *output, const struct wlr_fbox *full_area,
+		struct wlr_fbox *usable_area, struct wlr_scene_tree *tree) {
 	struct wlr_scene_node *node;
 	wl_list_for_each(node, &tree->children, link) {
 		struct sway_scene_descriptor *desc = node->data;
@@ -40,10 +40,16 @@ static void arrange_surface(struct sway_output *output, const struct wlr_box *fu
 }
 
 void arrange_layers(struct sway_output *output) {
-	struct wlr_box usable_area = { 0 };
+	int output_width, output_height;
 	wlr_output_effective_resolution(output->wlr_output,
-			&usable_area.width, &usable_area.height);
-	const struct wlr_box full_area = usable_area;
+		&output_width, &output_height);
+	struct wlr_fbox usable_area = {
+		.x = 0,
+		.y = 0,
+		.width = output_width,
+		.height = output_height,
+	};
+	const struct wlr_fbox full_area = usable_area;
 
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background);
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom);
@@ -51,9 +57,9 @@ void arrange_layers(struct sway_output *output) {
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay);
 
 	if (memcmp(&usable_area, &output->usable_area,
-				sizeof(struct wlr_box)) != 0) {
+				sizeof(struct wlr_fbox)) != 0) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
-		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
+		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_fbox));
 		arrange_output(output);
 	}
 }
@@ -182,7 +188,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		transaction_commit_dirty();
 	}
 
-	int lx, ly;
+	double lx, ly;
 	wlr_scene_node_coords(&surface->scene->tree->node, &lx, &ly);
 	wlr_scene_node_set_position(&surface->popups->node, lx, ly);
 }
@@ -238,12 +244,12 @@ static void popup_unconstrain(struct sway_layer_popup *popup) {
 	struct wlr_xdg_popup *wlr_popup = popup->wlr_popup;
 	struct sway_output *output = popup->toplevel->output;
 
-	int lx, ly;
+	double lx, ly;
 	wlr_scene_node_coords(&popup->toplevel->scene->tree->node, &lx, &ly);
 
 	// the output box expressed in the coordinate system of the toplevel parent
 	// of the popup
-	struct wlr_box output_toplevel_sx_box = {
+	struct wlr_fbox output_toplevel_sx_box = {
 		.x = output->lx - lx,
 		.y = output->ly - ly,
 		.width = output->width,
@@ -300,7 +306,7 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface_v1 *layer_surface = data;
 	sway_log(SWAY_DEBUG, "new layer surface: namespace %s layer %d anchor %" PRIu32
-			" size %" PRIu32 "x%" PRIu32 " margin %" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",",
+			" size %lfx%lf margin %lf,%lf,%lf,%lf",
 		layer_surface->namespace,
 		layer_surface->pending.layer,
 		layer_surface->pending.anchor,

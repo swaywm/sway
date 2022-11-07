@@ -42,7 +42,7 @@ struct sway_output {
 	struct sway_server *server;
 	struct wl_list link;
 
-	struct wlr_box usable_area;
+	struct wlr_fbox usable_area;
 
 	struct timespec last_frame;
 

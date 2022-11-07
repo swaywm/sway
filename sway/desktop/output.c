@@ -121,7 +121,7 @@ static struct buffer_timer *buffer_timer_assign(struct wlr_scene_buffer *buffer)
 }
 
 static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
-		int x, int y, void *user_data) {
+		double x, double y, void *user_data) {
 	struct send_frame_done_data *data = user_data;
 	struct sway_output *output = data->output;
 	int view_max_render_time = 0;

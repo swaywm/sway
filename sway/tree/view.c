@@ -170,8 +170,8 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 	}
 }
 
-uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+uint32_t view_configure(struct sway_view *view, double lx, double ly,
+		double width, double height) {
 	if (view->impl->configure) {
 		return view->impl->configure(view, lx, ly, width, height);
 	}
@@ -1138,7 +1138,7 @@ void view_remove_saved_buffer(struct sway_view *view) {
 }
 
 static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
-		int sx, int sy, void *data) {
+		double sx, double sy, void *data) {
 	struct wlr_scene_tree *tree = data;
 
 	struct wlr_scene_buffer *sbuf = wlr_scene_buffer_create(tree, NULL);
@@ -1178,7 +1178,7 @@ bool view_is_transient_for(struct sway_view *child,
 }
 
 static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
-		int x, int y, void *data) {
+		double x, double y, void *data) {
 	struct timespec *when = data;
 	wl_signal_emit_mutable(&scene_buffer->events.frame_done, when);
 }

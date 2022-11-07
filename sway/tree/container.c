@@ -57,7 +57,7 @@ static void handle_output_leave(
 }
 
 static bool handle_point_accepts_input(
-		struct wlr_scene_buffer *buffer, int x, int y) {
+		struct wlr_scene_buffer *buffer, double x, double y) {
 	return false;
 }
 
