@@ -25,6 +25,7 @@ packages:
 - x11/libX11
 - x11/pixman
 - x11/xcb-util-wm
+- misc/hwdata
 sources:
 - https://github.com/swaywm/sway
 - https://gitlab.freedesktop.org/wlroots/wlroots.git
