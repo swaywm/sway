@@ -15,6 +15,7 @@ struct sway_session_lock_surface {
 	struct wl_listener surface_commit;
 	struct wl_listener output_mode;
 	struct wl_listener output_commit;
+	struct wl_listener output_destroy;
 };
 
 static void set_lock_focused_surface(struct wlr_surface *focused) {
@@ -57,9 +58,7 @@ static void handle_output_commit(struct wl_listener *listener, void *data) {
 	}
 }
 
-static void handle_surface_destroy(struct wl_listener *listener, void *data) {
-	struct sway_session_lock_surface *surf = wl_container_of(listener, surf, destroy);
-
+static void destroy_lock_surface(struct sway_session_lock_surface *surf) {
 	// Move the seat focus to another surface if one is available
 	if (server.session_lock.focused == surf->surface) {
 		struct wlr_surface *next_focus = NULL;
@@ -79,8 +78,20 @@ static void handle_surface_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surf->surface_commit.link);
 	wl_list_remove(&surf->output_mode.link);
 	wl_list_remove(&surf->output_commit.link);
+	wl_list_remove(&surf->output_destroy.link);
 	output_damage_whole(surf->output);
 	free(surf);
+}
+
+static void handle_surface_destroy(struct wl_listener *listener, void *data) {
+	struct sway_session_lock_surface *surf = wl_container_of(listener, surf, destroy);
+	destroy_lock_surface(surf);
+}
+
+static void handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct sway_session_lock_surface *surf =
+		wl_container_of(listener, surf, output_destroy);
+	destroy_lock_surface(surf);
 }
 
 static void handle_new_surface(struct wl_listener *listener, void *data) {
@@ -108,6 +119,8 @@ static void handle_new_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&output->wlr_output->events.mode, &surf->output_mode);
 	surf->output_commit.notify = handle_output_commit;
 	wl_signal_add(&output->wlr_output->events.commit, &surf->output_commit);
+	surf->output_destroy.notify = handle_output_destroy;
+	wl_signal_add(&output->node.events.destroy, &surf->output_destroy);
 }
 
 static void handle_unlock(struct wl_listener *listener, void *data) {
