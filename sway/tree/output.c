@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
-#include <wlr/types/wlr_output_damage.h>
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -88,10 +87,53 @@ static void restore_workspaces(struct sway_output *output) {
 	output_sort_workspaces(output);
 }
 
+static void destroy_scene_layers(struct sway_output *output) {
+	wlr_scene_node_destroy(&output->fullscreen_background->node);
+
+	scene_node_disown_children(output->layers.tiling);
+	scene_node_disown_children(output->layers.fullscreen);
+
+	size_t num_layers = sizeof(output->layers) / sizeof(struct wlr_scene_node *);
+	for (size_t i = 0; i < num_layers; i++) {
+		struct wlr_scene_tree *tree =
+			((struct wlr_scene_tree **) &output->layers)[i];
+
+		if (tree) {
+			wlr_scene_node_destroy(&tree->node);
+		}
+	}
+}
+
 struct sway_output *output_create(struct wlr_output *wlr_output) {
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	node_init(&output->node, N_OUTPUT, output);
+
+	bool alloc_failure = false;
+	size_t num_layers = sizeof(output->layers) / sizeof(struct wlr_scene_node *);
+	for (size_t i = 0; i < num_layers; i++) {
+		((struct wlr_scene_tree **) &output->layers)[i] =
+			alloc_scene_tree(root->staging, &alloc_failure);
+	}
+
+	if (!alloc_failure) {
+		output->fullscreen_background = wlr_scene_rect_create(
+			output->layers.fullscreen, 0, 0, (float[4]){0., 0., 0., 1.});
+
+		if (!output->fullscreen_background) {
+			sway_log(SWAY_ERROR, "Unable to allocate a background rect");
+			alloc_failure = true;
+		}
+	}
+
+	if (alloc_failure) {
+		destroy_scene_layers(output);
+		wlr_scene_output_destroy(output->scene_output);
+		free(output);
+		return NULL;
+	}
+
 	output->wlr_output = wlr_output;
+	
 	wlr_output->data = output;
 	output->detected_subpixel = wlr_output->subpixel;
 	output->scale_filter = SCALE_FILTER_NEAREST;
@@ -102,11 +144,6 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
-
-	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
-	for (size_t i = 0; i < len; ++i) {
-		wl_list_init(&output->layers[i]);
-	}
 
 	return output;
 }
@@ -239,18 +276,12 @@ void output_destroy(struct sway_output *output) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+
+	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
 	wl_event_source_remove(output->repaint_timer);
 	free(output);
-}
-
-static void untrack_output(struct sway_container *con, void *data) {
-	struct sway_output *output = data;
-	int index = list_find(con->outputs, output);
-	if (index != -1) {
-		list_del(con->outputs, index);
-	}
 }
 
 void output_disable(struct sway_output *output) {
@@ -266,8 +297,6 @@ void output_disable(struct sway_output *output) {
 	wl_signal_emit_mutable(&output->events.disable, output);
 
 	output_evacuate(output);
-
-	root_for_each_container(untrack_output, output);
 
 	list_del(root->outputs, index);
 

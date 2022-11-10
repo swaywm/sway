@@ -259,8 +259,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 		return;
 	}
 	struct sway_output *output = workspace->output;
-	struct wlr_box *area = &output->usable_area;
-	sway_log(SWAY_DEBUG, "Usable area for ws: %dx%d@%d,%d",
+	struct wlr_fbox *area = &output->usable_area;
+	sway_log(SWAY_DEBUG, "Usable area for ws: %lfx%lf@%lf,%lf",
 			area->width, area->height, area->x, area->y);
 
 	bool first_arrange = workspace->width == 0 && workspace->height == 0;

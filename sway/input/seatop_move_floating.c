@@ -1,6 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 #include <wlr/types/wlr_cursor.h>
-#include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -39,9 +38,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 	struct seatop_move_floating_event *e = seat->seatop_data;
 	struct wlr_cursor *cursor = seat->cursor->cursor;
-	desktop_damage_whole_container(e->con);
 	container_floating_move_to(e->con, cursor->x - e->dx, cursor->y - e->dy);
-	desktop_damage_whole_container(e->con);
 	transaction_commit_dirty();
 }
 

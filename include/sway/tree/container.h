@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_scene.h>
 #include "list.h"
 #include "sway/tree/node.h"
 
@@ -68,11 +69,39 @@ struct sway_container {
 	struct sway_node node;
 	struct sway_view *view;
 
+	struct wlr_scene_tree *scene_tree;
+
+	struct {
+		struct wlr_scene_tree *tree;
+
+		struct wlr_scene_rect *border;
+		struct wlr_scene_rect *background;
+
+		struct sway_text_node *title_text;
+		struct sway_text_node *marks_text;
+	} title_bar;
+
+	struct {
+		struct wlr_scene_tree *tree;
+		
+		struct wlr_scene_rect *top;
+		struct wlr_scene_rect *bottom;
+		struct wlr_scene_rect *left;
+		struct wlr_scene_rect *right;
+	} border;
+
+	struct wlr_scene_tree *content_tree;
+	struct wlr_scene_buffer *output_handler;
+
+	struct wl_listener output_enter;
+	struct wl_listener output_leave;
+
 	struct sway_container_state current;
 	struct sway_container_state pending;
 
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
+	int title_width;
 
 	enum sway_container_layout prev_split_layout;
 
@@ -100,14 +129,6 @@ struct sway_container {
 	double child_total_width;
 	double child_total_height;
 
-	// In most cases this is the same as the content x and y, but if the view
-	// refuses to resize to the content dimensions then it can be smaller.
-	// These are in layout coordinates.
-	double surface_x, surface_y;
-
-	// Outputs currently being intersected
-	list_t *outputs; // struct sway_output
-
 	// Indicates that the container is a scratchpad container.
 	// Both hidden and visible scratchpad containers have scratchpad=true.
 	// Hidden scratchpad containers have a NULL parent.
@@ -115,18 +136,7 @@ struct sway_container {
 
 	float alpha;
 
-	struct wlr_texture *title_focused;
-	struct wlr_texture *title_focused_inactive;
-	struct wlr_texture *title_focused_tab_title;
-	struct wlr_texture *title_unfocused;
-	struct wlr_texture *title_urgent;
-
 	list_t *marks; // char *
-	struct wlr_texture *marks_focused;
-	struct wlr_texture *marks_focused_inactive;
-	struct wlr_texture *marks_focused_tab_title;
-	struct wlr_texture *marks_unfocused;
-	struct wlr_texture *marks_urgent;
 
 	struct {
 		struct wl_signal destroy;
@@ -146,19 +156,6 @@ void container_begin_destroy(struct sway_container *con);
 struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
-/**
- * Find a container at the given coordinates. Returns the surface and
- * surface-local coordinates of the given layout coordinates if the container
- * is a view and the view contains a surface at those coordinates.
- */
-struct sway_container *container_at(struct sway_workspace *workspace,
-		double lx, double ly, struct wlr_surface **surface,
-		double *sx, double *sy);
-
-struct sway_container *tiling_container_at(
-		struct sway_node *parent, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy);
-
 void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
@@ -175,13 +172,13 @@ bool container_has_ancestor(struct sway_container *container,
 
 void container_update_textures_recursive(struct sway_container *con);
 
-void container_damage_whole(struct sway_container *container);
-
 void container_reap_empty(struct sway_container *con);
 
 struct sway_container *container_flatten(struct sway_container *container);
 
-void container_update_title_textures(struct sway_container *container);
+void container_update_title_bar(struct sway_container *container);
+
+void container_update_marks(struct sway_container *container);
 
 size_t container_build_representation(enum sway_container_layout layout,
 		list_t *children, char *buffer);
@@ -213,11 +210,6 @@ void container_set_geometry_from_content(struct sway_container *con);
  * Uses pending container state.
  */
 bool container_is_floating(struct sway_container *container);
-
-/**
- * Same as above, but for current container state.
- */
-bool container_is_current_floating(struct sway_container *container);
 
 /**
  * Get a container's box in layout coordinates.
@@ -281,25 +273,11 @@ bool container_is_floating_or_child(struct sway_container *container);
  */
 bool container_is_fullscreen_or_child(struct sway_container *container);
 
-/**
- * Return the output which will be used for scale purposes.
- * This is the most recently entered output.
- * If the container is not on any output, return NULL.
- */
-struct sway_output *container_get_effective_output(struct sway_container *con);
-
-void container_discover_outputs(struct sway_container *con);
-
 enum sway_container_layout container_parent_layout(struct sway_container *con);
-
-enum sway_container_layout container_current_parent_layout(
-		struct sway_container *con);
 
 list_t *container_get_siblings(struct sway_container *container);
 
 int container_sibling_index(struct sway_container *child);
-
-list_t *container_get_current_siblings(struct sway_container *container);
 
 void container_handle_fullscreen_reparent(struct sway_container *con);
 
@@ -348,8 +326,6 @@ bool container_has_mark(struct sway_container *container, char *mark);
 
 void container_add_mark(struct sway_container *container, char *mark);
 
-void container_update_marks_textures(struct sway_container *container);
-
 void container_raise_floating(struct sway_container *con);
 
 bool container_is_scratchpad_hidden(struct sway_container *con);
@@ -372,5 +348,11 @@ bool container_is_sticky_or_child(struct sway_container *con);
  * Returns the number of new containers added to the parent
  */
 int container_squash(struct sway_container *con);
+
+void container_arrange_title_bar(struct sway_container *con);
+
+void container_update(struct sway_container *con);
+
+void container_update_itself_and_parents(struct sway_container *con);
 
 #endif

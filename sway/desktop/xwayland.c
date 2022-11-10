@@ -5,15 +5,16 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/xwayland.h>
 #include <xcb/xcb_icccm.h>
 #include "log.h"
-#include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -43,29 +44,12 @@ static void unmanaged_handle_request_configure(struct wl_listener *listener,
 		ev->width, ev->height);
 }
 
-static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
-	struct sway_xwayland_unmanaged *surface =
-		wl_container_of(listener, surface, commit);
-	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
-
-	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
-		false);
-}
-
 static void unmanaged_handle_set_geometry(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, set_geometry);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	if (xsurface->x != surface->lx || xsurface->y != surface->ly) {
-		// Surface has moved
-		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
-			true);
-		surface->lx = xsurface->x;
-		surface->ly = xsurface->y;
-		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
-			true);
-	}
+	wlr_scene_node_set_position(&surface->surface_scene->buffer->node, xsurface->x, xsurface->y);
 }
 
 static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
@@ -73,17 +57,18 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, map);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	wl_list_insert(root->xwayland_unmanaged.prev, &surface->link);
+	surface->surface_scene = wlr_scene_surface_create(root->layers.unmanaged,
+		xsurface->surface);
 
-	wl_signal_add(&xsurface->events.set_geometry, &surface->set_geometry);
-	surface->set_geometry.notify = unmanaged_handle_set_geometry;
+	if (surface->surface_scene) {
+		scene_descriptor_assign(&surface->surface_scene->buffer->node,
+			SWAY_SCENE_DESC_XWAYLAND_UNMANAGED, surface);
+		wlr_scene_node_set_position(&surface->surface_scene->buffer->node,
+			xsurface->x, xsurface->y);
 
-	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
-	surface->commit.notify = unmanaged_handle_commit;
-
-	surface->lx = xsurface->x;
-	surface->ly = xsurface->y;
-	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly, true);
+		wl_signal_add(&xsurface->events.set_geometry, &surface->set_geometry);
+		surface->set_geometry.notify = unmanaged_handle_set_geometry;
+	}
 
 	if (wlr_xwayland_or_surface_wants_focus(xsurface)) {
 		struct sway_seat *seat = input_manager_current_seat();
@@ -97,10 +82,10 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, unmap);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
-	desktop_damage_surface(xsurface->surface, xsurface->x, xsurface->y, true);
-	wl_list_remove(&surface->link);
-	wl_list_remove(&surface->set_geometry.link);
-	wl_list_remove(&surface->commit.link);
+
+	if (surface->surface_scene) {
+		wl_list_remove(&surface->set_geometry.link);
+	}
 
 	struct sway_seat *seat = input_manager_current_seat();
 	if (seat->wlr_seat->keyboard_state.focused_surface == xsurface->surface) {
@@ -247,8 +232,8 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static uint32_t configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+static uint32_t configure(struct sway_view *view, double lx, double ly,
+		double width, double height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
 		return 0;
@@ -396,17 +381,6 @@ static const struct sway_view_impl view_impl = {
 	.destroy = destroy,
 };
 
-static void get_geometry(struct sway_view *view, struct wlr_box *box) {
-	box->x = box->y = 0;
-	if (view->surface) {
-		box->width = view->surface->current.width;
-		box->height = view->surface->current.height;
-	} else {
-		box->width = 0;
-		box->height = 0;
-	}
-}
-
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, commit);
@@ -414,18 +388,17 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	struct wlr_surface_state *state = &xsurface->surface->current;
 
-	struct wlr_box new_geo;
-	get_geometry(view, &new_geo);
+	struct wlr_box new_geo = {0};
+	new_geo.width = state->width;
+	new_geo.height = state->height;
+
 	bool new_size = new_geo.width != view->geometry.width ||
-			new_geo.height != view->geometry.height ||
-			new_geo.x != view->geometry.x ||
-			new_geo.y != view->geometry.y;
+			new_geo.height != view->geometry.height;
 
 	if (new_size) {
 		// The client changed its surface size in this commit. For floating
 		// containers, we resize the container to match. For tiling containers,
 		// we only recenter the surface.
-		desktop_damage_view(view);
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
 			view_update_size(view);
@@ -433,15 +406,20 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		} else {
 			view_center_surface(view);
 		}
-		desktop_damage_view(view);
 	}
 
 	if (view->container->node.instruction) {
-		transaction_notify_view_ready_by_geometry(view,
+		bool successful = transaction_notify_view_ready_by_geometry(view,
 				xsurface->x, xsurface->y, state->width, state->height);
-	}
 
-	view_damage_from(view);
+		// If we saved the view and this commit isn't what we're looking for
+		// that means the user will never actually see the buffers submitted to
+		// us here. Just send frame done events to these surfaces so they can
+		// commit another time for us.
+		if (view->saved_surface_tree && !successful) {
+			view_send_frame_done(view);
+		}
+	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -486,6 +464,8 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 
 	view_unmap(view);
 
+	xwayland_view->surface_scene = NULL;
+
 	wl_list_remove(&xwayland_view->commit.link);
 }
 
@@ -505,6 +485,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	// Put it back into the tree
 	view_map(view, xsurface->surface, xsurface->fullscreen, NULL, false);
+
+	xwayland_view->surface_scene = wlr_scene_surface_create(
+		xwayland_view->view.content_tree, xsurface->surface);
 
 	transaction_commit_dirty();
 }
@@ -712,7 +695,10 @@ struct sway_xwayland_view *create_xwayland_view(struct wlr_xwayland_surface *xsu
 		return NULL;
 	}
 
-	view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl);
+	if (!view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl)) {
+		free(xwayland_view);
+		return NULL;
+	}
 	xwayland_view->view.wlr_xwayland_surface = xsurface;
 
 	wl_signal_add(&xsurface->events.destroy, &xwayland_view->destroy);

@@ -3,7 +3,7 @@
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/render/wlr_texture.h>
+#include <wlr/types/wlr_scene.h>
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
 #include "config.h"
@@ -16,10 +16,40 @@ struct sway_root {
 	struct wlr_output_layout *output_layout;
 
 	struct wl_listener output_layout_change;
+
+	// scene node layout:
+	// - root
+	// 	- staging
+	// 	- layer shell stuff
+	// 	- tiling
+	// 	- floating
+	// 	- fullscreen stuff
+	// 	- seat stuff
+	// 	- ext_session_lock
+	struct wlr_scene *root_scene;
+
+	// since wlr_scene nodes can't be orphaned and must always
+	// have a parent, use this staging scene_tree so that a
+	// node always have a valid parent. Nothing in this
+	// staging node will be visible.
+	struct wlr_scene_tree *staging;
+
+	struct {
+		struct wlr_scene_tree *shell_background;
+		struct wlr_scene_tree *shell_bottom;
+		struct wlr_scene_tree *tiling;
+		struct wlr_scene_tree *floating;
+		struct wlr_scene_tree *shell_top;
+		struct wlr_scene_tree *fullscreen;
+		struct wlr_scene_tree *fullscreen_global;
 #if HAVE_XWAYLAND
-	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
+		struct wlr_scene_tree *unmanaged;
 #endif
-	struct wl_list drag_icons; // sway_drag_icon::link
+		struct wlr_scene_tree *shell_overlay;
+		struct wlr_scene_tree *popup;
+		struct wlr_scene_tree *seat;
+		struct wlr_scene_tree *session_lock;
+	} layers;
 
 	// Includes disabled outputs
 	struct wl_list all_outputs; // sway_output::link

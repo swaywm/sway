@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/edges.h>
+#include <wlr/types/wlr_scene.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/tablet.h"
@@ -42,8 +43,6 @@ struct sway_seatop_impl {
 			uint32_t time_msec, enum wlr_tablet_tool_tip_state state);
 	void (*end)(struct sway_seat *seat);
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
-	void (*render)(struct sway_seat *seat, struct sway_output *output,
-			pixman_region32_t *damage);
 	bool allow_set_cursor;
 };
 
@@ -67,16 +66,12 @@ struct sway_seat_node {
 };
 
 struct sway_drag_icon {
-	struct sway_seat *seat;
 	struct wlr_drag_icon *wlr_drag_icon;
-	struct wl_list link; // sway_root::drag_icons
+	struct wlr_scene_tree *tree;
+	struct wlr_scene_tree *surface_tree;
 
-	double x, y; // in layout-local coordinates
-
-	struct wl_listener surface_commit;
-	struct wl_listener map;
-	struct wl_listener unmap;
 	struct wl_listener destroy;
+	struct wl_listener commit;
 };
 
 struct sway_drag {
@@ -88,6 +83,15 @@ struct sway_drag {
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
+
+	// Seat scene tree structure
+	// - scene_tree
+	//   - drag icons
+	//     - drag icon 1
+	//     - drag icon 2
+	//   - seatop specific stuff
+	struct wlr_scene_tree *scene_tree;
+	struct wlr_scene_tree *drag_icons;
 
 	bool has_focus;
 	struct wl_list focus_stack; // list of containers in focus order
@@ -247,7 +251,7 @@ void seat_idle_notify_activity(struct sway_seat *seat,
 
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
-void drag_icon_update_position(struct sway_drag_icon *icon);
+void drag_icon_update_position(struct sway_seat *seat, struct sway_drag_icon *icon);
 
 enum wlr_edges find_resize_edge(struct sway_container *cont,
 		struct wlr_surface *surface, struct sway_cursor *cursor);
@@ -331,13 +335,6 @@ void seatop_end(struct sway_seat *seat);
  * The seatop may choose to abort itself in response to this.
  */
 void seatop_unref(struct sway_seat *seat, struct sway_container *con);
-
-/**
- * Instructs a seatop to render anything that it needs to render
- * (eg. dropzone for move-tiling)
- */
-void seatop_render(struct sway_seat *seat, struct sway_output *output,
-		pixman_region32_t *damage);
 
 bool seatop_allows_set_cursor(struct sway_seat *seat);
 

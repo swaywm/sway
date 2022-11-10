@@ -27,6 +27,18 @@
 #endif
 
 struct sway_transaction;
+struct sway_session_lock {
+	struct wlr_session_lock_v1 *lock;
+	struct wlr_surface *focused;
+	bool abandoned;
+
+	struct wl_list outputs; // struct sway_session_lock_output
+
+	// invalid if the session is abandoned
+	struct wl_listener new_surface;
+	struct wl_listener unlock;
+	struct wl_listener destroy;
+};
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -40,7 +52,6 @@ struct sway_server {
 	struct wlr_allocator *allocator;
 
 	struct wlr_compositor *compositor;
-	struct wl_listener compositor_new_surface;
 
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
@@ -92,14 +103,8 @@ struct sway_server {
 	struct wl_listener output_manager_test;
 
 	struct {
-		bool locked;
+		struct sway_session_lock *lock;
 		struct wlr_session_lock_manager_v1 *manager;
-
-		struct wlr_session_lock_v1 *lock;
-		struct wlr_surface *focused;
-		struct wl_listener lock_new_surface;
-		struct wl_listener lock_unlock;
-		struct wl_listener lock_destroy;
 
 		struct wl_listener new_lock;
 		struct wl_listener manager_destroy;
@@ -139,13 +144,6 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
-	bool noscanout;        // Disable direct scan-out
-
-	enum {
-		DAMAGE_DEFAULT,    // Default behaviour
-		DAMAGE_HIGHLIGHT,  // Highlight regions of the screen being damaged
-		DAMAGE_RERENDER,   // Render the full output when any damage occurs
-	} damage;
 };
 
 extern struct sway_debug debug;
@@ -157,12 +155,13 @@ void server_run(struct sway_server *server);
 
 void restore_nofile_limit(void);
 
-void handle_compositor_new_surface(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void sway_session_lock_init(void);
+void sway_session_lock_add_output(struct sway_session_lock *lock,
+	struct sway_output *output);
 void handle_xdg_shell_surface(struct wl_listener *listener, void *data);
 #if HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

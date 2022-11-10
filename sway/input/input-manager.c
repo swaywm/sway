@@ -293,7 +293,7 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 	struct sway_input_manager *input_manager = wl_container_of(
 			listener, input_manager, inhibit_deactivate);
 	struct sway_seat *seat;
-	if (server.session_lock.locked) {
+	if (server.session_lock.lock) {
 		// Don't deactivate the grab of a screenlocker
 		return;
 	}
