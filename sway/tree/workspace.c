@@ -114,7 +114,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	output_sort_workspaces(output);
 
 	ipc_event_workspace(NULL, ws, "init");
-	wl_signal_emit(&root->events.new_node, &ws->node);
+	wl_signal_emit_mutable(&root->events.new_node, &ws->node);
 
 	return ws;
 }
@@ -142,7 +142,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 void workspace_begin_destroy(struct sway_workspace *workspace) {
 	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
 	ipc_event_workspace(NULL, workspace, "empty"); // intentional
-	wl_signal_emit(&workspace->node.events.destroy, &workspace->node);
+	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
 
 	if (workspace->output) {
 		workspace_detach(workspace);

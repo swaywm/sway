@@ -147,7 +147,7 @@ void output_enable(struct sway_output *output) {
 
 	input_manager_configure_xcursor();
 
-	wl_signal_emit(&root->events.new_node, &output->node);
+	wl_signal_emit_mutable(&root->events.new_node, &output->node);
 
 	arrange_layers(output);
 	arrange_root();
@@ -263,7 +263,7 @@ void output_disable(struct sway_output *output) {
 	}
 
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
-	wl_signal_emit(&output->events.disable, output);
+	wl_signal_emit_mutable(&output->events.disable, output);
 
 	output_evacuate(output);
 
@@ -287,7 +287,7 @@ void output_begin_destroy(struct sway_output *output) {
 		return;
 	}
 	sway_log(SWAY_DEBUG, "Destroying output '%s'", output->wlr_output->name);
-	wl_signal_emit(&output->node.events.destroy, &output->node);
+	wl_signal_emit_mutable(&output->node.events.destroy, &output->node);
 
 	output->node.destroying = true;
 	node_set_dirty(&output->node);
