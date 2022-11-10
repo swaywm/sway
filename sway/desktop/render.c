@@ -282,7 +282,7 @@ void render_border_corner(struct sway_output *output, pixman_region32_t *output_
 	for (int i = 0; i < nrects; ++i) {
 		scissor_output(wlr_output, &rects[i]);
 		fx_render_border_corner(renderer, &box, color, wlr_output->transform_matrix,
-				corner_location, corner_radius * wlr_output->scale, border_thickness);
+				corner_location, corner_radius, border_thickness);
 	}
 
 damage_finish:
@@ -484,6 +484,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		if (con->corner_radius) {
 			int size = 2 * (con->corner_radius + state->border_thickness);
 			int scaled_thickness = state->border_thickness * output_scale;
+			int scaled_corner_radius = con->corner_radius * output_scale;
 			if (state->border_left) {
 				box.width = size;
 				box.height = size;
@@ -491,7 +492,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 				box.y = floor(state->y + state->height - size);
 				scale_box(&box, output_scale);
 				render_border_corner(output, damage, &box, color,
-						con->corner_radius, scaled_thickness, BOTTOM_LEFT);
+						scaled_corner_radius, scaled_thickness, BOTTOM_LEFT);
 			}
 			if (state->border_right) {
 				box.width = size;
@@ -500,7 +501,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 				box.y = floor(state->y + state->height - size);
 				scale_box(&box, output_scale);
 				render_border_corner(output, damage, &box, color,
-						con->corner_radius, scaled_thickness, BOTTOM_RIGHT);
+						scaled_corner_radius, scaled_thickness, BOTTOM_RIGHT);
 			}
 		}
 	}
@@ -800,6 +801,7 @@ static void render_top_border(struct sway_output *output,
 	if (con->corner_radius) {
 		int size = 2 * (con->corner_radius + state->border_thickness);
 		int scaled_thickness = state->border_thickness * output_scale;
+		int scaled_corner_radius = con->corner_radius * output_scale;
 
 		// top left
 		if (state->border_left) {
@@ -809,7 +811,7 @@ static void render_top_border(struct sway_output *output,
 			box.y = floor(state->y);
 			scale_box(&box, output_scale);
 			render_border_corner(output, output_damage, &box, color,
-					con->corner_radius, scaled_thickness, TOP_LEFT);
+					scaled_corner_radius, scaled_thickness, TOP_LEFT);
 		}
 		// top right
 		if (state->border_right) {
@@ -819,7 +821,7 @@ static void render_top_border(struct sway_output *output,
 			box.y = floor(state->y);
 			scale_box(&box, output_scale);
 			render_border_corner(output, output_damage, &box, color,
-					con->corner_radius, scaled_thickness, TOP_RIGHT);
+					scaled_corner_radius, scaled_thickness, TOP_RIGHT);
 		}
 	}
 }
