@@ -14,9 +14,17 @@
 #include <wlr/util/box.h>
 #include "log.h"
 #include "sway/desktop/fx_renderer.h"
-#include "sway/desktop/shaders.h"
 #include "sway/output.h"
 #include "sway/server.h"
+
+// shaders
+#include "quad_vert_src.h"
+#include "quad_frag_src.h"
+#include "corner_frag_src.h"
+#include "tex_vert_src.h"
+#include "tex_rgba_frag_src.h"
+#include "tex_rgbx_frag_src.h"
+#include "tex_external_frag_src.h"
 
 static const GLfloat verts[] = {
 	1, 0, // top right
@@ -125,7 +133,7 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	// init shaders
 	GLuint prog;
 
-	prog = link_program(quad_vertex_src, quad_fragment_src);
+	prog = link_program(quad_vert_src, quad_frag_src);
 	renderer->shaders.quad.program = prog;
 	if (!renderer->shaders.quad.program) {
 		goto error;
@@ -135,7 +143,7 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
 	// Border corners
-	prog = link_program(quad_vertex_src, corner_fragment_src);
+	prog = link_program(quad_vert_src, corner_frag_src);
 	renderer->shaders.corner.program = prog;
 	if (!renderer->shaders.corner.program) {
 		goto error;
@@ -153,15 +161,15 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.corner.half_thickness = glGetUniformLocation(prog, "half_thickness");
 
 	// fragment shaders
-	prog = link_program(tex_vertex_src, tex_fragment_src_rgba);
+	prog = link_program(tex_vert_src, tex_rgba_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_rgba, prog)) {
 		goto error;
 	}
-	prog = link_program(tex_vertex_src, tex_fragment_src_rgbx);
+	prog = link_program(tex_vert_src, tex_rgbx_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_rgbx, prog)) {
 		goto error;
 	}
-	prog = link_program(tex_vertex_src, tex_fragment_src_external);
+	prog = link_program(tex_vert_src, tex_external_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_ext, prog)) {
 		goto error;
 	}

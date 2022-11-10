@@ -206,6 +206,8 @@ sway_sources = files(
     'tree/output.c',
 )
 
+subdir('desktop/shaders')
+
 sway_deps = [
     cairo,
     drm,
