@@ -847,7 +847,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 }
 
 void view_unmap(struct sway_view *view) {
-	wl_signal_emit(&view->events.unmap, view);
+	wl_signal_emit_mutable(&view->events.unmap, view);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 

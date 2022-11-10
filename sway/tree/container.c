@@ -49,7 +49,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	c->outputs = create_list();
 
 	wl_signal_init(&c->events.destroy);
-	wl_signal_emit(&root->events.new_node, &c->node);
+	wl_signal_emit_mutable(&root->events.new_node, &c->node);
 
 	return c;
 }
@@ -104,7 +104,7 @@ void container_begin_destroy(struct sway_container *con) {
 		container_fullscreen_disable(con);
 	}
 
-	wl_signal_emit(&con->node.events.destroy, &con->node);
+	wl_signal_emit_mutable(&con->node.events.destroy, &con->node);
 
 	container_end_mouse_operation(con);
 
