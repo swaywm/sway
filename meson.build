@@ -36,7 +36,7 @@ if is_freebsd
 endif
 
 # Execute the wlroots subproject, if any
-wlroots_version = ['>=0.16.0', '<0.17.0']
+wlroots_version = ['>=0.17.0', '<0.18.0']
 subproject(
 	'wlroots',
 	default_options: ['examples=false'],
