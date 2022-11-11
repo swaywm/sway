@@ -3,6 +3,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_output.h>
 #include "config.h"
 #include "sway/tree/node.h"
@@ -26,7 +27,7 @@ struct sway_output {
 	struct wlr_box usable_area;
 
 	struct timespec last_frame;
-	struct wlr_output_damage *damage;
+	struct wlr_damage_ring damage_ring;
 
 	int lx, ly; // layout coords
 	int width, height; // transformed buffer size
@@ -44,8 +45,9 @@ struct sway_output {
 	struct wl_listener commit;
 	struct wl_listener mode;
 	struct wl_listener present;
-	struct wl_listener damage_destroy;
-	struct wl_listener damage_frame;
+	struct wl_listener damage;
+	struct wl_listener frame;
+	struct wl_listener needs_frame;
 
 	struct {
 		struct wl_signal disable;

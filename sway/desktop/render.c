@@ -8,8 +8,8 @@
 #include <wlr/render/gles2.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_matrix.h>
-#include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_compositor.h>
@@ -1186,7 +1186,7 @@ renderer_end:
 
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(wlr_output->transform);
-	wlr_region_transform(&frame_damage, &output->damage->current,
+	wlr_region_transform(&frame_damage, &output->damage_ring.current,
 		transform, width, height);
 
 	if (debug.damage != DAMAGE_DEFAULT) {
@@ -1200,5 +1200,7 @@ renderer_end:
 	if (!wlr_output_commit(wlr_output)) {
 		return;
 	}
+
+	wlr_damage_ring_rotate(&output->damage_ring);
 	output->last_frame = *when;
 }

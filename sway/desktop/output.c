@@ -10,7 +10,6 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_matrix.h>
-#include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_presentation_time.h>
@@ -553,31 +552,43 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
-	bool needs_frame;
-	pixman_region32_t damage;
-	pixman_region32_init(&damage);
-	if (!wlr_output_damage_attach_render(output->damage,
-			&needs_frame, &damage)) {
+	int buffer_age;
+	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
 		return 0;
 	}
 
-	if (needs_frame) {
-		struct timespec now;
-		clock_gettime(CLOCK_MONOTONIC, &now);
-
-		output_render(output, &now, &damage);
-	} else {
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	wlr_damage_ring_get_buffer_damage(&output->damage_ring, buffer_age, &damage);
+	if (!output->wlr_output->needs_frame &&
+			!pixman_region32_not_empty(&output->damage_ring.current)) {
+		pixman_region32_fini(&damage);
 		wlr_output_rollback(output->wlr_output);
+		return 0;
 	}
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	output_render(output, &now, &damage);
 
 	pixman_region32_fini(&damage);
 
 	return 0;
 }
 
-static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
+static void handle_damage(struct wl_listener *listener, void *user_data) {
 	struct sway_output *output =
-		wl_container_of(listener, output, damage_frame);
+		wl_container_of(listener, output, damage);
+	struct wlr_output_event_damage *event = user_data;
+	if (wlr_damage_ring_add(&output->damage_ring, event->damage)) {
+		wlr_output_schedule_frame(output->wlr_output);
+	}
+}
+
+static void handle_frame(struct wl_listener *listener, void *user_data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, frame);
 	if (!output->enabled || !output->wlr_output->enabled) {
 		return;
 	}
@@ -640,11 +651,18 @@ static void damage_handle_frame(struct wl_listener *listener, void *user_data) {
 	send_frame_done(output, &data);
 }
 
+static void handle_needs_frame(struct wl_listener *listener, void *user_data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, needs_frame);
+	wlr_output_schedule_frame(output->wlr_output);
+}
+
 void output_damage_whole(struct sway_output *output) {
 	// The output can exist with no wlr_output if it's just been disconnected
 	// and the transaction to evacuate it has't completed yet.
-	if (output && output->wlr_output && output->damage) {
-		wlr_output_damage_add_whole(output->damage);
+	if (output != NULL && output->wlr_output != NULL) {
+		wlr_damage_ring_add_whole(&output->damage_ring);
+		wlr_output_schedule_frame(output->wlr_output);
 	}
 }
 
@@ -668,11 +686,15 @@ static void damage_surface_iterator(struct sway_output *output,
 			ceil(output->wlr_output->scale) - surface->current.scale);
 	}
 	pixman_region32_translate(&damage, box.x, box.y);
-	wlr_output_damage_add(output->damage, &damage);
+	if (wlr_damage_ring_add(&output->damage_ring, &damage)) {
+		wlr_output_schedule_frame(output->wlr_output);
+	}
 	pixman_region32_fini(&damage);
 
 	if (whole) {
-		wlr_output_damage_add_box(output->damage, &box);
+		if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
+			wlr_output_schedule_frame(output->wlr_output);
+		}
 	}
 
 	if (!wl_list_empty(&surface->current.frame_callback_list)) {
@@ -702,7 +724,9 @@ void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
 	box.x -= output->lx;
 	box.y -= output->ly;
 	scale_box(&box, output->wlr_output->scale);
-	wlr_output_damage_add_box(output->damage, &box);
+	if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
+		wlr_output_schedule_frame(output->wlr_output);
+	}
 }
 
 static void damage_child_views_iterator(struct sway_container *con,
@@ -726,27 +750,15 @@ void output_damage_whole_container(struct sway_output *output,
 		.height = con->current.height + 2,
 	};
 	scale_box(&box, output->wlr_output->scale);
-	wlr_output_damage_add_box(output->damage, &box);
+	if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
+		wlr_output_schedule_frame(output->wlr_output);
+	}
 	// Damage subsurfaces as well, which may extend outside the box
 	if (con->view) {
 		damage_child_views_iterator(con, output);
 	} else {
 		container_for_each_child(con, damage_child_views_iterator, output);
 	}
-}
-
-static void damage_handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_output *output =
-		wl_container_of(listener, output, damage_destroy);
-	if (!output->enabled) {
-		return;
-	}
-	output_disable(output);
-
-	wl_list_remove(&output->damage_destroy.link);
-	wl_list_remove(&output->damage_frame.link);
-
-	transaction_commit_dirty();
 }
 
 static void update_output_manager_config(struct sway_server *server) {
@@ -778,11 +790,12 @@ static void update_output_manager_config(struct sway_server *server) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
 	struct sway_server *server = output->server;
-	output_begin_destroy(output);
 
 	if (output->enabled) {
 		output_disable(output);
 	}
+
+	output_begin_destroy(output);
 
 	wl_list_remove(&output->link);
 
@@ -790,6 +803,11 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->mode.link);
 	wl_list_remove(&output->present.link);
+	wl_list_remove(&output->damage.link);
+	wl_list_remove(&output->frame.link);
+	wl_list_remove(&output->needs_frame.link);
+
+	wlr_damage_ring_finish(&output->damage_ring);
 
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
@@ -817,9 +835,14 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 	if (!output->enabled) {
 		return;
 	}
+
 	arrange_layers(output);
 	arrange_output(output);
 	transaction_commit_dirty();
+
+	wlr_damage_ring_set_bounds(&output->damage_ring,
+		output->width, output->height);
+	wlr_output_schedule_frame(output->wlr_output);
 
 	update_output_manager_config(output->server);
 }
@@ -847,6 +870,14 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		transaction_commit_dirty();
 
 		update_output_manager_config(output->server);
+	}
+
+	if (event->committed & (WLR_OUTPUT_STATE_MODE |
+			WLR_OUTPUT_STATE_TRANSFORM |
+			WLR_OUTPUT_STATE_SCALE)) {
+		wlr_damage_ring_set_bounds(&output->damage_ring,
+			output->width, output->height);
+		wlr_output_schedule_frame(output->wlr_output);
 	}
 }
 
@@ -903,7 +934,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		return;
 	}
 	output->server = server;
-	output->damage = wlr_output_damage_create(wlr_output);
+	wlr_damage_ring_init(&output->damage_ring);
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
@@ -913,10 +944,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
-	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
-	output->damage_frame.notify = damage_handle_frame;
-	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
-	output->damage_destroy.notify = damage_handle_destroy;
+	wl_signal_add(&wlr_output->events.damage, &output->damage);
+	output->damage.notify = handle_damage;
+	wl_signal_add(&wlr_output->events.frame, &output->frame);
+	output->frame.notify = handle_frame;
+	wl_signal_add(&wlr_output->events.needs_frame, &output->needs_frame);
+	output->needs_frame.notify = handle_needs_frame;
 
 	output->repaint_timer = wl_event_loop_add_timer(server->wl_event_loop,
 		output_repaint_timer_handler, output);
