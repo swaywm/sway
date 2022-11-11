@@ -663,7 +663,9 @@ The default colors are:
 	padding of the text while _vertical_ value affects vertical padding (space
 	above and below text). Padding includes titlebar borders so their value
 	should be greater than titlebar_border_thickness. If _vertical_ value is
-	not specified it is set to the _horizontal_ value.
+	not specified it is set to the _horizontal_ value. If _corner_radius_ is set
+	to be greater than the _horizontal_ or _vertical_ value, the value will be
+	treated as that of _corner_radius_.
 
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
@@ -960,3 +962,4 @@ The following attributes may be matched with:
 # SEE ALSO
 
 *sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)
+

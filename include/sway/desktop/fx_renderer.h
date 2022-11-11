@@ -4,7 +4,7 @@
 #include <GLES2/gl2.h>
 #include <stdbool.h>
 
-enum corner_location {NONE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT};
+enum corner_location { NONE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
 
 struct gles2_tex_shader {
 	GLuint program;
@@ -13,6 +13,17 @@ struct gles2_tex_shader {
 	GLint alpha;
 	GLint pos_attrib;
 	GLint tex_attrib;
+	GLint size;
+	GLint position;
+	GLint radius;
+	GLint has_titlebar;
+};
+
+struct rounded_quad_shader {
+	GLuint program;
+	GLint proj;
+	GLint color;
+	GLint pos_attrib;
 	GLint size;
 	GLint position;
 	GLint radius;
@@ -31,6 +42,10 @@ struct fx_renderer {
 			GLint color;
 			GLint pos_attrib;
 		} quad;
+
+		struct rounded_quad_shader rounded_tl_quad;
+		struct rounded_quad_shader rounded_tr_quad;
+
 		struct {
 			GLuint program;
 			GLint proj;
@@ -45,6 +60,7 @@ struct fx_renderer {
 			GLint half_size;
 			GLint half_thickness;
 		} corner;
+
 		struct gles2_tex_shader tex_rgba;
 		struct gles2_tex_shader tex_rgbx;
 		struct gles2_tex_shader tex_ext;
@@ -63,13 +79,18 @@ void fx_renderer_scissor(struct wlr_box *box);
 
 bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box, const float matrix[static 9],
-		float alpha, int radius);
+		float alpha, int radius, const bool has_titlebar);
 
 bool fx_render_texture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
-		const struct wlr_box *dst_box, const float matrix[static 9], float alpha, int radius);
+		const struct wlr_box *dst_box, const float matrix[static 9], float alpha, int radius,
+		const bool has_titlebar);
 
 void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box,
 		const float color[static 4], const float projection[static 9]);
+
+void fx_render_rounded_rect(struct fx_renderer *renderer, const struct wlr_box *box,
+		const float color[static 4], const float projection[static 9],
+		int radius, enum corner_location corner_location);
 
 void fx_render_border_corner(struct fx_renderer *renderer, const struct wlr_box *box,
 		const float color[static 4], const float projection[static 9],
