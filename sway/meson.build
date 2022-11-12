@@ -225,6 +225,7 @@ sway_deps = [
     wayland_server,
     wlroots,
     xkbcommon,
+    egl,
 ]
 
 if have_xwayland
