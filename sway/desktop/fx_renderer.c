@@ -120,6 +120,33 @@ bool init_rounded_quad_shader(struct rounded_quad_shader *shader, GLuint prog) {
 	return true;
 }
 
+static bool check_gl_ext(const char *exts, const char *ext) {
+	size_t extlen = strlen(ext);
+	const char *end = exts + strlen(exts);
+
+	while (exts < end) {
+		if (exts[0] == ' ') {
+			exts++;
+			continue;
+		}
+		size_t n = strcspn(exts, " ");
+		if (n == extlen && strncmp(ext, exts, n) == 0) {
+			return true;
+		}
+		exts += n;
+	}
+	return false;
+}
+
+static void load_gl_proc(void *proc_ptr, const char *name) {
+	void *proc = (void *)eglGetProcAddress(name);
+	if (proc == NULL) {
+		sway_log(SWAY_ERROR, "GLES2 RENDERER: eglGetProcAddress(%s) failed", name);
+		abort();
+	}
+	*(void **)proc_ptr = proc;
+}
+
 struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	struct fx_renderer *renderer = calloc(1, sizeof(struct fx_renderer));
 	if (renderer == NULL) {
@@ -148,7 +175,12 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	sway_log(SWAY_INFO, "GL renderer: %s", glGetString(GL_RENDERER));
 	sway_log(SWAY_INFO, "Supported GLES2 extensions: %s", exts_str);
 
-	// TODO: gl checks
+	// TODO: the rest of the gl checks
+	if (check_gl_ext(exts_str, "GL_OES_EGL_image_external")) {
+		renderer->exts.OES_egl_image_external = true;
+		load_gl_proc(&renderer->procs.glEGLImageTargetTexture2DOES,
+			"glEGLImageTargetTexture2DOES");
+	}
 
 	// init shaders
 	GLuint prog;
@@ -275,18 +307,15 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 			shader = &renderer->shaders.tex_rgbx;
 		}
 		break;
-	/*
 	case GL_TEXTURE_EXTERNAL_OES:
 		shader = &renderer->shaders.tex_ext;
 
-		// TODO: ADD ME ONCE EXTS ADDED TO RENDERER
 		if (!renderer->exts.OES_egl_image_external) {
 			sway_log(SWAY_ERROR, "Failed to render texture: "
 				"GL_TEXTURE_EXTERNAL_OES not supported");
 			return false;
 		}
 		break;
-		*/
 	default:
 		sway_log(SWAY_ERROR, "Aborting render");
 		abort();

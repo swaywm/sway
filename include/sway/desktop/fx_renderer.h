@@ -2,6 +2,7 @@
 #define _SWAY_OPENGL_H
 
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 #include <stdbool.h>
 
 enum corner_location { ALL, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
@@ -34,6 +35,15 @@ struct fx_renderer {
 	struct wlr_egl *egl;
 
 	float projection[9];
+
+	struct {
+		bool OES_egl_image_external;
+	} exts;
+
+	struct {
+		PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
+	} procs;
+
 
 	// Shaders
 	struct {
