@@ -40,6 +40,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	c->pending.layout = L_NONE;
 	c->view = view;
 	c->alpha = 1.0f;
+	c->saturation = 1.0f;
 	c->corner_radius = config->corner_radius;
 
 	if (!view) {

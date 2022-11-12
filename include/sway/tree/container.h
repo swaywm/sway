@@ -113,6 +113,8 @@ struct sway_container {
 	// Hidden scratchpad containers have a NULL parent.
 	bool scratchpad;
 
+	float saturation;
+
 	float alpha;
 
 	int corner_radius;

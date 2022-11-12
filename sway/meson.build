@@ -73,6 +73,7 @@ sway_sources = files(
     'commands/mark.c',
     'commands/max_render_time.c',
     'commands/opacity.c',
+    'commands/saturation.c',
     'commands/include.c',
     'commands/input.c',
     'commands/layout.c',

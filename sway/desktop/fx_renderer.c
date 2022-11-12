@@ -99,6 +99,7 @@ bool init_frag_shader(struct gles2_tex_shader *shader, GLuint prog) {
 	shader->size = glGetUniformLocation(prog, "size");
 	shader->position = glGetUniformLocation(prog, "position");
 	shader->radius = glGetUniformLocation(prog, "radius");
+	shader->saturation = glGetUniformLocation(prog, "saturation");
 	shader->has_titlebar = glGetUniformLocation(prog, "has_titlebar");
 	return true;
 }
@@ -254,8 +255,7 @@ void fx_renderer_scissor(struct wlr_box *box) {
 
 bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box, const float matrix[static 9],
-		float alpha, int radius, const bool has_titlebar) {
-
+		float alpha, int radius, float saturation, const bool has_titlebar) {
 	assert(wlr_texture_is_gles2(wlr_texture));
 	struct wlr_gles2_texture_attribs texture_attrs;
 	wlr_gles2_texture_get_attribs(wlr_texture, &texture_attrs);
@@ -312,6 +312,7 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 	glUniform1i(shader->tex, 0);
 	glUniform1f(shader->alpha, alpha);
 	glUniform1f(shader->has_titlebar, has_titlebar);
+	glUniform1f(shader->saturation, saturation);
 
 	// rounded corners
 	glUniform2f(shader->size, dst_box->width, dst_box->height);
@@ -347,14 +348,14 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 
 bool fx_render_texture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_box *dst_box, const float matrix[static 9], float alpha, int radius,
-		const bool has_titlebar) {
+		float saturation, const bool has_titlebar) {
 	struct wlr_fbox src_box = {
 		.x = 0,
 		.y = 0,
 		.width = wlr_texture->width,
 		.height = wlr_texture->height,
 	};
-	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box, dst_box, matrix, alpha, radius, has_titlebar);
+	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box, dst_box, matrix, alpha, radius, saturation, has_titlebar);
 }
 
 void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box,

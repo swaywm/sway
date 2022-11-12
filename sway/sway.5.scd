@@ -767,6 +767,11 @@ The default colors are:
 	Adjusts the opacity of the window between 0 (completely transparent) and
 	1 (completely opaque). If the operation is omitted, _set_ will be used.
 
+*saturation* [set|plus|minus] <value>
+	Adjusts the saturation (Digital Vibrance) of the window between 0 (black and
+	white) and 2 (over saturated which is suited for some FPS games) while 1 is
+	the default saturation. If the operation is omitted, _set_ will be used.
+
 *tiling_drag*  enable|disable|toggle
 	Sets whether or not tiling containers can be dragged with the mouse. If
 	_enabled_ (default), the _floating_mod_ can be used to drag tiling, as well
