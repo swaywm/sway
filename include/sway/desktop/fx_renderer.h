@@ -4,7 +4,7 @@
 #include <GLES2/gl2.h>
 #include <stdbool.h>
 
-enum corner_location { NONE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
+enum corner_location { ALL, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
 
 struct gles2_tex_shader {
 	GLuint program;
@@ -44,6 +44,7 @@ struct fx_renderer {
 			GLint pos_attrib;
 		} quad;
 
+		struct rounded_quad_shader rounded_quad;
 		struct rounded_quad_shader rounded_tl_quad;
 		struct rounded_quad_shader rounded_tr_quad;
 

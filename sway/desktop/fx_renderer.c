@@ -20,6 +20,7 @@
 // shaders
 #include "quad_vert_src.h"
 #include "quad_frag_src.h"
+#include "quad_round_frag_src.h"
 #include "quad_round_tl_frag_src.h"
 #include "quad_round_tr_frag_src.h"
 #include "corner_frag_src.h"
@@ -163,6 +164,10 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
 	// rounded quad fragment shaders
+	prog = link_program(quad_vert_src, quad_round_frag_src);
+	if (!init_rounded_quad_shader(&renderer->shaders.rounded_quad, prog)) {
+		goto error;
+	}
 	prog = link_program(quad_vert_src, quad_round_tl_frag_src);
 	if (!init_rounded_quad_shader(&renderer->shaders.rounded_tl_quad, prog)) {
 		goto error;
@@ -407,6 +412,9 @@ void fx_render_rounded_rect(struct fx_renderer *renderer, const struct wlr_box *
 	struct rounded_quad_shader *shader = NULL;
 
 	switch (corner_location) {
+		case ALL:
+			shader = &renderer->shaders.rounded_quad;
+			break;
 		case TOP_LEFT:
 			shader = &renderer->shaders.rounded_tl_quad;
 			break;

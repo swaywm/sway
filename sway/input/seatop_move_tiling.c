@@ -45,7 +45,8 @@ static void handle_render(struct sway_seat *seat,
 		struct wlr_box box;
 		memcpy(&box, &e->drop_box, sizeof(struct wlr_box));
 		scale_box(&box, output->wlr_output->scale);
-		render_rect(output, damage, &box, color);
+		render_rounded_rect(output, damage, &box, color,
+			e->con->corner_radius * output->wlr_output->scale, ALL);
 	}
 }
 

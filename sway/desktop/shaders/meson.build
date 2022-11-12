@@ -3,6 +3,7 @@ embed = find_program('./embed.sh', native: true)
 shaders = [
     'quad.vert',
     'quad.frag',
+    'quad_round.frag',
     'quad_round_tl.frag',
     'quad_round_tr.frag',
     'corner.frag',
