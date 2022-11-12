@@ -840,8 +840,9 @@ static void handle_mode(struct wl_listener *listener, void *data) {
 	arrange_output(output);
 	transaction_commit_dirty();
 
-	wlr_damage_ring_set_bounds(&output->damage_ring,
-		output->width, output->height);
+	int width, height;
+	wlr_output_transformed_resolution(output->wlr_output, &width, &height);
+	wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 	wlr_output_schedule_frame(output->wlr_output);
 
 	update_output_manager_config(output->server);
@@ -872,11 +873,10 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		update_output_manager_config(output->server);
 	}
 
-	if (event->committed & (WLR_OUTPUT_STATE_MODE |
-			WLR_OUTPUT_STATE_TRANSFORM |
-			WLR_OUTPUT_STATE_SCALE)) {
-		wlr_damage_ring_set_bounds(&output->damage_ring,
-			output->width, output->height);
+	if (event->committed & (WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM)) {
+		int width, height;
+		wlr_output_transformed_resolution(output->wlr_output, &width, &height);
+		wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 		wlr_output_schedule_frame(output->wlr_output);
 	}
 }
