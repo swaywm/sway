@@ -8,7 +8,7 @@ uniform float radius;
 
 void main() {
     vec2 q = abs(gl_FragCoord.xy - position - size) - size + radius;
-   float distance = min(max(q.x,q.y),0.0) + length(max(q,0.0)) - radius;
+    float distance = min(max(q.x,q.y),0.0) + length(max(q,0.0)) - radius;
     float smoothedAlpha = 1.0 - smoothstep(-1.0, 0.5, distance);
     gl_FragColor = mix(vec4(0), v_color, smoothedAlpha);
 }
