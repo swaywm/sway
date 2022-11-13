@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  package:
+  fedora-copr:
     container: fedora:latest
     runs-on: ubuntu-latest
 
@@ -31,6 +31,12 @@ jobs:
         with:
           fetch-depth: 0
           path: swayfx
+      # Checks out the latest tag
+      - run: |
+          cd swayfx
+          git stash save "Action stashing changes"
+          latestTag=$(git describe --abbrev=0 --tags)
+          git checkout $latestTag
 
       - name: Copy spec into root dir
         run: |

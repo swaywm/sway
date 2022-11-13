@@ -1,0 +1,35 @@
+name: Check build for Arch.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  arch-build:
+    container: archlinux:latest
+    runs-on: ubuntu-latest
+
+    steps:
+      # It is necessary to checkout into sub-directory, because of some weird ownership problems cause by using containers
+      - name: Check out sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: swayfx
+
+      - name: Git makepkg build and check
+        id: makepkg
+        uses: edlanglois/pkgbuild-action@v1
+        with:
+          pkgdir: ./swayfx/build-scripts/aur-git
+
+      - name: Stable makepkg build and check
+        id: makepkg
+        uses: edlanglois/pkgbuild-action@v1
+        with:
+          pkgdir: ./swayfx/build-scripts/aur
