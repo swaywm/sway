@@ -1,4 +1,4 @@
-name: Check build for Arch.
+name: Check git build for Arch.
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  arch-build:
+  arch-build-git:
     container: archlinux:latest
     runs-on: ubuntu-latest
 
@@ -27,9 +27,3 @@ jobs:
         uses: edlanglois/pkgbuild-action@v1
         with:
           pkgdir: ./swayfx/build-scripts/aur-git
-
-      - name: Stable makepkg build and check
-        id: makepkg
-        uses: edlanglois/pkgbuild-action@v1
-        with:
-          pkgdir: ./swayfx/build-scripts/aur

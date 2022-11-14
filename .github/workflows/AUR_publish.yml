@@ -7,48 +7,56 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 jobs:
-  aur-publish:
+  aur-publish-stable:
     runs-on: ubuntu-latest
     steps:
-    - name: Check out sources
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    # Checks out the latest tag
-    - run: |
-        git stash save "Action stashing changes"
-        latestTag=$(git describe --abbrev=0 --tags)
-        git checkout $latestTag
+      - name: Check out sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # Checks out the latest tag
+      - run: |
+          git stash save "Action stashing changes"
+          latestTag=$(git describe --abbrev=0 --tags)
+          git checkout $latestTag
 
-    - name: Publish AUR Stable package
-      uses: ulises-jeremias/github-actions-aur-publish@v1
-      with:
-        pkgname: swayfx
-        pkgbuild: ./build-scripts/aur/PKGBUILD
-        assets: |
-          ./build-scripts/aur/50-systemd-user.conf
-          ./build-scripts/aur/sway.install
-        commit_username: ${{ secrets.AUR_USERNAME }}
-        commit_email: ${{ secrets.AUR_EMAIL }}
-        ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-        commit_message: Update AUR package
-        ssh_keyscan_types: rsa,dsa,ecdsa,ed25519
-        update_pkgver: false
+      - name: Publish AUR Stable package
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: swayfx
+          pkgbuild: ./build-scripts/aur/PKGBUILD
+          assets: |
+            ./build-scripts/aur/50-systemd-user.conf
+            ./build-scripts/aur/sway.install
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,dsa,ecdsa,ed25519
+          update_pkgver: false
 
-    # Checks out the the Master branch
-    - run: |
-        git checkout master
-    - name: Publish AUR -git package
-      uses: ulises-jeremias/github-actions-aur-publish@v1
-      with:
-        pkgname: swayfx-git
-        pkgbuild: ./build-scripts/aur-git/PKGBUILD
-        assets: |
-          ./build-scripts/aur-git/50-systemd-user.conf
-          ./build-scripts/aur-git/sway.install
-        commit_username: ${{ secrets.AUR_USERNAME }}
-        commit_email: ${{ secrets.AUR_EMAIL }}
-        ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-        commit_message: Update AUR package
-        ssh_keyscan_types: rsa,dsa,ecdsa,ed25519
-        update_pkgver: false
+  aur-publish-git:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # Checks out the the Master branch
+      - run: |
+          git checkout master
+
+      - name: Publish AUR -git package
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: swayfx-git
+          pkgbuild: ./build-scripts/aur-git/PKGBUILD
+          assets: |
+            ./build-scripts/aur-git/50-systemd-user.conf
+            ./build-scripts/aur-git/sway.install
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,dsa,ecdsa,ed25519
+          update_pkgver: false

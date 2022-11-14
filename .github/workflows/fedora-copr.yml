@@ -16,10 +16,17 @@ jobs:
       - name: Install API token for copr-cli
         env:
           # To generate a new token: https://copr.fedorainfracloud.org/api/.
+          API_LOGIN: ${{ secrets.COPR_API_LOGIN }}
+          API_USERNAME: ${{ secrets.COPR_API_USERNAME }}
           API_TOKEN_CONTENT: ${{ secrets.COPR_API_TOKEN }}
         run: |
           mkdir -p "$HOME/.config"
-          echo "$API_TOKEN_CONTENT" > "$HOME/.config/copr"
+          # To generate a new token: https://copr.fedorainfracloud.org/api/.
+          echo "[copr-cli]" >> "$HOME/.config/copr"
+          echo "login = $API_LOGIN" >> "$HOME/.config/copr"
+          echo "username = $API_USERNAME" >> "$HOME/.config/copr"
+          echo "token = $API_TOKEN_CONTENT" >> "$HOME/.config/copr"
+          echo "copr_url = https://copr.fedorainfracloud.org" >> "$HOME/.config/copr"
 
       - name: Install tooling for source RPM build
         run: |

@@ -8,6 +8,7 @@ test/
 build/
 build-*/
 !build-scripts
+!build-scripts/*
 .lvimrc
 config-debug
 wayland-*-protocol.*
