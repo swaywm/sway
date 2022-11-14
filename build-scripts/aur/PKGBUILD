@@ -42,7 +42,7 @@ optdepends=(
 backup=(etc/sway/config)
 arch=("i686" "x86_64")
 url="https://github.com/WillPower3309/swayfx"
-source=("${url}/releases/download/$pkgver/swayfx-$pkgver.tar.gz"
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/$pkgver.tar.gz"
 	50-systemd-user.conf)
 sha512sums=(
 	"SKIP"
@@ -56,7 +56,7 @@ build() {
 	arch-meson \
 		-Dsd-bus-provider=libsystemd \
 		-Dwerror=false \
-		"$_pkgname" build
+		"${_pkgname}-${pkgver}" build
 	meson compile -C build
 }
 
@@ -65,7 +65,7 @@ package() {
 
 	DESTDIR="$pkgdir" meson install -C build
 
-	cd "$_pkgname"
+	cd "${_pkgname}-${pkgver}"
 	install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 	for util in autoname-workspaces.py inactive-windows-transparency.py grimshot; do
 		install -Dm755 "contrib/$util" -t "$pkgdir/usr/share/$pkgname/scripts"
