@@ -49,6 +49,9 @@
 #include "sway/xwayland.h"
 #endif
 
+#define SWAY_XDG_SHELL_VERSION 2
+#define SWAY_LAYER_SHELL_VERSION 3
+
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	/* We only offer non-desktop outputs, but in the future we might want to do
 	 * more logic here. */
@@ -60,8 +63,6 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 		wlr_drm_lease_request_v1_reject(req);
 	}
 }
-
-#define SWAY_XDG_SHELL_VERSION	2
 
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
@@ -121,7 +122,8 @@ bool server_init(struct sway_server *server) {
 	server->idle_inhibit_manager_v1 =
 		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
 
-	server->layer_shell = wlr_layer_shell_v1_create(server->wl_display);
+	server->layer_shell = wlr_layer_shell_v1_create(server->wl_display,
+		SWAY_LAYER_SHELL_VERSION);
 	wl_signal_add(&server->layer_shell->events.new_surface,
 		&server->layer_shell_surface);
 	server->layer_shell_surface.notify = handle_layer_shell_surface;
