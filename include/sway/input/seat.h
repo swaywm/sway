@@ -72,6 +72,7 @@ struct sway_drag_icon {
 	struct wl_list link; // sway_root::drag_icons
 
 	double x, y; // in layout-local coordinates
+	int dx, dy; // offset in surface-local coordinates
 
 	struct wl_listener surface_commit;
 	struct wl_listener map;

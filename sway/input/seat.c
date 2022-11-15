@@ -382,8 +382,8 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 	case WLR_DRAG_GRAB_KEYBOARD:
 		return;
 	case WLR_DRAG_GRAB_KEYBOARD_POINTER:
-		icon->x = cursor->x + wlr_icon->surface->sx;
-		icon->y = cursor->y + wlr_icon->surface->sy;
+		icon->x = cursor->x + icon->dx;
+		icon->y = cursor->y + icon->dy;
 		break;
 	case WLR_DRAG_GRAB_KEYBOARD_TOUCH:;
 		struct wlr_touch_point *point =
@@ -391,8 +391,8 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 		if (point == NULL) {
 			return;
 		}
-		icon->x = seat->touch_x + wlr_icon->surface->sx;
-		icon->y = seat->touch_y + wlr_icon->surface->sy;
+		icon->x = seat->touch_x + icon->dx;
+		icon->y = seat->touch_y + icon->dy;
 	}
 
 	drag_icon_damage_whole(icon);
@@ -402,6 +402,9 @@ static void drag_icon_handle_surface_commit(struct wl_listener *listener,
 		void *data) {
 	struct sway_drag_icon *icon =
 		wl_container_of(listener, icon, surface_commit);
+	struct wlr_drag_icon *wlr_icon = icon->wlr_drag_icon;
+	icon->dx += wlr_icon->surface->current.dx;
+	icon->dy += wlr_icon->surface->current.dy;
 	drag_icon_update_position(icon);
 }
 
