@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <string.h>
+#include <wlr/types/wlr_xdg_activation_v1.h>
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/desktop/launcher.h"
@@ -15,7 +16,8 @@ static struct wl_list pid_workspaces;
 struct pid_workspace {
 	pid_t pid;
 	char *name;
-	struct timespec time_added;
+	struct wlr_xdg_activation_token_v1 *token;
+	struct wl_listener token_destroy;
 
 	struct sway_node *node;
 	struct wl_listener node_destroy;
@@ -59,7 +61,9 @@ static pid_t get_parent_pid(pid_t child) {
 
 static void pid_workspace_destroy(struct pid_workspace *pw) {
 	wl_list_remove(&pw->node_destroy.link);
+	wl_list_remove(&pw->token_destroy.link);
 	wl_list_remove(&pw->link);
+	wlr_xdg_activation_token_v1_destroy(pw->token);
 	free(pw->name);
 	free(pw);
 }
@@ -162,6 +166,12 @@ static void pw_handle_node_destroy(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void token_handle_destroy(struct wl_listener *listener, void *data) {
+	struct pid_workspace *pw = wl_container_of(listener, pw, token_destroy);
+	pw->token = NULL;
+	pid_workspace_destroy(pw);
+}
+
 void root_record_workspace_pid(pid_t pid) {
 	sway_log(SWAY_DEBUG, "Recording workspace for process %d", pid);
 	if (!pid_workspaces.prev && !pid_workspaces.next) {
@@ -175,26 +185,21 @@ void root_record_workspace_pid(pid_t pid) {
 		return;
 	}
 
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-
-	// Remove expired entries
-	static const int timeout = 60;
-	struct pid_workspace *old, *_old;
-	wl_list_for_each_safe(old, _old, &pid_workspaces, link) {
-		if (now.tv_sec - old->time_added.tv_sec >= timeout) {
-			pid_workspace_destroy(old);
-		}
-	}
-
 	struct pid_workspace *pw = calloc(1, sizeof(struct pid_workspace));
+	struct wlr_xdg_activation_token_v1 *token =
+		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
+	token->data = pw;
 	pw->name = strdup(ws->name);
+	pw->token = token;
 	pw->node = &ws->node;
 	pw->pid = pid;
 
-	memcpy(&pw->time_added, &now, sizeof(struct timespec));
 	pw->node_destroy.notify = pw_handle_node_destroy;
 	wl_signal_add(&pw->node->events.destroy, &pw->node_destroy);
+
+	pw->token_destroy.notify = token_handle_destroy;
+	wl_signal_add(&token->events.destroy, &pw->token_destroy);
+
 	wl_list_insert(&pid_workspaces, &pw->link);
 }
 
