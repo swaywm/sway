@@ -1,7 +1,14 @@
 # vim: syntax=spec
+
+### CHANGE THESE VARIABLES BEFORE RELEASE:
+# Change to current Sway base version!
+%global SwayBaseVersion 1.7
+# Change to current SwayFX tag!
+%global Tag 0.1
+
 Name:			{{{ git_dir_name }}}
-Version:		0.1
-Release:		1%{?dist}
+Version:		%{Tag}
+Release:		2%{?dist}
 Summary:		SwayFX: Sway, but with eye candy!
 License:		MIT
 URL:			https://github.com/WillPower3309/swayfx
@@ -58,6 +65,9 @@ Recommends:		foot
 Recommends:		grim
 %{?systemd_requires}
 
+Conflicts:		sway
+Provides:		sway = %{SwayBaseVersion}
+
 %description
 SwayFX: Sway, but with eye candy!
 
@@ -89,8 +99,8 @@ interface.
 
 %build
 %meson \
-	-Dsd-bus-provider=libsystemd \
-	-Dwerror=false
+    -Dsd-bus-provider=libsystemd \
+    -Dwerror=false
 
 %meson_build
 

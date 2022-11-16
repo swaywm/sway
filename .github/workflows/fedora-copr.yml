@@ -30,7 +30,7 @@ jobs:
 
       - name: Install tooling for source RPM build
         run: |
-          dnf -y install copr-cli rpkg git
+          dnf -y install @development-tools @rpm-development-tools copr-cli rpkg git 'dnf-command(builddep)'
 
       # It is necessary to checkout into sub-directory, because of some weird ownership problems cause by using containers
       - name: Check out sources
@@ -38,17 +38,47 @@ jobs:
         with:
           fetch-depth: 0
           path: swayfx
-      # Checks out the latest tag
-      - run: |
+
+      - name: Check out the latest tag
+        run: |
+          cp ./swayfx/build-scripts/swayfx.rpkg.spec ./
           cd swayfx
           git stash save "Action stashing changes"
           latestTag=$(git describe --abbrev=0 --tags)
           git checkout $latestTag
 
-      - name: Copy spec into root dir
+      - name: Copy master spec into root dir
         run: |
           cd swayfx
-          cp ./build-scripts/swayfx.rpkg.spec ./
+          cp ../swayfx.rpkg.spec ./
+
+      - name: Generate spec
+        run: |
+          cd swayfx
+          mkdir specs
+          rpkg spec --source --outdir specs
+
+      - name: Install build dependencies
+        run: |
+          cd swayfx
+          dnf -y builddep ./specs/swayfx.rpkg.spec
+
+      - name: Local build
+        run: |
+          cd swayfx
+          mkdir -p out
+          rpkg local --out `pwd`/out
+
+      - name: Test if installation of package is successful
+        run: |
+          cd swayfx/out
+
+          packages=(`rpmspec -q --nodebuginfo --qf \
+              "./%{ARCH}/%{Name}-%{Version}-%{Release}.%{ARCH}.rpm\n" \
+              ../specs/swayfx.rpkg.spec`)
+          for i in "${packages[@]}"; do
+            dnf -y install "$i"
+          done
 
       - name: Submit the build to copr
         run: |
