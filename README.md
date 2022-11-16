@@ -25,10 +25,11 @@ Sway is an incredible window manager, and certainly one of the most well establi
 
 ### Nix
 
-If you have Nix installed, you can run SwayFX with a single command:
+If you have Nix installed, you can build and run SwayFX easily:
 
 ```
-nix run github:WillPower3309/swayfx
+nix build
+./result/bin/sway
 ```
 
 You can also bring up a development shell and follow the build instructions below, without installing all of the dependencies manually:
