@@ -53,6 +53,7 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	}
 
 	pid_t pid, child;
+	struct launcher_ctx *ctx = launcher_ctx_create();
 	// Fork process
 	if ((pid = fork()) == 0) {
 		// Fork child process again
@@ -92,8 +93,12 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	waitpid(pid, NULL, 0);
 	if (child > 0) {
 		sway_log(SWAY_DEBUG, "Child process created with pid %d", child);
-		launcher_ctx_create(child);
+		if (ctx != NULL) {
+			sway_log(SWAY_DEBUG, "Recording workspace for process %d", child);
+			ctx->pid = child;
+		}
 	} else {
+		launcher_ctx_destroy(ctx);
 		return cmd_results_new(CMD_FAILURE, "Second fork() failed");
 	}
 

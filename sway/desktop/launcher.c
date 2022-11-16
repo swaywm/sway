@@ -175,13 +175,11 @@ static void token_handle_destroy(struct wl_listener *listener, void *data) {
 	launcher_ctx_destroy(ctx);
 }
 
-struct launcher_ctx *launcher_ctx_create(pid_t pid) {
-	sway_log(SWAY_DEBUG, "Recording workspace for process %d", pid);
-
+struct launcher_ctx *launcher_ctx_create() {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	if (!ws) {
-		sway_log(SWAY_DEBUG, "Bailing out, no workspace");
+		sway_log(SWAY_DEBUG, "Failed to create launch context. No workspace.");
 		return NULL;
 	}
 
@@ -192,7 +190,6 @@ struct launcher_ctx *launcher_ctx_create(pid_t pid) {
 	ctx->name = strdup(ws->name);
 	ctx->token = token;
 	ctx->node = &ws->node;
-	ctx->pid = pid;
 
 	ctx->node_destroy.notify = ctx_handle_node_destroy;
 	wl_signal_add(&ctx->node->events.destroy, &ctx->node_destroy);

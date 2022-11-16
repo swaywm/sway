@@ -23,6 +23,6 @@ void launcher_ctx_consume(struct launcher_ctx *ctx);
 
 void launcher_ctx_destroy(struct launcher_ctx *ctx);
 
-struct launcher_ctx *launcher_ctx_create(pid_t pid);
+struct launcher_ctx *launcher_ctx_create(void);
 
 #endif
