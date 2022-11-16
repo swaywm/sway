@@ -4,19 +4,21 @@
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/desktop/launcher.h"
+#include "sway/tree/node.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/root.h"
 #include "log.h"
 
 static struct wl_list pid_workspaces;
 
 struct pid_workspace {
 	pid_t pid;
-	char *workspace;
+	char *name;
 	struct timespec time_added;
 
-	struct sway_output *output;
-	struct wl_listener output_destroy;
+	struct sway_node *node;
+	struct wl_listener node_destroy;
 
 	struct wl_list link;
 };
@@ -56,9 +58,9 @@ static pid_t get_parent_pid(pid_t child) {
 }
 
 static void pid_workspace_destroy(struct pid_workspace *pw) {
-	wl_list_remove(&pw->output_destroy.link);
+	wl_list_remove(&pw->node_destroy.link);
 	wl_list_remove(&pw->link);
-	free(pw->workspace);
+	free(pw->name);
 	free(pw);
 }
 
@@ -69,6 +71,7 @@ struct sway_workspace *root_workspace_for_pid(pid_t pid) {
 	}
 
 	struct sway_workspace *ws = NULL;
+	struct sway_output *output = NULL;
 	struct pid_workspace *pw = NULL;
 
 	sway_log(SWAY_DEBUG, "Looking up workspace for pid %d", pid);
@@ -79,45 +82,84 @@ struct sway_workspace *root_workspace_for_pid(pid_t pid) {
 			if (pid == _pw->pid) {
 				pw = _pw;
 				sway_log(SWAY_DEBUG,
-						"found pid_workspace for pid %d, workspace %s",
-						pid, pw->workspace);
-				goto found;
+					"found %s match for pid %d: %s",
+					node_type_to_str(pw->node->type), pid, node_get_name(pw->node));
+				break;
 			}
 		}
 		pid = get_parent_pid(pid);
 	} while (pid > 1);
 
-found:
-	if (pw && pw->workspace) {
-		ws = workspace_by_name(pw->workspace);
-
-		if (!ws) {
-			sway_log(SWAY_DEBUG,
-					"Creating workspace %s for pid %d because it disappeared",
-					pw->workspace, pid);
-
-			struct sway_output *output = pw->output;
-			if (pw->output && !pw->output->enabled) {
+	if (pw) {
+		switch (pw->node->type) {
+		case N_CONTAINER:
+			// Unimplemented
+			// TODO: add container matching?
+			ws = pw->node->sway_container->pending.workspace;
+			break;
+		case N_WORKSPACE:
+			ws = pw->node->sway_workspace;
+			break;
+		case N_OUTPUT:
+			output = pw->node->sway_output;
+			ws = workspace_by_name(pw->name);
+			if (!ws) {
 				sway_log(SWAY_DEBUG,
-						"Workspace output %s is disabled, trying another one",
-						pw->output->wlr_output->name);
-				output = NULL;
+						"Creating workspace %s for pid %d because it disappeared",
+						pw->name, pid);
+				if (!output->enabled) {
+					sway_log(SWAY_DEBUG,
+							"Workspace output %s is disabled, trying another one",
+							output->wlr_output->name);
+					output = NULL;
+				}
+				ws = workspace_create(output, pw->name);
 			}
-
-			ws = workspace_create(output, pw->workspace);
+			break;
+		case N_ROOT:
+			ws = workspace_create(NULL, pw->name);
+			break;
 		}
-
 		pid_workspace_destroy(pw);
 	}
 
 	return ws;
 }
 
-static void pw_handle_output_destroy(struct wl_listener *listener, void *data) {
-	struct pid_workspace *pw = wl_container_of(listener, pw, output_destroy);
-	pw->output = NULL;
-	wl_list_remove(&pw->output_destroy.link);
-	wl_list_init(&pw->output_destroy.link);
+static void pw_handle_node_destroy(struct wl_listener *listener, void *data) {
+	struct pid_workspace *pw = wl_container_of(listener, pw, node_destroy);
+	switch (pw->node->type) {
+	case N_CONTAINER:
+		// Unimplemented
+		break;
+	case N_WORKSPACE:;
+		struct sway_workspace *ws = pw->node->sway_workspace;
+		wl_list_remove(&pw->node_destroy.link);
+		wl_list_init(&pw->node_destroy.link);
+		// We want to save this ws name to recreate later, hopefully on the
+		// same output
+		free(pw->name);
+		pw->name = strdup(ws->name);
+		if (!ws->output || ws->output->node.destroying) {
+			// If the output is being destroyed it would be pointless to track
+			// If the output is being disabled, we'll find out if it's still
+			// disabled when we try to match it.
+			pw->node = &root->node;
+			break;
+		}
+		pw->node = &ws->output->node;
+		wl_signal_add(&pw->node->events.destroy, &pw->node_destroy);
+		break;
+	case N_OUTPUT:
+		wl_list_remove(&pw->node_destroy.link);
+		wl_list_init(&pw->node_destroy.link);
+		// We'll make the ws pw->name somewhere else
+		pw->node = &root->node;
+		break;
+	case N_ROOT:
+		// Unreachable
+		break;
+	}
 }
 
 void root_record_workspace_pid(pid_t pid) {
@@ -130,11 +172,6 @@ void root_record_workspace_pid(pid_t pid) {
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	if (!ws) {
 		sway_log(SWAY_DEBUG, "Bailing out, no workspace");
-		return;
-	}
-	struct sway_output *output = ws->output;
-	if (!output) {
-		sway_log(SWAY_DEBUG, "Bailing out, no output");
 		return;
 	}
 
@@ -151,12 +188,13 @@ void root_record_workspace_pid(pid_t pid) {
 	}
 
 	struct pid_workspace *pw = calloc(1, sizeof(struct pid_workspace));
-	pw->workspace = strdup(ws->name);
-	pw->output = output;
+	pw->name = strdup(ws->name);
+	pw->node = &ws->node;
 	pw->pid = pid;
+
 	memcpy(&pw->time_added, &now, sizeof(struct timespec));
-	pw->output_destroy.notify = pw_handle_output_destroy;
-	wl_signal_add(&output->wlr_output->events.destroy, &pw->output_destroy);
+	pw->node_destroy.notify = pw_handle_node_destroy;
+	wl_signal_add(&pw->node->events.destroy, &pw->node_destroy);
 	wl_list_insert(&pid_workspaces, &pw->link);
 }
 
@@ -170,20 +208,6 @@ void root_remove_workspace_pid(pid_t pid) {
 		if (pid == pw->pid) {
 			pid_workspace_destroy(pw);
 			return;
-		}
-	}
-}
-
-void root_rename_pid_workspaces(const char *old_name, const char *new_name) {
-	if (!pid_workspaces.prev && !pid_workspaces.next) {
-		wl_list_init(&pid_workspaces);
-	}
-
-	struct pid_workspace *pw = NULL;
-	wl_list_for_each(pw, &pid_workspaces, link) {
-		if (strcmp(pw->workspace, old_name) == 0) {
-			free(pw->workspace);
-			pw->workspace = strdup(new_name);
 		}
 	}
 }
