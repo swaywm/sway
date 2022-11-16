@@ -23,9 +23,21 @@ Sway is an incredible window manager, and certainly one of the most well establi
 
 ## Installation
 
-### Compiling from Source
+### Nix
 
-This project contains a nix flake for those who have the nix package manager installed. This flake handles installing the below dependencies when `nix develop` is ran inside of the project root. Otherwise, the below dependencies must be installed prior to building and running this project.
+If you have Nix installed, you can run SwayFX with a single command:
+
+```
+nix run github:WillPower3309/swayfx
+```
+
+You can also bring up a development shell and follow the build instructions below, without installing all of the dependencies manually:
+
+```
+nix develop
+```
+
+### Compiling from Source
 
 Install dependencies:
 
