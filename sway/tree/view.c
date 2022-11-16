@@ -64,6 +64,8 @@ void view_destroy(struct sway_view *view) {
 	}
 	list_free(view->executed_criteria);
 
+	view_assign_ctx(view, NULL);
+
 	free(view->title_format);
 
 	if (view->impl->destroy) {
@@ -534,6 +536,20 @@ static void view_populate_pid(struct sway_view *view) {
 	view->pid = pid;
 }
 
+void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx) {
+	if (view->ctx) {
+		// This ctx has been replaced
+		launcher_ctx_destroy(view->ctx);
+		view->ctx = NULL;
+	}
+	if (ctx == NULL) {
+		return;
+	}
+	launcher_ctx_consume(ctx);
+
+	view->ctx = ctx;
+}
+
 static struct sway_workspace *select_workspace(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 
@@ -569,13 +585,14 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	}
 	list_free(criterias);
 	if (ws) {
-		remove_workspace_pid(view->pid);
+		view_assign_ctx(view, NULL);
 		return ws;
 	}
 
 	// Check if there's a PID mapping
-	ws = workspace_for_pid(view->pid);
+	ws = view->ctx ? launcher_ctx_get_workspace(view->ctx) : NULL;
 	if (ws) {
+		view_assign_ctx(view, NULL);
 		return ws;
 	}
 
@@ -717,6 +734,13 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	view->surface = wlr_surface;
 	view_populate_pid(view);
 	view->container = container_create(view);
+
+	if (view->ctx == NULL) {
+		struct launcher_ctx *ctx = launcher_ctx_find_pid(view->pid);
+		if (ctx != NULL) {
+			view_assign_ctx(view, ctx);
+		}
+	}
 
 	// If there is a request to be opened fullscreen on a specific output, try
 	// to honor that request. Otherwise, fallback to assigns, pid mappings,
