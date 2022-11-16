@@ -32,11 +32,17 @@ static void export_xdga_token(struct launcher_ctx *ctx) {
 	setenv("XDG_ACTIVATION_TOKEN", token, 1);
 }
 
+static void export_startup_id(struct launcher_ctx *ctx) {
+	const char *token = launcher_ctx_get_token_name(ctx);
+	setenv("DESKTOP_STARTUP_ID", token, 1);
+}
+
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	char *cmd = NULL;
+	bool no_startup_id = false;
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
-		sway_log(SWAY_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+		no_startup_id = true;
 		--argc; ++argv;
 		if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
 			return error;
@@ -73,6 +79,9 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 			close(fd[1]);
 			if (ctx) {
 				export_xdga_token(ctx);
+			}
+			if (ctx && !no_startup_id) {
+				export_startup_id(ctx);
 			}
 			execlp("sh", "sh", "-c", cmd, (void *)NULL);
 			sway_log_errno(SWAY_ERROR, "execlp failed");
