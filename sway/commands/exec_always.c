@@ -91,7 +91,7 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	waitpid(pid, NULL, 0);
 	if (child > 0) {
 		sway_log(SWAY_DEBUG, "Child process created with pid %d", child);
-		root_record_workspace_pid(child);
+		launcher_ctx_create(child);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "Second fork() failed");
 	}
