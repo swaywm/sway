@@ -11,8 +11,6 @@
 #include "sway/tree/root.h"
 #include "log.h"
 
-static struct wl_list launcher_ctxs;
-
 /**
  * Get the pid of a parent process given the pid of a child process.
  *
@@ -73,8 +71,7 @@ void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 }
 
 struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
-	if (!launcher_ctxs.prev && !launcher_ctxs.next) {
-		wl_list_init(&launcher_ctxs);
+	if (wl_list_empty(&server.pending_launcher_ctxs)) {
 		return NULL;
 	}
 
@@ -83,7 +80,7 @@ struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
 
 	do {
 		struct launcher_ctx *_ctx = NULL;
-		wl_list_for_each(_ctx, &launcher_ctxs, link) {
+		wl_list_for_each(_ctx, &server.pending_launcher_ctxs, link) {
 			if (pid == _ctx->pid) {
 				ctx = _ctx;
 				sway_log(SWAY_DEBUG,
@@ -178,17 +175,14 @@ static void token_handle_destroy(struct wl_listener *listener, void *data) {
 	launcher_ctx_destroy(ctx);
 }
 
-void launcher_ctx_create(pid_t pid) {
+struct launcher_ctx *launcher_ctx_create(pid_t pid) {
 	sway_log(SWAY_DEBUG, "Recording workspace for process %d", pid);
-	if (!launcher_ctxs.prev && !launcher_ctxs.next) {
-		wl_list_init(&launcher_ctxs);
-	}
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	if (!ws) {
 		sway_log(SWAY_DEBUG, "Bailing out, no workspace");
-		return;
+		return NULL;
 	}
 
 	struct launcher_ctx *ctx = calloc(1, sizeof(struct launcher_ctx));
@@ -206,5 +200,7 @@ void launcher_ctx_create(pid_t pid) {
 	ctx->token_destroy.notify = token_handle_destroy;
 	wl_signal_add(&token->events.destroy, &ctx->token_destroy);
 
-	wl_list_insert(&launcher_ctxs, &ctx->link);
+	wl_list_init(&ctx->link);
+	wl_list_insert(&server.pending_launcher_ctxs, &ctx->link);
+	return ctx;
 }
