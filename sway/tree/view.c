@@ -19,6 +19,7 @@
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/desktop/idle_inhibit_v1.h"
+#include "sway/desktop/launcher.h"
 #include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
