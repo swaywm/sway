@@ -9,6 +9,4 @@ void root_record_workspace_pid(pid_t pid);
 
 void root_remove_workspace_pid(pid_t pid);
 
-void root_rename_pid_workspaces(const char *old_name, const char *new_name);
-
 #endif
