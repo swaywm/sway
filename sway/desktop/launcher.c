@@ -11,9 +11,9 @@
 #include "sway/tree/root.h"
 #include "log.h"
 
-static struct wl_list pid_workspaces;
+static struct wl_list launcher_ctxs;
 
-struct pid_workspace {
+struct launcher_ctx {
 	pid_t pid;
 	char *name;
 	struct wlr_xdg_activation_token_v1 *token;
@@ -59,106 +59,121 @@ static pid_t get_parent_pid(pid_t child) {
 	return -1;
 }
 
-static void pid_workspace_destroy(struct pid_workspace *pw) {
-	wl_list_remove(&pw->node_destroy.link);
-	wl_list_remove(&pw->token_destroy.link);
-	wl_list_remove(&pw->link);
-	wlr_xdg_activation_token_v1_destroy(pw->token);
-	free(pw->name);
-	free(pw);
+static void launcher_ctx_destroy(struct launcher_ctx *ctx) {
+	if (ctx == NULL) {
+		return;
+	}
+	wl_list_remove(&ctx->node_destroy.link);
+	wl_list_remove(&ctx->token_destroy.link);
+	wl_list_remove(&ctx->link);
+	wlr_xdg_activation_token_v1_destroy(ctx->token);
+	free(ctx->name);
+	free(ctx);
 }
 
-struct sway_workspace *root_workspace_for_pid(pid_t pid) {
-	if (!pid_workspaces.prev && !pid_workspaces.next) {
-		wl_list_init(&pid_workspaces);
+static struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
+	if (!launcher_ctxs.prev && !launcher_ctxs.next) {
+		wl_list_init(&launcher_ctxs);
 		return NULL;
 	}
 
-	struct sway_workspace *ws = NULL;
-	struct sway_output *output = NULL;
-	struct pid_workspace *pw = NULL;
-
+	struct launcher_ctx *ctx = NULL;
 	sway_log(SWAY_DEBUG, "Looking up workspace for pid %d", pid);
 
 	do {
-		struct pid_workspace *_pw = NULL;
-		wl_list_for_each(_pw, &pid_workspaces, link) {
-			if (pid == _pw->pid) {
-				pw = _pw;
+		struct launcher_ctx *_ctx = NULL;
+		wl_list_for_each(_ctx, &launcher_ctxs, link) {
+			if (pid == _ctx->pid) {
+				ctx = _ctx;
 				sway_log(SWAY_DEBUG,
 					"found %s match for pid %d: %s",
-					node_type_to_str(pw->node->type), pid, node_get_name(pw->node));
+					node_type_to_str(ctx->node->type), pid, node_get_name(ctx->node));
 				break;
 			}
 		}
 		pid = get_parent_pid(pid);
 	} while (pid > 1);
 
-	if (pw) {
-		switch (pw->node->type) {
-		case N_CONTAINER:
-			// Unimplemented
-			// TODO: add container matching?
-			ws = pw->node->sway_container->pending.workspace;
-			break;
-		case N_WORKSPACE:
-			ws = pw->node->sway_workspace;
-			break;
-		case N_OUTPUT:
-			output = pw->node->sway_output;
-			ws = workspace_by_name(pw->name);
-			if (!ws) {
+	return ctx;
+}
+
+static struct sway_workspace *launcher_ctx_get_workspace(
+		struct launcher_ctx *ctx) {
+	struct sway_workspace *ws = NULL;
+	struct sway_output *output = NULL;
+
+	switch (ctx->node->type) {
+	case N_CONTAINER:
+		// Unimplemented
+		// TODO: add container matching?
+		ws = ctx->node->sway_container->pending.workspace;
+		break;
+	case N_WORKSPACE:
+		ws = ctx->node->sway_workspace;
+		break;
+	case N_OUTPUT:
+		output = ctx->node->sway_output;
+		ws = workspace_by_name(ctx->name);
+		if (!ws) {
+			sway_log(SWAY_DEBUG,
+					"Creating workspace %s for pid %d because it disappeared",
+					ctx->name, ctx->pid);
+			if (!output->enabled) {
 				sway_log(SWAY_DEBUG,
-						"Creating workspace %s for pid %d because it disappeared",
-						pw->name, pid);
-				if (!output->enabled) {
-					sway_log(SWAY_DEBUG,
-							"Workspace output %s is disabled, trying another one",
-							output->wlr_output->name);
-					output = NULL;
-				}
-				ws = workspace_create(output, pw->name);
+						"Workspace output %s is disabled, trying another one",
+						output->wlr_output->name);
+				output = NULL;
 			}
-			break;
-		case N_ROOT:
-			ws = workspace_create(NULL, pw->name);
-			break;
+			ws = workspace_create(output, ctx->name);
 		}
-		pid_workspace_destroy(pw);
+		break;
+	case N_ROOT:
+		ws = workspace_create(NULL, ctx->name);
+		break;
 	}
 
 	return ws;
 }
 
-static void pw_handle_node_destroy(struct wl_listener *listener, void *data) {
-	struct pid_workspace *pw = wl_container_of(listener, pw, node_destroy);
-	switch (pw->node->type) {
+struct sway_workspace *workspace_for_pid(pid_t pid) {
+	struct launcher_ctx *ctx = launcher_ctx_find_pid(pid);
+	if (ctx == NULL) {
+		return NULL;
+	}
+	struct sway_workspace *ws = launcher_ctx_get_workspace(ctx);
+	launcher_ctx_destroy(ctx);
+	return ws;
+}
+
+static void ctx_handle_node_destroy(struct wl_listener *listener, void *data) {
+	struct launcher_ctx *ctx = wl_container_of(listener, ctx, node_destroy);
+	switch (ctx->node->type) {
 	case N_CONTAINER:
 		// Unimplemented
 		break;
 	case N_WORKSPACE:;
-		struct sway_workspace *ws = pw->node->sway_workspace;
-		wl_list_remove(&pw->node_destroy.link);
-		wl_list_init(&pw->node_destroy.link);
+		struct sway_workspace *ws = ctx->node->sway_workspace;
+		wl_list_remove(&ctx->node_destroy.link);
+		wl_list_init(&ctx->node_destroy.link);
 		// We want to save this ws name to recreate later, hopefully on the
 		// same output
-		free(pw->name);
-		pw->name = strdup(ws->name);
+		free(ctx->name);
+		ctx->name = strdup(ws->name);
 		if (!ws->output || ws->output->node.destroying) {
 			// If the output is being destroyed it would be pointless to track
 			// If the output is being disabled, we'll find out if it's still
 			// disabled when we try to match it.
-			pw->node = &root->node;
+			ctx->node = &root->node;
 			break;
 		}
-		pw->node = &ws->output->node;
-		wl_signal_add(&pw->node->events.destroy, &pw->node_destroy);
+		ctx->node = &ws->output->node;
+		wl_signal_add(&ctx->node->events.destroy, &ctx->node_destroy);
 		break;
 	case N_OUTPUT:
-		wl_list_remove(&pw->node_destroy.link);
-		wl_list_init(&pw->node_destroy.link);
-		// We'll make the ws pw->name somewhere else
-		pw->node = &root->node;
+		wl_list_remove(&ctx->node_destroy.link);
+		wl_list_init(&ctx->node_destroy.link);
+		// We'll make the ws ctx->name somewhere else
+		ctx->node = &root->node;
 		break;
 	case N_ROOT:
 		// Unreachable
@@ -167,15 +182,15 @@ static void pw_handle_node_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void token_handle_destroy(struct wl_listener *listener, void *data) {
-	struct pid_workspace *pw = wl_container_of(listener, pw, token_destroy);
-	pw->token = NULL;
-	pid_workspace_destroy(pw);
+	struct launcher_ctx *ctx = wl_container_of(listener, ctx, token_destroy);
+	ctx->token = NULL;
+	launcher_ctx_destroy(ctx);
 }
 
-void root_record_workspace_pid(pid_t pid) {
+void launcher_ctx_create(pid_t pid) {
 	sway_log(SWAY_DEBUG, "Recording workspace for process %d", pid);
-	if (!pid_workspaces.prev && !pid_workspaces.next) {
-		wl_list_init(&pid_workspaces);
+	if (!launcher_ctxs.prev && !launcher_ctxs.next) {
+		wl_list_init(&launcher_ctxs);
 	}
 
 	struct sway_seat *seat = input_manager_current_seat();
@@ -185,34 +200,29 @@ void root_record_workspace_pid(pid_t pid) {
 		return;
 	}
 
-	struct pid_workspace *pw = calloc(1, sizeof(struct pid_workspace));
+	struct launcher_ctx *ctx = calloc(1, sizeof(struct launcher_ctx));
 	struct wlr_xdg_activation_token_v1 *token =
 		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
-	token->data = pw;
-	pw->name = strdup(ws->name);
-	pw->token = token;
-	pw->node = &ws->node;
-	pw->pid = pid;
+	token->data = ctx;
+	ctx->name = strdup(ws->name);
+	ctx->token = token;
+	ctx->node = &ws->node;
+	ctx->pid = pid;
 
-	pw->node_destroy.notify = pw_handle_node_destroy;
-	wl_signal_add(&pw->node->events.destroy, &pw->node_destroy);
+	ctx->node_destroy.notify = ctx_handle_node_destroy;
+	wl_signal_add(&ctx->node->events.destroy, &ctx->node_destroy);
 
-	pw->token_destroy.notify = token_handle_destroy;
-	wl_signal_add(&token->events.destroy, &pw->token_destroy);
+	ctx->token_destroy.notify = token_handle_destroy;
+	wl_signal_add(&token->events.destroy, &ctx->token_destroy);
 
-	wl_list_insert(&pid_workspaces, &pw->link);
+	wl_list_insert(&launcher_ctxs, &ctx->link);
 }
 
-void root_remove_workspace_pid(pid_t pid) {
-	if (!pid_workspaces.prev || !pid_workspaces.next) {
+void remove_workspace_pid(pid_t pid) {
+	if (!launcher_ctxs.prev || !launcher_ctxs.next) {
 		return;
 	}
 
-	struct pid_workspace *pw, *tmp;
-	wl_list_for_each_safe(pw, tmp, &pid_workspaces, link) {
-		if (pid == pw->pid) {
-			pid_workspace_destroy(pw);
-			return;
-		}
-	}
+	struct launcher_ctx *ctx = launcher_ctx_find_pid(pid);
+	launcher_ctx_destroy(ctx);
 }

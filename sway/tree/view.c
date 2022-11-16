@@ -569,12 +569,12 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	}
 	list_free(criterias);
 	if (ws) {
-		root_remove_workspace_pid(view->pid);
+		remove_workspace_pid(view->pid);
 		return ws;
 	}
 
 	// Check if there's a PID mapping
-	ws = root_workspace_for_pid(view->pid);
+	ws = workspace_for_pid(view->pid);
 	if (ws) {
 		return ws;
 	}

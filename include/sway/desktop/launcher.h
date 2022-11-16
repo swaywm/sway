@@ -3,10 +3,10 @@
 
 #include <stdlib.h>
 
-struct sway_workspace *root_workspace_for_pid(pid_t pid);
+struct sway_workspace *workspace_for_pid(pid_t pid);
 
-void root_record_workspace_pid(pid_t pid);
+void launcher_ctx_create(pid_t pid);
 
-void root_remove_workspace_pid(pid_t pid);
+void remove_workspace_pid(pid_t pid);
 
 #endif
