@@ -3,10 +3,26 @@
 
 #include <stdlib.h>
 
-struct sway_workspace *workspace_for_pid(pid_t pid);
+struct launcher_ctx {
+	pid_t pid;
+	char *name;
+	struct wlr_xdg_activation_token_v1 *token;
+	struct wl_listener token_destroy;
+
+	struct sway_node *node;
+	struct wl_listener node_destroy;
+
+	struct wl_list link; // sway_server::pending_launcher_ctxs
+};
+
+struct launcher_ctx *launcher_ctx_find_pid(pid_t pid);
+
+struct sway_workspace *launcher_ctx_get_workspace(struct launcher_ctx *ctx);
+
+void launcher_ctx_consume(struct launcher_ctx *ctx);
+
+void launcher_ctx_destroy(struct launcher_ctx *ctx);
 
 void launcher_ctx_create(pid_t pid);
-
-void remove_workspace_pid(pid_t pid);
 
 #endif
