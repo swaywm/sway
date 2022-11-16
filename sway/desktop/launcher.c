@@ -13,18 +13,6 @@
 
 static struct wl_list launcher_ctxs;
 
-struct launcher_ctx {
-	pid_t pid;
-	char *name;
-	struct wlr_xdg_activation_token_v1 *token;
-	struct wl_listener token_destroy;
-
-	struct sway_node *node;
-	struct wl_listener node_destroy;
-
-	struct wl_list link;
-};
-
 /**
  * Get the pid of a parent process given the pid of a child process.
  *
@@ -59,7 +47,20 @@ static pid_t get_parent_pid(pid_t child) {
 	return -1;
 }
 
-static void launcher_ctx_destroy(struct launcher_ctx *ctx) {
+void launcher_ctx_consume(struct launcher_ctx *ctx) {
+	// The view is now responsible for destroying this ctx
+	wl_list_remove(&ctx->token_destroy.link);
+	wl_list_init(&ctx->token_destroy.link);
+
+	wlr_xdg_activation_token_v1_destroy(ctx->token);
+	ctx->token = NULL;
+
+	// Prevent additional matches
+	wl_list_remove(&ctx->link);
+	wl_list_init(&ctx->link);
+}
+
+void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 	if (ctx == NULL) {
 		return;
 	}
@@ -71,7 +72,7 @@ static void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 	free(ctx);
 }
 
-static struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
+struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
 	if (!launcher_ctxs.prev && !launcher_ctxs.next) {
 		wl_list_init(&launcher_ctxs);
 		return NULL;
@@ -97,7 +98,7 @@ static struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
 	return ctx;
 }
 
-static struct sway_workspace *launcher_ctx_get_workspace(
+struct sway_workspace *launcher_ctx_get_workspace(
 		struct launcher_ctx *ctx) {
 	struct sway_workspace *ws = NULL;
 	struct sway_output *output = NULL;
@@ -132,16 +133,6 @@ static struct sway_workspace *launcher_ctx_get_workspace(
 		break;
 	}
 
-	return ws;
-}
-
-struct sway_workspace *workspace_for_pid(pid_t pid) {
-	struct launcher_ctx *ctx = launcher_ctx_find_pid(pid);
-	if (ctx == NULL) {
-		return NULL;
-	}
-	struct sway_workspace *ws = launcher_ctx_get_workspace(ctx);
-	launcher_ctx_destroy(ctx);
 	return ws;
 }
 
@@ -216,13 +207,4 @@ void launcher_ctx_create(pid_t pid) {
 	wl_signal_add(&token->events.destroy, &ctx->token_destroy);
 
 	wl_list_insert(&launcher_ctxs, &ctx->link);
-}
-
-void remove_workspace_pid(pid_t pid) {
-	if (!launcher_ctxs.prev || !launcher_ctxs.next) {
-		return;
-	}
-
-	struct launcher_ctx *ctx = launcher_ctx_find_pid(pid);
-	launcher_ctx_destroy(ctx);
 }
