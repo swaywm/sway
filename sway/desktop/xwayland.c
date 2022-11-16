@@ -5,6 +5,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/xwayland.h>
 #include <xcb/xcb_icccm.h>
 #include "log.h"
@@ -16,6 +17,7 @@
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/server.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 
@@ -466,6 +468,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_role.link);
+	wl_list_remove(&xwayland_view->set_startup_id.link);
 	wl_list_remove(&xwayland_view->set_window_type.link);
 	wl_list_remove(&xwayland_view->set_hints.link);
 	wl_list_remove(&xwayland_view->set_decorations.link);
@@ -666,6 +669,31 @@ static void handle_set_role(struct wl_listener *listener, void *data) {
 	view_execute_criteria(view);
 }
 
+static void handle_set_startup_id(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_startup_id);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (xsurface->startup_id == NULL) {
+		return;
+	}
+
+	struct wlr_xdg_activation_token_v1 *token =
+		wlr_xdg_activation_v1_find_token(
+				server.xdg_activation_v1, xsurface->startup_id);
+	if (token == NULL) {
+		// Tried to activate with an unknown or expired token
+		return;
+	}
+
+	struct launcher_ctx *ctx = token->data;
+	if (token->data == NULL) {
+		// TODO: support external launchers in X
+		return;
+	}
+	view_assign_ctx(view, ctx);
+}
+
 static void handle_set_window_type(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, set_window_type);
@@ -750,6 +778,10 @@ struct sway_xwayland_view *create_xwayland_view(struct wlr_xwayland_surface *xsu
 
 	wl_signal_add(&xsurface->events.set_role, &xwayland_view->set_role);
 	xwayland_view->set_role.notify = handle_set_role;
+
+	wl_signal_add(&xsurface->events.set_startup_id,
+			&xwayland_view->set_startup_id);
+	xwayland_view->set_startup_id.notify = handle_set_startup_id;
 
 	wl_signal_add(&xsurface->events.set_window_type,
 			&xwayland_view->set_window_type);
