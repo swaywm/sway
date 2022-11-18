@@ -376,6 +376,7 @@ static void render_view_popups(struct sway_view *view, struct sway_output *outpu
 	struct render_data data = {
 		.damage = damage,
 		.alpha = alpha,
+		.saturation = saturation,
 		.corner_radius = corner_radius,
 		.has_titlebar = has_titlebar,
 	};
