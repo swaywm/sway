@@ -27,6 +27,11 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	return error;
 }
 
+static void export_xdga_token(struct launcher_ctx *ctx) {
+	const char *token = launcher_ctx_get_token_name(ctx);
+	setenv("XDG_ACTIVATION_TOKEN", token, 1);
+}
+
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	char *cmd = NULL;
@@ -66,6 +71,9 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 		close(fd[0]);
 		if ((child = fork()) == 0) {
 			close(fd[1]);
+			if (ctx) {
+				export_xdga_token(ctx);
+			}
 			execlp("sh", "sh", "-c", cmd, (void *)NULL);
 			sway_log_errno(SWAY_ERROR, "execlp failed");
 			_exit(1);
