@@ -248,6 +248,9 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 
 error:
 	glDeleteProgram(renderer->shaders.quad.program);
+	glDeleteProgram(renderer->shaders.rounded_quad.program);
+	glDeleteProgram(renderer->shaders.rounded_tl_quad.program);
+	glDeleteProgram(renderer->shaders.rounded_tr_quad.program);
 	glDeleteProgram(renderer->shaders.corner.program);
 	glDeleteProgram(renderer->shaders.tex_rgba.program);
 	glDeleteProgram(renderer->shaders.tex_rgbx.program);
