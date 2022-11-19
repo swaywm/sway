@@ -9,6 +9,8 @@ struct launcher_ctx {
 	struct wlr_xdg_activation_token_v1 *token;
 	struct wl_listener token_destroy;
 
+	bool activated;
+
 	struct sway_node *node;
 	struct wl_listener node_destroy;
 
@@ -24,5 +26,7 @@ void launcher_ctx_consume(struct launcher_ctx *ctx);
 void launcher_ctx_destroy(struct launcher_ctx *ctx);
 
 struct launcher_ctx *launcher_ctx_create(void);
+
+const char *launcher_ctx_get_token_name(struct launcher_ctx *ctx);
 
 #endif

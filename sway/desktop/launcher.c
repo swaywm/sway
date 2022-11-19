@@ -50,7 +50,10 @@ void launcher_ctx_consume(struct launcher_ctx *ctx) {
 	wl_list_remove(&ctx->token_destroy.link);
 	wl_list_init(&ctx->token_destroy.link);
 
-	wlr_xdg_activation_token_v1_destroy(ctx->token);
+	if (!ctx->activated) {
+		// An unactivated token hasn't been destroyed yet
+		wlr_xdg_activation_token_v1_destroy(ctx->token);
+	}
 	ctx->token = NULL;
 
 	// Prevent additional matches
@@ -200,4 +203,9 @@ struct launcher_ctx *launcher_ctx_create() {
 	wl_list_init(&ctx->link);
 	wl_list_insert(&server.pending_launcher_ctxs, &ctx->link);
 	return ctx;
+}
+
+const char *launcher_ctx_get_token_name(struct launcher_ctx *ctx) {
+	const char *token = wlr_xdg_activation_token_v1_get_name(ctx->token);
+	return token;
 }
