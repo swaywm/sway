@@ -12,8 +12,6 @@
 
   outputs = { self, nixpkgs, flake-compat, ... }:
     let
-      inherit (nixpkgs) lib;
-
       pkgsFor = system:
         import nixpkgs {
           inherit system;
@@ -21,7 +19,8 @@
         };
 
       targetSystems = [ "aarch64-linux" "x86_64-linux" ];
-    in {
+    in
+    {
       overlays.default = final: prev: {
         swayfx-unwrapped = prev.sway-unwrapped.overrideAttrs
           (old: { src = builtins.path { path = prev.lib.cleanSource ./.; }; });
@@ -34,11 +33,14 @@
         });
 
       devShells = nixpkgs.lib.genAttrs targetSystems (system:
-        let pkgs = pkgsFor system;
-        in {
+        let
+          pkgs = pkgsFor system;
+        in
+        {
           default = pkgs.mkShell {
             name = "swayfx-shell";
             depsBuildBuild = with pkgs; [ pkg-config ];
+            inputsFrom = [ self.packages.${system}.swayfx-unwrapped pkgs.wlroots ];
 
             nativeBuildInputs = with pkgs; [
               cmake
@@ -49,7 +51,11 @@
               scdoc
             ];
 
-            inputsFrom = [ self.packages.${system}.swayfx-unwrapped ];
+            shellHook = with pkgs; ''(
+              mkdir -p "$PWD/subprojects"
+              cd "$PWD/subprojects"
+              cp -R --no-preserve=mode,ownership ${wlroots.src} wlroots
+            )'';
           };
         });
     };
