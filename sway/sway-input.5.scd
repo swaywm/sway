@@ -175,6 +175,10 @@ The following commands may only be used in the configuration file.
 *input* <identifier> pointer_accel [<-1|1>]
 	Changes the pointer acceleration for the specified input device.
 
+*input* <identifier> rotation_angle <angle>
+	Sets the rotation angle of the device to the given clockwise angle in
+	degrees. The angle must be between 0.0 (inclusive) and 360.0 (exclusive).
+
 *input* <identifier> scroll_button disable|button[1-3,8,9]|<event-code-or-name>
 	Sets the button used for scroll_method on_button_down. The button can
 	be given as an event name or code, which can be obtained from *libinput
