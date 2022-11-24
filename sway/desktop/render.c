@@ -554,8 +554,8 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
  * The left side is: 1px border, 2px padding, title
  */
 static void render_titlebar(struct sway_output *output,
-		pixman_region32_t *output_damage, struct sway_container *con,
-		int x, int y, int width, struct border_colors *colors,
+		pixman_region32_t *output_damage, struct sway_container *con, int x, int y,
+		int width, struct border_colors *colors, float alpha, int corner_radius,
 		struct wlr_texture *title_texture, struct wlr_texture *marks_texture) {
 	struct wlr_box box;
 	float color[4];
@@ -564,7 +564,6 @@ static void render_titlebar(struct sway_output *output,
 	double output_y = output->ly;
 	int titlebar_border_thickness = config->titlebar_border_thickness;
 	enum alignment title_align = config->title_align;
-	int corner_radius = con->corner_radius;
 
 	// titlebar padding should account for corner radius
 	int titlebar_h_padding = corner_radius > config->titlebar_h_padding ?
@@ -574,7 +573,7 @@ static void render_titlebar(struct sway_output *output,
 
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
-	premultiply_alpha(color, con->alpha);
+	premultiply_alpha(color, alpha);
 	box.x = corner_radius ? x + corner_radius : x + titlebar_border_thickness;
 	box.y = y;
 	box.width = corner_radius ?
@@ -641,7 +640,7 @@ static void render_titlebar(struct sway_output *output,
 
 	// title marks textures should have no eyecandy
 	struct decoration_data deco_data = get_undecorated_decoration_data();
-	deco_data.alpha = con->alpha;
+	deco_data.alpha = alpha;
 
 	// Marks
 	int ob_marks_x = 0; // output-buffer-local
@@ -684,7 +683,7 @@ static void render_titlebar(struct sway_output *output,
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
-		premultiply_alpha(color, con->alpha);
+		premultiply_alpha(color, alpha);
 		box.x = texture_box.x + round(output_x * output_scale);
 		box.y = round((y + titlebar_border_thickness) * output_scale);
 		box.width = texture_box.width;
@@ -760,7 +759,7 @@ static void render_titlebar(struct sway_output *output,
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
-		premultiply_alpha(color, con->alpha);
+		premultiply_alpha(color, alpha);
 		box.x = texture_box.x + round(output_x * output_scale);
 		box.y = round((y + titlebar_border_thickness) * output_scale);
 		box.width = texture_box.width;
@@ -950,17 +949,19 @@ static void render_containers_linear(struct sway_output *output,
 			bool has_titlebar = state->border == B_NORMAL;
 			struct decoration_data deco_data = {
 				.alpha = child->alpha,
-				.corner_radius = child->corner_radius,
+				// no corner radius if smart gaps are on and only visible view
+				.corner_radius = config->smart_gaps == SMART_GAPS_ON &&
+					view_ancestor_is_only_visible(view) ? 0 : child->corner_radius,
 				.saturation = child->saturation,
 				.has_titlebar = has_titlebar,
 			};
 			render_view(output, damage, child, colors, deco_data);
 			if (has_titlebar) {
-				render_titlebar(output, damage, child, floor(state->x),
-						floor(state->y), state->width, colors,
+				render_titlebar(output, damage, child, floor(state->x), floor(state->y),
+						state->width, colors, deco_data.alpha, deco_data.corner_radius,
 						title_texture, marks_texture);
 			} else if (state->border == B_PIXEL) {
-				render_top_border(output, damage, state, colors, child->alpha, child->corner_radius);
+				render_top_border(output, damage, state, colors, deco_data.alpha, deco_data.corner_radius);
 			}
 		} else {
 			render_container(output, damage, child,
@@ -1029,8 +1030,8 @@ static void render_containers_tabbed(struct sway_output *output,
 			tab_width = parent->box.width - tab_width * i;
 		}
 
-		render_titlebar(output, damage, child, x, parent->box.y, tab_width,
-				colors, title_texture, marks_texture);
+		render_titlebar(output, damage, child, x, parent->box.y, tab_width, colors,
+				child->alpha, child->corner_radius, title_texture, marks_texture);
 
 		if (child == current) {
 			current_colors = colors;
@@ -1098,8 +1099,8 @@ static void render_containers_stacked(struct sway_output *output,
 		}
 
 		int y = parent->box.y + titlebar_height * i;
-		render_titlebar(output, damage, child, parent->box.x, y,
-				parent->box.width, colors, title_texture, marks_texture);
+		render_titlebar(output, damage, child, parent->box.x, y, parent->box.width,
+				colors, child->alpha, child->corner_radius, title_texture, marks_texture);
 
 		if (child == current) {
 			current_colors = colors;
@@ -1212,11 +1213,11 @@ static void render_floating_container(struct sway_output *soutput,
 		};
 		render_view(soutput, damage, con, colors, deco_data);
 		if (has_titlebar) {
-			render_titlebar(soutput, damage, con, floor(state->x),
-					floor(state->y), state->width, colors,
+			render_titlebar(soutput, damage, con, floor(state->x), floor(state->y),
+					state->width, colors, deco_data.alpha, deco_data.corner_radius,
 					title_texture, marks_texture);
 		} else if (state->border == B_PIXEL) {
-			render_top_border(soutput, damage, state, colors, con->alpha, con->corner_radius);
+			render_top_border(soutput, damage, state, colors, deco_data.alpha, deco_data.corner_radius);
 		}
 	} else {
 		render_container(soutput, damage, con, state->focused);
