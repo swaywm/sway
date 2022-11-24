@@ -295,7 +295,7 @@ void fx_renderer_scissor(struct wlr_box *box) {
 
 bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box, const float matrix[static 9],
-		float alpha, int radius, float saturation, const bool has_titlebar) {
+		struct decoration_data deco_data) {
 	assert(wlr_texture_is_gles2(wlr_texture));
 	struct wlr_gles2_texture_attribs texture_attrs;
 	wlr_gles2_texture_get_attribs(wlr_texture, &texture_attrs);
@@ -332,7 +332,7 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 	wlr_matrix_transpose(gl_matrix, gl_matrix);
 
 	// if there's no opacity or rounded corners we don't need to blend
-	if (!texture_attrs.has_alpha && alpha == 1.0 && !radius) {
+	if (!texture_attrs.has_alpha && deco_data.alpha == 1.0 && !deco_data.corner_radius) {
 		glDisable(GL_BLEND);
 	} else {
 		glEnable(GL_BLEND);
@@ -347,14 +347,12 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 
 	glUniformMatrix3fv(shader->proj, 1, GL_FALSE, gl_matrix);
 	glUniform1i(shader->tex, 0);
-	glUniform1f(shader->alpha, alpha);
-	glUniform1f(shader->has_titlebar, has_titlebar);
-	glUniform1f(shader->saturation, saturation);
-
-	// rounded corners
 	glUniform2f(shader->size, dst_box->width, dst_box->height);
 	glUniform2f(shader->position, dst_box->x, dst_box->y);
-	glUniform1f(shader->radius, radius);
+	glUniform1f(shader->alpha, deco_data.alpha);
+	glUniform1f(shader->has_titlebar, deco_data.has_titlebar);
+	glUniform1f(shader->saturation, deco_data.saturation);
+	glUniform1f(shader->radius, deco_data.corner_radius);
 
 	const GLfloat x1 = src_box->x / wlr_texture->width;
 	const GLfloat y1 = src_box->y / wlr_texture->height;
@@ -384,15 +382,16 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 }
 
 bool fx_render_texture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
-		const struct wlr_box *dst_box, const float matrix[static 9], float alpha, int radius,
-		float saturation, const bool has_titlebar) {
+		const struct wlr_box *dst_box, const float matrix[static 9],
+		struct decoration_data deco_data) {
 	struct wlr_fbox src_box = {
 		.x = 0,
 		.y = 0,
 		.width = wlr_texture->width,
 		.height = wlr_texture->height,
 	};
-	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box, dst_box, matrix, alpha, radius, saturation, has_titlebar);
+	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box,
+			dst_box, matrix, deco_data);
 }
 
 void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box,
