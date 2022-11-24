@@ -31,6 +31,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->middle_emulation = INT_MIN;
 	input->natural_scroll = INT_MIN;
 	input->accel_profile = INT_MIN;
+	input->rotation_angle = FLT_MIN;
 	input->pointer_accel = FLT_MIN;
 	input->scroll_factor = FLT_MIN;
 	input->scroll_button = INT_MIN;
@@ -73,6 +74,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 	if (src->natural_scroll != INT_MIN) {
 		dst->natural_scroll = src->natural_scroll;
+	}
+	if (src->rotation_angle != FLT_MIN) {
+		dst->rotation_angle = src->rotation_angle;
 	}
 	if (src->pointer_accel != FLT_MIN) {
 		dst->pointer_accel = src->pointer_accel;
