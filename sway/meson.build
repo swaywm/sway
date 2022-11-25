@@ -222,7 +222,6 @@ sway_deps = [
 	pcre2,
 	glesv2,
 	pixman,
-	server_protos,
 	threads,
 	wayland_server,
 	wlroots,
@@ -237,7 +236,7 @@ endif
 
 executable(
 	'sway',
-	sway_sources,
+	sway_sources + wl_protos_src,
 	include_directories: [sway_inc],
 	dependencies: sway_deps,
 	link_with: [lib_sway_common],

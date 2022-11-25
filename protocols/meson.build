@@ -20,7 +20,6 @@ protocols = [
 ]
 
 wl_protos_src = []
-wl_protos_headers = []
 
 foreach xml : protocols
 	wl_protos_src += custom_target(
@@ -29,38 +28,16 @@ foreach xml : protocols
 		output: '@BASENAME@-protocol.c',
 		command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
 	)
-	wl_protos_headers += custom_target(
+	wl_protos_src += custom_target(
 		xml.underscorify() + '_server_h',
 		input: xml,
 		output: '@BASENAME@-protocol.h',
 		command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
 	)
-	wl_protos_headers += custom_target(
+	wl_protos_src += custom_target(
 		xml.underscorify() + '_client_h',
 		input: xml,
 		output: '@BASENAME@-client-protocol.h',
 		command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
 	)
 endforeach
-
-lib_client_protos = static_library(
-	'client_protos',
-	wl_protos_src + wl_protos_headers,
-	dependencies: wayland_client.partial_dependency(compile_args: true),
-)
-
-client_protos = declare_dependency(
-	link_with: lib_client_protos,
-	sources: wl_protos_headers,
-)
-
-lib_server_protos = static_library(
-	'server_protos',
-	wl_protos_src + wl_protos_headers,
-	dependencies: wayland_server.partial_dependency(compile_args: true),
-)
-
-server_protos = declare_dependency(
-	link_with: lib_server_protos,
-	sources: wl_protos_headers,
-)
