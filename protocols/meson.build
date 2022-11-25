@@ -18,13 +18,6 @@ protocols = [
 	'wlr-output-power-management-unstable-v1.xml',
 ]
 
-client_protocols = [
-	wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
-	wl_protocol_dir / 'unstable/xdg-output/xdg-output-unstable-v1.xml',
-	'wlr-layer-shell-unstable-v1.xml',
-	'wlr-input-inhibitor-unstable-v1.xml',
-]
-
 wl_protos_src = []
 wl_protos_headers = []
 
@@ -41,9 +34,6 @@ foreach xml : protocols
 		output: '@BASENAME@-protocol.h',
 		command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
 	)
-endforeach
-
-foreach xml : client_protocols
 	wl_protos_headers += custom_target(
 		xml.underscorify() + '_client_h',
 		input: xml,
