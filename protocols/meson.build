@@ -1,14 +1,10 @@
 wl_protocol_dir = wayland_protos.get_variable('pkgdatadir')
 
-wayland_scanner_dep = dependency('wayland-scanner', required: false, native: true)
-if wayland_scanner_dep.found()
-	wayland_scanner = find_program(
-		wayland_scanner_dep.get_variable(pkgconfig: 'wayland_scanner'),
-		native: true,
-	)
-else
-	wayland_scanner = find_program('wayland-scanner', native: true)
-endif
+wayland_scanner_dep = dependency('wayland-scanner', native: true)
+wayland_scanner = find_program(
+	wayland_scanner_dep.get_variable(pkgconfig: 'wayland_scanner'),
+	native: true,
+)
 
 protocols = [
 	wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
