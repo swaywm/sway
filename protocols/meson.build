@@ -24,7 +24,7 @@ wl_protos_headers = []
 
 foreach xml : protocols
 	wl_protos_src += custom_target(
-		xml.underscorify() + '_server_c',
+		xml.underscorify() + '_c',
 		input: xml,
 		output: '@BASENAME@-protocol.c',
 		command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
