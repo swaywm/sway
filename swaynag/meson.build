@@ -5,11 +5,11 @@ executable(
 		'render.c',
 		'swaynag.c',
 		'types.c',
+		wl_protos_src,
 	],
 	include_directories: [sway_inc],
 	dependencies: [
 		cairo,
-		client_protos,
 		pango,
 		pangocairo,
 		wayland_client,
