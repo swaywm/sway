@@ -6,16 +6,20 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
-#include <wlr/backend/drm.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
 #include "sway/tree/root.h"
 #include "log.h"
 #include "util.h"
+
+#if WLR_HAS_DRM_BACKEND
+#include <wlr/backend/drm.h>
+#endif
 
 int output_name_cmp(const void *item, const void *data) {
 	const struct output_config *output = item;
@@ -286,6 +290,7 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 
 static void set_modeline(struct wlr_output *output,
 		struct wlr_output_state *pending, drmModeModeInfo *drm_mode) {
+#if WLR_HAS_DRM_BACKEND
 	if (!wlr_output_is_drm(output)) {
 		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 		return;
@@ -295,6 +300,9 @@ static void set_modeline(struct wlr_output *output,
 	if (mode) {
 		wlr_output_state_set_mode(pending, mode);
 	}
+#else
+	sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
+#endif
 }
 
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
@@ -436,9 +444,11 @@ static void queue_output_config(struct output_config *oc,
 	enum wl_output_transform tr = WL_OUTPUT_TRANSFORM_NORMAL;
 	if (oc && oc->transform >= 0) {
 		tr = oc->transform;
+#if WLR_HAS_DRM_BACKEND
 	} else if (wlr_output_is_drm(wlr_output)) {
 		tr = wlr_drm_connector_get_panel_orientation(wlr_output);
 		sway_log(SWAY_DEBUG, "Auto-detected output transform: %d", tr);
+#endif
 	}
 	if (wlr_output->transform != tr) {
 		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, tr);

@@ -4,11 +4,10 @@
 #include <strings.h>
 #include <time.h>
 #include <wayland-server-core.h>
-#include <wlr/backend/drm.h>
+#include <wlr/config.h>
 #include <wlr/backend/headless.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
-#include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -30,6 +29,11 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+
+#if WLR_HAS_DRM_BACKEND
+#include <wlr/backend/drm.h>
+#include <wlr/types/wlr_drm_lease_v1.h>
+#endif
 
 struct sway_output *output_by_name_or_id(const char *name_or_id) {
 	for (int i = 0; i < root->outputs->length; ++i) {
@@ -923,10 +927,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	if (wlr_output->non_desktop) {
 		sway_log(SWAY_DEBUG, "Not configuring non-desktop output");
 		struct sway_output_non_desktop *non_desktop = output_non_desktop_create(wlr_output);
+#if WLR_HAS_DRM_BACKEND
 		if (server->drm_lease_manager) {
 			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
 					wlr_output);
 		}
+#endif
 		list_add(root->non_desktop_outputs, non_desktop);
 		return;
 	}
