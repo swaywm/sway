@@ -76,11 +76,11 @@ gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 glesv2 = wlroots_features['gles2_renderer'] ? dependency('glesv2') : null_dep
 libevdev = dependency('libevdev')
-libinput = dependency('libinput', version: '>=1.21.0')
+libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
 xcb = dependency('xcb', required: get_option('xwayland'))
 drm_full = dependency('libdrm') # only needed for drm_fourcc.h
 drm = drm_full.partial_dependency(compile_args: true, includes: true)
-libudev = dependency('libudev')
+libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_dep
 bash_comp = dependency('bash-completion', required: false)
 fish_comp = dependency('fish', required: false)
 math = cc.find_library('m')

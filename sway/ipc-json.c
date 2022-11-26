@@ -3,7 +3,7 @@
 #include <json.h>
 #include <libevdev/libevdev.h>
 #include <stdio.h>
-#include <wlr/backend/libinput.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <xkbcommon/xkbcommon.h>
@@ -20,6 +20,10 @@
 #include "sway/input/seat.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "sway/desktop/idle_inhibit_v1.h"
+
+#if WLR_HAS_LIBINPUT_BACKEND
+#include <wlr/backend/libinput.h>
+#endif
 
 static const int i3_output_id = INT32_MAX;
 static const int i3_scratch_id = INT32_MAX - 1;
@@ -847,6 +851,7 @@ json_object *ipc_json_describe_node_recursive(struct sway_node *node) {
 	return object;
 }
 
+#if WLR_HAS_LIBINPUT_BACKEND
 static json_object *describe_libinput_device(struct libinput_device *device) {
 	json_object *object = json_object_new_object();
 
@@ -1052,6 +1057,7 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 
 	return object;
 }
+#endif
 
 json_object *ipc_json_describe_input(struct sway_input_device *device) {
 	if (!(sway_assert(device, "Device must not be null"))) {
@@ -1115,12 +1121,14 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 				json_object_new_double(scroll_factor));
 	}
 
+#if WLR_HAS_LIBINPUT_BACKEND
 	if (wlr_input_device_is_libinput(device->wlr_device)) {
 		struct libinput_device *libinput_dev;
 		libinput_dev = wlr_libinput_get_device_handle(device->wlr_device);
 		json_object_object_add(object, "libinput",
 				describe_libinput_device(libinput_dev));
 	}
+#endif
 
 	return object;
 }

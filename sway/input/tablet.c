@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
-#include <wlr/backend/libinput.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_tablet_pad.h>
@@ -8,6 +8,10 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/input/tablet.h"
+
+#if WLR_HAS_LIBINPUT_BACKEND
+#include <wlr/backend/libinput.h>
+#endif
 
 static void handle_pad_tablet_destroy(struct wl_listener *listener, void *data) {
 	struct sway_tablet_pad *pad =
@@ -63,6 +67,7 @@ void sway_configure_tablet(struct sway_tablet *tablet) {
 			wlr_tablet_create(server.tablet_v2, seat->wlr_seat, device);
 	}
 
+#if WLR_HAS_LIBINPUT_BACKEND
 	/* Search for a sibling tablet pad */
 	if (!wlr_input_device_is_libinput(device)) {
 		/* We can only do this on libinput devices */
@@ -87,6 +92,7 @@ void sway_configure_tablet(struct sway_tablet *tablet) {
 			break;
 		}
 	}
+#endif
 }
 
 void sway_tablet_destroy(struct sway_tablet *tablet) {
@@ -287,6 +293,7 @@ void sway_configure_tablet_pad(struct sway_tablet_pad *tablet_pad) {
 	tablet_pad->ring.notify = handle_tablet_pad_ring;
 	wl_signal_add(&tablet_pad->wlr->events.ring, &tablet_pad->ring);
 
+#if WLR_HAS_LIBINPUT_BACKEND
 	/* Search for a sibling tablet */
 	if (!wlr_input_device_is_libinput(wlr_device)) {
 		/* We can only do this on libinput devices */
@@ -311,6 +318,7 @@ void sway_configure_tablet_pad(struct sway_tablet_pad *tablet_pad) {
 			break;
 		}
 	}
+#endif
 }
 
 void sway_tablet_pad_destroy(struct sway_tablet_pad *tablet_pad) {
