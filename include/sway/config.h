@@ -209,7 +209,7 @@ enum seat_config_allow_constrain {
 };
 
 enum seat_config_shortcuts_inhibit {
-	SHORTCUTS_INHIBIT_DEFAULT, // the default is currently enabled
+	SHORTCUTS_INHIBIT_DEFAULT, // the default is currently disabled
 	SHORTCUTS_INHIBIT_ENABLE,
 	SHORTCUTS_INHIBIT_DISABLE,
 };

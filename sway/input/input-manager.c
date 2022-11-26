@@ -363,7 +363,7 @@ static void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 		}
 	}
 
-	if (inhibit == SHORTCUTS_INHIBIT_DISABLE) {
+	if (inhibit != SHORTCUTS_INHIBIT_ENABLE) {
 		/**
 		 * Here we deny to honour the inhibitor by never sending the
 		 * activate signal. We can not, however, destroy the inhibitor
