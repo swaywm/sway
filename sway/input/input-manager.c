@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <wlr/backend/libinput.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_input_inhibitor.h>
@@ -21,6 +21,10 @@
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
+
+#if WLR_HAS_LIBINPUT_BACKEND
+#include <wlr/backend/libinput.h>
+#endif
 
 #define DEFAULT_SEAT "seat0"
 
@@ -90,6 +94,7 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 }
 
 static bool device_is_touchpad(struct sway_input_device *device) {
+#if WLR_HAS_LIBINPUT_BACKEND
 	if (device->wlr_device->type != WLR_INPUT_DEVICE_POINTER ||
 			!wlr_input_device_is_libinput(device->wlr_device)) {
 		return false;
@@ -99,6 +104,9 @@ static bool device_is_touchpad(struct sway_input_device *device) {
 		wlr_libinput_get_device_handle(device->wlr_device);
 
 	return libinput_device_config_tap_get_finger_count(libinput_device) > 0;
+#else
+	return false;
+#endif
 }
 
 const char *input_device_get_type(struct sway_input_device *device) {
@@ -236,7 +244,11 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	apply_input_type_config(input_device);
 
+#if WLR_HAS_LIBINPUT_BACKEND
 	bool config_changed = sway_input_configure_libinput_device(input_device);
+#else
+	bool config_changed = false;
+#endif
 
 	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
 	input_device->device_destroy.notify = handle_device_destroy;
@@ -532,7 +544,11 @@ static void retranslate_keysyms(struct input_config *input_config) {
 
 static void input_manager_configure_input(
 		struct sway_input_device *input_device) {
+#if WLR_HAS_LIBINPUT_BACKEND
 	bool config_changed = sway_input_configure_libinput_device(input_device);
+#else
+	bool config_changed = false;
+#endif
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_configure_device(seat, input_device);
@@ -567,7 +583,9 @@ void input_manager_apply_input_config(struct input_config *input_config) {
 }
 
 void input_manager_reset_input(struct sway_input_device *input_device) {
+#if WLR_HAS_LIBINPUT_BACKEND
 	sway_input_reset_libinput_device(input_device);
+#endif
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_reset_device(seat, input_device);

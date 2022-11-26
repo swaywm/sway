@@ -1,14 +1,19 @@
 #include <limits.h>
 #include <string.h>
 #include <strings.h>
-#include <wlr/backend/libinput.h>
+#include <wlr/config.h>
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+#if WLR_HAS_LIBINPUT_BACKEND
+#include <wlr/backend/libinput.h>
+#endif
+
 static void toggle_supported_send_events_for_device(struct input_config *ic,
 		struct sway_input_device *input_device) {
+#if WLR_HAS_LIBINPUT_BACKEND
 	struct wlr_input_device *wlr_device = input_device->wlr_device;
 	if (!wlr_input_device_is_libinput(wlr_device)) {
 		return;
@@ -41,6 +46,7 @@ static void toggle_supported_send_events_for_device(struct input_config *ic,
 	}
 
 	ic->send_events = mode;
+#endif
 }
 
 static int mode_for_name(const char *name) {
@@ -56,6 +62,7 @@ static int mode_for_name(const char *name) {
 
 static void toggle_select_send_events_for_device(struct input_config *ic,
 		struct sway_input_device *input_device, int argc, char **argv) {
+#if WLR_HAS_LIBINPUT_BACKEND
 	if (!wlr_input_device_is_libinput(input_device->wlr_device)) {
 		return;
 	}
@@ -72,6 +79,7 @@ static void toggle_select_send_events_for_device(struct input_config *ic,
 		}
 	}
 	ic->send_events = mode_for_name(argv[index % argc]);
+#endif
 }
 
 static void toggle_send_events(int argc, char **argv) {
