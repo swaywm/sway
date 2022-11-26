@@ -1,11 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
-#include <GLES2/gl2.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <time.h>
 #include <wayland-server-core.h>
-#include <wlr/render/gles2.h>
+#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_damage_ring.h>
@@ -27,6 +26,10 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+
+#if WLR_HAS_GLES2_RENDERER
+#include <wlr/render/gles2.h>
+#endif
 
 struct render_data {
 	pixman_region32_t *damage;
@@ -74,6 +77,7 @@ static void scissor_output(struct wlr_output *wlr_output,
 
 static void set_scale_filter(struct wlr_output *wlr_output,
 		struct wlr_texture *texture, enum scale_filter_mode scale_filter) {
+#if WLR_HAS_GLES2_RENDERER
 	if (!wlr_texture_is_gles2(texture)) {
 		return;
 	}
@@ -94,6 +98,7 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 	case SCALE_FILTER_SMART:
 		assert(false); // unreachable
 	}
+#endif
 }
 
 static void render_texture(struct wlr_output *wlr_output,

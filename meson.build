@@ -43,6 +43,24 @@ subproject(
 	required: false,
 	version: wlroots_version,
 )
+wlroots = dependency('wlroots', version: wlroots_version)
+wlroots_features = {
+	'xwayland': false,
+	'libinput_backend': false,
+	'gles2_renderer': false,
+	'session': false,
+}
+foreach name, _ : wlroots_features
+	var_name = 'have_' + name.underscorify()
+	have = wlroots.get_variable(pkgconfig: var_name, internal: var_name) == 'true'
+	wlroots_features += { name: have }
+endforeach
+
+if get_option('xwayland').enabled() and not wlroots_features['xwayland']
+	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
+endif
+
+null_dep = dependency('', required: false)
 
 jsonc = dependency('json-c', version: '>=0.13')
 pcre2 = dependency('libpcre2-8')
@@ -50,14 +68,13 @@ wayland_server = dependency('wayland-server', version: '>=1.21.0')
 wayland_client = dependency('wayland-client')
 wayland_cursor = dependency('wayland-cursor')
 wayland_protos = dependency('wayland-protocols', version: '>=1.24')
-wlroots = dependency('wlroots', version: wlroots_version)
 xkbcommon = dependency('xkbcommon')
 cairo = dependency('cairo')
 pango = dependency('pango')
 pangocairo = dependency('pangocairo')
 gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
-glesv2 = dependency('glesv2')
+glesv2 = wlroots_features['gles2_renderer'] ? dependency('glesv2') : null_dep
 libevdev = dependency('libevdev')
 libinput = dependency('libinput', version: '>=1.21.0')
 xcb = dependency('xcb', required: get_option('xwayland'))
@@ -71,18 +88,6 @@ rt = cc.find_library('rt')
 xcb_icccm = dependency('xcb-icccm', required: get_option('xwayland'))
 threads = dependency('threads') # for pthread_setschedparam
 
-wlroots_features = {
-	'xwayland': false,
-}
-foreach name, _ : wlroots_features
-	var_name = 'have_' + name.underscorify()
-	have = wlroots.get_variable(pkgconfig: var_name, internal: var_name) == 'true'
-	wlroots_features += { name: have }
-endforeach
-
-if get_option('xwayland').enabled() and not wlroots_features['xwayland']
-	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
-endif
 have_xwayland = xcb.found() and wlroots_features['xwayland']
 
 if get_option('sd-bus-provider') == 'auto'
