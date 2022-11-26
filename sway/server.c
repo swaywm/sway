@@ -7,13 +7,11 @@
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
-#include <wlr/backend/session.h>
 #include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_data_control_v1.h>
-#include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
@@ -46,13 +44,19 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/root.h"
+
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
+#endif
+
+#if WLR_HAS_DRM_BACKEND
+#include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
 #define SWAY_XDG_SHELL_VERSION 2
 #define SWAY_LAYER_SHELL_VERSION 3
 
+#if WLR_HAS_DRM_BACKEND
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	/* We only offer non-desktop outputs, but in the future we might want to do
 	 * more logic here. */
@@ -64,6 +68,7 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 		wlr_drm_lease_request_v1_reject(req);
 	}
 }
+#endif
 
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
@@ -189,6 +194,7 @@ bool server_init(struct sway_server *server) {
 
 	sway_session_lock_init();
 
+#if WLR_HAS_DRM_BACKEND
 	server->drm_lease_manager=
 		wlr_drm_lease_v1_manager_create(server->wl_display, server->backend);
 	if (server->drm_lease_manager) {
@@ -199,6 +205,7 @@ bool server_init(struct sway_server *server) {
 		sway_log(SWAY_DEBUG, "Failed to create wlr_drm_lease_device_v1");
 		sway_log(SWAY_INFO, "VR will not be available");
 	}
+#endif
 
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
