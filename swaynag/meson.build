@@ -11,6 +11,7 @@ executable(
 	dependencies: [
 		cairo,
 		pango,
+		rt,
 		pangocairo,
 		wayland_client,
 		wayland_cursor,
