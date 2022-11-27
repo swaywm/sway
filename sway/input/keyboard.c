@@ -755,6 +755,9 @@ struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 	xkb_context_set_user_data(context, error);
 	xkb_context_set_log_fn(context, handle_xkb_context_log);
 
+	// This includes the $XDG_CONFIG_HOME/xkb in the lookup
+	xkb_context_include_path_append_default(context);
+
 	struct xkb_keymap *keymap = NULL;
 
 	if (ic && ic->xkb_file) {
