@@ -3,7 +3,7 @@
 [English][en] - **[Česky][cs]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Svenska][sv] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway je s [i3] kompatibilní [Wayland] kompozitor. Přečtěte si [FAQ]. Připojte se na
-[IRC kanál] \(#sway na irc.libera.chat).
+[IRC kanál][IRC channel] \(#sway na irc.libera.chat).
 
 ## Podpisy vydání
 
