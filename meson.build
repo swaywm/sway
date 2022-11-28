@@ -326,4 +326,3 @@ summary({
 	'tray': have_tray,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
-
