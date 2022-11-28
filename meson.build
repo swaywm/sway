@@ -86,7 +86,7 @@ rt = cc.find_library('rt')
 xcb_icccm = dependency('xcb-icccm', required: get_option('xwayland'))
 threads = dependency('threads') # for pthread_setschedparam
 
-have_xwayland = xcb.found() and wlroots_features['xwayland']
+have_xwayland = xcb.found() and xcb_icccm.found() and wlroots_features['xwayland']
 
 if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
