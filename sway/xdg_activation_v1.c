@@ -1,6 +1,7 @@
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include "sway/desktop/launcher.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 
 void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		void *data) {
@@ -36,5 +37,17 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 	if (wlr_seat) {
 		struct sway_seat *seat = wlr_seat->data;
 		view_request_activate(view, seat);
+	}
+}
+
+void xdg_activation_v1_handle_new_token(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_activation_token_v1 *token = data;
+	struct sway_seat *seat = token->seat ? token->seat->data :
+		input_manager_current_seat();
+
+	struct sway_workspace *ws = seat_get_focused_workspace(seat);
+	if (ws) {
+		launcher_ctx_create(token, &ws->node);
+		return;
 	}
 }
