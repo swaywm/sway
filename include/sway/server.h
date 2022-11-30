@@ -114,6 +114,7 @@ struct sway_server {
 
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
+	struct wl_listener xdg_activation_v1_new_token;
 
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
@@ -174,6 +175,8 @@ void handle_server_decoration(struct wl_listener *listener, void *data);
 void handle_xdg_decoration(struct wl_listener *listener, void *data);
 void handle_pointer_constraint(struct wl_listener *listener, void *data);
 void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
+	void *data);
+void xdg_activation_v1_handle_new_token(struct wl_listener *listener,
 	void *data);
 
 void set_rr_scheduling(void);

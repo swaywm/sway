@@ -225,6 +225,10 @@ bool server_init(struct sway_server *server) {
 		xdg_activation_v1_handle_request_activate;
 	wl_signal_add(&server->xdg_activation_v1->events.request_activate,
 		&server->xdg_activation_v1_request_activate);
+	server->xdg_activation_v1_new_token.notify =
+		xdg_activation_v1_handle_new_token;
+	wl_signal_add(&server->xdg_activation_v1->events.new_token,
+		&server->xdg_activation_v1_new_token);
 
 	wl_list_init(&server->pending_launcher_ctxs);
 
