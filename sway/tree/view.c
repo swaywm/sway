@@ -366,12 +366,14 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
-void view_request_activate(struct sway_view *view) {
+void view_request_activate(struct sway_view *view, struct sway_seat *seat) {
 	struct sway_workspace *ws = view->container->pending.workspace;
 	if (!ws) { // hidden scratchpad container
 		return;
 	}
-	struct sway_seat *seat = input_manager_current_seat();
+	if (!seat) {
+		seat = input_manager_current_seat();
+	}
 
 	switch (config->focus_on_window_activation) {
 	case FOWA_SMART:

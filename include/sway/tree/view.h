@@ -271,7 +271,7 @@ void view_set_activated(struct sway_view *view, bool activated);
 /**
  * Called when the view requests to be focused.
  */
-void view_request_activate(struct sway_view *view);
+void view_request_activate(struct sway_view *view, struct sway_seat *seat);
 
 /**
  * If possible, instructs the client to change their decoration mode.
