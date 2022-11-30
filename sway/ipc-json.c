@@ -1,7 +1,6 @@
 #include <ctype.h>
 #include <float.h>
 #include <json.h>
-#include <libevdev/libevdev.h>
 #include <stdio.h>
 #include <wlr/config.h>
 #include <wlr/types/wlr_content_type_v1.h>

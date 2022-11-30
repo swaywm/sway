@@ -75,7 +75,6 @@ pangocairo = dependency('pangocairo')
 gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 glesv2 = wlroots_features['gles2_renderer'] ? dependency('glesv2') : null_dep
-libevdev = dependency('libevdev')
 libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
 xcb = dependency('xcb', required: get_option('xwayland'))
 drm_full = dependency('libdrm') # only needed for drm_fourcc.h

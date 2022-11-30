@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_pointer_gestures_v1.h>
 #include <wlr/types/wlr_compositor.h>
+#include <linux/input.h>
 #include "sway/input/seat.h"
 #include "config.h"
 
@@ -137,7 +138,5 @@ uint32_t get_mouse_bindcode(const char *name, char **error);
 
 // Considers both bindsym and bindcode
 uint32_t get_mouse_button(const char *name, char **error);
-
-const char *get_mouse_button_name(uint32_t button);
 
 #endif

@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <math.h>
-#include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
 #include <errno.h>
 #include <time.h>
@@ -1247,18 +1246,6 @@ uint32_t get_mouse_bindsym(const char *name, char **error) {
 			SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
 			SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
 		return buttons[number - 1];
-	} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
-		// Get event code from name
-		int code = libevdev_event_code_from_name(EV_KEY, name);
-		if (code == -1) {
-			size_t len = snprintf(NULL, 0, "Unknown event %s", name) + 1;
-			*error = malloc(len);
-			if (*error) {
-				snprintf(*error, len, "Unknown event %s", name);
-			}
-			return 0;
-		}
-		return code;
 	}
 	return 0;
 }
@@ -1275,17 +1262,6 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 		*error = strdup("Button event code out of range.");
 		return 0;
 	}
-	const char *event = libevdev_event_code_get_name(EV_KEY, code);
-	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
-		size_t len = snprintf(NULL, 0, "Event code %d (%s) is not a button",
-				code, event ? event : "(null)") + 1;
-		*error = malloc(len);
-		if (*error) {
-			snprintf(*error, len, "Event code %d (%s) is not a button",
-					code, event ? event : "(null)");
-		}
-		return 0;
-	}
 	return code;
 }
 
@@ -1295,22 +1271,6 @@ uint32_t get_mouse_button(const char *name, char **error) {
 		button = get_mouse_bindcode(name, error);
 	}
 	return button;
-}
-
-const char *get_mouse_button_name(uint32_t button) {
-	const char *name = libevdev_event_code_get_name(EV_KEY, button);
-	if (!name) {
-		if (button == SWAY_SCROLL_UP) {
-			name = "SWAY_SCROLL_UP";
-		} else if (button == SWAY_SCROLL_DOWN) {
-			name = "SWAY_SCROLL_DOWN";
-		} else if (button == SWAY_SCROLL_LEFT) {
-			name = "SWAY_SCROLL_LEFT";
-		} else if (button == SWAY_SCROLL_RIGHT) {
-			name = "SWAY_SCROLL_RIGHT";
-		}
-	}
-	return name;
 }
 
 static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
