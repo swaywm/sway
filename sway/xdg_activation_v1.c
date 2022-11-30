@@ -31,5 +31,10 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		return;
 	}
 
-	view_request_activate(view);
+	struct wlr_seat *wlr_seat = event->token->seat;
+	// The requesting seat may have been destroyed.
+	if (wlr_seat) {
+		struct sway_seat *seat = wlr_seat->data;
+		view_request_activate(view, seat);
+	}
 }
