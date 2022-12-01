@@ -805,7 +805,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	wl_list_remove(&output->destroy.link);
 	wl_list_remove(&output->commit.link);
-	wl_list_remove(&output->mode.link);
 	wl_list_remove(&output->present.link);
 	wl_list_remove(&output->damage.link);
 	wl_list_remove(&output->frame.link);
@@ -822,8 +821,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	update_output_manager_config(server);
 }
 
-static void handle_mode(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, mode);
+static void handle_mode(struct sway_output *output) {
 	if (!output->enabled && !output->enabling) {
 		struct output_config *oc = find_output_config(output);
 		if (output->wlr_output->current_mode != NULL &&
@@ -861,6 +859,10 @@ static void update_textures(struct sway_container *con, void *data) {
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, commit);
 	struct wlr_output_event_commit *event = data;
+
+	if (event->committed & WLR_OUTPUT_STATE_MODE) {
+		handle_mode(output);
+	}
 
 	if (!output->enabled) {
 		return;
@@ -954,8 +956,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_output->events.commit, &output->commit);
 	output->commit.notify = handle_commit;
-	wl_signal_add(&wlr_output->events.mode, &output->mode);
-	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
 	wl_signal_add(&wlr_output->events.damage, &output->damage);
