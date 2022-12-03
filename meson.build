@@ -83,7 +83,7 @@ endforeach
 if get_option('xwayland').enabled() and not wlroots_features['xwayland']
 	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
 endif
-have_xwayland = xcb.found() and wlroots_features['xwayland']
+have_xwayland = xcb.found() and xcb_icccm.found() and wlroots_features['xwayland']
 
 if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
