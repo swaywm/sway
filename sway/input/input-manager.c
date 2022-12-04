@@ -593,6 +593,13 @@ void input_manager_reset_input(struct sway_input_device *input_device) {
 }
 
 void input_manager_reset_all_inputs(void) {
+	// Set the active keyboard to NULL to avoid spamming configuration updates
+	// for all keyboard devices.
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		wlr_seat_set_keyboard(seat->wlr_seat, NULL);
+	}
+
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &server.input->devices, link) {
 		input_manager_reset_input(input_device);
@@ -601,7 +608,6 @@ void input_manager_reset_all_inputs(void) {
 	// If there is at least one keyboard using the default keymap, repeat delay,
 	// and repeat rate, then it is possible that there is a keyboard group that
 	// need their keyboard disarmed.
-	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		struct sway_keyboard_group *group;
 		wl_list_for_each(group, &seat->keyboard_groups, link) {
