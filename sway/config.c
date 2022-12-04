@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <wordexp.h>
+#include <sys/auxv.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -17,6 +18,7 @@
 #include <wlr/types/wlr_output.h>
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/input/keyboard.h"
 #include "sway/input/switch.h"
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -38,6 +40,9 @@ struct sway_config *config = NULL;
 static struct xkb_state *keysym_translation_state_create(
 		struct xkb_rule_names rules) {
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (getauxval(AT_SECURE) > 0) {
+		xkb_context_include_path_append_default_unsecured(context);
+	}
 	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_names(
 		context,
 		&rules,

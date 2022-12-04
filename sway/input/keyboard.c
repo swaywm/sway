@@ -1,12 +1,14 @@
 #include <assert.h>
 #include <limits.h>
 #include <strings.h>
+#include <sys/auxv.h>
 #include <wlr/config.h>
 #include <wlr/backend/multi.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
+#include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
@@ -752,6 +754,45 @@ static void handle_xkb_context_log(struct xkb_context *context,
 	}
 }
 
+int xkb_context_include_path_append_default_unsecured(struct xkb_context *ctx) {
+    char *user_path;
+    int ret = 0;
+
+    const char *home = getenv("HOME");
+    const char *xdg = getenv("XDG_CONFIG_HOME");
+
+    if (xdg != NULL) {
+		int len = strlen(xdg) + strlen("/xkb") + 1;
+		user_path = calloc(len, sizeof(char));
+        if (user_path) {
+			snprintf(user_path, len, "%s/xkb", xdg);
+            ret |= xkb_context_include_path_append(ctx, user_path);
+            free(user_path);
+        }
+    } else if (home != NULL) {
+		int len = strlen(home) + strlen("/.config/xkb") + 1;
+		user_path = calloc(len, sizeof(char));
+        if (user_path) {
+			snprintf(user_path, len, "%s/.config/xkb", home);
+            ret |= xkb_context_include_path_append(ctx, user_path);
+            free(user_path);
+        }
+    }
+
+    if (home != NULL) {
+		int len = strlen(home) + strlen("/.xkb") + 1;
+		user_path = calloc(len, sizeof(char));
+        if (user_path) {
+			snprintf(user_path, len, "%s/.xkb", home);
+            ret |= xkb_context_include_path_append(ctx, user_path);
+            free(user_path);
+        }
+    }
+
+	return ret;
+}
+
+
 struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 		char **error) {
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
@@ -760,6 +801,10 @@ struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 	}
 	xkb_context_set_user_data(context, error);
 	xkb_context_set_log_fn(context, handle_xkb_context_log);
+
+	if (getauxval(AT_SECURE) > 0) {
+		xkb_context_include_path_append_default_unsecured(context);
+	}
 
 	struct xkb_keymap *keymap = NULL;
 

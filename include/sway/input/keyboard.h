@@ -81,6 +81,8 @@ struct sway_keyboard_group {
 	struct wl_list link; // sway_seat::keyboard_groups
 };
 
+int xkb_context_include_path_append_default_unsecured(struct xkb_context *ctx);
+
 struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 		char **error);
 
