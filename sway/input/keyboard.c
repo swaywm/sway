@@ -1070,9 +1070,6 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		}
 	}
 
-	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
-	wlr_seat_set_keyboard(seat, keyboard->wlr);
-
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_signal_add(&keyboard->wlr->events.key, &keyboard->keyboard_key);
 	keyboard->keyboard_key.notify = handle_keyboard_key;
