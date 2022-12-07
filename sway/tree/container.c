@@ -1404,14 +1404,14 @@ enum sway_container_layout container_current_parent_layout(
 }
 
 list_t *container_get_siblings(struct sway_container *container) {
-	if (container->pending.parent) {
-		return container->pending.parent->pending.children;
-	}
-	if (container_is_scratchpad_hidden(container)) {
+	if (container_is_scratchpad_hidden_or_child(container)) {
 		return NULL;
 	}
 	if (!container->pending.workspace) {
 		return NULL;
+	}
+	if (container->pending.parent) {
+		return container->pending.parent->pending.children;
 	}
 	if (list_find(container->pending.workspace->tiling, container) != -1) {
 		return container->pending.workspace->tiling;
