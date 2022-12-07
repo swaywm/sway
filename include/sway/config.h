@@ -468,6 +468,12 @@ enum xwayland_mode {
 struct sway_config {
 	// SwayFX config options
 	int corner_radius;
+	float dim_inactive;
+	// dim_inactive colors
+	struct {
+		float unfocused[4];
+		float urgent[4];
+	} dim_inactive_colors;
 
 	char *swaynag_command;
 	struct swaynag_instance swaynag_config_errors;

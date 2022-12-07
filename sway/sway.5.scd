@@ -588,6 +588,16 @@ The default colors are:
 *corner_radius* <radius>
 	Set corner radius for new windows.
 
+*dim_inactive* <value>
+	Adjusts the dimming of inactive windows between 0.0 (no dimming) and 1.0
+	(fully dimmed) while 0.0 is the default value.
+
+*dim_inactive_colors.unfocused* <hex color>
+	The color to dim inactive windows with. Example color: #000000FF
+
+*dim_inactive_colors.urgent* <hex color>
+	The color to dim inactive urgent windows with. Example color: #900000FF
+
 *default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.
 

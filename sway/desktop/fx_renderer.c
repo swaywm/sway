@@ -95,6 +95,8 @@ bool init_frag_shader(struct gles2_tex_shader *shader, GLuint prog) {
 	shader->proj = glGetUniformLocation(prog, "proj");
 	shader->tex = glGetUniformLocation(prog, "tex");
 	shader->alpha = glGetUniformLocation(prog, "alpha");
+	shader->dim = glGetUniformLocation(prog, "dim");
+	shader->dim_color = glGetUniformLocation(prog, "dim_color");
 	shader->pos_attrib = glGetAttribLocation(prog, "pos");
 	shader->tex_attrib = glGetAttribLocation(prog, "texcoord");
 	shader->size = glGetUniformLocation(prog, "size");
@@ -345,11 +347,15 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 
 	glUseProgram(shader->program);
 
+	float* dim_color = deco_data.dim_color;
+
 	glUniformMatrix3fv(shader->proj, 1, GL_FALSE, gl_matrix);
 	glUniform1i(shader->tex, 0);
 	glUniform2f(shader->size, dst_box->width, dst_box->height);
 	glUniform2f(shader->position, dst_box->x, dst_box->y);
 	glUniform1f(shader->alpha, deco_data.alpha);
+	glUniform1f(shader->dim, deco_data.dim);
+	glUniform4f(shader->dim_color, dim_color[0], dim_color[1], dim_color[2], dim_color[3]);
 	glUniform1f(shader->has_titlebar, deco_data.has_titlebar);
 	glUniform1f(shader->saturation, deco_data.saturation);
 	glUniform1f(shader->radius, deco_data.corner_radius);
