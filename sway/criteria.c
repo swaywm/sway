@@ -287,7 +287,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->instance->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && strcmp(instance, view_get_instance(focused))) {
+			if (focused && lenient_strcmp(instance, view_get_instance(focused))) {
 				return false;
 			}
 			break;
@@ -307,7 +307,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->window_role->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && strcmp(window_role, view_get_window_role(focused))) {
+			if (focused && lenient_strcmp(window_role, view_get_window_role(focused))) {
 				return false;
 			}
 			break;
