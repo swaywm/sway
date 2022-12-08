@@ -19,7 +19,7 @@ packages:
   - wayland-protocols
   - xcb-util-image-dev
   - xcb-util-wm-dev
-  - xwayland
+  - xwayland-dev
   - hwdata
 sources:
   - https://github.com/swaywm/sway
