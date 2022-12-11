@@ -18,13 +18,12 @@
 #include "sway/server.h"
 
 // shaders
-#include "quad_vert_src.h"
+#include "common_vert_src.h"
 #include "quad_frag_src.h"
 #include "quad_round_frag_src.h"
 #include "quad_round_tl_frag_src.h"
 #include "quad_round_tr_frag_src.h"
 #include "corner_frag_src.h"
-#include "tex_vert_src.h"
 #include "tex_rgba_frag_src.h"
 #include "tex_rgbx_frag_src.h"
 #include "tex_external_frag_src.h"
@@ -188,7 +187,7 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	GLuint prog;
 
 	// quad fragment shader
-	prog = link_program(quad_vert_src, quad_frag_src);
+	prog = link_program(common_vert_src, quad_frag_src);
 	renderer->shaders.quad.program = prog;
 	if (!renderer->shaders.quad.program) {
 		goto error;
@@ -198,21 +197,21 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
 	// rounded quad fragment shaders
-	prog = link_program(quad_vert_src, quad_round_frag_src);
+	prog = link_program(common_vert_src, quad_round_frag_src);
 	if (!init_rounded_quad_shader(&renderer->shaders.rounded_quad, prog)) {
 		goto error;
 	}
-	prog = link_program(quad_vert_src, quad_round_tl_frag_src);
+	prog = link_program(common_vert_src, quad_round_tl_frag_src);
 	if (!init_rounded_quad_shader(&renderer->shaders.rounded_tl_quad, prog)) {
 		goto error;
 	}
-	prog = link_program(quad_vert_src, quad_round_tr_frag_src);
+	prog = link_program(common_vert_src, quad_round_tr_frag_src);
 	if (!init_rounded_quad_shader(&renderer->shaders.rounded_tr_quad, prog)) {
 		goto error;
 	}
 
 	// Border corner shader
-	prog = link_program(quad_vert_src, corner_frag_src);
+	prog = link_program(common_vert_src, corner_frag_src);
 	renderer->shaders.corner.program = prog;
 	if (!renderer->shaders.corner.program) {
 		goto error;
@@ -230,15 +229,15 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.corner.half_thickness = glGetUniformLocation(prog, "half_thickness");
 
 	// fragment shaders
-	prog = link_program(tex_vert_src, tex_rgba_frag_src);
+	prog = link_program(common_vert_src, tex_rgba_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_rgba, prog)) {
 		goto error;
 	}
-	prog = link_program(tex_vert_src, tex_rgbx_frag_src);
+	prog = link_program(common_vert_src, tex_rgbx_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_rgbx, prog)) {
 		goto error;
 	}
-	prog = link_program(tex_vert_src, tex_external_frag_src);
+	prog = link_program(common_vert_src, tex_external_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_ext, prog)) {
 		goto error;
 	}
