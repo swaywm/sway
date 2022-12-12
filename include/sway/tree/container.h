@@ -113,6 +113,11 @@ struct sway_container {
 	// Hidden scratchpad containers have a NULL parent.
 	bool scratchpad;
 
+	// Stores last output size and position for adjusting coordinates of
+	// scratchpad windows.
+	// Unused for non-scratchpad windows.
+	struct wlr_box transform;
+
 	float alpha;
 
 	struct wlr_texture *title_focused;
@@ -195,6 +200,9 @@ size_t container_titlebar_height(void);
 
 void floating_calculate_constraints(int *min_width, int *max_width,
 		int *min_height, int *max_height);
+
+void floating_fix_coordinates(struct sway_container *con,
+		struct wlr_box *old, struct wlr_box *new);
 
 void container_floating_resize_and_center(struct sway_container *con);
 

@@ -712,6 +712,21 @@ void floating_calculate_constraints(int *min_width, int *max_width,
 
 }
 
+void floating_fix_coordinates(struct sway_container *con, struct wlr_box *old, struct wlr_box *new) {
+	if (!old->width || !old->height) {
+		// Fall back to centering on the workspace.
+		container_floating_move_to_center(con);
+	} else {
+		int rel_x = con->pending.x - old->x + (con->pending.width / 2);
+		int rel_y = con->pending.y - old->y + (con->pending.height / 2);
+
+		con->pending.x = new->x + (double)(rel_x * new->width) / old->width - (con->pending.width / 2);
+		con->pending.y = new->y + (double)(rel_y * new->height) / old->height - (con->pending.height / 2);
+
+		sway_log(SWAY_DEBUG, "Transformed container %p to coords (%f, %f)", con, con->pending.x, con->pending.y);
+	}
+}
+
 static void floating_natural_resize(struct sway_container *con) {
 	int min_width, max_width, min_height, max_height;
 	floating_calculate_constraints(&min_width, &max_width,
@@ -1025,6 +1040,13 @@ void container_floating_move_to(struct sway_container *con,
 		workspace_add_floating(new_workspace, con);
 		arrange_workspace(old_workspace);
 		arrange_workspace(new_workspace);
+		// If the moved container was a visible scratchpad container, then
+		// update its transform.
+		if (con->scratchpad) {
+			struct wlr_box output_box;
+			output_get_box(new_output, &output_box);
+			con->transform = output_box;
+		}
 		workspace_detect_urgent(old_workspace);
 		workspace_detect_urgent(new_workspace);
 	}
