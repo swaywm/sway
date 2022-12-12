@@ -206,9 +206,17 @@ static void container_move_to_workspace(struct sway_container *container,
 		container_detach(container);
 		workspace_add_floating(workspace, container);
 		container_handle_fullscreen_reparent(container);
-		// If changing output, center it within the workspace
+		// If changing output, adjust the coordinates of the window.
 		if (old_output != workspace->output && !container->pending.fullscreen_mode) {
-			container_floating_move_to_center(container);
+			struct wlr_box workspace_box, old_workspace_box;
+			workspace_get_box(workspace, &workspace_box);
+			workspace_get_box(old_workspace, &old_workspace_box);
+			floating_fix_coordinates(container, &old_workspace_box, &workspace_box);
+			if (container->scratchpad && workspace->output) {
+				struct wlr_box output_box;
+				output_get_box(workspace->output, &output_box);
+				container->transform = workspace_box;
+			}
 		}
 	} else {
 		container_detach(container);
