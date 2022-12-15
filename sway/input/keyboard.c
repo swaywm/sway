@@ -754,7 +754,7 @@ static void handle_xkb_context_log(struct xkb_context *context,
 
 struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 		char **error) {
-	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_SECURE_GETENV);
 	if (!sway_assert(context, "cannot create XKB context")) {
 		return NULL;
 	}
