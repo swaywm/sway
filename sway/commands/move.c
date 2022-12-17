@@ -686,6 +686,9 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	arrange_output(old_output);
 	arrange_output(new_output);
 
+	struct sway_seat *seat = config->handler_context.seat;
+	seat_consider_warp_to_focus(seat);
+
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
