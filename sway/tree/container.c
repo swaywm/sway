@@ -1407,9 +1407,6 @@ list_t *container_get_siblings(struct sway_container *container) {
 	if (container->pending.parent) {
 		return container->pending.parent->pending.children;
 	}
-	if (container_is_scratchpad_hidden(container)) {
-		return NULL;
-	}
 	if (!container->pending.workspace) {
 		return NULL;
 	}
