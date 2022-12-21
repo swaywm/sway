@@ -32,9 +32,8 @@ struct swaynag_type *swaynag_type_new(const char *name) {
 
 void swaynag_types_add_default(list_t *types) {
 	struct swaynag_type *type_defaults = swaynag_type_new("<defaults>");
-	type_defaults->font = strdup("pango:Monospace 10");
 	type_defaults->font_description =
-		pango_font_description_from_string(type_defaults->font);
+		pango_font_description_from_string("pango:Monospace 10");
 	type_defaults->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
@@ -90,10 +89,6 @@ struct swaynag_type *swaynag_type_get(list_t *types, char *name) {
 void swaynag_type_merge(struct swaynag_type *dest, struct swaynag_type *src) {
 	if (!dest || !src) {
 		return;
-	}
-
-	if (src->font) {
-		dest->font = strdup(src->font);
 	}
 
 	if (src->font_description) {
@@ -178,7 +173,6 @@ void swaynag_type_merge(struct swaynag_type *dest, struct swaynag_type *src) {
 
 void swaynag_type_free(struct swaynag_type *type) {
 	free(type->name);
-	free(type->font);
 	pango_font_description_free(type->font_description);
 	free(type->output);
 	free(type);

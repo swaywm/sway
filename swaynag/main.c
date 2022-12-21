@@ -98,7 +98,9 @@ int main(int argc, char **argv) {
 	sway_log(SWAY_DEBUG, "Anchors: %" PRIu32, swaynag.type->anchors);
 	sway_log(SWAY_DEBUG, "Type: %s", swaynag.type->name);
 	sway_log(SWAY_DEBUG, "Message: %s", swaynag.message);
-	sway_log(SWAY_DEBUG, "Font: %s", swaynag.type->font);
+	char *font = pango_font_description_to_string(swaynag.type->font_description);
+	sway_log(SWAY_DEBUG, "Font: %s", font);
+	free(font);
 	sway_log(SWAY_DEBUG, "Buttons");
 	for (int i = 0; i < swaynag.buttons->length; i++) {
 		struct swaynag_button *button = swaynag.buttons->items[i];

@@ -4,7 +4,6 @@
 struct swaynag_type {
 	char *name;
 
-	char *font; // Used for debugging.
 	PangoFontDescription *font_description;
 	char *output;
 	uint32_t anchors;
