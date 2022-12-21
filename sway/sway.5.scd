@@ -88,7 +88,7 @@ The following commands may only be used in the configuration file.
 	It can be disabled by setting the command to a single dash:
 	_swaynag\_command -_
 
-*workspace_layout* default|stacking|tabbed
+*workspace_layout* default|splith|splitv|stacking|tabbed
 	Specifies the initial layout for new containers in an empty workspace.
 
 *xwayland* enable|disable|force
