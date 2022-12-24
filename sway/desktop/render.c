@@ -1105,8 +1105,9 @@ static void render_containers_stacked(struct sway_output *output,
 		}
 
 		int y = parent->box.y + titlebar_height * i;
+		int corner_radius = i != 0 ? 0 : child->corner_radius;
 		render_titlebar(output, damage, child, parent->box.x, y, parent->box.width,
-				colors, child->alpha, child->corner_radius, title_texture, marks_texture);
+				colors, child->alpha, corner_radius, title_texture, marks_texture);
 
 		if (child == current) {
 			current_colors = colors;
