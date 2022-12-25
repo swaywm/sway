@@ -112,10 +112,41 @@ static const char *ipc_json_output_adaptive_sync_status_description(
 		return "disabled";
 	case WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED:
 		return "enabled";
-	case WLR_OUTPUT_ADAPTIVE_SYNC_UNKNOWN:
-		return "unknown";
 	}
 	return NULL;
+}
+
+static const char *ipc_json_output_mode_aspect_ratio_description(
+		enum wlr_output_mode_aspect_ratio aspect_ratio) {
+	switch (aspect_ratio) {
+	case WLR_OUTPUT_MODE_ASPECT_RATIO_NONE:
+		return "none";
+	case WLR_OUTPUT_MODE_ASPECT_RATIO_4_3:
+		return "4:3";
+	case WLR_OUTPUT_MODE_ASPECT_RATIO_16_9:
+		return "16:9";
+	case WLR_OUTPUT_MODE_ASPECT_RATIO_64_27:
+		return "64:27";
+	case WLR_OUTPUT_MODE_ASPECT_RATIO_256_135:
+		return "256:135";
+	}
+	return NULL;
+}
+
+static json_object *ipc_json_output_mode_description(
+		const struct wlr_output_mode *mode) {
+	const char *pic_ar =
+		ipc_json_output_mode_aspect_ratio_description(mode->picture_aspect_ratio);
+	json_object *mode_object = json_object_new_object();
+	json_object_object_add(mode_object, "width",
+		json_object_new_int(mode->width));
+	json_object_object_add(mode_object, "height",
+		json_object_new_int(mode->height));
+	json_object_object_add(mode_object, "refresh",
+		json_object_new_int(mode->refresh));
+	json_object_object_add(mode_object, "picture_aspect_ratio",
+		json_object_new_string(pic_ar));
+	return mode_object;
 }
 
 #if HAVE_XWAYLAND
@@ -242,23 +273,50 @@ static json_object *ipc_json_create_node(int id, const char* type, char *name,
 	return object;
 }
 
+static void ipc_json_describe_wlr_output(struct wlr_output *wlr_output, json_object *object) {
+	json_object_object_add(object, "primary", json_object_new_boolean(false));
+	json_object_object_add(object, "make",
+			json_object_new_string(wlr_output->make ? wlr_output->make : "Unknown"));
+	json_object_object_add(object, "model",
+			json_object_new_string(wlr_output->model ? wlr_output->model : "Unknown"));
+	json_object_object_add(object, "serial",
+			json_object_new_string(wlr_output->serial ? wlr_output->serial : "Unknown"));
+
+	json_object *modes_array = json_object_new_array();
+	struct wlr_output_mode *mode;
+	wl_list_for_each(mode, &wlr_output->modes, link) {
+		json_object *mode_object = json_object_new_object();
+		json_object_object_add(mode_object, "width",
+			json_object_new_int(mode->width));
+		json_object_object_add(mode_object, "height",
+			json_object_new_int(mode->height));
+		json_object_object_add(mode_object, "refresh",
+			json_object_new_int(mode->refresh));
+		json_object_array_add(modes_array, mode_object);
+	}
+	json_object_object_add(object, "modes", modes_array);
+}
+
 static void ipc_json_describe_output(struct sway_output *output,
 		json_object *object) {
+	ipc_json_describe_wlr_output(output->wlr_output, object);
+}
+
+static void ipc_json_describe_enabled_output(struct sway_output *output,
+		json_object *object) {
+	ipc_json_describe_output(output, object);
+
 	struct wlr_output *wlr_output = output->wlr_output;
+	json_object_object_add(object, "non_desktop", json_object_new_boolean(false));
 	json_object_object_add(object, "active", json_object_new_boolean(true));
 	json_object_object_add(object, "dpms",
 			json_object_new_boolean(wlr_output->enabled));
-	json_object_object_add(object, "primary", json_object_new_boolean(false));
+	json_object_object_add(object, "power",
+			json_object_new_boolean(wlr_output->enabled));
 	json_object_object_add(object, "layout", json_object_new_string("output"));
 	json_object_object_add(object, "orientation",
 			json_object_new_string(
 				ipc_json_orientation_description(L_NONE)));
-	json_object_object_add(object, "make",
-			json_object_new_string(wlr_output->make));
-	json_object_object_add(object, "model",
-			json_object_new_string(wlr_output->model));
-	json_object_object_add(object, "serial",
-			json_object_new_string(wlr_output->serial));
 	json_object_object_add(object, "scale",
 			json_object_new_double(wlr_output->scale));
 	json_object_object_add(object, "scale_filter",
@@ -283,25 +341,26 @@ static void ipc_json_describe_output(struct sway_output *output,
 	json_object *modes_array = json_object_new_array();
 	struct wlr_output_mode *mode;
 	wl_list_for_each(mode, &wlr_output->modes, link) {
-		json_object *mode_object = json_object_new_object();
-		json_object_object_add(mode_object, "width",
-			json_object_new_int(mode->width));
-		json_object_object_add(mode_object, "height",
-			json_object_new_int(mode->height));
-		json_object_object_add(mode_object, "refresh",
-			json_object_new_int(mode->refresh));
+		json_object *mode_object =
+			ipc_json_output_mode_description(mode);
 		json_object_array_add(modes_array, mode_object);
 	}
 
 	json_object_object_add(object, "modes", modes_array);
 
-	json_object *current_mode_object = json_object_new_object();
-	json_object_object_add(current_mode_object, "width",
-		json_object_new_int(wlr_output->width));
-	json_object_object_add(current_mode_object, "height",
-		json_object_new_int(wlr_output->height));
-	json_object_object_add(current_mode_object, "refresh",
-		json_object_new_int(wlr_output->refresh));
+	json_object *current_mode_object;
+	if (wlr_output->current_mode != NULL) {
+		current_mode_object =
+			ipc_json_output_mode_description(wlr_output->current_mode);
+	} else {
+		current_mode_object = json_object_new_object();
+		json_object_object_add(current_mode_object, "width",
+			json_object_new_int(wlr_output->width));
+		json_object_object_add(current_mode_object, "height",
+			json_object_new_int(wlr_output->height));
+		json_object_object_add(current_mode_object, "refresh",
+			json_object_new_int(wlr_output->refresh));
+	}
 	json_object_object_add(object, "current_mode", current_mode_object);
 
 	struct sway_node *parent = node_get_parent(&output->node);
@@ -325,33 +384,15 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 
 	json_object *object = json_object_new_object();
 
+	ipc_json_describe_output(output, object);
+
+	json_object_object_add(object, "non_desktop", json_object_new_boolean(false));
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "name",
 			json_object_new_string(wlr_output->name));
 	json_object_object_add(object, "active", json_object_new_boolean(false));
 	json_object_object_add(object, "dpms", json_object_new_boolean(false));
-	json_object_object_add(object, "primary", json_object_new_boolean(false));
-	json_object_object_add(object, "make",
-			json_object_new_string(wlr_output->make));
-	json_object_object_add(object, "model",
-			json_object_new_string(wlr_output->model));
-	json_object_object_add(object, "serial",
-			json_object_new_string(wlr_output->serial));
-
-	json_object *modes_array = json_object_new_array();
-	struct wlr_output_mode *mode;
-	wl_list_for_each(mode, &wlr_output->modes, link) {
-		json_object *mode_object = json_object_new_object();
-		json_object_object_add(mode_object, "width",
-			json_object_new_int(mode->width));
-		json_object_object_add(mode_object, "height",
-			json_object_new_int(mode->height));
-		json_object_object_add(mode_object, "refresh",
-			json_object_new_int(mode->refresh));
-		json_object_array_add(modes_array, mode_object);
-	}
-
-	json_object_object_add(object, "modes", modes_array);
+	json_object_object_add(object, "power", json_object_new_boolean(false));
 
 	json_object_object_add(object, "current_workspace", NULL);
 
@@ -363,6 +404,21 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 	json_object_object_add(object, "rect", rect_object);
 
 	json_object_object_add(object, "percent", NULL);
+
+	return object;
+}
+
+json_object *ipc_json_describe_non_desktop_output(struct sway_output_non_desktop *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	json_object *object = json_object_new_object();
+
+	ipc_json_describe_wlr_output(wlr_output, object);
+
+	json_object_object_add(object, "non_desktop", json_object_new_boolean(true));
+	json_object_object_add(object, "type", json_object_new_string("output"));
+	json_object_object_add(object, "name",
+				json_object_new_string(wlr_output->name));
 
 	return object;
 }
@@ -453,7 +509,9 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 
 static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 	enum sway_container_layout parent_layout = container_parent_layout(c);
-	bool tab_or_stack = parent_layout == L_TABBED || parent_layout == L_STACKED;
+	list_t *siblings = container_get_siblings(c);
+	bool tab_or_stack = (parent_layout == L_TABBED || parent_layout == L_STACKED)
+		&& ((siblings && siblings->length > 1) || !config->hide_lone_tab);
 	if (((!tab_or_stack || container_is_floating(c)) &&
 				c->current.border != B_NORMAL) ||
 			c->pending.fullscreen_mode != FULLSCREEN_NONE ||
@@ -706,7 +764,7 @@ json_object *ipc_json_describe_node(struct sway_node *node) {
 	case N_ROOT:
 		break;
 	case N_OUTPUT:
-		ipc_json_describe_output(node->sway_output, object);
+		ipc_json_describe_enabled_output(node->sway_output, object);
 		break;
 	case N_CONTAINER:
 		ipc_json_describe_container(node->sway_container, object);
@@ -942,6 +1000,19 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		json_object_object_add(object, "dwt", json_object_new_string(dwt));
 	}
 
+	if (libinput_device_config_dwtp_is_available(device)) {
+		const char *dwtp = "unknown";
+		switch (libinput_device_config_dwtp_get_enabled(device)) {
+		case LIBINPUT_CONFIG_DWTP_ENABLED:
+			dwtp = "enabled";
+			break;
+		case LIBINPUT_CONFIG_DWTP_DISABLED:
+			dwtp = "disabled";
+			break;
+		}
+		json_object_object_add(object, "dwtp", json_object_new_string(dwtp));
+	}
+
 	if (libinput_device_config_calibration_has_matrix(device)) {
 		float matrix[6];
 		libinput_device_config_calibration_get_matrix(device, matrix);
@@ -977,9 +1048,15 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 			input_device_get_type(device)));
 
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
-		struct wlr_keyboard *keyboard = device->wlr_device->keyboard;
+		struct wlr_keyboard *keyboard =
+			wlr_keyboard_from_input_device(device->wlr_device);
 		struct xkb_keymap *keymap = keyboard->keymap;
 		struct xkb_state *state = keyboard->xkb_state;
+
+		json_object_object_add(object, "repeat_delay", 
+			json_object_new_int(keyboard->repeat_info.delay));
+		json_object_object_add(object, "repeat_rate", 
+			json_object_new_int(keyboard->repeat_info.rate));
 
 		json_object *layouts_arr = json_object_new_array();
 		json_object_object_add(object, "xkb_layout_names", layouts_arr);
@@ -1005,11 +1082,11 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 		struct input_config *ic = input_device_get_config(device);
 		float scroll_factor = 1.0f;
-		if (ic != NULL && !isnan(ic->scroll_factor) && 
+		if (ic != NULL && !isnan(ic->scroll_factor) &&
 				ic->scroll_factor != FLT_MIN) {
 			scroll_factor = ic->scroll_factor;
 		}
-		json_object_object_add(object, "scroll_factor", 
+		json_object_object_add(object, "scroll_factor",
 				json_object_new_double(scroll_factor));
 	}
 

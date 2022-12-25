@@ -2,7 +2,7 @@
 
 _swaybar()
 {
-  local cur prev
+  local cur prev short long
   _get_comp_words_by_ref cur prev
 
   short=(

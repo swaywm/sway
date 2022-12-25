@@ -18,9 +18,9 @@ struct seatop_down_event {
 };
 
 static void handle_pointer_axis(struct sway_seat *seat,
-		struct wlr_event_pointer_axis *event) {
+		struct wlr_pointer_axis_event *event) {
 	struct sway_input_device *input_device =
-		event->device ? event->device->data : NULL;
+		event->pointer ? event->pointer->base.data : NULL;
 	struct input_config *ic =
 		input_device ? input_device_get_config(input_device) : NULL;
 	float scroll_factor =

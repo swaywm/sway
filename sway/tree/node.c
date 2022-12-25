@@ -18,13 +18,13 @@ void node_init(struct sway_node *node, enum sway_node_type type, void *thing) {
 const char *node_type_to_str(enum sway_node_type type) {
 	switch (type) {
 	case N_ROOT:
-		return "N_ROOT";
+		return "root";
 	case N_OUTPUT:
-		return "N_OUTPUT";
+		return "output";
 	case N_WORKSPACE:
-		return "N_WORKSPACE";
+		return "workspace";
 	case N_CONTAINER:
-		return "N_CONTAINER";
+		return "container";
 	}
 	return "";
 }

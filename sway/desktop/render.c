@@ -9,11 +9,11 @@
 #include <wlr/render/gles2.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_matrix.h>
-#include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
-#include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/util/region.h>
 #include "log.h"
 #include "config.h"
@@ -1299,6 +1299,41 @@ void output_render(struct sway_output *output, struct timespec *when,
 		fx_renderer_clear((float[]){1, 1, 0, 1});
 	}
 
+	if (server.session_lock.locked) {
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		if (server.session_lock.lock == NULL) {
+			// abandoned lock -> red BG
+			clear_color[0] = 1.f;
+		}
+		int nrects;
+		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			scissor_output(wlr_output, &rects[i]);
+			wlr_renderer_clear(renderer, clear_color);
+		}
+
+		if (server.session_lock.lock != NULL) {
+			struct render_data data = {
+				.damage = damage,
+				.alpha = 1.0f,
+			};
+
+			struct wlr_session_lock_surface_v1 *lock_surface;
+			wl_list_for_each(lock_surface, &server.session_lock.lock->surfaces, link) {
+				if (lock_surface->output != wlr_output) {
+					continue;
+				}
+				if (!lock_surface->mapped) {
+					continue;
+				}
+
+				output_surface_for_each_surface(output, lock_surface->surface,
+					0.0, 0.0, render_surface_iterator, &data);
+			}
+		}
+		goto renderer_end;
+	}
+
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto render_overlay;
 	}
@@ -1407,7 +1442,7 @@ renderer_end:
 
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(wlr_output->transform);
-	wlr_region_transform(&frame_damage, &output->damage->current,
+	wlr_region_transform(&frame_damage, &output->damage_ring.current,
 		transform, width, height);
 
 	if (debug.damage != DAMAGE_DEFAULT) {
@@ -1421,5 +1456,7 @@ renderer_end:
 	if (!wlr_output_commit(wlr_output)) {
 		return;
 	}
+
+	wlr_damage_ring_rotate(&output->damage_ring);
 	output->last_frame = *when;
 }

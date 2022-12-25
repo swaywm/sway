@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_idle_notify_v1.h>
 #include "log.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/seat.h"
@@ -140,6 +141,7 @@ void sway_idle_inhibit_v1_check_active(
 		}
 	}
 	wlr_idle_set_enabled(manager->idle, NULL, !inhibited);
+	wlr_idle_notifier_v1_set_inhibited(server.idle_notifier_v1, inhibited);
 }
 
 struct sway_idle_inhibit_manager_v1 *sway_idle_inhibit_manager_v1_create(

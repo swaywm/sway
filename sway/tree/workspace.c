@@ -56,6 +56,8 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 
 struct sway_workspace *workspace_create(struct sway_output *output,
 		const char *name) {
+	sway_assert(name, "NULL name given to workspace_create");
+
 	if (output == NULL) {
 		output = workspace_get_initial_output(name);
 	}
@@ -69,7 +71,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 		return NULL;
 	}
 	node_init(&ws->node, N_WORKSPACE, ws);
-	ws->name = name ? strdup(name) : NULL;
+	ws->name = strdup(name);
 	ws->prev_split_layout = L_NONE;
 	ws->layout = output_get_default_layout(output);
 	ws->floating = create_list();
@@ -114,7 +116,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	output_sort_workspaces(output);
 
 	ipc_event_workspace(NULL, ws, "init");
-	wl_signal_emit(&root->events.new_node, &ws->node);
+	wl_signal_emit_mutable(&root->events.new_node, &ws->node);
 
 	return ws;
 }
@@ -142,7 +144,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 void workspace_begin_destroy(struct sway_workspace *workspace) {
 	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
 	ipc_event_workspace(NULL, workspace, "empty"); // intentional
-	wl_signal_emit(&workspace->node.events.destroy, &workspace->node);
+	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
 
 	if (workspace->output) {
 		workspace_detach(workspace);

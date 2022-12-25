@@ -26,7 +26,7 @@ struct swaybar_config *init_config(void) {
 	config->status_command = NULL;
 	config->pango_markup = false;
 	config->position = parse_position("bottom");
-	config->font = strdup("monospace 10");
+	config->font_description = pango_font_description_from_string("monospace 10");
 	config->mode = strdup("dock");
 	config->hidden_state = strdup("hide");
 	config->sep_symbol = NULL;
@@ -105,7 +105,7 @@ void free_tray_binding(struct tray_binding *binding) {
 
 void free_config(struct swaybar_config *config) {
 	free(config->status_command);
-	free(config->font);
+	pango_font_description_free(config->font_description);
 	free(config->mode);
 	free(config->hidden_state);
 	free(config->sep_symbol);

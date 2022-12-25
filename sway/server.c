@@ -18,13 +18,16 @@
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
+#include <wlr/types/wlr_single_pixel_buffer_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -48,19 +51,6 @@
 #include "sway/xwayland.h"
 #endif
 
-bool server_privileged_prepare(struct sway_server *server) {
-	sway_log(SWAY_DEBUG, "Preparing Wayland server initialization");
-	server->wl_display = wl_display_create();
-	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display);
-
-	if (!server->backend) {
-		sway_log(SWAY_ERROR, "Unable to create backend");
-		return false;
-	}
-	return true;
-}
-
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	/* We only offer non-desktop outputs, but in the future we might want to do
 	 * more logic here. */
@@ -73,8 +63,18 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	}
 }
 
+#define SWAY_XDG_SHELL_VERSION	2
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
+	server->wl_display = wl_display_create();
+	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
+	server->backend = wlr_backend_autocreate(server->wl_display);
+
+	if (!server->backend) {
+		sway_log(SWAY_ERROR, "Unable to create backend");
+		return false;
+	}
 
 	server->wlr_renderer = wlr_renderer_autocreate(server->backend);
 	if (!server->wlr_renderer) {
@@ -109,6 +109,8 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->compositor->events.new_surface,
 		&server->compositor_new_surface);
 
+	wlr_subcompositor_create(server->wl_display);
+
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
@@ -123,6 +125,7 @@ bool server_init(struct sway_server *server) {
 	wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
 
 	server->idle = wlr_idle_create(server->wl_display);
+	server->idle_notifier_v1 = wlr_idle_notifier_v1_create(server->wl_display);
 	server->idle_inhibit_manager_v1 =
 		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
 
@@ -131,7 +134,8 @@ bool server_init(struct sway_server *server) {
 		&server->layer_shell_surface);
 	server->layer_shell_surface.notify = handle_layer_shell_surface;
 
-	server->xdg_shell = wlr_xdg_shell_create(server->wl_display);
+	server->xdg_shell = wlr_xdg_shell_create(server->wl_display,
+		SWAY_XDG_SHELL_VERSION);
 	wl_signal_add(&server->xdg_shell->events.new_surface,
 		&server->xdg_shell_surface);
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
@@ -188,6 +192,8 @@ bool server_init(struct sway_server *server) {
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
 
+	sway_session_lock_init();
+
 	server->drm_lease_manager=
 		wlr_drm_lease_v1_manager_create(server->wl_display, server->backend);
 	if (server->drm_lease_manager) {
@@ -204,6 +210,7 @@ bool server_init(struct sway_server *server) {
 	wlr_data_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_v1_device_manager_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
+	wlr_single_pixel_buffer_manager_v1_create(server->wl_display);
 
 	struct wlr_xdg_foreign_registry *foreign_registry =
 		wlr_xdg_foreign_registry_create(server->wl_display);
@@ -216,10 +223,12 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_activation_v1->events.request_activate,
 		&server->xdg_activation_v1_request_activate);
 
+	wl_list_init(&server->pending_launcher_ctxs);
+
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
-	for (int i = 1; i <= 32; ++i) {
-		sprintf(name_candidate, "wayland-%d", i);
+	for (unsigned int i = 1; i <= 32; ++i) {
+		snprintf(name_candidate, sizeof(name_candidate), "wayland-%u", i);
 		if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
 			server->socket = strdup(name_candidate);
 			break;

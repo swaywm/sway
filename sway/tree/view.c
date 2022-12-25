@@ -6,6 +6,7 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include "config.h"
 #if HAVE_XWAYLAND
@@ -18,6 +19,7 @@
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/desktop/idle_inhibit_v1.h"
+#include "sway/desktop/launcher.h"
 #include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
@@ -61,6 +63,8 @@ void view_destroy(struct sway_view *view) {
 		view_remove_saved_buffer(view);
 	}
 	list_free(view->executed_criteria);
+
+	view_assign_ctx(view, NULL);
 
 	free(view->title_format);
 
@@ -532,6 +536,20 @@ static void view_populate_pid(struct sway_view *view) {
 	view->pid = pid;
 }
 
+void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx) {
+	if (view->ctx) {
+		// This ctx has been replaced
+		launcher_ctx_destroy(view->ctx);
+		view->ctx = NULL;
+	}
+	if (ctx == NULL) {
+		return;
+	}
+	launcher_ctx_consume(ctx);
+
+	view->ctx = ctx;
+}
+
 static struct sway_workspace *select_workspace(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 
@@ -567,13 +585,14 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	}
 	list_free(criterias);
 	if (ws) {
-		root_remove_workspace_pid(view->pid);
+		view_assign_ctx(view, NULL);
 		return ws;
 	}
 
 	// Check if there's a PID mapping
-	ws = root_workspace_for_pid(view->pid);
+	ws = view->ctx ? launcher_ctx_get_workspace(view->ctx) : NULL;
 	if (ws) {
+		view_assign_ctx(view, NULL);
 		return ws;
 	}
 
@@ -739,6 +758,13 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	view_populate_pid(view);
 	view->container = container_create(view);
 
+	if (view->ctx == NULL) {
+		struct launcher_ctx *ctx = launcher_ctx_find_pid(view->pid);
+		if (ctx != NULL) {
+			view_assign_ctx(view, ctx);
+		}
+	}
+
 	// If there is a request to be opened fullscreen on a specific output, try
 	// to honor that request. Otherwise, fallback to assigns, pid mappings,
 	// focused workspace, etc
@@ -873,7 +899,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 }
 
 void view_unmap(struct sway_view *view) {
-	wl_signal_emit(&view->events.unmap, view);
+	wl_signal_emit_mutable(&view->events.unmap, view);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 
@@ -1308,20 +1334,22 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	free(view->container->title);
 	free(view->container->formatted_title);
-	if (title) {
-		size_t len = parse_title_format(view, NULL);
+
+	size_t len = parse_title_format(view, NULL);
+
+	if (len) {
 		char *buffer = calloc(len + 1, sizeof(char));
 		if (!sway_assert(buffer, "Unable to allocate title string")) {
 			return;
 		}
-		parse_title_format(view, buffer);
 
-		view->container->title = strdup(title);
+		parse_title_format(view, buffer);
 		view->container->formatted_title = buffer;
 	} else {
-		view->container->title = NULL;
 		view->container->formatted_title = NULL;
 	}
+
+	view->container->title = title ? strdup(title) : NULL;
 
 	// Update title after the global font height is updated
 	container_update_title_textures(view->container);

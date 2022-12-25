@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include "gesture.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -20,6 +21,7 @@ struct seatop_default_event {
 	struct sway_node *previous_node;
 	uint32_t pressed_buttons[SWAY_CURSOR_PRESSED_BUTTONS_CAP];
 	size_t pressed_button_count;
+	struct gesture_tracker gestures;
 };
 
 /*-----------------------------------------\
@@ -427,13 +429,31 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		}
 	}
 
+	// Handle changing focus when clicking on a container
+	if (cont && state == WLR_BUTTON_PRESSED) {
+		// Default case: focus the container that was just clicked.
+		node = &cont->node;
+
+		// If the container is a tab/stacked container and the click happened
+		// on a tab, switch to the tab. If the tab contents were already
+		// focused, focus the tab container itself. If the tab container was
+		// already focused, cycle back to focusing the tab contents.
+		if (on_titlebar) {
+			struct sway_container *focus = seat_get_focused_container(seat);
+			if (focus == cont || !container_has_ancestor(focus, cont)) {
+				node = seat_get_focus_inactive(seat, &cont->node);
+			}
+		}
+
+		seat_set_focus(seat, node);
+		transaction_commit_dirty();
+	}
+
 	// Handle beginning floating move
 	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
 			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && (mod_pressed || on_titlebar)) {
-			seat_set_focus_container(seat,
-					seat_get_focus_inactive_view(seat, &cont->node));
 			seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
 			return;
 		}
@@ -444,6 +464,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			state == WLR_BUTTON_PRESSED) {
 		// Via border
 		if (button == BTN_LEFT && resize_edge != WLR_EDGE_NONE) {
+			seat_set_focus_container(seat, cont);
 			seatop_begin_resize_floating(seat, cont, resize_edge);
 			return;
 		}
@@ -458,6 +479,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
 			edge |= cursor->cursor->y > floater->pending.y + floater->pending.height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+			seat_set_focus_container(seat, floater);
 			seatop_begin_resize_floating(seat, floater, edge);
 			return;
 		}
@@ -467,25 +489,18 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
 			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
 			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
-		struct sway_container *focus = seat_get_focused_container(seat);
-		bool focused = focus == cont || container_has_ancestor(focus, cont);
-		if (on_titlebar && !focused) {
-			node = seat_get_focus_inactive(seat, &cont->node);
-			seat_set_focus(seat, node);
-		}
-
-		// If moving a container by it's title bar, use a threshold for the drag
+		// If moving a container by its title bar, use a threshold for the drag
 		if (!mod_pressed && config->tiling_drag_threshold > 0) {
 			seatop_begin_move_tiling_threshold(seat, cont);
 		} else {
 			seatop_begin_move_tiling(seat, cont);
 		}
+
 		return;
 	}
 
 	// Handle mousedown on a container surface
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
-		seat_set_focus_container(seat, cont);
 		seatop_begin_down(seat, cont, time_msec, sx, sy);
 		seat_pointer_notify_button(seat, time_msec, button, WLR_BUTTON_PRESSED);
 		return;
@@ -493,9 +508,6 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle clicking a container surface or decorations
 	if (cont && state == WLR_BUTTON_PRESSED) {
-		node = seat_get_focus_inactive(seat, &cont->node);
-		seat_set_focus(seat, node);
-		transaction_commit_dirty();
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
@@ -645,7 +657,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
  * Functions used by handle_pointer_axis  /
  *--------------------------------------*/
 
-static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
+static uint32_t wl_axis_to_button(struct wlr_pointer_axis_event *event) {
 	switch (event->orientation) {
 	case WLR_AXIS_ORIENTATION_VERTICAL:
 		return event->delta < 0 ? SWAY_SCROLL_UP : SWAY_SCROLL_DOWN;
@@ -658,9 +670,9 @@ static uint32_t wl_axis_to_button(struct wlr_event_pointer_axis *event) {
 }
 
 static void handle_pointer_axis(struct sway_seat *seat,
-		struct wlr_event_pointer_axis *event) {
+		struct wlr_pointer_axis_event *event) {
 	struct sway_input_device *input_device =
-		event->device ? event->device->data : NULL;
+		event->pointer ? event->pointer->base.data : NULL;
 	struct input_config *ic =
 		input_device ? input_device_get_config(input_device) : NULL;
 	struct sway_cursor *cursor = seat->cursor;
@@ -706,6 +718,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	// Scrolling on a tabbed or stacked title bar (handled as press event)
 	if (!handled && (on_titlebar || on_titlebar_border)) {
+		struct sway_node *new_focus;
 		enum sway_container_layout layout = container_parent_layout(cont);
 		if (layout == L_TABBED || layout == L_STACKED) {
 			struct sway_node *tabcontainer = node_get_parent(node);
@@ -713,7 +726,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 				seat_get_active_tiling_child(seat, tabcontainer);
 			list_t *siblings = container_get_siblings(cont);
 			int desired = list_find(siblings, active->sway_container) +
-				round(scroll_factor * event->delta_discrete);
+				round(scroll_factor * event->delta_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
 			if (desired < 0) {
 				desired = 0;
 			} else if (desired >= siblings->length) {
@@ -722,14 +735,16 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 			struct sway_container *new_sibling_con = siblings->items[desired];
 			struct sway_node *new_sibling = &new_sibling_con->node;
-			struct sway_node *new_focus =
-				seat_get_focus_inactive(seat, new_sibling);
 			// Use the focused child of the tabbed/stacked container, not the
 			// container the user scrolled on.
-			seat_set_focus(seat, new_focus);
-			transaction_commit_dirty();
-			handled = true;
+			new_focus = seat_get_focus_inactive(seat, new_sibling);
+		} else {
+			new_focus = seat_get_focus_inactive(seat, &cont->node);
 		}
+
+		seat_set_focus(seat, new_focus);
+		transaction_commit_dirty();
+		handled = true;
 	}
 
 	// Handle mouse bindings - x11 mouse buttons 4-7 - release event
@@ -747,6 +762,304 @@ static void handle_pointer_axis(struct sway_seat *seat,
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
 			event->orientation, scroll_factor * event->delta,
 			round(scroll_factor * event->delta_discrete), event->source);
+	}
+}
+
+/*------------------------------------\
+ * Functions used by gesture support  /
+ *----------------------------------*/
+
+/**
+ * Check gesture binding for a specific gesture type and finger count.
+ * Returns true if binding is present, false otherwise
+ */
+static bool gesture_binding_check(list_t *bindings, enum gesture_type type,
+		uint8_t fingers, struct sway_input_device *device) {
+	char *input =
+		device ? input_device_get_identifier(device->wlr_device) : strdup("*");
+
+	for (int i = 0; i < bindings->length; ++i) {
+		struct sway_gesture_binding *binding = bindings->items[i];
+
+		// Check type and finger count
+		if (!gesture_check(&binding->gesture, type, fingers)) {
+			continue;
+		}
+
+		// Check that input matches
+		if (strcmp(binding->input, "*") != 0 &&
+			strcmp(binding->input, input) != 0) {
+			continue;
+		}
+
+		free(input);
+
+		return true;
+	}
+
+	free(input);
+
+	return false;
+}
+
+/**
+ * Return the gesture binding which matches gesture type, finger count
+ * and direction, otherwise return null.
+ */
+static struct sway_gesture_binding* gesture_binding_match(
+		list_t *bindings, struct gesture *gesture, const char *input) {
+	struct sway_gesture_binding *current = NULL;
+
+	// Find best matching binding
+	for (int i = 0; i < bindings->length; ++i) {
+		struct sway_gesture_binding *binding = bindings->items[i];
+		bool exact = binding->flags & BINDING_EXACT;
+
+		// Check gesture matching
+		if (!gesture_match(&binding->gesture, gesture, exact)) {
+			continue;
+		}
+
+		// Check input matching
+		if (strcmp(binding->input, "*") != 0 &&
+				strcmp(binding->input, input) != 0) {
+			continue;
+		}
+
+		// If we already have a match ...
+		if (current) {
+			// ... check if input matching is equivalent
+			if (strcmp(current->input, binding->input) == 0) {
+
+				// ... - do not override an exact binding
+				if (!exact && current->flags & BINDING_EXACT) {
+					continue;
+				}
+
+				// ... - and ensure direction matching is better or equal
+				if (gesture_compare(&current->gesture, &binding->gesture) > 0) {
+					continue;
+				}
+			} else if (strcmp(binding->input, "*") == 0) {
+				// ... do not accept worse input match
+				continue;
+			}
+		}
+
+		// Accept newer or better match
+		current = binding;
+
+		// If exact binding and input is found, quit search
+		if (strcmp(current->input, input) == 0 &&
+				gesture_compare(&current->gesture, gesture) == 0) {
+			break;
+		}
+	} // for all gesture bindings
+
+	return current;
+}
+
+// Wrapper around gesture_tracker_end to use tracker with sway bindings
+static struct sway_gesture_binding* gesture_tracker_end_and_match(
+		struct gesture_tracker *tracker, struct sway_input_device* device) {
+	// Determine name of input that received gesture
+	char *input = device
+		? input_device_get_identifier(device->wlr_device)
+		: strdup("*");
+
+	// Match tracking result to binding
+	struct gesture *gesture = gesture_tracker_end(tracker);
+	struct sway_gesture_binding *binding = gesture_binding_match(
+			config->current_mode->gesture_bindings, gesture, input);
+	free(gesture);
+	free(input);
+
+	return binding;
+}
+
+// Small wrapper around seat_execute_command to work on gesture bindings
+static void gesture_binding_execute(struct sway_seat *seat,
+		struct sway_gesture_binding *binding) {
+	struct sway_binding *dummy_binding =
+		calloc(1, sizeof(struct sway_binding));
+	dummy_binding->type = BINDING_GESTURE;
+	dummy_binding->command = binding->command;
+
+	char *description = gesture_to_string(&binding->gesture);
+	sway_log(SWAY_DEBUG, "executing gesture binding: %s", description);
+	free(description);
+
+	seat_execute_command(seat, dummy_binding);
+
+	free(dummy_binding);
+}
+
+static void handle_hold_begin(struct sway_seat *seat,
+		struct wlr_pointer_hold_begin_event *event) {
+	// Start tracking gesture if there is a matching binding ...
+	struct sway_input_device *device =
+		event->pointer ? event->pointer->base.data : NULL;
+	list_t *bindings = config->current_mode->gesture_bindings;
+	if (gesture_binding_check(bindings, GESTURE_TYPE_HOLD, event->fingers, device)) {
+		struct seatop_default_event *seatop = seat->seatop_data;
+		gesture_tracker_begin(&seatop->gestures, GESTURE_TYPE_HOLD, event->fingers);
+	} else {
+		// ... otherwise forward to client
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_hold_begin(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->fingers);
+	}
+}
+
+static void handle_hold_end(struct sway_seat *seat,
+		struct wlr_pointer_hold_end_event *event) {
+	// Ensure that gesture is being tracked and was not cancelled
+	struct seatop_default_event *seatop = seat->seatop_data;
+	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_HOLD)) {
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_hold_end(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->cancelled);
+		return;
+	}
+	if (event->cancelled) {
+		gesture_tracker_cancel(&seatop->gestures);
+		return;
+	}
+
+	// End gesture tracking and execute matched binding
+	struct sway_input_device *device =
+		event->pointer ? event->pointer->base.data : NULL;
+	struct sway_gesture_binding *binding = gesture_tracker_end_and_match(
+		&seatop->gestures, device);
+
+	if (binding) {
+		gesture_binding_execute(seat, binding);
+	}
+}
+
+static void handle_pinch_begin(struct sway_seat *seat,
+		struct wlr_pointer_pinch_begin_event *event) {
+	// Start tracking gesture if there is a matching binding ...
+	struct sway_input_device *device =
+		event->pointer ? event->pointer->base.data : NULL;
+	list_t *bindings = config->current_mode->gesture_bindings;
+	if (gesture_binding_check(bindings, GESTURE_TYPE_PINCH, event->fingers, device)) {
+		struct seatop_default_event *seatop = seat->seatop_data;
+		gesture_tracker_begin(&seatop->gestures, GESTURE_TYPE_PINCH, event->fingers);
+	} else {
+		// ... otherwise forward to client
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_pinch_begin(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->fingers);
+	}
+}
+
+static void handle_pinch_update(struct sway_seat *seat,
+		struct wlr_pointer_pinch_update_event *event) {
+	// Update any ongoing tracking ...
+	struct seatop_default_event *seatop = seat->seatop_data;
+	if (gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_PINCH)) {
+		gesture_tracker_update(&seatop->gestures, event->dx, event->dy,
+			event->scale, event->rotation);
+	} else {
+		// ... otherwise forward to client
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_pinch_update(
+			cursor->pointer_gestures,
+			cursor->seat->wlr_seat,
+			event->time_msec, event->dx, event->dy,
+			event->scale, event->rotation);
+	}
+}
+
+static void handle_pinch_end(struct sway_seat *seat,
+		struct wlr_pointer_pinch_end_event *event) {
+	// Ensure that gesture is being tracked and was not cancelled
+	struct seatop_default_event *seatop = seat->seatop_data;
+	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_PINCH)) {
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_pinch_end(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->cancelled);
+		return;
+	}
+	if (event->cancelled) {
+		gesture_tracker_cancel(&seatop->gestures);
+		return;
+	}
+
+	// End gesture tracking and execute matched binding
+	struct sway_input_device *device =
+		event->pointer ? event->pointer->base.data : NULL;
+	struct sway_gesture_binding *binding = gesture_tracker_end_and_match(
+		&seatop->gestures, device);
+
+	if (binding) {
+		gesture_binding_execute(seat, binding);
+	}
+}
+
+static void handle_swipe_begin(struct sway_seat *seat,
+		struct wlr_pointer_swipe_begin_event *event) {
+	// Start tracking gesture if there is a matching binding ...
+	struct sway_input_device *device =
+		event->pointer ? event->pointer->base.data : NULL;
+	list_t *bindings = config->current_mode->gesture_bindings;
+	if (gesture_binding_check(bindings, GESTURE_TYPE_SWIPE, event->fingers, device)) {
+		struct seatop_default_event *seatop = seat->seatop_data;
+		gesture_tracker_begin(&seatop->gestures, GESTURE_TYPE_SWIPE, event->fingers);
+	} else {
+		// ... otherwise forward to client
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_swipe_begin(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->fingers);
+	}
+}
+
+static void handle_swipe_update(struct sway_seat *seat,
+		struct wlr_pointer_swipe_update_event *event) {
+
+	// Update any ongoing tracking ...
+	struct seatop_default_event *seatop = seat->seatop_data;
+	if (gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_SWIPE)) {
+		gesture_tracker_update(&seatop->gestures,
+			event->dx, event->dy, NAN, NAN);
+	} else {
+		// ... otherwise forward to client
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_swipe_update(
+			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			event->time_msec, event->dx, event->dy);
+	}
+}
+
+static void handle_swipe_end(struct sway_seat *seat,
+		struct wlr_pointer_swipe_end_event *event) {
+	// Ensure gesture is being tracked and was not cancelled
+	struct seatop_default_event *seatop = seat->seatop_data;
+	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_SWIPE)) {
+		struct sway_cursor *cursor = seat->cursor;
+		wlr_pointer_gestures_v1_send_swipe_end(cursor->pointer_gestures,
+			cursor->seat->wlr_seat, event->time_msec, event->cancelled);
+		return;
+	}
+	if (event->cancelled) {
+		gesture_tracker_cancel(&seatop->gestures);
+		return;
+	}
+
+	// End gesture tracking and execute matched binding
+	struct sway_input_device *device =
+		event->pointer ? event->pointer->base.data : NULL;
+	struct sway_gesture_binding *binding = gesture_tracker_end_and_match(
+		&seatop->gestures, device);
+
+	if (binding) {
+		gesture_binding_execute(seat, binding);
 	}
 }
 
@@ -779,6 +1092,14 @@ static const struct sway_seatop_impl seatop_impl = {
 	.pointer_axis = handle_pointer_axis,
 	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
+	.hold_begin = handle_hold_begin,
+	.hold_end = handle_hold_end,
+	.pinch_begin = handle_pinch_begin,
+	.pinch_update = handle_pinch_update,
+	.pinch_end = handle_pinch_end,
+	.swipe_begin = handle_swipe_begin,
+	.swipe_update = handle_swipe_update,
+	.swipe_end = handle_swipe_end,
 	.rebase = handle_rebase,
 	.allow_set_cursor = true,
 };
@@ -789,8 +1110,8 @@ void seatop_begin_default(struct sway_seat *seat) {
 	struct seatop_default_event *e =
 		calloc(1, sizeof(struct seatop_default_event));
 	sway_assert(e, "Unable to allocate seatop_default_event");
+
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
-
 	seatop_rebase(seat, 0);
 }

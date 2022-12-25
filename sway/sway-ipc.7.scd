@@ -213,7 +213,10 @@ following properties:
 :  Whether this output is active/enabled
 |- dpms
 :  boolean
-:  Whether this output is on/off (via DPMS)
+:  (Deprecated, use _power_ instead) Whether this output is on/off (via DPMS)
+|- power
+:  boolean
+:  Whether this output is on/off
 |- primary
 :  boolean
 :  For i3 compatibility, this will be false. It does not make sense in Wayland
@@ -370,7 +373,7 @@ node and will have the following properties:
    that can be used as an aid in submitting reproduction steps for bug reports
 |- fullscreen_mode
 :  integer
-:  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means 
+:  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means
    full workspace, and 2 means global fullscreen
 |- app_id
 :  string
@@ -1194,6 +1197,10 @@ following properties will be included for devices that support them:
 |- dwt
 :  string
 :  Whether disable-while-typing is enabled. It can be _enabled_ or _disabled_
+|- dwtp
+:  string
+:  Whether disable-while-trackpointing is enabled. It can be _enabled_ or
+  _disabled_
 |- calibration_matrix
 :  array
 :  An array of 6 floats representing the calibration matrix for absolute
@@ -1233,7 +1240,8 @@ following properties will be included for devices that support them:
 			"click_method": "button_areas",
 			"middle_emulation": "disabled",
 			"scroll_method": "edge",
-			"dwt": "enabled"
+			"dwt": "enabled",
+			"dwtp": "enabled"
 		}
 	},
 	{
@@ -1360,7 +1368,8 @@ one seat. Each object has the following properties:
 					"click_method": "button_areas",
 					"middle_emulation": "disabled",
 					"scroll_method": "edge",
-					"dwt": "enabled"
+					"dwt": "enabled",
+					"dwtp": "enabled"
 				}
 			},
 			{

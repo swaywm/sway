@@ -11,24 +11,40 @@
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-static char *read_from_stdin(void) {
-	char *buffer = NULL;
-	size_t buffer_len = 0;
-	char *line = NULL;
-	size_t line_size = 0;
-	ssize_t nread;
-	while ((nread = getline(&line, &line_size, stdin)) != -1) {
+static char *read_and_trim_stdin(void) {
+	char *buffer = NULL, *line = NULL;
+	size_t buffer_len = 0, line_size = 0;
+	while (1) {
+		ssize_t nread = getline(&line, &line_size, stdin);
+		if (nread == -1) {
+			if (feof(stdin)) {
+				break;
+			} else {
+				perror("getline");
+				goto freeline;
+			}
+		}
 		buffer = realloc(buffer, buffer_len + nread + 1);
-		snprintf(&buffer[buffer_len], nread + 1, "%s", line);
+		if (!buffer) {
+			perror("realloc");
+			goto freebuf;
+		}
+		memcpy(&buffer[buffer_len], line, nread + 1);
 		buffer_len += nread;
 	}
 	free(line);
 
-	while (buffer && buffer[buffer_len - 1] == '\n') {
+	while (buffer_len && buffer[buffer_len - 1] == '\n') {
 		buffer[--buffer_len] = '\0';
 	}
 
 	return buffer;
+
+freeline:
+	free(line);
+freebuf:
+	free(buffer);
+	return NULL;
 }
 
 int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
@@ -150,8 +166,11 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 					fprintf(stderr, "Missing action for button %s\n", optarg);
 					return EXIT_FAILURE;
 				}
-				struct swaynag_button *button;
-				button = calloc(sizeof(struct swaynag_button), 1);
+				struct swaynag_button *button = calloc(sizeof(struct swaynag_button), 1);
+				if (!button) {
+					perror("calloc");
+					return EXIT_FAILURE;
+				}
 				button->text = strdup(optarg);
 				button->type = SWAYNAG_ACTION_COMMAND;
 				button->action = strdup(argv[optind]);
@@ -208,21 +227,26 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		case 'f': // Font
 			if (type) {
 				free(type->font);
+				pango_font_description_free(type->font_description);
 				type->font = strdup(optarg);
+				type->font_description = pango_font_description_from_string(type->font);
 			}
 			break;
 		case 'l': // Detailed Message
 			if (swaynag) {
 				free(swaynag->details.message);
-				swaynag->details.message = read_from_stdin();
+				swaynag->details.message = read_and_trim_stdin();
+				if (!swaynag->details.message) {
+					return EXIT_FAILURE;
+				}
 				swaynag->details.button_up.text = strdup("▲");
 				swaynag->details.button_down.text = strdup("▼");
 			}
 			break;
 		case 'L': // Detailed Button Text
 			if (swaynag) {
-				free(swaynag->details.button_details->text);
-				swaynag->details.button_details->text = strdup(optarg);
+				free(swaynag->details.button_details.text);
+				swaynag->details.button_details.text = strdup(optarg);
 			}
 			break;
 		case 'm': // Message
@@ -239,8 +263,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			break;
 		case 's': // Dismiss Button Text
 			if (swaynag) {
-				struct swaynag_button *button_close;
-				button_close = swaynag->buttons->items[0];
+				struct swaynag_button *button_close = swaynag->buttons->items[0];
 				free(button_close->text);
 				button_close->text = strdup(optarg);
 			}
@@ -399,23 +422,24 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 
 		if (line[0] == '[') {
 			char *close = strchr(line, ']');
-			if (!close) {
-				fprintf(stderr, "Closing bracket not found on line %d\n",
-						line_number);
+			if (!close || close != &line[nread - 2] || nread <= 3) {
+				fprintf(stderr, "Line %d is malformed\n", line_number);
 				result = 1;
 				break;
 			}
-			char *name = calloc(1, close - line);
-			strncat(name, line + 1, close - line - 1);
-			type = swaynag_type_get(types, name);
+			*close = '\0';
+			type = swaynag_type_get(types, &line[1]);
 			if (!type) {
-				type = swaynag_type_new(name);
+				type = swaynag_type_new(&line[1]);
 				list_add(types, type);
 			}
-			free(name);
 		} else {
-			char *flag = malloc(sizeof(char) * (nread + 3));
-			sprintf(flag, "--%s", line);
+			char *flag = malloc(nread + 3);
+			if (!flag) {
+				perror("calloc");
+				return EXIT_FAILURE;
+			}
+			snprintf(flag, nread + 3, "--%s", line);
 			char *argv[] = {"swaynag", flag};
 			result = swaynag_parse_options(2, argv, swaynag, types, type,
 					NULL, NULL);

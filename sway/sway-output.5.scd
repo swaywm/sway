@@ -24,7 +24,7 @@ must be separated by one space. For example:
 
 # COMMANDS
 
-*output* <name> mode|resolution|res [--custom] <WIDTHxHEIGHT>[@<RATE>Hz]
+*output* <name> mode|resolution|res [--custom] <width>x<height>[@<rate>Hz]
 	Configures the specified output to use the given mode. Modes are a
 	combination of width and height (in pixels) and a refresh rate that your
 	display can be configured to use. For a list of available modes for each
@@ -119,12 +119,20 @@ must be separated by one space. For example:
 	Enables or disables the specified output (all outputs are enabled by
 	default).
 
+	As opposed to the _power_ command, the output will loose its current
+	workspace and windows.
+
 *output* <name> toggle
 	Toggle the specified output.
 
+*output* <name> power on|off|toggle
+	Turns on or off the specified output.
+
+	As opposed to the _enable_ and _disable_ commands, the output keeps its
+	current workspaces and windows.
+
 *output* <name> dpms on|off|toggle
-	Enables or disables the specified output via DPMS. To turn an output off
-	(ie. blank the screen but keep workspaces as-is), one can set DPMS to off.
+	Deprecated. Alias for _power_.
 
 *output* <name> max_render_time off|<msec>
 	Controls when sway composites the output, as a positive number of

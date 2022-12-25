@@ -166,6 +166,16 @@ static bool set_dwt(struct libinput_device *device, bool dwt) {
 	return true;
 }
 
+static bool set_dwtp(struct libinput_device *device, bool dwtp) {
+	if (!libinput_device_config_dwtp_is_available(device) ||
+			libinput_device_config_dwtp_get_enabled(device) == dwtp) {
+		return false;
+	}
+	sway_log(SWAY_DEBUG, "dwtp_set_enabled(%d)", dwtp);
+	log_status(libinput_device_config_dwtp_set_enabled(device, dwtp));
+	return true;
+}
+
 static bool set_calibration_matrix(struct libinput_device *dev, float mat[6]) {
 	if (!libinput_device_config_calibration_has_matrix(dev)) {
 		return false;
@@ -187,10 +197,10 @@ static bool set_calibration_matrix(struct libinput_device *dev, float mat[6]) {
 	return changed;
 }
 
-void sway_input_configure_libinput_device(struct sway_input_device *input_device) {
+bool sway_input_configure_libinput_device(struct sway_input_device *input_device) {
 	struct input_config *ic = input_device_get_config(input_device);
 	if (!ic || !wlr_input_device_is_libinput(input_device->wlr_device)) {
-		return;
+		return false;
 	}
 
 	struct libinput_device *device =
@@ -255,13 +265,14 @@ void sway_input_configure_libinput_device(struct sway_input_device *input_device
 	if (ic->dwt != INT_MIN) {
 		changed |= set_dwt(device, ic->dwt);
 	}
+	if (ic->dwtp != INT_MIN) {
+		changed |= set_dwtp(device, ic->dwtp);
+	}
 	if (ic->calibration_matrix.configured) {
 		changed |= set_calibration_matrix(device, ic->calibration_matrix.matrix);
 	}
 
-	if (changed) {
-		ipc_event_input("libinput_config", input_device);
-	}
+	return changed;
 }
 
 void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
@@ -304,6 +315,8 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 		libinput_device_config_scroll_get_default_button(device));
 	changed |= set_dwt(device,
 		libinput_device_config_dwt_get_default_enabled(device));
+	changed |= set_dwtp(device,
+		libinput_device_config_dwtp_get_default_enabled(device));
 
 	float matrix[6];
 	libinput_device_config_calibration_get_default_matrix(device, matrix);

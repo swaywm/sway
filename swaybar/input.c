@@ -141,14 +141,15 @@ static bool check_bindings(struct swaybar *bar, uint32_t button,
 }
 
 static bool process_hotspots(struct swaybar_output *output,
-		double x, double y, uint32_t button) {
+		double x, double y, uint32_t button, uint32_t state) {
+	bool released = state == WL_POINTER_BUTTON_STATE_RELEASED;
 	struct swaybar_hotspot *hotspot;
 	wl_list_for_each(hotspot, &output->hotspots, link) {
 		if (x >= hotspot->x && y >= hotspot->y
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
 			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot, x, y,
-					button, hotspot->data)) {
+					button, released, hotspot->data)) {
 				return true;
 			}
 		}
@@ -166,14 +167,11 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	if (check_bindings(seat->bar, button, state)) {
+	if (process_hotspots(output, pointer->x, pointer->y, button, state)) {
 		return;
 	}
 
-	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
-		return;
-	}
-	process_hotspots(output, pointer->x, pointer->y, button);
+	check_bindings(seat->bar, button, state);
 }
 
 static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
@@ -222,15 +220,15 @@ static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
 static void process_discrete_scroll(struct swaybar_seat *seat,
 		struct swaybar_output *output, struct swaybar_pointer *pointer,
 		uint32_t axis, wl_fixed_t value) {
-	// If there is a button press binding, execute it, skip default behavior,
-	// and check button release bindings
 	uint32_t button = wl_axis_to_button(axis, value);
-	if (check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
-		check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
+	if (process_hotspots(output, pointer->x, pointer->y, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
+		// (Currently hotspots don't do anything on release events, so no need to emit one)
 		return;
 	}
 
-	if (process_hotspots(output, pointer->x, pointer->y, button)) {
+	// If there is a button press binding, execute it, and check button release bindings
+	if (check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
+		check_bindings(seat->bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 		return;
 	}
 
@@ -403,7 +401,8 @@ static void wl_touch_up(void *data, struct wl_touch *wl_touch,
 	}
 	if (time - slot->time < 500) {
 		// Tap, treat it like a pointer click
-		process_hotspots(slot->output, slot->x, slot->y, BTN_LEFT);
+		process_hotspots(slot->output, slot->x, slot->y, BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
+		// (Currently hotspots don't do anything on release events, so no need to emit one)
 	}
 	slot->output = NULL;
 }

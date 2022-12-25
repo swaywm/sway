@@ -1,7 +1,8 @@
 #ifndef _SWAY_CRITERIA_H
 #define _SWAY_CRITERIA_H
 
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 #include "config.h"
 #include "list.h"
 #include "tree/view.h"
@@ -15,13 +16,13 @@ enum criteria_type {
 };
 
 enum pattern_type {
-	PATTERN_PCRE,
+	PATTERN_PCRE2,
 	PATTERN_FOCUSED,
 };
 
 struct pattern {
 	enum pattern_type match_type;
-	pcre *regex;
+	pcre2_code *regex;
 };
 
 struct criteria {

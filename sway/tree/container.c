@@ -9,6 +9,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/render/drm_format_set.h>
 #include "linux-dmabuf-unstable-v1-protocol.h"
 #include "cairo_util.h"
@@ -51,7 +52,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	c->outputs = create_list();
 
 	wl_signal_init(&c->events.destroy);
-	wl_signal_emit(&root->events.new_node, &c->node);
+	wl_signal_emit_mutable(&root->events.new_node, &c->node);
 
 	return c;
 }
@@ -106,7 +107,7 @@ void container_begin_destroy(struct sway_container *con) {
 		container_fullscreen_disable(con);
 	}
 
-	wl_signal_emit(&con->node.events.destroy, &con->node);
+	wl_signal_emit_mutable(&con->node.events.destroy, &con->node);
 
 	container_end_mouse_operation(con);
 
@@ -196,7 +197,7 @@ static struct sway_container *surface_at_view(struct sway_container *con, double
 #endif
 	case SWAY_VIEW_XDG_SHELL:
 		_surface = wlr_xdg_surface_surface_at(
-				view->wlr_xdg_surface,
+				view->wlr_xdg_toplevel->base,
 				view_sx, view_sy, &_sx, &_sy);
 		break;
 	}
@@ -522,7 +523,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 			to_cairo_subpixel_order(output->wlr_output->subpixel));
 	}
 	cairo_set_font_options(c, fo);
-	get_text_size(c, config->font, &width, NULL, &baseline, scale,
+	get_text_size(c, config->font_description, &width, NULL, &baseline, scale,
 			config->pango_markup, "%s", text);
 	cairo_surface_destroy(dummy_surface);
 	cairo_destroy(c);
@@ -556,7 +557,7 @@ static void render_titlebar_text_texture(struct sway_output *output,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, config->font_baseline * scale - baseline);
 
-	render_text(cairo, config->font, scale, pango_markup, "%s", text);
+	render_text(cairo, config->font_description, scale, pango_markup, "%s", text);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
@@ -697,12 +698,13 @@ void floating_calculate_constraints(int *min_width, int *max_width,
 		*min_height = config->floating_minimum_height;
 	}
 
-	struct wlr_box *box = wlr_output_layout_get_box(root->output_layout, NULL);
+	struct wlr_box box;
+	wlr_output_layout_get_box(root->output_layout, NULL, &box);
 
 	if (config->floating_maximum_width == -1) { // no maximum
 		*max_width = INT_MAX;
 	} else if (config->floating_maximum_width == 0) { // automatic
-		*max_width = box->width;
+		*max_width = box.width;
 	} else {
 		*max_width = config->floating_maximum_width;
 	}
@@ -710,7 +712,7 @@ void floating_calculate_constraints(int *min_width, int *max_width,
 	if (config->floating_maximum_height == -1) { // no maximum
 		*max_height = INT_MAX;
 	} else if (config->floating_maximum_height == 0) { // automatic
-		*max_height = box->height;
+		*max_height = box.height;
 	} else {
 		*max_height = config->floating_maximum_height;
 	}
@@ -742,9 +744,9 @@ void container_floating_resize_and_center(struct sway_container *con) {
 		return;
 	}
 
-	struct wlr_box *ob = wlr_output_layout_get_box(root->output_layout,
-			ws->output->wlr_output);
-	if (!ob) {
+	struct wlr_box ob;
+	wlr_output_layout_get_box(root->output_layout, ws->output->wlr_output, &ob);
+	if (wlr_box_empty(&ob)) {
 		// On NOOP output. Will be called again when moved to an output
 		con->pending.x = 0;
 		con->pending.y = 0;
@@ -756,8 +758,8 @@ void container_floating_resize_and_center(struct sway_container *con) {
 	floating_natural_resize(con);
 	if (!con->view) {
 		if (con->pending.width > ws->width || con->pending.height > ws->height) {
-			con->pending.x = ob->x + (ob->width - con->pending.width) / 2;
-			con->pending.y = ob->y + (ob->height - con->pending.height) / 2;
+			con->pending.x = ob.x + (ob.width - con->pending.width) / 2;
+			con->pending.y = ob.y + (ob.height - con->pending.height) / 2;
 		} else {
 			con->pending.x = ws->x + (ws->width - con->pending.width) / 2;
 			con->pending.y = ws->y + (ws->height - con->pending.height) / 2;
@@ -765,8 +767,8 @@ void container_floating_resize_and_center(struct sway_container *con) {
 	} else {
 		if (con->pending.content_width > ws->width
 				|| con->pending.content_height > ws->height) {
-			con->pending.content_x = ob->x + (ob->width - con->pending.content_width) / 2;
-			con->pending.content_y = ob->y + (ob->height - con->pending.content_height) / 2;
+			con->pending.content_x = ob.x + (ob.width - con->pending.content_width) / 2;
+			con->pending.content_y = ob.y + (ob.height - con->pending.content_height) / 2;
 		} else {
 			con->pending.content_x = ws->x + (ws->width - con->pending.content_width) / 2;
 			con->pending.content_y = ws->y + (ws->height - con->pending.content_height) / 2;
@@ -788,11 +790,11 @@ void container_floating_set_default_size(struct sway_container *con) {
 	int min_width, max_width, min_height, max_height;
 	floating_calculate_constraints(&min_width, &max_width,
 			&min_height, &max_height);
-	struct wlr_box *box = calloc(1, sizeof(struct wlr_box));
-	workspace_get_box(con->pending.workspace, box);
+	struct wlr_box box;
+	workspace_get_box(con->pending.workspace, &box);
 
-	double width = fmax(min_width, fmin(box->width * 0.5, max_width));
-	double height = fmax(min_height, fmin(box->height * 0.75, max_height));
+	double width = fmax(min_width, fmin(box.width * 0.5, max_width));
+	double height = fmax(min_height, fmin(box.height * 0.75, max_height));
 	if (!con->view) {
 		con->pending.width = width;
 		con->pending.height = height;
@@ -801,8 +803,6 @@ void container_floating_set_default_size(struct sway_container *con) {
 		con->pending.content_height = height;
 		container_set_geometry_from_content(con);
 	}
-
-	free(box);
 }
 
 
@@ -1413,6 +1413,9 @@ list_t *container_get_siblings(struct sway_container *container) {
 	if (container_is_scratchpad_hidden(container)) {
 		return NULL;
 	}
+	if (!container->pending.workspace) {
+		return NULL;
+	}
 	if (list_find(container->pending.workspace->tiling, container) != -1) {
 		return container->pending.workspace->tiling;
 	}
@@ -1707,7 +1710,7 @@ static void update_marks_texture(struct sway_container *con,
 	for (int i = 0; i < con->marks->length; ++i) {
 		char *mark = con->marks->items[i];
 		if (mark[0] != '_') {
-			sprintf(part, "[%s]", mark);
+			snprintf(part, len + 1, "[%s]", mark);
 			strcat(buffer, part);
 		}
 	}

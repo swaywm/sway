@@ -147,6 +147,10 @@ The following commands may only be used in the configuration file.
 *input* <identifier> dwt enabled|disabled
 	Enables or disables disable-while-typing for the specified input device.
 
+*input* <identifier> dwtp enabled|disabled
+	Enables or disables disable-while-trackpointing for the specified input
+	device.
+
 *input* <identifier> events enabled|disabled|disabled_on_external_mouse|toggle [<toggle-modes>]
 	Enables or disables send_events for specified input device. Disabling
 	send_events disables the input device.

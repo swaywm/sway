@@ -150,27 +150,17 @@ static void log_kernel(void) {
 	pclose(f);
 }
 
-
-static bool drop_permissions(void) {
-	if (getuid() != geteuid() || getgid() != getegid()) {
-		sway_log(SWAY_ERROR, "!!! DEPRECATION WARNING: "
-			"SUID privilege drop will be removed in a future release, please migrate to seatd-launch");
-
-		// Set the gid and uid in the correct order.
-		if (setgid(getgid()) != 0) {
-			sway_log(SWAY_ERROR, "Unable to drop root group, refusing to start");
-			return false;
-		}
-		if (setuid(getuid()) != 0) {
-			sway_log(SWAY_ERROR, "Unable to drop root user, refusing to start");
-			return false;
-		}
-	}
-	if (setgid(0) != -1 || setuid(0) != -1) {
-		sway_log(SWAY_ERROR, "Unable to drop root (we shouldn't be able to "
-			"restore it after setuid), refusing to start");
+static bool detect_suid(void) {
+	if (geteuid() != 0 && getegid() != 0) {
 		return false;
 	}
+
+	if (getuid() == geteuid() && getgid() == getegid()) {
+		return false;
+	}
+
+	sway_log(SWAY_ERROR, "SUID operation is no longer supported, refusing to start. "
+			"This check will be removed in a future release.");
 	return true;
 }
 
@@ -240,34 +230,34 @@ static void handle_wlr_log(enum wlr_log_importance importance,
 	_sway_vlog(convert_wlr_log_importance(importance), sway_fmt, args);
 }
 
-int main(int argc, char **argv) {
-	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
+static const struct option long_options[] = {
+	{"help", no_argument, NULL, 'h'},
+	{"config", required_argument, NULL, 'c'},
+	{"validate", no_argument, NULL, 'C'},
+	{"debug", no_argument, NULL, 'd'},
+	{"version", no_argument, NULL, 'v'},
+	{"verbose", no_argument, NULL, 'V'},
+	{"get-socketpath", no_argument, NULL, 'p'},
+	{"unsupported-gpu", no_argument, NULL, 'u'},
+	{0, 0, 0, 0}
+};
 
-	static const struct option long_options[] = {
-		{"help", no_argument, NULL, 'h'},
-		{"config", required_argument, NULL, 'c'},
-		{"validate", no_argument, NULL, 'C'},
-		{"debug", no_argument, NULL, 'd'},
-		{"version", no_argument, NULL, 'v'},
-		{"verbose", no_argument, NULL, 'V'},
-		{"get-socketpath", no_argument, NULL, 'p'},
-		{"unsupported-gpu", no_argument, NULL, 'u'},
-		{0, 0, 0, 0}
-	};
+static const char usage[] =
+	"Usage: sway [options] [command]\n"
+	"\n"
+	"  -h, --help             Show help message and quit.\n"
+	"  -c, --config <config>  Specify a config file.\n"
+	"  -C, --validate         Check the validity of the config file, then exit.\n"
+	"  -d, --debug            Enables full logging, including debug information.\n"
+	"  -v, --version          Show the version number and quit.\n"
+	"  -V, --verbose          Enables more verbose logging.\n"
+	"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
+	"\n";
+
+int main(int argc, char **argv) {
+	static bool verbose = false, debug = false, validate = false, allow_unsupported_gpu = false;
 
 	char *config_path = NULL;
-
-	const char* usage =
-		"Usage: sway [options] [command]\n"
-		"\n"
-		"  -h, --help             Show help message and quit.\n"
-		"  -c, --config <config>  Specify a config file.\n"
-		"  -C, --validate         Check the validity of the config file, then exit.\n"
-		"  -d, --debug            Enables full logging, including debug information.\n"
-		"  -v, --version          Show the version number and quit.\n"
-		"  -V, --verbose          Enables more verbose logging.\n"
-		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
-		"\n";
 
 	int c;
 	while (1) {
@@ -286,25 +276,25 @@ int main(int argc, char **argv) {
 			config_path = strdup(optarg);
 			break;
 		case 'C': // validate
-			validate = 1;
+			validate = true;
 			break;
 		case 'd': // debug
-			debug = 1;
+			debug = true;
 			break;
 		case 'D': // extended debug options
 			enable_debug_flag(optarg);
 			break;
 		case 'u':
-			allow_unsupported_gpu = 1;
+			allow_unsupported_gpu = true;
 			break;
 		case 'v': // version
 			printf("sway version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		case 'V': // verbose
-			verbose = 1;
+			verbose = true;
 			break;
-		case 'p': ; // --get-socketpath
+		case 'p': // --get-socketpath
 			if (getenv("SWAYSOCK")) {
 				printf("%s\n", getenv("SWAYSOCK"));
 				exit(EXIT_SUCCESS);
@@ -317,6 +307,11 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
 		}
+	}
+
+	// SUID operation is deprecated, so block it for now.
+	if (detect_suid()) {
+		exit(EXIT_FAILURE);
 	}
 
 	// Since wayland requires XDG_RUNTIME_DIR to be set, abort with just the
@@ -357,9 +352,6 @@ int main(int argc, char **argv) {
 					"`sway -d 2>sway.log`.");
 			exit(EXIT_FAILURE);
 		}
-		if (!drop_permissions()) {
-			exit(EXIT_FAILURE);
-		}
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
 			sway_log(SWAY_ERROR, "Unable to retrieve socket path");
@@ -372,16 +364,6 @@ int main(int argc, char **argv) {
 	}
 
 	detect_proprietary(allow_unsupported_gpu);
-
-	if (!server_privileged_prepare(&server)) {
-		return 1;
-	}
-
-	if (!drop_permissions()) {
-		server_fini(&server);
-		exit(EXIT_FAILURE);
-	}
-
 	increase_nofile_limit();
 
 	// handle SIGTERM signals
@@ -412,6 +394,8 @@ int main(int argc, char **argv) {
 		sway_terminate(EXIT_FAILURE);
 		goto shutdown;
 	}
+
+	set_rr_scheduling();
 
 	if (!server_start(&server)) {
 		sway_terminate(EXIT_FAILURE);
