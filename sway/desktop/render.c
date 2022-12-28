@@ -951,10 +951,9 @@ static void render_containers_linear(struct sway_output *output,
 								 ? config->dim_inactive_colors.urgent
 								 : config->dim_inactive_colors.unfocused,
 				.dim = child->current.focused ? 0.0f: config->dim_inactive,
-				// no corner radius if smart gaps are on and only visible view TODO: FIX
-				//.corner_radius = config->smart_gaps == SMART_GAPS_ON &&
-				//view_ancestor_is_only_visible(view) ? 0 : child->corner_radius,
-				.corner_radius = child->corner_radius,
+				// no corner radius if no gaps (allows smart_gaps to work as expected)
+				.corner_radius = output->current.active_workspace->current_gaps.top == 0
+					? 0 : child->corner_radius,
 				.saturation = child->saturation,
 				.has_titlebar = has_titlebar,
 			};
