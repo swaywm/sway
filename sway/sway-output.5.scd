@@ -119,7 +119,7 @@ must be separated by one space. For example:
 	Enables or disables the specified output (all outputs are enabled by
 	default).
 
-	As opposed to the _power_ command, the output will loose its current
+	As opposed to the _power_ command, the output will lose its current
 	workspace and windows.
 
 *output* <name> toggle
