@@ -909,7 +909,6 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 
 exit_cleanup:
 	free(buf);
-	return;
 }
 
 bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_type,
