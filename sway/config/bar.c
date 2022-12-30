@@ -256,7 +256,6 @@ static void invoke_swaybar(struct bar_config *bar) {
 	}
 
 	sway_log(SWAY_DEBUG, "Spawned swaybar %s", bar->id);
-	return;
 }
 
 void load_swaybar(struct bar_config *bar) {
