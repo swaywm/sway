@@ -28,7 +28,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	wlr_seat_pointer_notify_axis(seat->wlr_seat, event->time_msec,
 		event->orientation, scroll_factor * event->delta,
-		round(scroll_factor * event->delta_discrete), event->source);
+		roundf(scroll_factor * event->delta_discrete), event->source);
 }
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,

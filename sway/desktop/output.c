@@ -364,14 +364,14 @@ overlay:
 }
 
 static int scale_length(int length, int offset, float scale) {
-	return round((offset + length) * scale) - round(offset * scale);
+	return roundf((offset + length) * scale) - roundf(offset * scale);
 }
 
 void scale_box(struct wlr_box *box, float scale) {
 	box->width = scale_length(box->width, box->x, scale);
 	box->height = scale_length(box->height, box->y, scale);
-	box->x = round(box->x * scale);
-	box->y = round(box->y * scale);
+	box->x = roundf(box->x * scale);
+	box->y = roundf(box->y * scale);
 }
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
@@ -683,11 +683,11 @@ static void damage_surface_iterator(struct sway_output *output,
 	pixman_region32_init(&damage);
 	wlr_surface_get_effective_damage(surface, &damage);
 	wlr_region_scale(&damage, &damage, output->wlr_output->scale);
-	if (ceil(output->wlr_output->scale) > surface->current.scale) {
+	if (ceilf(output->wlr_output->scale) > surface->current.scale) {
 		// When scaling up a surface, it'll become blurry so we need to
 		// expand the damage region
 		wlr_region_expand(&damage, &damage,
-			ceil(output->wlr_output->scale) - surface->current.scale);
+			ceilf(output->wlr_output->scale) - surface->current.scale);
 	}
 	pixman_region32_translate(&damage, box.x, box.y);
 	if (wlr_damage_ring_add(&output->damage_ring, &damage)) {
