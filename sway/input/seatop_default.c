@@ -726,7 +726,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 				seat_get_active_tiling_child(seat, tabcontainer);
 			list_t *siblings = container_get_siblings(cont);
 			int desired = list_find(siblings, active->sway_container) +
-				round(scroll_factor * event->delta_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+				roundf(scroll_factor * event->delta_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
 			if (desired < 0) {
 				desired = 0;
 			} else if (desired >= siblings->length) {
@@ -761,7 +761,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 	if (!handled) {
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
 			event->orientation, scroll_factor * event->delta,
-			round(scroll_factor * event->delta_discrete), event->source);
+			roundf(scroll_factor * event->delta_discrete), event->source);
 	}
 }
 

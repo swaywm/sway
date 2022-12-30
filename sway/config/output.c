@@ -257,7 +257,7 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	// Not all floating point integers can be represented exactly
 	// as (int)(1000 * mHz / 1000.f)
 	// round() the result to avoid any error
-	int mhz = (int)round(refresh_rate * 1000);
+	int mhz = (int)roundf(refresh_rate * 1000);
 
 	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
