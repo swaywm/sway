@@ -148,7 +148,7 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
-const struct cmd_handler *find_handler(char *line,
+const struct cmd_handler *find_handler(const char *line,
 		const struct cmd_handler *handlers, size_t handlers_size) {
 	if (!handlers || !handlers_size) {
 		return NULL;
