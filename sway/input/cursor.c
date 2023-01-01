@@ -1322,6 +1322,10 @@ static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 		double sy = constraint->current.cursor_hint.y;
 
 		struct sway_view *view = view_from_wlr_surface(constraint->surface);
+		if (!view) {
+			return;
+		}
+
 		struct sway_container *con = view->container;
 
 		double lx = sx + con->pending.content_x - view->geometry.x;
