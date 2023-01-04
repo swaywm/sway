@@ -33,10 +33,10 @@ struct cmd_results *cmd_font(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Invalid font family.");
 	}
 
-	const gint size = pango_font_description_get_size(font_description);
-	if (size == 0) {
+	const PangoFontMask flags = pango_font_description_get_set_fields(font_description);
+	if ((flags & PANGO_FONT_MASK_SIZE) == 0) {
 		pango_font_description_free(font_description);
-		return cmd_results_new(CMD_FAILURE, "Invalid font size.");
+		return cmd_results_new(CMD_FAILURE, "Font size not given.");
 	}
 
 	if (config->font_description != NULL) {
