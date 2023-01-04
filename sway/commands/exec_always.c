@@ -8,6 +8,8 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
+#include "sway/desktop/launcher.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
@@ -25,11 +27,22 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	return error;
 }
 
+static void export_xdga_token(struct launcher_ctx *ctx) {
+	const char *token = launcher_ctx_get_token_name(ctx);
+	setenv("XDG_ACTIVATION_TOKEN", token, 1);
+}
+
+static void export_startup_id(struct launcher_ctx *ctx) {
+	const char *token = launcher_ctx_get_token_name(ctx);
+	setenv("DESKTOP_STARTUP_ID", token, 1);
+}
+
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	char *cmd = NULL;
+	bool no_startup_id = false;
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
-		sway_log(SWAY_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+		no_startup_id = true;
 		--argc; ++argv;
 		if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
 			return error;
@@ -51,6 +64,7 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	}
 
 	pid_t pid, child;
+	struct launcher_ctx *ctx = launcher_ctx_create();
 	// Fork process
 	if ((pid = fork()) == 0) {
 		// Fork child process again
@@ -63,6 +77,12 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 		close(fd[0]);
 		if ((child = fork()) == 0) {
 			close(fd[1]);
+			if (ctx) {
+				export_xdga_token(ctx);
+			}
+			if (ctx && !no_startup_id) {
+				export_startup_id(ctx);
+			}
 			execlp("sh", "sh", "-c", cmd, (void *)NULL);
 			sway_log_errno(SWAY_ERROR, "execlp failed");
 			_exit(1);
@@ -90,8 +110,12 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	waitpid(pid, NULL, 0);
 	if (child > 0) {
 		sway_log(SWAY_DEBUG, "Child process created with pid %d", child);
-		root_record_workspace_pid(child);
+		if (ctx != NULL) {
+			sway_log(SWAY_DEBUG, "Recording workspace for process %d", child);
+			ctx->pid = child;
+		}
 	} else {
+		launcher_ctx_destroy(ctx);
 		return cmd_results_new(CMD_FAILURE, "Second fork() failed");
 	}
 

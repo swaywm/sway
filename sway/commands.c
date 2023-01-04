@@ -46,6 +46,7 @@ static const struct cmd_handler handlers[] = {
 	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
+	{ "bindgesture", cmd_bindgesture },
 	{ "bindswitch", cmd_bindswitch },
 	{ "bindsym", cmd_bindsym },
 	{ "client.background", cmd_client_noop },
@@ -96,6 +97,7 @@ static const struct cmd_handler handlers[] = {
 	{ "titlebar_border_thickness", cmd_titlebar_border_thickness },
 	{ "titlebar_padding", cmd_titlebar_padding },
 	{ "unbindcode", cmd_unbindcode },
+	{ "unbindgesture", cmd_unbindgesture },
 	{ "unbindswitch", cmd_unbindswitch },
 	{ "unbindsym", cmd_unbindsym },
 	{ "workspace", cmd_workspace },
@@ -412,6 +414,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
 				&& handler->handle != cmd_bindswitch
+				&& handler->handle != cmd_bindgesture
 				&& handler->handle != cmd_set
 				&& handler->handle != cmd_for_window
 				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
@@ -487,13 +490,19 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 	}
 	results->status = status;
 	if (format) {
-		char *error = malloc(256);
+		char *error = NULL;
 		va_list args;
 		va_start(args, format);
-		if (error) {
-			vsnprintf(error, 256, format, args);
-		}
+		int slen = vsnprintf(NULL, 0, format, args);
 		va_end(args);
+		if (slen > 0) {
+			error = malloc(slen + 1);
+			if (error != NULL) {
+				va_start(args, format);
+				vsnprintf(error, slen + 1, format, args);
+				va_end(args);
+			}
+		}
 		results->error = error;
 	} else {
 		results->error = NULL;

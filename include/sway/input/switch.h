@@ -5,6 +5,7 @@
 
 struct sway_switch {
 	struct sway_seat_device *seat_device;
+	struct wlr_switch *wlr;
 	enum wlr_switch_state state;
 	enum wlr_switch_type type;
 

@@ -236,7 +236,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	apply_input_type_config(input_device);
 
-	sway_input_configure_libinput_device(input_device);
+	bool config_changed = sway_input_configure_libinput_device(input_device);
 
 	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
 	input_device->device_destroy.notify = handle_device_destroy;
@@ -274,6 +274,10 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	}
 
 	ipc_event_input("added", input_device);
+
+	if (config_changed) {
+		ipc_event_input("libinput_config", input_device);
+	}
 }
 
 static void handle_inhibit_activate(struct wl_listener *listener, void *data) {
@@ -289,6 +293,10 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 	struct sway_input_manager *input_manager = wl_container_of(
 			listener, input_manager, inhibit_deactivate);
 	struct sway_seat *seat;
+	if (server.session_lock.locked) {
+		// Don't deactivate the grab of a screenlocker
+		return;
+	}
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		seat_set_exclusive_client(seat, NULL);
 		struct sway_node *previous = seat_get_focus(seat);
@@ -377,7 +385,7 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input_manager =
 		wl_container_of(listener, input_manager, virtual_keyboard_new);
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
-	struct wlr_input_device *device = &keyboard->input_device;
+	struct wlr_input_device *device = &keyboard->keyboard.base;
 
 	// TODO: Amend protocol to allow NULL seat
 	struct sway_seat *seat = keyboard->seat ?
@@ -410,7 +418,7 @@ void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, input_manager, virtual_pointer_new);
 	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
 	struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
-	struct wlr_input_device *device = &pointer->input_device;
+	struct wlr_input_device *device = &pointer->pointer.base;
 
 	struct sway_seat *seat = event->suggested_seat ?
 		input_manager_sway_seat_from_wlr_seat(event->suggested_seat) :
@@ -524,10 +532,13 @@ static void retranslate_keysyms(struct input_config *input_config) {
 
 static void input_manager_configure_input(
 		struct sway_input_device *input_device) {
-	sway_input_configure_libinput_device(input_device);
+	bool config_changed = sway_input_configure_libinput_device(input_device);
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_configure_device(seat, input_device);
+	}
+	if (config_changed) {
+		ipc_event_input("libinput_config", input_device);
 	}
 }
 
@@ -564,6 +575,13 @@ void input_manager_reset_input(struct sway_input_device *input_device) {
 }
 
 void input_manager_reset_all_inputs(void) {
+	// Set the active keyboard to NULL to avoid spamming configuration updates
+	// for all keyboard devices.
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		wlr_seat_set_keyboard(seat->wlr_seat, NULL);
+	}
+
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &server.input->devices, link) {
 		input_manager_reset_input(input_device);
@@ -572,7 +590,6 @@ void input_manager_reset_all_inputs(void) {
 	// If there is at least one keyboard using the default keymap, repeat delay,
 	// and repeat rate, then it is possible that there is a keyboard group that
 	// need their keyboard disarmed.
-	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		struct sway_keyboard_group *group;
 		wl_list_for_each(group, &seat->keyboard_groups, link) {

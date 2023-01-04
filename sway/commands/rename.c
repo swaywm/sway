@@ -7,6 +7,7 @@
 #include "sway/config.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/desktop/launcher.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
 #include "sway/tree/root.h"
@@ -90,8 +91,6 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	}
 
 	sway_log(SWAY_DEBUG, "renaming workspace '%s' to '%s'", workspace->name, new_name);
-
-	root_rename_pid_workspaces(workspace->name, new_name);
 
 	free(workspace->name);
 	workspace->name = new_name;

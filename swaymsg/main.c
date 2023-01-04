@@ -185,12 +185,13 @@ static void pretty_print_seat(json_object *i) {
 }
 
 static void pretty_print_output(json_object *o) {
-	json_object *name, *rect, *focused, *active, *ws, *current_mode;
+	json_object *name, *rect, *focused, *active, *ws, *current_mode, *non_desktop;
 	json_object_object_get_ex(o, "name", &name);
 	json_object_object_get_ex(o, "rect", &rect);
 	json_object_object_get_ex(o, "focused", &focused);
 	json_object_object_get_ex(o, "active", &active);
 	json_object_object_get_ex(o, "current_workspace", &ws);
+	json_object_object_get_ex(o, "non_desktop", &non_desktop);
 	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
 		*transform, *max_render_time, *adaptive_sync_status;
 	json_object_object_get_ex(o, "make", &make);
@@ -213,7 +214,15 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(current_mode, "height", &height);
 	json_object_object_get_ex(current_mode, "refresh", &refresh);
 
-	if (json_object_get_boolean(active)) {
+	if (json_object_get_boolean(non_desktop)) {
+		printf(
+			"Output %s '%s %s %s' (non-desktop)\n",
+			json_object_get_string(name),
+			json_object_get_string(make),
+			json_object_get_string(model),
+			json_object_get_string(serial)
+		);
+	} else if (json_object_get_boolean(active)) {
 		printf(
 			"Output %s '%s %s %s'%s\n"
 			"  Current mode: %dx%d @ %.3f Hz\n"
@@ -262,14 +271,22 @@ static void pretty_print_output(json_object *o) {
 		for (size_t i = 0; i < modes_len; ++i) {
 			json_object *mode = json_object_array_get_idx(modes, i);
 
-			json_object *mode_width, *mode_height, *mode_refresh;
+			json_object *mode_width, *mode_height, *mode_refresh,
+				*mode_picture_aspect_ratio;
 			json_object_object_get_ex(mode, "width", &mode_width);
 			json_object_object_get_ex(mode, "height", &mode_height);
 			json_object_object_get_ex(mode, "refresh", &mode_refresh);
+			json_object_object_get_ex(mode, "picture_aspect_ratio",
+				&mode_picture_aspect_ratio);
 
-			printf("    %dx%d @ %.3f Hz\n", json_object_get_int(mode_width),
+			printf("    %dx%d @ %.3f Hz", json_object_get_int(mode_width),
 				json_object_get_int(mode_height),
 				(double)json_object_get_int(mode_refresh) / 1000);
+			if (mode_picture_aspect_ratio &&
+					strcmp("none", json_object_get_string(mode_picture_aspect_ratio)) != 0) {
+				printf(" (%s)", json_object_get_string(mode_picture_aspect_ratio));
+			}
+			printf("\n");
 		}
 	}
 
@@ -288,27 +305,82 @@ static void pretty_print_config(json_object *c) {
 	printf("%s\n", json_object_get_string(config));
 }
 
+static void pretty_print_tree(json_object *obj, int indent) {
+	for (int i = 0; i < indent; i++) {
+		printf("  ");
+	}
+
+	int id = json_object_get_int(json_object_object_get(obj, "id"));
+	const char *name = json_object_get_string(json_object_object_get(obj, "name"));
+	const char *type = json_object_get_string(json_object_object_get(obj, "type"));
+	const char *shell = json_object_get_string(json_object_object_get(obj, "shell"));
+
+	printf("#%d: %s \"%s\"", id, type, name);
+
+	if (shell != NULL) {
+		int pid = json_object_get_int(json_object_object_get(obj, "pid"));
+		const char *app_id = json_object_get_string(json_object_object_get(obj, "app_id"));
+		json_object *window_props_obj = json_object_object_get(obj, "window_properties");
+		const char *instance = json_object_get_string(json_object_object_get(window_props_obj, "instance"));
+		const char *class = json_object_get_string(json_object_object_get(window_props_obj, "class"));
+		int x11_id = json_object_get_int(json_object_object_get(obj, "window"));
+
+		printf(" (%s, pid: %d", shell, pid);
+		if (app_id != NULL) {
+			printf(", app_id: \"%s\"", app_id);
+		}
+		if (instance != NULL) {
+			printf(", instance: \"%s\"", instance);
+		}
+		if (class != NULL) {
+			printf(", class: \"%s\"", class);
+		}
+		if (x11_id != 0) {
+			printf(", X11 window: 0x%X", x11_id);
+		}
+		printf(")");
+	}
+
+	printf("\n");
+
+	json_object *nodes_obj = json_object_object_get(obj, "nodes");
+	size_t len = json_object_array_length(nodes_obj);
+	for (size_t i = 0; i < len; i++) {
+		pretty_print_tree(json_object_array_get_idx(nodes_obj, i), indent + 1);
+	}
+
+	json_object *floating_nodes_obj;
+	json_bool floating_nodes = json_object_object_get_ex(obj, "floating_nodes", &floating_nodes_obj);
+	if (floating_nodes) {
+		size_t len = json_object_array_length(floating_nodes_obj);
+		for (size_t i = 0; i < len; i++) {
+			pretty_print_tree(json_object_array_get_idx(floating_nodes_obj, i), indent + 1);
+		}
+	}
+}
+
 static void pretty_print(int type, json_object *resp) {
-	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
-			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
-			type != IPC_GET_VERSION && type != IPC_GET_SEATS &&
-			type != IPC_GET_CONFIG && type != IPC_SEND_TICK) {
-		printf("%s\n", json_object_to_json_string_ext(resp,
-			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+	switch (type) {
+	case IPC_SEND_TICK:
 		return;
-	}
-
-	if (type == IPC_SEND_TICK) {
-		return;
-	}
-
-	if (type == IPC_GET_VERSION) {
+	case IPC_GET_VERSION:
 		pretty_print_version(resp);
 		return;
-	}
-
-	if (type == IPC_GET_CONFIG) {
+	case IPC_GET_CONFIG:
 		pretty_print_config(resp);
+		return;
+	case IPC_GET_TREE:
+		pretty_print_tree(resp, 0);
+		return;
+	case IPC_COMMAND:
+	case IPC_GET_WORKSPACES:
+	case IPC_GET_INPUTS:
+	case IPC_GET_OUTPUTS:
+	case IPC_GET_SEATS:
+		break;
+	default:
+		printf("%s\n", json_object_to_json_string_ext(resp,
+			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
 	}
 

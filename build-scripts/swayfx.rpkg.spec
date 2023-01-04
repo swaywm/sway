@@ -2,7 +2,7 @@
 
 ### CHANGE THESE VARIABLES BEFORE RELEASE:
 # Change to current Sway base version!
-%global SwayBaseVersion 1.7
+%global SwayBaseVersion 1.8
 # Change to current SwayFX tag!
 %global Tag 0.1.1
 
@@ -23,8 +23,8 @@ BuildRequires:	pkgconfig(gdk-pixbuf-2.0)
 BuildRequires:	pkgconfig(json-c) >= 0.13
 BuildRequires:	pkgconfig(libdrm)
 BuildRequires:	pkgconfig(libevdev)
-BuildRequires:	pkgconfig(libinput) >= 1.6.0
-BuildRequires:	pkgconfig(libpcre)
+BuildRequires:	pkgconfig(libinput) >= 1.21.0
+BuildRequires:	pkgconfig(libpcre2)
 BuildRequires:	pkgconfig(libsystemd) >= 239
 BuildRequires:	pkgconfig(libudev)
 BuildRequires:	pkgconfig(pango)
@@ -35,7 +35,7 @@ BuildRequires:	pkgconfig(wayland-cursor)
 BuildRequires:	pkgconfig(wayland-egl)
 BuildRequires:	pkgconfig(wayland-server) >= 1.20.0
 BuildRequires:	pkgconfig(wayland-protocols) >= 1.24
-BuildRequires:	(pkgconfig(wlroots) >= 0.15.0 with pkgconfig(wlroots) < 0.16)
+BuildRequires:	(pkgconfig(wlroots) >= 0.16.0 with pkgconfig(wlroots) < 0.17)
 BuildRequires:	pkgconfig(xcb)
 BuildRequires:	pkgconfig(xkbcommon)
 # Dmenu is the default launcher in sway

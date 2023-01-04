@@ -385,13 +385,18 @@ static int cmp_sni_id(const void *item, const void *cmp_to) {
 
 static enum hotspot_event_handling icon_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
-		double x, double y, uint32_t button, void *data) {
+		double x, double y, uint32_t button, bool released, void *data) {
 	sway_log(SWAY_DEBUG, "Clicked on %s", (char *)data);
 
 	struct swaybar_tray *tray = output->bar->tray;
 	int idx = list_seq_find(tray->items, cmp_sni_id, data);
 
 	if (idx != -1) {
+		if (released) {
+			// Since we handle the pressed event, also handle the released event
+			// to block it from falling through to a binding in the bar
+			return HOTSPOT_IGNORE;
+		}
 		struct swaybar_sni *sni = tray->items->items[idx];
 		// guess global position since wayland doesn't expose it
 		struct swaybar_config *config = tray->bar->config;
@@ -464,6 +469,11 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		}
 
 		sni->target_size = target_size;
+	}
+
+	// Passive
+	if (sni->status && sni->status[0] == 'P') {
+		return 0;
 	}
 
 	int icon_size;

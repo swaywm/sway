@@ -28,6 +28,7 @@ struct sway_root {
 	double width, height;
 
 	list_t *outputs; // struct sway_output
+	list_t *non_desktop_outputs; // struct sway_output_non_desktop
 	list_t *scratchpad; // struct sway_container
 
 	// For when there's no connected outputs
@@ -68,12 +69,6 @@ void root_scratchpad_show(struct sway_container *con);
  */
 void root_scratchpad_hide(struct sway_container *con);
 
-struct sway_workspace *root_workspace_for_pid(pid_t pid);
-
-void root_record_workspace_pid(pid_t pid);
-
-void root_remove_workspace_pid(pid_t pid);
-
 void root_for_each_workspace(void (*f)(struct sway_workspace *ws, void *data),
 		void *data);
 
@@ -90,7 +85,5 @@ struct sway_container *root_find_container(
 		bool (*test)(struct sway_container *con, void *data), void *data);
 
 void root_get_box(struct sway_root *root, struct wlr_box *box);
-
-void root_rename_pid_workspaces(const char *old_name, const char *new_name);
 
 #endif

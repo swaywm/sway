@@ -1,7 +1,7 @@
 #ifndef _SWAY_LAYERS_H
 #define _SWAY_LAYERS_H
 #include <stdbool.h>
-#include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 
 enum layer_parent {

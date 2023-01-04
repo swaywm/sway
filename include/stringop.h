@@ -2,6 +2,7 @@
 #define _SWAY_STRINGOP_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "list.h"
 
 void strip_whitespace(char *str);

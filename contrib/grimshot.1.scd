@@ -6,7 +6,7 @@ grimshot - a helper for screenshots within sway
 
 # SYNOPSIS
 
-*grimshot* [--notify] (copy|save) [TARGET] [FILE]++
+*grimshot* [--notify] [--cursor] (copy|save) [TARGET] [FILE]++
 *grimshot* check++
 *grimshot* usage
 
@@ -15,8 +15,11 @@ grimshot - a helper for screenshots within sway
 *--notify*
 	Show notifications to the user that a screenshot has been taken.
 
+*--cursor*
+	Include cursors in the screenshot.
+
 *save*
-	Save the screenshot into a regular file. Grimshot will write images
+	Save the screenshot into a regular file. Grimshot will write image
 	files to *XDG_SCREENSHOTS_DIR* if this is set (or defined
 	in *user-dirs.dir*), or otherwise fall back to *XDG_PICTURES_DIR*.
 	Set FILE to '-' to pipe the output to STDOUT.

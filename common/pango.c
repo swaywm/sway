@@ -50,7 +50,7 @@ size_t escape_markup_text(const char *src, char *dest) {
 	return length;
 }
 
-PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
+PangoLayout *get_pango_layout(cairo_t *cairo, const PangoFontDescription *desc,
 		const char *text, double scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs;
@@ -73,16 +73,14 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	}
 
 	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
-	PangoFontDescription *desc = pango_font_description_from_string(font);
 	pango_layout_set_font_description(layout, desc);
 	pango_layout_set_single_paragraph_mode(layout, 1);
 	pango_layout_set_attributes(layout, attrs);
 	pango_attr_list_unref(attrs);
-	pango_font_description_free(desc);
 	return layout;
 }
 
-void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
+void get_text_size(cairo_t *cairo, const PangoFontDescription *desc, int *width, int *height,
 		int *baseline, double scale, bool markup, const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
@@ -99,7 +97,7 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	vsnprintf(buf, length, fmt, args);
 	va_end(args);
 
-	PangoLayout *layout = get_pango_layout(cairo, font, buf, scale, markup);
+	PangoLayout *layout = get_pango_layout(cairo, desc, buf, scale, markup);
 	pango_cairo_update_layout(cairo, layout);
 	pango_layout_get_pixel_size(layout, width, height);
 	if (baseline) {
@@ -109,10 +107,9 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	free(buf);
 }
 
-void get_text_metrics(const char *font, int *height, int *baseline) {
+void get_text_metrics(const PangoFontDescription *description, int *height, int *baseline) {
 	cairo_t *cairo = cairo_create(NULL);
 	PangoContext *pango = pango_cairo_create_context(cairo);
-	PangoFontDescription *description = pango_font_description_from_string(font);
 	// When passing NULL as a language, pango uses the current locale.
 	PangoFontMetrics *metrics = pango_context_get_metrics(pango, description, NULL);
 
@@ -120,12 +117,11 @@ void get_text_metrics(const char *font, int *height, int *baseline) {
 	*height = *baseline + pango_font_metrics_get_descent(metrics) / PANGO_SCALE;
 
 	pango_font_metrics_unref(metrics);
-	pango_font_description_free(description);
 	g_object_unref(pango);
 	cairo_destroy(cairo);
 }
 
-void render_text(cairo_t *cairo, const char *font,
+void render_text(cairo_t *cairo, const PangoFontDescription *desc,
 		double scale, bool markup, const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
@@ -142,7 +138,7 @@ void render_text(cairo_t *cairo, const char *font,
 	vsnprintf(buf, length, fmt, args);
 	va_end(args);
 
-	PangoLayout *layout = get_pango_layout(cairo, font, buf, scale, markup);
+	PangoLayout *layout = get_pango_layout(cairo, desc, buf, scale, markup);
 	cairo_font_options_t *fo = cairo_font_options_create();
 	cairo_get_font_options(cairo, fo);
 	pango_cairo_context_set_font_options(pango_layout_get_context(layout), fo);

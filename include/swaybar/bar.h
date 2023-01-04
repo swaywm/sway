@@ -58,7 +58,6 @@ struct swaybar_output {
 	struct zxdg_output_v1 *xdg_output;
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
-	struct wl_region *input_region;
 	uint32_t wl_name;
 
 	struct wl_list workspaces; // swaybar_workspace::link

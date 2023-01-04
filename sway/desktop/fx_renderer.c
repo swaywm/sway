@@ -35,6 +35,71 @@ static const GLfloat verts[] = {
 	0, 1, // bottom left
 };
 
+static const float transforms[][9] = {
+	[WL_OUTPUT_TRANSFORM_NORMAL] = {
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_90] = {
+		0.0f, 1.0f, 0.0f,
+		-1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_180] = {
+		-1.0f, 0.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_270] = {
+		0.0f, -1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_FLIPPED] = {
+		-1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_FLIPPED_90] = {
+		0.0f, 1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_FLIPPED_180] = {
+		1.0f, 0.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+	[WL_OUTPUT_TRANSFORM_FLIPPED_270] = {
+		0.0f, -1.0f, 0.0f,
+		-1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	},
+};
+
+static void matrix_projection(float mat[static 9], int width, int height,
+		enum wl_output_transform transform) {
+	memset(mat, 0, sizeof(*mat) * 9);
+
+	const float *t = transforms[transform];
+	float x = 2.0f / width;
+	float y = 2.0f / height;
+
+	// Rotation + reflection
+	mat[0] = x * t[0];
+	mat[1] = x * t[1];
+	mat[3] = y * -t[3];
+	mat[4] = y * -t[4];
+
+	// Translation
+	mat[2] = -copysign(1.0f, mat[0] + mat[1]);
+	mat[5] = -copysign(1.0f, mat[3] + mat[4]);
+
+	// Identity
+	mat[8] = 1.0f;
+}
+
 static GLuint compile_shader(GLuint type, const GLchar *src) {
 	GLuint shader = glCreateShader(type);
 	glShaderSource(shader, 1, &src, NULL);
@@ -156,7 +221,8 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 
 	// TODO: wlr_egl_make_current or eglMakeCurrent?
 	// TODO: assert instead of conditional statement?
-	if (!wlr_egl_make_current(egl)) {
+	if (!eglMakeCurrent(wlr_egl_get_display(egl), EGL_NO_SURFACE, EGL_NO_SURFACE,
+			wlr_egl_get_context(egl))) {
 		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not make EGL current");
 		return NULL;
 	}
@@ -242,7 +308,11 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 		goto error;
 	}
 
-	wlr_egl_unset_current(renderer->egl);
+	if (!eglMakeCurrent(wlr_egl_get_display(renderer->egl),
+				EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
+		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not unset current EGL");
+		goto error;
+	}
 
 	sway_log(SWAY_INFO, "GLES2 RENDERER: Shaders Initialized Successfully");
 	return renderer;
@@ -257,7 +327,10 @@ error:
 	glDeleteProgram(renderer->shaders.tex_rgbx.program);
 	glDeleteProgram(renderer->shaders.tex_ext.program);
 
-	wlr_egl_unset_current(renderer->egl);
+	if (!eglMakeCurrent(wlr_egl_get_display(renderer->egl),
+				EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
+		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not unset current EGL");
+	}
 
 	// TODO: more freeing?
 	free(renderer);
@@ -270,7 +343,7 @@ void fx_renderer_begin(struct fx_renderer *renderer, uint32_t width, uint32_t he
 	glViewport(0, 0, width, height);
 
 	// refresh projection matrix
-	wlr_matrix_projection(renderer->projection, width, height,
+	matrix_projection(renderer->projection, width, height,
 		WL_OUTPUT_TRANSFORM_FLIPPED_180);
 
 	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);

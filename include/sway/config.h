@@ -10,12 +10,14 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xf86drmMode.h>
 #include "../include/config.h"
+#include "gesture.h"
 #include "list.h"
 #include "swaynag.h"
 #include "tree/container.h"
 #include "sway/input/tablet.h"
 #include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include <pango/pangocairo.h>
 
 // TODO: Refactor this shit
 
@@ -32,7 +34,8 @@ enum binding_input_type {
 	BINDING_KEYSYM,
 	BINDING_MOUSECODE,
 	BINDING_MOUSESYM,
-	BINDING_SWITCH
+	BINDING_SWITCH, // dummy, only used to call seat_execute_command
+	BINDING_GESTURE // dummy, only used to call seat_execute_command
 };
 
 enum binding_flags {
@@ -45,10 +48,11 @@ enum binding_flags {
 	BINDING_RELOAD = 1 << 6, // switch only; (re)trigger binding on reload
 	BINDING_INHIBITED = 1 << 7, // keyboard only: ignore shortcut inhibitor
 	BINDING_NOREPEAT = 1 << 8, // keyboard only; do not trigger when repeating a held key
+	BINDING_EXACT = 1 << 9, // gesture only; only trigger on exact match
 };
 
 /**
- * A key binding and an associated command.
+ * A key (or mouse) binding and an associated command.
  */
 struct sway_binding {
 	enum binding_input_type type;
@@ -62,12 +66,10 @@ struct sway_binding {
 	char *command;
 };
 
-/**
- * A mouse binding and an associated command.
- */
-struct sway_mouse_binding {
-	uint32_t button;
-	char *command;
+enum sway_switch_trigger {
+	SWAY_SWITCH_TRIGGER_OFF,
+	SWAY_SWITCH_TRIGGER_ON,
+	SWAY_SWITCH_TRIGGER_TOGGLE,
 };
 
 /**
@@ -75,8 +77,18 @@ struct sway_mouse_binding {
  */
 struct sway_switch_binding {
 	enum wlr_switch_type type;
-	enum wlr_switch_state state;
+	enum sway_switch_trigger trigger;
 	uint32_t flags;
+	char *command;
+};
+
+/**
+ * A gesture binding and an associated command.
+ */
+struct sway_gesture_binding {
+	char *input;
+	uint32_t flags;
+	struct gesture gesture;
 	char *command;
 };
 
@@ -99,6 +111,7 @@ struct sway_mode {
 	list_t *keycode_bindings;
 	list_t *mouse_bindings;
 	list_t *switch_bindings;
+	list_t *gesture_bindings;
 	bool pango;
 };
 
@@ -137,6 +150,7 @@ struct input_config {
 	int drag;
 	int drag_lock;
 	int dwt;
+	int dwtp;
 	int left_handed;
 	int middle_emulation;
 	int natural_scroll;
@@ -234,12 +248,6 @@ struct seat_config {
 	} xcursor_theme;
 };
 
-enum config_dpms {
-	DPMS_IGNORE,
-	DPMS_ON,
-	DPMS_OFF,
-};
-
 enum scale_filter_mode {
 	SCALE_FILTER_DEFAULT, // the default is currently smart
 	SCALE_FILTER_LINEAR,
@@ -261,6 +269,7 @@ enum render_bit_depth {
 struct output_config {
 	char *name;
 	int enabled;
+	int power;
 	int width, height;
 	float refresh_rate;
 	int custom_mode;
@@ -277,7 +286,6 @@ struct output_config {
 	char *background;
 	char *background_option;
 	char *background_fallback;
-	enum config_dpms dpms_state;
 };
 
 /**
@@ -501,7 +509,8 @@ struct sway_config {
 	char *floating_scroll_right_cmd;
 	enum sway_container_layout default_orientation;
 	enum sway_container_layout default_layout;
-	char *font;
+	char *font; // Used for IPC.
+	PangoFontDescription *font_description; // Used internally for rendering and validating.
 	int font_height;
 	int font_baseline;
 	bool pango_markup;
@@ -699,6 +708,8 @@ int workspace_output_cmp_workspace(const void *a, const void *b);
 void free_sway_binding(struct sway_binding *sb);
 
 void free_switch_binding(struct sway_switch_binding *binding);
+
+void free_gesture_binding(struct sway_gesture_binding *binding);
 
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 

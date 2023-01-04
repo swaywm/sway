@@ -3,12 +3,12 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
-#include <wlr/types/wlr_output_damage.h>
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
+#include "sway/server.h"
 #include "log.h"
 #include "util.h"
 
@@ -146,7 +146,7 @@ void output_enable(struct sway_output *output) {
 
 	input_manager_configure_xcursor();
 
-	wl_signal_emit(&root->events.new_node, &output->node);
+	wl_signal_emit_mutable(&root->events.new_node, &output->node);
 
 	arrange_layers(output);
 	arrange_root();
@@ -262,7 +262,7 @@ void output_disable(struct sway_output *output) {
 	}
 
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
-	wl_signal_emit(&output->events.disable, output);
+	wl_signal_emit_mutable(&output->events.disable, output);
 
 	output_evacuate(output);
 
@@ -286,7 +286,7 @@ void output_begin_destroy(struct sway_output *output) {
 		return;
 	}
 	sway_log(SWAY_DEBUG, "Destroying output '%s'", output->wlr_output->name);
-	wl_signal_emit(&output->node.events.destroy, &output->node);
+	wl_signal_emit_mutable(&output->node.events.destroy, &output->node);
 
 	output->node.destroying = true;
 	node_set_dirty(&output->node);
@@ -301,10 +301,10 @@ struct sway_output *output_get_in_direction(struct sway_output *reference,
 	if (!sway_assert(direction, "got invalid direction: %d", direction)) {
 		return NULL;
 	}
-	struct wlr_box *output_box =
-		wlr_output_layout_get_box(root->output_layout, reference->wlr_output);
-	int lx = output_box->x + output_box->width / 2;
-	int ly = output_box->y + output_box->height / 2;
+	struct wlr_box output_box;
+	wlr_output_layout_get_box(root->output_layout, reference->wlr_output, &output_box);
+	int lx = output_box.x + output_box.width / 2;
+	int ly = output_box.y + output_box.height / 2;
 	struct wlr_output *wlr_adjacent = wlr_output_layout_adjacent_output(
 			root->output_layout, direction, reference->wlr_output, lx, ly);
 	if (!wlr_adjacent) {
@@ -388,6 +388,33 @@ void output_get_box(struct sway_output *output, struct wlr_box *box) {
 	box->y = output->ly;
 	box->width = output->width;
 	box->height = output->height;
+}
+
+static void handle_destroy_non_desktop(struct wl_listener *listener, void *data) {
+	struct sway_output_non_desktop *output =
+		wl_container_of(listener, output, destroy);
+
+	sway_log(SWAY_DEBUG, "Destroying non-desktop output '%s'", output->wlr_output->name);
+
+	int index = list_find(root->non_desktop_outputs, output);
+	list_del(root->non_desktop_outputs, index);
+
+	wl_list_remove(&output->destroy.link);
+
+	free(output);
+}
+
+struct sway_output_non_desktop *output_non_desktop_create(
+		struct wlr_output *wlr_output) {
+	struct sway_output_non_desktop *output =
+		calloc(1, sizeof(struct sway_output_non_desktop));
+
+	output->wlr_output = wlr_output;
+
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	output->destroy.notify = handle_destroy_non_desktop;
+
+	return output;
 }
 
 enum sway_container_layout output_get_default_layout(
