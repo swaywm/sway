@@ -23,9 +23,9 @@ depends=(
 	"libxcb"
 	"libxkbcommon.so"
 	"pango"
-	"pcre2"
+	"pcre"
 	"ttf-font"
-	"wlroots<0.17"
+	"wlroots0.15"
 )
 optdepends=(
 	"alacritty: Terminal emulator used by the default config"
