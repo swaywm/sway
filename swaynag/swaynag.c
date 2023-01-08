@@ -483,10 +483,6 @@ void swaynag_run(struct swaynag *swaynag) {
 			&& wl_display_dispatch(swaynag->display) != -1) {
 		// This is intentionally left blank
 	}
-
-	if (swaynag->display) {
-		wl_display_disconnect(swaynag->display);
-	}
 }
 
 void swaynag_destroy(struct swaynag *swaynag) {
@@ -501,6 +497,7 @@ void swaynag_destroy(struct swaynag *swaynag) {
 	}
 	list_free(swaynag->buttons);
 	free(swaynag->details.message);
+	free(swaynag->details.details_text);
 	free(swaynag->details.button_up.text);
 	free(swaynag->details.button_down.text);
 
@@ -540,5 +537,9 @@ void swaynag_destroy(struct swaynag *swaynag) {
 
 	if (swaynag->shm) {
 		wl_shm_destroy(swaynag->shm);
+	}
+
+	if (swaynag->display) {
+		wl_display_disconnect(swaynag->display);
 	}
 }
