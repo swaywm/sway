@@ -53,6 +53,7 @@ options=(debug)
 install=sway.install
 
 build() {
+	export PKG_CONFIG_PATH='/usr/lib/wlroots0.15/pkgconfig'
 	arch-meson \
 		-Dsd-bus-provider=libsystemd \
 		-Dwerror=false \
