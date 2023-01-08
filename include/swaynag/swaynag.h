@@ -58,6 +58,7 @@ struct swaynag_button {
 struct swaynag_details {
 	bool visible;
 	char *message;
+	char *details_text;
 
 	int x;
 	int y;
@@ -67,7 +68,7 @@ struct swaynag_details {
 	int offset;
 	int visible_lines;
 	int total_lines;
-	struct swaynag_button button_details;
+	struct swaynag_button *button_details;
 	struct swaynag_button button_up;
 	struct swaynag_button button_down;
 };

@@ -29,10 +29,12 @@ int main(int argc, char **argv) {
 	wl_list_init(&swaynag.outputs);
 	wl_list_init(&swaynag.seats);
 
-	struct swaynag_button button_close = { 0 };
-	button_close.text = strdup("X");
-	button_close.type = SWAYNAG_ACTION_DISMISS;
-	list_add(swaynag.buttons, &button_close);
+	struct swaynag_button *button_close = calloc(1, sizeof(struct swaynag_button));
+	button_close->text = strdup("X");
+	button_close->type = SWAYNAG_ACTION_DISMISS;
+	list_add(swaynag.buttons, button_close);
+
+	swaynag.details.details_text = strdup("Toggle details");
 
 	char *config_path = NULL;
 	bool debug = false;
@@ -54,8 +56,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	swaynag.details.button_details.text = strdup("Toggle details");
-	swaynag.details.button_details.type = SWAYNAG_ACTION_EXPAND;
 
 	if (argc > 1) {
 		struct swaynag_type *type_args = swaynag_type_new("<args>");
@@ -88,10 +88,11 @@ int main(int argc, char **argv) {
 	swaynag_type_merge(type, swaynag_type_get(types, "<args>"));
 	swaynag.type = type;
 
-	swaynag_types_free(types);
-
 	if (swaynag.details.message) {
-		list_add(swaynag.buttons, &swaynag.details.button_details);
+		swaynag.details.button_details = calloc(1, sizeof(struct swaynag_button));
+		swaynag.details.button_details->text = strdup(swaynag.details.details_text);
+		swaynag.details.button_details->type = SWAYNAG_ACTION_EXPAND;
+		list_add(swaynag.buttons, swaynag.details.button_details);
 	}
 
 	sway_log(SWAY_DEBUG, "Output: %s", swaynag.type->output);
@@ -111,11 +112,9 @@ int main(int argc, char **argv) {
 
 	swaynag_setup(&swaynag);
 	swaynag_run(&swaynag);
-	return status;
 
 cleanup:
 	swaynag_types_free(types);
-	free(swaynag.details.button_details.text);
 	swaynag_destroy(&swaynag);
 	return status;
 }
