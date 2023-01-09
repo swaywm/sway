@@ -176,11 +176,11 @@ static void seat_keyboard_notify_enter(struct sway_seat *seat,
 			state->pressed_keycodes, state->npressed, &keyboard->modifiers);
 }
 
-static void seat_tablet_pads_notify_enter(struct sway_seat *seat,
+static void seat_tablet_pads_set_focus(struct sway_seat *seat,
 		struct wlr_surface *surface) {
 	struct sway_seat_device *seat_device;
 	wl_list_for_each(seat_device, &seat->devices, link) {
-		sway_tablet_pad_notify_enter(seat_device->tablet_pad, surface);
+		sway_tablet_pad_set_focus(seat_device->tablet_pad, surface);
 	}
 }
 
@@ -204,7 +204,7 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 #endif
 
 		seat_keyboard_notify_enter(seat, view->surface);
-		seat_tablet_pads_notify_enter(seat, view->surface);
+		seat_tablet_pads_set_focus(seat, view->surface);
 		sway_input_method_relay_set_focus(&seat->im_relay, view->surface);
 
 		struct wlr_pointer_constraint_v1 *constraint =
@@ -1313,7 +1313,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 	}
 
 	sway_input_method_relay_set_focus(&seat->im_relay, surface);
-	seat_tablet_pads_notify_enter(seat, surface);
+	seat_tablet_pads_set_focus(seat, surface);
 }
 
 void seat_set_focus_layer(struct sway_seat *seat,
