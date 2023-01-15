@@ -319,6 +319,8 @@ int main(int argc, char **argv) {
 	if (!getenv("XDG_RUNTIME_DIR") && optind == argc) {
 		fprintf(stderr,
 				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
+		fprintf(stderr,
+				"Please check that user is member of seat group and that the seatd.service is enabled.\n");
 		exit(EXIT_FAILURE);
 	}
 
