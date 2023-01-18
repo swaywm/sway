@@ -85,4 +85,5 @@ Here's a quick outline of where most of our changes lie vs the main sway reposit
 + `sway/desktop/fx_renderer.c`: the meat and potatoes of this project, structured as similarly to wlr_renderer as possible
 + `sway/desktop/shaders`: where all of the shaders that fx_renderer uses live
 
-Please join our (for the time being very small) Discord server for development chatter! https://discord.gg/jVjjFdcN
+Please join our (for the time being very small) Discord server for development chatter! https://discord.gg/R5hYhC2BFg
+
