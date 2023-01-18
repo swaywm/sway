@@ -338,6 +338,9 @@ static void config_defaults(struct sway_config *config) {
 	config->dim_inactive = 0.0f;
 	color_to_rgba(config->dim_inactive_colors.unfocused, 0x000000FF);
 	color_to_rgba(config->dim_inactive_colors.urgent, 0x900000FF);
+	config->shadow_enabled = false;
+	config->shadow_blur_sigma = 20.0f;
+	color_to_rgba(config->shadow_color, 0x0000007F);
 
 	// The keysym to keycode translation
 	struct xkb_rule_names rules = {0};

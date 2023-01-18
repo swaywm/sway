@@ -24,6 +24,7 @@
 #include "quad_round_tl_frag_src.h"
 #include "quad_round_tr_frag_src.h"
 #include "corner_frag_src.h"
+#include "box_shadow_frag_src.h"
 #include "tex_rgba_frag_src.h"
 #include "tex_rgbx_frag_src.h"
 #include "tex_external_frag_src.h"
@@ -108,6 +109,7 @@ static GLuint compile_shader(GLuint type, const GLchar *src) {
 	GLint ok;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
 	if (ok == GL_FALSE) {
+		sway_log(SWAY_ERROR, "Failed to compile shader");
 		glDeleteShader(shader);
 		shader = 0;
 	}
@@ -140,6 +142,7 @@ static GLuint link_program(const GLchar *vert_src, const GLchar *frag_src) {
 	GLint ok;
 	glGetProgramiv(prog, GL_LINK_STATUS, &ok);
 	if (ok == GL_FALSE) {
+		sway_log(SWAY_ERROR, "Failed to link shader");
 		glDeleteProgram(prog);
 		goto error;
 	}
@@ -294,6 +297,20 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.corner.half_size = glGetUniformLocation(prog, "half_size");
 	renderer->shaders.corner.half_thickness = glGetUniformLocation(prog, "half_thickness");
 
+	// box shadow shader
+	prog = link_program(common_vert_src, box_shadow_frag_src);
+	renderer->shaders.box_shadow.program = prog;
+	if (!renderer->shaders.box_shadow.program) {
+		goto error;
+	}
+	renderer->shaders.box_shadow.proj = glGetUniformLocation(prog, "proj");
+	renderer->shaders.box_shadow.color = glGetUniformLocation(prog, "color");
+	renderer->shaders.box_shadow.pos_attrib = glGetAttribLocation(prog, "pos");
+	renderer->shaders.box_shadow.position = glGetUniformLocation(prog, "position");
+	renderer->shaders.box_shadow.size = glGetUniformLocation(prog, "size");
+	renderer->shaders.box_shadow.blur_sigma = glGetUniformLocation(prog, "blur_sigma");
+	renderer->shaders.box_shadow.corner_radius = glGetUniformLocation(prog, "corner_radius");
+
 	// fragment shaders
 	prog = link_program(common_vert_src, tex_rgba_frag_src);
 	if (!init_frag_shader(&renderer->shaders.tex_rgba, prog)) {
@@ -323,6 +340,7 @@ error:
 	glDeleteProgram(renderer->shaders.rounded_tl_quad.program);
 	glDeleteProgram(renderer->shaders.rounded_tr_quad.program);
 	glDeleteProgram(renderer->shaders.corner.program);
+	glDeleteProgram(renderer->shaders.box_shadow.program);
 	glDeleteProgram(renderer->shaders.tex_rgba.program);
 	glDeleteProgram(renderer->shaders.tex_rgbx.program);
 	glDeleteProgram(renderer->shaders.tex_ext.program);
@@ -340,6 +358,15 @@ error:
 }
 
 void fx_renderer_begin(struct fx_renderer *renderer, uint32_t width, uint32_t height) {
+	// Create and render the stencil buffer
+	if (renderer->stencil_buffer_id == 0) {
+		glGenRenderbuffers(1, &renderer->stencil_buffer_id);
+	}
+	glBindRenderbuffer(GL_RENDERBUFFER, renderer->stencil_buffer_id);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+			GL_RENDERBUFFER, renderer->stencil_buffer_id);
+
 	glViewport(0, 0, width, height);
 
 	// refresh projection matrix
@@ -354,8 +381,9 @@ void fx_renderer_end() {
 }
 
 void fx_renderer_clear(const float color[static 4]) {
-		glClearColor(color[0], color[1], color[2], color[3]);
-		glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(color[0], color[1], color[2], color[3]);
+	glClearStencil(0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 void fx_renderer_scissor(struct wlr_box *box) {
@@ -615,4 +643,81 @@ void fx_render_border_corner(struct fx_renderer *renderer, const struct wlr_box 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	glDisableVertexAttribArray(renderer->shaders.corner.pos_attrib);
+}
+
+// TODO: alpha input arg?
+void fx_render_box_shadow(struct fx_renderer *renderer, const struct wlr_box *box,
+		const float color[static 4], const float projection[static 9],
+		int corner_radius, float blur_sigma) {
+	if (box->width == 0 || box->height == 0) {
+		return;
+	}
+	assert(box->width > 0 && box->height > 0);
+	float matrix[9];
+	wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0, projection);
+
+	float gl_matrix[9];
+	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
+
+	// TODO: investigate why matrix is flipped prior to this cmd
+	// wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
+
+	wlr_matrix_transpose(gl_matrix, gl_matrix);
+
+	// Init stencil work
+	// NOTE: Alpha needs to be set to 1.0 to be able to discard any "empty" pixels
+	const float col[4] = {0.0, 0.0, 0.0, 1.0};
+	struct wlr_box inner_box;
+	memcpy(&inner_box, box, sizeof(struct wlr_box));
+	inner_box.x += blur_sigma;
+	inner_box.y += blur_sigma;
+	inner_box.width -= blur_sigma * 2;
+	inner_box.height -= blur_sigma * 2;
+
+	glEnable(GL_STENCIL_TEST);
+	glClearStencil(0);
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	// Disable writing to color buffer
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	// Draw the rounded rect as a mask
+	fx_render_rounded_rect(renderer, &inner_box, col, projection, corner_radius, ALL);
+	// Close the mask
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	// Reenable writing to color buffer
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	// blending will practically always be needed (unless we have a madman
+	// who uses opaque shadows with zero sigma), so just enable it
+	glEnable(GL_BLEND);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glUseProgram(renderer->shaders.box_shadow.program);
+
+	glUniformMatrix3fv(renderer->shaders.box_shadow.proj, 1, GL_FALSE, gl_matrix);
+	glUniform4f(renderer->shaders.box_shadow.color, color[0], color[1], color[2], color[3]);
+	glUniform1f(renderer->shaders.box_shadow.blur_sigma, blur_sigma);
+	glUniform1f(renderer->shaders.box_shadow.corner_radius, corner_radius);
+
+	glUniform2f(renderer->shaders.box_shadow.size, box->width, box->height);
+	glUniform2f(renderer->shaders.box_shadow.position, box->x, box->y);
+
+	glVertexAttribPointer(renderer->shaders.box_shadow.pos_attrib, 2, GL_FLOAT, GL_FALSE,
+			0, verts);
+
+	glEnableVertexAttribArray(renderer->shaders.box_shadow.pos_attrib);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableVertexAttribArray(renderer->shaders.box_shadow.pos_attrib);
+
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	glClearStencil(0);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glDisable(GL_STENCIL_TEST);
 }

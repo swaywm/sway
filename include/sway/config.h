@@ -482,6 +482,9 @@ struct sway_config {
 		float unfocused[4];
 		float urgent[4];
 	} dim_inactive_colors;
+	bool shadow_enabled;
+	int shadow_blur_sigma;
+	float shadow_color[4];
 
 	char *swaynag_command;
 	struct swaynag_instance swaynag_config_errors;

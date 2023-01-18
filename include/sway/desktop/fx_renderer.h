@@ -47,6 +47,8 @@ struct fx_renderer {
 
 	float projection[9];
 
+	GLuint stencil_buffer_id;
+
 	struct {
 		bool OES_egl_image_external;
 	} exts;
@@ -84,6 +86,17 @@ struct fx_renderer {
 			GLint half_thickness;
 		} corner;
 
+		struct {
+			GLuint program;
+			GLint proj;
+			GLint color;
+			GLint pos_attrib;
+			GLint position;
+			GLint size;
+			GLint blur_sigma;
+			GLint corner_radius;
+		} box_shadow;
+
 		struct gles2_tex_shader tex_rgba;
 		struct gles2_tex_shader tex_rgbx;
 		struct gles2_tex_shader tex_ext;
@@ -117,5 +130,8 @@ void fx_render_rounded_rect(struct fx_renderer *renderer, const struct wlr_box *
 void fx_render_border_corner(struct fx_renderer *renderer, const struct wlr_box *box,
 		const float color[static 4], const float projection[static 9],
 		enum corner_location corner_location, int radius, int border_thickness);
+
+void fx_render_box_shadow(struct fx_renderer *renderer, const struct wlr_box *box,
+		const float color[static 4], const float projection[static 9], int radius, float blur_sigma);
 
 #endif

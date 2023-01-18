@@ -328,6 +328,47 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
+// _box.x and .y are expected to be layout-local
+// _box.width and .height are expected to be output-buffer-local
+void render_box_shadow(struct sway_output *output, pixman_region32_t *output_damage,
+		const struct wlr_box *_box, const float color[static 4],
+		float blur_sigma, float corner_radius, float border_thickness) {
+	struct wlr_output *wlr_output = output->wlr_output;
+	struct fx_renderer *renderer = output->server->renderer;
+
+	struct wlr_box box;
+	memcpy(&box, _box, sizeof(struct wlr_box));
+	box.x -= output->lx * wlr_output->scale + blur_sigma;
+	box.y -= output->ly * wlr_output->scale + blur_sigma;
+	box.width += 2 * blur_sigma;
+	box.height += 2 * blur_sigma;
+
+	// Uses the outer radii of the window for a more realistic look
+	corner_radius = corner_radius + border_thickness;
+
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	pixman_region32_union_rect(&damage, &damage, box.x, box.y,
+		box.width, box.height);
+	pixman_region32_intersect(&damage, &damage, output_damage);
+	bool damaged = pixman_region32_not_empty(&damage);
+	if (!damaged) {
+		goto damage_finish;
+	}
+
+	int nrects;
+	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
+	for (int i = 0; i < nrects; ++i) {
+		scissor_output(wlr_output, &rects[i]);
+
+		fx_render_box_shadow(renderer, &box, color,
+				wlr_output->transform_matrix, corner_radius, blur_sigma);
+	}
+
+damage_finish:
+	pixman_region32_fini(&damage);
+}
+
 void premultiply_alpha(float color[4], float opacity) {
 	color[3] *= opacity;
 	color[0] *= color[3];
@@ -431,7 +472,7 @@ static void render_saved_view(struct sway_view *view, struct sway_output *output
 }
 
 /**
- * Render a view's surface and left/bottom/right borders.
+ * Render a view's surface, shadow, and left/bottom/right borders.
  */
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors,
@@ -443,7 +484,22 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		render_view_toplevels(view, output, damage, deco_data);
 	}
 
-	if (con->current.border == B_NONE || con->current.border == B_CSD) {
+	// if CSD borders, don't render borders or shadow
+	if (con->current.border == B_CSD) {
+		return;
+	}
+
+	// render shadow
+	if (con->shadow_enabled && config->shadow_blur_sigma > 0 && config->shadow_color[3] > 0.0) {
+		struct sway_container_state *state = &con->current;
+		struct wlr_box box = { state->x, state->y, state->width, state->height };
+		scale_box(&box, output->wlr_output->scale);
+		render_box_shadow(output, damage, &box, config->shadow_color,
+			config->shadow_blur_sigma, con->corner_radius,
+			state->border_thickness);
+	}
+
+	if (con->current.border == B_NONE) {
 		return;
 	}
 

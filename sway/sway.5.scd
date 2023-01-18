@@ -659,6 +659,17 @@ The default colors are:
 *dim_inactive_colors.urgent* <hex color>
 	The color to dim inactive urgent windows with. Example color: #900000FF
 
+*shadows* <value>
+	Adjusts if shadows should be enabled or not (on|off). Can also be set per
+	window with *for_window*.
+
+*shadow_blur_radius* <value>
+	Adjusts the shadow blur radius of windows between 0 (disabled) and 100
+	while 20 is the default value.
+
+*shadow_color* <hex color with alpha>
+	The shadow color. Default color: #0000007F
+
 *default_border* normal|none|pixel [<n>]
 	Set default border style for new tiled windows.
 

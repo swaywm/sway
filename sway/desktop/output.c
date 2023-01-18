@@ -746,11 +746,12 @@ static void damage_child_views_iterator(struct sway_container *con,
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	// Pad the box by 1px, because the width is a double and might be a fraction
+	int shadow_sigma = con->shadow_enabled ? config->shadow_blur_sigma : 0;
 	struct wlr_box box = {
-		.x = con->current.x - output->lx - 1,
-		.y = con->current.y - output->ly - 1,
-		.width = con->current.width + 2,
-		.height = con->current.height + 2,
+		.x = con->current.x - output->lx - 1 - shadow_sigma,
+		.y = con->current.y - output->ly - 1 - shadow_sigma,
+		.width = con->current.width + 2 + shadow_sigma * 2,
+		.height = con->current.height + 2 + shadow_sigma * 2,
 	};
 	scale_box(&box, output->wlr_output->scale);
 	if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
