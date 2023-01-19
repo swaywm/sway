@@ -649,6 +649,9 @@ The default colors are:
 *corner_radius* <radius>
 	Set corner radius for new windows.
 
+*smart_corner_radius* on|off
+	Set corner radius only if there are gaps around the window.
+
 *dim_inactive* <value>
 	Adjusts the dimming of inactive windows between 0.0 (no dimming) and 1.0
 	(fully dimmed) while 0.0 is the default value.

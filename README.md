@@ -12,6 +12,7 @@ Sway is an incredible window manager, and certainly one of the most well establi
 ## New Configuration Options
 
 + Corner radius: `corner_radius <val>`
++ Smart corner radius: `smart_corner_radius on|off`
 + Application saturation: `for_window [CRITERIA HERE] saturation <set|plus|minus> <val 0.0 <-> 2.0>`
 + Window shadows: *ONLY ON SWAYFX-GIT, NOT YET RELEASED*
     - `shadows on|off`
