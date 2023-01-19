@@ -44,6 +44,10 @@ You can also bring up a development shell and follow the build instructions belo
 ```
 nix develop
 ```
+### Gentoo
+
+If you use gentoo, you can install it from the guru:
+https://github.com/gentoo/guru/tree/master/gui-wm/swayfx
 
 ### Compiling from Source
 
