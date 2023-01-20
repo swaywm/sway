@@ -1044,7 +1044,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
-	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
+	if (!wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height)) {
+		return;
+	}
 
 	if (debug.damage == DAMAGE_RERENDER) {
 		int width, height;
