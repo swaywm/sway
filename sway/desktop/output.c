@@ -601,7 +601,14 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	// delaying both output rendering and surface frame callbacks.
 	int msec_until_refresh = 0;
 
-	if (output->max_render_time != 0) {
+	int max_render_time = 0;
+	if (output->max_render_time == -1) {
+		max_render_time = output->auto_max_render_time;
+	} else if (output->max_render_time != 0) {
+		max_render_time = output->max_render_time;
+	}
+
+	if (max_render_time != 0) {
 		struct timespec now;
 		clockid_t presentation_clock
 			= wlr_backend_get_presentation_clock(server.backend);
@@ -637,7 +644,7 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 		}
 	}
 
-	int delay = msec_until_refresh - output->max_render_time;
+	int delay = msec_until_refresh - max_render_time;
 
 	// If the delay is less than 1 millisecond (which is the least we can wait)
 	// then just render right away.
@@ -794,6 +801,8 @@ static void update_output_manager_config(struct sway_server *server) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
 	struct sway_server *server = output->server;
+
+	wlr_render_timestamp_destroy(output->render_end_ts);
 
 	if (output->enabled) {
 		output_disable(output);

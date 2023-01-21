@@ -249,8 +249,15 @@ static void pretty_print_output(json_object *o) {
 		);
 
 		int max_render_time_int = json_object_get_int(max_render_time);
+
 		printf("  Max render time: ");
-		printf(max_render_time_int == 0 ? "off\n" : "%d ms\n", max_render_time_int);
+		if (max_render_time_int == 0) {
+			printf("off\n");
+		} else if (max_render_time_int > 0) {
+			printf("%d ms\n", max_render_time_int);
+		} else {
+			printf("%d ms (auto)\n", -max_render_time_int);
+		}
 
 		printf("  Adaptive sync: %s\n",
 			json_object_get_string(adaptive_sync_status));

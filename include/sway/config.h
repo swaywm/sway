@@ -21,6 +21,9 @@
 
 // TODO: Refactor this shit
 
+#define MAX_RENDER_TIME_OFF 0
+#define MAX_RENDER_TIME_AUTO -2
+
 /**
  * Describes a variable created via the `set` command.
  */
