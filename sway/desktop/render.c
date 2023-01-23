@@ -1473,9 +1473,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 				 ? config->dim_inactive_colors.urgent
 				 : config->dim_inactive_colors.unfocused,
 			.dim = focus->current.focused ? 0.0f: config->dim_inactive,
-			.corner_radius = focus->corner_radius,
+			.corner_radius = 0,
 			.saturation = focus->saturation,
-			.has_titlebar = focus->current.border == B_NORMAL,
+			.has_titlebar = false,
 		};
 		render_view_popups(focus->view, output, damage, deco_data);
 	}
