@@ -20,6 +20,7 @@
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
@@ -789,6 +790,8 @@ static void update_output_manager_config(struct sway_server *server) {
 	}
 
 	wlr_output_manager_v1_set_configuration(server->output_manager_v1, config);
+
+	ipc_event_output();
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {

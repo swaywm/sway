@@ -1445,6 +1445,9 @@ available:
 :  workspace
 :[ Sent whenever an event involving a workspace occurs such as initialization
    of a new workspace or a different workspace gains focus
+|- 0x80000001
+:  output
+:  Sent when outputs are updated
 |- 0x80000002
 :  mode
 :  Sent whenever the binding mode changes
@@ -1562,6 +1565,20 @@ The following change types are currently available:
 		"nodes": [
 		]
 	}
+}
+```
+
+## 0x80000001. OUTPUT
+
+Sent whenever an output is added, removed, or its configuration is changed.
+The event is a single object with the property _change_, which is a string
+containing the reason for the change. Currently, the only value for _change_ is
+_unspecified_.
+
+*Example Event:*
+```
+{
+	"change": "unspecified"
 }
 ```
 
