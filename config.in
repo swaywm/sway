@@ -25,6 +25,7 @@ set $menu dmenu_path | dmenu | xargs swaymsg exec --
 corner_radius 10
 
 shadows off
+shadows_on_csd off
 shadow_blur_radius 20
 shadow_color #0000007F
 

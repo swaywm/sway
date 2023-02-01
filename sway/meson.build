@@ -110,6 +110,7 @@ sway_sources = files(
 	'commands/shadow_blur_radius.c',
 	'commands/shadow_color.c',
 	'commands/shadows.c',
+	'commands/shadows_on_csd.c',
 	'commands/show_marks.c',
 	'commands/shortcuts_inhibitor.c',
 	'commands/smart_borders.c',

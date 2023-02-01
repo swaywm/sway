@@ -181,6 +181,7 @@ sway_cmd cmd_shortcuts_inhibitor;
 sway_cmd cmd_shadow_blur_radius;
 sway_cmd cmd_shadow_color;
 sway_cmd cmd_shadows;
+sway_cmd cmd_shadows_on_csd;
 sway_cmd cmd_show_marks;
 sway_cmd cmd_smart_borders;
 sway_cmd cmd_smart_corner_radius;

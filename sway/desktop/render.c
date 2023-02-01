@@ -489,8 +489,8 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		render_view_toplevels(view, output, damage, deco_data);
 	}
 
-	// if CSD borders, don't render borders or shadow
-	if (con->current.border == B_CSD) {
+	// Only draw shadows on CSD windows if shadows_on_csd is enabled
+	if (con->current.border == B_CSD && !config->shadows_on_csd_enabled) {
 		return;
 	}
 
@@ -504,7 +504,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 			state->border_thickness);
 	}
 
-	if (con->current.border == B_NONE) {
+	if (con->current.border == B_NONE || con->current.border == B_CSD) {
 		return;
 	}
 

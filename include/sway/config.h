@@ -484,6 +484,7 @@ struct sway_config {
 		float urgent[4];
 	} dim_inactive_colors;
 	bool shadow_enabled;
+	bool shadows_on_csd_enabled;
 	int shadow_blur_sigma;
 	float shadow_color[4];
 

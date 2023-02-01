@@ -16,6 +16,7 @@ Sway is an incredible window manager, and certainly one of the most well establi
 + Application saturation: `for_window [CRITERIA HERE] saturation <set|plus|minus> <val 0.0 <-> 2.0>`
 + Window shadows: *ONLY ON SWAYFX-GIT, NOT YET RELEASED*
     - `shadows on|off`
+    - `shadows_on_csd on|off` (**Note**: The shadow might not fit some windows)
     - `shadow_blur_radius <integer value 0 - 100>`
     - `shadow_color <hex color with alpha> ex, #0000007F`
 + Dim unfocused windows:

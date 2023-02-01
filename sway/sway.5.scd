@@ -666,6 +666,10 @@ The default colors are:
 	Adjusts if shadows should be enabled or not (on|off). Can also be set per
 	window with *for_window*.
 
+*shadows_on_csd* <value>
+	Adjusts if shadows should be drawn on windows that draw their own
+	decorations (on|off). *Note:* The shadow might not fit some windows.
+
 *shadow_blur_radius* <value>
 	Adjusts the shadow blur radius of windows between 0 (disabled) and 100
 	while 20 is the default value.
