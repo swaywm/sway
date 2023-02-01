@@ -508,6 +508,20 @@ void ipc_event_input(const char *change, struct sway_input_device *device) {
 	json_object_put(json);
 }
 
+void ipc_event_output(void) {
+	if (!ipc_has_event_listeners(IPC_EVENT_OUTPUT)) {
+		return;
+	}
+	sway_log(SWAY_DEBUG, "Sending output event");
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "change", json_object_new_string("unspecified"));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_OUTPUT);
+	json_object_put(json);
+}
+
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
