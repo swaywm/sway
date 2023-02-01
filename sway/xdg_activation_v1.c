@@ -6,12 +6,8 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		void *data) {
 	const struct wlr_xdg_activation_v1_request_activate_event *event = data;
 
-	if (!wlr_surface_is_xdg_surface(event->surface)) {
-		return;
-	}
-
 	struct wlr_xdg_surface *xdg_surface =
-		wlr_xdg_surface_from_wlr_surface(event->surface);
+		wlr_xdg_surface_try_from_wlr_surface(event->surface);
 	if (xdg_surface == NULL) {
 		return;
 	}
