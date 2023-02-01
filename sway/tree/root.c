@@ -52,6 +52,9 @@ void root_destroy(struct sway_root *root) {
 	list_free(root->scratchpad);
 	list_free(root->outputs);
 	wlr_output_layout_destroy(root->output_layout);
+	list_free(root->fallback_output->workspaces);
+	list_free(root->fallback_output->current.workspaces);
+	free(root->fallback_output);
 	free(root);
 }
 
