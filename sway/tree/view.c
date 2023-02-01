@@ -526,7 +526,7 @@ static void view_populate_pid(struct sway_view *view) {
 #if HAVE_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:;
 		struct wlr_xwayland_surface *surf =
-			wlr_xwayland_surface_from_wlr_surface(view->surface);
+			wlr_xwayland_surface_try_from_wlr_surface(view->surface);
 		pid = surf->pid;
 		break;
 #endif
@@ -853,9 +853,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	bool set_focus = should_focus(view);
 
 #if HAVE_XWAYLAND
-	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
-		struct wlr_xwayland_surface *xsurface =
-				wlr_xwayland_surface_from_wlr_surface(wlr_surface);
+	struct wlr_xwayland_surface *xsurface;
+	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
 		set_focus &= wlr_xwayland_icccm_input_model(xsurface) !=
 				WLR_ICCCM_INPUT_MODEL_NONE;
 	}
@@ -1197,12 +1196,8 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return view_from_wlr_xdg_surface(xdg_surface);
 	}
 #if HAVE_XWAYLAND
-	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
-		struct wlr_xwayland_surface *xsurface =
-			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
-		if (xsurface == NULL) {
-			return NULL;
-		}
+	struct wlr_xwayland_surface *xsurface;
+	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xwayland_surface(xsurface);
 	}
 #endif
