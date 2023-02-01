@@ -107,6 +107,8 @@ _swaymsg_ [options...] [message]
 	Subscribe to a list of event types. The argument for this type should be
 	provided in the form of a valid JSON array. If any of the types are invalid
 	or if a valid JSON array is not provided, this will result in a failure.
+	For a list of valid event types and the data returned with them refer to
+	*sway-ipc*(7).
 
 # RETURN CODES
 
