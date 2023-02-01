@@ -228,17 +228,15 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
 
+	struct wlr_layer_surface_v1 *layer;
 #if HAVE_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 #endif
-	if (wlr_surface_is_layer_surface(surface)) {
+	if ((layer = wlr_layer_surface_v1_try_from_wlr_surface(surface)) &&
+			layer->current.keyboard_interactive) {
 		// Handle tapping a layer surface
-		struct wlr_layer_surface_v1 *layer =
-				wlr_layer_surface_v1_from_wlr_surface(surface);
-		if (layer->current.keyboard_interactive) {
-			seat_set_focus_layer(seat, layer);
-			transaction_commit_dirty();
-		}
+		seat_set_focus_layer(seat, layer);
+		transaction_commit_dirty();
 	} else if (cont) {
 		bool is_floating_or_child = container_is_floating_or_child(cont);
 		bool is_fullscreen_or_child = container_is_fullscreen_or_child(cont);
@@ -368,9 +366,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle clicking a layer surface
-	if (surface && wlr_surface_is_layer_surface(surface)) {
-		struct wlr_layer_surface_v1 *layer =
-			wlr_layer_surface_v1_from_wlr_surface(surface);
+	struct wlr_layer_surface_v1 *layer;
+	if (surface &&
+			(layer = wlr_layer_surface_v1_try_from_wlr_surface(surface))) {
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(seat, layer);
 			transaction_commit_dirty();

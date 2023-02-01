@@ -951,7 +951,7 @@ static void subsurface_get_view_coords(struct sway_view_child *child,
 		*sx = *sy = 0;
 	}
 	struct wlr_subsurface *subsurface =
-		wlr_subsurface_from_wlr_surface(surface);
+		wlr_subsurface_try_from_wlr_surface(surface);
 	*sx += subsurface->current.x;
 	*sy += subsurface->current.y;
 }
@@ -1187,12 +1187,8 @@ void view_child_destroy(struct sway_view_child *child) {
 }
 
 struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
-	if (wlr_surface_is_xdg_surface(wlr_surface)) {
-		struct wlr_xdg_surface *xdg_surface =
-			wlr_xdg_surface_from_wlr_surface(wlr_surface);
-		if (xdg_surface == NULL) {
-			return NULL;
-		}
+	struct wlr_xdg_surface *xdg_surface;
+	if ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xdg_surface(xdg_surface);
 	}
 #if HAVE_XWAYLAND
@@ -1201,15 +1197,11 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return view_from_wlr_xwayland_surface(xsurface);
 	}
 #endif
-	if (wlr_surface_is_subsurface(wlr_surface)) {
-		struct wlr_subsurface *subsurface =
-			wlr_subsurface_from_wlr_surface(wlr_surface);
-		if (subsurface == NULL) {
-			return NULL;
-		}
+	struct wlr_subsurface *subsurface;
+	if ((subsurface = wlr_subsurface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_surface(subsurface->parent);
 	}
-	if (wlr_surface_is_layer_surface(wlr_surface)) {
+	if (wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
 		return NULL;
 	}
 
