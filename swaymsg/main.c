@@ -259,7 +259,7 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_string(adaptive_sync_status));
 	} else {
 		printf(
-			"Output %s '%s %s %s' (inactive)\n",
+			"Output %s '%s %s %s' (disabled)\n",
 			json_object_get_string(name),
 			json_object_get_string(make),
 			json_object_get_string(model),
