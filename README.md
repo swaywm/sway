@@ -84,6 +84,7 @@ sway (gdm is known to work fairly well).
 [uk]: README.uk.md
 [zh-CN]: README.zh-CN.md
 [zh-TW]: README.zh-TW.md
+[no]: README.no.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
