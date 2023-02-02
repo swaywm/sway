@@ -15,7 +15,7 @@ releases].
 Sway er tilgjengelig i mange distribusjoner. Prøv å installere "sway" pakken
 fra din distro sine repoer.
 
-Er du interessert i å pakke Sway til din distribusjon kan du ta turen innom
+Er du interessert i å pakke Sway for din distribusjon kan du ta turen innom
 IRC-kanalen eller send en e-post til sir@cmpwn.com for råd.
 
 ### Kompilering fra kildekode
