@@ -2,23 +2,22 @@
 
 [English][en] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - **[Norsk][no]** - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
-Sway er en [i3]-kompatibel [Wayland] compositor. Les [Ofte stilte spørsmål].
+Sway er en [i3]-kompatibel [Wayland] compositor. Les [Ofte stilte spørsmål][FAQ].
 Delta på [IRC kanalen][IRC channel] \(#sway på irc.libera.chat).
 
 ## Utgivelses Signaturer
 
-Utgivelser er signert med [E88F5E48] og publisert [på GitHub][GitHub
-releases].
+Utgivelser er signert med [E88F5E48] og publisert [på GitHub][GitHub releases].
 
 ## Installasjon
 
 ### Fra system pakker
 
-Sway er tilgjengelig i mange distribusjoner. Prøv å installere "sway" pakken
+Sway er tilgjengelig i mange distribusjoner, prøv å installere "sway" pakken
 fra din distro sine repoer.
 
 Er du interessert i å pakke Sway for din distribusjon kan du ta turen innom
-IRC-kanalen eller send en e-post til sir@cmpwn.com for råd.
+IRC-kanalen eller sende en e-post til sir@cmpwn.com for råd.
 
 ### Kompilering fra kildekode
 
@@ -47,7 +46,7 @@ Kjør følgende kommandoer:
     ninja -C build
     sudo ninja -C build install
 
-På systemer uten logind eller seatd skal du sette SUID bit i sway filen:
+På systemer uten logind eller seatd må du sette SUID bit i sway filen:
 
     sudo chmod a+s /usr/local/bin/sway
 
@@ -56,9 +55,9 @@ Sway slipper 'root' tillatelser kort etter oppstart.
 ## Konfigurasjon
 
 Hvis du allerede bruker i3 kan du bare kopiere din i3 konfigurasjon til
-`~/.config/sway/config`. Ellers skal du kopiere eksempel konfigurasjonsfilen til
+`~/.config/sway/config`. Ellers må du kopiere eksempel konfigurasjonsfilen til
 `~/.config/sway/config`. Eksempel filen er normalt plasert i `/etc/sway/config`.  Kjør
-`man 5 sway` for å få oplysninger om konfigurasjonen.
+`man 5 sway` for å få opplysninger om konfigurasjonen.
 
 ## Utførelse
 
