@@ -1,16 +1,18 @@
 # sway
 
-sway एक [i3](https://i3wm.org/)-अनुकूल
-[Wayland](https://wayland.freedesktop.org/) Compositor है।
-[FAQ](https://github.com/swaywm/sway/wiki) पढिये। [IRC
-Channel](https://web.libera.chat/gamja/?channels=#sway)
+[English][en] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - **[हिन्दी][hi]** - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+
+sway एक [i3]-अनुकूल
+[Wayland] Compositor है।
+[FAQ] पढिये। [IRC
+Channel]
 (irc.libera.chat पर #sway) में भी जुडिये।
 
 ## रिलीज हस्ताक्षर
 
 रिलीजें
-[E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)
-से साइन होतें हैं और [Github पर](https://github.com/swaywm/sway/releases) प्रकाशित होते हैं।
+[E88F5E48]
+से साइन होतें हैं और [Github पर][Github releases] प्रकाशित होते हैं।
 
 ## इंस्टौलेशन
 
@@ -23,12 +25,12 @@ Sway कई distributions में उप्लब्ध है। आप अ�
 
 यदि आप परीक्षण और विकास के लिए sway और wlroots के नवीनतम संस्करण बनाना
 चाहते हैं, तो [यह विकी
-पृष्ठ](https://github.com/swaywm/sway/wiki/Development-Setup) देखें।
+पृष्ठ][Development-Setup] देखें।
 
 निर्भरताएं:
 
 * meson \*
-* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
+* [wlroots]
 * wayland
 * wayland-protocols \*
 * pcre2
@@ -36,7 +38,7 @@ Sway कई distributions में उप्लब्ध है। आप अ�
 * pango
 * cairo
 * gdk-pixbuf (वैकल्पिक: system tray के लिये)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (वैकल्पिक: man पृष्ठों के लिये)
+* [scdoc] (वैकल्पिक: man पृष्ठों के लिये)
   \*
 * git (वैकल्पिक: संस्करण जानने के लिये)
 
@@ -68,3 +70,37 @@ sway` से आप configuration के बारे में जानका�
 आप एक tty से `sway` को चला सकते हैं। कुछ display managers काम करते हैं परन्तु ये
 sway के द्वारा समर्थित नहीं है (gdm के बारे में जाना गया है कि वह सही काम करता
 है)।
+
+[en]: https://github.com/swaywm/sway#readme
+[cs]: README.cs.md
+[de]: README.de.md
+[dk]: README.dk.md
+[es]: README.es.md
+[fr]: README.fr.md
+[gr]: README.gr.md
+[hi]: README.hi.md
+[hu]: README.hu.md
+[ir]: README.ir.md
+[it]: README.it.md
+[ja]: README.ja.md
+[ko]: README.ko.md
+[nl]: README.nl.md
+[no]: README.no.md
+[pl]: README.pl.md
+[pt]: README.pt.md
+[ro]: README.ro.md
+[ru]: README.ru.md
+[sv]: README.sv.md
+[tr]: README.tr.md
+[uk]: README.uk.md
+[zh-CN]: README.zh-CN.md
+[zh-TW]: README.zh-TW.md
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc

@@ -1,6 +1,6 @@
 # sway
 
-[English][en] - **[Česky][cs]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Svenska][sv] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+[English][en] - **[Česky][cs]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway je s [i3] kompatibilní [Wayland] kompozitor. Přečtěte si [FAQ]. Připojte se na
 [IRC kanál][IRC channel] \(#sway na irc.libera.chat).
@@ -67,7 +67,6 @@ podporovány sway (je známo, že gdm funguje docela dobře).
 [dk]: README.dk.md
 [es]: README.es.md
 [fr]: README.fr.md
-[sv]: README.sv.md
 [gr]: README.gr.md
 [hi]: README.hi.md
 [hu]: README.hu.md
@@ -76,10 +75,12 @@ podporovány sway (je známo, že gdm funguje docela dobře).
 [ja]: README.ja.md
 [ko]: README.ko.md
 [nl]: README.nl.md
+[no]: README.no.md
 [pl]: README.pl.md
 [pt]: README.pt.md
 [ro]: README.ro.md
 [ru]: README.ru.md
+[sv]: README.sv.md
 [tr]: README.tr.md
 [uk]: README.uk.md
 [zh-CN]: README.zh-CN.md

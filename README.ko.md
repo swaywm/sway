@@ -1,12 +1,14 @@
 # sway
 
-sway는 [i3](https://i3wm.org/)-호환 [Wayland](http://wayland.freedesktop.org/) 컴포지터입니다.
-[FAQ](https://github.com/swaywm/sway/wiki)를 읽어보세요. [IRC 채널](https://web.libera.chat/gamja/?channels=#sway) (#sway on irc.libera.chat)도 있습니다.
+[English][en] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - **[한국어][ko]** - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+
+sway는 [i3]-호환 [Wayland] 컴포지터입니다.
+[FAQ]를 읽어보세요. [IRC 채널][IRC channel] (#sway on irc.libera.chat)도 있습니다.
 
 ## 릴리즈 서명
 
-릴리즈는 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48)에서 서명되고,
-[GitHub에서](https://github.com/swaywm/sway/releases) 공개되고 있습니다.
+릴리즈는 [E88F5E48]에서 서명되고,
+[GitHub에서][Github releases] 공개되고 있습니다.
 
 ## 설치
 
@@ -24,7 +26,7 @@ IRC 채널을 방문하거나 sir@cmpwn.com으로 이메일을 보내 상담 받
 다음 의존 패키지들을 설치해 주세요:
 
 * meson \*
-* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
+* [wlroots]
 * wayland
 * wayland-protocols \*
 * pcre2
@@ -32,7 +34,7 @@ IRC 채널을 방문하거나 sir@cmpwn.com으로 이메일을 보내 상담 받
 * pango
 * cairo
 * gdk-pixbuf2 (선택: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (선택: man pages) \*
+* [scdoc] (선택: man pages) \*
 * git \*
 
 _\*컴파일 떄 필요_
@@ -59,3 +61,37 @@ i3를 이미 사용 중이라면, i3 config을 `~/.config/sway/config`로 복사
 ## 실행
 
 TTY에서 `sway`를 실행하세요. 일부 display manager는 작동하지만, sway로 부터 지원되지 않습니다(gdm은 상당히 잘 작동한다고 알려져 있습니다).
+
+[en]: https://github.com/swaywm/sway#readme
+[cs]: README.cs.md
+[de]: README.de.md
+[dk]: README.dk.md
+[es]: README.es.md
+[fr]: README.fr.md
+[gr]: README.gr.md
+[hi]: README.hi.md
+[hu]: README.hu.md
+[ir]: README.ir.md
+[it]: README.it.md
+[ja]: README.ja.md
+[ko]: README.ko.md
+[nl]: README.nl.md
+[no]: README.no.md
+[pl]: README.pl.md
+[pt]: README.pt.md
+[ro]: README.ro.md
+[ru]: README.ru.md
+[sv]: README.sv.md
+[tr]: README.tr.md
+[uk]: README.uk.md
+[zh-CN]: README.zh-CN.md
+[zh-TW]: README.zh-TW.md
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc

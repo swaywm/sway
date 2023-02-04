@@ -1,14 +1,16 @@
 # sway
 
-sway 是一個與 [i3](https://i3wm.org/) 相容的 [Wayland](http://wayland.freedesktop.org/) compositor。
-閱讀 [FAQ](https://github.com/swaywm/sway/wiki)。 加入 [IRC
-頻道](https://web.libera.chat/gamja/?channels=#sway) (#sway on
+[English][en] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - **[中文-繁體][zh-TW]**
+
+sway 是一個與 [i3] 相容的 [Wayland] compositor。
+閱讀 [FAQ]。 加入 [IRC
+頻道][IRC channel] (#sway on
 irc.libera.chat)
 
 ## 發行簽章
 
-所有發行的版本都會以 [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) 簽署
-並發佈於 [GitHub](https://github.com/swaywm/sway/releases)
+所有發行的版本都會以 [E88F5E48] 簽署
+並發佈於 [GitHub][Github releases]
 
 ## 安裝
 
@@ -25,7 +27,7 @@ Sway 在許多發行版都有提供。請自己嘗試於你的發行版安裝 �
 相依套件:
 
 * meson \*
-* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
+* [wlroots]
 * wayland
 * wayland-protocols \*
 * pcre2
@@ -33,7 +35,7 @@ Sway 在許多發行版都有提供。請自己嘗試於你的發行版安裝 �
 * pango
 * cairo
 * gdk-pixbuf2 (選擇性: system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (選擇性: man pages) \*
+* [scdoc] (選擇性: man pages) \*
 * git \*
 
 _\*編譯時相依_
@@ -59,3 +61,37 @@ Sway 在啟動不久後就會放棄 root 權限。
 ## 執行
 
 在 TTY 執行 `sway`。有些 display manager 可能可以運作但 sway 不提供支援 (已知 gdm 運作的很好)
+
+[en]: https://github.com/swaywm/sway#readme
+[cs]: README.cs.md
+[de]: README.de.md
+[dk]: README.dk.md
+[es]: README.es.md
+[fr]: README.fr.md
+[gr]: README.gr.md
+[hi]: README.hi.md
+[hu]: README.hu.md
+[ir]: README.ir.md
+[it]: README.it.md
+[ja]: README.ja.md
+[ko]: README.ko.md
+[nl]: README.nl.md
+[no]: README.no.md
+[pl]: README.pl.md
+[pt]: README.pt.md
+[ro]: README.ro.md
+[ru]: README.ru.md
+[sv]: README.sv.md
+[tr]: README.tr.md
+[uk]: README.uk.md
+[zh-CN]: README.zh-CN.md
+[zh-TW]: README.zh-TW.md
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc
