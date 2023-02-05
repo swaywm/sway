@@ -630,7 +630,7 @@ static void handle_request_activate(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	view_request_activate(view);
+	view_request_activate(view, NULL);
 
 	transaction_commit_dirty();
 }

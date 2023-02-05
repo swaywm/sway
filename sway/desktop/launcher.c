@@ -69,7 +69,7 @@ void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 	wl_list_remove(&ctx->token_destroy.link);
 	wl_list_remove(&ctx->link);
 	wlr_xdg_activation_token_v1_destroy(ctx->token);
-	free(ctx->name);
+	free(ctx->fallback_name);
 	free(ctx);
 }
 
@@ -114,22 +114,22 @@ struct sway_workspace *launcher_ctx_get_workspace(
 		break;
 	case N_OUTPUT:
 		output = ctx->node->sway_output;
-		ws = workspace_by_name(ctx->name);
+		ws = workspace_by_name(ctx->fallback_name);
 		if (!ws) {
 			sway_log(SWAY_DEBUG,
 					"Creating workspace %s for pid %d because it disappeared",
-					ctx->name, ctx->pid);
+					ctx->fallback_name, ctx->pid);
 			if (!output->enabled) {
 				sway_log(SWAY_DEBUG,
 						"Workspace output %s is disabled, trying another one",
 						output->wlr_output->name);
 				output = NULL;
 			}
-			ws = workspace_create(output, ctx->name);
+			ws = workspace_create(output, ctx->fallback_name);
 		}
 		break;
 	case N_ROOT:
-		ws = workspace_create(NULL, ctx->name);
+		ws = workspace_create(NULL, ctx->fallback_name);
 		break;
 	}
 
@@ -148,8 +148,8 @@ static void ctx_handle_node_destroy(struct wl_listener *listener, void *data) {
 		wl_list_init(&ctx->node_destroy.link);
 		// We want to save this ws name to recreate later, hopefully on the
 		// same output
-		free(ctx->name);
-		ctx->name = strdup(ws->name);
+		free(ctx->fallback_name);
+		ctx->fallback_name = strdup(ws->name);
 		if (!ws->output || ws->output->node.destroying) {
 			// If the output is being destroyed it would be pointless to track
 			// If the output is being disabled, we'll find out if it's still
@@ -178,21 +178,41 @@ static void token_handle_destroy(struct wl_listener *listener, void *data) {
 	launcher_ctx_destroy(ctx);
 }
 
-struct launcher_ctx *launcher_ctx_create() {
-	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_workspace *ws = seat_get_focused_workspace(seat);
-	if (!ws) {
-		sway_log(SWAY_DEBUG, "Failed to create launch context. No workspace.");
+struct launcher_ctx *launcher_ctx_create(struct wlr_xdg_activation_token_v1 *token,
+		struct sway_node *node) {
+	struct launcher_ctx *ctx = calloc(1, sizeof(struct launcher_ctx));
+
+	const char *fallback_name = NULL;
+	struct sway_workspace *ws = NULL;
+	switch (node->type) {
+	case N_CONTAINER:
+		// Unimplemented
+		free(ctx);
+		return NULL;
+	case N_WORKSPACE:
+		ws = node->sway_workspace;
+		fallback_name = ws->name;
+		break;
+	case N_OUTPUT:;
+		struct sway_output *output = node->sway_output;
+		ws = output_get_active_workspace(output);
+		fallback_name = ws ? ws->name : NULL;
+		break;
+	case N_ROOT:
+		// Unimplemented
+		free(ctx);
 		return NULL;
 	}
 
-	struct launcher_ctx *ctx = calloc(1, sizeof(struct launcher_ctx));
-	struct wlr_xdg_activation_token_v1 *token =
-		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
-	token->data = ctx;
-	ctx->name = strdup(ws->name);
+	if (!fallback_name) {
+		// TODO: implement a better fallback.
+		free(ctx);
+		return NULL;
+	}
+
+	ctx->fallback_name = strdup(fallback_name);
 	ctx->token = token;
-	ctx->node = &ws->node;
+	ctx->node = node;
 
 	ctx->node_destroy.notify = ctx_handle_node_destroy;
 	wl_signal_add(&ctx->node->events.destroy, &ctx->node_destroy);
@@ -202,6 +222,30 @@ struct launcher_ctx *launcher_ctx_create() {
 
 	wl_list_init(&ctx->link);
 	wl_list_insert(&server.pending_launcher_ctxs, &ctx->link);
+
+	token->data = ctx;
+	return ctx;
+}
+
+// Creates a context with a new token for the internal launcher
+struct launcher_ctx *launcher_ctx_create_internal() {
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_workspace *ws = seat_get_focused_workspace(seat);
+	if (!ws) {
+		sway_log(SWAY_DEBUG, "Failed to create launch context. No workspace.");
+		return NULL;
+	}
+
+	struct wlr_xdg_activation_token_v1 *token =
+		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
+	token->seat = seat->wlr_seat;
+
+	struct launcher_ctx *ctx = launcher_ctx_create(token, &ws->node);
+	if (!ctx) {
+		wlr_xdg_activation_token_v1_destroy(token);
+		return NULL;
+	}
+
 	return ctx;
 }
 
