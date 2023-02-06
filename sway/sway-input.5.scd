@@ -251,6 +251,10 @@ correct seat.
 	If _when-typing_ is enabled, then the cursor will be hidden whenever a key
 	is pressed.
 
+	Be aware that this setting can interfere with input handling in games and
+	certain types of software (Gimp, Blender etc) that rely on simultaneous
+	input from mouse and keyboard.
+
 *seat* <name> idle_inhibit <sources...>
 	Sets the set of input event sources which can prevent the seat from
 	becoming idle, as a space separated list of source names. Valid names are
