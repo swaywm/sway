@@ -739,6 +739,8 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
 			if (strcmp(event_type, "workspace") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
+			} else if (strcmp(event_type, "output") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_OUTPUT);
 			} else if (strcmp(event_type, "barconfig_update") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
 			} else if (strcmp(event_type, "bar_state_update") == 0) {
