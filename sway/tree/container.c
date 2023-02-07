@@ -1129,25 +1129,38 @@ static void set_fullscreen(struct sway_container *con, bool enable) {
 		return;
 	}
 
-	struct wlr_linux_dmabuf_feedback_v1_tranche tranches[] = {
-		{
-			.target_device = scanout_dev,
-			.flags = ZWP_LINUX_DMABUF_FEEDBACK_V1_TRANCHE_FLAGS_SCANOUT,
-			.formats = &scanout_formats,
-		},
-		{
-			.target_device = render_dev,
-			.formats = renderer_formats,
-		},
+	size_t tranche_size = sizeof(struct wlr_linux_dmabuf_feedback_v1_tranche);
+	struct wl_array tranches;
+	wl_array_init(&tranches);
+
+	struct wlr_linux_dmabuf_feedback_v1_tranche *ptr;
+	ptr = wl_array_add(&tranches, tranche_size);
+	if (!sway_assert(ptr, "Unable to allocate tranche")) {
+	    return;
+	}
+	*ptr = (struct wlr_linux_dmabuf_feedback_v1_tranche) {
+	    .target_device = scanout_dev,
+	    .flags = ZWP_LINUX_DMABUF_FEEDBACK_V1_TRANCHE_FLAGS_SCANOUT,
+	    .formats = scanout_formats,
+	};
+
+	ptr = wl_array_add(&tranches, tranche_size);
+	if (!sway_assert(ptr, "Unable to allocate tranche")) {
+	    return;
+	}
+	*ptr = (struct wlr_linux_dmabuf_feedback_v1_tranche) {
+	    .target_device = render_dev,
+	    .formats = *renderer_formats,
 	};
 
 	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
 		.main_device = render_dev,
 		.tranches = tranches,
-		.tranches_len = sizeof(tranches) / sizeof(tranches[0]),
 	};
 	wlr_linux_dmabuf_v1_set_surface_feedback(server.linux_dmabuf_v1,
 		con->view->surface, &feedback);
+
+	wl_array_release(&tranches);
 
 	wlr_drm_format_set_finish(&scanout_formats);
 }
