@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <sys/stat.h>
 #include <wayland-server-core.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -1101,10 +1102,10 @@ static void set_fullscreen(struct sway_container *con, bool enable) {
 	// TODO: add wlroots helpers for all of this stuff
 
 	const struct wlr_drm_format_set *renderer_formats =
-		wlr_renderer_get_dmabuf_texture_formats(server.renderer);
+		wlr_renderer_get_dmabuf_texture_formats(output->wlr_output->renderer);
 	assert(renderer_formats);
 
-	int renderer_drm_fd = wlr_renderer_get_drm_fd(server.renderer);
+	int renderer_drm_fd = wlr_renderer_get_drm_fd(output->wlr_output->renderer);
 	int backend_drm_fd = wlr_backend_get_drm_fd(wlr_output->backend);
 	if (renderer_drm_fd < 0 || backend_drm_fd < 0) {
 		return;
