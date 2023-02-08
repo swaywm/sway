@@ -18,6 +18,7 @@
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -1265,14 +1266,14 @@ bool container_is_fullscreen_or_child(struct sway_container *container) {
 
 static void surface_send_enter_iterator(struct wlr_surface *surface,
 		int x, int y, void *data) {
-	struct wlr_output *wlr_output = data;
-	wlr_surface_send_enter(surface, wlr_output);
+	struct sway_output *output = data;
+	surface_enter_output(surface, output);
 }
 
 static void surface_send_leave_iterator(struct wlr_surface *surface,
 		int x, int y, void *data) {
-	struct wlr_output *wlr_output = data;
-	wlr_surface_send_leave(surface, wlr_output);
+	struct sway_output *output = data;
+	surface_leave_output(surface, output);
 }
 
 void container_discover_outputs(struct sway_container *con) {
@@ -1298,7 +1299,7 @@ void container_discover_outputs(struct sway_container *con) {
 			sway_log(SWAY_DEBUG, "Container %p entered output %p", con, output);
 			if (con->view) {
 				view_for_each_surface(con->view,
-						surface_send_enter_iterator, output->wlr_output);
+						surface_send_enter_iterator, output);
 				if (con->view->foreign_toplevel) {
 					wlr_foreign_toplevel_handle_v1_output_enter(
 							con->view->foreign_toplevel, output->wlr_output);
@@ -1310,7 +1311,7 @@ void container_discover_outputs(struct sway_container *con) {
 			sway_log(SWAY_DEBUG, "Container %p left output %p", con, output);
 			if (con->view) {
 				view_for_each_surface(con->view,
-					surface_send_leave_iterator, output->wlr_output);
+					surface_send_leave_iterator, output);
 				if (con->view->foreign_toplevel) {
 					wlr_foreign_toplevel_handle_v1_output_leave(
 							con->view->foreign_toplevel, output->wlr_output);

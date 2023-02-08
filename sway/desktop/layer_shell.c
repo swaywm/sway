@@ -13,6 +13,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
 
@@ -382,8 +383,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wlr_output->data;
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
-	wlr_surface_send_enter(sway_layer->layer_surface->surface,
-		sway_layer->layer_surface->output);
+	surface_enter_output(sway_layer->layer_surface->surface, output);
 	cursor_rebase_all();
 }
 
@@ -510,7 +510,7 @@ static void popup_handle_map(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *layer = popup_get_layer(popup);
 	struct wlr_output *wlr_output = layer->layer_surface->output;
 	sway_assert(wlr_output, "wlr_layer_surface_v1 has null output");
-	wlr_surface_send_enter(popup->wlr_popup->base->surface, wlr_output);
+	surface_enter_output(popup->wlr_popup->base->surface, wlr_output->data);
 	popup_damage(popup, true);
 }
 
