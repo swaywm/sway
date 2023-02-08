@@ -25,6 +25,7 @@
 #include "sway/output.h"
 #include "sway/input/seat.h"
 #include "sway/server.h"
+#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -1148,7 +1149,7 @@ void view_child_init(struct sway_view_child *child,
 	if (container != NULL) {
 		struct sway_workspace *workspace = container->pending.workspace;
 		if (workspace) {
-			wlr_surface_send_enter(child->surface, workspace->output->wlr_output);
+			surface_enter_output(child->surface, workspace->output);
 		}
 	}
 

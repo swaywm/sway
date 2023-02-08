@@ -15,4 +15,9 @@ struct sway_surface {
 	struct wl_event_source *frame_done_timer;
 };
 
+void surface_enter_output(struct wlr_surface *surface,
+	struct sway_output *output);
+void surface_leave_output(struct wlr_surface *surface,
+	struct sway_output *output);
+
 #endif

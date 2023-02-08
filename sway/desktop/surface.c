@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include "sway/server.h"
 #include "sway/surface.h"
+#include "sway/output.h"
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_surface *surface = wl_container_of(listener, surface, destroy);
@@ -43,4 +44,14 @@ void handle_compositor_new_surface(struct wl_listener *listener, void *data) {
 	if (!surface->frame_done_timer) {
 		wl_resource_post_no_memory(wlr_surface->resource);
 	}
+}
+
+void surface_enter_output(struct wlr_surface *surface,
+		struct sway_output *output) {
+	wlr_surface_send_enter(surface, output->wlr_output);
+}
+
+void surface_leave_output(struct wlr_surface *surface,
+		struct sway_output *output) {
+	wlr_surface_send_leave(surface, output->wlr_output);
 }
