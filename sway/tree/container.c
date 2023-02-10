@@ -351,8 +351,8 @@ static struct sway_container *view_container_at(struct sway_node *parent,
 		.height = container->pending.height,
 	};
 
-	if (wlr_box_contains_point(&box, lx, ly)) {
-		surface_at_view(parent->sway_container, lx, ly, surface, sx, sy);
+	if (container->view->surface && wlr_box_contains_point(&box, lx, ly)) {
+		surface_at_view(container, lx, ly, surface, sx, sy);
 		return container;
 	}
 
