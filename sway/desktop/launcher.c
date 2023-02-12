@@ -228,19 +228,22 @@ struct launcher_ctx *launcher_ctx_create(struct wlr_xdg_activation_token_v1 *tok
 }
 
 // Creates a context with a new token for the internal launcher
-struct launcher_ctx *launcher_ctx_create_internal() {
+struct launcher_ctx *launcher_ctx_create_internal(struct sway_node *node) {
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_workspace *ws = seat_get_focused_workspace(seat);
-	if (!ws) {
-		sway_log(SWAY_DEBUG, "Failed to create launch context. No workspace.");
-		return NULL;
+	if (!node) {
+		struct sway_workspace *ws = seat_get_focused_workspace(seat);
+		if (!ws) {
+			sway_log(SWAY_DEBUG, "Failed to create launch context. No workspace.");
+			return NULL;
+		}
+		node = &ws->node;
 	}
 
 	struct wlr_xdg_activation_token_v1 *token =
 		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
 	token->seat = seat->wlr_seat;
 
-	struct launcher_ctx *ctx = launcher_ctx_create(token, &ws->node);
+	struct launcher_ctx *ctx = launcher_ctx_create(token, node);
 	if (!ctx) {
 		wlr_xdg_activation_token_v1_destroy(token);
 		return NULL;
