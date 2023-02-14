@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include "sway/server.h"
 #include "sway/surface.h"
+#include "sway/output.h"
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_surface *surface = wl_container_of(listener, surface, destroy);
@@ -43,4 +45,27 @@ void handle_compositor_new_surface(struct wl_listener *listener, void *data) {
 	if (!surface->frame_done_timer) {
 		wl_resource_post_no_memory(wlr_surface->resource);
 	}
+}
+
+static void surface_update_outputs(struct wlr_surface *surface) {
+	float scale = 1;
+	struct wlr_surface_output *surface_output;
+	wl_list_for_each(surface_output, &surface->current_outputs, link) {
+		if (surface_output->output->scale > scale) {
+			scale = surface_output->output->scale;
+		}
+	}
+	wlr_fractional_scale_v1_notify_scale(surface, scale);
+}
+
+void surface_enter_output(struct wlr_surface *surface,
+		struct sway_output *output) {
+	wlr_surface_send_enter(surface, output->wlr_output);
+	surface_update_outputs(surface);
+}
+
+void surface_leave_output(struct wlr_surface *surface,
+		struct sway_output *output) {
+	wlr_surface_send_leave(surface, output->wlr_output);
+	surface_update_outputs(surface);
 }

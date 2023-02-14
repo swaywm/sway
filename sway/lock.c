@@ -5,6 +5,7 @@
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/surface.h"
 
 struct sway_session_lock_surface {
 	struct wlr_session_lock_surface_v1 *lock_surface;
@@ -31,7 +32,7 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 	if (server.session_lock.focused == NULL) {
 		set_lock_focused_surface(surf->surface);
 	}
-	wlr_surface_send_enter(surf->surface, surf->output->wlr_output);
+	surface_enter_output(surf->surface, surf->output);
 	output_damage_whole(surf->output);
 }
 
