@@ -337,8 +337,9 @@ node and will have the following properties:
    this, but borders are included.
 |- window_rect
 :  object
-:  The geometry of the contents inside the node. The window decorations are
-   excluded from this calculation, but borders are included.
+:  The geometry of the content inside the node. These coordinates are relative
+   to the node itself. Window decorations and borders are outside the
+   _window_rect_
 |- deco_rect
 :  object
 :  The geometry of the decorations for the node relative to the parent node

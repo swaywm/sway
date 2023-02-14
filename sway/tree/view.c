@@ -377,6 +377,7 @@ void view_request_activate(struct sway_view *view) {
 	case FOWA_SMART:
 		if (workspace_is_visible(ws)) {
 			seat_set_focus_container(seat, view->container);
+			container_raise_floating(view->container);
 		} else {
 			view_set_urgent(view, true);
 		}
@@ -386,10 +387,12 @@ void view_request_activate(struct sway_view *view) {
 		break;
 	case FOWA_FOCUS:
 		seat_set_focus_container(seat, view->container);
+		container_raise_floating(view->container);
 		break;
 	case FOWA_NONE:
 		break;
 	}
+	transaction_commit_dirty();
 }
 
 void view_set_csd_from_server(struct sway_view *view, bool enabled) {

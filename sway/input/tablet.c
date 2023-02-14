@@ -334,14 +334,10 @@ static void handle_pad_tablet_surface_destroy(struct wl_listener *listener,
 	struct sway_tablet_pad *tablet_pad =
 		wl_container_of(listener, tablet_pad, surface_destroy);
 
-	wlr_tablet_v2_tablet_pad_notify_leave(tablet_pad->tablet_v2_pad,
-		tablet_pad->current_surface);
-	wl_list_remove(&tablet_pad->surface_destroy.link);
-	wl_list_init(&tablet_pad->surface_destroy.link);
-	tablet_pad->current_surface = NULL;
+	sway_tablet_pad_set_focus(tablet_pad, NULL);
 }
 
-void sway_tablet_pad_notify_enter(struct sway_tablet_pad *tablet_pad,
+void sway_tablet_pad_set_focus(struct sway_tablet_pad *tablet_pad,
 		struct wlr_surface *surface) {
 	if (!tablet_pad || !tablet_pad->tablet) {
 		return;
@@ -360,7 +356,8 @@ void sway_tablet_pad_notify_enter(struct sway_tablet_pad *tablet_pad,
 		tablet_pad->current_surface = NULL;
 	}
 
-	if (!wlr_surface_accepts_tablet_v2(tablet_pad->tablet->tablet_v2, surface)) {
+	if (surface == NULL ||
+			!wlr_surface_accepts_tablet_v2(tablet_pad->tablet->tablet_v2, surface)) {
 		return;
 	}
 
@@ -368,7 +365,6 @@ void sway_tablet_pad_notify_enter(struct sway_tablet_pad *tablet_pad,
 		tablet_pad->tablet->tablet_v2, surface);
 
 	tablet_pad->current_surface = surface;
-	wl_list_remove(&tablet_pad->surface_destroy.link);
 	tablet_pad->surface_destroy.notify = handle_pad_tablet_surface_destroy;
 	wl_signal_add(&surface->events.destroy, &tablet_pad->surface_destroy);
 }

@@ -558,7 +558,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 	struct wlr_box window_box = {
 		c->pending.content_x - c->pending.x,
-		(c->current.border == B_PIXEL) ? c->current.border_thickness : 0,
+		(c->current.border == B_PIXEL) ? c->pending.content_y - c->pending.y : 0,
 		c->pending.content_width,
 		c->pending.content_height
 	};

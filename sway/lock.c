@@ -32,6 +32,7 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 	if (server.session_lock.focused == NULL) {
 		set_lock_focused_surface(surf->surface);
 	}
+	wlr_surface_send_enter(surf->surface, surf->output->wlr_output);
 	output_damage_whole(surf->output);
 }
 

@@ -1399,6 +1399,41 @@ void output_render(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
+	if (server.session_lock.locked) {
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		if (server.session_lock.lock == NULL) {
+			// abandoned lock -> red BG
+			clear_color[0] = 1.f;
+		}
+		int nrects;
+		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			scissor_output(wlr_output, &rects[i]);
+			fx_renderer_clear(clear_color);
+		}
+
+		if (server.session_lock.lock != NULL) {
+			struct render_data data = {
+				.damage = damage,
+				.deco_data = get_undecorated_decoration_data(),
+			};
+
+			struct wlr_session_lock_surface_v1 *lock_surface;
+			wl_list_for_each(lock_surface, &server.session_lock.lock->surfaces, link) {
+				if (lock_surface->output != wlr_output) {
+					continue;
+				}
+				if (!lock_surface->mapped) {
+					continue;
+				}
+
+				output_surface_for_each_surface(output, lock_surface->surface,
+					0.0, 0.0, render_surface_iterator, &data);
+			}
+		}
+		goto renderer_end;
+	}
+
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto render_overlay;
 	}

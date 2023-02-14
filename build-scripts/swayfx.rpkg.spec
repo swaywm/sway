@@ -2,7 +2,7 @@
 
 ### CHANGE THESE VARIABLES BEFORE RELEASE:
 # Change to current Sway base version!
-%global SwayBaseVersion 1.8
+%global SwayBaseVersion 1.8.1
 # Change to current SwayFX tag!
 %global Tag 0.1.1
 

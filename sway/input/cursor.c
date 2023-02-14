@@ -97,6 +97,24 @@ struct sway_node *node_at_coords(
 	double ox = lx, oy = ly;
 	wlr_output_layout_output_coords(root->output_layout, wlr_output, &ox, &oy);
 
+	if (server.session_lock.locked) {
+		if (server.session_lock.lock == NULL) {
+			return NULL;
+		}
+		struct wlr_session_lock_surface_v1 *lock_surf;
+		wl_list_for_each(lock_surf, &server.session_lock.lock->surfaces, link) {
+			if (lock_surf->output != wlr_output) {
+				continue;
+			}
+
+			*surface = wlr_surface_surface_at(lock_surf->surface, ox, oy, sx, sy);
+			if (*surface != NULL) {
+				return NULL;
+			}
+		}
+		return NULL;
+	}
+
 	// layer surfaces on the overlay layer are rendered on top
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
@@ -1322,6 +1340,10 @@ static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 		double sy = constraint->current.cursor_hint.y;
 
 		struct sway_view *view = view_from_wlr_surface(constraint->surface);
+		if (!view) {
+			return;
+		}
+
 		struct sway_container *con = view->container;
 
 		double lx = sx + con->pending.content_x - view->geometry.x;

@@ -23,6 +23,7 @@ sway_sources = files(
 	'desktop/transaction.c',
 	'desktop/xdg_shell.c',
 	'desktop/launcher.c',
+
 	'input/input-manager.c',
 	'input/cursor.c',
 	'input/keyboard.c',

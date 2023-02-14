@@ -76,6 +76,11 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
+	if (!server->backend) {
+		sway_log(SWAY_ERROR, "Unable to create backend");
+		return false;
+	}
+
 	server->wlr_renderer = wlr_renderer_autocreate(server->backend);
 	if (!server->wlr_renderer) {
 		sway_log(SWAY_ERROR, "Failed to create wlr_renderer");

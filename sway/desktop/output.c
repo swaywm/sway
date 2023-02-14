@@ -1022,6 +1022,7 @@ static void output_manager_apply(struct sway_server *server,
 		oc->y = config_head->state.y;
 		oc->transform = config_head->state.transform;
 		oc->scale = config_head->state.scale;
+		oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
 
 		if (test_only) {
 			ok &= test_output_config(oc, output);
