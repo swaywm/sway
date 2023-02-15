@@ -336,7 +336,7 @@ static void config_defaults(struct sway_config *config) {
 	// SwayFX defaults
 	config->corner_radius = 0;
 	config->smart_corner_radius = true;
-	config->dim_inactive = 0.0f;
+	config->default_dim_inactive = 0.0f;
 	color_to_rgba(config->dim_inactive_colors.unfocused, 0x000000FF);
 	color_to_rgba(config->dim_inactive_colors.urgent, 0x900000FF);
 	config->shadow_enabled = false;

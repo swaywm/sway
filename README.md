@@ -20,7 +20,8 @@ Sway is an incredible window manager, and certainly one of the most well establi
     - `shadow_blur_radius <integer value 0 - 100>`
     - `shadow_color <hex color with alpha> ex, #0000007F`
 + Dim unfocused windows:
-    - `dim_inactive <float value 0.0 - 1.0>`
+    - `default_dim_inactive <float value 0.0 - 1.0>`
+    - `for_window [CRITERIA_HERE] dim_inactive <float value 0.0 - 1.0>`
     - `dim_inactive_colors.unfocused <hex color> ex, #000000FF`
     - `dim_inactive_colors.urgent <hex color> ex, #900000FF`
 

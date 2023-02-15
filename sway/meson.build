@@ -53,6 +53,7 @@ sway_sources = files(
 	'commands/smart_corner_radius.c',
 	'commands/create_output.c',
 	'commands/default_border.c',
+	'commands/default_dim_inactive.c',
 	'commands/default_floating_border.c',
 	'commands/default_orientation.c',
 	'commands/dim_inactive.c',

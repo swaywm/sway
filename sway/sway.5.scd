@@ -652,9 +652,14 @@ The default colors are:
 *smart_corner_radius* on|off
 	Set corner radius only if there are gaps around the window.
 
-*dim_inactive* <value>
+*default_dim_inactive* <value>
 	Adjusts the dimming of inactive windows between 0.0 (no dimming) and 1.0
 	(fully dimmed) while 0.0 is the default value.
+
+*dim_inactive* <value>
+	This can only be used with a *for_window* rule.
+	Adjusts the dimming of a window, matching the rule, between 0.0 (no dimming) 
+	and 1.0 (fully dimmed). Default value: *default_dim_inactive*
 
 *dim_inactive_colors.unfocused* <hex color>
 	The color to dim inactive windows with. Example color: #000000FF

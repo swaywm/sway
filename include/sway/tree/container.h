@@ -120,6 +120,8 @@ struct sway_container {
 	float alpha;
 
 	int corner_radius;
+	
+	float dim;
 
 	struct wlr_texture *title_focused;
 	struct wlr_texture *title_focused_inactive;

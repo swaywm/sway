@@ -1011,12 +1011,13 @@ static void render_containers_linear(struct sway_output *output,
 			int corner_radius = config->smart_corner_radius &&
 					output->current.active_workspace->current_gaps.top == 0
 					? 0 : child->corner_radius;
+
 			struct decoration_data deco_data = {
 				.alpha = child->alpha,
 				.dim_color = view_is_urgent(view)
 								 ? config->dim_inactive_colors.urgent
 								 : config->dim_inactive_colors.unfocused,
-				.dim = child->current.focused || parent->focused ? 0.0f: config->dim_inactive,
+				.dim = child->current.focused || parent->focused ? 0.0f : child->dim,
 				// no corner radius if no gaps (allows smart_gaps to work as expected)
 				.corner_radius = corner_radius,
 				.saturation = child->saturation,
@@ -1112,7 +1113,7 @@ static void render_containers_tabbed(struct sway_output *output,
 			.dim_color = view_is_urgent(current->view)
 							 ? config->dim_inactive_colors.urgent
 							 : config->dim_inactive_colors.unfocused,
-			.dim = current->current.focused || parent->focused ? 0.0f: config->dim_inactive,
+			.dim = current->current.focused || parent->focused ? 0.0f : current->dim,
 			.corner_radius = current->corner_radius,
 			.saturation = current->saturation,
 			.has_titlebar = true,
@@ -1186,7 +1187,7 @@ static void render_containers_stacked(struct sway_output *output,
 			.dim_color = view_is_urgent(current->view)
 							 ? config->dim_inactive_colors.urgent
 							 : config->dim_inactive_colors.unfocused,
-			.dim = current->current.focused || parent->focused ? 0.0f: config->dim_inactive,
+			.dim = current->current.focused || parent->focused ? 0.0f : current->dim,
 			.saturation = current->saturation,
 			.corner_radius = current->corner_radius,
 			.has_titlebar = true,
@@ -1286,7 +1287,7 @@ static void render_floating_container(struct sway_output *soutput,
 			.dim_color = view_is_urgent(view)
 							 ? config->dim_inactive_colors.urgent
 							 : config->dim_inactive_colors.unfocused,
-			.dim = con->current.focused ? 0.0f: config->dim_inactive,
+			.dim = con->current.focused ? 0.0f : con->dim,
 			.saturation = con->saturation,
 			.corner_radius = con->corner_radius,
 			.has_titlebar = has_titlebar,
@@ -1512,7 +1513,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 			.dim_color = view_is_urgent(focus->view)
 				 ? config->dim_inactive_colors.urgent
 				 : config->dim_inactive_colors.unfocused,
-			.dim = focus->current.focused ? 0.0f: config->dim_inactive,
+			.dim = focus->current.focused ? 0.0f : focus->dim,
 			.corner_radius = 0,
 			.saturation = focus->saturation,
 			.has_titlebar = false,

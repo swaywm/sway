@@ -477,7 +477,7 @@ struct sway_config {
 	// SwayFX config options
 	int corner_radius;
 	bool smart_corner_radius;
-	float dim_inactive;
+	float default_dim_inactive;
 	// dim_inactive colors
 	struct {
 		float unfocused[4];
