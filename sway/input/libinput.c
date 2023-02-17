@@ -220,7 +220,8 @@ bool sway_input_configure_libinput_device(struct sway_input_device *input_device
 
 	bool changed = false;
 	if (ic->mapped_to_output &&
-			!output_by_name_or_id(ic->mapped_to_output)) {
+		strcmp("*", ic->mapped_to_output) != 0 &&
+		!output_by_name_or_id(ic->mapped_to_output)) {
 		sway_log(SWAY_DEBUG,
 				"%s '%s' is mapped to offline output '%s'; disabling input",
 				ic->input_type, ic->identifier, ic->mapped_to_output);
