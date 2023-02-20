@@ -383,7 +383,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wlr_output->data;
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
-	surface_enter_output(sway_layer->layer_surface->surface, output);
 	cursor_rebase_all();
 }
 
@@ -678,6 +677,8 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 
 	wl_list_insert(&output->layers[layer_surface->pending.layer],
 			&sway_layer->link);
+
+	surface_enter_output(layer_surface->surface, output);
 
 	// Temporarily set the layer's current state to pending
 	// So that we can easily arrange it
