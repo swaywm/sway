@@ -859,6 +859,12 @@ static void update_textures(struct sway_container *con, void *data) {
 	container_update_marks_textures(con);
 }
 
+static void update_output_scale_iterator(struct sway_output *output,
+		struct sway_view *view, struct wlr_surface *surface,
+		struct wlr_box *box, void *user_data) {
+	surface_update_outputs(surface);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, commit);
 	struct wlr_output_event_commit *event = data;
@@ -873,6 +879,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 
 	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
 		output_for_each_container(output, update_textures, NULL);
+		output_for_each_surface(output, update_output_scale_iterator, NULL);
 	}
 
 	if (event->committed & (WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {
