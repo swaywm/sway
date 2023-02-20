@@ -1029,7 +1029,7 @@ static void render_seatops(struct sway_output *output,
 	}
 }
 
-void output_render(struct sway_output *output, struct timespec *when,
+void output_render(struct sway_output *output, struct wlr_buffer *buffer,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_renderer *renderer = output->server->renderer;
@@ -1044,7 +1044,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
-	if (!wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height)) {
+	if (!wlr_renderer_begin_with_buffer(renderer, buffer)) {
 		return;
 	}
 
@@ -1184,30 +1184,4 @@ renderer_end:
 	wlr_renderer_scissor(renderer, NULL);
 	wlr_output_render_software_cursors(wlr_output, damage);
 	wlr_renderer_end(renderer);
-
-	int width, height;
-	wlr_output_transformed_resolution(wlr_output, &width, &height);
-
-	pixman_region32_t frame_damage;
-	pixman_region32_init(&frame_damage);
-
-	enum wl_output_transform transform =
-		wlr_output_transform_invert(wlr_output->transform);
-	wlr_region_transform(&frame_damage, &output->damage_ring.current,
-		transform, width, height);
-
-	if (debug.damage != DAMAGE_DEFAULT) {
-		pixman_region32_union_rect(&frame_damage, &frame_damage,
-			0, 0, wlr_output->width, wlr_output->height);
-	}
-
-	wlr_output_set_damage(wlr_output, &frame_damage);
-	pixman_region32_fini(&frame_damage);
-
-	if (!wlr_output_commit(wlr_output)) {
-		return;
-	}
-
-	wlr_damage_ring_rotate(&output->damage_ring);
-	output->last_frame = *when;
 }

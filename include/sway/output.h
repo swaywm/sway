@@ -28,6 +28,7 @@ struct sway_output {
 
 	struct timespec last_frame;
 	struct wlr_damage_ring damage_ring;
+	struct wlr_output_swapchain *swapchain;
 
 	int lx, ly; // layout coords
 	int width, height; // transformed buffer size
@@ -112,7 +113,7 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 
-void output_render(struct sway_output *output, struct timespec *when,
+void output_render(struct sway_output *output, struct wlr_buffer *buffer,
 	pixman_region32_t *damage);
 
 void output_surface_for_each_surface(struct sway_output *output,

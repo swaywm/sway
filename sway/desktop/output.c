@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_output_swapchain.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_compositor.h>
@@ -517,6 +518,26 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	return wlr_output_commit(wlr_output);
 }
 
+static void get_frame_damage(struct sway_output *output,
+		pixman_region32_t *frame_damage) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	int width, height;
+	wlr_output_transformed_resolution(wlr_output, &width, &height);
+
+	pixman_region32_init(frame_damage);
+
+	enum wl_output_transform transform =
+		wlr_output_transform_invert(wlr_output->transform);
+	wlr_region_transform(frame_damage, &output->damage_ring.current,
+		transform, width, height);
+
+	if (debug.damage != DAMAGE_DEFAULT) {
+		pixman_region32_union_rect(frame_damage, frame_damage,
+			0, 0, wlr_output->width, wlr_output->height);
+	}
+}
+
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 	if (output->wlr_output == NULL) {
@@ -558,7 +579,10 @@ static int output_repaint_timer_handler(void *data) {
 	}
 
 	int buffer_age;
-	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
+	struct wlr_output_state state = {0};
+	struct wlr_buffer *buffer = wlr_output_swapchain_acquire(output->swapchain,
+		&state, &buffer_age);
+	if (buffer == NULL) {
 		return 0;
 	}
 
@@ -568,16 +592,36 @@ static int output_repaint_timer_handler(void *data) {
 	if (!output->wlr_output->needs_frame &&
 			!pixman_region32_not_empty(&output->damage_ring.current)) {
 		pixman_region32_fini(&damage);
-		wlr_output_rollback(output->wlr_output);
+		wlr_buffer_unlock(buffer);
 		return 0;
 	}
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	output_render(output, &now, &damage);
+	output_render(output, buffer, &damage);
 
 	pixman_region32_fini(&damage);
+
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	wlr_output_attach_buffer(wlr_output, buffer);
+	wlr_buffer_unlock(buffer);
+
+	int width, height;
+	wlr_output_transformed_resolution(wlr_output, &width, &height);
+
+	pixman_region32_t frame_damage;
+	get_frame_damage(output, &frame_damage);
+	wlr_output_set_damage(wlr_output, &frame_damage);
+	pixman_region32_fini(&frame_damage);
+
+	if (!wlr_output_commit(wlr_output)) {
+		return 0;
+	}
+
+	wlr_damage_ring_rotate(&output->damage_ring);
+	output->last_frame = now;
 
 	return 0;
 }
@@ -814,6 +858,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->needs_frame.link);
 	wl_list_remove(&output->request_state.link);
 
+	// output->swapchain destroys itself with the wlr_output
 	wlr_damage_ring_finish(&output->damage_ring);
 
 	output->wlr_output->data = NULL;
@@ -953,6 +998,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		return;
 	}
 	output->server = server;
+	output->swapchain = wlr_output_swapchain_create(wlr_output);
 	wlr_damage_ring_init(&output->damage_ring);
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
