@@ -5,7 +5,7 @@
 #include <GLES2/gl2ext.h>
 #include <stdbool.h>
 
-enum corner_location { ALL, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
+enum corner_location { ALL, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, NONE };
 
 struct decoration_data {
 	float alpha;
