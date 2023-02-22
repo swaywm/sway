@@ -578,6 +578,11 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
+	if (!output->wlr_output->needs_frame &&
+			!pixman_region32_not_empty(&output->damage_ring.current)) {
+		return 0;
+	}
+
 	int buffer_age;
 	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
 		return 0;
@@ -586,12 +591,6 @@ static int output_repaint_timer_handler(void *data) {
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
 	wlr_damage_ring_get_buffer_damage(&output->damage_ring, buffer_age, &damage);
-	if (!output->wlr_output->needs_frame &&
-			!pixman_region32_not_empty(&output->damage_ring.current)) {
-		pixman_region32_fini(&damage);
-		wlr_output_rollback(output->wlr_output);
-		return 0;
-	}
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
