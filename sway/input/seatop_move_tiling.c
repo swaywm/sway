@@ -32,7 +32,7 @@ struct seatop_move_tiling_event {
 };
 
 static void handle_render(struct sway_seat *seat,
-		struct sway_output *output, pixman_region32_t *damage) {
+		struct sway_output *output, const pixman_region32_t *damage) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (!e->threshold_reached) {
 		return;
