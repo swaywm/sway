@@ -112,8 +112,7 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 
-void output_render(struct sway_output *output, struct timespec *when,
-	pixman_region32_t *damage);
+void output_render(struct sway_output *output, pixman_region32_t *damage);
 
 void output_surface_for_each_surface(struct sway_output *output,
 		struct wlr_surface *surface, double ox, double oy,
