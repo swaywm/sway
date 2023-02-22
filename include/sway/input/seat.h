@@ -50,7 +50,7 @@ struct sway_seatop_impl {
 	void (*end)(struct sway_seat *seat);
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
 	void (*render)(struct sway_seat *seat, struct sway_output *output,
-			pixman_region32_t *damage);
+			const pixman_region32_t *damage);
 	bool allow_set_cursor;
 };
 
@@ -357,7 +357,7 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con);
  * (eg. dropzone for move-tiling)
  */
 void seatop_render(struct sway_seat *seat, struct sway_output *output,
-		pixman_region32_t *damage);
+		const pixman_region32_t *damage);
 
 bool seatop_allows_set_cursor(struct sway_seat *seat);
 
