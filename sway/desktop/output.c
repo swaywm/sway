@@ -6,6 +6,7 @@
 #include <wayland-server-core.h>
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
+#include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_matrix.h>
@@ -583,8 +584,14 @@ static int output_repaint_timer_handler(void *data) {
 		return 0;
 	}
 
+	if (!wlr_output_configure_primary_swapchain(wlr_output, NULL,
+			&output->swapchain)) {
+		return 0;
+	}
+
 	int buffer_age;
-	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, &buffer_age);
+	if (buffer == NULL) {
 		return 0;
 	}
 
@@ -595,9 +602,12 @@ static int output_repaint_timer_handler(void *data) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	output_render(output, &damage);
+	output_render(output, buffer, &damage);
 
 	pixman_region32_fini(&damage);
+
+	wlr_output_attach_buffer(wlr_output, buffer);
+	wlr_buffer_unlock(buffer);
 
 	pixman_region32_t frame_damage;
 	get_frame_damage(output, &frame_damage);
@@ -845,6 +855,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->frame.link);
 	wl_list_remove(&output->needs_frame.link);
 	wl_list_remove(&output->request_state.link);
+
+	wlr_swapchain_destroy(output->swapchain);
+	output->swapchain = NULL;
 
 	wlr_damage_ring_finish(&output->damage_ring);
 

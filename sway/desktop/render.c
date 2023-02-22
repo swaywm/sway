@@ -1029,7 +1029,8 @@ static void render_seatops(struct sway_output *output,
 	}
 }
 
-void output_render(struct sway_output *output, pixman_region32_t *damage) {
+void output_render(struct sway_output *output, struct wlr_buffer *buffer,
+		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_renderer *renderer = output->server->renderer;
 
@@ -1043,7 +1044,7 @@ void output_render(struct sway_output *output, pixman_region32_t *damage) {
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
-	if (!wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height)) {
+	if (!wlr_renderer_begin_with_buffer(renderer, buffer)) {
 		return;
 	}
 
