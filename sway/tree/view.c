@@ -25,7 +25,6 @@
 #include "sway/input/seat.h"
 #include "sway/scene_descriptor.h"
 #include "sway/server.h"
-#include "sway/surface.h"
 #include "sway/sway_text_node.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"

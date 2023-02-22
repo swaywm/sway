@@ -125,9 +125,6 @@ struct sway_container {
 	double child_total_width;
 	double child_total_height;
 
-	// Outputs currently being intersected
-	list_t *outputs; // struct sway_output
-
 	// Indicates that the container is a scratchpad container.
 	// Both hidden and visible scratchpad containers have scratchpad=true.
 	// Hidden scratchpad containers have a NULL parent.
@@ -279,15 +276,6 @@ bool container_is_floating_or_child(struct sway_container *container);
  * container.
  */
 bool container_is_fullscreen_or_child(struct sway_container *container);
-
-/**
- * Return the output which will be used for scale purposes.
- * This is the most recently entered output.
- * If the container is not on any output, return NULL.
- */
-struct sway_output *container_get_effective_output(struct sway_container *con);
-
-void container_discover_outputs(struct sway_container *con);
 
 enum sway_container_layout container_parent_layout(struct sway_container *con);
 

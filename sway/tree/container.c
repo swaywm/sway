@@ -17,7 +17,6 @@
 #include "sway/sway_text_node.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -113,7 +112,6 @@ struct sway_container *container_create(struct sway_view *view) {
 	c->view = view;
 	c->alpha = 1.0f;
 	c->marks = create_list();
-	c->outputs = create_list();
 
 	wl_signal_init(&c->events.destroy);
 	wl_signal_emit_mutable(&root->events.new_node, &c->node);
@@ -453,7 +451,6 @@ void container_destroy(struct sway_container *con) {
 	free(con->formatted_title);
 	list_free(con->pending.children);
 	list_free(con->current.children);
-	list_free(con->outputs);
 
 	list_free_items_and_destroy(con->marks);
 
@@ -595,18 +592,6 @@ bool container_has_ancestor(struct sway_container *descendant,
 		}
 	}
 	return false;
-}
-
-
-/**
- * Return the output which will be used for scale purposes.
- * This is the most recently entered output.
- */
-struct sway_output *container_get_effective_output(struct sway_container *con) {
-	if (con->outputs->length == 0) {
-		return NULL;
-	}
-	return con->outputs->items[con->outputs->length - 1];
 }
 
 /**
@@ -1265,63 +1250,6 @@ bool container_is_fullscreen_or_child(struct sway_container *container) {
 	} while (container);
 
 	return false;
-}
-
-static void surface_send_enter_iterator(struct wlr_surface *surface,
-		int x, int y, void *data) {
-	struct sway_output *output = data;
-	surface_enter_output(surface, output);
-}
-
-static void surface_send_leave_iterator(struct wlr_surface *surface,
-		int x, int y, void *data) {
-	struct sway_output *output = data;
-	surface_leave_output(surface, output);
-}
-
-void container_discover_outputs(struct sway_container *con) {
-	struct wlr_box con_box = {
-		.x = con->current.x,
-		.y = con->current.y,
-		.width = con->current.width,
-		.height = con->current.height,
-	};
-
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		struct wlr_box output_box;
-		output_get_box(output, &output_box);
-		struct wlr_box intersection;
-		bool intersects =
-			wlr_box_intersection(&intersection, &con_box, &output_box);
-		int index = list_find(con->outputs, output);
-
-		if (intersects && index == -1) {
-			// Send enter
-			sway_log(SWAY_DEBUG, "Container %p entered output %p", con, output);
-			if (con->view) {
-				view_for_each_surface(con->view,
-						surface_send_enter_iterator, output);
-				if (con->view->foreign_toplevel) {
-					wlr_foreign_toplevel_handle_v1_output_enter(
-							con->view->foreign_toplevel, output->wlr_output);
-				}
-			}
-			list_add(con->outputs, output);
-		} else if (!intersects && index != -1) {
-			// Send leave
-			sway_log(SWAY_DEBUG, "Container %p left output %p", con, output);
-			if (con->view) {
-				view_for_each_surface(con->view,
-					surface_send_leave_iterator, output);
-				if (con->view->foreign_toplevel) {
-					wlr_foreign_toplevel_handle_v1_output_leave(
-							con->view->foreign_toplevel, output->wlr_output);
-				}
-			}
-			list_del(con->outputs, index);
-		}
-	}
 }
 
 enum sway_container_layout container_parent_layout(struct sway_container *con) {
