@@ -8,7 +8,6 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/surface.h"
 
 struct sway_session_lock_output {
 	struct wlr_scene_tree *tree;

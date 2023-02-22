@@ -14,7 +14,6 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/surface.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
 #include <wlr/types/wlr_scene.h>
