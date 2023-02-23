@@ -12,7 +12,7 @@ enum gaps_op {
 	GAPS_OP_SET,
 	GAPS_OP_ADD,
 	GAPS_OP_SUBTRACT,
-    GAPS_OP_BOUNDED_SUBTRACT,
+	GAPS_OP_BOUNDED_SUBTRACT,
 	GAPS_OP_TOGGLE
 };
 
@@ -104,13 +104,13 @@ static void apply_gaps_op(int *prop, enum gaps_op op, int amount) {
 	case GAPS_OP_SUBTRACT:
 		*prop -= amount;
 		break;
-    case GAPS_OP_BOUNDED_SUBTRACT:
-        if (amount <= *prop) {
-            *prop -= amount;
-        } else {
-            *prop = 0;
-        }
-        break;
+	case GAPS_OP_BOUNDED_SUBTRACT:
+		if (amount <= *prop) {
+			*prop -= amount;
+		} else {
+			*prop = 0;
+		}
+		break;
 	case GAPS_OP_TOGGLE:
 		*prop = *prop ? 0 : amount;
 		break;
@@ -192,8 +192,8 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 		data.operation = GAPS_OP_ADD;
 	} else if (strcasecmp(argv[2], "minus") == 0) {
 		data.operation = GAPS_OP_SUBTRACT;
-    } else if (strcasecmp(argv[2], "bounded_minus") == 0) {
-        data.operation = GAPS_OP_BOUNDED_SUBTRACT;
+	} else if (strcasecmp(argv[2], "bounded_minus") == 0) {
+		data.operation = GAPS_OP_BOUNDED_SUBTRACT;
 	} else if (strcasecmp(argv[2], "toggle") == 0) {
 		data.operation = GAPS_OP_TOGGLE;
 	} else {
