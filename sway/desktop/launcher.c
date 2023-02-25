@@ -228,7 +228,7 @@ struct launcher_ctx *launcher_ctx_create(struct wlr_xdg_activation_token_v1 *tok
 }
 
 // Creates a context with a new token for the internal launcher
-struct launcher_ctx *launcher_ctx_create_internal() {
+struct launcher_ctx *launcher_ctx_create_internal(void) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 	if (!ws) {
