@@ -508,7 +508,6 @@ static void render_titlebar_text_texture(struct sway_output *output,
 	cairo_t *c = cairo_create(dummy_surface);
 	cairo_set_antialias(c, CAIRO_ANTIALIAS_BEST);
 	cairo_font_options_t *fo = cairo_font_options_create();
-	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
 	if (output->wlr_output->subpixel == WL_OUTPUT_SUBPIXEL_NONE) {
 		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
 	} else {
