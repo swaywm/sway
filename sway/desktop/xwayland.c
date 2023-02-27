@@ -75,7 +75,11 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, map);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	wl_list_insert(root->xwayland_unmanaged.prev, &surface->link);
+	if (xsurface->parent == NULL) {
+		wl_list_insert(root->xwayland_unmanaged.prev, &surface->link);
+	} else {
+		wl_list_init(&surface->link);
+	};
 
 	wl_signal_add(&xsurface->events.set_geometry, &surface->set_geometry);
 	surface->set_geometry.notify = unmanaged_handle_set_geometry;
@@ -147,6 +151,7 @@ static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->destroy.link);
 	wl_list_remove(&surface->override_redirect.link);
 	wl_list_remove(&surface->request_activate.link);
+	wl_list_remove(&surface->set_parent.link);
 	free(surface);
 }
 
@@ -169,6 +174,17 @@ static void unmanaged_handle_override_redirect(struct wl_listener *listener, voi
 	struct sway_xwayland_view *xwayland_view = create_xwayland_view(xsurface);
 	if (mapped) {
 		handle_map(&xwayland_view->map, xsurface);
+	}
+}
+
+static void unmanaged_handle_set_parent(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface = wl_container_of(listener, surface, set_parent);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+
+	bool mapped = xsurface->mapped;
+	if (mapped) {
+		unmanaged_handle_unmap(&surface->unmap, NULL);
+		unmanaged_handle_map(&surface->map, NULL);
 	}
 }
 
@@ -196,6 +212,8 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	surface->override_redirect.notify = unmanaged_handle_override_redirect;
 	wl_signal_add(&xsurface->events.request_activate, &surface->request_activate);
 	surface->request_activate.notify = unmanaged_handle_request_activate;
+	wl_signal_add(&xsurface->events.set_parent, &surface->set_parent);
+	surface->set_parent.notify = unmanaged_handle_set_parent;
 
 	return surface;
 }
@@ -335,6 +353,41 @@ static void handle_set_decorations(struct wl_listener *listener, void *data) {
 	view_update_csd_from_client(view, csd);
 }
 
+struct xwayland_surface_iterator_data {
+	wlr_surface_iterator_func_t user_iterator;
+	void *user_data;
+	int x, y;
+};
+
+static void xwayland_surface_iterator(struct wlr_surface *surface,
+		int sx, int sy, void *data) {
+	struct xwayland_surface_iterator_data *iter_data = data;
+	iter_data->user_iterator(surface, iter_data->x + sx, iter_data->y + sy,
+		iter_data->user_data);
+}
+
+static void for_each_popup_surface(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	struct wlr_xwayland_surface *child;
+	sway_log(SWAY_INFO, "iterating popups for %d", xsurface->window_id);
+	wl_list_for_each(child, &xsurface->children, parent_link) {
+		if (!child->override_redirect || !child->mapped) {
+			continue;
+		}
+		sway_log(SWAY_INFO, "found popup %d", child->window_id);
+		struct xwayland_surface_iterator_data data = {
+			.user_iterator = iterator,
+			.user_data = user_data,
+			.x = child->x - xsurface->x, .y = child->y - xsurface->y,
+		};
+		wlr_surface_for_each_surface(child->surface, xwayland_surface_iterator, &data);
+	}
+}
+
 static bool is_transient_for(struct sway_view *child,
 		struct sway_view *ancestor) {
 	if (xwayland_view_from_view(child) == NULL) {
@@ -393,6 +446,7 @@ static const struct sway_view_impl view_impl = {
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
+	.for_each_popup_surface = for_each_popup_surface,
 	.is_transient_for = is_transient_for,
 	.close = _close,
 	.destroy = destroy,
