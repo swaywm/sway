@@ -717,23 +717,11 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 
 static void handle_xkb_context_log(struct xkb_context *context,
 		enum xkb_log_level level, const char *format, va_list args) {
-	va_list args_copy;
-	va_copy(args_copy, args);
-	size_t length = vsnprintf(NULL, 0, format, args_copy) + 1;
-	va_end(args_copy);
+	char *error = vformat_str(format, args);
 
-	char *error = malloc(length);
-	if (!error) {
-		sway_log(SWAY_ERROR, "Failed to allocate libxkbcommon log message");
-		return;
-	}
-
-	va_copy(args_copy, args);
-	vsnprintf(error, length, format, args_copy);
-	va_end(args_copy);
-
-	if (error[length - 2] == '\n') {
-		error[length - 2] = '\0';
+	size_t len = strlen(error);
+	if (error[len - 1] == '\n') {
+		error[len - 1] = '\0';
 	}
 
 	sway_log_importance_t importance = SWAY_DEBUG;
@@ -768,13 +756,8 @@ struct xkb_keymap *sway_keyboard_compile_keymap(struct input_config *ic,
 		if (!keymap_file) {
 			sway_log_errno(SWAY_ERROR, "cannot read xkb file %s", ic->xkb_file);
 			if (error) {
-				size_t len = snprintf(NULL, 0, "cannot read xkb file %s: %s",
-						ic->xkb_file, strerror(errno)) + 1;
-				*error = malloc(len);
-				if (*error) {
-					snprintf(*error, len, "cannot read xkb_file %s: %s",
-							ic->xkb_file, strerror(errno));
-				}
+				*error = format_str("cannot read xkb file %s: %s",
+					ic->xkb_file, strerror(errno));
 			}
 			goto cleanup;
 		}

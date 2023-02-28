@@ -10,6 +10,7 @@
 #include "swaybar/tray/tray.h"
 #include "list.h"
 #include "log.h"
+#include "stringop.h"
 
 static const char *watcher_path = "/StatusNotifierWatcher";
 
@@ -138,12 +139,10 @@ static int handle_new_watcher(sd_bus_message *msg,
 
 bool init_host(struct swaybar_host *host, char *protocol,
 		struct swaybar_tray *tray) {
-	size_t len = snprintf(NULL, 0, "org.%s.StatusNotifierWatcher", protocol) + 1;
-	host->watcher_interface = malloc(len);
+	host->watcher_interface = format_str("org.%s.StatusNotifierWatcher", protocol);
 	if (!host->watcher_interface) {
 		return false;
 	}
-	snprintf(host->watcher_interface, len, "org.%s.StatusNotifierWatcher", protocol);
 
 	sd_bus_slot *reg_slot = NULL, *unreg_slot = NULL, *watcher_slot = NULL;
 	int ret = sd_bus_match_signal(tray->bus, &reg_slot, host->watcher_interface,
@@ -173,13 +172,10 @@ bool init_host(struct swaybar_host *host, char *protocol,
 	}
 
 	pid_t pid = getpid();
-	size_t service_len = snprintf(NULL, 0, "org.%s.StatusNotifierHost-%d",
-			protocol, pid) + 1;
-	host->service = malloc(service_len);
+	host->service = format_str("org.%s.StatusNotifierHost-%d", protocol, pid);
 	if (!host->service) {
 		goto error;
 	}
-	snprintf(host->service, service_len, "org.%s.StatusNotifierHost-%d", protocol, pid);
 	ret = sd_bus_request_name(tray->bus, host->service, 0);
 	if (ret < 0) {
 		sway_log(SWAY_DEBUG, "Failed to acquire service name: %s", strerror(-ret));
