@@ -300,6 +300,7 @@ static void ipc_json_describe_wlr_output(struct wlr_output *wlr_output, json_obj
 			json_object_new_string(wlr_output->model ? wlr_output->model : "Unknown"));
 	json_object_object_add(object, "serial",
 			json_object_new_string(wlr_output->serial ? wlr_output->serial : "Unknown"));
+	json_object_object_add(object, "port", json_object_new_string(wlr_output->port));
 
 	json_object *modes_array = json_object_new_array();
 	struct wlr_output_mode *mode;
