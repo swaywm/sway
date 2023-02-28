@@ -36,13 +36,18 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
+static bool output_match_name_or_id(struct sway_output *output,
+		const char *name_or_id) {
+	char identifier[128];
+	output_get_identifier(identifier, sizeof(identifier), output);
+	return strcasecmp(identifier, name_or_id) == 0
+		|| strcasecmp(output->wlr_output->name, name_or_id) == 0;
+}
+
 struct sway_output *output_by_name_or_id(const char *name_or_id) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		char identifier[128];
-		output_get_identifier(identifier, sizeof(identifier), output);
-		if (strcasecmp(identifier, name_or_id) == 0
-				|| strcasecmp(output->wlr_output->name, name_or_id) == 0) {
+		if (output_match_name_or_id(output, name_or_id)) {
 			return output;
 		}
 	}
@@ -52,10 +57,7 @@ struct sway_output *output_by_name_or_id(const char *name_or_id) {
 struct sway_output *all_output_by_name_or_id(const char *name_or_id) {
 	struct sway_output *output;
 	wl_list_for_each(output, &root->all_outputs, link) {
-		char identifier[128];
-		output_get_identifier(identifier, sizeof(identifier), output);
-		if (strcasecmp(identifier, name_or_id) == 0
-				|| strcasecmp(output->wlr_output->name, name_or_id) == 0) {
+		if (output_match_name_or_id(output, name_or_id)) {
 			return output;
 		}
 	}
