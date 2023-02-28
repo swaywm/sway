@@ -164,6 +164,10 @@ static void unmanaged_handle_override_redirect(struct wl_listener *listener, voi
 		wl_container_of(listener, surface, override_redirect);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
+	sway_log(SWAY_INFO, "unmanaged surface %d changed override_redirect to %d",
+		xsurface->window_id, xsurface->override_redirect);
+	xsurface->override_redirect = true;
+	return;
 	bool mapped = xsurface->mapped;
 	if (mapped) {
 		unmanaged_handle_unmap(&surface->unmap, NULL);
@@ -366,12 +370,8 @@ static void xwayland_surface_iterator(struct wlr_surface *surface,
 		iter_data->user_data);
 }
 
-static void for_each_popup_surface(struct sway_view *view,
+static void xwayland_surface_for_each_popup_surface(struct wlr_xwayland_surface *xsurface,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (xwayland_view_from_view(view) == NULL) {
-		return;
-	}
-	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	struct wlr_xwayland_surface *child;
 	sway_log(SWAY_INFO, "iterating popups for %d", xsurface->window_id);
 	wl_list_for_each(child, &xsurface->children, parent_link) {
@@ -385,7 +385,17 @@ static void for_each_popup_surface(struct sway_view *view,
 			.x = child->x - xsurface->x, .y = child->y - xsurface->y,
 		};
 		wlr_surface_for_each_surface(child->surface, xwayland_surface_iterator, &data);
+		xwayland_surface_for_each_popup_surface(child, iterator, user_data);
 	}
+}
+
+static void for_each_popup_surface(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	xwayland_surface_for_each_popup_surface(xsurface, iterator, user_data);
 }
 
 static bool is_transient_for(struct sway_view *child,

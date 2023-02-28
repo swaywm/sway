@@ -121,6 +121,28 @@ struct sway_node *node_at_coords(
 
 	// check for unmanaged views
 #if HAVE_XWAYLAND
+	struct sway_container *focus = seat_get_focused_container(seat);
+	if (focus && focus->view && focus->view->type == SWAY_VIEW_XWAYLAND) {
+		struct wlr_xwayland_surface *xsurface = focus->view->wlr_xwayland_surface;
+		struct wlr_xwayland_surface *child;
+		sway_log(SWAY_INFO, "iterating popups for %d", xsurface->window_id);
+		wl_list_for_each_reverse(child, &xsurface->children, parent_link) {
+			if (!child->override_redirect || !child->mapped) {
+				continue;
+			}
+			sway_log(SWAY_INFO, "found popup %d", child->window_id);
+			double _sx = lx - child->x;
+			double _sy = ly - child->y;
+			if (wlr_surface_point_accepts_input(child->surface, _sx, _sy)) {
+				*surface = xsurface->surface;
+				*sx = lx - xsurface->x;
+				*sy = ly - xsurface->y;
+				wlr_xwayland_surface_restack(child, NULL, XCB_STACK_MODE_ABOVE);
+				return NULL;
+			}
+		}
+	}
+
 	struct wl_list *unmanaged = &root->xwayland_unmanaged;
 	struct sway_xwayland_unmanaged *unmanaged_surface;
 	wl_list_for_each_reverse(unmanaged_surface, unmanaged, link) {
