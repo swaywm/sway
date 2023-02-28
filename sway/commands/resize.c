@@ -415,7 +415,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (width.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	}
 
@@ -427,10 +427,10 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		}
 		int num_consumed_args = parse_movement_amount(argc, argv, &height);
 		if (argc > num_consumed_args) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 		if (width.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	}
 
@@ -462,7 +462,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		"[<amount> px|ppt [or <amount> px|ppt]]'";
 	uint32_t axis = parse_resize_axis(*argv);
 	if (axis == WLR_EDGE_NONE) {
-		return cmd_results_new(CMD_INVALID, usage);
+		return cmd_results_new(CMD_INVALID, "%s", usage);
 	}
 	--argc; ++argv;
 
@@ -473,7 +473,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (first_amount.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	} else {
 		first_amount.amount = 10;
@@ -483,7 +483,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	// "or"
 	if (argc) {
 		if (strcmp(*argv, "or") != 0) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 		--argc; ++argv;
 	}
@@ -493,10 +493,10 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	if (argc) {
 		int num_consumed_args = parse_movement_amount(argc, argv, &second_amount);
 		if (argc > num_consumed_args) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 		if (second_amount.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	} else {
 		second_amount.amount = 0;
@@ -566,5 +566,5 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	const char usage[] = "Expected 'resize <shrink|grow> "
 		"<width|height|up|down|left|right> [<amount>] [px|ppt]'";
 
-	return cmd_results_new(CMD_INVALID, usage);
+	return cmd_results_new(CMD_INVALID, "%s", usage);
 }

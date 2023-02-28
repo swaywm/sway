@@ -153,7 +153,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 				workspace->output);
 	}
 	if (new_layout == L_NONE) {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 	if (new_layout != old_layout) {
 		if (container) {

@@ -21,7 +21,7 @@ struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 	char *message = NULL;
 	uint32_t button = get_mouse_button(*argv, &message);
 	if (message) {
-		error = cmd_results_new(CMD_INVALID, message);
+		error = cmd_results_new(CMD_INVALID, "%s", message);
 		free(message);
 		return error;
 	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN

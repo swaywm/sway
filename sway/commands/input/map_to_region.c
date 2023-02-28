@@ -49,5 +49,5 @@ struct cmd_results *input_cmd_map_to_region(int argc, char **argv) {
 error:
 	free(ic->mapped_to_region);
 	ic->mapped_to_region = NULL;
-	return cmd_results_new(CMD_FAILURE, errstr);
+	return cmd_results_new(CMD_FAILURE, "%s", errstr);
 }
