@@ -73,12 +73,10 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 		++argv; --argc;
 	} else if (config->reading && !config->current_bar) {
-		int len = snprintf(NULL, 0, "bar-%d", config->bars->length) + 1;
-		id = malloc(len * sizeof(char));
+		id = format_str("bar-%d", config->bars->length);
 		if (!id) {
 			return cmd_results_new(CMD_FAILURE, "Unable to allocate bar id");
 		}
-		snprintf(id, len, "bar-%d", config->bars->length);
 	} else if (!config->reading && strcmp(argv[0], "mode") != 0 &&
 			strcmp(argv[0], "hidden_state") != 0) {
 		if (is_subcommand(argv[0])) {

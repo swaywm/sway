@@ -162,13 +162,10 @@ static void merge_id_on_name(struct output_config *oc) {
 	char id[128];
 	output_get_identifier(id, sizeof(id), output);
 
-	size_t size = snprintf(NULL, 0, "%s on %s", id, name) + 1;
-	char *id_on_name = malloc(size);
+	char *id_on_name = format_str("%s on %s", id, name);
 	if (!id_on_name) {
-		sway_log(SWAY_ERROR, "Failed to allocate id on name string");
 		return;
 	}
-	snprintf(id_on_name, size, "%s on %s", id, name);
 
 	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
 	if (i >= 0) {
@@ -633,9 +630,7 @@ static struct output_config *get_output_config(char *identifier,
 	struct output_config *oc_name = NULL;
 	struct output_config *oc_id = NULL;
 
-	size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
-	char *id_on_name = malloc(length);
-	snprintf(id_on_name, length, "%s on %s", identifier, name);
+	char *id_on_name = format_str("%s on %s", identifier, name);
 	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
 	if (i >= 0) {
 		oc_id_on_name = config->output_configs->items[i];

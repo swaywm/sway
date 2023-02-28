@@ -489,20 +489,10 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 	}
 	results->status = status;
 	if (format) {
-		char *error = NULL;
 		va_list args;
 		va_start(args, format);
-		int slen = vsnprintf(NULL, 0, format, args);
+		results->error = vformat_str(format, args);
 		va_end(args);
-		if (slen > 0) {
-			error = malloc(slen + 1);
-			if (error != NULL) {
-				va_start(args, format);
-				vsnprintf(error, slen + 1, format, args);
-				va_end(args);
-			}
-		}
-		results->error = error;
 	} else {
 		results->error = NULL;
 	}
