@@ -46,7 +46,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "container") || strcasecmp(argv[1], "with")) {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 
 	struct sway_container *current = config->handler_context.container;
@@ -65,7 +65,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 		other = root_find_container(test_mark, value);
 	} else {
 		free(value);
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 
 	if (!other) {

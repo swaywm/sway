@@ -61,7 +61,7 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 	const char expected[] = "Expected 'workspace <name> gaps "
 		"inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
 	if (gaps_location == 0) {
-		return cmd_results_new(CMD_INVALID, expected);
+		return cmd_results_new(CMD_INVALID, "%s", expected);
 	}
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO,
@@ -79,7 +79,7 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 	char *end;
 	int amount = strtol(argv[gaps_location + 2], &end, 10);
 	if (strlen(end)) {
-		return cmd_results_new(CMD_FAILURE, expected);
+		return cmd_results_new(CMD_FAILURE, "%s", expected);
 	}
 
 	bool valid = false;
@@ -110,7 +110,7 @@ static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
 		}
 	}
 	if (!valid) {
-		return cmd_results_new(CMD_INVALID, expected);
+		return cmd_results_new(CMD_INVALID, "%s", expected);
 	}
 
 	// Prevent invalid gaps configurations.
@@ -174,7 +174,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 
 		if (root->fullscreen_global) {
-			return cmd_results_new(CMD_FAILURE, "workspace",
+			return cmd_results_new(CMD_FAILURE,
 				"Can't switch workspaces while fullscreen global");
 		}
 

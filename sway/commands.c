@@ -381,10 +381,13 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 	sway_log(SWAY_INFO, "Config command: %s", exec);
 	const struct cmd_handler *handler = find_core_handler(argv[0]);
 	if (!handler || !handler->handle) {
-		const char *error = handler
-			? "Command '%s' is shimmed, but unimplemented"
-			: "Unknown/invalid command '%s'";
-		results = cmd_results_new(CMD_INVALID, error, argv[0]);
+		if (handler) {
+			results = cmd_results_new(CMD_INVALID,
+				"Command '%s' is shimmed, but unimplemented", argv[0]);
+		} else {
+			results = cmd_results_new(CMD_INVALID,
+				"Unknown/invalid command '%s'", argv[0]);
+		}
 		goto cleanup;
 	}
 
