@@ -36,8 +36,12 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
-static bool output_match_name_or_id(struct sway_output *output,
+bool output_match_name_or_id(struct sway_output *output,
 		const char *name_or_id) {
+	if (strcmp(name_or_id, "*") == 0) {
+		return true;
+	}
+
 	char identifier[128];
 	output_get_identifier(identifier, sizeof(identifier), output);
 	return strcasecmp(identifier, name_or_id) == 0

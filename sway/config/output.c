@@ -722,12 +722,11 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	// this is during startup then there will be no container and config
 	// will be applied during normal "new output" event from wlroots.
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	char id[128];
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		char *name = sway_output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), sway_output);
-		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
+		if (output_match_name_or_id(sway_output, oc->name)) {
+			char id[128];
+			output_get_identifier(id, sizeof(id), sway_output);
 			struct output_config *current = get_output_config(id, sway_output);
 			if (!current) {
 				// No stored output config matched, apply oc directly

@@ -96,6 +96,9 @@ void output_damage_box(struct sway_output *output, struct wlr_box *box);
 void output_damage_whole_container(struct sway_output *output,
 	struct sway_container *con);
 
+bool output_match_name_or_id(struct sway_output *output,
+	const char *name_or_id);
+
 // this ONLY includes the enabled outputs
 struct sway_output *output_by_name_or_id(const char *name_or_id);
 
