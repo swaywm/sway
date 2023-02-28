@@ -263,6 +263,9 @@ static uint32_t configure(struct sway_view *view, double lx, double ly, int widt
 	return 0;
 }
 
+static bool is_surface_transient_for(struct wlr_xwayland_surface *surface,
+		struct sway_view *ancestor);
+
 static void set_activated(struct sway_view *view, bool activated) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
@@ -275,6 +278,15 @@ static void set_activated(struct sway_view *view, bool activated) {
 
 	wlr_xwayland_surface_activate(surface, activated);
 	wlr_xwayland_surface_restack(surface, NULL, XCB_STACK_MODE_ABOVE);
+
+	struct sway_xwayland_unmanaged *unmanaged;
+	wl_list_for_each(unmanaged, &root->xwayland_unmanaged, link) {
+		struct wlr_xwayland_surface *unmanaged_surface = unmanaged->wlr_xwayland_surface;
+		if (!is_surface_transient_for(unmanaged_surface, view)) {
+			continue;
+		}
+		wlr_xwayland_surface_restack(unmanaged_surface, NULL, XCB_STACK_MODE_ABOVE);
+	}
 }
 
 static void set_tiled(struct sway_view *view, bool tiled) {
@@ -335,12 +347,8 @@ static void handle_set_decorations(struct wl_listener *listener, void *data) {
 	view_update_csd_from_client(view, csd);
 }
 
-static bool is_transient_for(struct sway_view *child,
+static bool is_surface_transient_for(struct wlr_xwayland_surface *surface,
 		struct sway_view *ancestor) {
-	if (xwayland_view_from_view(child) == NULL) {
-		return false;
-	}
-	struct wlr_xwayland_surface *surface = child->wlr_xwayland_surface;
 	while (surface) {
 		if (surface->parent == ancestor->wlr_xwayland_surface) {
 			return true;
@@ -348,6 +356,15 @@ static bool is_transient_for(struct sway_view *child,
 		surface = surface->parent;
 	}
 	return false;
+}
+
+static bool is_transient_for(struct sway_view *child,
+		struct sway_view *ancestor) {
+	if (xwayland_view_from_view(child) == NULL) {
+		return false;
+	}
+	struct wlr_xwayland_surface *surface = child->wlr_xwayland_surface;
+	return is_surface_transient_for(surface, ancestor);
 }
 
 static void _close(struct sway_view *view) {
