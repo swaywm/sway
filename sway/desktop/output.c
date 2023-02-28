@@ -496,6 +496,12 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	if (n_surfaces != 1) {
 		return false;
 	}
+	size_t n_popups = 0;
+	output_view_for_each_popup_surface(output, view,
+		count_surface_iterator, &n_popups);
+	if (n_popups > 0) {
+		return false;
+	}
 
 	if (surface->buffer == NULL) {
 		return false;
