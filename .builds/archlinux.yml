@@ -3,6 +3,7 @@ packages:
   - cairo
   - gdk-pixbuf2
   - json-c
+  - libdisplay-info
   - libegl
   - libinput
   - libxcb
