@@ -12,6 +12,7 @@
 #include "../include/config.h"
 #include "gesture.h"
 #include "list.h"
+#include "stringop.h"
 #include "swaynag.h"
 #include "tree/container.h"
 #include "sway/input/tablet.h"
@@ -625,7 +626,7 @@ void run_deferred_bindings(void);
 /**
  * Adds a warning entry to the swaynag instance used for errors.
  */
-void config_add_swaynag_warning(char *fmt, ...);
+void config_add_swaynag_warning(char *fmt, ...) _SWAY_ATTRIB_PRINTF(1, 2);
 
 /**
  * Free config struct
