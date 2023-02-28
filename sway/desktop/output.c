@@ -42,6 +42,13 @@ bool output_match_name_or_id(struct sway_output *output,
 		return true;
 	}
 
+	const char port_prefix[] = "port:";
+	if (strncmp(name_or_id, port_prefix, strlen(port_prefix)) == 0) {
+		const char *port = &name_or_id[strlen(port_prefix)];
+		return output->wlr_output->port != NULL &&
+			strcmp(output->wlr_output->port, port) == 0;
+	}
+
 	char identifier[128];
 	output_get_identifier(identifier, sizeof(identifier), output);
 	return strcasecmp(identifier, name_or_id) == 0
