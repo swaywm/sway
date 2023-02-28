@@ -12,23 +12,6 @@
 
 const uint8_t GESTURE_FINGERS_ANY = 0;
 
-// Helper to easily allocate and format string
-static char *strformat(const char *format, ...) {
-	va_list args;
-	va_start(args, format);
-	int length = vsnprintf(NULL, 0, format, args) + 1;
-	va_end(args);
-
-	char *result = malloc(length);
-	if (result) {
-		va_start(args, format);
-		vsnprintf(result, length, format, args);
-		va_end(args);
-	}
-
-	return result;
-}
-
 char *gesture_parse(const char *input, struct gesture *output) {
 	// Clear output in case of failure
 	output->type = GESTURE_TYPE_NONE;
@@ -38,7 +21,7 @@ char *gesture_parse(const char *input, struct gesture *output) {
 	// Split input type, fingers and directions
 	list_t *split = split_string(input, ":");
 	if (split->length < 1 || split->length > 3) {
-		return strformat(
+		return format_str(
 				"expected <gesture>[:<fingers>][:direction], got %s",
 				input);
 	}
@@ -51,8 +34,8 @@ char *gesture_parse(const char *input, struct gesture *output) {
 	} else if (strcmp(split->items[0], "swipe") == 0) {
 		output->type = GESTURE_TYPE_SWIPE;
 	} else {
-		return strformat("expected hold|pinch|swipe, got %s",
-				split->items[0]);
+		return format_str("expected hold|pinch|swipe, got %s",
+				(const char *)split->items[0]);
 	}
 
 	// Parse optional arguments
@@ -67,7 +50,7 @@ char *gesture_parse(const char *input, struct gesture *output) {
 			next = split->length == 3 ? split->items[2] : NULL;
 		} else if (split->length == 3) {
 			// Fail here if argument can only be finger count
-			return strformat("expected 1-9, got %s", next);
+			return format_str("expected 1-9, got %s", next);
 		}
 
 		// If there is an argument left, try to parse as direction
@@ -95,7 +78,7 @@ char *gesture_parse(const char *input, struct gesture *output) {
 				} else if (strcmp(item, "counterclockwise") == 0) {
 					output->directions |= GESTURE_DIRECTION_COUNTERCLOCKWISE;
 				} else {
-					return strformat("expected direction, got %s", item);
+					return format_str("expected direction, got %s", item);
 				}
 			}
 			list_free_items_and_destroy(directions);
@@ -163,7 +146,7 @@ static char *gesture_directions_to_string(uint32_t directions) {
 			if (!result) {
 				result = strdup(name);
 			} else {
-				char *new = strformat("%s+%s", result, name);
+				char *new = format_str("%s+%s", result, name);
 				free(result);
 				result = new;
 			}
@@ -179,7 +162,7 @@ static char *gesture_directions_to_string(uint32_t directions) {
 
 char *gesture_to_string(struct gesture *gesture) {
 	char *directions = gesture_directions_to_string(gesture->directions);
-	char *result = strformat("%s:%u:%s",
+	char *result = format_str("%s:%u:%s",
 		gesture_type_string(gesture->type),
 		gesture->fingers, directions);
 	free(directions);
