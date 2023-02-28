@@ -1,6 +1,7 @@
 #ifndef _SWAY_SWAYNAG_H
 #define _SWAY_SWAYNAG_H
 #include <wayland-server-core.h>
+#include "stringop.h"
 
 struct swaynag_instance {
 	struct wl_client *client;
@@ -21,7 +22,7 @@ bool swaynag_spawn(const char *swaynag_command,
 // Write a log message to swaynag->fd[1]. This will fail when swaynag->detailed
 // is false.
 void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,
-		const char *fmt, ...);
+		const char *fmt, ...) _SWAY_ATTRIB_PRINTF(3, 4);
 
 // If swaynag->detailed, close swaynag->fd[1] so swaynag displays
 void swaynag_show(struct swaynag_instance *swaynag);
