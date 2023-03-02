@@ -124,6 +124,9 @@ struct sway_node *node_at_coords(
 	struct wl_list *unmanaged = &root->xwayland_unmanaged;
 	struct sway_xwayland_unmanaged *unmanaged_surface;
 	wl_list_for_each_reverse(unmanaged_surface, unmanaged, link) {
+		if (!unmanaged_surface->visible) {
+			continue;
+		}
 		struct wlr_xwayland_surface *xsurface =
 			unmanaged_surface->wlr_xwayland_surface;
 

@@ -147,6 +147,7 @@ static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->destroy.link);
 	wl_list_remove(&surface->override_redirect.link);
 	wl_list_remove(&surface->request_activate.link);
+	wl_list_remove(&surface->set_parent.link);
 	free(surface);
 }
 
@@ -169,6 +170,24 @@ static void unmanaged_handle_override_redirect(struct wl_listener *listener, voi
 	struct sway_xwayland_view *xwayland_view = create_xwayland_view(xsurface);
 	if (mapped) {
 		handle_map(&xwayland_view->map, xsurface);
+	}
+}
+
+static bool is_surface_transient_for(struct wlr_xwayland_surface *surface,
+		struct sway_view *ancestor);
+
+static void unmanaged_handle_set_parent(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface = wl_container_of(listener, surface, set_parent);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+
+	if (xsurface->parent != NULL) {
+		struct sway_seat *seat = input_manager_current_seat();
+		struct sway_container *focus = seat_get_focused_container(seat);
+		surface->visible = focus && focus->view
+			&& focus->view->type == SWAY_VIEW_XWAYLAND
+			&& is_surface_transient_for(xsurface, focus->view);
+	} else {
+		surface->visible = true;
 	}
 }
 
@@ -196,6 +215,9 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	surface->override_redirect.notify = unmanaged_handle_override_redirect;
 	wl_signal_add(&xsurface->events.request_activate, &surface->request_activate);
 	surface->request_activate.notify = unmanaged_handle_request_activate;
+	wl_signal_add(&xsurface->events.set_parent, &surface->set_parent);
+	surface->set_parent.notify = unmanaged_handle_set_parent;
+	unmanaged_handle_set_parent(&surface->set_parent, xsurface);
 
 	return surface;
 }
@@ -263,9 +285,6 @@ static uint32_t configure(struct sway_view *view, double lx, double ly, int widt
 	return 0;
 }
 
-static bool is_surface_transient_for(struct wlr_xwayland_surface *surface,
-		struct sway_view *ancestor);
-
 static void set_activated(struct sway_view *view, bool activated) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
@@ -287,6 +306,7 @@ static void set_activated(struct sway_view *view, bool activated) {
 		if (!is_surface_transient_for(unmanaged_surface, view)) {
 			continue;
 		}
+		unmanaged->visible = activated;
 		if (activated) {
 			wlr_xwayland_surface_restack(unmanaged_surface, NULL, XCB_STACK_MODE_ABOVE);
 		}

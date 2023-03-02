@@ -171,6 +171,7 @@ struct sway_xwayland_unmanaged {
 	struct wl_list link;
 
 	int lx, ly;
+	bool visible;
 
 	struct wl_listener request_activate;
 	struct wl_listener request_configure;
@@ -181,6 +182,7 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener override_redirect;
+	struct wl_listener set_parent;
 };
 #endif
 struct sway_view_child;

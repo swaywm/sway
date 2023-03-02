@@ -239,6 +239,9 @@ void output_unmanaged_for_each_surface(struct sway_output *output,
 		void *user_data) {
 	struct sway_xwayland_unmanaged *unmanaged_surface;
 	wl_list_for_each(unmanaged_surface, unmanaged, link) {
+		if (!unmanaged_surface->visible) {
+			continue;
+		}
 		struct wlr_xwayland_surface *xsurface =
 			unmanaged_surface->wlr_xwayland_surface;
 		double ox = unmanaged_surface->lx - output->lx;
