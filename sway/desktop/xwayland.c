@@ -277,7 +277,9 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 
 	wlr_xwayland_surface_activate(surface, activated);
-	wlr_xwayland_surface_restack(surface, NULL, XCB_STACK_MODE_ABOVE);
+	if (activated) {
+		wlr_xwayland_surface_restack(surface, NULL, XCB_STACK_MODE_ABOVE);
+	}
 
 	struct sway_xwayland_unmanaged *unmanaged;
 	wl_list_for_each(unmanaged, &root->xwayland_unmanaged, link) {
@@ -285,7 +287,9 @@ static void set_activated(struct sway_view *view, bool activated) {
 		if (!is_surface_transient_for(unmanaged_surface, view)) {
 			continue;
 		}
-		wlr_xwayland_surface_restack(unmanaged_surface, NULL, XCB_STACK_MODE_ABOVE);
+		if (activated) {
+			wlr_xwayland_surface_restack(unmanaged_surface, NULL, XCB_STACK_MODE_ABOVE);
+		}
 	}
 }
 
