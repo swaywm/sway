@@ -1,0 +1,108 @@
+#!/bin/sh
+
+PROG=$(basename "$0")
+case $1 in
+    top-left|top-mid|top-right|mid-left|mid-mid|mid-right|bottom-left|bottom-mid|bottom-right|left|right|top|bottom)
+        dest="$1"
+        ;;
+    *)
+        echo "$PROG moves floating windows on a 3x3 grid in a workspace or snaps to edges."
+        echo "Usage:"
+        echo "  $PROG top-left|top-mid|top-right|mid-left|mid-mid|mid-right|bottom-left|bottom-mid|bottom-right|left|right|top|bottom"
+        exit 0
+        ;;
+esac
+
+wintree=($(swaymsg -t get_tree | jq -r '..|select(.type? == "root")|(.rect.width,.rect.height),(..|select(.type? == "output") | select(.active? == true) | .nodes|.[0]|.rect|.width,.height), (..|select(.focused? == true) | .id,.rect.width,.rect.height,.rect.x,.rect.y,.deco_rect.width,.deco_rect.height,.type)'))
+output_width=${wintree[0]}
+output_height=${wintree[1]}
+workspace_width=${wintree[2]}
+workspace_height=${wintree[3]}
+
+bar_width=$(( output_width - workspace_width ))
+bar_height=$(( output_height - workspace_height ))
+
+win_id=${wintree[4]}
+win_width=${wintree[5]}
+win_height=${wintree[6]}
+new_x=${wintree[7]}
+new_y=${wintree[8]}
+deco_width=${wintree[9]}
+deco_height=${wintree[10]}
+win_type=${wintree[11]}
+
+case "$win_type" in
+    "floating_con")
+        case $dest in
+            top-left)
+                new_x=0
+                new_y=0
+                ;;
+
+            top-mid)
+                new_x=$(( (workspace_width - win_width) / 2 ))
+                new_y=0
+                ;;
+
+            top-right)
+                new_x=$(( workspace_width - win_width ))
+                new_y=0
+                ;;
+
+            mid-left)
+                new_x=0
+                new_y=$(( (workspace_height - win_height - deco_height) / 2 ))
+                ;;
+
+            mid-mid)
+                new_x=$(( (workspace_width - win_width) / 2 ))
+                new_y=$(( (workspace_height - win_height - deco_height) / 2 ))
+                ;;
+            
+            mid-right)
+                new_x=$(( workspace_width - win_width ))
+                new_y=$(( (workspace_height - win_height - deco_height) / 2))
+                ;;
+
+            bottom-left)
+                new_x=0
+                new_y=$(( workspace_height - win_height - deco_height ))
+                ;;
+            
+            bottom-mid)
+                new_x=$(( (workspace_width - win_width) / 2 ))
+                new_y=$(( workspace_height - win_height - deco_height ))
+                ;;
+
+            bottom-right)
+                new_x=$(( workspace_width - win_width ))
+                new_y=$(( workspace_height - win_height - deco_height ))
+                ;;
+
+            left)
+                new_x=0
+                new_y=$(( new_y - deco_height - bar_height ))
+                ;;
+
+            right)
+                new_x=$(( workspace_width - win_width ))
+                new_y=$(( new_y - deco_height - bar_height ))
+                ;;
+            top)
+                new_y=0
+                ;;
+
+            bottom)
+                new_y=$(( workspace_height - win_height - deco_height ))
+                ;;
+        esac
+
+        swaymsg "[con_id=$win_id] move position $new_x $new_y"
+        ;;
+
+    "con")
+        # no-op
+        echo "$PROG: can't move tiled windows"
+        exit 0
+        ;;
+esac
