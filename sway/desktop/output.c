@@ -496,6 +496,12 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	if (n_surfaces != 1) {
 		return false;
 	}
+	size_t n_popups = 0;
+	output_view_for_each_popup_surface(output, view,
+		count_surface_iterator, &n_popups);
+	if (n_popups > 0) {
+		return false;
+	}
 
 	if (surface->buffer == NULL) {
 		return false;
@@ -517,13 +523,34 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 	return wlr_output_commit(wlr_output);
 }
 
+static void get_frame_damage(struct sway_output *output,
+		pixman_region32_t *frame_damage) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	int width, height;
+	wlr_output_transformed_resolution(wlr_output, &width, &height);
+
+	pixman_region32_init(frame_damage);
+
+	enum wl_output_transform transform =
+		wlr_output_transform_invert(wlr_output->transform);
+	wlr_region_transform(frame_damage, &output->damage_ring.current,
+		transform, width, height);
+
+	if (debug.damage != DAMAGE_DEFAULT) {
+		pixman_region32_union_rect(frame_damage, frame_damage,
+			0, 0, wlr_output->width, wlr_output->height);
+	}
+}
+
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
-	if (output->wlr_output == NULL) {
+	struct wlr_output *wlr_output = output->wlr_output;
+	if (wlr_output == NULL) {
 		return 0;
 	}
 
-	output->wlr_output->frame_pending = false;
+	wlr_output->frame_pending = false;
 
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
@@ -557,6 +584,11 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
+	if (!output->wlr_output->needs_frame &&
+			!pixman_region32_not_empty(&output->damage_ring.current)) {
+		return 0;
+	}
+
 	int buffer_age;
 	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
 		return 0;
@@ -565,19 +597,25 @@ static int output_repaint_timer_handler(void *data) {
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
 	wlr_damage_ring_get_buffer_damage(&output->damage_ring, buffer_age, &damage);
-	if (!output->wlr_output->needs_frame &&
-			!pixman_region32_not_empty(&output->damage_ring.current)) {
-		pixman_region32_fini(&damage);
-		wlr_output_rollback(output->wlr_output);
-		return 0;
-	}
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	output_render(output, &now, &damage);
+	output_render(output, &damage);
 
 	pixman_region32_fini(&damage);
+
+	pixman_region32_t frame_damage;
+	get_frame_damage(output, &frame_damage);
+	wlr_output_set_damage(wlr_output, &frame_damage);
+	pixman_region32_fini(&frame_damage);
+
+	if (!wlr_output_commit(wlr_output)) {
+		return 0;
+	}
+
+	wlr_damage_ring_rotate(&output->damage_ring);
+	output->last_frame = now;
 
 	return 0;
 }
@@ -859,6 +897,12 @@ static void update_textures(struct sway_container *con, void *data) {
 	container_update_marks_textures(con);
 }
 
+static void update_output_scale_iterator(struct sway_output *output,
+		struct sway_view *view, struct wlr_surface *surface,
+		struct wlr_box *box, void *user_data) {
+	surface_update_outputs(surface);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, commit);
 	struct wlr_output_event_commit *event = data;
@@ -873,6 +917,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 
 	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
 		output_for_each_container(output, update_textures, NULL);
+		output_for_each_surface(output, update_output_scale_iterator, NULL);
 	}
 
 	if (event->committed & (WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {

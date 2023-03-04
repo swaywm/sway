@@ -460,6 +460,16 @@ static void queue_output_config(struct output_config *oc,
 	float scale;
 	if (oc && oc->scale > 0) {
 		scale = oc->scale;
+
+		// The factional-scale-v1 protocol uses increments of 120ths to send
+		// the scale factor to the client. Adjust the scale so that we use the
+		// same value as the clients'.
+		float adjusted_scale = round(scale * 120) / 120;
+		if (scale != adjusted_scale) {
+			sway_log(SWAY_INFO, "Adjusting output scale from %f to %f",
+				scale, adjusted_scale);
+			scale = adjusted_scale;
+		}
 	} else {
 		scale = compute_default_scale(wlr_output, pending);
 		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);

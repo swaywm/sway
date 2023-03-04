@@ -20,6 +20,7 @@ packages:
 - devel/libudev-devd
 - graphics/libdrm
 - graphics/mesa-libs
+- sysutils/libdisplay-info
 - sysutils/seatd
 - x11/libinput
 - x11/libX11

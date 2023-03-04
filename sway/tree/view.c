@@ -369,16 +369,13 @@ void view_set_activated(struct sway_view *view, bool activated) {
 
 void view_request_activate(struct sway_view *view, struct sway_seat *seat) {
 	struct sway_workspace *ws = view->container->pending.workspace;
-	if (!ws) { // hidden scratchpad container
-		return;
-	}
 	if (!seat) {
 		seat = input_manager_current_seat();
 	}
 
 	switch (config->focus_on_window_activation) {
 	case FOWA_SMART:
-		if (workspace_is_visible(ws)) {
+		if (ws && workspace_is_visible(ws)) {
 			seat_set_focus_container(seat, view->container);
 			container_raise_floating(view->container);
 		} else {
@@ -389,8 +386,12 @@ void view_request_activate(struct sway_view *view, struct sway_seat *seat) {
 		view_set_urgent(view, true);
 		break;
 	case FOWA_FOCUS:
-		seat_set_focus_container(seat, view->container);
-		container_raise_floating(view->container);
+		if (container_is_scratchpad_hidden_or_child(view->container)) {
+			root_scratchpad_show(view->container);
+		} else {
+			seat_set_focus_container(seat, view->container);
+			container_raise_floating(view->container);
+		}
 		break;
 	case FOWA_NONE:
 		break;

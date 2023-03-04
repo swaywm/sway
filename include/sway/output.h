@@ -112,8 +112,7 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 
-void output_render(struct sway_output *output, struct timespec *when,
-	pixman_region32_t *damage);
+void output_render(struct sway_output *output, pixman_region32_t *damage);
 
 void output_surface_for_each_surface(struct sway_output *output,
 		struct wlr_surface *surface, double ox, double oy,
@@ -167,7 +166,7 @@ enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
 
 void render_rect(struct sway_output *output,
-		pixman_region32_t *output_damage, const struct wlr_box *_box,
+		const pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]);
 
 void premultiply_alpha(float color[4], float opacity);
