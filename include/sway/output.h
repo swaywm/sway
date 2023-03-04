@@ -78,14 +78,6 @@ struct sway_output_non_desktop {
 	struct wl_listener destroy;
 };
 
-struct render_context {
-	struct sway_output *output;
-	struct wlr_renderer *renderer;
-	const pixman_region32_t *output_damage;
-
-	struct wlr_render_pass *pass;
-};
-
 struct sway_output *output_create(struct wlr_output *wlr_output);
 
 void output_destroy(struct sway_output *output);
@@ -136,8 +128,6 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 
-void output_render(struct render_context *ctx);
-
 void output_surface_for_each_surface(struct sway_output *output,
 		struct wlr_surface *surface, double ox, double oy,
 		sway_surface_iterator_func_t iterator, void *user_data);
@@ -184,11 +174,6 @@ void output_get_box(struct sway_output *output, struct wlr_box *box);
 
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
-
-void render_rect(struct render_context *ctx, const struct wlr_box *_box,
-		float color[static 4]);
-
-void premultiply_alpha(float color[4], float opacity);
 
 void scale_box(struct wlr_box *box, float scale);
 
