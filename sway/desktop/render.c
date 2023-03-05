@@ -1065,7 +1065,7 @@ void output_render(struct render_context *ctx) {
 				if (lock_surface->output != wlr_output) {
 					continue;
 				}
-				if (!lock_surface->mapped) {
+				if (!lock_surface->surface->mapped) {
 					continue;
 				}
 

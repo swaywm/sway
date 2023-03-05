@@ -104,8 +104,8 @@ static struct sway_xdg_popup *popup_create(
 	wl_signal_add(&xdg_surface->events.destroy, &popup->destroy);
 	popup->destroy.notify = popup_handle_destroy;
 
-	wl_signal_add(&xdg_surface->events.map, &popup->child.surface_map);
-	wl_signal_add(&xdg_surface->events.unmap, &popup->child.surface_unmap);
+	wl_signal_add(&xdg_surface->surface->events.map, &popup->child.surface_map);
+	wl_signal_add(&xdg_surface->surface->events.unmap, &popup->child.surface_unmap);
 
 	popup_unconstrain(popup);
 
@@ -344,7 +344,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	struct wlr_xdg_toplevel *toplevel = xdg_shell_view->view.wlr_xdg_toplevel;
 	struct sway_view *view = &xdg_shell_view->view;
 
-	if (!toplevel->base->mapped) {
+	if (!toplevel->base->surface->mapped) {
 		return;
 	}
 
@@ -529,10 +529,10 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {
 	xdg_shell_view->view.wlr_xdg_toplevel = xdg_surface->toplevel;
 
 	xdg_shell_view->map.notify = handle_map;
-	wl_signal_add(&xdg_surface->events.map, &xdg_shell_view->map);
+	wl_signal_add(&xdg_surface->surface->events.map, &xdg_shell_view->map);
 
 	xdg_shell_view->unmap.notify = handle_unmap;
-	wl_signal_add(&xdg_surface->events.unmap, &xdg_shell_view->unmap);
+	wl_signal_add(&xdg_surface->surface->events.unmap, &xdg_shell_view->unmap);
 
 	xdg_shell_view->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &xdg_shell_view->destroy);

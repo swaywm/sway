@@ -265,7 +265,7 @@ void output_drag_icons_for_each_surface(struct sway_output *output,
 		double ox = drag_icon->x - output->lx;
 		double oy = drag_icon->y - output->ly;
 
-		if (drag_icon->wlr_drag_icon->mapped) {
+		if (drag_icon->wlr_drag_icon->surface->mapped) {
 			output_surface_for_each_surface(output,
 				drag_icon->wlr_drag_icon->surface, ox, oy,
 				iterator, user_data);
@@ -295,7 +295,7 @@ static void output_for_each_surface(struct sway_output *output,
 			if (lock_surface->output != output->wlr_output) {
 				continue;
 			}
-			if (!lock_surface->mapped) {
+			if (!lock_surface->surface->mapped) {
 				continue;
 			}
 

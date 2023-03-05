@@ -219,7 +219,7 @@ void arrange_layers(struct sway_output *output) {
 		wl_list_for_each_reverse(layer,
 				&output->layers[layers_above_shell[i]], link) {
 			if (layer->layer_surface->current.keyboard_interactive &&
-					layer->layer_surface->mapped) {
+					layer->layer_surface->surface->mapped) {
 				topmost = layer;
 				break;
 			}
@@ -253,7 +253,7 @@ static struct sway_layer_surface *find_mapped_layer_by_client(
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
 			struct wl_resource *resource = lsurface->layer_surface->resource;
 			if (wl_resource_get_client(resource) == client
-					&& lsurface->layer_surface->mapped) {
+					&& lsurface->layer_surface->surface->mapped) {
 				return lsurface;
 			}
 		}
@@ -293,8 +293,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 
 	bool layer_changed = false;
 	if (layer_surface->current.committed != 0
-			|| layer->mapped != layer_surface->mapped) {
-		layer->mapped = layer_surface->mapped;
+			|| layer->mapped != layer_surface->surface->mapped) {
+		layer->mapped = layer_surface->surface->mapped;
 		layer_changed = layer->layer != layer_surface->current.layer;
 		if (layer_changed) {
 			wl_list_remove(&layer->link);
@@ -349,7 +349,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_layer, destroy);
 	sway_log(SWAY_DEBUG, "Layer surface destroyed (%s)",
 		sway_layer->layer_surface->namespace);
-	if (sway_layer->layer_surface->mapped) {
+	if (sway_layer->layer_surface->surface->mapped) {
 		unmap(sway_layer);
 	}
 
@@ -454,9 +454,9 @@ static struct sway_layer_subsurface *create_subsurface(
 	wl_list_insert(&layer_surface->subsurfaces, &subsurface->link);
 
 	subsurface->map.notify = subsurface_handle_map;
-	wl_signal_add(&wlr_subsurface->events.map, &subsurface->map);
+	wl_signal_add(&wlr_subsurface->surface->events.map, &subsurface->map);
 	subsurface->unmap.notify = subsurface_handle_unmap;
-	wl_signal_add(&wlr_subsurface->events.unmap, &subsurface->unmap);
+	wl_signal_add(&wlr_subsurface->surface->events.unmap, &subsurface->unmap);
 	subsurface->destroy.notify = subsurface_handle_destroy;
 	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
 	subsurface->commit.notify = subsurface_handle_commit;
@@ -571,9 +571,9 @@ static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
 	popup->parent_layer = parent;
 
 	popup->map.notify = popup_handle_map;
-	wl_signal_add(&wlr_popup->base->events.map, &popup->map);
+	wl_signal_add(&wlr_popup->base->surface->events.map, &popup->map);
 	popup->unmap.notify = popup_handle_unmap;
-	wl_signal_add(&wlr_popup->base->events.unmap, &popup->unmap);
+	wl_signal_add(&wlr_popup->base->surface->events.unmap, &popup->unmap);
 	popup->destroy.notify = popup_handle_destroy;
 	wl_signal_add(&wlr_popup->base->events.destroy, &popup->destroy);
 	popup->commit.notify = popup_handle_commit;
@@ -661,9 +661,9 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_layer->destroy.notify = handle_destroy;
 	wl_signal_add(&layer_surface->events.destroy, &sway_layer->destroy);
 	sway_layer->map.notify = handle_map;
-	wl_signal_add(&layer_surface->events.map, &sway_layer->map);
+	wl_signal_add(&layer_surface->surface->events.map, &sway_layer->map);
 	sway_layer->unmap.notify = handle_unmap;
-	wl_signal_add(&layer_surface->events.unmap, &sway_layer->unmap);
+	wl_signal_add(&layer_surface->surface->events.unmap, &sway_layer->unmap);
 	sway_layer->new_popup.notify = handle_new_popup;
 	wl_signal_add(&layer_surface->events.new_popup, &sway_layer->new_popup);
 	sway_layer->new_subsurface.notify = handle_new_subsurface;
