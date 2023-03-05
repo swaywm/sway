@@ -367,7 +367,7 @@ static void handle_new_node(struct wl_listener *listener, void *data) {
 }
 
 static void drag_icon_damage_whole(struct sway_drag_icon *icon) {
-	if (!icon->wlr_drag_icon->mapped) {
+	if (!icon->wlr_drag_icon->surface->mapped) {
 		return;
 	}
 	desktop_damage_surface(icon->wlr_drag_icon->surface, icon->x, icon->y, true);
@@ -511,9 +511,9 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 		icon->surface_commit.notify = drag_icon_handle_surface_commit;
 		wl_signal_add(&wlr_drag_icon->surface->events.commit, &icon->surface_commit);
 		icon->unmap.notify = drag_icon_handle_unmap;
-		wl_signal_add(&wlr_drag_icon->events.unmap, &icon->unmap);
+		wl_signal_add(&wlr_drag_icon->surface->events.unmap, &icon->unmap);
 		icon->map.notify = drag_icon_handle_map;
-		wl_signal_add(&wlr_drag_icon->events.map, &icon->map);
+		wl_signal_add(&wlr_drag_icon->surface->events.map, &icon->map);
 		icon->destroy.notify = drag_icon_handle_destroy;
 		wl_signal_add(&wlr_drag_icon->events.destroy, &icon->destroy);
 
@@ -1350,7 +1350,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	} else if (!layer || seat->focused_layer == layer) {
 		return;
 	}
-	assert(layer->mapped);
+	assert(layer->surface->mapped);
 	seat_set_focus_surface(seat, layer->surface, true);
 	if (layer->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
 		seat->focused_layer = layer;

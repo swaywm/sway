@@ -60,7 +60,7 @@ static void destroy_lock_surface(struct sway_session_lock_surface *surf) {
 
 		struct wlr_session_lock_surface_v1 *other;
 		wl_list_for_each(other, &server.session_lock.lock->surfaces, link) {
-			if (other != surf->lock_surface && other->mapped) {
+			if (other != surf->lock_surface && other->surface->mapped) {
 				next_focus = other->surface;
 				break;
 			}
