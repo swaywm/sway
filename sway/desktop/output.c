@@ -9,6 +9,7 @@
 #include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -564,6 +565,7 @@ static int output_repaint_timer_handler(void *data) {
 	wlr_output->frame_pending = false;
 
 	if (!wlr_output->needs_frame &&
+			!output->gamma_lut_changed &&
 			!pixman_region32_not_empty(&output->damage_ring.current)) {
 		return 0;
 	}
@@ -576,6 +578,19 @@ static int output_repaint_timer_handler(void *data) {
 	struct sway_container *fullscreen_con = root->fullscreen_global;
 	if (!fullscreen_con) {
 		fullscreen_con = workspace->current.fullscreen;
+	}
+
+	if (output->gamma_lut_changed) {
+		struct wlr_gamma_control_v1 *gamma_control =
+			wlr_gamma_control_manager_v1_get_control(
+			server.gamma_control_manager_v1, wlr_output);
+		if (!wlr_gamma_control_v1_apply(gamma_control, &wlr_output->pending)) {
+			return 0;
+		}
+		if (!wlr_output_test(wlr_output)) {
+			wlr_output_rollback(wlr_output);
+			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
+		}
 	}
 
 	pixman_region32_t frame_damage;
@@ -1074,6 +1089,16 @@ void handle_output_layout_change(struct wl_listener *listener,
 	struct sway_server *server =
 		wl_container_of(listener, server, output_layout_change);
 	update_output_manager_config(server);
+}
+
+void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, gamma_control_set_gamma);
+	const struct wlr_gamma_control_manager_v1_set_gamma_event *event = data;
+
+	struct sway_output *output = event->output->data;
+	output->gamma_lut_changed = true;
+	wlr_output_schedule_frame(output->wlr_output);
 }
 
 static void output_manager_apply(struct sway_server *server,

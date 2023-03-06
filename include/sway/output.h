@@ -57,6 +57,7 @@ struct sway_output {
 	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
 	struct wl_event_source *repaint_timer;
+	bool gamma_lut_changed;
 };
 
 struct sway_output_non_desktop {
@@ -186,6 +187,8 @@ void scale_box(struct wlr_box *box, float scale);
 enum wlr_direction opposite_direction(enum wlr_direction d);
 
 void handle_output_layout_change(struct wl_listener *listener, void *data);
+
+void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data);
 
 void handle_output_manager_apply(struct wl_listener *listener, void *data);
 
