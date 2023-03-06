@@ -556,6 +556,11 @@ static int output_repaint_timer_handler(void *data) {
 
 	wlr_output->frame_pending = false;
 
+	if (!wlr_output->needs_frame &&
+			!pixman_region32_not_empty(&output->damage_ring.current)) {
+		return 0;
+	}
+
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
 		return 0;
@@ -586,11 +591,6 @@ static int output_repaint_timer_handler(void *data) {
 		if (scanned_out) {
 			return 0;
 		}
-	}
-
-	if (!output->wlr_output->needs_frame &&
-			!pixman_region32_not_empty(&output->damage_ring.current)) {
-		return 0;
 	}
 
 	int buffer_age;
