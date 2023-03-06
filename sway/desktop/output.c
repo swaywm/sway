@@ -571,6 +571,11 @@ static int output_repaint_timer_handler(void *data) {
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
+	pixman_region32_t frame_damage;
+	get_frame_damage(output, &frame_damage);
+	wlr_output_set_damage(wlr_output, &frame_damage);
+	pixman_region32_fini(&frame_damage);
+
 	if (fullscreen_con && fullscreen_con->view && !debug.noscanout) {
 		// Try to scan-out the fullscreen view
 		static bool last_scanned_out = false;
@@ -608,11 +613,6 @@ static int output_repaint_timer_handler(void *data) {
 	output_render(output, &damage);
 
 	pixman_region32_fini(&damage);
-
-	pixman_region32_t frame_damage;
-	get_frame_damage(output, &frame_damage);
-	wlr_output_set_damage(wlr_output, &frame_damage);
-	pixman_region32_fini(&frame_damage);
 
 	if (!wlr_output_commit(wlr_output)) {
 		return 0;
