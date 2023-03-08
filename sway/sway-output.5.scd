@@ -131,6 +131,11 @@ must be separated by one space. For example:
 	As opposed to the _enable_ and _disable_ commands, the output keeps its
 	current workspaces and windows.
 
+*output* <name> unplug
+	Removes the specified headless output.
+
+	To create a headless output see *create_output* in *swaymsg*(1).
+
 *output* <name> dpms on|off|toggle
 	Deprecated. Alias for _power_.
 
