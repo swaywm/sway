@@ -125,7 +125,9 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 }
 
 static void unmanaged_handle_request_activate(struct wl_listener *listener, void *data) {
-	struct wlr_xwayland_surface *xsurface = data;
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, request_activate);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 	if (!xsurface->mapped) {
 		return;
 	}
@@ -495,8 +497,8 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, map);
-	struct wlr_xwayland_surface *xsurface = data;
 	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
 	view->natural_width = xsurface->width;
 	view->natural_height = xsurface->height;
@@ -515,8 +517,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 static void handle_override_redirect(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, override_redirect);
-	struct wlr_xwayland_surface *xsurface = data;
 	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
 	bool mapped = xsurface->mapped;
 	if (mapped) {
