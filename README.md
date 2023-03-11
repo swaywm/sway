@@ -33,6 +33,8 @@ Sway is an incredible window manager, and certainly one of the most well establi
 
 ## Installation
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/swayfx.svg)](https://repology.org/project/swayfx/versions)
+
 ### Nix
 
 If you have Nix installed, you can build and run SwayFX easily:
