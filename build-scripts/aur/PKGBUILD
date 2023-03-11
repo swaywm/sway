@@ -1,7 +1,7 @@
 # Maintainer: Erik Reider <erik.reider@protonmail.com>
 _pkgname=swayfx
 pkgname="$_pkgname"
-pkgver=0.1.1
+pkgver=0.2
 pkgrel=1
 license=("MIT")
 pkgdesc="SwayFX: Sway, but with eye candy!"
@@ -23,9 +23,9 @@ depends=(
 	"libxcb"
 	"libxkbcommon.so"
 	"pango"
-	"pcre"
+	"pcre2"
 	"ttf-font"
-	"wlroots0.15"
+	"wlroots<0.17"
 )
 optdepends=(
 	"alacritty: Terminal emulator used by the default config"

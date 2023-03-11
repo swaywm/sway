@@ -4,11 +4,11 @@
 # Change to current Sway base version!
 %global SwayBaseVersion 1.8.1
 # Change to current SwayFX tag!
-%global Tag 0.1.1
+%global Tag 0.2
 
 Name:			{{{ git_dir_name }}}
 Version:		%{Tag}
-Release:		2%{?dist}
+Release:		3%{?dist}
 Summary:		SwayFX: Sway, but with eye candy!
 License:		MIT
 URL:			https://github.com/WillPower3309/swayfx
@@ -20,23 +20,25 @@ BuildRequires:	gnupg2
 BuildRequires:	meson >= 0.60.0
 BuildRequires:	pkgconfig(cairo)
 BuildRequires:	pkgconfig(gdk-pixbuf-2.0)
+BuildRequires:	pkgconfig(glesv2)
 BuildRequires:	pkgconfig(json-c) >= 0.13
 BuildRequires:	pkgconfig(libdrm)
 BuildRequires:	pkgconfig(libevdev)
 BuildRequires:	pkgconfig(libinput) >= 1.21.0
-BuildRequires:	pkgconfig(libpcre2)
+BuildRequires:	pkgconfig(libpcre2-8)
 BuildRequires:	pkgconfig(libsystemd) >= 239
 BuildRequires:	pkgconfig(libudev)
 BuildRequires:	pkgconfig(pango)
 BuildRequires:	pkgconfig(pangocairo)
+BuildRequires:	pkgconfig(pixman-1)
 BuildRequires:	pkgconfig(scdoc)
 BuildRequires:	pkgconfig(wayland-client)
 BuildRequires:	pkgconfig(wayland-cursor)
-BuildRequires:	pkgconfig(wayland-egl)
-BuildRequires:	pkgconfig(wayland-server) >= 1.20.0
+BuildRequires:	pkgconfig(wayland-server) >= 1.21.0
 BuildRequires:	pkgconfig(wayland-protocols) >= 1.24
 BuildRequires:	(pkgconfig(wlroots) >= 0.16.0 with pkgconfig(wlroots) < 0.17)
 BuildRequires:	pkgconfig(xcb)
+BuildRequires:	pkgconfig(xcb-icccm)
 BuildRequires:	pkgconfig(xkbcommon)
 # Dmenu is the default launcher in sway
 Recommends:		dmenu

@@ -1,7 +1,7 @@
 # Maintainer: Erik Reider <erik.reider@protonmail.com>
 _pkgname=swayfx
 pkgname="$_pkgname-git"
-pkgver=r6919.af282928
+pkgver=r6930.94ebb45e
 pkgrel=1
 license=("MIT")
 pkgdesc="SwayFX: Sway, but with eye candy!"
