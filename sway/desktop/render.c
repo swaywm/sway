@@ -631,6 +631,8 @@ static void render_titlebar(struct sway_output *output,
 	int titlebar_h_padding = config->titlebar_h_padding;
 	int titlebar_v_padding = config->titlebar_v_padding;
 	enum alignment title_align = config->title_align;
+	// value by which all heights should be adjusted to counteract removed bottom border
+	int bottom_border_compensation = config->titlebar_separator ? 0 : titlebar_border_thickness;
 
 	if (corner_location == NONE) {
 		corner_radius = 0;
@@ -660,18 +662,20 @@ static void render_titlebar(struct sway_output *output,
 	render_rect(output, output_damage, &box, color);
 
 	// Single pixel bar below title
-	box.x = x;
-	box.y = y + container_titlebar_height() - titlebar_border_thickness;
-	box.width = width;
-	box.height = titlebar_border_thickness;
-	scale_box(&box, output_scale);
-	render_rect(output, output_damage, &box, color);
+	if (config->titlebar_separator) {
+		box.x = x;
+		box.y = y + container_titlebar_height() - titlebar_border_thickness;
+		box.width = width;
+		box.height = titlebar_border_thickness;
+		scale_box(&box, output_scale);
+		render_rect(output, output_damage, &box, color);
+	}
 
 	// Single pixel bar left edge
 	box.x = x;
 	box.y = y;
 	box.width = titlebar_border_thickness;
-	box.height = container_titlebar_height() - titlebar_border_thickness;
+	box.height = container_titlebar_height() + bottom_border_compensation;
 	if (corner_radius && corner_location != TOP_RIGHT) {
 		box.height -= corner_radius;
 		box.y += corner_radius;
@@ -683,7 +687,7 @@ static void render_titlebar(struct sway_output *output,
 	box.x = x + width - titlebar_border_thickness;
 	box.y = y;
 	box.width = titlebar_border_thickness;
-	box.height = container_titlebar_height() - titlebar_border_thickness;
+	box.height = container_titlebar_height() + bottom_border_compensation;
 	if (corner_radius && corner_location != TOP_LEFT) {
 		box.height -= corner_radius;
 		box.y += corner_radius;
@@ -781,7 +785,7 @@ static void render_titlebar(struct sway_output *output,
 
 		// Padding below
 		box.y += ob_padding_above + texture_box.height;
-		box.height = ob_padding_below;
+		box.height = ob_padding_below + bottom_border_compensation;
 		render_rect(output, output_damage, &box, color);
 	}
 
@@ -857,7 +861,7 @@ static void render_titlebar(struct sway_output *output,
 
 		// Padding below
 		box.y += ob_padding_above + texture_box.height;
-		box.height = ob_padding_below;
+		box.height = ob_padding_below + bottom_border_compensation;
 		render_rect(output, output_damage, &box, color);
 	}
 
@@ -891,7 +895,7 @@ static void render_titlebar(struct sway_output *output,
 	if (box.width > 0) {
 		box.x = ob_left_x + ob_left_width + round(output_x * output_scale);
 		box.y = round(bg_y * output_scale);
-		box.height = ob_bg_height;
+		box.height = ob_bg_height + bottom_border_compensation;
 		render_rect(output, output_damage, &box, color);
 	}
 
@@ -900,7 +904,7 @@ static void render_titlebar(struct sway_output *output,
 	box.y = y + titlebar_border_thickness;
 	box.width = titlebar_h_padding - titlebar_border_thickness;
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
-		config->font_height;
+		config->font_height + bottom_border_compensation;
 	scale_box(&box, output_scale);
 	int left_x = ob_left_x + round(output_x * output_scale);
 	if (box.x + box.width < left_x) {
@@ -917,7 +921,7 @@ static void render_titlebar(struct sway_output *output,
 	box.y = y + titlebar_border_thickness;
 	box.width = titlebar_h_padding - titlebar_border_thickness;
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
-		config->font_height;
+		config->font_height + bottom_border_compensation;
 	scale_box(&box, output_scale);
 	int right_rx = ob_right_x + ob_right_width + round(output_x * output_scale);
 	if (right_rx < box.x) {

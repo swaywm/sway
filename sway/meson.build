@@ -108,6 +108,7 @@ sway_sources = files(
 	'commands/seat/pointer_constraint.c',
 	'commands/seat/shortcuts_inhibitor.c',
 	'commands/seat/xcursor_theme.c',
+	'commands/titlebar_separator.c',
 	'commands/set.c',
 	'commands/shadow_blur_radius.c',
 	'commands/shadow_color.c',

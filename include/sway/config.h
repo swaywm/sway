@@ -487,6 +487,7 @@ struct sway_config {
 	bool shadows_on_csd_enabled;
 	int shadow_blur_sigma;
 	float shadow_color[4];
+	bool titlebar_separator;
 
 	char *swaynag_command;
 	struct swaynag_instance swaynag_config_errors;

@@ -761,6 +761,9 @@ The default colors are:
 	to be greater than the _horizontal_ or _vertical_ value, the value will be
 	treated as that of _corner_radius_.
 
+*titlebar_separator* enable|disable
+	Allows to remove the border between titlebar and window content.
+
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
