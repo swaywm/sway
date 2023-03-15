@@ -44,6 +44,7 @@ struct sway_view_impl {
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	void (*set_resizing)(struct sway_view *view, bool resizing);
+	void (*set_withdrawn)(struct sway_view *view, bool withdrawn);
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
@@ -365,6 +366,8 @@ void view_execute_criteria(struct sway_view *view);
 bool view_is_visible(struct sway_view *view);
 
 void view_set_urgent(struct sway_view *view, bool enable);
+
+void view_set_withdrawn(struct sway_view *view, bool withdrawn);
 
 bool view_is_urgent(struct sway_view *view);
 

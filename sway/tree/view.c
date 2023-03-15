@@ -431,6 +431,12 @@ void view_set_tiled(struct sway_view *view, bool tiled) {
 	}
 }
 
+void view_set_withdrawn(struct sway_view *view, bool withdrawn) {
+	if (view->impl->set_withdrawn) {
+		view->impl->set_withdrawn(view, withdrawn);
+	}
+}
+
 void view_close(struct sway_view *view) {
 	if (view->impl->close) {
 		view->impl->close(view);
