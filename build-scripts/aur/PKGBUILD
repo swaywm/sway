@@ -2,7 +2,7 @@
 _pkgname=swayfx
 pkgname="$_pkgname"
 pkgver=0.2
-pkgrel=1
+pkgrel=2
 license=("MIT")
 pkgdesc="SwayFX: Sway, but with eye candy!"
 makedepends=(
@@ -53,7 +53,6 @@ options=(debug)
 install=sway.install
 
 build() {
-	export PKG_CONFIG_PATH='/usr/lib/wlroots0.15/pkgconfig'
 	arch-meson \
 		-Dsd-bus-provider=libsystemd \
 		-Dwerror=false \
