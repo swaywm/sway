@@ -228,6 +228,8 @@ correct seat.
 	absolute coordinates (with respect to the global coordinate space).
 	Specifying either value as 0 will not update that coordinate.
 
+	Deprecated: use the virtual-pointer Wayland protocol instead.
+
 *seat* <seat> cursor press|release button[1-9]|<event-name-or-code>
 	Simulate pressing (or releasing) the specified mouse button on the
 	specified seat. The button can either be provided as a button event name or
@@ -235,6 +237,8 @@ correct seat.
 	mouse button (button[1-9]). If using button[4-7], which map to axes, an axis
 	event will be simulated, however _press_ and _release_ will be ignored and
 	both will occur.
+
+	Deprecated: use the virtual-pointer Wayland protocol instead.
 
 *seat* <name> fallback true|false
 	Set this seat as the fallback seat. A fallback seat will attach any device
