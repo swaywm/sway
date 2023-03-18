@@ -145,7 +145,10 @@ void root_scratchpad_show(struct sway_container *con) {
 	// Show the container
 	if (old_ws) {
 		container_detach(con);
-		workspace_consider_destroy(old_ws);
+		// Make sure the last inactive container on the old workspace is above
+		// the workspace itself in the focus stack.
+		struct sway_node *node = seat_get_focus_inactive(seat, &old_ws->node);
+		seat_set_raw_focus(seat, node);
 	} else {
 		// Act on the ancestor of scratchpad hidden split containers
 		while (con->pending.parent) {
@@ -163,6 +166,9 @@ void root_scratchpad_show(struct sway_container *con) {
 
 	arrange_workspace(new_ws);
 	seat_set_focus(seat, seat_get_focus_inactive(seat, &con->node));
+	if (old_ws) {
+		workspace_consider_destroy(old_ws);
+	}
 }
 
 static void disable_fullscreen(struct sway_container *con, void *data) {
