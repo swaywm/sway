@@ -7,6 +7,13 @@
 
 enum corner_location { ALL, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, NONE };
 
+enum fx_gles2_shader_source {
+	WLR_GLES2_SHADER_SOURCE_TEXTURE_RGBA = 1,
+	WLR_GLES2_SHADER_SOURCE_TEXTURE_RGBX = 2,
+	WLR_GLES2_SHADER_SOURCE_TEXTURE_EXTERNAL = 3,
+	WLR_GLES2_SHADER_SOURCE_NOT_TEXTURE = 4,
+};
+
 struct decoration_data {
 	float alpha;
 	float saturation;

@@ -8,9 +8,7 @@ shaders = [
     'quad_round_tr.frag',
     'corner.frag',
     'box_shadow.frag',
-    'tex_rgba.frag',
-    'tex_rgbx.frag',
-    'tex_external.frag',
+    'tex_decorated.frag',
 ]
 
 foreach name : shaders
