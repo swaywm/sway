@@ -8,6 +8,7 @@ shaders = [
     'quad_round_tr.frag',
     'corner.frag',
     'box_shadow.frag',
+    'tex.frag',
     'tex_decorated.frag',
 ]
 

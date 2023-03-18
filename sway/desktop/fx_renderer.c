@@ -25,7 +25,7 @@
 #include "quad_round_tr_frag_src.h"
 #include "corner_frag_src.h"
 #include "box_shadow_frag_src.h"
-//#include "tex_frag_src.h"
+#include "tex_frag_src.h"
 #include "tex_decorated_frag_src.h"
 
 static const GLfloat verts[] = {
@@ -166,9 +166,24 @@ error:
 static bool link_tex_program(struct fx_renderer *renderer,
 		struct gles2_tex_shader *shader, enum fx_gles2_shader_source source) {
 	GLuint prog;
-	const GLchar *frag_src = tex_decorated_frag_src;
+	shader->program = prog = link_program(tex_frag_src, source);
+	if (!shader->program) {
+		return false;
+	}
 
-	shader->program = prog = link_program(frag_src, source);
+	shader->proj = glGetUniformLocation(prog, "proj");
+	shader->tex = glGetUniformLocation(prog, "tex");
+	shader->alpha = glGetUniformLocation(prog, "alpha");
+	shader->pos_attrib = glGetAttribLocation(prog, "pos");
+	shader->tex_attrib = glGetAttribLocation(prog, "texcoord");
+
+	return true;
+}
+
+static bool link_tex_decorated_program(struct fx_renderer *renderer,
+		struct gles2_tex_shader *shader, enum fx_gles2_shader_source source) {
+	GLuint prog;
+	shader->program = prog = link_program(tex_decorated_frag_src, source);
 	if (!shader->program) {
 		return false;
 	}
@@ -244,8 +259,6 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not make EGL current");
 		return NULL;
 	}
-	// TODO: needed?
-	renderer->egl = egl;
 
 	// get extensions
 	const char *exts_str = (const char *)glGetString(GL_EXTENSIONS);
@@ -339,9 +352,20 @@ struct fx_renderer *fx_renderer_create(struct wlr_egl *egl) {
 			WLR_GLES2_SHADER_SOURCE_TEXTURE_EXTERNAL)) {
 		goto error;
 	}
+	if (!link_tex_decorated_program(renderer, &renderer->shaders.tex_decorated_rgba,
+			WLR_GLES2_SHADER_SOURCE_TEXTURE_RGBA)) {
+		goto error;
+	}
+	if (!link_tex_decorated_program(renderer, &renderer->shaders.tex_decorated_rgbx,
+			WLR_GLES2_SHADER_SOURCE_TEXTURE_RGBX)) {
+		goto error;
+	}
+	if (!link_tex_decorated_program(renderer, &renderer->shaders.tex_decorated_ext,
+			WLR_GLES2_SHADER_SOURCE_TEXTURE_EXTERNAL)) {
+		goto error;
+	}
 
-
-	if (!eglMakeCurrent(wlr_egl_get_display(renderer->egl),
+	if (!eglMakeCurrent(wlr_egl_get_display(egl),
 				EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
 		sway_log(SWAY_ERROR, "GLES2 RENDERER: Could not unset current EGL");
 		goto error;
@@ -360,6 +384,9 @@ error:
 	glDeleteProgram(renderer->shaders.tex_rgba.program);
 	glDeleteProgram(renderer->shaders.tex_rgbx.program);
 	glDeleteProgram(renderer->shaders.tex_ext.program);
+	glDeleteProgram(renderer->shaders.tex_decorated_rgba.program);
+	glDeleteProgram(renderer->shaders.tex_decorated_rgbx.program);
+	glDeleteProgram(renderer->shaders.tex_decorated_ext.program);
 
 	if (!eglMakeCurrent(wlr_egl_get_display(renderer->egl),
 				EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
@@ -403,15 +430,15 @@ void fx_renderer_clear(const float color[static 4]) {
 }
 
 void fx_renderer_scissor(struct wlr_box *box) {
-		if (box) {
-				glScissor(box->x, box->y, box->width, box->height);
-				glEnable(GL_SCISSOR_TEST);
-		} else {
-				glDisable(GL_SCISSOR_TEST);
-		}
+	if (box) {
+		glScissor(box->x, box->y, box->width, box->height);
+		glEnable(GL_SCISSOR_TEST);
+	} else {
+		glDisable(GL_SCISSOR_TEST);
+	}
 }
 
-bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
+bool fx_render_window(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box, const float matrix[static 9],
 		struct decoration_data deco_data) {
 	assert(wlr_texture_is_gles2(wlr_texture));
@@ -423,13 +450,13 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 	switch (texture_attrs.target) {
 	case GL_TEXTURE_2D:
 		if (texture_attrs.has_alpha) {
-			shader = &renderer->shaders.tex_rgba;
+			shader = &renderer->shaders.tex_decorated_rgba;
 		} else {
-			shader = &renderer->shaders.tex_rgbx;
+			shader = &renderer->shaders.tex_decorated_rgbx;
 		}
 		break;
 	case GL_TEXTURE_EXTERNAL_OES:
-		shader = &renderer->shaders.tex_ext;
+		shader = &renderer->shaders.tex_decorated_ext;
 
 		if (!renderer->exts.OES_egl_image_external) {
 			sway_log(SWAY_ERROR, "Failed to render texture: "
@@ -503,17 +530,92 @@ bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_t
 	return true;
 }
 
-bool fx_render_texture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
-		const struct wlr_box *dst_box, const float matrix[static 9],
-		struct decoration_data deco_data) {
+bool fx_render_subtexture_with_matrix(struct fx_renderer *renderer, struct wlr_texture *wlr_texture,
+		const struct wlr_fbox *box, const float matrix[static 9], const float alpha) {
+	assert(wlr_texture_is_gles2(wlr_texture));
+	struct wlr_gles2_texture_attribs texture_attrs;
+	wlr_gles2_texture_get_attribs(wlr_texture, &texture_attrs);
+
+	struct gles2_tex_shader *shader = NULL;
+
+	switch (texture_attrs.target) {
+	case GL_TEXTURE_2D:
+		if (texture_attrs.has_alpha) {
+			shader = &renderer->shaders.tex_rgba;
+		} else {
+			shader = &renderer->shaders.tex_rgbx;
+		}
+		break;
+	case GL_TEXTURE_EXTERNAL_OES:
+		// EGL_EXT_image_dma_buf_import_modifiers requires
+		// GL_OES_EGL_image_external
+		assert(renderer->exts.OES_egl_image_external);
+		shader = &renderer->shaders.tex_ext;
+		break;
+	default:
+		abort();
+	}
+
+	float gl_matrix[9];
+	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
+
+	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
+	// to GL_FALSE
+	wlr_matrix_transpose(gl_matrix, gl_matrix);
+
+	if (!texture_attrs.has_alpha && alpha == 1.0) {
+		glDisable(GL_BLEND);
+	} else {
+		glEnable(GL_BLEND);
+	}
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(texture_attrs.target, texture_attrs.tex);
+
+	glTexParameteri(texture_attrs.target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glUseProgram(shader->program);
+
+	glUniformMatrix3fv(shader->proj, 1, GL_FALSE, gl_matrix);
+	glUniform1i(shader->tex, 0);
+	glUniform1f(shader->alpha, alpha);
+
+	const GLfloat x1 = box->x / wlr_texture->width;
+	const GLfloat y1 = box->y / wlr_texture->height;
+	const GLfloat x2 = (box->x + box->width) / wlr_texture->width;
+	const GLfloat y2 = (box->y + box->height) / wlr_texture->height;
+	const GLfloat texcoord[] = {
+		x2, y1, // top right
+		x1, y1, // top left
+		x2, y2, // bottom right
+		x1, y2, // bottom left
+	};
+
+	glVertexAttribPointer(shader->pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, verts);
+	glVertexAttribPointer(shader->tex_attrib, 2, GL_FLOAT, GL_FALSE, 0, texcoord);
+
+	glEnableVertexAttribArray(shader->pos_attrib);
+	glEnableVertexAttribArray(shader->tex_attrib);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableVertexAttribArray(shader->pos_attrib);
+	glDisableVertexAttribArray(shader->tex_attrib);
+
+	glBindTexture(texture_attrs.target, 0);
+
+	return true;
+}
+
+bool fx_render_texture_with_matrix(struct fx_renderer *renderer,
+		struct wlr_texture *wlr_texture, const float matrix[static 9], float alpha) {
 	struct wlr_fbox src_box = {
 		.x = 0,
 		.y = 0,
 		.width = wlr_texture->width,
 		.height = wlr_texture->height,
 	};
-	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box,
-			dst_box, matrix, deco_data);
+	return fx_render_subtexture_with_matrix(renderer, wlr_texture, &src_box, matrix, alpha);
 }
 
 void fx_render_rect(struct fx_renderer *renderer, const struct wlr_box *box,

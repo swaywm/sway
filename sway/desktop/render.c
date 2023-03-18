@@ -110,7 +110,7 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 	}
 }
 
-static void render_texture(struct wlr_output *wlr_output,
+static void render_window(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
 		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
 		const float matrix[static 9], struct decoration_data deco_data) {
@@ -132,11 +132,40 @@ static void render_texture(struct wlr_output *wlr_output,
 	for (int i = 0; i < nrects; ++i) {
 		scissor_output(wlr_output, &rects[i]);
 		set_scale_filter(wlr_output, texture, output->scale_filter);
+		fx_render_window(renderer, texture, src_box, dst_box,
+				matrix, deco_data);
+	}
+
+damage_finish:
+	pixman_region32_fini(&damage);
+}
+
+static void render_texture(struct wlr_output *wlr_output,
+		pixman_region32_t *output_damage, struct wlr_texture *texture,
+		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
+		const float matrix[static 9], float alpha) {
+	struct sway_output *output = wlr_output->data;
+	struct fx_renderer *renderer = output->server->renderer;
+
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	pixman_region32_union_rect(&damage, &damage, dst_box->x, dst_box->y,
+		dst_box->width, dst_box->height);
+	pixman_region32_intersect(&damage, &damage, output_damage);
+	bool damaged = pixman_region32_not_empty(&damage);
+	if (!damaged) {
+		goto damage_finish;
+	}
+
+	int nrects;
+	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
+	for (int i = 0; i < nrects; ++i) {
+		scissor_output(wlr_output, &rects[i]);
+		set_scale_filter(wlr_output, texture, output->scale_filter);
 		if (src_box != NULL) {
-			fx_render_subtexture_with_matrix(renderer, texture, src_box, dst_box,
-					matrix, deco_data);
+			fx_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha);
 		} else {
-			fx_render_texture_with_matrix(renderer, texture, dst_box, matrix, deco_data);
+			fx_render_texture_with_matrix(renderer, texture, matrix, alpha);
 		}
 	}
 
