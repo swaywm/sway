@@ -905,6 +905,11 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		case LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE:
 			accel_profile = "adaptive";
 			break;
+#if HAVE_LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM
+		case LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM:
+			accel_profile = "custom";
+			break;
+#endif
 		}
 		json_object_object_add(object, "accel_profile",
 				json_object_new_string(accel_profile));
