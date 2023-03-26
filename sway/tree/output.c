@@ -230,10 +230,6 @@ void output_destroy(struct sway_output *output) {
 				"Tried to free output which wasn't marked as destroying")) {
 		return;
 	}
-	if (!sway_assert(output->wlr_output == NULL,
-				"Tried to free output which still had a wlr_output")) {
-		return;
-	}
 	if (!sway_assert(output->node.ntxnrefs == 0, "Tried to free output "
 				"which is still referenced by transactions")) {
 		return;

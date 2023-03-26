@@ -285,6 +285,9 @@ void server_fini(struct sway_server *server) {
 	wl_display_destroy_clients(server->wl_display);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
+	list_free(root->fallback_output->workspaces);
+	list_free(root->fallback_output->current.workspaces);
+	free(root->fallback_output);
 }
 
 bool server_start(struct sway_server *server) {

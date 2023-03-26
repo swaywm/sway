@@ -854,9 +854,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	wlr_damage_ring_finish(&output->damage_ring);
 
-	output->wlr_output->data = NULL;
-	output->wlr_output = NULL;
-
 	transaction_commit_dirty();
 
 	update_output_manager_config(server);
