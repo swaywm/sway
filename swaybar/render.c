@@ -693,15 +693,6 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 	struct swaybar_output *output = ctx->output;
 	struct swaybar *bar = output->bar;
 	struct swaybar_config *config = bar->config;
-	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
-	if (output->focused) {
-		ctx->background_color = config->colors.focused_background;
-	} else {
-		ctx->background_color = config->colors.background;
-	}
-
-	cairo_set_source_u32(cairo, ctx->background_color);
-	cairo_paint(cairo);
 
 	int th;
 	get_text_size(cairo, config->font_description, NULL, &th, NULL, 1, false, "");
@@ -763,8 +754,17 @@ void render_frame(struct swaybar_output *output) {
 
 	free_hotspots(&output->hotspots);
 
+	uint32_t background_color;
+	if (output->focused) {
+		background_color = output->bar->config->colors.focused_background;
+	} else {
+		background_color = output->bar->config->colors.background;
+	}
+
 	struct render_context ctx = { 0 };
 	ctx.output = output;
+	// initial background color used for deciding the best way to antialias text
+	ctx.background_color = background_color;
 
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
@@ -786,10 +786,11 @@ void render_frame(struct swaybar_output *output) {
 		ctx.textaa_sharp = fo;
 	}
 
-	cairo_save(cairo);
-	cairo_set_operator(cairo, CAIRO_OPERATOR_CLEAR);
+
+	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_u32(cairo, background_color);
 	cairo_paint(cairo);
-	cairo_restore(cairo);
+
 	uint32_t height = render_to_cairo(&ctx);
 	int config_height = output->bar->config->height;
 	if (config_height > 0) {
@@ -834,7 +835,7 @@ void render_frame(struct swaybar_output *output) {
 		wl_surface_damage(output->surface, 0, 0,
 				output->width, output->height);
 
-		uint32_t bg_alpha = ctx.background_color & 0xFF;
+		uint32_t bg_alpha = background_color & 0xFF;
 		if (bg_alpha == 0xFF) {
 			struct wl_region *region =
 				wl_compositor_create_region(output->bar->compositor);
