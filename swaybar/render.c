@@ -841,6 +841,8 @@ void render_frame(struct swaybar_output *output) {
 			wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
 			wl_surface_set_opaque_region(output->surface, region);
 			wl_region_destroy(region);
+		} else {
+			wl_surface_set_opaque_region(output->surface, NULL);
 		}
 
 		struct wl_callback *frame_callback = wl_surface_frame(output->surface);
