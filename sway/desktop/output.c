@@ -884,11 +884,6 @@ static void handle_mode(struct sway_output *output) {
 	arrange_output(output);
 	transaction_commit_dirty();
 
-	int width, height;
-	wlr_output_transformed_resolution(output->wlr_output, &width, &height);
-	wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
-	wlr_output_schedule_frame(output->wlr_output);
-
 	update_output_manager_config(output->server);
 }
 
