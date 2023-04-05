@@ -999,6 +999,9 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	}
 	output->server = server;
 	wlr_damage_ring_init(&output->damage_ring);
+	int width, height;
+	wlr_output_transformed_resolution(output->wlr_output, &width, &height);
+	wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
