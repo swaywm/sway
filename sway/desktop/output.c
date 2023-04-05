@@ -826,9 +826,6 @@ static void update_output_manager_config(struct sway_server *server) {
 			config_head->state.y = output_box.y;
 		}
 	
-		int width, height;
-		wlr_output_transformed_resolution(output->wlr_output, &width, &height);
-		wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 	}
 
 	wlr_output_manager_v1_set_configuration(server->output_manager_v1, config);
@@ -1031,6 +1028,15 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	transaction_commit_dirty();
 
+	struct sway_output *tmp_output;
+	wl_list_for_each(tmp_output, &root->all_outputs, link) {
+		if (tmp_output == root->fallback_output) {
+			continue;
+		}
+		int width, height;
+		wlr_output_transformed_resolution(tmp_output->wlr_output, &width, &height);
+		wlr_damage_ring_set_bounds(&tmp_output->damage_ring, width, height);
+	}
 	update_output_manager_config(server);
 }
 
