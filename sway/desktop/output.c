@@ -825,7 +825,6 @@ static void update_output_manager_config(struct sway_server *server) {
 			config_head->state.x = output_box.x;
 			config_head->state.y = output_box.y;
 		}
-	
 	}
 
 	wlr_output_manager_v1_set_configuration(server->output_manager_v1, config);
