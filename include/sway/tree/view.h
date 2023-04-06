@@ -46,10 +46,6 @@ struct sway_view_impl {
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	void (*set_resizing)(struct sway_view *view, bool resizing);
 	bool (*wants_floating)(struct sway_view *view);
-	void (*for_each_surface)(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data);
-	void (*for_each_popup_surface)(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data);
 	bool (*is_transient_for)(struct sway_view *child,
 			struct sway_view *ancestor);
 	void (*close)(struct sway_view *view);
@@ -253,20 +249,6 @@ void view_set_tiled(struct sway_view *view, bool tiled);
 void view_close(struct sway_view *view);
 
 void view_close_popups(struct sway_view *view);
-
-void view_damage_from(struct sway_view *view);
-
-/**
- * Iterate all surfaces of a view (toplevels + popups).
- */
-void view_for_each_surface(struct sway_view *view,
-	wlr_surface_iterator_func_t iterator, void *user_data);
-
-/**
- * Iterate all popup surfaces of a view.
- */
-void view_for_each_popup_surface(struct sway_view *view,
-	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation
 

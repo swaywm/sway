@@ -686,7 +686,6 @@ void workspace_detect_urgent(struct sway_workspace *workspace) {
 	if (workspace->urgent != new_urgent) {
 		workspace->urgent = new_urgent;
 		ipc_event_workspace(NULL, workspace, "urgent");
-		output_damage_whole(workspace->output);
 	}
 }
 

@@ -597,12 +597,6 @@ bool container_has_ancestor(struct sway_container *descendant,
 	return false;
 }
 
-void container_damage_whole(struct sway_container *container) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		output_damage_whole_container(output, container);
-	}
-}
 
 /**
  * Return the output which will be used for scale purposes.
