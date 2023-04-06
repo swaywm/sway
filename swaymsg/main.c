@@ -193,11 +193,12 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "power", &power);
 	json_object_object_get_ex(o, "current_workspace", &ws);
 	json_object_object_get_ex(o, "non_desktop", &non_desktop);
-	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
+	json_object *make, *model, *serial, *port, *scale, *scale_filter, *subpixel,
 		*transform, *max_render_time, *adaptive_sync_status;
 	json_object_object_get_ex(o, "make", &make);
 	json_object_object_get_ex(o, "model", &model);
 	json_object_object_get_ex(o, "serial", &serial);
+	json_object_object_get_ex(o, "port", &port);
 	json_object_object_get_ex(o, "scale", &scale);
 	json_object_object_get_ex(o, "scale_filter", &scale_filter);
 	json_object_object_get_ex(o, "subpixel_hinting", &subpixel);
@@ -265,6 +266,10 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_string(model),
 			json_object_get_string(serial)
 		);
+	}
+
+	if (port != NULL) {
+		printf("  Port: %s\n", json_object_get_string(port));
 	}
 
 	size_t modes_len = json_object_is_type(modes, json_type_array)
