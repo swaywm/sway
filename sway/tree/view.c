@@ -16,7 +16,6 @@
 #include "log.h"
 #include "sway/criteria.h"
 #include "sway/commands.h"
-#include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/launcher.h"
@@ -456,34 +455,6 @@ void view_close_popups(struct sway_view *view) {
 	}
 }
 
-void view_damage_from(struct sway_view *view) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		output_damage_from_view(output, view);
-	}
-}
-
-void view_for_each_surface(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (!view->surface) {
-		return;
-	}
-	if (view->impl->for_each_surface) {
-		view->impl->for_each_surface(view, iterator, user_data);
-	} else {
-		wlr_surface_for_each_surface(view->surface, iterator, user_data);
-	}
-}
-
-void view_for_each_popup_surface(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (!view->surface) {
-		return;
-	}
-	if (view->impl->for_each_popup_surface) {
-		view->impl->for_each_popup_surface(view, iterator, user_data);
-	}
-}
 static bool view_has_executed_criteria(struct sway_view *view,
 		struct criteria *criteria) {
 	for (int i = 0; i < view->executed_criteria->length; ++i) {
@@ -1143,7 +1114,6 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 			view->urgent_timer = NULL;
 		}
 	}
-	container_damage_whole(view->container);
 
 	ipc_event_window(view->container, "urgent");
 

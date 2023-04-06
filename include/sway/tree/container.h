@@ -125,11 +125,6 @@ struct sway_container {
 	double child_total_width;
 	double child_total_height;
 
-	// In most cases this is the same as the content x and y, but if the view
-	// refuses to resize to the content dimensions then it can be smaller.
-	// These are in layout coordinates.
-	double surface_x, surface_y;
-
 	// Outputs currently being intersected
 	list_t *outputs; // struct sway_output
 
@@ -180,8 +175,6 @@ bool container_has_ancestor(struct sway_container *container,
 		struct sway_container *ancestor);
 
 void container_update_textures_recursive(struct sway_container *con);
-
-void container_damage_whole(struct sway_container *container);
 
 void container_reap_empty(struct sway_container *con);
 

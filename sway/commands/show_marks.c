@@ -26,10 +26,5 @@ struct cmd_results *cmd_show_marks(int argc, char **argv) {
 		root_for_each_container(title_bar_update_iterator, NULL);
 	}
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		output_damage_whole(output);
-	}
-
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
