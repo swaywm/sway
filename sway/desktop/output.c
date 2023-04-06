@@ -512,6 +512,10 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
+	if (!wlr_output_is_direct_scanout_allowed(wlr_output)) {
+		return false;
+	}
+
 	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
 	if (!wlr_output_test(wlr_output)) {
 		return false;
