@@ -11,6 +11,23 @@ import signal
 import sys
 from functools import partial
 
+fixed_ids = set()
+
+
+def check_focused(window):
+    return window.pid not in fixed_ids
+
+
+def add_not_blocking(ipc):
+    focused = ipc.get_tree().find_focused()
+    if focused != None:
+        pid = focused.pid
+        if pid in fixed_ids:
+            fixed_ids.remove(pid)
+        else:
+            fixed_ids.add(pid)
+
+
 def on_window_focus(inactive_opacity, ipc, event):
     global prev_focused
     global prev_workspace
@@ -25,7 +42,7 @@ def on_window_focus(inactive_opacity, ipc, event):
 
     if focused.id != prev_focused.id:  # https://github.com/swaywm/sway/issues/2859
         focused.command("opacity 1")
-        if workspace == prev_workspace:
+        if workspace == prev_workspace and check_focused(prev_focused):
             prev_focused.command("opacity " + inactive_opacity)
         prev_focused = focused
         prev_workspace = workspace
@@ -61,9 +78,12 @@ if __name__ == "__main__":
     for window in ipc.get_tree():
         if window.focused:
             prev_focused = window
-        else:
+        elif check_focused(window):
             window.command("opacity " + args.opacity)
     for sig in [signal.SIGINT, signal.SIGTERM]:
         signal.signal(sig, lambda signal, frame: remove_opacity(ipc))
+
+    # send USR1 signal to prevent focused window from making transparent
+    signal.signal(signal.SIGUSR1, lambda signal, frame: add_not_blocking(ipc))
     ipc.on("window::focus", partial(on_window_focus, args.opacity))
     ipc.main()
