@@ -33,7 +33,6 @@ static struct cmd_results *tray_bind(int argc, char **argv, bool code) {
 		free(binding);
 		return cmd_results_new(CMD_INVALID, "Unknown button %s", argv[0]);
 	}
-	const char *name = get_mouse_button_name(binding->button);
 
 	static const char *commands[] = {
 		"ContextMenu",
@@ -66,16 +65,16 @@ static struct cmd_results *tray_bind(int argc, char **argv, bool code) {
 			free(binding);
 			binding = other;
 			sway_log(SWAY_DEBUG,
-					"[bar %s] Updated tray binding for %u (%s) to %s",
-					config->current_bar->id, binding->button, name,
+					"[bar %s] Updated tray binding for %u to %s",
+					config->current_bar->id, binding->button,
 					binding->command);
 			break;
 		}
 	}
 	if (!overwritten) {
 		wl_list_insert(&config->current_bar->tray_bindings, &binding->link);
-		sway_log(SWAY_DEBUG, "[bar %s] Added tray binding for %u (%s) to %s",
-				config->current_bar->id, binding->button, name,
+		sway_log(SWAY_DEBUG, "[bar %s] Added tray binding for %u to %s",
+				config->current_bar->id, binding->button,
 				binding->command);
 	}
 

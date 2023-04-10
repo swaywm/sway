@@ -1,4 +1,3 @@
-#include <libevdev/libevdev.h>
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/cursor.h"

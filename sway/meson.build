@@ -216,7 +216,6 @@ sway_deps = [
 	cairo,
 	drm,
 	jsonc,
-	libevdev,
 	libinput,
 	libudev,
 	math,

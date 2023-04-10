@@ -1,4 +1,3 @@
-#include <libevdev/libevdev.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -11,7 +10,6 @@
 
 static struct cmd_results *binding_add(struct bar_binding *binding,
 		list_t *mode_bindings) {
-	const char *name = get_mouse_button_name(binding->button);
 	bool overwritten = false;
 	for (int i = 0; i < mode_bindings->length; i++) {
 		struct bar_binding *other = mode_bindings->items[i];
@@ -20,16 +18,16 @@ static struct cmd_results *binding_add(struct bar_binding *binding,
 			overwritten = true;
 			mode_bindings->items[i] = binding;
 			free_bar_binding(other);
-			sway_log(SWAY_DEBUG, "[bar %s] Updated binding for %u (%s)%s",
-					config->current_bar->id, binding->button, name,
+			sway_log(SWAY_DEBUG, "[bar %s] Updated binding for %u%s",
+					config->current_bar->id, binding->button,
 					binding->release ? " - release" : "");
 			break;
 		}
 	}
 	if (!overwritten) {
 		list_add(mode_bindings, binding);
-		sway_log(SWAY_DEBUG, "[bar %s] Added binding for %u (%s)%s",
-				config->current_bar->id, binding->button, name,
+		sway_log(SWAY_DEBUG, "[bar %s] Added binding for %u%s",
+				config->current_bar->id, binding->button,
 				binding->release ? " - release" : "");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL);
@@ -37,13 +35,12 @@ static struct cmd_results *binding_add(struct bar_binding *binding,
 
 static struct cmd_results *binding_remove(struct bar_binding *binding,
 		list_t *mode_bindings) {
-	const char *name = get_mouse_button_name(binding->button);
 	for (int i = 0; i < mode_bindings->length; i++) {
 		struct bar_binding *other = mode_bindings->items[i];
 		if (other->button == binding->button &&
 				other->release == binding->release) {
-			sway_log(SWAY_DEBUG, "[bar %s] Unbound binding for %u (%s)%s",
-					config->current_bar->id, binding->button, name,
+			sway_log(SWAY_DEBUG, "[bar %s] Unbound binding for %u%s",
+					config->current_bar->id, binding->button,
 					binding->release ? " - release" : "");
 			free_bar_binding(other);
 			free_bar_binding(binding);
@@ -53,8 +50,8 @@ static struct cmd_results *binding_remove(struct bar_binding *binding,
 	}
 
 	struct cmd_results *error = cmd_results_new(CMD_FAILURE, "Could not "
-			"find binding for [bar %s]" " Button %u (%s)%s",
-			config->current_bar->id, binding->button, name,
+			"find binding for [bar %s]" " Button %u%s",
+			config->current_bar->id, binding->button,
 			binding->release ? " - release" : "");
 	free_bar_binding(binding);
 	return error;
