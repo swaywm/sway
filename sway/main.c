@@ -340,6 +340,10 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	if (server.linux_dmabuf_v1) {
+		wlr_scene_set_linux_dmabuf_v1(root->root_scene, server.linux_dmabuf_v1);
+	}
+
 	if (validate) {
 		bool valid = load_main_config(config_path, false, true);
 		free(config_path);
