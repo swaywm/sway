@@ -1157,33 +1157,6 @@ static void set_fullscreen(struct sway_container *con, bool enable) {
 				con->view->foreign_toplevel, enable);
 		}
 	}
-
-	if (!server.linux_dmabuf_v1 || !con->view->surface) {
-		return;
-	}
-	if (!enable) {
-		wlr_linux_dmabuf_v1_set_surface_feedback(server.linux_dmabuf_v1,
-			con->view->surface, NULL);
-		return;
-	}
-
-	if (!con->pending.workspace || !con->pending.workspace->output) {
-		return;
-	}
-
-	struct sway_output *output = con->pending.workspace->output;
-
-	const struct wlr_linux_dmabuf_feedback_v1_init_options options = {
-		.main_renderer = server.renderer,
-		.scanout_primary_output = output->wlr_output,
-	};
-	struct wlr_linux_dmabuf_feedback_v1 feedback = {0};
-	if (!wlr_linux_dmabuf_feedback_v1_init_with_options(&feedback, &options)) {
-		return;
-	}
-	wlr_linux_dmabuf_v1_set_surface_feedback(server.linux_dmabuf_v1,
-		con->view->surface, &feedback);
-	wlr_linux_dmabuf_feedback_v1_finish(&feedback);
 }
 
 static void container_fullscreen_workspace(struct sway_container *con) {
