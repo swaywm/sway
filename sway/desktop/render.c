@@ -303,7 +303,7 @@ static void render_saved_view(struct sway_view *view,
 
 	struct sway_saved_buffer *saved_buf;
 	wl_list_for_each(saved_buf, &view->saved_buffers, link) {
-		if (!saved_buf->buffer->texture) {
+		if (!saved_buf->buffer->texture_set) {
 			continue;
 		}
 
@@ -343,8 +343,14 @@ static void render_saved_view(struct sway_view *view,
 		}
 		scale_box(&dst_box, wlr_output->scale);
 
-		render_texture(wlr_output, damage, saved_buf->buffer->texture,
-			&saved_buf->source_box, &dst_box, matrix, alpha);
+		struct wlr_texture *texture = wlr_texture_set_get_tex_for_renderer(
+				saved_buf->buffer->texture_set, wlr_output->renderer);
+		if (!texture) {
+			continue;
+		}
+
+		render_texture(wlr_output, damage, texture, &saved_buf->source_box,
+				&dst_box, matrix, alpha);
 	}
 
 	// FIXME: we should set the surface that this saved buffer originates from
