@@ -2,6 +2,7 @@
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_raster.h>
 #include "sway/config.h"
 #if HAVE_XWAYLAND
 #include <wlr/xwayland.h>
@@ -57,7 +58,7 @@ struct sway_view_impl {
 };
 
 struct sway_saved_buffer {
-	struct wlr_client_buffer *buffer;
+	struct wlr_raster *raster;
 	int x, y;
 	int width, height;
 	enum wl_output_transform transform;

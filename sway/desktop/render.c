@@ -6,7 +6,7 @@
 #include <wayland-server-core.h>
 #include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_raster.h>
 #include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -142,7 +142,13 @@ static void render_surface_iterator(struct sway_output *output,
 	const pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
 
-	struct wlr_texture *texture = wlr_surface_get_texture(surface);
+	struct wlr_raster *raster = wlr_raster_from_surface(surface);
+	if (!raster) {
+		return;
+	}
+
+	struct wlr_texture *texture = wlr_raster_create_texture(
+		raster, wlr_output->renderer);
 	if (!texture) {
 		return;
 	}
@@ -303,7 +309,9 @@ static void render_saved_view(struct sway_view *view,
 
 	struct sway_saved_buffer *saved_buf;
 	wl_list_for_each(saved_buf, &view->saved_buffers, link) {
-		if (!saved_buf->buffer->texture) {
+		struct wlr_texture *texture = wlr_raster_create_texture(
+			saved_buf->raster, wlr_output->renderer);
+		if (!texture) {
 			continue;
 		}
 
@@ -343,7 +351,7 @@ static void render_saved_view(struct sway_view *view,
 		}
 		scale_box(&dst_box, wlr_output->scale);
 
-		render_texture(wlr_output, damage, saved_buf->buffer->texture,
+		render_texture(wlr_output, damage, texture,
 			&saved_buf->source_box, &dst_box, matrix, alpha);
 	}
 
