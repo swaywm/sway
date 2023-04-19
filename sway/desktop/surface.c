@@ -11,13 +11,26 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_surface *surface = wl_container_of(listener, surface, destroy);
 
 	surface->wlr_surface->data = NULL;
+	wl_list_remove(&surface->commit.link);
 	wl_list_remove(&surface->destroy.link);
 
 	if (surface->frame_done_timer) {
 		wl_event_source_remove(surface->frame_done_timer);
 	}
 
+	wlr_raster_unlock(surface->raster);
+
 	free(surface);
+}
+
+static void handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_surface *surface = wl_container_of(listener, surface, commit);
+
+	// update the surface raster every surface commit
+	struct wlr_raster *raster = wlr_raster_from_surface(surface->wlr_surface);
+
+	wlr_raster_unlock(surface->raster);
+	surface->raster = raster;
 }
 
 static int surface_frame_done_timer_handler(void *data) {
@@ -40,11 +53,16 @@ void handle_compositor_new_surface(struct wl_listener *listener, void *data) {
 	surface->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_surface->events.destroy, &surface->destroy);
 
+	surface->commit.notify = handle_commit;
+	wl_signal_add(&wlr_surface->events.commit, &surface->commit);
+
 	surface->frame_done_timer = wl_event_loop_add_timer(server.wl_event_loop,
 		surface_frame_done_timer_handler, surface);
 	if (!surface->frame_done_timer) {
 		wl_resource_post_no_memory(wlr_surface->resource);
 	}
+
+	surface->raster = wlr_raster_from_surface(wlr_surface);
 }
 
 void surface_update_outputs(struct wlr_surface *surface) {

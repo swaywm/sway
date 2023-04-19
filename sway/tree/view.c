@@ -1412,7 +1412,7 @@ void view_remove_saved_buffer(struct sway_view *view) {
 	}
 	struct sway_saved_buffer *saved_buf, *tmp;
 	wl_list_for_each_safe(saved_buf, tmp, &view->saved_buffers, link) {
-		wlr_buffer_unlock(&saved_buf->buffer->base);
+		wlr_raster_unlock(saved_buf->raster);
 		wl_list_remove(&saved_buf->link);
 		free(saved_buf);
 	}
@@ -1423,9 +1423,8 @@ static void view_save_buffer_iterator(struct wlr_surface *surface,
 	struct sway_view *view = data;
 
 	if (surface && wlr_surface_has_buffer(surface)) {
-		wlr_buffer_lock(&surface->buffer->base);
 		struct sway_saved_buffer *saved_buffer = calloc(1, sizeof(struct sway_saved_buffer));
-		saved_buffer->buffer = surface->buffer;
+		saved_buffer->raster = wlr_raster_from_surface(surface);
 		saved_buffer->width = surface->current.width;
 		saved_buffer->height = surface->current.height;
 		saved_buffer->x = view->container->surface_x + sx;

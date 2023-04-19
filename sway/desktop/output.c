@@ -7,7 +7,7 @@
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_raster.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -509,7 +509,8 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	if (surface->buffer == NULL) {
+	struct wlr_raster *raster = wlr_raster_from_surface(surface);
+	if (raster == NULL || raster->buffer == NULL) {
 		return false;
 	}
 
@@ -522,7 +523,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
+	wlr_output_attach_buffer(wlr_output, raster->buffer);
 	if (!wlr_output_test(wlr_output)) {
 		return false;
 	}
