@@ -613,10 +613,22 @@ static int output_repaint_timer_handler(void *data) {
 	pixman_region32_init(&damage);
 	wlr_damage_ring_get_buffer_damage(&output->damage_ring, buffer_age, &damage);
 
+	if (debug.damage == DAMAGE_RERENDER) {
+		int width, height;
+		wlr_output_transformed_resolution(wlr_output, &width, &height);
+		pixman_region32_union_rect(&damage, &damage, 0, 0, width, height);
+	}
+
+	struct render_context ctx = {
+		.output_damage = &damage,
+		.renderer = wlr_output->renderer,
+		.output = output,
+	};
+
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	output_render(output, &damage);
+	output_render(&ctx);
 
 	pixman_region32_fini(&damage);
 

@@ -1726,10 +1726,9 @@ void seatop_end(struct sway_seat *seat) {
 	seat->seatop_impl = NULL;
 }
 
-void seatop_render(struct sway_seat *seat, struct sway_output *output,
-		const pixman_region32_t *damage) {
+void seatop_render(struct sway_seat *seat, struct render_context *ctx) {
 	if (seat->seatop_impl->render) {
-		seat->seatop_impl->render(seat, output, damage);
+		seat->seatop_impl->render(seat, ctx);
 	}
 }
 
