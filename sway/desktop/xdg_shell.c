@@ -332,8 +332,16 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	if (view->container->node.instruction) {
-		transaction_notify_view_ready_by_serial(view,
+		bool successful = transaction_notify_view_ready_by_serial(view,
 				xdg_surface->current.configure_serial);
+
+		// If we saved the view and this commit isn't what we're looking for
+		// that means the user will never actually see the buffers submitted to
+		// us here. Just send frame done events to these surfaces so they can
+		// commit another time for us.
+		if (view->saved_surface_tree && !successful) {
+			view_send_frame_done(view);
+		}
 	}
 }
 

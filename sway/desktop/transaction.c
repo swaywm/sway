@@ -232,21 +232,6 @@ static void apply_workspace_state(struct sway_workspace *ws,
 static void apply_container_state(struct sway_container *container,
 		struct sway_container_state *state) {
 	struct sway_view *view = container->view;
-	// Damage the old location
-	desktop_damage_whole_container(container);
-	if (view && !wl_list_empty(&view->saved_buffers)) {
-		struct sway_saved_buffer *saved_buf;
-		wl_list_for_each(saved_buf, &view->saved_buffers, link) {
-			struct wlr_box box = {
-				.x = saved_buf->x - view->saved_geometry.x,
-				.y = saved_buf->y - view->saved_geometry.y,
-				.width = saved_buf->width,
-				.height = saved_buf->height,
-			};
-			desktop_damage_box(&box);
-		}
-	}
-
 	// There are separate children lists for each instruction state, the
 	// container's current state and the container's pending state
 	// (ie. con->children). The list itself needs to be freed here.
@@ -256,17 +241,19 @@ static void apply_container_state(struct sway_container *container,
 
 	memcpy(&container->current, state, sizeof(struct sway_container_state));
 
-	if (view && !wl_list_empty(&view->saved_buffers)) {
-		if (!container->node.destroying || container->node.ntxnrefs == 1) {
-			view_remove_saved_buffer(view);
+	if (view) {
+		if (view->saved_surface_tree) {
+			if (!container->node.destroying || container->node.ntxnrefs == 1) {
+				view_remove_saved_buffer(view);
+			}
 		}
-	}
 
-	// If the view hasn't responded to the configure, center it within
-	// the container. This is important for fullscreen views which
-	// refuse to resize to the size of the output.
-	if (view && view->surface) {
-		view_center_surface(view);
+		// If the view hasn't responded to the configure, center it within
+		// the container. This is important for fullscreen views which
+		// refuse to resize to the size of the output.
+		if (view->surface) {
+			view_center_surface(view);
+		}
 	}
 
 	// Damage the new location
@@ -415,21 +402,11 @@ static void transaction_commit(struct sway_transaction *transaction) {
 				++transaction->num_waiting;
 			}
 
-			// From here on we are rendering a saved buffer of the view, which
-			// means we can send a frame done event to make the client redraw it
-			// as soon as possible. Additionally, this is required if a view is
-			// mapping and its default geometry doesn't intersect an output.
-			struct timespec now;
-			clock_gettime(CLOCK_MONOTONIC, &now);
-			wlr_surface_send_frame_done(
-					node->sway_container->view->surface, &now);
+			view_send_frame_done(node->sway_container->view);
 		}
 		if (!hidden && node_is_view(node) &&
-				wl_list_empty(&node->sway_container->view->saved_buffers)) {
+				!node->sway_container->view->saved_surface_tree) {
 			view_save_buffer(node->sway_container->view);
-			memcpy(&node->sway_container->view->saved_geometry,
-					&node->sway_container->view->geometry,
-					sizeof(struct wlr_box));
 		}
 		node->instruction = instruction;
 	}
