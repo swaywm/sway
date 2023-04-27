@@ -57,21 +57,13 @@ struct sway_view_impl {
 	void (*destroy)(struct sway_view *view);
 };
 
-struct sway_saved_buffer {
-	struct wlr_client_buffer *buffer;
-	int x, y;
-	int width, height;
-	enum wl_output_transform transform;
-	struct wlr_fbox source_box;
-	struct wl_list link; // sway_view::saved_buffers
-};
-
 struct sway_view {
 	enum sway_view_type type;
 	const struct sway_view_impl *impl;
 
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *content_tree;
+	struct wlr_scene_tree *saved_surface_tree;
 
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
@@ -92,15 +84,9 @@ struct sway_view {
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
 
-	struct wl_list saved_buffers; // sway_saved_buffer::link
-
 	// The geometry for whatever the client is committing, regardless of
 	// transaction state. Updated on every commit.
 	struct wlr_box geometry;
-
-	// The "old" geometry during a transaction. Used to damage the old location
-	// when a transaction is applied.
-	struct wlr_box saved_geometry;
 
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;
@@ -346,5 +332,7 @@ void view_save_buffer(struct sway_view *view);
 bool view_is_transient_for(struct sway_view *child, struct sway_view *ancestor);
 
 void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx);
+
+void view_send_frame_done(struct sway_view *view);
 
 #endif
