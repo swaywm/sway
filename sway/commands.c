@@ -381,10 +381,13 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 	sway_log(SWAY_INFO, "Config command: %s", exec);
 	const struct cmd_handler *handler = find_core_handler(argv[0]);
 	if (!handler || !handler->handle) {
-		const char *error = handler
-			? "Command '%s' is shimmed, but unimplemented"
-			: "Unknown/invalid command '%s'";
-		results = cmd_results_new(CMD_INVALID, error, argv[0]);
+		if (handler) {
+			results = cmd_results_new(CMD_INVALID,
+				"Command '%s' is shimmed, but unimplemented", argv[0]);
+		} else {
+			results = cmd_results_new(CMD_INVALID,
+				"Unknown/invalid command '%s'", argv[0]);
+		}
 		goto cleanup;
 	}
 
@@ -486,20 +489,10 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 	}
 	results->status = status;
 	if (format) {
-		char *error = NULL;
 		va_list args;
 		va_start(args, format);
-		int slen = vsnprintf(NULL, 0, format, args);
+		results->error = vformat_str(format, args);
 		va_end(args);
-		if (slen > 0) {
-			error = malloc(slen + 1);
-			if (error != NULL) {
-				va_start(args, format);
-				vsnprintf(error, slen + 1, format, args);
-				va_end(args);
-			}
-		}
-		results->error = error;
 	} else {
 		results->error = NULL;
 	}

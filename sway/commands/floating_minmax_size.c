@@ -23,16 +23,16 @@ static struct cmd_results *handle_command(int argc, char **argv, char *cmd_name,
 	char *err;
 	int width = (int)strtol(argv[0], &err, 10);
 	if (*err) {
-		return cmd_results_new(CMD_INVALID, cmd_name, usage);
+		return cmd_results_new(CMD_INVALID, "%s", usage);
 	}
 
 	if (strcmp(argv[1], "x") != 0) {
-		return cmd_results_new(CMD_INVALID, cmd_name, usage);
+		return cmd_results_new(CMD_INVALID, "%s", usage);
 	}
 
 	int height = (int)strtol(argv[2], &err, 10);
 	if (*err) {
-		return cmd_results_new(CMD_INVALID, cmd_name, usage);
+		return cmd_results_new(CMD_INVALID, "%s", usage);
 	}
 
 	*config_width = width;

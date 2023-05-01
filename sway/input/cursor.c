@@ -1273,11 +1273,7 @@ uint32_t get_mouse_bindsym(const char *name, char **error) {
 		// Get event code from name
 		int code = libevdev_event_code_from_name(EV_KEY, name);
 		if (code == -1) {
-			size_t len = snprintf(NULL, 0, "Unknown event %s", name) + 1;
-			*error = malloc(len);
-			if (*error) {
-				snprintf(*error, len, "Unknown event %s", name);
-			}
+			*error = format_str("Unknown event %s", name);
 			return 0;
 		}
 		return code;
@@ -1299,13 +1295,8 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 	}
 	const char *event = libevdev_event_code_get_name(EV_KEY, code);
 	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
-		size_t len = snprintf(NULL, 0, "Event code %d (%s) is not a button",
-				code, event ? event : "(null)") + 1;
-		*error = malloc(len);
-		if (*error) {
-			snprintf(*error, len, "Event code %d (%s) is not a button",
-					code, event ? event : "(null)");
-		}
+		*error = format_str("Event code %d (%s) is not a button",
+			code, event ? event : "(null)");
 		return 0;
 	}
 	return code;

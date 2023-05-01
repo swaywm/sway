@@ -18,7 +18,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		int argc, char **argv) {
 	if (strcasecmp(argv[0], "move") == 0) {
 		if (argc < 3) {
-			return cmd_results_new(CMD_INVALID, expected_syntax);
+			return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 		}
 		int delta_x = strtol(argv[1], NULL, 10);
 		int delta_y = strtol(argv[2], NULL, 10);
@@ -27,7 +27,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	} else if (strcasecmp(argv[0], "set") == 0) {
 		if (argc < 3) {
-			return cmd_results_new(CMD_INVALID, expected_syntax);
+			return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 		}
 		// map absolute coords (0..1,0..1) to root container coords
 		float x = strtof(argv[1], NULL) / root->width;
@@ -37,7 +37,7 @@ static struct cmd_results *handle_command(struct sway_cursor *cursor,
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	} else {
 		if (argc < 2) {
-			return cmd_results_new(CMD_INVALID, expected_syntax);
+			return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 		}
 		struct cmd_results *error = NULL;
 		if ((error = press_or_release(cursor, argv[0], argv[1]))) {
@@ -92,14 +92,14 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 	} else if (strcasecmp(action, "release") == 0) {
 		state = WLR_BUTTON_RELEASED;
 	} else {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 
 	char *message = NULL;
 	button = get_mouse_button(button_str, &message);
 	if (message) {
 		struct cmd_results *error =
-			cmd_results_new(CMD_INVALID, message);
+			cmd_results_new(CMD_INVALID, "%s", message);
 		free(message);
 		return error;
 	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN

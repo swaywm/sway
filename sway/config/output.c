@@ -153,25 +153,16 @@ static void merge_wildcard_on_all(struct output_config *wildcard) {
 }
 
 static void merge_id_on_name(struct output_config *oc) {
-	char *id_on_name = NULL;
-	char id[128];
-	char *name = NULL;
-	struct sway_output *output;
-	wl_list_for_each(output, &root->all_outputs, link) {
-		name = output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), output);
-		if (strcmp(name, oc->name) == 0 || strcmp(id, oc->name) == 0) {
-			size_t length = snprintf(NULL, 0, "%s on %s", id, name) + 1;
-			id_on_name = malloc(length);
-			if (!id_on_name) {
-				sway_log(SWAY_ERROR, "Failed to allocate id on name string");
-				return;
-			}
-			snprintf(id_on_name, length, "%s on %s", id, name);
-			break;
-		}
+	struct sway_output *output = all_output_by_name_or_id(oc->name);
+	if (output == NULL) {
+		return;
 	}
 
+	const char *name = output->wlr_output->name;
+	char id[128];
+	output_get_identifier(id, sizeof(id), output);
+
+	char *id_on_name = format_str("%s on %s", id, name);
 	if (!id_on_name) {
 		return;
 	}
@@ -639,9 +630,7 @@ static struct output_config *get_output_config(char *identifier,
 	struct output_config *oc_name = NULL;
 	struct output_config *oc_id = NULL;
 
-	size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
-	char *id_on_name = malloc(length);
-	snprintf(id_on_name, length, "%s on %s", identifier, name);
+	char *id_on_name = format_str("%s on %s", identifier, name);
 	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
 	if (i >= 0) {
 		oc_id_on_name = config->output_configs->items[i];
@@ -728,12 +717,11 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	// this is during startup then there will be no container and config
 	// will be applied during normal "new output" event from wlroots.
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	char id[128];
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		char *name = sway_output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), sway_output);
-		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
+		if (output_match_name_or_id(sway_output, oc->name)) {
+			char id[128];
+			output_get_identifier(id, sizeof(id), sway_output);
 			struct output_config *current = get_output_config(id, sway_output);
 			if (!current) {
 				// No stored output config matched, apply oc directly

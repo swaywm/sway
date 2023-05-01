@@ -80,15 +80,7 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 		}
 	}
 
-	const char *fmt = "%d:%d:%s";
-	int len = snprintf(NULL, 0, fmt, vendor, product, name) + 1;
-	char *identifier = malloc(len);
-	if (!identifier) {
-		sway_log(SWAY_ERROR, "Unable to allocate unique input device name");
-		return NULL;
-	}
-
-	snprintf(identifier, len, fmt, vendor, product, name);
+	char *identifier = format_str("%d:%d:%s", vendor, product, name);
 	free(name);
 	return identifier;
 }

@@ -20,7 +20,7 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 	}
 
 	if (!argc) {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 
 	if (strcmp(argv[0], "none") == 0) {
@@ -38,7 +38,7 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 		config->hide_edge_borders = E_NONE;
 		config->hide_edge_borders_smart = ESMART_NO_GAPS;
 	} else {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 	config->hide_lone_tab = hide_lone_tab;
 

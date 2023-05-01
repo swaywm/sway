@@ -36,13 +36,22 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
+bool output_match_name_or_id(struct sway_output *output,
+		const char *name_or_id) {
+	if (strcmp(name_or_id, "*") == 0) {
+		return true;
+	}
+
+	char identifier[128];
+	output_get_identifier(identifier, sizeof(identifier), output);
+	return strcasecmp(identifier, name_or_id) == 0
+		|| strcasecmp(output->wlr_output->name, name_or_id) == 0;
+}
+
 struct sway_output *output_by_name_or_id(const char *name_or_id) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		char identifier[128];
-		output_get_identifier(identifier, sizeof(identifier), output);
-		if (strcasecmp(identifier, name_or_id) == 0
-				|| strcasecmp(output->wlr_output->name, name_or_id) == 0) {
+		if (output_match_name_or_id(output, name_or_id)) {
 			return output;
 		}
 	}
@@ -52,10 +61,7 @@ struct sway_output *output_by_name_or_id(const char *name_or_id) {
 struct sway_output *all_output_by_name_or_id(const char *name_or_id) {
 	struct sway_output *output;
 	wl_list_for_each(output, &root->all_outputs, link) {
-		char identifier[128];
-		output_get_identifier(identifier, sizeof(identifier), output);
-		if (strcasecmp(identifier, name_or_id) == 0
-				|| strcasecmp(output->wlr_output->name, name_or_id) == 0) {
+		if (output_match_name_or_id(output, name_or_id)) {
 			return output;
 		}
 	}
@@ -512,6 +518,10 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
+	if (!wlr_output_is_direct_scanout_allowed(wlr_output)) {
+		return false;
+	}
+
 	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
 	if (!wlr_output_test(wlr_output)) {
 		return false;
@@ -552,6 +562,11 @@ static int output_repaint_timer_handler(void *data) {
 
 	wlr_output->frame_pending = false;
 
+	if (!wlr_output->needs_frame &&
+			!pixman_region32_not_empty(&output->damage_ring.current)) {
+		return 0;
+	}
+
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
 		return 0;
@@ -561,6 +576,11 @@ static int output_repaint_timer_handler(void *data) {
 	if (!fullscreen_con) {
 		fullscreen_con = workspace->current.fullscreen;
 	}
+
+	pixman_region32_t frame_damage;
+	get_frame_damage(output, &frame_damage);
+	wlr_output_set_damage(wlr_output, &frame_damage);
+	pixman_region32_fini(&frame_damage);
 
 	if (fullscreen_con && fullscreen_con->view && !debug.noscanout) {
 		// Try to scan-out the fullscreen view
@@ -584,11 +604,6 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
-	if (!output->wlr_output->needs_frame &&
-			!pixman_region32_not_empty(&output->damage_ring.current)) {
-		return 0;
-	}
-
 	int buffer_age;
 	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
 		return 0;
@@ -604,11 +619,6 @@ static int output_repaint_timer_handler(void *data) {
 	output_render(output, &damage);
 
 	pixman_region32_fini(&damage);
-
-	pixman_region32_t frame_damage;
-	get_frame_damage(output, &frame_damage);
-	wlr_output_set_damage(wlr_output, &frame_damage);
-	pixman_region32_fini(&frame_damage);
 
 	if (!wlr_output_commit(wlr_output)) {
 		return 0;
@@ -884,11 +894,6 @@ static void handle_mode(struct sway_output *output) {
 	arrange_output(output);
 	transaction_commit_dirty();
 
-	int width, height;
-	wlr_output_transformed_resolution(output->wlr_output, &width, &height);
-	wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
-	wlr_output_schedule_frame(output->wlr_output);
-
 	update_output_manager_config(output->server);
 }
 
@@ -1024,6 +1029,9 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	transaction_commit_dirty();
 
+	int width, height;
+	wlr_output_transformed_resolution(output->wlr_output, &width, &height);
+	wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 	update_output_manager_config(server);
 }
 

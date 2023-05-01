@@ -924,23 +924,18 @@ void config_add_swaynag_warning(char *fmt, ...) {
 	if (config->reading && !config->validating) {
 		va_list args;
 		va_start(args, fmt);
-		size_t length = vsnprintf(NULL, 0, fmt, args) + 1;
+		char *str = vformat_str(fmt, args);
 		va_end(args);
-
-		char *temp = malloc(length + 1);
-		if (!temp) {
-			sway_log(SWAY_ERROR, "Failed to allocate buffer for warning.");
+		if (str == NULL) {
 			return;
 		}
-
-		va_start(args, fmt);
-		vsnprintf(temp, length, fmt, args);
-		va_end(args);
 
 		swaynag_log(config->swaynag_command, &config->swaynag_config_errors,
 			"Warning on line %i (%s) '%s': %s",
 			config->current_config_line_number, config->current_config_path,
-			config->current_config_line, temp);
+			config->current_config_line, str);
+
+		free(str);
 	}
 }
 

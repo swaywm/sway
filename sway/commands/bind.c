@@ -127,7 +127,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		if (!button) {
 			if (message) {
 				struct cmd_results *error =
-					cmd_results_new(CMD_INVALID, message);
+					cmd_results_new(CMD_INVALID, "%s", message);
 				free(message);
 				return error;
 			} else {
@@ -143,7 +143,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 		if (!button) {
 			if (message) {
 				struct cmd_results *error =
-					cmd_results_new(CMD_INVALID, message);
+					cmd_results_new(CMD_INVALID, "%s", message);
 				free(message);
 				return error;
 			} else {
@@ -182,7 +182,7 @@ static struct cmd_results *identify_key(const char* name, bool first_key,
 			uint32_t button = get_mouse_bindsym(name, &message);
 			if (message) {
 				struct cmd_results *error =
-					cmd_results_new(CMD_INVALID, message);
+					cmd_results_new(CMD_INVALID, "%s", message);
 				free(message);
 				return error;
 			} else if (button) {
@@ -539,7 +539,7 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
 				"Invalid %s command (expected binding with the form "
-				"<switch>:<state>)", bindtype, argc);
+				"<switch>:<state>)", bindtype);
 	}
 	if (strcmp(split->items[0], "tablet") == 0) {
 		binding->type = WLR_SWITCH_TYPE_TABLET_MODE;
@@ -549,7 +549,8 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
 				"Invalid %s command (expected switch binding: "
-				"unknown switch %s)", bindtype, split->items[0]);
+				"unknown switch %s)", bindtype,
+				(const char *)split->items[0]);
 	}
 	if (strcmp(split->items[1], "on") == 0) {
 		binding->trigger = SWAY_SWITCH_TRIGGER_ON;
@@ -562,7 +563,7 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		return cmd_results_new(CMD_FAILURE,
 				"Invalid %s command "
 				"(expected switch state: unknown state %s)",
-				bindtype, split->items[1]);
+				bindtype, (const char *)split->items[1]);
 	}
 	list_free_items_and_destroy(split);
 
