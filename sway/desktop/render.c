@@ -38,6 +38,23 @@ struct render_data {
 	struct wlr_box *clip_box;
 };
 
+static void transform_output_damage(pixman_region32_t *damage, struct wlr_output *output) {
+	int ow, oh;
+	wlr_output_transformed_resolution(output, &ow, &oh);
+	enum wl_output_transform transform =
+		wlr_output_transform_invert(output->transform);
+	wlr_region_transform(damage, damage, transform, ow, oh);
+}
+
+static void transform_output_box(struct wlr_box *box, struct wlr_output *output) {
+	int ow, oh;
+	wlr_output_transformed_resolution(output, &ow, &oh);
+	enum wl_output_transform transform =
+		wlr_output_transform_invert(output->transform);
+	wlr_box_transform(box, box, transform, ow, oh);
+}
+
+
 /**
  * Apply scale to a width or height.
  *
@@ -52,28 +69,6 @@ struct render_data {
  */
 static int scale_length(int length, int offset, float scale) {
 	return roundf((offset + length) * scale) - roundf(offset * scale);
-}
-
-static void scissor_output(struct wlr_output *wlr_output,
-		pixman_box32_t *rect) {
-	struct wlr_renderer *renderer = wlr_output->renderer;
-	assert(renderer);
-
-	struct wlr_box box = {
-		.x = rect->x1,
-		.y = rect->y1,
-		.width = rect->x2 - rect->x1,
-		.height = rect->y2 - rect->y1,
-	};
-
-	int ow, oh;
-	wlr_output_transformed_resolution(wlr_output, &ow, &oh);
-
-	enum wl_output_transform transform =
-		wlr_output_transform_invert(wlr_output->transform);
-	wlr_box_transform(&box, &box, transform, ow, oh);
-
-	wlr_renderer_scissor(renderer, &box);
 }
 
 static void set_scale_filter(struct wlr_output *wlr_output,
@@ -103,40 +98,39 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 }
 
 static void render_texture(struct render_context *ctx, struct wlr_texture *texture,
-		const struct wlr_fbox *src_box, const struct wlr_box *dst_box,
+		const struct wlr_fbox *_src_box, const struct wlr_box *dst_box,
 		enum wl_output_transform transform, float alpha) {
-	struct wlr_renderer *renderer = ctx->renderer;
 	struct sway_output *output = ctx->output;
 
 	struct wlr_box proj_box = *dst_box;
-	scale_box(&proj_box, output->wlr_output->scale);
 
-	float matrix[9];
-	enum wl_output_transform inv_transform = wlr_output_transform_invert(transform);
-	wlr_matrix_project_box(matrix, &proj_box, inv_transform, 0,
-		output->wlr_output->transform_matrix);
+	struct wlr_fbox src_box = {0};
+	if (_src_box) {
+		src_box = *_src_box;
+	}
 
 	pixman_region32_t damage;
-	pixman_region32_init(&damage);
-	pixman_region32_union_rect(&damage, &damage, dst_box->x, dst_box->y,
-		dst_box->width, dst_box->height);
+	pixman_region32_init_rect(&damage, proj_box.x, proj_box.y,
+		proj_box.width, proj_box.height);
 	pixman_region32_intersect(&damage, &damage, ctx->output_damage);
 	bool damaged = pixman_region32_not_empty(&damage);
 	if (!damaged) {
 		goto damage_finish;
 	}
 
-	int nrects;
-	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
-	for (int i = 0; i < nrects; ++i) {
-		scissor_output(output->wlr_output, &rects[i]);
-		set_scale_filter(output->wlr_output, texture, output->scale_filter);
-		if (src_box != NULL) {
-			wlr_render_subtexture_with_matrix(renderer, texture, src_box, matrix, alpha);
-		} else {
-			wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
-		}
-	}
+	transform_output_box(&proj_box, output->wlr_output);
+	transform_output_damage(&damage, output->wlr_output);
+	transform = wlr_output_transform_compose(transform, output->wlr_output->transform);
+
+	set_scale_filter(output->wlr_output, texture, output->scale_filter);
+	wlr_render_pass_add_texture(ctx->pass, &(struct wlr_render_texture_options) {
+		.texture = texture,
+		.src_box = src_box,
+		.dst_box = proj_box,
+		.transform = transform,
+		.alpha = &alpha,
+		.clip = &damage,
+	});
 
 damage_finish:
 	pixman_region32_fini(&damage);
@@ -218,16 +212,13 @@ static void render_drag_icons(struct render_context *ctx, struct wl_list *drag_i
 void render_rect(struct render_context *ctx, const struct wlr_box *_box,
 		float color[static 4]) {
 	struct wlr_output *wlr_output = ctx->output->wlr_output;
-	struct wlr_renderer *renderer = ctx->renderer;
 
-	struct wlr_box box;
-	memcpy(&box, _box, sizeof(struct wlr_box));
+	struct wlr_box box = *_box;
 	box.x -= ctx->output->lx * wlr_output->scale;
 	box.y -= ctx->output->ly * wlr_output->scale;
 
 	pixman_region32_t damage;
-	pixman_region32_init(&damage);
-	pixman_region32_union_rect(&damage, &damage, box.x, box.y,
+	pixman_region32_init_rect(&damage, box.x, box.y,
 		box.width, box.height);
 	pixman_region32_intersect(&damage, &damage, ctx->output_damage);
 	bool damaged = pixman_region32_not_empty(&damage);
@@ -235,13 +226,19 @@ void render_rect(struct render_context *ctx, const struct wlr_box *_box,
 		goto damage_finish;
 	}
 
-	int nrects;
-	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
-	for (int i = 0; i < nrects; ++i) {
-		scissor_output(wlr_output, &rects[i]);
-		wlr_render_rect(renderer, &box, color,
-			wlr_output->transform_matrix);
-	}
+	transform_output_damage(&damage, wlr_output);
+	transform_output_box(&box, wlr_output);
+
+	wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
+		.box = box,
+		.color = {
+			.r = color[0],
+			.g = color[1],
+			.b = color[2],
+			.a = color[3],
+		},
+		.clip = &damage,
+	});
 
 damage_finish:
 	pixman_region32_fini(&damage);
@@ -1006,7 +1003,6 @@ static void render_seatops(struct render_context *ctx) {
 
 void output_render(struct render_context *ctx) {
 	struct wlr_output *wlr_output = ctx->output->wlr_output;
-	struct wlr_renderer *renderer = ctx->renderer;
 	struct sway_output *output = ctx->output;
 	const pixman_region32_t *damage = ctx->output_damage;
 
@@ -1020,31 +1016,37 @@ void output_render(struct render_context *ctx) {
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
-	if (!wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height)) {
-		return;
-	}
-
 	if (!pixman_region32_not_empty(damage)) {
 		// Output isn't damaged but needs buffer swap
 		goto renderer_end;
 	}
 
 	if (debug.damage == DAMAGE_HIGHLIGHT) {
-		wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
+		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
+			.box = { .width = output->width, .height = output->height },
+			.color = { .r = 1, .g = 1, .b = 0, .a = 1 },
+		});
 	}
 
+	pixman_region32_t transformed_damage;
+	pixman_region32_init(&transformed_damage);
+	pixman_region32_copy(&transformed_damage, damage);
+	transform_output_damage(&transformed_damage, wlr_output);
+
 	if (server.session_lock.locked) {
-		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		struct wlr_render_color clear_color = {
+			.a = 1.0f
+		};
 		if (server.session_lock.lock == NULL) {
 			// abandoned lock -> red BG
-			clear_color[0] = 1.f;
+			clear_color.r = 1.f;
 		}
-		int nrects;
-		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			scissor_output(wlr_output, &rects[i]);
-			wlr_renderer_clear(renderer, clear_color);
-		}
+
+		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
+			.box = { .width = output->width, .height = output->height },
+			.color = clear_color,
+			.clip = &transformed_damage,
+		});
 
 		if (server.session_lock.lock != NULL) {
 			struct render_data data = {
@@ -1073,14 +1075,11 @@ void output_render(struct render_context *ctx) {
 	}
 
 	if (fullscreen_con) {
-		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
-
-		int nrects;
-		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			scissor_output(wlr_output, &rects[i]);
-			wlr_renderer_clear(renderer, clear_color);
-		}
+		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
+			.box = { .width = output->width, .height = output->height },
+			.color = { .r = 0, .g = 0, .b = 0, .a = 1 },
+			.clip = &transformed_damage,
+		});
 
 		if (fullscreen_con->view) {
 			if (!wl_list_empty(&fullscreen_con->view->saved_buffers)) {
@@ -1104,14 +1103,11 @@ void output_render(struct render_context *ctx) {
 		render_unmanaged(ctx, &root->xwayland_unmanaged);
 #endif
 	} else {
-		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
-
-		int nrects;
-		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			scissor_output(wlr_output, &rects[i]);
-			wlr_renderer_clear(renderer, clear_color);
-		}
+		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
+			.box = { .width = output->width, .height = output->height },
+			.color = { .r = 0.25f, .g = 0.25f, .b = 0.25f, .a = 1 },
+			.clip = &transformed_damage,
+		});
 
 		render_layer_toplevel(ctx,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
@@ -1150,7 +1146,6 @@ render_overlay:
 	render_drag_icons(ctx, &root->drag_icons);
 
 renderer_end:
-	wlr_renderer_scissor(renderer, NULL);
-	wlr_output_render_software_cursors(wlr_output, damage);
-	wlr_renderer_end(renderer);
+	pixman_region32_fini(&transformed_damage);
+	wlr_output_add_software_cursors_to_render_pass(wlr_output, ctx->pass, damage);
 }

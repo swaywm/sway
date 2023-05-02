@@ -6,6 +6,7 @@
 #include <wayland-server-core.h>
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
+#include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_matrix.h>
@@ -604,9 +605,21 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
+	if (!wlr_output_configure_primary_swapchain(wlr_output, NULL, &wlr_output->swapchain)) {
+		return false;
+	}
+
 	int buffer_age;
-	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
-		return 0;
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(wlr_output->swapchain, &buffer_age);
+	if (buffer == NULL) {
+		return false;
+	}
+
+	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(
+		wlr_output->renderer, buffer);
+	if (render_pass == NULL) {
+		wlr_buffer_unlock(buffer);
+		return false;
 	}
 
 	pixman_region32_t damage;
@@ -623,6 +636,7 @@ static int output_repaint_timer_handler(void *data) {
 		.output_damage = &damage,
 		.renderer = wlr_output->renderer,
 		.output = output,
+		.pass = render_pass,
 	};
 
 	struct timespec now;
@@ -631,6 +645,14 @@ static int output_repaint_timer_handler(void *data) {
 	output_render(&ctx);
 
 	pixman_region32_fini(&damage);
+
+	if (!wlr_render_pass_submit(render_pass)) {
+		wlr_buffer_unlock(buffer);
+		return false;
+	}
+
+	wlr_output_attach_buffer(wlr_output, buffer);
+	wlr_buffer_unlock(buffer);
 
 	if (!wlr_output_commit(wlr_output)) {
 		return 0;
