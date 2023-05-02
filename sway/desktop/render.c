@@ -1018,7 +1018,7 @@ void output_render(struct render_context *ctx) {
 
 	if (!pixman_region32_not_empty(damage)) {
 		// Output isn't damaged but needs buffer swap
-		goto renderer_end;
+		return;
 	}
 
 	if (debug.damage == DAMAGE_HIGHLIGHT) {
