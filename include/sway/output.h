@@ -69,6 +69,8 @@ struct render_context {
 	struct sway_output *output;
 	struct wlr_renderer *renderer;
 	const pixman_region32_t *output_damage;
+
+	struct wlr_render_pass *pass;
 };
 
 struct sway_output *output_create(struct wlr_output *wlr_output);
