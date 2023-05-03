@@ -101,10 +101,12 @@ must be separated by one space. For example:
 	the specified file cannot be accessed or if the image does not fill the entire
 	output, a fallback color may be provided to cover the rest of the output.
 	_fallback_color_ should be specified as _#RRGGBB_. Alpha is not supported.
+	**swaybg** is required to be installed.
 
 *output* <name> background|bg <color> solid_color
 	Sets the background of the given output to the specified color. _color_
-	should be specified as _#RRGGBB_. Alpha is not supported.
+	should be specified as _#RRGGBB_. Alpha is not supported. **swaybg** is
+	required to be installed.
 
 *output* <name> transform <transform> [clockwise|anticlockwise]
 	Sets the background transform to the given value. Can be one of "90", "180",
