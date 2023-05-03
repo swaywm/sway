@@ -44,6 +44,8 @@ struct sway_seatop_impl {
 			struct wlr_touch_up_event *event);
 	void (*touch_down)(struct sway_seat *seat,
 			struct wlr_touch_down_event *event, double lx, double ly);
+	void (*touch_cancel)(struct sway_seat *seat,
+			struct wlr_touch_cancel_event *event);
 	void (*tablet_tool_motion)(struct sway_seat *seat,
 			struct sway_tablet_tool *tool, uint32_t time_msec);
 	void (*tablet_tool_tip)(struct sway_seat *seat, struct sway_tablet_tool *tool,
@@ -337,6 +339,9 @@ void seatop_touch_up(struct sway_seat *seat,
 
 void seatop_touch_down(struct sway_seat *seat,
 		struct wlr_touch_down_event *event, double lx, double ly);
+
+void seatop_touch_cancel(struct sway_seat *seat,
+		struct wlr_touch_cancel_event *event);
 
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec);
 

@@ -509,6 +509,24 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void handle_touch_cancel(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_cancel);
+	struct wlr_touch_cancel_event *event = data;
+	cursor_handle_activity_from_device(cursor, &event->touch->base);
+
+	struct sway_seat *seat = cursor->seat;
+
+	if (cursor->simulating_pointer_from_touch) {
+		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
+			cursor->pointer_touch_up = true;
+			dispatch_cursor_button(cursor, &event->touch->base,
+				event->time_msec, BTN_LEFT, WLR_BUTTON_RELEASED);
+		}
+	} else {
+		seatop_touch_cancel(seat, event);
+	}
+}
+
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
@@ -1100,6 +1118,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->frame.link);
 	wl_list_remove(&cursor->touch_down.link);
 	wl_list_remove(&cursor->touch_up.link);
+	wl_list_remove(&cursor->touch_cancel.link);
 	wl_list_remove(&cursor->touch_motion.link);
 	wl_list_remove(&cursor->touch_frame.link);
 	wl_list_remove(&cursor->tool_axis.link);
@@ -1180,6 +1199,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	wl_signal_add(&wlr_cursor->events.touch_up, &cursor->touch_up);
 	cursor->touch_up.notify = handle_touch_up;
+
+	wl_signal_add(&wlr_cursor->events.touch_cancel, &cursor->touch_cancel);
+	cursor->touch_cancel.notify = handle_touch_cancel;
 
 	wl_signal_add(&wlr_cursor->events.touch_motion,
 		&cursor->touch_motion);
