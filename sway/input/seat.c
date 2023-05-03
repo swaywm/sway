@@ -1638,6 +1638,12 @@ void seatop_touch_down(struct sway_seat *seat, struct wlr_touch_down_event *even
 	}
 }
 
+void seatop_touch_cancel(struct sway_seat *seat, struct wlr_touch_cancel_event *event) {
+	if (seat->seatop_impl->touch_cancel) {
+		seat->seatop_impl->touch_cancel(seat, event);
+	}
+}
+
 void seatop_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
 		enum wlr_tablet_tool_tip_state state) {
