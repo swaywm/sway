@@ -117,6 +117,10 @@ static void handle_touch_cancel(struct sway_seat *seat,
 		}
 	}
 
+	if (wl_list_empty(&e->point_events)) {
+		seatop_begin_default(seat);
+	}
+
 	if (e->surface) {
 		wlr_seat_touch_notify_cancel(seat->wlr_seat, e->surface);
 	}
