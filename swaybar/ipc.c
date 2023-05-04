@@ -426,12 +426,9 @@ bool ipc_initialize(struct swaybar *bar) {
 	}
 	free(res);
 
-	struct swaybar_config *config = bar->config;
-	char subscribe[128]; // suitably large buffer
-	len = snprintf(subscribe, 128,
-			"[ \"barconfig_update\" , \"bar_state_update\" %s %s ]",
-			config->binding_mode_indicator ? ", \"mode\"" : "",
-			config->workspace_buttons ? ", \"workspace\"" : "");
+	char *subscribe =
+		"[ \"barconfig_update\", \"bar_state_update\", \"mode\", \"workspace\" ]";
+	len = strlen(subscribe);
 	free(ipc_single_command(bar->ipc_event_socketfd,
 			IPC_SUBSCRIBE, subscribe, &len));
 	return true;
