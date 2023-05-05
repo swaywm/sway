@@ -11,6 +11,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
+#include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
@@ -44,6 +45,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 
 #if HAVE_XWAYLAND
@@ -234,6 +236,11 @@ bool server_init(struct sway_server *server) {
 		xdg_activation_v1_handle_new_token;
 	wl_signal_add(&server->xdg_activation_v1->events.new_token,
 		&server->xdg_activation_v1_new_token);
+
+	struct wlr_cursor_shape_manager_v1 *cursor_shape_manager =
+		wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
+	server->request_set_cursor_shape.notify = handle_request_set_cursor_shape;
+	wl_signal_add(&cursor_shape_manager->events.request_set_shape, &server->request_set_cursor_shape);
 
 	wl_list_init(&server->pending_launcher_ctxs);
 

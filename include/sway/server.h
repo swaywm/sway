@@ -120,6 +120,8 @@ struct sway_server {
 	struct wl_listener xdg_activation_v1_request_activate;
 	struct wl_listener xdg_activation_v1_new_token;
 
+	struct wl_listener request_set_cursor_shape;
+
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
 	// The timeout for transactions, after which a transaction is applied

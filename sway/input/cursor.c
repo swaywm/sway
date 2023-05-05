@@ -7,6 +7,7 @@
 #include <time.h>
 #include <strings.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_touch.h>
@@ -1466,4 +1467,27 @@ void sway_cursor_constrain(struct sway_cursor *cursor,
 	cursor->constraint_commit.notify = handle_constraint_commit;
 	wl_signal_add(&constraint->surface->events.commit,
 		&cursor->constraint_commit);
+}
+
+void handle_request_set_cursor_shape(struct wl_listener *listener, void *data) {
+	const struct wlr_cursor_shape_manager_v1_request_set_shape_event *event = data;
+	struct sway_seat *seat = event->seat_client->seat->data;
+
+	if (!seatop_allows_set_cursor(seat)) {
+		return;
+	}
+
+	struct wl_client *focused_client = NULL;
+	struct wlr_surface *focused_surface = seat->wlr_seat->pointer_state.focused_surface;
+	if (focused_surface != NULL) {
+		focused_client = wl_resource_get_client(focused_surface->resource);
+	}
+
+	// TODO: check cursor mode
+	if (focused_client == NULL || event->seat_client->client != focused_client) {
+		sway_log(SWAY_DEBUG, "denying request to set cursor from unfocused client");
+		return;
+	}
+
+	cursor_set_image(seat->cursor, wlr_cursor_shape_v1_name(event->shape), focused_client);
 }
