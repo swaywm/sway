@@ -145,4 +145,6 @@ uint32_t get_mouse_button(const char *name, char **error);
 
 const char *get_mouse_button_name(uint32_t button);
 
+void handle_request_set_cursor_shape(struct wl_listener *listener, void *data);
+
 #endif
