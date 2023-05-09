@@ -99,7 +99,7 @@ static void set_scale_filter(struct wlr_output *wlr_output,
 
 static void render_texture(struct render_context *ctx, struct wlr_texture *texture,
 		const struct wlr_fbox *_src_box, const struct wlr_box *dst_box,
-		enum wl_output_transform transform, float alpha) {
+		const struct wlr_box *clip_box, enum wl_output_transform transform, float alpha) {
 	struct sway_output *output = ctx->output;
 
 	struct wlr_box proj_box = *dst_box;
@@ -113,6 +113,12 @@ static void render_texture(struct render_context *ctx, struct wlr_texture *textu
 	pixman_region32_init_rect(&damage, proj_box.x, proj_box.y,
 		proj_box.width, proj_box.height);
 	pixman_region32_intersect(&damage, &damage, ctx->output_damage);
+
+	if (clip_box) {
+		pixman_region32_intersect_rect(&damage, &damage,
+				clip_box->x, clip_box->y, clip_box->width, clip_box->height);
+	}
+
 	bool damaged = pixman_region32_not_empty(&damage);
 	if (!damaged) {
 		goto damage_finish;
@@ -151,19 +157,17 @@ static void render_surface_iterator(struct sway_output *output,
 	struct wlr_fbox src_box;
 	wlr_surface_get_buffer_source_box(surface, &src_box);
 
-	struct wlr_box proj_box = *_box;
-	scale_box(&proj_box, wlr_output->scale);
-
 	struct wlr_box dst_box = *_box;
-	struct wlr_box *clip_box = data->clip_box;
-	if (clip_box != NULL) {
-		dst_box.width = fmin(dst_box.width, clip_box->width);
-		dst_box.height = fmin(dst_box.height, clip_box->height);
+	struct wlr_box clip_box = *_box;
+	if (data->clip_box != NULL) {
+		clip_box.width = fmin(dst_box.width, data->clip_box->width);
+		clip_box.height = fmin(dst_box.height, data->clip_box->height);
 	}
 	scale_box(&dst_box, wlr_output->scale);
+	scale_box(&clip_box, wlr_output->scale);
 
 	render_texture(data->ctx, texture,
-		&src_box, &dst_box, surface->current.transform, alpha);
+		&src_box, &dst_box, &clip_box, surface->current.transform, alpha);
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
@@ -320,20 +324,20 @@ static void render_saved_view(struct render_context *ctx, struct sway_view *view
 		}
 
 		struct wlr_box dst_box = proj_box;
-		scale_box(&proj_box, wlr_output->scale);
-
+		struct wlr_box clip_box = proj_box;
 		if (!floating) {
-			dst_box.width = fmin(dst_box.width,
+			clip_box.width = fmin(dst_box.width,
 					view->container->current.content_width -
 					(saved_buf->x - view->container->current.content_x) + view->saved_geometry.x);
-			dst_box.height = fmin(dst_box.height,
+			clip_box.height = fmin(dst_box.height,
 					view->container->current.content_height -
 					(saved_buf->y - view->container->current.content_y) + view->saved_geometry.y);
 		}
 		scale_box(&dst_box, wlr_output->scale);
+		scale_box(&clip_box, wlr_output->scale);
 
 		render_texture(ctx, saved_buf->buffer->texture,
-			&saved_buf->source_box, &dst_box, saved_buf->transform, alpha);
+			&saved_buf->source_box, &dst_box, &clip_box, saved_buf->transform, alpha);
 	}
 
 	// FIXME: we should set the surface that this saved buffer originates from
@@ -509,7 +513,7 @@ static void render_titlebar(struct render_context *ctx, struct sway_container *c
 			texture_box.width = ob_inner_width;
 		}
 		render_texture(ctx, marks_texture,
-			NULL, &texture_box, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
+			NULL, &texture_box, NULL, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
@@ -580,7 +584,7 @@ static void render_titlebar(struct render_context *ctx, struct sway_container *c
 		}
 
 		render_texture(ctx, title_texture,
-			NULL, &texture_box, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
+			NULL, &texture_box, NULL, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
