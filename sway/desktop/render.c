@@ -1027,7 +1027,7 @@ void output_render(struct render_context *ctx) {
 
 	if (debug.damage == DAMAGE_HIGHLIGHT) {
 		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
-			.box = { .width = output->width, .height = output->height },
+			.box = { .width = wlr_output->width, .height = wlr_output->height },
 			.color = { .r = 1, .g = 1, .b = 0, .a = 1 },
 		});
 	}
@@ -1047,7 +1047,7 @@ void output_render(struct render_context *ctx) {
 		}
 
 		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
-			.box = { .width = output->width, .height = output->height },
+			.box = { .width = wlr_output->width, .height = wlr_output->height },
 			.color = clear_color,
 			.clip = &transformed_damage,
 		});
@@ -1080,7 +1080,7 @@ void output_render(struct render_context *ctx) {
 
 	if (fullscreen_con) {
 		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
-			.box = { .width = output->width, .height = output->height },
+			.box = { .width = wlr_output->width, .height = wlr_output->height },
 			.color = { .r = 0, .g = 0, .b = 0, .a = 1 },
 			.clip = &transformed_damage,
 		});
@@ -1108,7 +1108,7 @@ void output_render(struct render_context *ctx) {
 #endif
 	} else {
 		wlr_render_pass_add_rect(ctx->pass, &(struct wlr_render_rect_options){
-			.box = { .width = output->width, .height = output->height },
+			.box = { .width = wlr_output->width, .height = wlr_output->height },
 			.color = { .r = 0.25f, .g = 0.25f, .b = 0.25f, .a = 1 },
 			.clip = &transformed_damage,
 		});
