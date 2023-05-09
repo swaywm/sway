@@ -509,23 +509,24 @@ static void render_titlebar(struct render_context *ctx, struct sway_container *c
 		texture_box.y = round((bg_y - output_y) * output_scale) +
 			ob_padding_above;
 
-		if (ob_inner_width < texture_box.width) {
-			texture_box.width = ob_inner_width;
+		struct wlr_box clip_box = texture_box;
+		if (ob_inner_width < clip_box.width) {
+			clip_box.width = ob_inner_width;
 		}
 		render_texture(ctx, marks_texture,
-			NULL, &texture_box, NULL, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
+			NULL, &texture_box, &clip_box, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
 		premultiply_alpha(color, con->alpha);
-		box.x = texture_box.x + round(output_x * output_scale);
+		box.x = clip_box.x + round(output_x * output_scale);
 		box.y = roundf((y + titlebar_border_thickness) * output_scale);
-		box.width = texture_box.width;
+		box.width = clip_box.width;
 		box.height = ob_padding_above;
 		render_rect(ctx, &box, color);
 
 		// Padding below
-		box.y += ob_padding_above + texture_box.height;
+		box.y += ob_padding_above + clip_box.height;
 		box.height = ob_padding_below;
 		render_rect(ctx, &box, color);
 	}
@@ -579,24 +580,25 @@ static void render_titlebar(struct render_context *ctx, struct sway_container *c
 		texture_box.y =
 			round((bg_y - output_y) * output_scale) + ob_padding_above;
 
-		if (ob_inner_width - ob_marks_width < texture_box.width) {
-			texture_box.width = ob_inner_width - ob_marks_width;
+		struct wlr_box clip_box = texture_box;
+		if (ob_inner_width - ob_marks_width < clip_box.width) {
+			clip_box.width = ob_inner_width - ob_marks_width;
 		}
 
 		render_texture(ctx, title_texture,
-			NULL, &texture_box, NULL, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
+			NULL, &texture_box, &clip_box, WL_OUTPUT_TRANSFORM_NORMAL, con->alpha);
 
 		// Padding above
 		memcpy(&color, colors->background, sizeof(float) * 4);
 		premultiply_alpha(color, con->alpha);
-		box.x = texture_box.x + round(output_x * output_scale);
+		box.x = clip_box.x + round(output_x * output_scale);
 		box.y = roundf((y + titlebar_border_thickness) * output_scale);
-		box.width = texture_box.width;
+		box.width = clip_box.width;
 		box.height = ob_padding_above;
 		render_rect(ctx, &box, color);
 
 		// Padding below
-		box.y += ob_padding_above + texture_box.height;
+		box.y += ob_padding_above + clip_box.height;
 		box.height = ob_padding_below;
 		render_rect(ctx, &box, color);
 	}
