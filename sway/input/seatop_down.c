@@ -64,11 +64,11 @@ static void handle_touch_up(struct sway_seat *seat,
 		}
 	}
 
+	wlr_seat_touch_notify_up(seat->wlr_seat, event->time_msec, event->touch_id);
+
 	if (wl_list_empty(&e->point_events)) {
 		seatop_begin_default(seat);
 	}
-
-	wlr_seat_touch_notify_up(seat->wlr_seat, event->time_msec, event->touch_id);
 }
 
 static void handle_touch_down(struct sway_seat *seat,
@@ -117,12 +117,12 @@ static void handle_touch_cancel(struct sway_seat *seat,
 		}
 	}
 
-	if (wl_list_empty(&e->point_events)) {
-		seatop_begin_default(seat);
-	}
-
 	if (e->surface) {
 		wlr_seat_touch_notify_cancel(seat->wlr_seat, e->surface);
+	}
+
+	if (wl_list_empty(&e->point_events)) {
+		seatop_begin_default(seat);
 	}
 }
 
