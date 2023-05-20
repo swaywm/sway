@@ -353,6 +353,20 @@ set|plus|minus|toggle <amount>
 	becomes fullscreen on the same workspace as the first container. In either
 	of those cases, the second container will gain focus.
 
+*tearing_allowed* yes|no
+	Allows or disallows screen tearing as a result of asynchronous page flips
+	for a fullscreen application.
+
+	When this option is not set, the tearing hints provided by the application
+	determine whether tearing is allowed. When _yes_ is specified,
+	the application allows tearing regardless of the tearing hints.
+	When _no_ is specified, tearing will never be allowed on the application,
+	regardless of the tearing hints.
+
+	This setting only has an effect if tearing is allowed on the output through
+	the per-output *tearing_allowed* setting. See *sway-output*(5) 
+	for further details.
+
 *title_format* <format>
 	Sets the format of window titles. The following placeholders may be used:
 

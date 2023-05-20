@@ -85,6 +85,20 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 	return focus->sway_workspace;
 }
 
+bool output_can_tear_fullscreen_view(struct sway_output *output, 
+		struct sway_view *view) {
+	if (!view) {
+		return false;
+	}
+#ifdef WLR_HAS_DRM_BACKEND
+	if (wlr_backend_is_drm(output->wlr_output->backend) && 
+			output->tearing_allowed && view_can_tear(view)) {
+		return true;
+	}
+#endif
+	return false;
+}
+
 struct send_frame_done_data {
 	struct timespec when;
 	int msec_until_refresh;
@@ -146,6 +160,7 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 	struct send_frame_done_data *data = user_data;
 	struct sway_output *output = data->output;
 	int view_max_render_time = 0;
+	bool view_can_tear = false;
 
 	if (buffer->primary_output != data->output->scene_output) {
 		return;
@@ -157,6 +172,10 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 			SWAY_SCENE_DESC_VIEW);
 		if (view) {
 			view_max_render_time = view->max_render_time;
+
+			if (view->container && container_is_fullscreen_or_child(view->container)) {
+				view_can_tear = output_can_tear_fullscreen_view(output, view);
+			}
 			break;
 		}
 
@@ -169,6 +188,10 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 
 	int delay = data->msec_until_refresh - output->max_render_time
 			- view_max_render_time;
+
+	if (view_can_tear) {
+		delay = 0;
+	}
 
 	struct buffer_timer *timer = NULL;
 
@@ -230,6 +253,24 @@ static void output_configure_scene(struct sway_output *output,
 			output_configure_scene(output, node, opacity);
 		}
 	}
+}
+
+static struct sway_view *output_get_fullscreen_view(
+		struct sway_output *output) {
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (!workspace) {
+		return NULL;
+	}
+
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+	if (fullscreen_con) {
+		return fullscreen_con->view;
+	}
+
+	return NULL;
 }
 
 static int output_repaint_timer_handler(void *data) {
@@ -329,6 +370,11 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	}
 
 	int delay = msec_until_refresh - output->max_render_time;
+
+	struct sway_view *fullscreen_view = output_get_fullscreen_view(output);
+	if (output_can_tear_fullscreen_view(output, fullscreen_view)) {
+		delay = 0;
+	}
 
 	// If the delay is less than 1 millisecond (which is the least we can wait)
 	// then just render right away.

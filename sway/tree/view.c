@@ -58,6 +58,7 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 	view->executed_criteria = create_list();
 	view->allow_request_urgent = true;
 	view->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
+	view->tearing_mode = TEARING_WINDOW_HINT;
 	wl_signal_init(&view->events.unmap);
 	return true;
 }
@@ -1258,6 +1259,18 @@ bool view_is_transient_for(struct sway_view *child,
 		struct sway_view *ancestor) {
 	return child->impl->is_transient_for &&
 		child->impl->is_transient_for(child, ancestor);
+}
+
+bool view_can_tear(struct sway_view *view) {
+	switch(view->tearing_mode) {
+	case TEARING_OVERRIDE_FALSE:
+		return false;
+	case TEARING_OVERRIDE_TRUE:
+		return true;
+	case TEARING_WINDOW_HINT:
+		return view->tearing_hint;
+	}
+	return false;
 }
 
 static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
