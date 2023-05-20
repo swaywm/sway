@@ -312,6 +312,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	bool extent_changed =
 		memcmp(&old_extent, &layer->extent, sizeof(struct wlr_box)) != 0;
 	if (extent_changed || layer_changed) {
+		old_extent.x += output->lx;
+		old_extent.y += output->ly;
 		output_damage_box(output, &old_extent);
 		output_damage_surface(output, layer->geo.x, layer->geo.y,
 			layer_surface->surface, true);
