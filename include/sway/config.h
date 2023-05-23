@@ -50,6 +50,7 @@ enum binding_flags {
 	BINDING_INHIBITED = 1 << 7, // keyboard only: ignore shortcut inhibitor
 	BINDING_NOREPEAT = 1 << 8, // keyboard only; do not trigger when repeating a held key
 	BINDING_EXACT = 1 << 9, // gesture only; only trigger on exact match
+	BINDING_ALLOWOTHER = 1 << 10, // keyboard only; allow other keys to be pressed at the same time
 };
 
 /**
