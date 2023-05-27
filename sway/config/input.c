@@ -102,6 +102,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->tap != INT_MIN) {
 		dst->tap = src->tap;
 	}
+	if (src->transform) {
+		dst->transform = src->transform;
+	}
 	if (src->tap_button_map != INT_MIN) {
 		dst->tap_button_map = src->tap_button_map;
 	}

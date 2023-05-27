@@ -251,6 +251,7 @@ sway_cmd input_cmd_calibration_matrix;
 sway_cmd input_cmd_click_method;
 sway_cmd input_cmd_drag;
 sway_cmd input_cmd_drag_lock;
+sway_cmd input_cmd_transform;
 sway_cmd input_cmd_dwt;
 sway_cmd input_cmd_dwtp;
 sway_cmd input_cmd_events;

@@ -138,6 +138,18 @@ struct input_config_tool {
 	enum sway_tablet_tool_mode mode;
 };
 
+enum sway_input_transform {
+	INPUT_TRANSFORM_DEFAULT,
+	INPUT_TRANSFORM_NORMAL,
+	INPUT_TRANSFORM_90,
+	INPUT_TRANSFORM_180,
+	INPUT_TRANSFORM_270,
+	INPUT_TRANSFORM_FLIPPED,
+	INPUT_TRANSFORM_FLIPPED_90,
+	INPUT_TRANSFORM_FLIPPED_180,
+	INPUT_TRANSFORM_FLIPPED_270,
+};
+
 /**
  * options for input devices
  */
@@ -183,6 +195,8 @@ struct input_config {
 	enum input_config_mapped_to mapped_to;
 	char *mapped_to_output;
 	struct wlr_box *mapped_to_region;
+
+	enum sway_input_transform transform;
 
 	list_t *tools;
 
