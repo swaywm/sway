@@ -609,6 +609,53 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 	*y = apply_mapping_from_coord(y1, y2, *y);
 }
 
+static void apply_transform_to_coords(enum sway_input_transform transform,
+		double *x, double *y, double *dx, double *dy) {
+	double tx = *x, ty = *y, tdx = *dx, tdy = *dy;
+	switch (transform) {
+	case INPUT_TRANSFORM_90:
+		*dx = -tdy;
+		*dy = tdx;
+		*x = 1. - ty;
+		*y = tx;
+		return;
+	case INPUT_TRANSFORM_180:
+		*dx = -tdx;
+		*dy = -tdy;
+		*x = 1. - tx;
+		*y = 1. - ty;
+		return;
+	case INPUT_TRANSFORM_270:
+		*dx = tdy;
+		*dy = -tdx;
+		*x = ty;
+		*y = 1. - tx;
+		return;
+	case INPUT_TRANSFORM_FLIPPED:
+		*dx = -tdx;
+		*x = 1. - tx;
+		return;
+	case INPUT_TRANSFORM_FLIPPED_90:
+		*dx = -tdy;
+		*dy = tdx;
+		*x = 1. - ty;
+		*y = tx;
+		return;
+	case INPUT_TRANSFORM_FLIPPED_180:
+		*dy = -tdy;
+		*y = 1. - ty;
+		return;
+	case INPUT_TRANSFORM_FLIPPED_270:
+		*dx = -tdy;
+		*dy = tdx;
+		*x = 1. - ty;
+		*y = tx;
+		return;
+	default:
+		return;
+	}
+}
+
 static void handle_tablet_tool_position(struct sway_cursor *cursor,
 		struct sway_tablet_tool *tool,
 		bool change_x, bool change_y,
@@ -619,9 +666,13 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 		return;
 	}
 
+
 	struct sway_tablet *tablet = tool->tablet;
 	struct sway_input_device *input_device = tablet->seat_device->input_device;
 	struct input_config *ic = input_device_get_config(input_device);
+
+	apply_transform_to_coords(ic->transform, &x, &y, &dx, &dy);
+
 	if (ic != NULL && ic->mapped_from_region != NULL) {
 		apply_mapping_from_region(input_device->wlr_device,
 			ic->mapped_from_region, &x, &y);
