@@ -178,7 +178,7 @@ static void unmanaged_handle_override_redirect(struct wl_listener *listener, voi
 		wl_container_of(listener, surface, override_redirect);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	bool mapped = xsurface->surface != NULL || xsurface->surface->mapped;
+	bool mapped = xsurface->surface != NULL && xsurface->surface->mapped;
 	if (mapped) {
 		unmanaged_handle_unmap(&surface->unmap, NULL);
 	}
@@ -537,7 +537,7 @@ static void handle_override_redirect(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
-	bool mapped = xsurface->surface != NULL || xsurface->surface->mapped;
+	bool mapped = xsurface->surface != NULL && xsurface->surface->mapped;
 	if (mapped) {
 		handle_unmap(&xwayland_view->unmap, NULL);
 	}
