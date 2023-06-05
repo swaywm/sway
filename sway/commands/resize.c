@@ -253,12 +253,27 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 		amount->unit = MOVEMENT_UNIT_PPT;
 	}
 	if (amount->unit == MOVEMENT_UNIT_PPT) {
+        struct sway_container *parent = current->pending.parent;
 		float pct = amount->amount / 100.0f;
 
 		if (is_horizontal(axis)) {
-			amount->amount = (float)current->pending.width * pct;
+            while (parent && parent->pending.layout != L_HORIZ) {
+                parent = parent->pending.parent;
+            }
+            if (parent) {
+                amount->amount = (float)parent->pending.width * pct;
+            } else {
+                amount->amount = (float)current->pending.workspace->width * pct;
+            }
 		} else {
-			amount->amount = (float)current->pending.height * pct;
+            while (parent && parent->pending.layout != L_VERT) {
+                parent = parent->pending.parent;
+            }
+            if (parent) {
+                amount->amount = (float)parent->pending.height * pct;
+            } else {
+                amount->amount = (float)current->pending.workspace->height * pct;
+            }
 		}
 	}
 
