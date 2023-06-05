@@ -55,6 +55,10 @@ struct sway_layer_subsurface {
 };
 
 struct sway_output;
+
+struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
+		struct wlr_surface *surface);
+
 void arrange_layers(struct sway_output *output);
 
 struct sway_layer_surface *layer_from_wlr_layer_surface_v1(
