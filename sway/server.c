@@ -55,7 +55,7 @@
 #endif
 
 #define SWAY_XDG_SHELL_VERSION 2
-#define SWAY_LAYER_SHELL_VERSION 3
+#define SWAY_LAYER_SHELL_VERSION 4
 
 #if WLR_HAS_DRM_BACKEND
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {

@@ -17,6 +17,39 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
 
+struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
+		struct wlr_surface *surface) {
+	struct wlr_layer_surface_v1 *layer;
+	do {
+		if (!surface) {
+			return NULL;
+		}
+		// Topmost layer surface
+		if ((layer = wlr_layer_surface_v1_try_from_wlr_surface(surface))) {
+			return layer;
+		}
+		// Layer subsurface
+		if (wlr_subsurface_try_from_wlr_surface(surface)) {
+			surface = wlr_surface_get_root_surface(surface);
+			continue;
+		}
+
+		// Layer surface popup
+		struct wlr_xdg_surface * xdg_popup = NULL;
+		if ((xdg_popup = wlr_xdg_surface_try_from_wlr_surface(surface)) &&
+				xdg_popup->role == WLR_XDG_SURFACE_ROLE_POPUP) {
+			if (!xdg_popup->popup->parent) {
+				return NULL;
+			}
+			surface = wlr_surface_get_root_surface(xdg_popup->popup->parent);
+			continue;
+		}
+
+		// Return early if the surface is not a layer/xdg_popup/sub surface
+		return NULL;
+	} while (true);
+}
+
 static void apply_exclusive(struct wlr_box *usable_area,
 		uint32_t anchor, int32_t exclusive,
 		int32_t margin_top, int32_t margin_right,
@@ -218,7 +251,8 @@ void arrange_layers(struct sway_output *output) {
 	for (size_t i = 0; i < nlayers; ++i) {
 		wl_list_for_each_reverse(layer,
 				&output->layers[layers_above_shell[i]], link) {
-			if (layer->layer_surface->current.keyboard_interactive &&
+			if (layer->layer_surface->current.keyboard_interactive
+					== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
 					layer->layer_surface->surface->mapped) {
 				topmost = layer;
 				break;
@@ -231,10 +265,12 @@ void arrange_layers(struct sway_output *output) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
+		seat->has_exclusive_layer = false;
 		if (topmost != NULL) {
 			seat_set_focus_layer(seat, topmost->layer_surface);
 		} else if (seat->focused_layer &&
-				!seat->focused_layer->current.keyboard_interactive) {
+				seat->focused_layer->current.keyboard_interactive
+					!= ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
 			seat_set_focus_layer(seat, NULL);
 		}
 	}
