@@ -458,7 +458,7 @@ static void count_surface_iterator(struct sway_output *output,
 }
 
 static bool scan_out_fullscreen_view(struct sway_output *output,
-		struct sway_view *view) {
+		struct wlr_output_state *pending, struct sway_view *view) {
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (!sway_assert(workspace, "Expected an active workspace")) {
@@ -524,15 +524,16 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
-	if (!wlr_output_test(wlr_output)) {
+	wlr_output_state_set_buffer(pending, &surface->buffer->base);
+
+	if (!wlr_output_test_state(wlr_output, pending)) {
 		return false;
 	}
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
 
-	return wlr_output_commit(wlr_output);
+	return wlr_output_commit_state(wlr_output, pending);
 }
 
 static void get_frame_damage(struct sway_output *output,
@@ -580,29 +581,30 @@ static int output_repaint_timer_handler(void *data) {
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
+	struct wlr_output_state pending = {0};
+
 	if (output->gamma_lut_changed) {
 		struct wlr_gamma_control_v1 *gamma_control =
 			wlr_gamma_control_manager_v1_get_control(
 			server.gamma_control_manager_v1, wlr_output);
-		if (!wlr_gamma_control_v1_apply(gamma_control, &wlr_output->pending)) {
-			return 0;
+		if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
+			goto out;
 		}
-		if (!wlr_output_test(wlr_output)) {
-			wlr_output_rollback(wlr_output);
+		if (!wlr_output_test_state(wlr_output, &pending)) {
+			wlr_output_state_finish(&pending);
+			pending = (struct wlr_output_state){0};
 			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
 		}
 	}
 
-	pixman_region32_t frame_damage;
-	get_frame_damage(output, &frame_damage);
-	wlr_output_set_damage(wlr_output, &frame_damage);
-	pixman_region32_fini(&frame_damage);
+	pending.committed |= WLR_OUTPUT_STATE_BUFFER;
+	get_frame_damage(output, &pending.damage);
 
 	if (fullscreen_con && fullscreen_con->view && !debug.noscanout) {
 		// Try to scan-out the fullscreen view
 		static bool last_scanned_out = false;
 		bool scanned_out =
-			scan_out_fullscreen_view(output, fullscreen_con->view);
+			scan_out_fullscreen_view(output, &pending, fullscreen_con->view);
 
 		if (scanned_out && !last_scanned_out) {
 			sway_log(SWAY_DEBUG, "Scanning out fullscreen view on %s",
@@ -616,25 +618,25 @@ static int output_repaint_timer_handler(void *data) {
 		last_scanned_out = scanned_out;
 
 		if (scanned_out) {
-			return 0;
+			goto out;
 		}
 	}
 
-	if (!wlr_output_configure_primary_swapchain(wlr_output, NULL, &wlr_output->swapchain)) {
-		return false;
+	if (!wlr_output_configure_primary_swapchain(wlr_output, &pending, &wlr_output->swapchain)) {
+		goto out;
 	}
 
 	int buffer_age;
 	struct wlr_buffer *buffer = wlr_swapchain_acquire(wlr_output->swapchain, &buffer_age);
 	if (buffer == NULL) {
-		return false;
+		goto out;
 	}
 
 	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(
 		wlr_output->renderer, buffer, NULL);
 	if (render_pass == NULL) {
 		wlr_buffer_unlock(buffer);
-		return false;
+		goto out;
 	}
 
 	pixman_region32_t damage;
@@ -663,19 +665,21 @@ static int output_repaint_timer_handler(void *data) {
 
 	if (!wlr_render_pass_submit(render_pass)) {
 		wlr_buffer_unlock(buffer);
-		return false;
+		goto out;
 	}
 
-	wlr_output_attach_buffer(wlr_output, buffer);
+	wlr_output_state_set_buffer(&pending, buffer);
 	wlr_buffer_unlock(buffer);
 
-	if (!wlr_output_commit(wlr_output)) {
-		return 0;
+	if (!wlr_output_commit_state(wlr_output, &pending)) {
+		goto out;
 	}
 
 	wlr_damage_ring_rotate(&output->damage_ring);
 	output->last_frame = now;
 
+out:
+	wlr_output_state_finish(&pending);
 	return 0;
 }
 
