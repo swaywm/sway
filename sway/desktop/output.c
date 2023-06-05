@@ -616,7 +616,7 @@ static int output_repaint_timer_handler(void *data) {
 	}
 
 	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(
-		wlr_output->renderer, buffer);
+		wlr_output->renderer, buffer, NULL);
 	if (render_pass == NULL) {
 		wlr_buffer_unlock(buffer);
 		return false;
