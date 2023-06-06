@@ -162,8 +162,9 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		bool binding_locked = (binding->flags & BINDING_LOCKED) != 0;
 		bool binding_inhibited = (binding->flags & BINDING_INHIBITED) != 0;
 		bool binding_release = binding->flags & BINDING_RELEASE;
+		bool binding_allowother = (binding->flags & BINDING_ALLOWOTHER) != 0;
 
-		if (modifiers ^ binding->modifiers ||
+		if ((binding_allowother ? (binding->modifiers & modifiers) : modifiers) ^ binding->modifiers ||
 				release != binding_release ||
 				locked > binding_locked ||
 				inhibited > binding_inhibited ||
@@ -175,7 +176,42 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		}
 
 		bool match = false;
-		if (state->npressed == (size_t)binding->keys->length) {
+		if (binding_allowother) {
+			/*
+			 * Make sure all keys match, but also allow other keys to be pressed.
+			 * In case of a press (as opposed to release), make sure at least one
+			 * of the keys is the current key, otherwise the binding would be
+			 * triggered twice. In case of release, the keys are considered released
+			 * all at once so no check is necessary.
+			 */
+			bool one_key_is_current = false;
+
+			match = binding->keys->length != 0;
+
+			for (int j = 0; j < binding->keys->length; j++) {
+				bool key_match = false;
+				uint32_t key = *(uint32_t *)binding->keys->items[j];
+
+				for (size_t k = 0; k < state->npressed; k++) {
+					if (key == state->pressed_keys[k]) {
+						key_match = true;
+						break;
+					}
+				}
+
+				if (!key_match) {
+					match = false;
+					break;
+				}
+				if (key == state->current_key) {
+					one_key_is_current = true;
+				}
+			}
+
+			if (!release && !one_key_is_current) {
+				match = false;
+			}
+		} else if (state->npressed == (size_t)binding->keys->length) {
 			match = true;
 			for (size_t j = 0; j < state->npressed; j++) {
 				uint32_t key = *(uint32_t *)binding->keys->items[j];

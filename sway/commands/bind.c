@@ -377,6 +377,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			warn = false;
 		} else if (strcmp("--no-repeat", argv[0]) == 0) {
 			binding->flags |= BINDING_NOREPEAT;
+		} else if (strcmp("--allow-other", argv[0]) == 0) {
+			binding->flags |= BINDING_ALLOWOTHER;
 		} else {
 			break;
 		}
