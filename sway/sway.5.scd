@@ -454,7 +454,7 @@ runtime.
 ```
 
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
-[--locked] [--input-device=<device>] [--no-warn] [--inhibited] [Group<1-4>+]<code> \
+[--locked] [--input-device=<device>] [--no-warn] [--no-repeat] [--inhibited] [Group<1-4>+]<code> \
 <command>
 	is also available for binding with key/button codes instead of key/button names.
 
