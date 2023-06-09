@@ -73,6 +73,10 @@ struct swaybar_config *init_config(void) {
 	config->colors.urgent_workspace.background = 0x900000FF;
 	config->colors.urgent_workspace.text = 0xFFFFFFFF;
 
+	config->colors.empty_workspace.border = 0x000000FF;
+	config->colors.empty_workspace.background = 0x000000FF;
+	config->colors.empty_workspace.text = 0x666666FF;
+
 	config->colors.binding_mode.border = 0x2F343AFF;
 	config->colors.binding_mode.background = 0x900000FF;
 	config->colors.binding_mode.text = 0xFFFFFFFF;

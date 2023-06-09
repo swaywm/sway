@@ -1307,6 +1307,13 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(colors, "urgent_workspace_text",
 			json_object_new_string(bar->colors.urgent_workspace_text));
 
+	json_object_object_add(colors, "empty_workspace_border",
+			json_object_new_string(bar->colors.empty_workspace_border));
+	json_object_object_add(colors, "empty_workspace_bg",
+			json_object_new_string(bar->colors.empty_workspace_bg));
+	json_object_object_add(colors, "empty_workspace_text",
+			json_object_new_string(bar->colors.empty_workspace_text));
+
 	if (bar->colors.binding_mode_border) {
 		json_object_object_add(colors, "binding_mode_border",
 				json_object_new_string(bar->colors.binding_mode_border));
