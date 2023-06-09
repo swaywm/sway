@@ -506,6 +506,8 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 			json_object_new_string(workspace->output->wlr_output->name) : NULL);
 	json_object_object_add(object, "urgent",
 			json_object_new_boolean(workspace->urgent));
+	json_object_object_add(object, "empty",
+			json_object_new_boolean(workspace_is_empty(workspace)));
 	json_object_object_add(object, "representation", workspace->representation ?
 			json_object_new_string(workspace->representation) : NULL);
 
