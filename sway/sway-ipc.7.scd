@@ -918,6 +918,15 @@ containing the _#RRGGBBAA_ representation of the color:
 |- urgent_workspace_border
 :  The color to use for the border of the workspace buttons for workspaces that
    contain an urgent view
+|- empty_workspace_text
+:  The color to use for the text of the workspace buttons for workspaces that
+   are empty
+|- empty_workspace_bg
+:  The color to use for the background of the workspace buttons for workspaces
+   that are empty
+|- empty_workspace_border
+:  The color to use for the border of the workspace buttons for workspaces that
+   are empty
 |- binding_mode_text
 :  The color to use for the text of the binding mode indicator
 |- binding_mode_bg
@@ -967,6 +976,9 @@ containing the _#RRGGBBAA_ representation of the color:
 		"urgent_workspace_border": "#2f343aff",
 		"urgent_workspace_bg": "#900000ff",
 		"urgent_workspace_text": "#ffffffff",
+		"empty_workspace_border": "#000000ff",
+		"empty_workspace_bg": "#000000ff",
+		"empty_workspace_text": "#666666ff",
 		"binding_mode_border": "#2f343aff",
 		"binding_mode_bg": "#900000ff",
 		"binding_mode_text": "#ffffffff"
