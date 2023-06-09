@@ -920,6 +920,13 @@ The default colors are:
 	criteria (non-empty workspaces only) or _workspace_ command (to switch
 	to the workspace before moving).
 
+*workspace* <name> persistent yes|no
+	Specifies that workspace _name_ should not be destroyed when it is empty and
+	inactive.
+
+	This command will apply to an existing workspace or create it if it doesn't
+	exist.
+
 *workspace_auto_back_and_forth* yes|no
 	When _yes_, repeating a workspace switch command will switch back to the
 	prior workspace. For example, if you are currently on workspace 1,
