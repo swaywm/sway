@@ -597,7 +597,7 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
-	pending.committed |= WLR_OUTPUT_STATE_BUFFER;
+	pending.committed |= WLR_OUTPUT_STATE_DAMAGE;
 	get_frame_damage(output, &pending.damage);
 
 	if (fullscreen_con && fullscreen_con->view && !debug.noscanout) {
