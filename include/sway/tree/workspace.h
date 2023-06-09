@@ -42,6 +42,7 @@ struct sway_workspace {
 	list_t *tiling;             // struct sway_container
 	list_t *output_priority;
 	bool urgent;
+	bool persistent;
 
 	struct sway_workspace_state current;
 };
