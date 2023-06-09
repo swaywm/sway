@@ -139,6 +139,9 @@ has the following properties:
 |- urgent
 :  boolean
 :  Whether a view on the workspace has the urgent flag set
+|- empty
+:  boolean
+:  Whether the workspace is empty
 |- rect
 :  object
 :  The bounds of the workspace. It consists of _x_, _y_, _width_, and _height_
@@ -1562,6 +1565,7 @@ The following change types are currently available:
 		"num": 2,
 		"output": "eDP-1",
 		"type": "workspace",
+		"empty": true,
 		"representation": null,
 		"nodes": [
 		]
