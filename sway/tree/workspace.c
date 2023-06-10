@@ -155,10 +155,6 @@ void workspace_begin_destroy(struct sway_workspace *workspace) {
 }
 
 void workspace_consider_destroy(struct sway_workspace *ws) {
-	if (ws->persistent) {
-		return;
-	}
-
 	if (ws->tiling->length || ws->floating->length) {
 		return;
 	}
@@ -173,6 +169,11 @@ void workspace_consider_destroy(struct sway_workspace *ws) {
 		if (node == &ws->node) {
 			return;
 		}
+	}
+
+	if (ws->persistent) {
+		ipc_event_workspace(NULL, ws, "empty");
+		return;
 	}
 
 	workspace_begin_destroy(ws);
