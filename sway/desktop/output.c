@@ -584,6 +584,7 @@ static int output_repaint_timer_handler(void *data) {
 	struct wlr_output_state pending = {0};
 
 	if (output->gamma_lut_changed) {
+		output->gamma_lut_changed = false;
 		struct wlr_gamma_control_v1 *gamma_control =
 			wlr_gamma_control_manager_v1_get_control(
 			server.gamma_control_manager_v1, wlr_output);
