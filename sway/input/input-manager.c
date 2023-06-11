@@ -532,6 +532,18 @@ static void retranslate_keysyms(struct input_config *input_config) {
 			return;
 		}
 	}
+
+	for (int i = 0; i < config->input_type_configs->length; ++i) {
+		struct input_config *ic = config->input_type_configs->items[i];
+		if (ic->xkb_layout || ic->xkb_file) {
+			// this is the first config with xkb_layout or xkb_file
+			if (ic->identifier == input_config->identifier) {
+				translate_keysyms(ic);
+			}
+
+			return;
+		}
+	}
 }
 
 static void input_manager_configure_input(
