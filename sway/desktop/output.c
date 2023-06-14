@@ -1102,6 +1102,11 @@ void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
 	const struct wlr_gamma_control_manager_v1_set_gamma_event *event = data;
 
 	struct sway_output *output = event->output->data;
+
+	if(!output) {
+		return;
+	}
+
 	output->gamma_lut_changed = true;
 	wlr_output_schedule_frame(output->wlr_output);
 }
