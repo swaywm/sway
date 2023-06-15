@@ -1070,8 +1070,7 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	if (!image) {
 		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	} else if (!current_image || strcmp(current_image, image) != 0) {
-		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
-				cursor->cursor);
+		wlr_cursor_set_xcursor(cursor->cursor, cursor->xcursor_manager, image);
 	}
 }
 
