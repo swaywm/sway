@@ -252,7 +252,7 @@ void cursor_update_image(struct sway_cursor *cursor,
 }
 
 static void cursor_hide(struct sway_cursor *cursor) {
-	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+	wlr_cursor_unset_image(cursor->cursor);
 	cursor->hidden = true;
 	wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
 }
@@ -1068,7 +1068,7 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	}
 
 	if (!image) {
-		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+		wlr_cursor_unset_image(cursor->cursor);
 	} else if (!current_image || strcmp(current_image, image) != 0) {
 		wlr_cursor_set_xcursor(cursor->cursor, cursor->xcursor_manager, image);
 	}
