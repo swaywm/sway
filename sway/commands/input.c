@@ -27,6 +27,7 @@ static const struct cmd_handler input_handlers[] = {
 	{ "repeat_rate", input_cmd_repeat_rate },
 	{ "rotation_angle", input_cmd_rotation_angle },
 	{ "scroll_button", input_cmd_scroll_button },
+	{ "scroll_button_lock", input_cmd_scroll_button_lock },
 	{ "scroll_factor", input_cmd_scroll_factor },
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
