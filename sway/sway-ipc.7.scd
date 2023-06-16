@@ -1195,6 +1195,9 @@ following properties will be included for devices that support them:
 :  int
 :  The scroll button to use when _scroll_method_ is _on_button_down_. This
    will be given as an input event code
+|- scroll_button_lock
+:  string
+:  Whether scroll button lock is enabled. It can be _enabled_ or _disabled_
 |- dwt
 :  string
 :  Whether disable-while-typing is enabled. It can be _enabled_ or _disabled_

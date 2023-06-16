@@ -185,6 +185,9 @@ The following commands may only be used in the configuration file.
 	debug-events*, or as a x11 mouse button (button[1-3,8,9]). If set to
 	_disable_, it disables the scroll_method on_button_down.
 
+*input* <identifier> scroll_button_lock enabled|disabled
+	Enables or disables scroll button lock for specified input device.
+
 *input* <identifier> scroll_factor <floating point value>
 	Changes the scroll factor for the specified input device. Scroll speed will
 	be scaled by the given value, which must be non-negative.
