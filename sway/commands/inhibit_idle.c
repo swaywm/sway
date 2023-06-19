@@ -41,7 +41,7 @@ struct cmd_results *cmd_inhibit_idle(int argc, char **argv) {
 			sway_idle_inhibit_v1_user_inhibitor_destroy(inhibitor);
 		} else {
 			inhibitor->mode = mode;
-			sway_idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
+			sway_idle_inhibit_v1_check_active();
 		}
 	} else if (!clear) {
 		sway_idle_inhibit_v1_user_inhibitor_register(con->view, mode);

@@ -21,6 +21,7 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include "config.h"
 #include "list.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif
@@ -53,7 +54,7 @@ struct sway_server {
 
 	struct wlr_idle *idle;
 	struct wlr_idle_notifier_v1 *idle_notifier_v1;
-	struct sway_idle_inhibit_manager_v1 *idle_inhibit_manager_v1;
+	struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;
 
 	struct wlr_layer_shell_v1 *layer_shell;
 	struct wl_listener layer_shell_surface;
