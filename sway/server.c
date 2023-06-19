@@ -130,8 +130,7 @@ bool server_init(struct sway_server *server) {
 
 	server->idle = wlr_idle_create(server->wl_display);
 	server->idle_notifier_v1 = wlr_idle_notifier_v1_create(server->wl_display);
-	server->idle_inhibit_manager_v1 =
-		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
+	sway_idle_inhibit_manager_v1_init();
 
 	server->layer_shell = wlr_layer_shell_v1_create(server->wl_display,
 		SWAY_LAYER_SHELL_VERSION);
