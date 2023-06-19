@@ -1,6 +1,5 @@
 #include "sway/config.h"
 #include "sway/input/switch.h"
-#include <wlr/types/wlr_idle.h>
 #include "log.h"
 
 struct sway_switch *sway_switch_create(struct sway_seat *seat,

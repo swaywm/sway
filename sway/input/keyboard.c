@@ -4,7 +4,6 @@
 #include <wlr/config.h>
 #include <wlr/backend/multi.h>
 #include <wlr/interfaces/wlr_keyboard.h>
-#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
