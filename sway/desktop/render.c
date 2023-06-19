@@ -27,10 +27,6 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 
-#if WLR_HAS_GLES2_RENDERER
-#include <wlr/render/gles2.h>
-#endif
-
 struct render_data {
 	struct render_context *ctx;
 	const pixman_region32_t *damage;
@@ -71,30 +67,15 @@ static int scale_length(int length, int offset, float scale) {
 	return roundf((offset + length) * scale) - roundf(offset * scale);
 }
 
-static void set_scale_filter(struct wlr_output *wlr_output,
-		struct wlr_texture *texture, enum scale_filter_mode scale_filter) {
-#if WLR_HAS_GLES2_RENDERER
-	if (!wlr_texture_is_gles2(texture)) {
-		return;
-	}
-
-	struct wlr_gles2_texture_attribs attribs;
-	wlr_gles2_texture_get_attribs(texture, &attribs);
-
-	glBindTexture(attribs.target, attribs.tex);
-
-	switch (scale_filter) {
+static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output) {
+	switch (output->scale_filter) {
 	case SCALE_FILTER_LINEAR:
-		glTexParameteri(attribs.target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		break;
+		return WLR_SCALE_FILTER_BILINEAR;
 	case SCALE_FILTER_NEAREST:
-		glTexParameteri(attribs.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		break;
-	case SCALE_FILTER_DEFAULT:
-	case SCALE_FILTER_SMART:
-		assert(false); // unreachable
+		return WLR_SCALE_FILTER_NEAREST;
+	default:
+		abort(); // unreachable
 	}
-#endif
 }
 
 static void render_texture(struct render_context *ctx, struct wlr_texture *texture,
@@ -128,7 +109,6 @@ static void render_texture(struct render_context *ctx, struct wlr_texture *textu
 	transform_output_damage(&damage, output->wlr_output);
 	transform = wlr_output_transform_compose(transform, output->wlr_output->transform);
 
-	set_scale_filter(output->wlr_output, texture, output->scale_filter);
 	wlr_render_pass_add_texture(ctx->pass, &(struct wlr_render_texture_options) {
 		.texture = texture,
 		.src_box = src_box,
@@ -136,6 +116,7 @@ static void render_texture(struct render_context *ctx, struct wlr_texture *textu
 		.transform = transform,
 		.alpha = &alpha,
 		.clip = &damage,
+		.filter_mode = get_scale_filter(output),
 	});
 
 damage_finish:
