@@ -48,7 +48,6 @@ wlroots = dependency('wlroots', version: wlroots_version)
 wlroots_features = {
 	'xwayland': false,
 	'libinput_backend': false,
-	'gles2_renderer': false,
 	'session': false,
 }
 foreach name, _ : wlroots_features
@@ -75,7 +74,6 @@ pango = dependency('pango')
 pangocairo = dependency('pangocairo')
 gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
-glesv2 = wlroots_features['gles2_renderer'] ? dependency('glesv2') : null_dep
 libevdev = dependency('libevdev')
 libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
 xcb = dependency('xcb', required: get_option('xwayland'))

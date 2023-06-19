@@ -223,7 +223,6 @@ sway_deps = [
 	math,
 	pango,
 	pcre2,
-	glesv2,
 	pixman,
 	threads,
 	wayland_server,
