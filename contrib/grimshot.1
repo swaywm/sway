@@ -13,7 +13,7 @@ grimshot - a helper for screenshots within sway
 .P
 .SH SYNOPSIS
 .P
-\fBgrimshot\fR [--notify] [--cursor] (copy|save) [TARGET] [FILE]
+\fBgrimshot\fR [--notify] [--cursor] [--wait N] (copy|save) [TARGET] [FILE]
 .br
 \fBgrimshot\fR check
 .br
@@ -29,6 +29,13 @@ Show notifications to the user that a screenshot has been taken.\&
 \fB--cursor\fR
 .RS 4
 Include cursors in the screenshot.\&
+.P
+.RE
+\fB--wait N\fR
+.RS 4
+Wait for N seconds before taking a screenshot.\& Waits after any
+manual selection is made.\& Recommended to combine with --notify in
+order to know when the screenshot has been taken.\&
 .P
 .RE
 \fBsave\fR

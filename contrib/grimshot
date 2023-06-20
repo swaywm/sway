@@ -21,6 +21,7 @@ getTargetDirectory() {
 
 NOTIFY=no
 CURSOR=
+WAIT=no
 
 while [ $# -gt 0 ]; do
   key="$1"
@@ -34,6 +35,15 @@ while [ $# -gt 0 ]; do
       CURSOR=yes
       shift # past argument
       ;;
+    -w|--wait)
+      shift
+      WAIT="$1"
+      if echo "$WAIT" | grep "[^0-9]" -q; then
+        echo "invalid value for wait '$WAIT'" >&2
+        exit 3
+      fi
+      shift
+      ;;
     *)    # unknown option
       break # done with parsing --flags
       ;;
@@ -46,7 +56,7 @@ FILE=${3:-$(getTargetDirectory)/$(date -Ins).png}
 
 if [ "$ACTION" != "save" ] && [ "$ACTION" != "copy" ] && [ "$ACTION" != "check" ]; then
   echo "Usage:"
-  echo "  grimshot [--notify] [--cursor] (copy|save) [active|screen|output|area|window] [FILE|-]"
+  echo "  grimshot [--notify] [--cursor] [--wait N] (copy|save) [active|screen|output|area|window] [FILE|-]"
   echo "  grimshot check"
   echo "  grimshot usage"
   echo ""
@@ -151,6 +161,10 @@ elif [ "$SUBJECT" = "window" ] ; then
   WHAT="Window"
 else
   die "Unknown subject to take a screen shot from" "$SUBJECT"
+fi
+
+if [ "$WAIT" != "no" ]; then
+  sleep "$WAIT"
 fi
 
 if [ "$ACTION" = "copy" ] ; then
