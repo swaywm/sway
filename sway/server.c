@@ -49,6 +49,7 @@
 #include "sway/tree/root.h"
 
 #if HAVE_XWAYLAND
+#include <wlr/xwayland/shell.h>
 #include "sway/xwayland.h"
 #endif
 
@@ -73,10 +74,24 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 }
 #endif
 
+static bool filter_global(const struct wl_client *client,
+		const struct wl_global *global, void *data) {
+#if HAVE_XWAYLAND
+	struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
+	if (global == xwayland->shell_v1->global) {
+		return xwayland->server != NULL && client == xwayland->server->client;
+	}
+#endif
+
+	return true;
+}
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
+
+	wl_display_set_global_filter(server->wl_display, filter_global, NULL);
 
 	server->backend = wlr_backend_autocreate(server->wl_display, &server->session);
 	if (!server->backend) {
