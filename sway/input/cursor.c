@@ -236,7 +236,7 @@ void cursor_update_image(struct sway_cursor *cursor,
 		// Try a node's resize edge
 		enum wlr_edges edge = find_resize_edge(node->sway_container, NULL, cursor);
 		if (edge == WLR_EDGE_NONE) {
-			cursor_set_image(cursor, "left_ptr", NULL);
+			cursor_set_image(cursor, "default", NULL);
 		} else if (container_is_floating(node->sway_container)) {
 			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
 		} else {
@@ -247,7 +247,7 @@ void cursor_update_image(struct sway_cursor *cursor,
 			}
 		}
 	} else {
-		cursor_set_image(cursor, "left_ptr", NULL);
+		cursor_set_image(cursor, "default", NULL);
 	}
 }
 

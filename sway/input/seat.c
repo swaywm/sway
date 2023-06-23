@@ -671,7 +671,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 	} else {
 		wlr_seat_set_capabilities(seat->wlr_seat, caps);
 		if ((previous_caps & WL_SEAT_CAPABILITY_POINTER) == 0) {
-			cursor_set_image(seat->cursor, "left_ptr", NULL);
+			cursor_set_image(seat->cursor, "default", NULL);
 		}
 	}
 }
@@ -1039,7 +1039,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 			wlr_xcursor_manager_load(server.xwayland.xcursor_manager, 1);
 			struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
-				server.xwayland.xcursor_manager, "left_ptr", 1);
+				server.xwayland.xcursor_manager, "default", 1);
 			if (xcursor != NULL) {
 				struct wlr_xcursor_image *image = xcursor->images[0];
 				wlr_xwayland_set_cursor(
@@ -1082,7 +1082,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 	// Reset the cursor so that we apply it to outputs that just appeared
 	cursor_set_image(seat->cursor, NULL, NULL);
-	cursor_set_image(seat->cursor, "left_ptr", NULL);
+	cursor_set_image(seat->cursor, "default", NULL);
 	wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
 		seat->cursor->cursor->y);
 }
