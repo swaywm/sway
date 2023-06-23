@@ -154,7 +154,7 @@ static void update_cursor(struct swaynag_seat *seat) {
 	pointer->cursor_theme = wl_cursor_theme_load(
 		cursor_theme, cursor_size * swaynag->scale, swaynag->shm);
 	struct wl_cursor *cursor =
-		wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
+		wl_cursor_theme_get_cursor(pointer->cursor_theme, "default");
 	pointer->cursor_image = cursor->images[0];
 	wl_surface_set_buffer_scale(pointer->cursor_surface,
 			swaynag->scale);
