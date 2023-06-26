@@ -1154,9 +1154,6 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	wl_list_init(&cursor->image_surface_destroy.link);
 	cursor->image_surface_destroy.notify = handle_image_surface_destroy;
 
-	// gesture events
-	cursor->pointer_gestures = wlr_pointer_gestures_v1_create(server.wl_display);
-
 	wl_signal_add(&wlr_cursor->events.hold_begin, &cursor->hold_begin);
 	cursor->hold_begin.notify = handle_pointer_hold_begin;
 	wl_signal_add(&wlr_cursor->events.hold_end, &cursor->hold_end);

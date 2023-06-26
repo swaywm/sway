@@ -25,6 +25,7 @@ struct sway_input_manager {
 	struct wlr_keyboard_shortcuts_inhibit_manager_v1 *keyboard_shortcuts_inhibit;
 	struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard;
 	struct wlr_virtual_pointer_manager_v1 *virtual_pointer;
+	struct wlr_pointer_gestures_v1 *pointer_gestures;
 
 	struct wl_listener new_input;
 	struct wl_listener inhibit_activate;
