@@ -949,7 +949,7 @@ static void handle_hold_begin(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_hold_begin(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
 	}
 }
@@ -961,7 +961,7 @@ static void handle_hold_end(struct sway_seat *seat,
 	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_HOLD)) {
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_hold_end(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->cancelled);
 		return;
 	}
@@ -994,7 +994,7 @@ static void handle_pinch_begin(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_pinch_begin(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
 	}
 }
@@ -1010,7 +1010,7 @@ static void handle_pinch_update(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_pinch_update(
-			cursor->pointer_gestures,
+			server.input->pointer_gestures,
 			cursor->seat->wlr_seat,
 			event->time_msec, event->dx, event->dy,
 			event->scale, event->rotation);
@@ -1024,7 +1024,7 @@ static void handle_pinch_end(struct sway_seat *seat,
 	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_PINCH)) {
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_pinch_end(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->cancelled);
 		return;
 	}
@@ -1057,7 +1057,7 @@ static void handle_swipe_begin(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_swipe_begin(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
 	}
 }
@@ -1074,7 +1074,7 @@ static void handle_swipe_update(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_swipe_update(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->dx, event->dy);
 	}
 }
@@ -1085,7 +1085,7 @@ static void handle_swipe_end(struct sway_seat *seat,
 	struct seatop_default_event *seatop = seat->seatop_data;
 	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_SWIPE)) {
 		struct sway_cursor *cursor = seat->cursor;
-		wlr_pointer_gestures_v1_send_swipe_end(cursor->pointer_gestures,
+		wlr_pointer_gestures_v1_send_swipe_end(server.input->pointer_gestures,
 			cursor->seat->wlr_seat, event->time_msec, event->cancelled);
 		return;
 	}

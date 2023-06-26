@@ -495,6 +495,8 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	wl_signal_add(&input->keyboard_shortcuts_inhibit->events.new_inhibitor,
 			&input->keyboard_shortcuts_inhibit_new_inhibitor);
 
+	input->pointer_gestures = wlr_pointer_gestures_v1_create(server->wl_display);
+
 	return input;
 }
 
