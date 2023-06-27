@@ -1,12 +1,12 @@
 # sway
 
 
-Sway, [i3]-uyumlu bir [Wayland] dizgicisidir. [SSS][FAQ]'yi okuyun. 
+Sway, [i3] uyumlu bir [Wayland] dizgicisidir. [SSS][FAQ]'yi okuyun. 
 [IRC kanalı][IRC channel]na katılın \(irc.libera.chat'te #sway (İngilizce)).
 
 ## Sürüm imzaları
 
-Sürümler [E88F5E48] ile imzalandı ve [GitHub][GitHub releases]'da yayınlandı.
+Sürümler [E88F5E48] ile imzalanır ve [GitHub][GitHub releases]'da yayımlanır.
 
 ## Kurulum
 
@@ -30,32 +30,32 @@ Aşağıdaki bağımlılıkları yükleyin:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (isteğe bağlı: system tray)
-* [scdoc] (isteğe bağlı: man pages) \*
-* git (isteğe bağlı: version info) \*
+* gdk-pixbuf2 (isteğe bağlı: sistem tepsisi)
+* [scdoc] (isteğe bağlı: man sayfaları) \*
+* git (isteğe bağlı: sürüm bilgisi) \*
 
-_\*Derleme-anı bağımlılıkları_
+_\*Derleme aşaması bağımlılıkları_
 
 Şu komutları çalıştırın:
 
-    meson build
-    ninja -C build
-    sudo ninja -C build install
+    meson build/
+    ninja -C build/
+    sudo ninja -C build/ install
 
-logind olmayan sistemlerde, sway ikilisine (binary) izin vermeniz (suid) gerekir:
+logind ya da seatd olmayan sistemlerde, sway ikilisine suid etmeniz (yetkilendirmeniz) gerekir:
 
     sudo chmod a+s /usr/local/bin/sway
 
-Sway, başlangıçtan kısa bir süre sonra kök(root) izinlerini bırakacaktır.
+Sway, başlangıçtan kısa bir süre sonra kök izinlerini bırakacaktır.
 
 ## Yapılandırma
 
-Zaten i3 kullanıyorsanız, i3 yapılandırmanızı `~/.config/sway/config` konumuna kopyalayın ve kutudan çıktığı gibi çalışacaktır. Aksi takdirde, örnek yapılandırma dosyasını `~/.config/sway/config` konumuna kopyalayın. Genellikle `/etc/sway/config` konumunda bulunur.
+Halihazırda i3 kullanıyorsanız, i3 yapılandırmanızı `~/.config/sway/config` konumuna kopyalayın ve olduğu gibi çalışacaktır. Aksi takdirde, örnek yapılandırma dosyasını `~/.config/sway/config` konumuna kopyalayın. Genellikle `/etc/sway/config` konumunda bulunur.
 Yapılandırma hakkında bilgi almak için `man 5 sway` komutunu çalıştırın.
 
 ## Çalıştırma
 
-TTY'den `sway` çalıştırın. Bazı  görüntü yöneticileriyle(display manager) çalışabilir ama Sway tarafından desteklenmez. (gdm'nin oldukça iyi çalıştığı bilinmektedir.)
+Bir TTY'den `sway` çalıştırın. Bazı giriş ekranı yöneticileriyle çalışabilir ama Sway tarafından desteklenmez. (gdm'nin oldukça iyi çalıştığı bilinmektedir.)
 
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
