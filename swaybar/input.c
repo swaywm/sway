@@ -207,7 +207,7 @@ static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
 		}
 	}
 
-	if (new) {
+	if (new && new != active) {
 		ipc_send_workspace_command(bar, new->name);
 
 		// Since we're asking Sway to switch to 'new', it should become visible.
