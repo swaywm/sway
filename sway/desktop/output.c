@@ -6,8 +6,10 @@
 #include <wayland-server-core.h>
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
+#include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -264,7 +266,7 @@ void output_drag_icons_for_each_surface(struct sway_output *output,
 		double ox = drag_icon->x - output->lx;
 		double oy = drag_icon->y - output->ly;
 
-		if (drag_icon->wlr_drag_icon->mapped) {
+		if (drag_icon->wlr_drag_icon->surface->mapped) {
 			output_surface_for_each_surface(output,
 				drag_icon->wlr_drag_icon->surface, ox, oy,
 				iterator, user_data);
@@ -294,7 +296,7 @@ static void output_for_each_surface(struct sway_output *output,
 			if (lock_surface->output != output->wlr_output) {
 				continue;
 			}
-			if (!lock_surface->mapped) {
+			if (!lock_surface->surface->mapped) {
 				continue;
 			}
 
@@ -456,7 +458,7 @@ static void count_surface_iterator(struct sway_output *output,
 }
 
 static bool scan_out_fullscreen_view(struct sway_output *output,
-		struct sway_view *view) {
+		struct wlr_output_state *pending, struct sway_view *view) {
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (!sway_assert(workspace, "Expected an active workspace")) {
@@ -522,15 +524,16 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	wlr_output_attach_buffer(wlr_output, &surface->buffer->base);
-	if (!wlr_output_test(wlr_output)) {
+	wlr_output_state_set_buffer(pending, &surface->buffer->base);
+
+	if (!wlr_output_test_state(wlr_output, pending)) {
 		return false;
 	}
 
 	wlr_presentation_surface_sampled_on_output(server.presentation, surface,
 		wlr_output);
 
-	return wlr_output_commit(wlr_output);
+	return wlr_output_commit_state(wlr_output, pending);
 }
 
 static void get_frame_damage(struct sway_output *output,
@@ -563,6 +566,7 @@ static int output_repaint_timer_handler(void *data) {
 	wlr_output->frame_pending = false;
 
 	if (!wlr_output->needs_frame &&
+			!output->gamma_lut_changed &&
 			!pixman_region32_not_empty(&output->damage_ring.current)) {
 		return 0;
 	}
@@ -577,16 +581,31 @@ static int output_repaint_timer_handler(void *data) {
 		fullscreen_con = workspace->current.fullscreen;
 	}
 
-	pixman_region32_t frame_damage;
-	get_frame_damage(output, &frame_damage);
-	wlr_output_set_damage(wlr_output, &frame_damage);
-	pixman_region32_fini(&frame_damage);
+	struct wlr_output_state pending = {0};
+
+	if (output->gamma_lut_changed) {
+		output->gamma_lut_changed = false;
+		struct wlr_gamma_control_v1 *gamma_control =
+			wlr_gamma_control_manager_v1_get_control(
+			server.gamma_control_manager_v1, wlr_output);
+		if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
+			goto out;
+		}
+		if (!wlr_output_test_state(wlr_output, &pending)) {
+			wlr_output_state_finish(&pending);
+			pending = (struct wlr_output_state){0};
+			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
+		}
+	}
+
+	pending.committed |= WLR_OUTPUT_STATE_DAMAGE;
+	get_frame_damage(output, &pending.damage);
 
 	if (fullscreen_con && fullscreen_con->view && !debug.noscanout) {
 		// Try to scan-out the fullscreen view
 		static bool last_scanned_out = false;
 		bool scanned_out =
-			scan_out_fullscreen_view(output, fullscreen_con->view);
+			scan_out_fullscreen_view(output, &pending, fullscreen_con->view);
 
 		if (scanned_out && !last_scanned_out) {
 			sway_log(SWAY_DEBUG, "Scanning out fullscreen view on %s",
@@ -600,33 +619,68 @@ static int output_repaint_timer_handler(void *data) {
 		last_scanned_out = scanned_out;
 
 		if (scanned_out) {
-			return 0;
+			goto out;
 		}
 	}
 
+	if (!wlr_output_configure_primary_swapchain(wlr_output, &pending, &wlr_output->swapchain)) {
+		goto out;
+	}
+
 	int buffer_age;
-	if (!wlr_output_attach_render(output->wlr_output, &buffer_age)) {
-		return 0;
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(wlr_output->swapchain, &buffer_age);
+	if (buffer == NULL) {
+		goto out;
+	}
+
+	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(
+		wlr_output->renderer, buffer, NULL);
+	if (render_pass == NULL) {
+		wlr_buffer_unlock(buffer);
+		goto out;
 	}
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
 	wlr_damage_ring_get_buffer_damage(&output->damage_ring, buffer_age, &damage);
 
+	if (debug.damage == DAMAGE_RERENDER) {
+		int width, height;
+		wlr_output_transformed_resolution(wlr_output, &width, &height);
+		pixman_region32_union_rect(&damage, &damage, 0, 0, width, height);
+	}
+
+	struct render_context ctx = {
+		.output_damage = &damage,
+		.renderer = wlr_output->renderer,
+		.output = output,
+		.pass = render_pass,
+	};
+
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	output_render(output, &damage);
+	output_render(&ctx);
 
 	pixman_region32_fini(&damage);
 
-	if (!wlr_output_commit(wlr_output)) {
-		return 0;
+	if (!wlr_render_pass_submit(render_pass)) {
+		wlr_buffer_unlock(buffer);
+		goto out;
+	}
+
+	wlr_output_state_set_buffer(&pending, buffer);
+	wlr_buffer_unlock(buffer);
+
+	if (!wlr_output_commit_state(wlr_output, &pending)) {
+		goto out;
 	}
 
 	wlr_damage_ring_rotate(&output->damage_ring);
 	output->last_frame = now;
 
+out:
+	wlr_output_state_finish(&pending);
 	return 0;
 }
 
@@ -1040,6 +1094,21 @@ void handle_output_layout_change(struct wl_listener *listener,
 	struct sway_server *server =
 		wl_container_of(listener, server, output_layout_change);
 	update_output_manager_config(server);
+}
+
+void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, gamma_control_set_gamma);
+	const struct wlr_gamma_control_manager_v1_set_gamma_event *event = data;
+
+	struct sway_output *output = event->output->data;
+
+	if(!output) {
+		return;
+	}
+
+	output->gamma_lut_changed = true;
+	wlr_output_schedule_frame(output->wlr_output);
 }
 
 static void output_manager_apply(struct sway_server *server,

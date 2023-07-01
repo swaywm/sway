@@ -35,7 +35,6 @@ struct sway_cursor {
 	pixman_region32_t confine; // invalid if active_constraint == NULL
 	bool active_confine_requires_warp;
 
-	struct wlr_pointer_gestures_v1 *pointer_gestures;
 	struct wl_listener hold_begin;
 	struct wl_listener hold_end;
 	struct wl_listener pinch_begin;
@@ -53,6 +52,7 @@ struct sway_cursor {
 
 	struct wl_listener touch_down;
 	struct wl_listener touch_up;
+	struct wl_listener touch_cancel;
 	struct wl_listener touch_motion;
 	struct wl_listener touch_frame;
 	bool simulating_pointer_from_touch;

@@ -106,7 +106,7 @@ static int register_host(sd_bus_message *msg, void *data, sd_bus_error *error) {
 		sway_log(SWAY_DEBUG, "Registering Status Notifier Host '%s'", service);
 		list_add(watcher->hosts, strdup(service));
 		sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
-				"StatusNotifierHostRegistered", "s", service);
+				"StatusNotifierHostRegistered", "");
 	} else {
 		sway_log(SWAY_DEBUG, "Status Notifier Host '%s' already registered", service);
 	}

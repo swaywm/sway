@@ -64,11 +64,11 @@ static void handle_touch_up(struct sway_seat *seat,
 		}
 	}
 
+	wlr_seat_touch_notify_up(seat->wlr_seat, event->time_msec, event->touch_id);
+
 	if (wl_list_empty(&e->point_events)) {
 		seatop_begin_default(seat);
 	}
-
-	wlr_seat_touch_notify_up(seat->wlr_seat, event->time_msec, event->touch_id);
 }
 
 static void handle_touch_down(struct sway_seat *seat,
@@ -101,6 +101,28 @@ static void handle_touch_down(struct sway_seat *seat,
 
 	if (focused_node) {
 	    seat_set_focus(seat, focused_node);
+	}
+}
+
+static void handle_touch_cancel(struct sway_seat *seat,
+		struct wlr_touch_cancel_event *event) {
+	struct seatop_down_event *e = seat->seatop_data;
+	struct seatop_touch_point_event *point_event, *tmp;
+
+	wl_list_for_each_safe(point_event, tmp, &e->point_events, link) {
+		if (point_event->touch_id == event->touch_id) {
+			wl_list_remove(&point_event->link);
+			free(point_event);
+			break;
+		}
+	}
+
+	if (e->surface) {
+		wlr_seat_touch_notify_cancel(seat->wlr_seat, e->surface);
+	}
+
+	if (wl_list_empty(&e->point_events)) {
+		seatop_begin_default(seat);
 	}
 }
 
@@ -189,6 +211,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.touch_motion = handle_touch_motion,
 	.touch_up = handle_touch_up,
 	.touch_down = handle_touch_down,
+	.touch_cancel = handle_touch_cancel,
 	.unref = handle_unref,
 	.end = handle_end,
 	.allow_set_cursor = true,

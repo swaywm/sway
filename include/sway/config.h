@@ -161,6 +161,7 @@ struct input_config {
 	int repeat_delay;
 	int repeat_rate;
 	int scroll_button;
+	int scroll_button_lock;
 	int scroll_method;
 	int send_events;
 	int tap;

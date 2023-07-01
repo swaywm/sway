@@ -17,7 +17,7 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		return;
 	}
 
-	if (!xdg_surface->mapped) {
+	if (!xdg_surface->surface->mapped) {
 		// This is a startup notification. If we are tracking it, the data
 		// field is a launcher_ctx.
 		struct launcher_ctx *ctx = event->token->data;

@@ -82,7 +82,7 @@ void update_cursor(struct swaybar_seat *seat) {
 	pointer->cursor_theme = wl_cursor_theme_load(
 		cursor_theme, cursor_size * scale, seat->bar->shm);
 	struct wl_cursor *cursor;
-	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
+	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "default");
 	pointer->cursor_image = cursor->images[0];
 	wl_surface_set_buffer_scale(pointer->cursor_surface, scale);
 	wl_surface_attach(pointer->cursor_surface,
@@ -207,7 +207,7 @@ static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
 		}
 	}
 
-	if (new) {
+	if (new && new != active) {
 		ipc_send_workspace_command(bar, new->name);
 
 		// Since we're asking Sway to switch to 'new', it should become visible.

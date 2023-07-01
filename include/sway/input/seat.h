@@ -12,6 +12,7 @@
 #include "sway/input/text_input.h"
 
 struct sway_seat;
+struct render_context;
 
 struct sway_seatop_impl {
 	void (*button)(struct sway_seat *seat, uint32_t time_msec,
@@ -43,14 +44,15 @@ struct sway_seatop_impl {
 			struct wlr_touch_up_event *event);
 	void (*touch_down)(struct sway_seat *seat,
 			struct wlr_touch_down_event *event, double lx, double ly);
+	void (*touch_cancel)(struct sway_seat *seat,
+			struct wlr_touch_cancel_event *event);
 	void (*tablet_tool_motion)(struct sway_seat *seat,
 			struct sway_tablet_tool *tool, uint32_t time_msec);
 	void (*tablet_tool_tip)(struct sway_seat *seat, struct sway_tablet_tool *tool,
 			uint32_t time_msec, enum wlr_tablet_tool_tip_state state);
 	void (*end)(struct sway_seat *seat);
 	void (*unref)(struct sway_seat *seat, struct sway_container *con);
-	void (*render)(struct sway_seat *seat, struct sway_output *output,
-			const pixman_region32_t *damage);
+	void (*render)(struct sway_seat *seat, struct render_context *ctx);
 	bool allow_set_cursor;
 };
 
@@ -102,8 +104,9 @@ struct sway_seat {
 	struct sway_workspace *workspace;
 	char *prev_workspace_name; // for workspace back_and_forth
 
-	// If the focused layer is set, views cannot receive keyboard focus
 	struct wlr_layer_surface_v1 *focused_layer;
+	// If the exclusive layer is set, views cannot receive keyboard focus
+	bool has_exclusive_layer;
 
 	// If exclusive_client is set, no other clients will receive input events
 	struct wl_client *exclusive_client;
@@ -338,6 +341,9 @@ void seatop_touch_up(struct sway_seat *seat,
 void seatop_touch_down(struct sway_seat *seat,
 		struct wlr_touch_down_event *event, double lx, double ly);
 
+void seatop_touch_cancel(struct sway_seat *seat,
+		struct wlr_touch_cancel_event *event);
+
 void seatop_rebase(struct sway_seat *seat, uint32_t time_msec);
 
 /**
@@ -356,8 +362,7 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con);
  * Instructs a seatop to render anything that it needs to render
  * (eg. dropzone for move-tiling)
  */
-void seatop_render(struct sway_seat *seat, struct sway_output *output,
-		const pixman_region32_t *damage);
+void seatop_render(struct sway_seat *seat, struct render_context *ctx);
 
 bool seatop_allows_set_cursor(struct sway_seat *seat);
 

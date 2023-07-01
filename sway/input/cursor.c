@@ -236,7 +236,7 @@ void cursor_update_image(struct sway_cursor *cursor,
 		// Try a node's resize edge
 		enum wlr_edges edge = find_resize_edge(node->sway_container, NULL, cursor);
 		if (edge == WLR_EDGE_NONE) {
-			cursor_set_image(cursor, "left_ptr", NULL);
+			cursor_set_image(cursor, "default", NULL);
 		} else if (container_is_floating(node->sway_container)) {
 			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
 		} else {
@@ -247,12 +247,12 @@ void cursor_update_image(struct sway_cursor *cursor,
 			}
 		}
 	} else {
-		cursor_set_image(cursor, "left_ptr", NULL);
+		cursor_set_image(cursor, "default", NULL);
 	}
 }
 
 static void cursor_hide(struct sway_cursor *cursor) {
-	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+	wlr_cursor_unset_image(cursor->cursor);
 	cursor->hidden = true;
 	wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
 }
@@ -506,6 +506,24 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 		}
 	} else {
 		seatop_touch_up(seat, event);
+	}
+}
+
+static void handle_touch_cancel(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_cancel);
+	struct wlr_touch_cancel_event *event = data;
+	cursor_handle_activity_from_device(cursor, &event->touch->base);
+
+	struct sway_seat *seat = cursor->seat;
+
+	if (cursor->simulating_pointer_from_touch) {
+		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
+			cursor->pointer_touch_up = true;
+			dispatch_cursor_button(cursor, &event->touch->base,
+				event->time_msec, BTN_LEFT, WLR_BUTTON_RELEASED);
+		}
+	} else {
+		seatop_touch_cancel(seat, event);
 	}
 }
 
@@ -1050,10 +1068,9 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	}
 
 	if (!image) {
-		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+		wlr_cursor_unset_image(cursor->cursor);
 	} else if (!current_image || strcmp(current_image, image) != 0) {
-		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
-				cursor->cursor);
+		wlr_cursor_set_xcursor(cursor->cursor, cursor->xcursor_manager, image);
 	}
 }
 
@@ -1100,6 +1117,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->frame.link);
 	wl_list_remove(&cursor->touch_down.link);
 	wl_list_remove(&cursor->touch_up.link);
+	wl_list_remove(&cursor->touch_cancel.link);
 	wl_list_remove(&cursor->touch_motion.link);
 	wl_list_remove(&cursor->touch_frame.link);
 	wl_list_remove(&cursor->tool_axis.link);
@@ -1135,9 +1153,6 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	wl_list_init(&cursor->image_surface_destroy.link);
 	cursor->image_surface_destroy.notify = handle_image_surface_destroy;
-
-	// gesture events
-	cursor->pointer_gestures = wlr_pointer_gestures_v1_create(server.wl_display);
 
 	wl_signal_add(&wlr_cursor->events.hold_begin, &cursor->hold_begin);
 	cursor->hold_begin.notify = handle_pointer_hold_begin;
@@ -1180,6 +1195,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	wl_signal_add(&wlr_cursor->events.touch_up, &cursor->touch_up);
 	cursor->touch_up.notify = handle_touch_up;
+
+	wl_signal_add(&wlr_cursor->events.touch_cancel, &cursor->touch_cancel);
+	cursor->touch_cancel.notify = handle_touch_cancel;
 
 	wl_signal_add(&wlr_cursor->events.touch_motion,
 		&cursor->touch_motion);

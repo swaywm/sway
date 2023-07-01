@@ -2,6 +2,7 @@
 #include <float.h>
 #include <libevdev/libevdev.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "gesture.h"
@@ -9,6 +10,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/input/tablet.h"
+#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -365,10 +367,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		return;
 	}
 
-	// Handle clicking a layer surface
-	struct wlr_layer_surface_v1 *layer;
-	if (surface &&
-			(layer = wlr_layer_surface_v1_try_from_wlr_surface(surface))) {
+	// Handle clicking a layer surface and its popups/subsurfaces
+	struct wlr_layer_surface_v1 *layer = NULL;
+	if ((layer = toplevel_layer_surface_from_surface(surface))) {
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(seat, layer);
 			transaction_commit_dirty();
@@ -545,6 +546,21 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		if (wlr_output == NULL) {
 			return;
 		}
+
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
+		node_at_coords(seat, seat->cursor->cursor->x, seat->cursor->cursor->y,
+				&surface, &sx, &sy);
+
+		// Focus topmost layer surface
+		struct wlr_layer_surface_v1 *layer = NULL;
+		if ((layer = toplevel_layer_surface_from_surface(surface)) &&
+				layer->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, layer);
+			transaction_commit_dirty();
+			return;
+		}
+
 		struct sway_output *hovered_output = wlr_output->data;
 		if (focus && hovered_output != node_get_output(focus)) {
 			struct sway_workspace *ws = output_get_active_workspace(hovered_output);
@@ -934,7 +950,7 @@ static void handle_hold_begin(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_hold_begin(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
 	}
 }
@@ -946,7 +962,7 @@ static void handle_hold_end(struct sway_seat *seat,
 	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_HOLD)) {
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_hold_end(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->cancelled);
 		return;
 	}
@@ -979,7 +995,7 @@ static void handle_pinch_begin(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_pinch_begin(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
 	}
 }
@@ -995,7 +1011,7 @@ static void handle_pinch_update(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_pinch_update(
-			cursor->pointer_gestures,
+			server.input->pointer_gestures,
 			cursor->seat->wlr_seat,
 			event->time_msec, event->dx, event->dy,
 			event->scale, event->rotation);
@@ -1009,7 +1025,7 @@ static void handle_pinch_end(struct sway_seat *seat,
 	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_PINCH)) {
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_pinch_end(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->cancelled);
 		return;
 	}
@@ -1042,7 +1058,7 @@ static void handle_swipe_begin(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_swipe_begin(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->fingers);
 	}
 }
@@ -1059,7 +1075,7 @@ static void handle_swipe_update(struct sway_seat *seat,
 		// ... otherwise forward to client
 		struct sway_cursor *cursor = seat->cursor;
 		wlr_pointer_gestures_v1_send_swipe_update(
-			cursor->pointer_gestures, cursor->seat->wlr_seat,
+			server.input->pointer_gestures, cursor->seat->wlr_seat,
 			event->time_msec, event->dx, event->dy);
 	}
 }
@@ -1070,7 +1086,7 @@ static void handle_swipe_end(struct sway_seat *seat,
 	struct seatop_default_event *seatop = seat->seatop_data;
 	if (!gesture_tracker_check(&seatop->gestures, GESTURE_TYPE_SWIPE)) {
 		struct sway_cursor *cursor = seat->cursor;
-		wlr_pointer_gestures_v1_send_swipe_end(cursor->pointer_gestures,
+		wlr_pointer_gestures_v1_send_swipe_end(server.input->pointer_gestures,
 			cursor->seat->wlr_seat, event->time_msec, event->cancelled);
 		return;
 	}
