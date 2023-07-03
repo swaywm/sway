@@ -26,6 +26,12 @@
 #include "stringop.h"
 #include "util.h"
 
+#ifdef HAVE_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#elif HAVE_LIBELOGIND
+#include <elogind/sd-daemon.h>
+#endif
+
 static bool terminate_request = false;
 static int exit_value = 0;
 static struct rlimit original_nofile_rlimit = {0};
@@ -411,6 +417,11 @@ int main(int argc, char **argv) {
 	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);
 	}
+
+#if defined(HAVE_LIBSYSTEMD) || defined(HAVE_LIBELOGIND)
+	/* Signal systemd that we are ready to accept connections */
+	sd_notify(0, "READY=1");
+#endif
 
 	server_run(&server);
 
