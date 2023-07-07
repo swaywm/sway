@@ -81,8 +81,16 @@ void update_cursor(struct swaybar_seat *seat) {
 	int scale = pointer->current ? pointer->current->scale : 1;
 	pointer->cursor_theme = wl_cursor_theme_load(
 		cursor_theme, cursor_size * scale, seat->bar->shm);
+	if (!pointer->cursor_theme) {
+		sway_log(SWAY_ERROR, "Failed to load cursor theme");
+		return;
+	}
 	struct wl_cursor *cursor;
 	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "default");
+	if (!cursor) {
+		sway_log(SWAY_ERROR, "Failed to get default cursor from theme");
+		return;
+	}
 	pointer->cursor_image = cursor->images[0];
 	wl_surface_set_buffer_scale(pointer->cursor_surface, scale);
 	wl_surface_attach(pointer->cursor_surface,
