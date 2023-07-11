@@ -542,36 +542,6 @@ static void popup_damage(struct sway_layer_popup *layer_popup, bool whole) {
 	output_damage_surface(output, ox, oy, surface, whole);
 }
 
-static void popup_handle_map(struct wl_listener *listener, void *data) {
-	struct sway_layer_popup *popup = wl_container_of(listener, popup, map);
-	struct sway_layer_surface *layer = popup_get_layer(popup);
-	struct wlr_output *wlr_output = layer->layer_surface->output;
-	sway_assert(wlr_output, "wlr_layer_surface_v1 has null output");
-	surface_enter_output(popup->wlr_popup->base->surface, wlr_output->data);
-	popup_damage(popup, true);
-}
-
-static void popup_handle_unmap(struct wl_listener *listener, void *data) {
-	struct sway_layer_popup *popup = wl_container_of(listener, popup, unmap);
-	popup_damage(popup, true);
-}
-
-static void popup_handle_commit(struct wl_listener *listener, void *data) {
-	struct sway_layer_popup *popup = wl_container_of(listener, popup, commit);
-	popup_damage(popup, false);
-}
-
-static void popup_handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_layer_popup *popup =
-		wl_container_of(listener, popup, destroy);
-
-	wl_list_remove(&popup->map.link);
-	wl_list_remove(&popup->unmap.link);
-	wl_list_remove(&popup->destroy.link);
-	wl_list_remove(&popup->commit.link);
-	free(popup);
-}
-
 static void popup_unconstrain(struct sway_layer_popup *popup) {
 	struct sway_layer_surface *layer = popup_get_layer(popup);
 	struct wlr_xdg_popup *wlr_popup = popup->wlr_popup;
@@ -590,6 +560,39 @@ static void popup_unconstrain(struct sway_layer_popup *popup) {
 	};
 
 	wlr_xdg_popup_unconstrain_from_box(wlr_popup, &output_toplevel_sx_box);
+}
+
+static void popup_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, map);
+	struct sway_layer_surface *layer = popup_get_layer(popup);
+	struct wlr_output *wlr_output = layer->layer_surface->output;
+	sway_assert(wlr_output, "wlr_layer_surface_v1 has null output");
+	surface_enter_output(popup->wlr_popup->base->surface, wlr_output->data);
+	popup_damage(popup, true);
+}
+
+static void popup_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, unmap);
+	popup_damage(popup, true);
+}
+
+static void popup_handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, commit);
+	if (popup->wlr_popup->base->initial_commit) {
+		popup_unconstrain(popup);
+	}
+	popup_damage(popup, false);
+}
+
+static void popup_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup =
+		wl_container_of(listener, popup, destroy);
+
+	wl_list_remove(&popup->map.link);
+	wl_list_remove(&popup->unmap.link);
+	wl_list_remove(&popup->destroy.link);
+	wl_list_remove(&popup->commit.link);
+	free(popup);
 }
 
 static void popup_handle_new_popup(struct wl_listener *listener, void *data);
@@ -616,8 +619,6 @@ static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
 	wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
 	popup->new_popup.notify = popup_handle_new_popup;
 	wl_signal_add(&wlr_popup->base->events.new_popup, &popup->new_popup);
-
-	popup_unconstrain(popup);
 
 	return popup;
 }
