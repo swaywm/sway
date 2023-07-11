@@ -60,7 +60,7 @@ struct sway_server {
 	struct wl_listener layer_shell_surface;
 
 	struct wlr_xdg_shell *xdg_shell;
-	struct wl_listener xdg_shell_surface;
+	struct wl_listener xdg_shell_toplevel;
 
 	struct wlr_tablet_manager_v2 *tablet_v2;
 
@@ -171,7 +171,7 @@ void handle_new_output(struct wl_listener *listener, void *data);
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void sway_session_lock_init(void);
-void handle_xdg_shell_surface(struct wl_listener *listener, void *data);
+void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif

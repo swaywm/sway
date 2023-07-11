@@ -16,4 +16,6 @@ struct sway_xdg_decoration {
 struct sway_xdg_decoration *xdg_decoration_from_surface(
 	struct wlr_surface *surface);
 
+void set_xdg_decoration_mode(struct sway_xdg_decoration *deco);
+
 #endif
