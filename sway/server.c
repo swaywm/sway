@@ -185,9 +185,9 @@ bool server_init(struct sway_server *server) {
 
 	server->xdg_shell = wlr_xdg_shell_create(server->wl_display,
 		SWAY_XDG_SHELL_VERSION);
-	wl_signal_add(&server->xdg_shell->events.new_surface,
-		&server->xdg_shell_surface);
-	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
+	wl_signal_add(&server->xdg_shell->events.new_toplevel,
+		&server->xdg_shell_toplevel);
+	server->xdg_shell_toplevel.notify = handle_xdg_shell_toplevel;
 
 	server->tablet_v2 = wlr_tablet_v2_create(server->wl_display);
 
