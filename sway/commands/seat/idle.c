@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdint.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/seat.h"
@@ -69,5 +70,10 @@ struct cmd_results *seat_cmd_idle_wake(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Invalid idle source");
 	}
 	config->handler_context.seat_config->idle_wake_sources = sources;
+	sway_log(SWAY_INFO, "Warning: seat idle_wake is deprecated");
+	if (config->reading) {
+		config_add_swaynag_warning("seat idle_wake is deprecated. "
+			"Only seat idle_inhibit is supported.");
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

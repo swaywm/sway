@@ -100,22 +100,11 @@ void seat_destroy(struct sway_seat *seat) {
 
 void seat_idle_notify_activity(struct sway_seat *seat,
 		enum sway_input_idle_source source) {
-	uint32_t mask = seat->idle_inhibit_sources;
-	struct wlr_idle_timeout *timeout;
-	int ntimers = 0, nidle = 0;
-	wl_list_for_each(timeout, &server.idle->idle_timers, link) {
-		++ntimers;
-		if (timeout->idle_state) {
-			++nidle;
-		}
+	if ((source & seat->idle_inhibit_sources) == 0) {
+		return;
 	}
-	if (nidle == ntimers) {
-		mask = seat->idle_wake_sources;
-	}
-	if ((source & mask) > 0) {
-		wlr_idle_notify_activity(server.idle, seat->wlr_seat);
-		wlr_idle_notifier_v1_notify_activity(server.idle_notifier_v1, seat->wlr_seat);
-	}
+	wlr_idle_notify_activity(server.idle, seat->wlr_seat);
+	wlr_idle_notifier_v1_notify_activity(server.idle_notifier_v1, seat->wlr_seat);
 }
 
 /**
