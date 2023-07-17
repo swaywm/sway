@@ -75,6 +75,10 @@ void container_resize_tiled(struct sway_container *con,
 		return;
 	}
 
+	if (container_is_scratchpad_hidden_or_child(con)) {
+		return;
+	}
+
 	// For HORIZONTAL or VERTICAL, we are growing in two directions so select
 	// both adjacent siblings. For RIGHT or DOWN, just select the next sibling.
 	// For LEFT or UP, convert it to a RIGHT or DOWN resize and reassign con to
@@ -249,6 +253,10 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 		struct movement_amount *amount) {
 	struct sway_container *current = config->handler_context.container;
 
+	if (container_is_scratchpad_hidden_or_child(current)) {
+		return cmd_results_new(CMD_FAILURE, "Cannot resize a hidden scratchpad container");
+	}
+
 	if (amount->unit == MOVEMENT_UNIT_DEFAULT) {
 		amount->unit = MOVEMENT_UNIT_PPT;
 	}
@@ -292,6 +300,11 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
  */
 static struct cmd_results *resize_set_tiled(struct sway_container *con,
 		struct movement_amount *width, struct movement_amount *height) {
+
+	if (container_is_scratchpad_hidden_or_child(con)) {
+		return cmd_results_new(CMD_FAILURE, "Cannot resize a hidden scratchpad container");
+	}
+
 	if (width->amount) {
 		if (width->unit == MOVEMENT_UNIT_PPT ||
 				width->unit == MOVEMENT_UNIT_DEFAULT) {
