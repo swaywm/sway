@@ -66,6 +66,8 @@ struct sway_output {
 		struct wl_signal disable;
 	} events;
 
+	struct wlr_color_transform *color_transform;
+
 	struct timespec last_presentation;
 	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
