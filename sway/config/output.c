@@ -74,6 +74,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	oc->has_color_transform = -1;
 	oc->power = -1;
 	return oc;
 }
@@ -123,6 +124,17 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = src->render_bit_depth;
+	}
+	if (src->has_color_transform != -1) {
+		if (src->has_color_transform == 1) {
+			wlr_color_transform_ref(src->color_transform);
+		}
+		if (dst->has_color_transform == 1) {
+			wlr_color_transform_unref(dst->color_transform);
+		}
+		dst->has_color_transform = src->has_color_transform;
+		dst->color_transform = src->color_transform;
+
 	}
 	if (src->background) {
 		free(dst->background);
@@ -577,6 +589,17 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		output->max_render_time = oc->max_render_time;
 	}
 
+	if (oc && oc->has_color_transform >= 0) {
+		if (oc->has_color_transform == 1) {
+			wlr_color_transform_ref(oc->color_transform);
+		}
+		if (output->has_color_transform) {
+			wlr_color_transform_unref(output->color_transform);
+		}
+		output->has_color_transform = oc->has_color_transform;
+		output->color_transform = oc->color_transform;
+	}
+
 	// Reconfigure all devices, since input config may have been applied before
 	// this output came online, and some config items (like map_to_output) are
 	// dependent on an output being present.
@@ -758,6 +781,9 @@ void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc->background);
 	free(oc->background_option);
+	if (oc->has_color_transform == 1) {
+		wlr_color_transform_unref(oc->color_transform);
+	}
 	free(oc);
 }
 
