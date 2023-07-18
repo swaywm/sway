@@ -76,6 +76,8 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	oc->set_color_transform = false;
+	oc->color_transform = NULL;
 	oc->power = -1;
 	return oc;
 }
@@ -190,6 +192,14 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = src->render_bit_depth;
+	}
+	if (src->set_color_transform) {
+		if (src->color_transform) {
+			wlr_color_transform_ref(src->color_transform);
+		}
+		wlr_color_transform_unref(dst->color_transform);
+		dst->set_color_transform = true;
+		dst->color_transform = src->color_transform;
 	}
 	if (src->background) {
 		free(dst->background);
@@ -557,6 +567,13 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		output->max_render_time = oc->max_render_time;
 	}
 
+	if (oc && oc->set_color_transform) {
+		if (oc->color_transform) {
+			wlr_color_transform_ref(oc->color_transform);
+		}
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = oc->color_transform;
+	}
 	return true;
 }
 
@@ -997,6 +1014,7 @@ void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc->background);
 	free(oc->background_option);
+	wlr_color_transform_unref(oc->color_transform);
 	free(oc);
 }
 

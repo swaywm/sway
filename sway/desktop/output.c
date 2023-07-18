@@ -269,7 +269,10 @@ static int output_repaint_timer_handler(void *data) {
 		return 0;
 	}
 
-	wlr_scene_output_commit(output->scene_output, NULL);
+	struct wlr_scene_output_state_options opts = {
+		.color_transform = output->color_transform,
+	};
+	wlr_scene_output_commit(output->scene_output, &opts);
 	return 0;
 }
 

@@ -4,6 +4,7 @@ packages:
   - eudev-dev
   - gdk-pixbuf-dev
   - json-c-dev
+  - lcms2-dev
   - libdisplay-info-dev
   - libevdev-dev
   - libinput-dev
