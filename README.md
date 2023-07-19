@@ -1,6 +1,6 @@
 # sway
 
-**[English][en]** - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+**[English][en]** - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [ქართული][ge] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.libera.chat).
@@ -67,6 +67,7 @@ sway (gdm is known to work fairly well).
 [dk]: README.dk.md
 [es]: README.es.md
 [fr]: README.fr.md
+[ge]: README.ge.md
 [gr]: README.gr.md
 [hi]: README.hi.md
 [hu]: README.hu.md
