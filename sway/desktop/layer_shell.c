@@ -35,13 +35,13 @@ struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 		}
 
 		// Layer surface popup
-		struct wlr_xdg_surface * xdg_popup = NULL;
-		if ((xdg_popup = wlr_xdg_surface_try_from_wlr_surface(surface)) &&
-				xdg_popup->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-			if (!xdg_popup->popup->parent) {
+		struct wlr_xdg_surface *xdg_surface = NULL;
+		if ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(surface)) &&
+				xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP && xdg_surface->popup != NULL) {
+			if (!xdg_surface->popup->parent) {
 				return NULL;
 			}
-			surface = wlr_surface_get_root_surface(xdg_popup->popup->parent);
+			surface = wlr_surface_get_root_surface(xdg_surface->popup->parent);
 			continue;
 		}
 

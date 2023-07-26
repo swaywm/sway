@@ -56,7 +56,8 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
 static bool surface_is_xdg_popup(struct wlr_surface *surface) {
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_try_from_wlr_surface(surface);
-	return xdg_surface != NULL && xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
+	return xdg_surface != NULL && xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP &&
+		xdg_surface->popup != NULL;
 }
 
 static struct wlr_surface *layer_surface_popup_at(struct sway_output *output,

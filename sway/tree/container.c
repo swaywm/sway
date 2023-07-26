@@ -394,7 +394,7 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 	}
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_try_from_wlr_surface(surface);
-	return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
+	return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP && xdg_surface->popup != NULL;
 }
 
 struct sway_container *container_at(struct sway_workspace *workspace,
