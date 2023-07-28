@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include "log.h"
+#include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
@@ -32,6 +33,7 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 	if (server.session_lock.focused == NULL) {
 		set_lock_focused_surface(surf->surface);
 	}
+	cursor_rebase_all();
 	surface_enter_output(surf->surface, surf->output);
 	output_damage_whole(surf->output);
 }
