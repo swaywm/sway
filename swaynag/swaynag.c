@@ -157,8 +157,7 @@ static void update_cursor(struct swaynag_seat *seat) {
 		sway_log(SWAY_ERROR, "Failed to load cursor theme");
 		return;
 	}
-	struct wl_cursor *cursor =
-		wl_cursor_theme_get_cursor(pointer->cursor_theme, "default");
+	struct wl_cursor *cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "default");
 	if (!cursor) {
 		sway_log(SWAY_ERROR, "Failed to get default cursor from theme");
 		return;
@@ -190,11 +189,22 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaynag_seat *seat = data;
+
 	struct swaynag_pointer *pointer = &seat->pointer;
 	pointer->x = wl_fixed_to_int(surface_x);
 	pointer->y = wl_fixed_to_int(surface_y);
-	pointer->serial = serial;
-	update_cursor(seat);
+
+	if (seat->swaynag->cursor_shape_manager) {
+		struct wp_cursor_shape_device_v1 *device =
+			wp_cursor_shape_manager_v1_get_pointer(
+				seat->swaynag->cursor_shape_manager, wl_pointer);
+		wp_cursor_shape_device_v1_set_shape(device, serial,
+			WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+		wp_cursor_shape_device_v1_destroy(device);
+	} else {
+		pointer->serial = serial;
+		update_cursor(seat);
+	}
 }
 
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
@@ -386,6 +396,9 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		swaynag->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);
+	} else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
+		swaynag->cursor_shape_manager = wl_registry_bind(
+				registry, name, &wp_cursor_shape_manager_v1_interface, 1);
 	}
 }
 
@@ -464,7 +477,9 @@ void swaynag_setup(struct swaynag *swaynag) {
 		exit(EXIT_FAILURE);
 	}
 
-	swaynag_setup_cursors(swaynag);
+	if (!swaynag->cursor_shape_manager) {
+		swaynag_setup_cursors(swaynag);
+	}
 
 	swaynag->surface = wl_compositor_create_surface(swaynag->compositor);
 	assert(swaynag->surface);
