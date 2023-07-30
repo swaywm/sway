@@ -111,7 +111,7 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 	struct swaybar_pointer *pointer = &seat->pointer;
 	seat->pointer.x = wl_fixed_to_double(surface_x);
 	seat->pointer.y = wl_fixed_to_double(surface_y);
-	pointer->serial = serial;
+
 	struct swaybar_output *output;
 	wl_list_for_each(output, &seat->bar->outputs, link) {
 		if (output->surface == surface) {
@@ -119,7 +119,18 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 			break;
 		}
 	}
-	update_cursor(seat);
+
+	if (seat->bar->cursor_shape_manager) {
+		struct wp_cursor_shape_device_v1 *device =
+			wp_cursor_shape_manager_v1_get_pointer(
+				seat->bar->cursor_shape_manager, wl_pointer);
+		wp_cursor_shape_device_v1_set_shape(device, serial,
+			WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+		wp_cursor_shape_device_v1_destroy(device);
+	} else {
+		pointer->serial = serial;
+		update_cursor(seat);
+	}
 }
 
 static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,

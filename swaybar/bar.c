@@ -362,6 +362,9 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0) {
 		bar->xdg_output_manager = wl_registry_bind(registry, name,
 			&zxdg_output_manager_v1_interface, 2);
+	} else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
+		bar->cursor_shape_manager = wl_registry_bind(registry, name,
+			&wp_cursor_shape_manager_v1_interface, 1);
 	}
 }
 
@@ -425,15 +428,17 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	// Second roundtrip for xdg-output
 	wl_display_roundtrip(bar->display);
 
-	struct swaybar_seat *seat;
-	wl_list_for_each(seat, &bar->seats, link) {
-		struct swaybar_pointer *pointer = &seat->pointer;
-		if (!pointer) {
-			continue;
+	if (!bar->cursor_shape_manager) {
+		struct swaybar_seat *seat;
+		wl_list_for_each(seat, &bar->seats, link) {
+			struct swaybar_pointer *pointer = &seat->pointer;
+			if (!pointer) {
+				continue;
+			}
+			pointer->cursor_surface =
+				wl_compositor_create_surface(bar->compositor);
+			assert(pointer->cursor_surface);
 		}
-		pointer->cursor_surface =
-			wl_compositor_create_surface(bar->compositor);
-		assert(pointer->cursor_surface);
 	}
 
 	if (bar->config->status_command) {
