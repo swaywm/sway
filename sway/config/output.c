@@ -510,10 +510,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
-	if (!oc || oc->power != 0) {
-		output->current_mode = pending.mode;
-	}
-
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
 	if (!wlr_output_commit_state(wlr_output, &pending)) {
 		// Failed to commit output changes, maybe the output is missing a CRTC.
