@@ -883,12 +883,9 @@ static void update_output_manager_config(struct sway_server *server) {
 		wlr_output_layout_get_box(root->output_layout,
 			output->wlr_output, &output_box);
 		// We mark the output enabled when it's switched off but not disabled
-		config_head->state.enabled = output->current_mode != NULL && output->enabled;
-		config_head->state.mode = output->current_mode;
-		if (!wlr_box_empty(&output_box)) {
-			config_head->state.x = output_box.x;
-			config_head->state.y = output_box.y;
-		}
+		config_head->state.enabled = !wlr_box_empty(&output_box);
+		config_head->state.x = output_box.x;
+		config_head->state.y = output_box.y;
 	}
 
 	wlr_output_manager_v1_set_configuration(server->output_manager_v1, config);
