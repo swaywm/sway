@@ -926,18 +926,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	update_output_manager_config(server);
 }
 
-static void handle_mode(struct sway_output *output) {
-	if (!output->enabled) {
-		return;
-	}
-
-	arrange_layers(output);
-	arrange_output(output);
-	transaction_commit_dirty();
-
-	update_output_manager_config(output->server);
-}
-
 static void update_textures(struct sway_container *con, void *data) {
 	container_update_title_textures(con);
 	container_update_marks_textures(con);
@@ -953,10 +941,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, commit);
 	struct wlr_output_event_commit *event = data;
 
-	if (event->committed & WLR_OUTPUT_STATE_MODE) {
-		handle_mode(output);
-	}
-
 	if (!output->enabled) {
 		return;
 	}
@@ -966,7 +950,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		output_for_each_surface(output, update_output_scale_iterator, NULL);
 	}
 
-	if (event->committed & (WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {
+	if (event->committed & (WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {
 		arrange_layers(output);
 		arrange_output(output);
 		transaction_commit_dirty();
