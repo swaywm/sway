@@ -927,19 +927,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void handle_mode(struct sway_output *output) {
-	if (!output->enabled && !output->enabling) {
-		struct output_config *oc = find_output_config(output);
-		if (output->wlr_output->current_mode != NULL &&
-				(!oc || oc->enabled)) {
-			// We want to enable this output, but it didn't work last time,
-			// possibly because we hadn't enough CRTCs. Try again now that the
-			// output has a mode.
-			sway_log(SWAY_DEBUG, "Output %s has gained a CRTC, "
-				"trying to enable it", output->wlr_output->name);
-			apply_output_config(oc, output);
-		}
-		return;
-	}
 	if (!output->enabled) {
 		return;
 	}
