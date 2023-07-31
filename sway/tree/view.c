@@ -4,6 +4,7 @@
 #include <wayland-server-core.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -759,6 +760,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 	if (!ws) {
 		ws = select_workspace(view);
+	}
+
+	if (ws && ws->output) {
+		// Once the output is determined, we can notify the client early about
+		// scale to reduce startup jitter.
+		float scale = ws->output->wlr_output->scale;
+		wlr_fractional_scale_v1_notify_scale(wlr_surface, scale);
+		wlr_surface_set_preferred_buffer_scale(wlr_surface, ceil(scale));
 	}
 
 	struct sway_seat *seat = input_manager_current_seat();
