@@ -403,7 +403,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle tiling resize via mod
-	bool mod_pressed = modifiers & config->floating_mod;
+	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
+	bool shortcuts_inhibited = sway_inhibitor && sway_inhibitor->inhibitor->active;
+	bool mod_pressed = modifiers & config->floating_mod && (!shortcuts_inhibited
+		|| config->floating_mod_inhibited);
+
 	if (cont && !is_floating_or_child && mod_pressed &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?

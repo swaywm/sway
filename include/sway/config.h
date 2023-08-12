@@ -507,6 +507,7 @@ struct sway_config {
 	struct bar_config *current_bar;
 	uint32_t floating_mod;
 	bool floating_mod_inverse;
+	bool floating_mod_inhibited;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
 	char *floating_scroll_up_cmd;
