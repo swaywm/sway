@@ -689,6 +689,10 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 
 			const char *subpixel = sway_wl_output_subpixel_to_string(output->wlr_output->subpixel);
 			json_object_object_add(output_json, "subpixel_hinting", json_object_new_string(subpixel));
+
+			const char *render_format = sway_render_format_to_string(output->wlr_output->render_format);
+			json_object_object_add(output_json, "render_format", json_object_new_string(render_format));
+
 			json_object_array_add(outputs, output_json);
 		}
 		struct sway_output *output;

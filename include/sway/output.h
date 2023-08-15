@@ -197,4 +197,6 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 
 struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr_output);
 
+const char *sway_render_format_to_string(uint32_t render_format);
+
 #endif
