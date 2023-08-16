@@ -182,6 +182,47 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 	}
 }
 
+static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output) {
+	switch (output->scale_filter) {
+	case SCALE_FILTER_LINEAR:
+		return WLR_SCALE_FILTER_BILINEAR;
+	case SCALE_FILTER_NEAREST:
+		return WLR_SCALE_FILTER_NEAREST;
+	default:
+		abort(); // unreachable
+	}
+}
+
+static void output_configure_scene(struct sway_output *output,
+		struct wlr_scene_node *node, float opacity) {
+	if (!node->enabled) {
+		return;
+	}
+
+	struct sway_container *con =
+		scene_descriptor_try_get(node, SWAY_SCENE_DESC_CONTAINER);
+	if (con) {
+		opacity = con->alpha;
+	}
+
+	if (node->type == WLR_SCENE_NODE_BUFFER) {
+		struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
+
+		// hack: don't call the scene setter because that will damage all outputs
+		// We don't want to damage outputs that aren't our current output that
+		// we're configuring
+		buffer->filter_mode = get_scale_filter(output);
+
+		wlr_scene_buffer_set_opacity(buffer, opacity);
+	} else if (node->type == WLR_SCENE_NODE_TREE) {
+		struct wlr_scene_tree *tree = wlr_scene_tree_from_node(node);
+		struct wlr_scene_node *node;
+		wl_list_for_each(node, &tree->children, link) {
+			output_configure_scene(output, node, opacity);
+		}
+	}
+}
+
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
@@ -190,6 +231,8 @@ static int output_repaint_timer_handler(void *data) {
 	}
 
 	output->wlr_output->frame_pending = false;
+
+	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
 
 	if (output->gamma_lut_changed) {
 		struct wlr_output_state pending;

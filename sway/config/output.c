@@ -554,6 +554,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		if (scale_filter_old != output->scale_filter) {
 			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
 				sway_output_scale_filter_to_string(output->scale_filter));
+			wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
 		}
 	}
 
