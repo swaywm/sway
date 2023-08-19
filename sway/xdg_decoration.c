@@ -53,7 +53,7 @@ static void xdg_decoration_handle_request_mode(struct wl_listener *listener,
 
 void handle_xdg_decoration(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_decoration_v1 *wlr_deco = data;
-	struct sway_xdg_shell_view *xdg_shell_view = wlr_deco->surface->data;
+	struct sway_xdg_shell_view *xdg_shell_view = wlr_deco->toplevel->base->data;
 
 	struct sway_xdg_decoration *deco = calloc(1, sizeof(*deco));
 	if (deco == NULL) {
@@ -79,7 +79,7 @@ struct sway_xdg_decoration *xdg_decoration_from_surface(
 		struct wlr_surface *surface) {
 	struct sway_xdg_decoration *deco;
 	wl_list_for_each(deco, &server.xdg_decorations, link) {
-		if (deco->wlr_xdg_decoration->surface->surface == surface) {
+		if (deco->wlr_xdg_decoration->toplevel->base->surface == surface) {
 			return deco;
 		}
 	}
