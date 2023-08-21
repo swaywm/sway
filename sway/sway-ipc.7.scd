@@ -226,6 +226,9 @@ following properties:
 |- subpixel_hinting
 :  string
 :  The subpixel hinting currently in use on the output. This can be _rgb_, _bgr_, _vrgb_, _vbgr_, or _none_
+|- render_bit_depth
+:  integer
+:  The render bit depth currently in use on the output.
 |- render_format
 :  string
 :  The render format currently in use on the output.

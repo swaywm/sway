@@ -199,4 +199,6 @@ struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr
 
 const char *sway_render_format_to_string(uint32_t render_format);
 
+int sway_render_format_to_bit_depth(uint32_t render_format);
+
 #endif

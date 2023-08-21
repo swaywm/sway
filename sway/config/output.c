@@ -377,6 +377,18 @@ static const uint32_t *bit_depth_preferences[] = {
 	},
 };
 
+int sway_render_format_to_bit_depth(uint32_t render_format) {
+	switch (render_format) {
+		case DRM_FORMAT_XRGB2101010:
+		case DRM_FORMAT_XBGR2101010:
+			return 10;
+		case DRM_FORMAT_XRGB8888:
+			return 8;
+		default:
+			return -1;
+	}
+}
+
 const char *sway_render_format_to_string(uint32_t render_format) {
 	switch (render_format) {
 		case DRM_FORMAT_XRGB2101010:
@@ -389,7 +401,7 @@ const char *sway_render_format_to_string(uint32_t render_format) {
 			return "INVALID";
 		default:
 			return "UNKNOWN";
-		}
+	}
 }
 
 static void queue_output_config(struct output_config *oc,

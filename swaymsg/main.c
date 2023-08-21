@@ -194,14 +194,14 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "current_workspace", &ws);
 	json_object_object_get_ex(o, "non_desktop", &non_desktop);
 	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
-		*render_format, *transform, *max_render_time, *adaptive_sync_status;
+		*bit_depth, *transform, *max_render_time, *adaptive_sync_status;
 	json_object_object_get_ex(o, "make", &make);
 	json_object_object_get_ex(o, "model", &model);
 	json_object_object_get_ex(o, "serial", &serial);
 	json_object_object_get_ex(o, "scale", &scale);
 	json_object_object_get_ex(o, "scale_filter", &scale_filter);
 	json_object_object_get_ex(o, "subpixel_hinting", &subpixel);
-	json_object_object_get_ex(o, "render_format", &render_format);
+	json_object_object_get_ex(o, "render_bit_depth", &bit_depth);
 	json_object_object_get_ex(o, "transform", &transform);
 	json_object_object_get_ex(o, "max_render_time", &max_render_time);
 	json_object_object_get_ex(o, "adaptive_sync_status", &adaptive_sync_status);
@@ -233,7 +233,7 @@ static void pretty_print_output(json_object *o) {
 			"  Scale factor: %f\n"
 			"  Scale filter: %s\n"
 			"  Subpixel hinting: %s\n"
-			"  Render format: %s\n"
+			"  Render bit depth: %d\n"
 			"  Transform: %s\n"
 			"  Workspace: %s\n",
 			json_object_get_string(name),
@@ -249,7 +249,7 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_double(scale),
 			json_object_get_string(scale_filter),
 			json_object_get_string(subpixel),
-			json_object_get_string(render_format),
+			json_object_get_int(bit_depth),
 			json_object_get_string(transform),
 			json_object_get_string(ws)
 		);
