@@ -8,7 +8,7 @@
 /**
  * The relay structure manages the relationship between text-input and
  * input_method interfaces on a given seat. Multiple text-input interfaces may
- * be bound to a relay, but at most one will be focused (reveiving events) at
+ * be bound to a relay, but at most one will be focused (receiving events) at
  * a time. At most one input-method interface may be bound to the seat. The
  * relay manages life cycle of both sides. When both sides are present and
  * focused, the relay passes messages between them.
