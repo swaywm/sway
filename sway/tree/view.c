@@ -931,11 +931,6 @@ void view_update_size(struct sway_view *view) {
 	con->pending.content_width = view->geometry.width;
 	con->pending.content_height = view->geometry.height;
 	container_set_geometry_from_content(con);
-
-	// Update the next scheduled width/height so correct coordinates
-	// are sent on the next toplevel configure from wlroots.
-	wlr_xdg_toplevel_set_size(view->wlr_xdg_toplevel, view->geometry.width,
-		view->geometry.height);
 }
 
 void view_center_surface(struct sway_view *view) {
