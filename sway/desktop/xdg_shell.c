@@ -294,6 +294,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
 			view_update_size(view);
+			wlr_xdg_toplevel_set_size(view->wlr_xdg_toplevel, view->geometry.width,
+				view->geometry.height);
 			transaction_commit_dirty_client();
 		} else {
 			view_center_surface(view);
