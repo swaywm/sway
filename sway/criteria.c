@@ -19,6 +19,7 @@
 bool criteria_is_empty(struct criteria *criteria) {
 	return !criteria->title
 		&& !criteria->shell
+		&& !criteria->all
 		&& !criteria->app_id
 		&& !criteria->con_mark
 		&& !criteria->con_id
@@ -456,6 +457,7 @@ static enum atom_name parse_window_type(const char *type) {
 #endif
 
 enum criteria_token {
+	T_ALL,
 	T_APP_ID,
 	T_CON_ID,
 	T_CON_MARK,
@@ -478,7 +480,9 @@ enum criteria_token {
 };
 
 static enum criteria_token token_from_name(char *name) {
-	if (strcmp(name, "app_id") == 0) {
+	if (strcmp(name, "all") == 0) {
+		return T_ALL;
+	} else if (strcmp(name, "app_id") == 0) {
 		return T_APP_ID;
 	} else if (strcmp(name, "con_id") == 0) {
 		return T_CON_ID;
@@ -524,8 +528,8 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		return false;
 	}
 
-	// Require value, unless token is floating or tiled
-	if (!value && token != T_FLOATING && token != T_TILING) {
+	// Require value, unless token is all, floating or tiled
+	if (!value && token != T_ALL && token != T_FLOATING && token != T_TILING) {
 		const char *fmt = "Token '%s' requires a value";
 		int len = strlen(fmt) + strlen(name) - 1;
 		error = malloc(len);
@@ -535,6 +539,9 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 
 	char *endptr = NULL;
 	switch (token) {
+	case T_ALL:
+		criteria->all = true;
+		break;
 	case T_TITLE:
 		pattern_create(&criteria->title, value);
 		break;

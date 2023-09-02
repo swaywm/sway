@@ -962,6 +962,9 @@ properties in practice for your applications.
 
 The following attributes may be matched with:
 
+*all*
+	Matches all windows.
+
 *app_id*
 	Compare value against the app id. Can be a regular expression. If value is
 	\_\_focused\_\_, then the app id must be the same as that of the currently
