@@ -322,7 +322,7 @@ node and will have the following properties:
 :  Number of pixels used for the border width
 |- layout
 :  string
-:  The node's layout. It can either be _splith_, _splitv_, _stacked_,
+:  The node's layout. It can either be _splith_, _splitv_, _stacking_,
    _tabbed_, or _output_
 |- orientation
 :  string
