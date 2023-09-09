@@ -78,7 +78,7 @@ static bool filter_global(const struct wl_client *client,
 		const struct wl_global *global, void *data) {
 #if HAVE_XWAYLAND
 	struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
-	if (global == xwayland->shell_v1->global) {
+	if (xwayland && global == xwayland->shell_v1->global) {
 		return xwayland->server != NULL && client == xwayland->server->client;
 	}
 #endif
