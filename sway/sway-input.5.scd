@@ -121,11 +121,16 @@ The following commands may only be used in the configuration file.
 
 *input* <identifier> map_from_region <X1xY1> <X2xY2>
 	Ignores inputs from this device that do not occur within the specified
-	region. Can be in millimeters (e.g. 10x20mm 20x40mm) or in terms of 0..1
-	(e.g. 0.5x0.5 0.7x0.7). Not all devices support millimeters. Only meaningful
-	if the device is not a keyboard and provides events in absolute terms (such
-	as a drawing tablet or touch screen - most pointers provide events relative
-	to the previous frame).
+	region. Can be in millimeters (e.g. 10x20mm 20x40mm) or the fraction of the
+	full available space in terms of 0..1 (e.g. 0.5x0.5 0.7x0.7). Not all
+	devices support millimeters. Only meaningful if the device is not a
+	keyboard and provides events in absolute terms (such as a drawing tablet
+	or touch screen - most pointers provide events relative to the previous
+	frame).
+
+	Commonly used to maintain the aspect ratio of the input device and screen.
+	Cropping a 16:10 input region to match a 16:9 display can use 0x0 1x0.9 as
+	the argument.
 
 ## LIBINPUT CONFIGURATION
 
