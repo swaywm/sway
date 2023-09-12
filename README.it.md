@@ -42,13 +42,6 @@ Esegui questi comandi:
     ninja -C build/
     sudo ninja -C build/ install
 
-Nei sistemi in cui non sono disponibili né logind né seatd, è necessario
-impostare il permesso suid al binario di sway:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway rinuncerà ai permessi di root poco dopo l'avvio.
-
 ## Configurazione
 
 Se hai già usato i3, copia il tuo file di configurazione in

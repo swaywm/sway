@@ -51,12 +51,6 @@ Exécutez ces commandes :
     ninja -C build
     sudo ninja -C build install
 
-Sur les systèmes sans logind, vous devez suid le binaire de sway :
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway se débarassera des permissions *root* peu de temps après le démarrage.
-
 ## Configuration
 
 Si vous utilisez déjà i3, copiez votre configuration i3 vers

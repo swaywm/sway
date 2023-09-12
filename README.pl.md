@@ -44,12 +44,6 @@ Wykonaj następujące polecenia:
     ninja -C build
     sudo ninja -C build install
 
-Na systemach bez logind należy wykonać polecenie suid na pliku wykonywalnym sway:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway pozbędzie się uprawnień roota tuż po wystartowaniu.
-
 ## Konfiguracja
 
 Jeśli już korzystasz z i3, skopiuj swoją konfigurację i3 do katalogu `~/.config/sway/config` i

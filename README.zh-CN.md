@@ -39,12 +39,6 @@ _\*编译时依赖_
     ninja -C build/
     sudo ninja -C build/ install
 
-在没有logind或seatd的系统上, 你需要给sway二进制文件设置suid:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-启动后，Sway会尽快放弃root权限。
-
 ## 配置
 
 如果你已经在使用i3，直接复制i3配置文件到 `~/.config/sway/config`，这是开箱即用的。或者，你可以复制配置样例到`~/.config/sway/config`。它通常位于 `/etc/sway/config`。

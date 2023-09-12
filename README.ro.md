@@ -43,14 +43,6 @@ Rulați aceste comenzi:
     sudo ninja -C build install
 ```
 
-Pe sisteme fără logind, trebuie să folosiți următoarea comandă pentru a marca binarul de Sway ca suid:
-
-```
-    sudo chmod a+s /usr/local/bin/sway
-```
-
-Imediat după pornire, Sway va renunța la permisiunile de root.
-
 ## Configurare
 
 Dacă folosiți deja i3, copiați fișierul de configurare din i3 în `~/.config/sway/config`, și va funcționa fără a necesita nici o modificare. In caz contrar, copiați exemplul de configurare (disponibil de obicei în `/etc/sway/config`) în `~/.config/sway/config`.

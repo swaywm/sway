@@ -44,12 +44,6 @@ _\*編譯時相依_
     ninja -C build
     sudo ninja -C build install
 
-在沒有 logind 的系統上，你需要為 sway 的執行檔加上 suid。
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway 在啟動不久後就會放棄 root 權限。
-
 ## 設定檔
 
 如果你已經在使用 i3，你可以直接將你的 i3 設定檔複製到 `~/.config/sway/config` 然後就能直接使用。

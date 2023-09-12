@@ -43,12 +43,6 @@ Spusťte tyto příkazy:
     ninja -C build/
     sudo ninja -C build/ install
 
-Na systémech bez logind či seatd musíte binární soubor sway nastavit jako suid:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway svá root oprávnění zruší krátce po spuštění.
-
 ## Konfigurace
 
 Pokud již používáte i3, zkopírujte svou konfiguraci i3 do `~/.config/sway/config`

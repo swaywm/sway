@@ -44,12 +44,6 @@ Voer deze opdrachten uit:
     ninja -C build
     sudo ninja -C build install
 
-Op systemen zonder logind, moet je bij het binaire bestand het suid bit instellen:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway zal root-rechten kort na het opstarten loslaten.
-
 ## Configuratie
 
 Als je al i3 gebruikt, kopieer dan je i3-configuratie naar `~/.config/sway/config` en

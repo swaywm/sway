@@ -34,12 +34,6 @@ Führe die folgenden Befehle aus:
     ninja -C build
     sudo ninja -C build install
 
-Falls dein System nicht logind benutzt, musst du sway noch die passenden Berechtigungen geben:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway läuft nur in der Startphase mit Root-Rechten.
-
 ## Konfiguration
 
 Falls du von i3 migrierst, kannst du deine Konfigurationsdatei nach `~/.config/sway/config` kopieren und die Einstellungen sollten ohne Weiteres funktionieren. Ansonsten kannst du die Beispielkonfiguration, die normalerweise in `/etc/sway/config` liegt, nach `~/.config/sway/config` kopieren. Die Dokumentation zur Konfigurationsdatei findest du in `man 5 sway`.

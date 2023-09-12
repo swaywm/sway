@@ -45,12 +45,6 @@ _\*Зависимости для сборки_
     ninja -C build
     sudo ninja -C build install
 
-На системах без logind вам понадобится добавить suid к файлу программы sway:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-sway сбросит root-права при запуске.
-
 ## Настройка
 
 Если вы уже используете i3, скопируйте ваш конфигурационный файл i3 в `~/.config/sway/config`, и

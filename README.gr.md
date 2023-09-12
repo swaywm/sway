@@ -44,12 +44,6 @@ _\*Compile-time dep_
     ninja -C build/
     sudo ninja -C build/ install
 
-Σε συστήματα χωρίς logind ή seatd, πρέπει να κάνετε suid το sway binary:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Το Sway θα κάνει drop root δικαιώματα λίγο μετά την εκκίνηση.
-
 ## Configuration
 
 Εάν ήδη χρησιμοποιήτε το i3, αντιγράψτε το i3 config σας στο `~/.config/sway/config` και
