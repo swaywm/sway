@@ -44,13 +44,6 @@ Futtasd ezeket a parancsokat:
     ninja -C build
     sudo ninja -C build install
 
-Ha `logind` nélküli rendszert használsz, akkor be kell állítanod a `suid` bitet
-a futtaható állományon:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-A Sway indulás után nem sokkal el fogja engedni a root jogosultságait.
-
 ## Konfiguráció
 
 Ha előzőleg i3-mat használtál, akkor átmásolhatod az i3 beállításaidat a

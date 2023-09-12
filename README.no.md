@@ -45,12 +45,6 @@ Kjør følgende kommandoer:
     ninja -C build
     sudo ninja -C build install
 
-På systemer uten logind eller seatd skal du sette SUID bit i sway filen:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway slipper 'root' tillatelser kort etter oppstart.
-
 ## Konfigurasjon
 
 Hvis du allerede bruker i3 kan du bare kopiere din i3 konfigurasjon til

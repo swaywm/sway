@@ -46,12 +46,6 @@ Execute esses comandos:
     ninja -C build
     sudo ninja -C build install
 
-Em sistemas sem logind, você precisa preparar o binário do sway:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-O sway perderá as privilégios de de root logo após o início do sistema.
-
 ## Configuração
 
 Se você já utiliza o i3, então copie os seus arquivos de configuração para `~/.config/sway/config` e

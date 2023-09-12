@@ -42,12 +42,6 @@ _\*Derleme-anı bağımlılıkları_
     ninja -C build
     sudo ninja -C build install
 
-logind olmayan sistemlerde, sway ikilisine (binary) izin vermeniz (suid) gerekir:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway, başlangıçtan kısa bir süre sonra kök(root) izinlerini bırakacaktır.
-
 ## Yapılandırma
 
 Zaten i3 kullanıyorsanız, i3 yapılandırmanızı `~/.config/sway/config` konumuna kopyalayın ve kutudan çıktığı gibi çalışacaktır. Aksi takdirde, örnek yapılandırma dosyasını `~/.config/sway/config` konumuna kopyalayın. Genellikle `/etc/sway/config` konumunda bulunur.

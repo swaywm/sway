@@ -48,13 +48,6 @@ _\* Compilation के समय आवश्यक_
 	ninja -C build/
 	sudo ninja -C build/ install
 
-उन systems पर जिनमें ना तो logind है, ना ही seatd है, आपको sway की binary
-को suid करना पडेगा:
-
-	sudo chmod a+s /usr/local/bin/sway
-
-Sway अपनी root अनुमतियां प्रारंभ होने के कुछ ही देर बाद छोड़ देगी।
-
 ## Configuration
 
 अगर आप पहले से ही i3 का उपयोग करते हैं तो अपने i3 config को

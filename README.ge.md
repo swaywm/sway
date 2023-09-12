@@ -39,12 +39,6 @@ _\* Compile-time dep_
     ninja -C build/
     sudo ninja -C build/ install
 
-სისტემებზე logind და seatd-ის გარეშე, გჭირდება suid გაუშვა sway binary-ზე:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway შეწყვეტს root ნებართვებს მალევე ჩართვის შემდეგ.
-
 ## კონფიგურაცია
 
 თუ უკვე იყენებთ i3-ს, მაშინ დააკოპირე i3 კონფიგურაცია და ჩასვი `~/.config/sway/config` 

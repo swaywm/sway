@@ -44,12 +44,6 @@ Desde su consola, ejecute las órdenes:
     ninja -C build
     sudo ninja -C build install
 
-En sistemas sin `logind`, necesitará cambiar los permisos del archivo compilado de sway:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway abandonará los permisos de super-usuario al poco de arrancar.
-
 ## Configuración
 
 Si ya utiliza i3, copie su archivo de configuración de i3 a `~/.config/sway/config` y

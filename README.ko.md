@@ -43,12 +43,6 @@ _\*컴파일 떄 필요_
     ninja -C build
     sudo ninja -C build install
 
-logind를 사용하고 있지 않는 시스템에서는, 바이너리에 suid를 설정할 필요가 있습니다:
-
-    sudo chmod a+s /usr/local/bin/sway
-    
-Sway는 시작 후에 root 권한을 drop할 것 입니다.
-
 ## 설정
 
 i3를 이미 사용 중이라면, i3 config을 `~/.config/sway/config`로 복사하세요.

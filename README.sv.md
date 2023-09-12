@@ -41,12 +41,6 @@ Kör dessa kommandon:
     ninja -C build/
     sudo ninja -C build/ install
 
-På system utan logind eller seatd måste du ge sways exekverbara fil root-privilegier:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway kommer att överge sina root-privilegier kort efter uppstart.
-
 ## Konfiguration
 
 Ifall du redan använder i3 så kan du kopiera din konfigurationsfil till `~/.config/sway/config` och det kommer då att fungera som det ska.
