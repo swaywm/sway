@@ -649,7 +649,8 @@ The default colors are:
 
 
 *default_border* normal|none|pixel [<n>]
-	Set default border style for new tiled windows.
+	Set default border style for new tiled windows. Config reload won't affect
+	existing windows, only newly created ones after the reload.
 
 *default_floating_border* normal|none|pixel [<n>]
 	Set default border style for new floating windows. This only applies to
