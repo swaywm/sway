@@ -49,14 +49,17 @@ void handle_compositor_new_surface(struct wl_listener *listener, void *data) {
 
 void surface_update_outputs(struct wlr_surface *surface) {
 	float scale = 1;
+	enum wl_output_transform transform;
 	struct wlr_surface_output *surface_output;
 	wl_list_for_each(surface_output, &surface->current_outputs, link) {
 		if (surface_output->output->scale > scale) {
 			scale = surface_output->output->scale;
+			transform = surface_output->output->transform;
 		}
 	}
 	wlr_fractional_scale_v1_notify_scale(surface, scale);
 	wlr_surface_set_preferred_buffer_scale(surface, ceil(scale));
+	wlr_surface_set_preferred_buffer_transform(surface, transform);
 }
 
 void surface_enter_output(struct wlr_surface *surface,
