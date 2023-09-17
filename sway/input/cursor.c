@@ -414,8 +414,8 @@ static void handle_pointer_motion_relative(
 
 	cursor_handle_activity_from_device(cursor, &e->pointer->base);
 
-	pointer_motion(cursor, e->time_msec, &e->pointer->base, e->delta_x,
-		e->delta_y, e->unaccel_dx, e->unaccel_dy);
+	pointer_motion(cursor, e->time_msec, &e->pointer->base, e->delta_x * sensitivity,
+		e->delta_y * sensitivity, e->unaccel_dx, e->unaccel_dy);
 }
 
 static void handle_pointer_motion_absolute(
@@ -432,7 +432,7 @@ static void handle_pointer_motion_absolute(
 	double dx = lx - cursor->cursor->x;
 	double dy = ly - cursor->cursor->y;
 
-	pointer_motion(cursor, event->time_msec, &event->pointer->base, dx * sensitivity, dy * sensitivity,
+	pointer_motion(cursor, event->time_msec, &event->pointer->base, dx, dy,
 		dx, dy);
 }
 
