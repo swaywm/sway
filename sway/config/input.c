@@ -33,6 +33,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->accel_profile = INT_MIN;
 	input->rotation_angle = FLT_MIN;
 	input->pointer_accel = FLT_MIN;
+	input->sensitivity = FLT_MIN;
 	input->scroll_factor = FLT_MIN;
 	input->scroll_button = INT_MIN;
 	input->scroll_button_lock = INT_MIN;
@@ -81,6 +82,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 	if (src->pointer_accel != FLT_MIN) {
 		dst->pointer_accel = src->pointer_accel;
+	}
+	if (src->sensitivity != FLT_MIN) {
+		dst->sensitivity = src->sensitivity;
 	}
 	if (src->scroll_factor != FLT_MIN) {
 		dst->scroll_factor = src->scroll_factor;
