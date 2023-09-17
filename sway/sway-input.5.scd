@@ -175,6 +175,10 @@ The following commands may only be used in the configuration file.
 *input* <identifier> pointer_accel [<-1|1>]
 	Changes the pointer acceleration for the specified input device.
 
+*input* <identifier> sensitivity <floating point value>
+	Multiplies the sensitivity of a relative pointing input device. Has no
+	effect on absolute pointing devices.
+
 *input* <identifier> rotation_angle <angle>
 	Sets the rotation angle of the device to the given clockwise angle in
 	degrees. The angle must be between 0.0 (inclusive) and 360.0 (exclusive).
