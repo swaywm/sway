@@ -408,7 +408,7 @@ static void handle_pointer_motion_relative(
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
 	struct wlr_pointer_motion_event *e = data;
 	
-	struct sway_input_device *sid = input_sway_device_from_wlr(e->pointer->base);
+	struct sway_input_device *sid = input_sway_device_from_wlr(e->pointer);
 	struct input_config *ic = sid ? input_device_get_config(sid) : NULL;
 	float sensitivity = (ic && ic->sensitivity != FLT_MIN) ? ic->sensitivity : 1.0f;
 
