@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <math.h>
+#include <float.h>
 #include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
 #include <errno.h>
@@ -22,6 +23,7 @@
 #include "sway/commands.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
@@ -30,7 +32,8 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 static uint32_t get_current_time_msec(void) {
 	struct timespec now;
@@ -415,6 +418,11 @@ static void handle_pointer_motion_absolute(
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_pointer_motion_absolute_event *event = data;
+
+	struct sway_input_device *sid = input_sway_device_from_wlr(event->device);
+	struct input_config *ic = sid ? input_device_get_config(sid) : NULL;
+	float sensitivity = (ic && ic->sensitivity != FLT_MIN) ? ic->sensitivity : 1.0f;
+
 	cursor_handle_activity_from_device(cursor, &event->pointer->base);
 
 	double lx, ly;
@@ -424,7 +432,7 @@ static void handle_pointer_motion_absolute(
 	double dx = lx - cursor->cursor->x;
 	double dy = ly - cursor->cursor->y;
 
-	pointer_motion(cursor, event->time_msec, &event->pointer->base, dx, dy,
+	pointer_motion(cursor, event->time_msec, &event->pointer->base, dx * sensitivity, dy * sensitivity,
 		dx, dy);
 }
 
