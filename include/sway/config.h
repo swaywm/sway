@@ -156,6 +156,7 @@ struct input_config {
 	int middle_emulation;
 	int natural_scroll;
 	float pointer_accel;
+	float sensitivity;
 	float rotation_angle;
 	float scroll_factor;
 	int repeat_delay;
