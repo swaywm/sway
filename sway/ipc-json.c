@@ -1128,8 +1128,6 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 		struct input_config *ic = input_device_get_config(device);
-		float scroll_factor = 1.0f;
-		float sensitivity = 1.0f;
 		if (ic != NULL) {
 			if (!isnan(ic->scroll_factor) && ic->scroll_factor != FLT_MIN) {
 				scroll_factor = ic->scroll_factor;
