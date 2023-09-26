@@ -58,9 +58,7 @@ void sway_configure_tablet(struct sway_tablet *tablet) {
 		tablet->seat_device->input_device->wlr_device;
 	struct sway_seat *seat = tablet->seat_device->sway_seat;
 
-	if ((seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER) == 0) {
-		seat_configure_xcursor(seat);
-	}
+	seat_configure_xcursor(seat);
 
 	if (!tablet->tablet_v2) {
 		tablet->tablet_v2 =
