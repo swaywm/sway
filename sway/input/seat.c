@@ -7,7 +7,6 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -103,7 +102,6 @@ void seat_idle_notify_activity(struct sway_seat *seat,
 	if ((source & seat->idle_inhibit_sources) == 0) {
 		return;
 	}
-	wlr_idle_notify_activity(server.idle, seat->wlr_seat);
 	wlr_idle_notifier_v1_notify_activity(server.idle_notifier_v1, seat->wlr_seat);
 }
 

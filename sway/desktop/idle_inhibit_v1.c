@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include "log.h"
 #include "sway/desktop/idle_inhibit_v1.h"
@@ -140,7 +139,6 @@ void sway_idle_inhibit_v1_check_active(void) {
 			break;
 		}
 	}
-	wlr_idle_set_enabled(server.idle, NULL, !inhibited);
 	wlr_idle_notifier_v1_set_inhibited(server.idle_notifier_v1, inhibited);
 }
 

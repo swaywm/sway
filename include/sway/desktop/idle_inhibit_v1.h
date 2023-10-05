@@ -1,7 +1,6 @@
 #ifndef _SWAY_DESKTOP_IDLE_INHIBIT_V1_H
 #define _SWAY_DESKTOP_IDLE_INHIBIT_V1_H
 #include <wlr/types/wlr_idle_inhibit_v1.h>
-#include <wlr/types/wlr_idle.h>
 
 enum sway_idle_inhibit_mode {
 	INHIBIT_IDLE_APPLICATION,  // Application set inhibitor (when visible)
