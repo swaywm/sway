@@ -964,6 +964,11 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 		wlr_output_schedule_frame(output->wlr_output);
 	}
+
+	// Next time the output is enabled, try to re-apply the gamma LUT
+	if ((event->committed & WLR_OUTPUT_STATE_ENABLED) && !output->wlr_output->enabled) {
+		output->gamma_lut_changed = true;
+	}
 }
 
 static void handle_present(struct wl_listener *listener, void *data) {
