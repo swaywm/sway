@@ -368,6 +368,11 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		return;
 	}
 
+	// Clear pending keyboard bindings, if any
+	if (state == WL_POINTER_BUTTON_STATE_PRESSED && modifiers != 0) {
+		sway_keyboard_for_wlr_keyboard(seat, keyboard)->held_binding = NULL;
+	}
+
 	// Handle clicking an empty workspace
 	if (node && node->type == N_WORKSPACE) {
 		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
