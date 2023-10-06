@@ -942,12 +942,15 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
+	if (event->state->committed & WLR_OUTPUT_STATE_SCALE) {
 		output_for_each_container(output, update_textures, NULL);
 		output_for_each_surface(output, update_output_scale_iterator, NULL);
 	}
 
-	if (event->committed & (WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM | WLR_OUTPUT_STATE_SCALE)) {
+	if (event->state->committed & (
+			WLR_OUTPUT_STATE_MODE |
+			WLR_OUTPUT_STATE_TRANSFORM |
+			WLR_OUTPUT_STATE_SCALE)) {
 		arrange_layers(output);
 		arrange_output(output);
 		transaction_commit_dirty();
@@ -955,7 +958,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		update_output_manager_config(output->server);
 	}
 
-	if (event->committed & (WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM)) {
+	if (event->state->committed & (
+			WLR_OUTPUT_STATE_MODE |
+			WLR_OUTPUT_STATE_TRANSFORM)) {
 		int width, height;
 		wlr_output_transformed_resolution(output->wlr_output, &width, &height);
 		wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
