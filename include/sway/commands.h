@@ -104,6 +104,7 @@ struct sway_container *container_find_resize_parent(struct sway_container *con,
 sway_cmd cmd_exec_validate;
 sway_cmd cmd_exec_process;
 
+sway_cmd cmd_action;
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;
 sway_cmd cmd_bindcode;

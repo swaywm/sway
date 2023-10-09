@@ -350,6 +350,17 @@ bool server_init(struct sway_server *server) {
 
 	wl_list_init(&server->pending_launcher_ctxs);
 
+	server->action_binder = wlr_action_binder_v1_create(server->wl_display);
+	server->action_binder_bind.notify = action_binder_v1_bind;
+	wl_signal_add(&server->action_binder->events.bind,
+			&server->action_binder_bind);
+	server->action_binder_unbind.notify = action_binder_v1_unbind;
+	wl_signal_add(&server->action_binder->events.unbind,
+			&server->action_binder_unbind);
+	server->action_binder_destroy.notify = action_binder_v1_delete;
+	wl_signal_add(&server->action_binder->events.destroy,
+			&server->action_binder_destroy);
+
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
 	for (unsigned int i = 1; i <= 32; ++i) {
