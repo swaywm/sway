@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include <wlr/types/wlr_frame_scheduler.h>
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -94,6 +95,7 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	wlr_output->data = output;
 	output->detected_subpixel = wlr_output->subpixel;
 	output->scale_filter = SCALE_FILTER_NEAREST;
+	output->frame_scheduler = wlr_frame_scheduler_autocreate(wlr_output);
 
 	wl_signal_init(&output->events.disable);
 

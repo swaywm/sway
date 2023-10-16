@@ -21,6 +21,7 @@ struct sway_output {
 	struct sway_node node;
 	struct wlr_output *wlr_output;
 	struct sway_server *server;
+	struct wlr_frame_scheduler *frame_scheduler;
 	struct wl_list link;
 
 	struct wl_list layers[4]; // sway_layer_surface::link
@@ -45,7 +46,6 @@ struct sway_output {
 	struct wl_listener present;
 	struct wl_listener damage;
 	struct wl_listener frame;
-	struct wl_listener needs_frame;
 	struct wl_listener request_state;
 
 	struct {

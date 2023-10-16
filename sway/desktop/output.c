@@ -9,6 +9,7 @@
 #include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_frame_scheduler.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -564,14 +565,6 @@ static int output_repaint_timer_handler(void *data) {
 		return 0;
 	}
 
-	wlr_output->frame_pending = false;
-
-	if (!wlr_output->needs_frame &&
-			!output->gamma_lut_changed &&
-			!pixman_region32_not_empty(&output->damage_ring.current)) {
-		return 0;
-	}
-
 	struct sway_workspace *workspace = output->current.active_workspace;
 	if (workspace == NULL) {
 		return 0;
@@ -690,7 +683,7 @@ static void handle_damage(struct wl_listener *listener, void *user_data) {
 		wl_container_of(listener, output, damage);
 	struct wlr_output_event_damage *event = user_data;
 	if (wlr_damage_ring_add(&output->damage_ring, event->damage)) {
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 }
 
@@ -746,7 +739,6 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	if (delay < 1) {
 		output_repaint_timer_handler(output);
 	} else {
-		output->wlr_output->frame_pending = true;
 		wl_event_source_timer_update(output->repaint_timer, delay);
 	}
 
@@ -757,18 +749,12 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	send_frame_done(output, &data);
 }
 
-static void handle_needs_frame(struct wl_listener *listener, void *user_data) {
-	struct sway_output *output =
-		wl_container_of(listener, output, needs_frame);
-	wlr_output_schedule_frame(output->wlr_output);
-}
-
 void output_damage_whole(struct sway_output *output) {
 	// The output can exist with no wlr_output if it's just been disconnected
 	// and the transaction to evacuate it has't completed yet.
 	if (output != NULL && output->wlr_output != NULL) {
 		wlr_damage_ring_add_whole(&output->damage_ring);
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 }
 
@@ -793,18 +779,18 @@ static void damage_surface_iterator(struct sway_output *output,
 	}
 	pixman_region32_translate(&damage, box.x, box.y);
 	if (wlr_damage_ring_add(&output->damage_ring, &damage)) {
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 	pixman_region32_fini(&damage);
 
 	if (whole) {
 		if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
-			wlr_output_schedule_frame(output->wlr_output);
+			wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 		}
 	}
 
 	if (!wl_list_empty(&surface->current.frame_callback_list)) {
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 }
 
@@ -831,7 +817,7 @@ void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
 	box.y -= output->ly;
 	scale_box(&box, output->wlr_output->scale);
 	if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 }
 
@@ -857,7 +843,7 @@ void output_damage_whole_container(struct sway_output *output,
 	};
 	scale_box(&box, output->wlr_output->scale);
 	if (wlr_damage_ring_add_box(&output->damage_ring, &box)) {
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 	// Damage subsurfaces as well, which may extend outside the box
 	if (con->view) {
@@ -909,7 +895,6 @@ static void begin_destroy(struct sway_output *output) {
 	wl_list_remove(&output->present.link);
 	wl_list_remove(&output->damage.link);
 	wl_list_remove(&output->frame.link);
-	wl_list_remove(&output->needs_frame.link);
 	wl_list_remove(&output->request_state.link);
 
 	wlr_damage_ring_finish(&output->damage_ring);
@@ -973,7 +958,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		int width, height;
 		wlr_output_transformed_resolution(output->wlr_output, &width, &height);
 		wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
-		wlr_output_schedule_frame(output->wlr_output);
+		wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 	}
 
 	// Next time the output is enabled, try to re-apply the gamma LUT
@@ -1056,10 +1041,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->present.notify = handle_present;
 	wl_signal_add(&wlr_output->events.damage, &output->damage);
 	output->damage.notify = handle_damage;
-	wl_signal_add(&wlr_output->events.frame, &output->frame);
+	wl_signal_add(&output->frame_scheduler->events.frame, &output->frame);
 	output->frame.notify = handle_frame;
-	wl_signal_add(&wlr_output->events.needs_frame, &output->needs_frame);
-	output->needs_frame.notify = handle_needs_frame;
 	wl_signal_add(&wlr_output->events.request_state, &output->request_state);
 	output->request_state.notify = handle_request_state;
 
@@ -1097,7 +1080,7 @@ void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
 	}
 
 	output->gamma_lut_changed = true;
-	wlr_output_schedule_frame(output->wlr_output);
+	wlr_frame_scheduler_schedule_frame(output->frame_scheduler);
 }
 
 static void output_manager_apply(struct sway_server *server,
