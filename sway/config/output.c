@@ -249,6 +249,8 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	// as (int)(1000 * mHz / 1000.f)
 	// round() the result to avoid any error
 	int mhz = (int)roundf(refresh_rate * 1000);
+	// If no target refresh rate is given, match highest available
+	mhz = mhz <= 0 ? INT_MAX : mhz;
 
 	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
@@ -258,23 +260,28 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	}
 
 	struct wlr_output_mode *mode, *best = NULL;
+	int best_diff_mhz = INT_MAX;
 	wl_list_for_each(mode, &output->modes, link) {
 		if (mode->width == width && mode->height == height) {
-			if (mode->refresh == mhz) {
+			int diff_mhz = abs(mode->refresh - mhz);
+			if (diff_mhz < best_diff_mhz) {
+				best_diff_mhz = diff_mhz;
 				best = mode;
-				break;
-			}
-			if (best == NULL || mode->refresh > best->refresh) {
-				best = mode;
+				if (best_diff_mhz == 0) {
+					break;
+				}
 			}
 		}
 	}
-	if (!best) {
-		sway_log(SWAY_ERROR, "Configured mode for %s not available", output->name);
-		sway_log(SWAY_INFO, "Picking preferred mode instead");
-		best = wlr_output_preferred_mode(output);
+	if (best) {
+		sway_log(SWAY_INFO, "Assigning configured mode (%dx%d@%.3fHz) to %s",
+			best->width, best->height, best->refresh / 1000.f, output->name);
 	} else {
-		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
+		best = wlr_output_preferred_mode(output);
+		sway_log(SWAY_INFO, "Configured mode (%dx%d@%.3fHz) not available, "
+			"applying preferred mode (%dx%d@%.3fHz)",
+			width, height, refresh_rate,
+			best->width, best->height, best->refresh / 1000.f);
 	}
 	wlr_output_state_set_mode(pending, best);
 }
