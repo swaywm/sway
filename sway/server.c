@@ -13,7 +13,6 @@
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_data_control_v1.h>
-#include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
@@ -107,7 +106,6 @@ bool server_init(struct sway_server *server) {
 	wlr_renderer_init_wl_shm(server->renderer, server->wl_display);
 
 	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer) != NULL) {
-		wlr_drm_create(server->wl_display, server->renderer);
 		server->linux_dmabuf_v1 = wlr_linux_dmabuf_v1_create_with_renderer(
 			server->wl_display, 4, server->renderer);
 	}
