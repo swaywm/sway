@@ -675,6 +675,7 @@ struct parent_data {
 	struct wlr_box box;
 	list_t *children;
 	bool focused;
+	bool sticky;
 	struct sway_container *active_child;
 };
 
@@ -697,19 +698,32 @@ static void render_containers_linear(struct render_context *ctx, struct parent_d
 			struct wlr_texture *title_texture;
 			struct wlr_texture *marks_texture;
 			struct sway_container_state *state = &child->current;
+			bool is_sticky = parent->sticky;
 
 			if (view_is_urgent(view)) {
 				colors = &config->border_colors.urgent;
 				title_texture = child->title_urgent;
 				marks_texture = child->marks_urgent;
-			} else if (state->focused || parent->focused) {
+			} else if ((state->focused || parent->focused) && !is_sticky) {
 				colors = &config->border_colors.focused;
 				title_texture = child->title_focused;
 				marks_texture = child->marks_focused;
-			} else if (child == parent->active_child) {
+			} else if ((state->focused || parent->focused) && is_sticky) {
+				colors = &config->border_colors.sticky;
+				title_texture = child->title_sticky;
+				marks_texture = child->marks_focused;
+			} else if (child == parent->active_child && !is_sticky) {
 				colors = &config->border_colors.focused_inactive;
 				title_texture = child->title_focused_inactive;
 				marks_texture = child->marks_focused_inactive;
+			} else if (child == parent->active_child && is_sticky) {
+				colors = &config->border_colors.sticky_inactive;
+				title_texture = child->title_sticky_inactive;
+				marks_texture = child->marks_focused_inactive;
+			} else if (is_sticky) {
+				colors = &config->border_colors.sticky_unfocused;
+				title_texture = child->title_sticky_unfocused;
+				marks_texture = child->marks_unfocused;
 			} else {
 				colors = &config->border_colors.unfocused;
 				title_texture = child->title_unfocused;
@@ -760,23 +774,36 @@ static void render_containers_tabbed(struct render_context *ctx, struct parent_d
 		struct wlr_texture *marks_texture;
 		bool urgent = view ?
 			view_is_urgent(view) : container_has_urgent_child(child);
+		bool is_sticky = parent->sticky;
 
 		if (urgent) {
 			colors = &config->border_colors.urgent;
 			title_texture = child->title_urgent;
 			marks_texture = child->marks_urgent;
-		} else if (cstate->focused || parent->focused) {
+		} else if ((cstate->focused || parent->focused) && !is_sticky) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
+			marks_texture = child->marks_focused;
+		} else if ((cstate->focused || parent->focused) && is_sticky) {
+			colors = &config->border_colors.sticky;
+			title_texture = child->title_sticky;
 			marks_texture = child->marks_focused;
 		} else if (config->has_focused_tab_title && container_has_focused_child(child)) {
 			colors = &config->border_colors.focused_tab_title;
 			title_texture = child->title_focused_tab_title;
 			marks_texture = child->marks_focused_tab_title;
-		} else if (child == parent->active_child) {
+		} else if (child == parent->active_child && !is_sticky) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = child->marks_focused_inactive;
+		} else if (child == parent->active_child && is_sticky) {
+			colors = &config->border_colors.sticky_inactive;
+			title_texture = child->title_sticky_inactive;
+			marks_texture = child->marks_focused_inactive;
+		} else if (is_sticky) {
+			colors = &config->border_colors.sticky_unfocused;
+			title_texture = child->title_sticky_unfocused;
+			marks_texture = child->marks_unfocused;
 		} else {
 			colors = &config->border_colors.unfocused;
 			title_texture = child->title_unfocused;
@@ -828,23 +855,36 @@ static void render_containers_stacked(struct render_context *ctx, struct parent_
 		struct wlr_texture *marks_texture;
 		bool urgent = view ?
 			view_is_urgent(view) : container_has_urgent_child(child);
+		bool is_sticky = parent->sticky;
 
 		if (urgent) {
 			colors = &config->border_colors.urgent;
 			title_texture = child->title_urgent;
 			marks_texture = child->marks_urgent;
-		} else if (cstate->focused || parent->focused) {
+		} else if ((cstate->focused || parent->focused) && !is_sticky) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
+			marks_texture = child->marks_focused;
+		} else if ((cstate->focused || parent->focused) && is_sticky) {
+			colors = &config->border_colors.sticky;
+			title_texture = child->title_sticky;
 			marks_texture = child->marks_focused;
 		} else if (config->has_focused_tab_title && container_has_focused_child(child)) {
 			colors = &config->border_colors.focused_tab_title;
 			title_texture = child->title_focused_tab_title;
 			marks_texture = child->marks_focused_tab_title;
-		 } else if (child == parent->active_child) {
+		 } else if (child == parent->active_child && !is_sticky) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = child->marks_focused_inactive;
+		 } else if (child == parent->active_child && is_sticky) {
+			colors = &config->border_colors.sticky_inactive;
+			title_texture = child->title_sticky_inactive;
+			marks_texture = child->marks_focused_inactive;
+		} else if (is_sticky) {
+			colors = &config->border_colors.sticky_unfocused;
+			title_texture = child->title_sticky_unfocused;
+			marks_texture = child->marks_unfocused;
 		} else {
 			colors = &config->border_colors.unfocused;
 			title_texture = child->title_unfocused;
@@ -905,6 +945,7 @@ static void render_container(struct render_context *ctx,
 		},
 		.children = con->current.children,
 		.focused = focused,
+		.sticky = container_is_sticky(con),
 		.active_child = con->current.focused_inactive_child,
 	};
 	render_containers(ctx, &data);
@@ -922,6 +963,7 @@ static void render_workspace(struct render_context *ctx,
 		},
 		.children = ws->current.tiling,
 		.focused = focused,
+		.sticky = false,
 		.active_child = ws->current.focused_inactive_child,
 	};
 	render_containers(ctx, &data);
@@ -934,15 +976,24 @@ static void render_floating_container(struct render_context *ctx,
 		struct border_colors *colors;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
+		bool is_sticky = container_is_sticky(con);
 
 		if (view_is_urgent(view)) {
 			colors = &config->border_colors.urgent;
 			title_texture = con->title_urgent;
 			marks_texture = con->marks_urgent;
-		} else if (con->current.focused) {
+		} else if (con->current.focused && !is_sticky) {
 			colors = &config->border_colors.focused;
 			title_texture = con->title_focused;
 			marks_texture = con->marks_focused;
+		} else if (con->current.focused && is_sticky) {
+			colors = &config->border_colors.sticky;
+			title_texture = con->title_sticky;
+			marks_texture = con->marks_focused;
+		} else if (is_sticky) {
+			colors = &config->border_colors.sticky_unfocused;
+			title_texture = con->title_sticky_unfocused;
+			marks_texture = con->marks_unfocused;
 		} else {
 			colors = &config->border_colors.unfocused;
 			title_texture = con->title_unfocused;
