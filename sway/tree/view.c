@@ -882,6 +882,8 @@ void view_unmap(struct sway_view *view) {
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 
+	view->executed_criteria->length = 0;
+
 	if (view->urgent_timer) {
 		wl_event_source_remove(view->urgent_timer);
 		view->urgent_timer = NULL;
