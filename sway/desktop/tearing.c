@@ -25,7 +25,7 @@ static void handle_tearing_controller_set_hint(struct wl_listener *listener,
 
 static void handle_tearing_controller_destroy(struct wl_listener *listener, 
     void *data) {
-  struct sway_tearing_controller *controller = 
+	struct sway_tearing_controller *controller = 
 		wl_container_of(listener, controller, destroy);
 	wl_list_remove(&controller->link);
 	free(controller);
