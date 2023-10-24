@@ -6,6 +6,7 @@ bin/
 test/
 build/
 build-*/
+.cache/
 .lvimrc
 config-debug
 wayland-*-protocol.*

@@ -46,7 +46,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 static void handle_output_commit(struct wl_listener *listener, void *data) {
 	struct wlr_output_event_commit *event = data;
 	struct sway_session_lock_surface *surf = wl_container_of(listener, surf, output_commit);
-	if (event->committed & (
+	if (event->state->committed & (
 			WLR_OUTPUT_STATE_MODE |
 			WLR_OUTPUT_STATE_SCALE |
 			WLR_OUTPUT_STATE_TRANSFORM)) {
