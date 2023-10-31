@@ -169,12 +169,19 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return;
 	}
-	enum wlr_edges edges = WLR_EDGE_NONE;
-	if (tiled) {
-		edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
-				WLR_EDGE_BOTTOM;
+	if (wl_resource_get_version(view->wlr_xdg_toplevel->resource) >=
+			XDG_TOPLEVEL_STATE_TILED_LEFT_SINCE_VERSION) {
+		enum wlr_edges edges = WLR_EDGE_NONE;
+		if (tiled) {
+			edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
+					WLR_EDGE_BOTTOM;
+		}
+		wlr_xdg_toplevel_set_tiled(view->wlr_xdg_toplevel, edges);
+	} else {
+		// The version is too low for the tiled state; configure as maximized instead
+		// to stop the client from drawing decorations outside of the toplevel geometry.
+		wlr_xdg_toplevel_set_maximized(view->wlr_xdg_toplevel, tiled);
 	}
-	wlr_xdg_toplevel_set_tiled(view->wlr_xdg_toplevel, edges);
 }
 
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
@@ -294,8 +301,11 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
 			view_update_size(view);
-			wlr_xdg_toplevel_set_size(view->wlr_xdg_toplevel, view->geometry.width,
-				view->geometry.height);
+			// Only set the toplevel size the current container actually has a size.
+			if (view->container->current.width) {
+				wlr_xdg_toplevel_set_size(view->wlr_xdg_toplevel, view->geometry.width,
+					view->geometry.height);
+			}
 			transaction_commit_dirty_client();
 		} else {
 			view_center_surface(view);
