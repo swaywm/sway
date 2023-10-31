@@ -706,9 +706,7 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 
 	if (output->max_render_time != 0) {
 		struct timespec now;
-		clockid_t presentation_clock
-			= wlr_backend_get_presentation_clock(server.backend);
-		clock_gettime(presentation_clock, &now);
+		clock_gettime(CLOCK_MONOTONIC, &now);
 
 		const long NSEC_IN_SECONDS = 1000000000;
 		struct timespec predicted_refresh = output->last_presentation;
