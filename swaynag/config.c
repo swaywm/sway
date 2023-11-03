@@ -166,7 +166,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 					fprintf(stderr, "Missing action for button %s\n", optarg);
 					return EXIT_FAILURE;
 				}
-				struct swaynag_button *button = calloc(sizeof(struct swaynag_button), 1);
+				struct swaynag_button *button = calloc(1, sizeof(struct swaynag_button));
 				if (!button) {
 					perror("calloc");
 					return EXIT_FAILURE;
