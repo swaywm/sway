@@ -189,6 +189,8 @@ struct input_config {
 
 	bool capturable;
 	struct wlr_box region;
+
+	uint64_t seq_id;
 };
 
 /**

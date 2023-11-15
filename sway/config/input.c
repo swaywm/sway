@@ -6,12 +6,16 @@
 #include "sway/input/keyboard.h"
 #include "log.h"
 
+static uint64_t input_config_sequence = 0;
+
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
 	if (!input) {
 		sway_log(SWAY_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
+	input->seq_id = input_config_sequence++;
+
 	sway_log(SWAY_DEBUG, "new_input_config(%s)", identifier);
 	if (!(input->identifier = strdup(identifier))) {
 		free(input);
@@ -182,6 +186,7 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 
 		tool_merge_outer:;
 	}
+	dst->seq_id = input_config_sequence++;
 }
 
 static bool validate_xkb_merge(struct input_config *dest,

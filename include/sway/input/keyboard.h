@@ -69,6 +69,8 @@ struct sway_keyboard {
 
 	struct wl_event_source *key_repeat_source;
 	struct sway_binding *repeat_binding;
+
+	uint64_t last_input_config;
 };
 
 struct sway_keyboard_group {

@@ -969,6 +969,11 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		return;
 	}
 
+	if (!config->reloading && keyboard->last_input_config == input_config->seq_id) {
+		// We have been here before, so bail early
+		return;
+	}
+
 	struct xkb_keymap *keymap = sway_keyboard_compile_keymap(input_config, NULL);
 	if (!keymap) {
 		sway_log(SWAY_ERROR, "Failed to compile keymap. Attempting defaults");
@@ -1067,6 +1072,8 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	wl_signal_add(&keyboard->wlr->events.modifiers,
 		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
+
+	keyboard->last_input_config = input_config->seq_id;
 
 	if (keymap_changed) {
 		ipc_event_input("xkb_keymap",
