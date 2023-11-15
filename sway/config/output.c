@@ -274,6 +274,9 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 		}
 	}
 	if (best) {
+		if (best == output->current_mode) {
+			return;
+		}
 		sway_log(SWAY_INFO, "Assigning configured mode (%dx%d@%.3fHz) to %s",
 			best->width, best->height, best->refresh / 1000.f, output->name);
 	} else {
