@@ -392,14 +392,18 @@ static void queue_output_config(struct output_config *oc,
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (oc && (!oc->enabled || oc->power == 0)) {
-		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
-		wlr_output_state_set_enabled(pending, false);
-		return;
+	pending->allow_reconfiguration = true;
+
+	bool enabled = !oc || (oc->enabled != 0 && oc->power != 0);
+	if (wlr_output->enabled != enabled) {
+		sway_log(SWAY_DEBUG, "Turning %s output %s",
+			enabled ? "on" : "off", wlr_output->name);
+		wlr_output_state_set_enabled(pending, enabled);
 	}
 
-	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
-	wlr_output_state_set_enabled(pending, true);
+	if (!enabled) {
+		return;
+	}
 
 	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
 		sway_log(SWAY_DEBUG, "Set %s modeline",
