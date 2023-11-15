@@ -293,9 +293,9 @@ static void set_modeline(struct wlr_output *output,
 		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 		return;
 	}
-	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
-	if (mode) {
+	if (mode && output->current_mode != mode) {
+		sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 		wlr_output_state_set_mode(pending, mode);
 	}
 #else
