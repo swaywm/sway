@@ -493,7 +493,8 @@ static void queue_output_config(struct output_config *oc,
 		wlr_output_state_set_scale(pending, scale);
 	}
 
-	if (oc && oc->adaptive_sync != -1) {
+	bool cur_adaptive_sync = wlr_output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
+	if (oc && oc->adaptive_sync != -1 && oc->adaptive_sync != cur_adaptive_sync) {
 		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
 			oc->adaptive_sync);
 		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
@@ -533,8 +534,17 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
-	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
-	if (!wlr_output_commit_state(wlr_output, &pending)) {
+	sway_log(SWAY_DEBUG, "HEY 0x%x", pending.committed);
+
+	bool ok;
+	if (pending.committed == 0 && wlr_output->commit_seq != 0) {
+		sway_log(SWAY_DEBUG, "Skipping no-op commit for output %s", wlr_output->name);
+		ok = true;
+	} else {
+		sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
+		ok = wlr_output_commit_state(wlr_output, &pending);
+	}
+	if (!ok) {
 		// Failed to commit output changes, maybe the output is missing a CRTC.
 		// Leave the output disabled for now and try again when the output gets
 		// the mode we asked for.
