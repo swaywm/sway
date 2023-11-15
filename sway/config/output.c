@@ -303,6 +303,34 @@ static void set_modeline(struct wlr_output *output,
 #endif
 }
 
+static void set_preferred_mode(struct wlr_output *wlr_output,
+		struct wlr_output_state *pending) {
+	struct wlr_output_mode *preferred_mode =
+		wlr_output_preferred_mode(wlr_output);
+	if (wlr_output->current_mode == preferred_mode) {
+		return;
+	}
+
+	sway_log(SWAY_DEBUG, "Set %s preferred mode", wlr_output->name);
+	wlr_output_state_set_mode(pending, preferred_mode);
+
+	if (!wlr_output_test_state(wlr_output, pending)) {
+		sway_log(SWAY_DEBUG, "Preferred mode rejected, "
+			"falling back to another mode");
+		struct wlr_output_mode *mode;
+		wl_list_for_each(mode, &wlr_output->modes, link) {
+			if (mode == preferred_mode) {
+				continue;
+			}
+
+			wlr_output_state_set_mode(pending, mode);
+			if (wlr_output_test_state(wlr_output, pending)) {
+				break;
+			}
+		}
+	}
+}
+
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
  * size field. */
 static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
@@ -415,26 +443,7 @@ static void queue_output_config(struct output_config *oc,
 		set_mode(wlr_output, pending, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		sway_log(SWAY_DEBUG, "Set preferred mode");
-		struct wlr_output_mode *preferred_mode =
-			wlr_output_preferred_mode(wlr_output);
-		wlr_output_state_set_mode(pending, preferred_mode);
-
-		if (!wlr_output_test_state(wlr_output, pending)) {
-			sway_log(SWAY_DEBUG, "Preferred mode rejected, "
-				"falling back to another mode");
-			struct wlr_output_mode *mode;
-			wl_list_for_each(mode, &wlr_output->modes, link) {
-				if (mode == preferred_mode) {
-					continue;
-				}
-
-				wlr_output_state_set_mode(pending, mode);
-				if (wlr_output_test_state(wlr_output, pending)) {
-					break;
-				}
-			}
-		}
+		set_preferred_mode(wlr_output, pending);
 	}
 
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
