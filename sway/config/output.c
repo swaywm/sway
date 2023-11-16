@@ -590,7 +590,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	// Reconfigure all devices, since input config may have been applied before
 	// this output came online, and some config items (like map_to_output) are
 	// dependent on an output being present.
-	input_manager_configure_all_inputs();
+	input_manager_configure_all_input_mappings();
 	// Reconfigure the cursor images, since the scale may have changed.
 	input_manager_configure_xcursor();
 	return true;
