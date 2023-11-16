@@ -834,7 +834,6 @@ static void seat_configure_switch(struct sway_seat *seat,
 	if (!seat_device->switch_device) {
 		sway_switch_create(seat, seat_device);
 	}
-	seat_apply_input_config(seat, seat_device);
 	sway_switch_configure(seat_device->switch_device);
 }
 
