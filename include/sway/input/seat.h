@@ -168,6 +168,9 @@ void seat_add_device(struct sway_seat *seat,
 void seat_configure_device(struct sway_seat *seat,
 		struct sway_input_device *device);
 
+void seat_configure_device_mapping(struct sway_seat *seat,
+		struct sway_input_device *input_device);
+
 void seat_reset_device(struct sway_seat *seat,
 		struct sway_input_device *input_device);
 

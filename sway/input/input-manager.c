@@ -571,6 +571,16 @@ void input_manager_configure_all_inputs(void) {
 	}
 }
 
+void input_manager_configure_all_input_mappings(void) {
+	struct sway_input_device *input_device;
+	wl_list_for_each(input_device, &server.input->devices, link) {
+		struct sway_seat *seat;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			seat_configure_device_mapping(seat, input_device);
+		}
+	}
+}
+
 void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
 	bool wildcard = strcmp(input_config->identifier, "*") == 0;
