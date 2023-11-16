@@ -278,6 +278,10 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 			best->width, best->height, best->refresh / 1000.f, output->name);
 	} else {
 		best = wlr_output_preferred_mode(output);
+		if (!best) {
+			sway_log(SWAY_ERROR, "No preferred mode for output %s", output->name);
+			return;
+		}
 		sway_log(SWAY_INFO, "Configured mode (%dx%d@%.3fHz) not available, "
 			"applying preferred mode (%dx%d@%.3fHz)",
 			width, height, refresh_rate,
