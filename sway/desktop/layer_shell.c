@@ -305,9 +305,8 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = input_manager_get_default_seat();
 	struct wl_client *client =
 		wl_resource_get_client(sway_layer->layer_surface->resource);
-	bool set_focus = seat->exclusive_client == client;
 
-	if (set_focus) {
+	if (!server.session_lock.locked) {
 		struct sway_layer_surface *layer =
 			find_mapped_layer_by_client(client, sway_layer->layer_surface->output);
 		if (layer) {
