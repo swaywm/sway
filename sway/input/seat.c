@@ -1104,8 +1104,7 @@ bool seat_is_input_allowed(struct sway_seat *seat,
 		}
 		return false;
 	}
-	struct wl_client *client = wl_resource_get_client(surface->resource);
-	return seat->exclusive_client == client || seat->exclusive_client == NULL;
+	return true;
 }
 
 static void send_unfocus(struct sway_container *con, void *data) {
@@ -1373,7 +1372,6 @@ void seat_set_focus_layer(struct sway_seat *seat,
 void seat_set_exclusive_client(struct sway_seat *seat,
 		struct wl_client *client) {
 	if (!client) {
-		seat->exclusive_client = client;
 		// Triggers a refocus of the topmost surface layer if necessary
 		// TODO: Make layer surface focus per-output based on cursor position
 		for (int i = 0; i < root->outputs->length; ++i) {
@@ -1408,7 +1406,6 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 					now.tv_nsec / 1000, point->touch_id);
 		}
 	}
-	seat->exclusive_client = client;
 }
 
 struct sway_node *seat_get_focus_inactive(struct sway_seat *seat,

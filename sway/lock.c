@@ -155,11 +155,6 @@ static void handle_abandon(struct wl_listener *listener, void *data) {
 	wl_list_remove(&server.session_lock.lock_unlock.link);
 	wl_list_remove(&server.session_lock.lock_destroy.link);
 
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		seat->exclusive_client = NULL;
-	}
-
 	// redraw everything
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
