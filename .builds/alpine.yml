@@ -24,7 +24,7 @@ packages:
   - hwdata-dev
 sources:
   - https://github.com/swaywm/sway
-  - https://gitlab.freedesktop.org/wlroots/wlroots.git
+  - https://gitlab.freedesktop.org/wlroots/wlroots.git#0.17
 tasks:
   - wlroots: |
       cd wlroots
