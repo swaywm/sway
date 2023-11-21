@@ -564,10 +564,13 @@ static void input_manager_configure_input(
 	}
 }
 
-void input_manager_configure_all_inputs(void) {
-	struct sway_input_device *input_device = NULL;
+void input_manager_configure_all_input_mappings(void) {
+	struct sway_input_device *input_device;
 	wl_list_for_each(input_device, &server.input->devices, link) {
-		input_manager_configure_input(input_device);
+		struct sway_seat *seat;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			seat_configure_device_mapping(seat, input_device);
+		}
 	}
 }
 
