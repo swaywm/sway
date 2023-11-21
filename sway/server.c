@@ -87,7 +87,6 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.gamma_control_manager_v1->global ||
 		global == server.layer_shell->global ||
 		global == server.session_lock.manager->global ||
-		global == server.input->inhibit->global ||
 		global == server.input->keyboard_shortcuts_inhibit->global ||
 		global == server.input->virtual_keyboard->global ||
 		global == server.input->virtual_pointer->global;
