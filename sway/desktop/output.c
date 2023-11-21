@@ -966,7 +966,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	// Next time the output is enabled, try to re-apply the gamma LUT
-	if ((event->committed & WLR_OUTPUT_STATE_ENABLED) && !output->wlr_output->enabled) {
+	if ((event->state->committed & WLR_OUTPUT_STATE_ENABLED) && !output->wlr_output->enabled) {
 		output->gamma_lut_changed = true;
 	}
 }
