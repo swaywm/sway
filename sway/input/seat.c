@@ -803,9 +803,7 @@ static void seat_apply_input_mapping(struct sway_seat *seat,
 
 static void seat_configure_pointer(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
-	if ((seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER) == 0) {
-		seat_configure_xcursor(seat);
-	}
+	seat_configure_xcursor(seat);
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
 	wl_event_source_timer_update(
@@ -1069,26 +1067,27 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 			sway_log(SWAY_ERROR,
 				"Cannot create XCursor manager for theme '%s'", cursor_theme);
 		}
-	}
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *sway_output = root->outputs->items[i];
-		struct wlr_output *output = sway_output->wlr_output;
-		bool result =
-			wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
-				output->scale);
-		if (!result) {
-			sway_log(SWAY_ERROR,
-				"Cannot load xcursor theme for output '%s' with scale %f",
-				output->name, output->scale);
+
+		for (int i = 0; i < root->outputs->length; ++i) {
+			struct sway_output *sway_output = root->outputs->items[i];
+			struct wlr_output *output = sway_output->wlr_output;
+			bool result =
+				wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
+					output->scale);
+			if (!result) {
+				sway_log(SWAY_ERROR,
+					"Cannot load xcursor theme for output '%s' with scale %f",
+					output->name, output->scale);
+			}
 		}
-	}
 
-	// Reset the cursor so that we apply it to outputs that just appeared
-	cursor_set_image(seat->cursor, NULL, NULL);
-	cursor_set_image(seat->cursor, "default", NULL);
-	wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
-		seat->cursor->cursor->y);
+		// Reset the cursor so that we apply it to outputs that just appeared
+		cursor_set_image(seat->cursor, NULL, NULL);
+		cursor_set_image(seat->cursor, "default", NULL);
+		wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
+			seat->cursor->cursor->y);
+	}
 }
 
 bool seat_is_input_allowed(struct sway_seat *seat,
