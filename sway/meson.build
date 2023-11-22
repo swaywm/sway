@@ -8,6 +8,7 @@ sway_sources = files(
 	'lock.c',
 	'main.c',
 	'realtime.c',
+	'scene_descriptor.c',
 	'server.c',
 	'swaynag.c',
 	'xdg_activation_v1.c',
