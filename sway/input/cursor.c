@@ -19,12 +19,12 @@
 #include "log.h"
 #include "util.h"
 #include "sway/commands.h"
-#include "sway/desktop.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
@@ -543,12 +543,8 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;
 		seat->touch_y = ly;
-		struct sway_drag_icon *drag_icon;
-		wl_list_for_each(drag_icon, &root->drag_icons, link) {
-			if (drag_icon->seat == seat) {
-				drag_icon_update_position(drag_icon);
-			}
-		}
+
+		drag_icons_update_position(seat);
 	}
 
 	if (cursor->simulating_pointer_from_touch) {

@@ -18,7 +18,7 @@
 #include "list.h"
 #include "log.h"
 #include "sway/config.h"
-#include "sway/desktop.h"
+#include "sway/scene_descriptor.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
@@ -92,6 +92,7 @@ void seat_destroy(struct sway_seat *seat) {
 	for (int i = 0; i < seat->deferred_bindings->length; i++) {
 		free_sway_binding(seat->deferred_bindings->items[i]);
 	}
+	wlr_scene_node_destroy(&seat->scene_tree->node);
 	list_free(seat->deferred_bindings);
 	free(seat->prev_workspace_name);
 	free(seat);
@@ -353,25 +354,15 @@ static void handle_new_node(struct wl_listener *listener, void *data) {
 	seat_node_from_node(seat, node);
 }
 
-static void drag_icon_damage_whole(struct sway_drag_icon *icon) {
-	if (!icon->wlr_drag_icon->surface->mapped) {
-		return;
-	}
-	desktop_damage_surface(icon->wlr_drag_icon->surface, icon->x, icon->y, true);
-}
-
-void drag_icon_update_position(struct sway_drag_icon *icon) {
-	drag_icon_damage_whole(icon);
-
-	struct wlr_drag_icon *wlr_icon = icon->wlr_drag_icon;
-	struct sway_seat *seat = icon->seat;
+static void drag_icon_update_position(struct sway_seat *seat, struct wlr_scene_node *node) {
+	struct wlr_drag_icon *wlr_icon = scene_descriptor_try_get(node, SWAY_SCENE_DESC_DRAG_ICON);
 	struct wlr_cursor *cursor = seat->cursor->cursor;
+
 	switch (wlr_icon->drag->grab_type) {
 	case WLR_DRAG_GRAB_KEYBOARD:
 		return;
 	case WLR_DRAG_GRAB_KEYBOARD_POINTER:
-		icon->x = cursor->x + icon->dx;
-		icon->y = cursor->y + icon->dy;
+		wlr_scene_node_set_position(node, cursor->x, cursor->y);
 		break;
 	case WLR_DRAG_GRAB_KEYBOARD_TOUCH:;
 		struct wlr_touch_point *point =
@@ -379,42 +370,15 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 		if (point == NULL) {
 			return;
 		}
-		icon->x = seat->touch_x + icon->dx;
-		icon->y = seat->touch_y + icon->dy;
+		wlr_scene_node_set_position(node, seat->touch_x, seat->touch_y);
 	}
-
-	drag_icon_damage_whole(icon);
 }
 
-static void drag_icon_handle_surface_commit(struct wl_listener *listener,
-		void *data) {
-	struct sway_drag_icon *icon =
-		wl_container_of(listener, icon, surface_commit);
-	struct wlr_drag_icon *wlr_icon = icon->wlr_drag_icon;
-	icon->dx += wlr_icon->surface->current.dx;
-	icon->dy += wlr_icon->surface->current.dy;
-	drag_icon_update_position(icon);
-}
-
-static void drag_icon_handle_map(struct wl_listener *listener, void *data) {
-	struct sway_drag_icon *icon = wl_container_of(listener, icon, map);
-	drag_icon_damage_whole(icon);
-}
-
-static void drag_icon_handle_unmap(struct wl_listener *listener, void *data) {
-	struct sway_drag_icon *icon = wl_container_of(listener, icon, unmap);
-	drag_icon_damage_whole(icon);
-}
-
-static void drag_icon_handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_drag_icon *icon = wl_container_of(listener, icon, destroy);
-	icon->wlr_drag_icon->data = NULL;
-	wl_list_remove(&icon->link);
-	wl_list_remove(&icon->surface_commit.link);
-	wl_list_remove(&icon->unmap.link);
-	wl_list_remove(&icon->map.link);
-	wl_list_remove(&icon->destroy.link);
-	free(icon);
+void drag_icons_update_position(struct sway_seat *seat) {
+	struct wlr_scene_node *node;
+	wl_list_for_each(node, &seat->drag_icons->children, link) {
+		drag_icon_update_position(seat, node);
+	}
 }
 
 static void drag_handle_destroy(struct wl_listener *listener, void *data) {
@@ -486,27 +450,20 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 
 	struct wlr_drag_icon *wlr_drag_icon = wlr_drag->icon;
 	if (wlr_drag_icon != NULL) {
-		struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
-		if (icon == NULL) {
-			sway_log(SWAY_ERROR, "Allocation failed");
+		struct wlr_scene_tree *tree = wlr_scene_drag_icon_create(seat->drag_icons, wlr_drag_icon);
+		if (!tree) {
+			sway_log(SWAY_ERROR, "Failed to allocate a drag icon scene tree");
 			return;
 		}
-		icon->seat = seat;
-		icon->wlr_drag_icon = wlr_drag_icon;
-		wlr_drag_icon->data = icon;
 
-		icon->surface_commit.notify = drag_icon_handle_surface_commit;
-		wl_signal_add(&wlr_drag_icon->surface->events.commit, &icon->surface_commit);
-		icon->unmap.notify = drag_icon_handle_unmap;
-		wl_signal_add(&wlr_drag_icon->surface->events.unmap, &icon->unmap);
-		icon->map.notify = drag_icon_handle_map;
-		wl_signal_add(&wlr_drag_icon->surface->events.map, &icon->map);
-		icon->destroy.notify = drag_icon_handle_destroy;
-		wl_signal_add(&wlr_drag_icon->events.destroy, &icon->destroy);
+		if (!scene_descriptor_assign(&tree->node, SWAY_SCENE_DESC_DRAG_ICON,
+				wlr_drag_icon)) {
+			sway_log(SWAY_ERROR, "Failed to allocate a drag icon scene descriptor");
+			wlr_scene_node_destroy(&tree->node);
+			return;
+		}
 
-		wl_list_insert(&root->drag_icons, &icon->link);
-
-		drag_icon_update_position(icon);
+		drag_icon_update_position(seat, &tree->node);
 	}
 	seatop_begin_default(seat);
 }
@@ -553,8 +510,18 @@ struct sway_seat *seat_create(const char *seat_name) {
 		return NULL;
 	}
 
+	bool failed = false;
+	seat->scene_tree = alloc_scene_tree(root->layers.seat, &failed);
+	seat->drag_icons = alloc_scene_tree(seat->scene_tree, &failed);
+	if (failed) {
+		wlr_scene_node_destroy(&seat->scene_tree->node);
+		free(seat);
+		return NULL;
+	}
+
 	seat->wlr_seat = wlr_seat_create(server.wl_display, seat_name);
 	if (!sway_assert(seat->wlr_seat, "could not allocate seat")) {
+		wlr_scene_node_destroy(&seat->scene_tree->node);
 		free(seat);
 		return NULL;
 	}
@@ -562,6 +529,7 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {
+		wlr_scene_node_destroy(&seat->scene_tree->node);
 		wlr_seat_destroy(seat->wlr_seat);
 		free(seat);
 		return NULL;

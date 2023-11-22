@@ -184,15 +184,6 @@ static void render_unmanaged(struct render_context *ctx, struct wl_list *unmanag
 }
 #endif
 
-static void render_drag_icons(struct render_context *ctx, struct wl_list *drag_icons) {
-	struct render_data data = {
-		.alpha = 1.0f,
-		.ctx = ctx,
-	};
-	output_drag_icons_for_each_surface(ctx->output, drag_icons,
-		render_surface_iterator, &data);
-}
-
 // _box.x and .y are expected to be layout-local
 // _box.width and .height are expected to be output-buffer-local
 void render_rect(struct render_context *ctx, const struct wlr_box *_box,
@@ -1131,7 +1122,6 @@ render_overlay:
 		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_layer_popups(ctx,
 		&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
-	render_drag_icons(ctx, &root->drag_icons);
 
 renderer_end:
 	pixman_region32_fini(&transformed_damage);

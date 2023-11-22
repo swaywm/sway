@@ -259,22 +259,6 @@ void output_unmanaged_for_each_surface(struct sway_output *output,
 }
 #endif
 
-void output_drag_icons_for_each_surface(struct sway_output *output,
-		struct wl_list *drag_icons, sway_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, drag_icons, link) {
-		double ox = drag_icon->x - output->lx;
-		double oy = drag_icon->y - output->ly;
-
-		if (drag_icon->wlr_drag_icon->surface->mapped) {
-			output_surface_for_each_surface(output,
-				drag_icon->wlr_drag_icon->surface, ox, oy,
-				iterator, user_data);
-		}
-	}
-}
-
 static int scale_length(int length, int offset, float scale) {
 	return roundf((offset + length) * scale) - roundf(offset * scale);
 }
