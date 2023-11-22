@@ -49,6 +49,7 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->layers.floating = alloc_scene_tree(&root_scene->tree, &failed);
 	root->layers.fullscreen = alloc_scene_tree(&root_scene->tree, &failed);
 	root->layers.fullscreen_global = alloc_scene_tree(&root_scene->tree, &failed);
+	root->layers.seat = alloc_scene_tree(&root_scene->tree, &failed);
 
 	if (failed) {
 		wlr_scene_node_destroy(&root_scene->tree.node);
@@ -63,7 +64,6 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 #if HAVE_XWAYLAND
 	wl_list_init(&root->xwayland_unmanaged);
 #endif
-	wl_list_init(&root->drag_icons);
 	wl_signal_init(&root->events.new_node);
 	root->outputs = create_list();
 	root->non_desktop_outputs = create_list();

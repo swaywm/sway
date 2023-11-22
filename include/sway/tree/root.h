@@ -40,12 +40,12 @@ struct sway_root {
 		struct wlr_scene_tree *floating;
 		struct wlr_scene_tree *fullscreen;
 		struct wlr_scene_tree *fullscreen_global;
+		struct wlr_scene_tree *seat;
 	} layers;
 
 #if HAVE_XWAYLAND
 	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
 #endif
-	struct wl_list drag_icons; // sway_drag_icon::link
 
 	// Includes disabled outputs
 	struct wl_list all_outputs; // sway_output::link

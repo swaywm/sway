@@ -12,6 +12,7 @@
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
@@ -620,12 +621,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 	}
 
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, &root->drag_icons, link) {
-		if (drag_icon->seat == seat) {
-			drag_icon_update_position(drag_icon);
-		}
-	}
+	drag_icons_update_position(seat);
 
 	e->previous_node = node;
 }
@@ -655,12 +651,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 	}
 
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, &root->drag_icons, link) {
-		if (drag_icon->seat == seat) {
-			drag_icon_update_position(drag_icon);
-		}
-	}
+	drag_icons_update_position(seat);
 
 	e->previous_node = node;
 }

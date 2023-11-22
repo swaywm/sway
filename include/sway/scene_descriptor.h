@@ -12,6 +12,7 @@
 
 enum sway_scene_descriptor_type {
 	SWAY_SCENE_DESC_BUFFER_TIMER,
+	SWAY_SCENE_DESC_DRAG_ICON,
 };
 
 bool scene_descriptor_assign(struct wlr_scene_node *node,
