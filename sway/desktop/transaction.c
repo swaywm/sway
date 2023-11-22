@@ -248,7 +248,7 @@ static void apply_container_state(struct sway_container *container,
 		// the container. This is important for fullscreen views which
 		// refuse to resize to the size of the output.
 		if (view->surface) {
-			view_center_surface(view);
+			view_center_and_clip_surface(view);
 		}
 	}
 }

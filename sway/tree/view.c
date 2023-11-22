@@ -893,14 +893,29 @@ void view_update_size(struct sway_view *view) {
 	container_set_geometry_from_content(con);
 }
 
-void view_center_surface(struct sway_view *view) {
+void view_center_and_clip_surface(struct sway_view *view) {
 	struct sway_container *con = view->container;
-	// We always center the current coordinates rather than the next, as the
-	// geometry immediately affects the currently active rendering.
-	int x = (int) fmax(0, (con->current.content_width - view->geometry.width) / 2);
-	int y = (int) fmax(0, (con->current.content_height - view->geometry.height) / 2);
 
-	wlr_scene_node_set_position(&view->content_tree->node, x, y);
+	if (container_is_floating(con)) {
+		// We always center the current coordinates rather than the next, as the
+		// geometry immediately affects the currently active rendering.
+		int x = (int) fmax(0, (con->current.content_width - view->geometry.width) / 2);
+		int y = (int) fmax(0, (con->current.content_height - view->geometry.height) / 2);
+
+		wlr_scene_node_set_position(&view->content_tree->node, x, y);
+	} else {
+		wlr_scene_node_set_position(&view->content_tree->node, 0, 0);
+	}
+
+	// only make sure to clip the content if there is content to clip
+	if (!wl_list_empty(&con->view->content_tree->children)) {
+		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &(struct wlr_box){
+			.x = con->view->geometry.x,
+			.y = con->view->geometry.y,
+			.width = con->current.content_width,
+			.height = con->current.content_height,
+		});
+	}
 }
 
 struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {

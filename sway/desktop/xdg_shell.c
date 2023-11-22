@@ -306,9 +306,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 					view->geometry.height);
 			}
 			transaction_commit_dirty_client();
-		} else {
-			view_center_surface(view);
 		}
+
+		view_center_and_clip_surface(view);
 	}
 
 	if (view->container->node.instruction) {
