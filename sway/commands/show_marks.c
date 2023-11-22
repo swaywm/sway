@@ -10,8 +10,8 @@
 #include "stringop.h"
 #include "util.h"
 
-static void rebuild_marks_iterator(struct sway_container *con, void *data) {
-	container_update_marks_textures(con);
+static void title_bar_update_iterator(struct sway_container *con, void *data) {
+	container_update_marks(con);
 }
 
 struct cmd_results *cmd_show_marks(int argc, char **argv) {
@@ -23,7 +23,7 @@ struct cmd_results *cmd_show_marks(int argc, char **argv) {
 	config->show_marks = parse_boolean(argv[0], config->show_marks);
 
 	if (config->show_marks) {
-		root_for_each_container(rebuild_marks_iterator, NULL);
+		root_for_each_container(title_bar_update_iterator, NULL);
 	}
 
 	for (int i = 0; i < root->outputs->length; ++i) {

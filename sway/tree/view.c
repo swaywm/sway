@@ -27,6 +27,7 @@
 #include "sway/scene_descriptor.h"
 #include "sway/server.h"
 #include "sway/surface.h"
+#include "sway/sway_text_node.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -1337,7 +1338,13 @@ void view_update_title(struct sway_view *view, bool force) {
 	view->container->title = title ? strdup(title) : NULL;
 
 	// Update title after the global font height is updated
-	container_update_title_textures(view->container);
+	if (view->container->title_bar.title_text && len) {
+		sway_text_node_set_text(view->container->title_bar.title_text,
+			view->container->formatted_title);
+		container_arrange_title_bar(view->container);
+	} else {
+		container_update_title_bar(view->container);
+	}
 
 	ipc_event_window(view->container, "title");
 
@@ -1404,6 +1411,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 			return;
 		}
 		clock_gettime(CLOCK_MONOTONIC, &view->urgent);
+		container_update_itself_and_parents(view->container);
 	} else {
 		view->urgent = (struct timespec){ 0 };
 		if (view->urgent_timer) {
