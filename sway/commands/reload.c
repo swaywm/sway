@@ -9,9 +9,8 @@
 #include "list.h"
 #include "log.h"
 
-static void rebuild_textures_iterator(struct sway_container *con, void *data) {
-	container_update_marks_textures(con);
-	container_update_title_textures(con);
+static void title_bar_update_iterator(struct sway_container *con, void *data) {
+	container_update_title_bar(con);
 }
 
 static void do_reload(void *data) {
@@ -48,7 +47,7 @@ static void do_reload(void *data) {
 	}
 	list_free_items_and_destroy(bar_ids);
 
-	root_for_each_container(rebuild_textures_iterator, NULL);
+	root_for_each_container(title_bar_update_iterator, NULL);
 
 	arrange_root();
 }

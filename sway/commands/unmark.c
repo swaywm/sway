@@ -8,9 +8,13 @@
 #include "log.h"
 #include "stringop.h"
 
-static void remove_all_marks_iterator(struct sway_container *con, void *data) {
+static void remove_mark(struct sway_container *con) {
 	container_clear_marks(con);
-	container_update_marks_textures(con);
+	container_update_marks(con);
+}
+
+static void remove_all_marks_iterator(struct sway_container *con, void *data) {
+	remove_mark(con);
 }
 
 // unmark                  Remove all marks from all views
@@ -38,8 +42,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 		}
 	} else if (con && !mark) {
 		// Clear all marks from the given container
-		container_clear_marks(con);
-		container_update_marks_textures(con);
+		remove_mark(con);
 	} else if (!con && mark) {
 		// Remove mark from whichever container has it
 		container_find_and_unmark(mark);
