@@ -1,8 +1,8 @@
 #include <strings.h>
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/output.h"
-#include "util.h"
 
 struct cmd_results *output_cmd_power(int argc, char **argv) {
 	if (!config->handler_context.output_config) {

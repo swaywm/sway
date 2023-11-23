@@ -1,9 +1,9 @@
 #include <string.h>
 #include <strings.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
-#include "log.h"
 
 struct cmd_results *input_cmd_click_method(int argc, char **argv) {
 	struct cmd_results *error = NULL;

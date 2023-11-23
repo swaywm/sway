@@ -1,8 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include <strings.h>
-#include "sway/commands.h"
 #include "log.h"
+#include "sway/commands.h"
 
 struct cmd_results *bar_cmd_position(int argc, char **argv) {
 	struct cmd_results *error = NULL;

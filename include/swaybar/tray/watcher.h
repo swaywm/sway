@@ -1,8 +1,8 @@
 #ifndef _SWAYBAR_TRAY_WATCHER_H
 #define _SWAYBAR_TRAY_WATCHER_H
 
-#include "swaybar/tray/tray.h"
 #include "list.h"
+#include "swaybar/tray/tray.h"
 
 struct swaybar_watcher {
 	char *interface;

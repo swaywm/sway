@@ -9,8 +9,8 @@
 #include "sway/output.h"
 #include "sway/desktop/launcher.h"
 #include "sway/tree/container.h"
-#include "sway/tree/workspace.h"
 #include "sway/tree/root.h"
+#include "sway/tree/workspace.h"
 
 static const char expected_syntax[] =
 	"Expected 'rename workspace <old_name> to <new_name>' or "

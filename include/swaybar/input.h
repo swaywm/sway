@@ -1,8 +1,8 @@
 #ifndef _SWAYBAR_INPUT_H
 #define _SWAYBAR_INPUT_H
 
-#include <wayland-client.h>
 #include <stdbool.h>
+#include <wayland-client.h>
 #include "list.h"
 
 #define SWAY_SCROLL_UP KEY_MAX + 1

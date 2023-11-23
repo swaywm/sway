@@ -1,25 +1,25 @@
 #define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
+#include "list.h"
+#include "log.h"
+#include "stringop.h"
 #include "sway/config.h"
+#include "sway/ipc-server.h"
+#include "sway/server.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/libinput.h"
 #include "sway/input/seat.h"
-#include "sway/ipc-server.h"
-#include "sway/server.h"
 #include "sway/tree/view.h"
-#include "stringop.h"
-#include "list.h"
-#include "log.h"
 
 #if WLR_HAS_LIBINPUT_BACKEND
 #include <wlr/backend/libinput.h>

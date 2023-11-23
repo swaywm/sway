@@ -1,9 +1,9 @@
 #ifndef _SWAYBAR_STATUS_LINE_H
 #define _SWAYBAR_STATUS_LINE_H
 #include <json.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include "bar.h"
 
 enum status_protocol {

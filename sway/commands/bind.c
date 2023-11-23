@@ -1,21 +1,21 @@
 #define _POSIX_C_SOURCE 200809L
-#include <libevdev/libevdev.h>
-#include <linux/input-event-codes.h>
 #include <string.h>
 #include <strings.h>
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-names.h>
+#include <libevdev/libevdev.h>
+#include <linux/input-event-codes.h>
 #include <wlr/types/wlr_cursor.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/desktop/transaction.h"
-#include "sway/input/cursor.h"
-#include "sway/input/keyboard.h"
-#include "sway/ipc-server.h"
+#include <xkbcommon/xkbcommon-names.h>
+#include <xkbcommon/xkbcommon.h>
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/ipc-server.h"
+#include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
+#include "sway/input/keyboard.h"
 
 int binding_order = 0;
 

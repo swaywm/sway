@@ -1,8 +1,8 @@
 #include "log.h"
-#include "sway/commands.h"
-#include "sway/input/seat.h"
-#include "sway/input/input-manager.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 
 static struct cmd_results *handle_action(struct seat_config *sc,
 		struct sway_seat *seat, const char *action) {

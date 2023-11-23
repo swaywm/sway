@@ -1,15 +1,15 @@
 #define _POSIX_C_SOURCE 200809L
+#include <errno.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#include <errno.h>
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/swaynag.h"
-#include "log.h"
-#include "stringop.h"
 
 static const char *bg_options[] = {
 	"stretch",

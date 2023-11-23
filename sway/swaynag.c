@@ -1,16 +1,16 @@
 #define _POSIX_C_SOURCE 200809L
 #include <signal.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include "log.h"
+#include "util.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
-#include "util.h"
 
 static void handle_swaynag_client_destroy(struct wl_listener *listener,
 		void *data) {

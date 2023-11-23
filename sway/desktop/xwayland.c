@@ -3,21 +3,21 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
-#include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_output.h>
-#include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/xwayland.h>
+#include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_xdg_activation_v1.h>
 #include <xcb/xcb_icccm.h>
 #include "log.h"
 #include "sway/desktop.h"
+#include "sway/output.h"
+#include "sway/server.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/server.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 

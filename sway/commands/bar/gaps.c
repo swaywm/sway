@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/ipc-server.h"
-#include "log.h"
 
 struct cmd_results *bar_cmd_gaps(int argc, char **argv) {
 	struct cmd_results *error = NULL;

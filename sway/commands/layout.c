@@ -1,12 +1,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <strings.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
 
 static enum sway_container_layout parse_layout_string(char *s) {
 	if (strcasecmp(s, "splith") == 0) {

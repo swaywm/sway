@@ -5,9 +5,9 @@
 #include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
+#include <wlr/config.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
-#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
@@ -41,11 +41,11 @@
 #include "list.h"
 #include "log.h"
 #include "sway/config.h"
-#include "sway/desktop/idle_inhibit_v1.h"
-#include "sway/input/input-manager.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
 #include "sway/tree/root.h"
 
 #if HAVE_XWAYLAND

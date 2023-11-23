@@ -1,11 +1,11 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/tree/view.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/tree/view.h"
 
 // mark foo                      Same as mark --replace foo
 // mark --add foo                Add this mark to view's list

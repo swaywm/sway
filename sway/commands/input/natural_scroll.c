@@ -1,9 +1,9 @@
 #include <string.h>
 #include <strings.h>
-#include "sway/config.h"
-#include "sway/commands.h"
-#include "sway/input/input-manager.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/input/input-manager.h"
 
 struct cmd_results *input_cmd_natural_scroll(int argc, char **argv) {
 	struct cmd_results *error = NULL;

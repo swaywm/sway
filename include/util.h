@@ -1,8 +1,8 @@
 #ifndef _SWAY_UTIL_H
 #define _SWAY_UTIL_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <wayland-server-protocol.h>
 
 enum movement_unit {

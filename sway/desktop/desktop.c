@@ -1,6 +1,6 @@
-#include "sway/tree/container.h"
 #include "sway/desktop.h"
 #include "sway/output.h"
+#include "sway/tree/container.h"
 
 void desktop_damage_surface(struct wlr_surface *surface, double lx, double ly,
 		bool whole) {

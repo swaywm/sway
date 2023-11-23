@@ -1,7 +1,7 @@
 #include <string.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "log.h"
 
 struct cmd_results *cmd_tiling_drag_threshold(int argc, char **argv) {
 	struct cmd_results *error = NULL;

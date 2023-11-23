@@ -1,13 +1,13 @@
 #include <string.h>
 #include <strings.h>
+#include "log.h"
 #include "sway/commands.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/input/input-manager.h"
-#include "sway/input/seat.h"
-#include "log.h"
 
 static struct cmd_results *do_split(int layout) {
 	struct sway_container *con = config->handler_context.container;

@@ -2,17 +2,17 @@
 #include <strings.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "log.h"
+#include "stringop.h"
+#include "util.h"
 #include "sway/commands.h"
-#include "sway/input/input-manager.h"
-#include "sway/input/cursor.h"
-#include "sway/input/seat.h"
 #include "sway/output.h"
+#include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "stringop.h"
-#include "util.h"
 
 static bool get_direction_from_next_prev(struct sway_container *container,
 		struct sway_seat *seat, const char *name, enum wlr_direction *out) {

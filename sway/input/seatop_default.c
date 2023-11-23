@@ -6,15 +6,15 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "gesture.h"
+#include "log.h"
+#include "sway/layers.h"
+#include "sway/output.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/input/tablet.h"
-#include "sway/layers.h"
-#include "sway/output.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif

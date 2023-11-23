@@ -1,11 +1,11 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/criteria.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/criteria.h"
 
 struct cmd_results *cmd_assign(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include <strings.h>
-#include "sway/config.h"
-#include "sway/commands.h"
-#include "sway/input/input-manager.h"
 #include "log.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/input/input-manager.h"
 
 struct cmd_results *input_cmd_map_to_output(int argc, char **argv) {
 	struct cmd_results *error = NULL;

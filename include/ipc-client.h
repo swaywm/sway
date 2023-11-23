@@ -7,7 +7,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/time.h>
-
 #include "ipc.h"
 
 /**

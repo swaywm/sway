@@ -1,10 +1,10 @@
 #include "log.h"
+#include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/commands.h"
 
 static void close_container_iterator(struct sway_container *con, void *data) {
 	if (con->view) {

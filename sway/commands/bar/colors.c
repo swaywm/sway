@@ -1,7 +1,7 @@
 #include <string.h>
-#include "sway/commands.h"
 #include "log.h"
 #include "util.h"
+#include "sway/commands.h"
 
 // Must be in alphabetical order for bsearch
 static const struct cmd_handler bar_colors_handlers[] = {

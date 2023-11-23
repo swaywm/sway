@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
-#include <unistd.h>
 #include <errno.h>
-#include "sway/config.h"
-#include "sway/commands.h"
+#include <unistd.h>
 #include "log.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 struct cmd_results *input_cmd_xkb_file(int argc, char **argv) {
 	struct cmd_results *error = NULL;

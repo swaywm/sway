@@ -1,19 +1,19 @@
 #define _POSIX_C_SOURCE 200809
 #include <ctype.h>
+#include <json.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <stdio.h>
-#include <json.h>
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/tree/view.h"
-#include "stringop.h"
-#include "log.h"
 
 // Returns error object, or NULL if check succeeds.
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {

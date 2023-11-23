@@ -4,20 +4,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <unistd.h>
+#include <wordexp.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <wordexp.h>
-#include "sway/config.h"
-#include "sway/input/keyboard.h"
-#include "sway/output.h"
 #include "config.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+#include "sway/config.h"
+#include "sway/output.h"
+#include "sway/input/keyboard.h"
 
 void free_bar_binding(struct bar_binding *binding) {
 	if (!binding) {

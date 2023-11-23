@@ -1,9 +1,9 @@
-#include <sys/resource.h>
+#include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
-#include <pthread.h>
-#include "sway/server.h"
+#include <sys/resource.h>
 #include "log.h"
+#include "sway/server.h"
 
 static void child_fork_callback(void) {
 	struct sched_param param;

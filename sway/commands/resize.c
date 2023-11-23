@@ -6,12 +6,12 @@
 #include <string.h>
 #include <strings.h>
 #include <wlr/util/edges.h>
+#include "log.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
-#include "util.h"
 
 #define AXIS_HORIZONTAL (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)
 #define AXIS_VERTICAL   (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)

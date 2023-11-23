@@ -1,6 +1,6 @@
-#include "sway/config.h"
-#include "sway/commands.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 struct cmd_results *seat_cmd_fallback(int argc, char **argv) {
 	struct cmd_results *error = NULL;

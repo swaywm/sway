@@ -2,10 +2,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sway/config.h"
-#include "sway/commands.h"
-#include "sway/input/input-manager.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/input/input-manager.h"
 
 struct cmd_results *input_cmd_scroll_factor(int argc, char **argv) {
 	struct cmd_results *error = NULL;

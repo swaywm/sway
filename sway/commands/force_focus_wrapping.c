@@ -1,7 +1,7 @@
-#include "sway/commands.h"
-#include "sway/config.h"
 #include "log.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 struct cmd_results *cmd_force_focus_wrapping(int argc, char **argv) {
 	sway_log(SWAY_INFO, "Warning: force_focus_wrapping is deprecated. "

@@ -1,9 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
-#include <linux/input-event-codes.h>
 #include <string.h>
 #include <strings.h>
 #include <time.h>
+#include <linux/input-event-codes.h>
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
@@ -19,6 +19,10 @@
 #include "log.h"
 #include "sway/config.h"
 #include "sway/desktop.h"
+#include "sway/ipc-server.h"
+#include "sway/layers.h"
+#include "sway/output.h"
+#include "sway/server.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
@@ -26,10 +30,6 @@
 #include "sway/input/seat.h"
 #include "sway/input/switch.h"
 #include "sway/input/tablet.h"
-#include "sway/ipc-server.h"
-#include "sway/layers.h"
-#include "sway/output.h"
-#include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"

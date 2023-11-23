@@ -2,11 +2,11 @@
 #define _SWAY_INPUT_CURSOR_H
 #include <stdbool.h>
 #include <stdint.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_pointer_gestures_v1.h>
-#include <wlr/types/wlr_compositor.h>
-#include "sway/input/seat.h"
 #include "config.h"
+#include "sway/input/seat.h"
 
 #define SWAY_CURSOR_PRESSED_BUTTONS_CAP 32
 

@@ -1,8 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 #include <limits.h>
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
-#include <stdint.h>
 #include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"

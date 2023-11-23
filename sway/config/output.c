@@ -3,19 +3,19 @@
 #include <drm_fourcc.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
-#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
-#include "sway/config.h"
-#include "sway/input/cursor.h"
-#include "sway/output.h"
-#include "sway/tree/root.h"
+#include <wlr/types/wlr_output_layout.h>
 #include "log.h"
 #include "util.h"
+#include "sway/config.h"
+#include "sway/output.h"
+#include "sway/input/cursor.h"
+#include "sway/tree/root.h"
 
 #if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>

@@ -7,25 +7,25 @@
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
-#include "linux-dmabuf-unstable-v1-protocol.h"
 #include "cairo_util.h"
+#include "list.h"
+#include "log.h"
 #include "pango.h"
+#include "stringop.h"
 #include "sway/config.h"
 #include "sway/desktop.h"
-#include "sway/desktop/transaction.h"
-#include "sway/input/input-manager.h"
-#include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/surface.h"
+#include "sway/xdg_decoration.h"
+#include "sway/desktop/transaction.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/xdg_decoration.h"
-#include "list.h"
-#include "log.h"
-#include "stringop.h"
+#include "linux-dmabuf-unstable-v1-protocol.h"
 
 struct sway_container *container_create(struct sway_view *view) {
 	struct sway_container *c = calloc(1, sizeof(struct sway_container));

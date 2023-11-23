@@ -2,10 +2,10 @@
 #include <string.h>
 #include <strings.h>
 #include <wlr/config.h>
-#include "sway/config.h"
-#include "sway/commands.h"
-#include "sway/input/input-manager.h"
 #include "log.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/input/input-manager.h"
 
 #if WLR_HAS_LIBINPUT_BACKEND
 #include <wlr/backend/libinput.h>

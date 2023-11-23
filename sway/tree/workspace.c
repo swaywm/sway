@@ -2,23 +2,23 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
+#include "list.h"
+#include "log.h"
 #include "stringop.h"
-#include "sway/input/input-manager.h"
-#include "sway/input/cursor.h"
-#include "sway/input/seat.h"
+#include "util.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "list.h"
-#include "log.h"
-#include "util.h"
 
 struct workspace_config *workspace_find_config(const char *ws_name) {
 	for (int i = 0; i < config->workspace_configs->length; ++i) {

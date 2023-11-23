@@ -4,9 +4,8 @@
 #include <strings.h>
 #include "list.h"
 #include "pool-buffer.h"
-#include "cursor-shape-v1-client-protocol.h"
-
 #include "swaynag/types.h"
+#include "cursor-shape-v1-client-protocol.h"
 
 #define SWAYNAG_MAX_HEIGHT 500
 

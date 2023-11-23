@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <wlr/interfaces/wlr_keyboard.h>
-#include "sway/config.h"
-#include "sway/commands.h"
-#include "sway/input/input-manager.h"
 #include "log.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/input/input-manager.h"
 
 struct xkb_switch_layout_action {
 	struct wlr_keyboard *keyboard;
