@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "log.h"
 #include "sway/output.h"
+#include <wlr/util/transform.h>
 
 static enum wl_output_transform invert_rotation_direction(
 		enum wl_output_transform t) {
