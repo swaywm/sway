@@ -1,4 +1,5 @@
 #include <string.h>
+#include <wlr/util/transform.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "log.h"
