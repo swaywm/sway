@@ -1,7 +1,7 @@
 #include <assert.h>
-#include "background-image.h"
 #include "config.h"
 #include "log.h"
+#include "swaybar/image.h"
 
 #if HAVE_GDK_PIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
