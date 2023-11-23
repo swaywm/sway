@@ -1,6 +1,7 @@
 #ifndef _SWAY_STRINGOP_H
 #define _SWAY_STRINGOP_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include "list.h"
