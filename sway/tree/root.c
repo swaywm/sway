@@ -9,6 +9,7 @@
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
@@ -44,13 +45,19 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 
 	bool failed = false;
 	root->staging = alloc_scene_tree(&root_scene->tree, &failed);
+	root->layer_tree = alloc_scene_tree(&root_scene->tree, &failed);
 
-	root->layers.tiling = alloc_scene_tree(&root_scene->tree, &failed);
-	root->layers.floating = alloc_scene_tree(&root_scene->tree, &failed);
-	root->layers.fullscreen = alloc_scene_tree(&root_scene->tree, &failed);
-	root->layers.fullscreen_global = alloc_scene_tree(&root_scene->tree, &failed);
-	root->layers.seat = alloc_scene_tree(&root_scene->tree, &failed);
-	root->layers.session_lock = alloc_scene_tree(&root_scene->tree, &failed);
+	root->layers.tiling = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.floating = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.fullscreen = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.fullscreen_global = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.seat = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.session_lock = alloc_scene_tree(root->layer_tree, &failed);
+
+	if (!failed && !scene_descriptor_assign(&root->layers.seat->node,
+			SWAY_SCENE_DESC_NON_INTERACTIVE, (void *)1)) {
+		failed = true;
+	}
 
 	if (failed) {
 		wlr_scene_node_destroy(&root_scene->tree.node);

@@ -35,6 +35,10 @@ struct sway_root {
 	// staging node will be visible.
 	struct wlr_scene_tree *staging;
 
+	// tree containing all layers the compositor will render. Cursor handling
+	// will end up iterating this tree.
+	struct wlr_scene_tree *layer_tree;
+
 	struct {
 		struct wlr_scene_tree *tiling;
 		struct wlr_scene_tree *floating;

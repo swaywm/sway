@@ -172,19 +172,6 @@ void container_begin_destroy(struct sway_container *con);
 struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
-/**
- * Find a container at the given coordinates. Returns the surface and
- * surface-local coordinates of the given layout coordinates if the container
- * is a view and the view contains a surface at those coordinates.
- */
-struct sway_container *container_at(struct sway_workspace *workspace,
-		double lx, double ly, struct wlr_surface **surface,
-		double *sx, double *sy);
-
-struct sway_container *tiling_container_at(
-		struct sway_node *parent, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy);
-
 void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
