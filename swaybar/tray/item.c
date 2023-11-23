@@ -7,12 +7,12 @@
 #include <string.h>
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/image.h"
 #include "swaybar/input.h"
 #include "swaybar/tray/host.h"
 #include "swaybar/tray/icon.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
-#include "background-image.h"
 #include "cairo_util.h"
 #include "list.h"
 #include "log.h"
