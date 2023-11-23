@@ -104,7 +104,7 @@ static cairo_surface_t* gdk_cairo_image_surface_create_from_pixbuf(
 }
 #endif // HAVE_GDK_PIXBUF
 
-cairo_surface_t *load_background_image(const char *path) {
+cairo_surface_t *load_image(const char *path) {
 	cairo_surface_t *image;
 #if HAVE_GDK_PIXBUF
 	GError *err = NULL;

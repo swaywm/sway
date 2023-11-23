@@ -431,7 +431,7 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 		list_free(icon_search_paths);
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
-			sni->icon = load_background_image(icon_path);
+			sni->icon = load_image(icon_path);
 			free(icon_path);
 			return;
 		}
