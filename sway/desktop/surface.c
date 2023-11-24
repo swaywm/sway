@@ -56,6 +56,7 @@ void surface_update_outputs(struct wlr_surface *surface) {
 		}
 	}
 	wlr_fractional_scale_v1_notify_scale(surface, scale);
+	wlr_surface_set_preferred_buffer_scale(surface, ceil(scale));
 }
 
 void surface_enter_output(struct wlr_surface *surface,

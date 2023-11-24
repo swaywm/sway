@@ -882,6 +882,8 @@ void view_unmap(struct sway_view *view) {
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 
+	view->executed_criteria->length = 0;
+
 	if (view->urgent_timer) {
 		wl_event_source_remove(view->urgent_timer);
 		view->urgent_timer = NULL;
@@ -1422,7 +1424,7 @@ static void view_save_buffer_iterator(struct wlr_surface *surface,
 		int sx, int sy, void *data) {
 	struct sway_view *view = data;
 
-	if (surface && wlr_surface_has_buffer(surface)) {
+	if (surface && surface->buffer) {
 		wlr_buffer_lock(&surface->buffer->base);
 		struct sway_saved_buffer *saved_buffer = calloc(1, sizeof(struct sway_saved_buffer));
 		saved_buffer->buffer = surface->buffer;

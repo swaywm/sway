@@ -160,6 +160,8 @@ struct sway_xwayland_view {
 	struct wl_listener set_window_type;
 	struct wl_listener set_hints;
 	struct wl_listener set_decorations;
+	struct wl_listener associate;
+	struct wl_listener dissociate;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -177,6 +179,8 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener request_fullscreen;
 	struct wl_listener commit;
 	struct wl_listener set_geometry;
+	struct wl_listener associate;
+	struct wl_listener dissociate;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -222,6 +226,7 @@ struct sway_xdg_popup {
 
 	struct wlr_xdg_popup *wlr_xdg_popup;
 
+	struct wl_listener surface_commit;
 	struct wl_listener new_popup;
 	struct wl_listener destroy;
 };

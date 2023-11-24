@@ -1,6 +1,6 @@
 # sway
 
-**[English][en]** - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+**[English][en]** - [عربي][ar] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [ქართული][ge] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway is an [i3]-compatible [Wayland] compositor. Read the [FAQ]. Join the
 [IRC channel] \(#sway on irc.libera.chat).
@@ -43,12 +43,6 @@ Run these commands:
     ninja -C build/
     sudo ninja -C build/ install
 
-On systems without logind nor seatd, you need to suid the sway binary:
-
-    sudo chmod a+s /usr/local/bin/sway
-
-Sway will drop root permissions shortly after startup.
-
 ## Configuration
 
 If you already use i3, then copy your i3 config to `~/.config/sway/config` and
@@ -62,11 +56,13 @@ Run `sway` from a TTY. Some display managers may work but are not supported by
 sway (gdm is known to work fairly well).
 
 [en]: https://github.com/swaywm/sway#readme
+[ar]: README.ar.md
 [cs]: README.cs.md
 [de]: README.de.md
 [dk]: README.dk.md
 [es]: README.es.md
 [fr]: README.fr.md
+[ge]: README.ge.md
 [gr]: README.gr.md
 [hi]: README.hi.md
 [hu]: README.hu.md

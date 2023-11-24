@@ -153,25 +153,16 @@ static void merge_wildcard_on_all(struct output_config *wildcard) {
 }
 
 static void merge_id_on_name(struct output_config *oc) {
-	char *id_on_name = NULL;
-	char id[128];
-	char *name = NULL;
-	struct sway_output *output;
-	wl_list_for_each(output, &root->all_outputs, link) {
-		name = output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), output);
-		if (strcmp(name, oc->name) == 0 || strcmp(id, oc->name) == 0) {
-			size_t length = snprintf(NULL, 0, "%s on %s", id, name) + 1;
-			id_on_name = malloc(length);
-			if (!id_on_name) {
-				sway_log(SWAY_ERROR, "Failed to allocate id on name string");
-				return;
-			}
-			snprintf(id_on_name, length, "%s on %s", id, name);
-			break;
-		}
+	struct sway_output *output = all_output_by_name_or_id(oc->name);
+	if (output == NULL) {
+		return;
 	}
 
+	const char *name = output->wlr_output->name;
+	char id[128];
+	output_get_identifier(id, sizeof(id), output);
+
+	char *id_on_name = format_str("%s on %s", id, name);
 	if (!id_on_name) {
 		return;
 	}
@@ -258,6 +249,8 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	// as (int)(1000 * mHz / 1000.f)
 	// round() the result to avoid any error
 	int mhz = (int)roundf(refresh_rate * 1000);
+	// If no target refresh rate is given, match highest available
+	mhz = mhz <= 0 ? INT_MAX : mhz;
 
 	if (wl_list_empty(&output->modes) || custom) {
 		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
@@ -267,23 +260,28 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	}
 
 	struct wlr_output_mode *mode, *best = NULL;
+	int best_diff_mhz = INT_MAX;
 	wl_list_for_each(mode, &output->modes, link) {
 		if (mode->width == width && mode->height == height) {
-			if (mode->refresh == mhz) {
+			int diff_mhz = abs(mode->refresh - mhz);
+			if (diff_mhz < best_diff_mhz) {
+				best_diff_mhz = diff_mhz;
 				best = mode;
-				break;
-			}
-			if (best == NULL || mode->refresh > best->refresh) {
-				best = mode;
+				if (best_diff_mhz == 0) {
+					break;
+				}
 			}
 		}
 	}
-	if (!best) {
-		sway_log(SWAY_ERROR, "Configured mode for %s not available", output->name);
-		sway_log(SWAY_INFO, "Picking preferred mode instead");
-		best = wlr_output_preferred_mode(output);
+	if (best) {
+		sway_log(SWAY_INFO, "Assigning configured mode (%dx%d@%.3fHz) to %s",
+			best->width, best->height, best->refresh / 1000.f, output->name);
 	} else {
-		sway_log(SWAY_DEBUG, "Assigning configured mode to %s", output->name);
+		best = wlr_output_preferred_mode(output);
+		sway_log(SWAY_INFO, "Configured mode (%dx%d@%.3fHz) not available, "
+			"applying preferred mode (%dx%d@%.3fHz)",
+			width, height, refresh_rate,
+			best->width, best->height, best->refresh / 1000.f);
 	}
 	wlr_output_state_set_mode(pending, best);
 }
@@ -519,10 +517,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
-	if (!oc || oc->power != 0) {
-		output->current_mode = pending.mode;
-	}
-
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
 	if (!wlr_output_commit_state(wlr_output, &pending)) {
 		// Failed to commit output changes, maybe the output is missing a CRTC.
@@ -596,7 +590,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	// Reconfigure all devices, since input config may have been applied before
 	// this output came online, and some config items (like map_to_output) are
 	// dependent on an output being present.
-	input_manager_configure_all_inputs();
+	input_manager_configure_all_input_mappings();
 	// Reconfigure the cursor images, since the scale may have changed.
 	input_manager_configure_xcursor();
 	return true;
@@ -639,9 +633,7 @@ static struct output_config *get_output_config(char *identifier,
 	struct output_config *oc_name = NULL;
 	struct output_config *oc_id = NULL;
 
-	size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
-	char *id_on_name = malloc(length);
-	snprintf(id_on_name, length, "%s on %s", identifier, name);
+	char *id_on_name = format_str("%s on %s", identifier, name);
 	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
 	if (i >= 0) {
 		oc_id_on_name = config->output_configs->items[i];
@@ -728,12 +720,11 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	// this is during startup then there will be no container and config
 	// will be applied during normal "new output" event from wlroots.
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	char id[128];
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		char *name = sway_output->wlr_output->name;
-		output_get_identifier(id, sizeof(id), sway_output);
-		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
+		if (output_match_name_or_id(sway_output, oc->name)) {
+			char id[128];
+			output_get_identifier(id, sizeof(id), sway_output);
 			struct output_config *current = get_output_config(id, sway_output);
 			if (!current) {
 				// No stored output config matched, apply oc directly

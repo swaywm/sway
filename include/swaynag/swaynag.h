@@ -4,6 +4,8 @@
 #include <strings.h>
 #include "list.h"
 #include "pool-buffer.h"
+#include "cursor-shape-v1-client-protocol.h"
+
 #include "swaynag/types.h"
 
 #define SWAYNAG_MAX_HEIGHT 500
@@ -85,6 +87,7 @@ struct swaynag {
 	struct swaynag_output *output;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zwlr_layer_surface_v1 *layer_surface;
+	struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
 	struct wl_surface *surface;
 
 	uint32_t width;

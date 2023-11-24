@@ -75,6 +75,10 @@ void container_resize_tiled(struct sway_container *con,
 		return;
 	}
 
+	if (container_is_scratchpad_hidden_or_child(con)) {
+		return;
+	}
+
 	// For HORIZONTAL or VERTICAL, we are growing in two directions so select
 	// both adjacent siblings. For RIGHT or DOWN, just select the next sibling.
 	// For LEFT or UP, convert it to a RIGHT or DOWN resize and reassign con to
@@ -249,16 +253,35 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
 		struct movement_amount *amount) {
 	struct sway_container *current = config->handler_context.container;
 
+	if (container_is_scratchpad_hidden_or_child(current)) {
+		return cmd_results_new(CMD_FAILURE, "Cannot resize a hidden scratchpad container");
+	}
+
 	if (amount->unit == MOVEMENT_UNIT_DEFAULT) {
 		amount->unit = MOVEMENT_UNIT_PPT;
 	}
 	if (amount->unit == MOVEMENT_UNIT_PPT) {
+        struct sway_container *parent = current->pending.parent;
 		float pct = amount->amount / 100.0f;
 
 		if (is_horizontal(axis)) {
-			amount->amount = (float)current->pending.width * pct;
+            while (parent && parent->pending.layout != L_HORIZ) {
+                parent = parent->pending.parent;
+            }
+            if (parent) {
+                amount->amount = (float)parent->pending.width * pct;
+            } else {
+                amount->amount = (float)current->pending.workspace->width * pct;
+            }
 		} else {
-			amount->amount = (float)current->pending.height * pct;
+            while (parent && parent->pending.layout != L_VERT) {
+                parent = parent->pending.parent;
+            }
+            if (parent) {
+                amount->amount = (float)parent->pending.height * pct;
+            } else {
+                amount->amount = (float)current->pending.workspace->height * pct;
+            }
 		}
 	}
 
@@ -277,6 +300,11 @@ static struct cmd_results *resize_adjust_tiled(uint32_t axis,
  */
 static struct cmd_results *resize_set_tiled(struct sway_container *con,
 		struct movement_amount *width, struct movement_amount *height) {
+
+	if (container_is_scratchpad_hidden_or_child(con)) {
+		return cmd_results_new(CMD_FAILURE, "Cannot resize a hidden scratchpad container");
+	}
+
 	if (width->amount) {
 		if (width->unit == MOVEMENT_UNIT_PPT ||
 				width->unit == MOVEMENT_UNIT_DEFAULT) {
@@ -415,7 +443,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (width.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	}
 
@@ -427,10 +455,10 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		}
 		int num_consumed_args = parse_movement_amount(argc, argv, &height);
 		if (argc > num_consumed_args) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 		if (width.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	}
 
@@ -462,7 +490,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		"[<amount> px|ppt [or <amount> px|ppt]]'";
 	uint32_t axis = parse_resize_axis(*argv);
 	if (axis == WLR_EDGE_NONE) {
-		return cmd_results_new(CMD_INVALID, usage);
+		return cmd_results_new(CMD_INVALID, "%s", usage);
 	}
 	--argc; ++argv;
 
@@ -473,7 +501,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 		argc -= num_consumed_args;
 		argv += num_consumed_args;
 		if (first_amount.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	} else {
 		first_amount.amount = 10;
@@ -483,7 +511,7 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	// "or"
 	if (argc) {
 		if (strcmp(*argv, "or") != 0) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 		--argc; ++argv;
 	}
@@ -493,10 +521,10 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 	if (argc) {
 		int num_consumed_args = parse_movement_amount(argc, argv, &second_amount);
 		if (argc > num_consumed_args) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 		if (second_amount.unit == MOVEMENT_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, usage);
+			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	} else {
 		second_amount.amount = 0;
@@ -566,5 +594,5 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	const char usage[] = "Expected 'resize <shrink|grow> "
 		"<width|height|up|down|left|right> [<amount>] [px|ppt]'";
 
-	return cmd_results_new(CMD_INVALID, usage);
+	return cmd_results_new(CMD_INVALID, "%s", usage);
 }

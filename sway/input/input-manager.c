@@ -6,7 +6,6 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
-#include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
 #include "sway/config.h"
@@ -80,15 +79,7 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 		}
 	}
 
-	const char *fmt = "%d:%d:%s";
-	int len = snprintf(NULL, 0, fmt, vendor, product, name) + 1;
-	char *identifier = malloc(len);
-	if (!identifier) {
-		sway_log(SWAY_ERROR, "Unable to allocate unique input device name");
-		return NULL;
-	}
-
-	snprintf(identifier, len, fmt, vendor, product, name);
+	char *identifier = format_str("%d:%d:%s", vendor, product, name);
 	free(name);
 	return identifier;
 }
@@ -292,34 +283,6 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	}
 }
 
-static void handle_inhibit_activate(struct wl_listener *listener, void *data) {
-	struct sway_input_manager *input_manager = wl_container_of(
-			listener, input_manager, inhibit_activate);
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &input_manager->seats, link) {
-		seat_set_exclusive_client(seat, input_manager->inhibit->active_client);
-	}
-}
-
-static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) {
-	struct sway_input_manager *input_manager = wl_container_of(
-			listener, input_manager, inhibit_deactivate);
-	struct sway_seat *seat;
-	if (server.session_lock.locked) {
-		// Don't deactivate the grab of a screenlocker
-		return;
-	}
-	wl_list_for_each(seat, &input_manager->seats, link) {
-		seat_set_exclusive_client(seat, NULL);
-		struct sway_node *previous = seat_get_focus(seat);
-		if (previous) {
-			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, NULL);
-			seat_set_focus(seat, previous);
-		}
-	}
-}
-
 static void handle_keyboard_shortcuts_inhibitor_destroy(
 		struct wl_listener *listener, void *data) {
 	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
@@ -488,20 +451,14 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 		&input->virtual_pointer_new);
 	input->virtual_pointer_new.notify = handle_virtual_pointer;
 
-	input->inhibit = wlr_input_inhibit_manager_create(server->wl_display);
-	input->inhibit_activate.notify = handle_inhibit_activate;
-	wl_signal_add(&input->inhibit->events.activate,
-			&input->inhibit_activate);
-	input->inhibit_deactivate.notify = handle_inhibit_deactivate;
-	wl_signal_add(&input->inhibit->events.deactivate,
-			&input->inhibit_deactivate);
-
 	input->keyboard_shortcuts_inhibit =
 		wlr_keyboard_shortcuts_inhibit_v1_create(server->wl_display);
 	input->keyboard_shortcuts_inhibit_new_inhibitor.notify =
 		handle_keyboard_shortcuts_inhibit_new_inhibitor;
 	wl_signal_add(&input->keyboard_shortcuts_inhibit->events.new_inhibitor,
 			&input->keyboard_shortcuts_inhibit_new_inhibitor);
+
+	input->pointer_gestures = wlr_pointer_gestures_v1_create(server->wl_display);
 
 	return input;
 }
@@ -540,6 +497,18 @@ static void retranslate_keysyms(struct input_config *input_config) {
 			return;
 		}
 	}
+
+	for (int i = 0; i < config->input_type_configs->length; ++i) {
+		struct input_config *ic = config->input_type_configs->items[i];
+		if (ic->xkb_layout || ic->xkb_file) {
+			// this is the first config with xkb_layout or xkb_file
+			if (ic->identifier == input_config->identifier) {
+				translate_keysyms(ic);
+			}
+
+			return;
+		}
+	}
 }
 
 static void input_manager_configure_input(
@@ -558,10 +527,13 @@ static void input_manager_configure_input(
 	}
 }
 
-void input_manager_configure_all_inputs(void) {
-	struct sway_input_device *input_device = NULL;
+void input_manager_configure_all_input_mappings(void) {
+	struct sway_input_device *input_device;
 	wl_list_for_each(input_device, &server.input->devices, link) {
-		input_manager_configure_input(input_device);
+		struct sway_seat *seat;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			seat_configure_device_mapping(seat, input_device);
+		}
 	}
 }
 

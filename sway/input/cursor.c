@@ -7,7 +7,7 @@
 #include <time.h>
 #include <strings.h>
 #include <wlr/types/wlr_cursor.h>
-#include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_tablet_v2.h>
@@ -55,7 +55,8 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
 static bool surface_is_xdg_popup(struct wlr_surface *surface) {
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_try_from_wlr_surface(surface);
-	return xdg_surface != NULL && xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
+	return xdg_surface != NULL && xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP &&
+		xdg_surface->popup != NULL;
 }
 
 static struct wlr_surface *layer_surface_popup_at(struct sway_output *output,
@@ -236,7 +237,7 @@ void cursor_update_image(struct sway_cursor *cursor,
 		// Try a node's resize edge
 		enum wlr_edges edge = find_resize_edge(node->sway_container, NULL, cursor);
 		if (edge == WLR_EDGE_NONE) {
-			cursor_set_image(cursor, "left_ptr", NULL);
+			cursor_set_image(cursor, "default", NULL);
 		} else if (container_is_floating(node->sway_container)) {
 			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
 		} else {
@@ -247,12 +248,12 @@ void cursor_update_image(struct sway_cursor *cursor,
 			}
 		}
 	} else {
-		cursor_set_image(cursor, "left_ptr", NULL);
+		cursor_set_image(cursor, "default", NULL);
 	}
 }
 
 static void cursor_hide(struct sway_cursor *cursor) {
-	wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+	wlr_cursor_unset_image(cursor->cursor);
 	cursor->hidden = true;
 	wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
 }
@@ -506,6 +507,24 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 		}
 	} else {
 		seatop_touch_up(seat, event);
+	}
+}
+
+static void handle_touch_cancel(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_cancel);
+	struct wlr_touch_cancel_event *event = data;
+	cursor_handle_activity_from_device(cursor, &event->touch->base);
+
+	struct sway_seat *seat = cursor->seat;
+
+	if (cursor->simulating_pointer_from_touch) {
+		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
+			cursor->pointer_touch_up = true;
+			dispatch_cursor_button(cursor, &event->touch->base,
+				event->time_msec, BTN_LEFT, WLR_BUTTON_RELEASED);
+		}
+	} else {
+		seatop_touch_cancel(seat, event);
 	}
 }
 
@@ -1050,10 +1069,9 @@ void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	}
 
 	if (!image) {
-		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+		wlr_cursor_unset_image(cursor->cursor);
 	} else if (!current_image || strcmp(current_image, image) != 0) {
-		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
-				cursor->cursor);
+		wlr_cursor_set_xcursor(cursor->cursor, cursor->xcursor_manager, image);
 	}
 }
 
@@ -1100,6 +1118,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->frame.link);
 	wl_list_remove(&cursor->touch_down.link);
 	wl_list_remove(&cursor->touch_up.link);
+	wl_list_remove(&cursor->touch_cancel.link);
 	wl_list_remove(&cursor->touch_motion.link);
 	wl_list_remove(&cursor->touch_frame.link);
 	wl_list_remove(&cursor->tool_axis.link);
@@ -1135,9 +1154,6 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	wl_list_init(&cursor->image_surface_destroy.link);
 	cursor->image_surface_destroy.notify = handle_image_surface_destroy;
-
-	// gesture events
-	cursor->pointer_gestures = wlr_pointer_gestures_v1_create(server.wl_display);
 
 	wl_signal_add(&wlr_cursor->events.hold_begin, &cursor->hold_begin);
 	cursor->hold_begin.notify = handle_pointer_hold_begin;
@@ -1180,6 +1196,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	wl_signal_add(&wlr_cursor->events.touch_up, &cursor->touch_up);
 	cursor->touch_up.notify = handle_touch_up;
+
+	wl_signal_add(&wlr_cursor->events.touch_cancel, &cursor->touch_cancel);
+	cursor->touch_cancel.notify = handle_touch_cancel;
 
 	wl_signal_add(&wlr_cursor->events.touch_motion,
 		&cursor->touch_motion);
@@ -1273,11 +1292,7 @@ uint32_t get_mouse_bindsym(const char *name, char **error) {
 		// Get event code from name
 		int code = libevdev_event_code_from_name(EV_KEY, name);
 		if (code == -1) {
-			size_t len = snprintf(NULL, 0, "Unknown event %s", name) + 1;
-			*error = malloc(len);
-			if (*error) {
-				snprintf(*error, len, "Unknown event %s", name);
-			}
+			*error = format_str("Unknown event %s", name);
 			return 0;
 		}
 		return code;
@@ -1299,13 +1314,8 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 	}
 	const char *event = libevdev_event_code_get_name(EV_KEY, code);
 	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
-		size_t len = snprintf(NULL, 0, "Event code %d (%s) is not a button",
-				code, event ? event : "(null)") + 1;
-		*error = malloc(len);
-		if (*error) {
-			snprintf(*error, len, "Event code %d (%s) is not a button",
-					code, event ? event : "(null)");
-		}
+		*error = format_str("Event code %d (%s) is not a button",
+			code, event ? event : "(null)");
 		return 0;
 	}
 	return code;
@@ -1457,4 +1467,27 @@ void sway_cursor_constrain(struct sway_cursor *cursor,
 	cursor->constraint_commit.notify = handle_constraint_commit;
 	wl_signal_add(&constraint->surface->events.commit,
 		&cursor->constraint_commit);
+}
+
+void handle_request_set_cursor_shape(struct wl_listener *listener, void *data) {
+	const struct wlr_cursor_shape_manager_v1_request_set_shape_event *event = data;
+	struct sway_seat *seat = event->seat_client->seat->data;
+
+	if (!seatop_allows_set_cursor(seat)) {
+		return;
+	}
+
+	struct wl_client *focused_client = NULL;
+	struct wlr_surface *focused_surface = seat->wlr_seat->pointer_state.focused_surface;
+	if (focused_surface != NULL) {
+		focused_client = wl_resource_get_client(focused_surface->resource);
+	}
+
+	// TODO: check cursor mode
+	if (focused_client == NULL || event->seat_client->client != focused_client) {
+		sway_log(SWAY_DEBUG, "denying request to set cursor from unfocused client");
+		return;
+	}
+
+	cursor_set_image(seat->cursor, wlr_cursor_shape_v1_name(event->shape), focused_client);
 }

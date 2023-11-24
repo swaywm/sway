@@ -3,6 +3,7 @@
 
 #include <wlr/util/edges.h>
 #include "config.h"
+#include "stringop.h"
 
 struct sway_container;
 
@@ -76,7 +77,7 @@ struct cmd_results *config_commands_command(char *exec);
 /**
  * Allocates a cmd_results object.
  */
-struct cmd_results *cmd_results_new(enum cmd_status status, const char *error, ...);
+struct cmd_results *cmd_results_new(enum cmd_status status, const char *error, ...) _SWAY_ATTRIB_PRINTF(2, 3);
 /**
  * Frees a cmd_results object.
  */
@@ -265,6 +266,7 @@ sway_cmd input_cmd_scroll_factor;
 sway_cmd input_cmd_repeat_delay;
 sway_cmd input_cmd_repeat_rate;
 sway_cmd input_cmd_scroll_button;
+sway_cmd input_cmd_scroll_button_lock;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
 sway_cmd input_cmd_tap_button_map;

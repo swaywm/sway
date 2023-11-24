@@ -145,22 +145,16 @@ void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,
 
 	va_list args;
 	va_start(args, fmt);
-	size_t length = vsnprintf(NULL, 0, fmt, args) + 1;
+	char *str = vformat_str(fmt, args);
 	va_end(args);
-
-	char *temp = malloc(length + 1);
-	if (!temp) {
+	if (!str) {
 		sway_log(SWAY_ERROR, "Failed to allocate buffer for swaynag log entry.");
 		return;
 	}
 
-	va_start(args, fmt);
-	vsnprintf(temp, length, fmt, args);
-	va_end(args);
+	write(swaynag->fd[1], str, strlen(str));
 
-	write(swaynag->fd[1], temp, length);
-
-	free(temp);
+	free(str);
 }
 
 void swaynag_show(struct swaynag_instance *swaynag) {

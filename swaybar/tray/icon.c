@@ -40,9 +40,7 @@ static list_t *get_basedirs(void) {
 	data_dirs = strdup(data_dirs);
 	char *dir = strtok(data_dirs, ":");
 	do {
-		size_t path_len = snprintf(NULL, 0, "%s/icons", dir) + 1;
-		char *path = malloc(path_len);
-		snprintf(path, path_len, "%s/icons", dir);
+		char *path = format_str("%s/icons", dir);
 		list_add(basedirs, path);
 	} while ((dir = strtok(NULL, ":")));
 	free(data_dirs);
@@ -206,13 +204,7 @@ static const char *entry_handler(char *group, char *key, char *value,
  */
 static struct icon_theme *read_theme_file(char *basedir, char *theme_name) {
 	// look for index.theme file
-	size_t path_len = snprintf(NULL, 0, "%s/%s/index.theme", basedir,
-			theme_name) + 1;
-	char *path = malloc(path_len);
-	if (!path) {
-		return NULL;
-	}
-	snprintf(path, path_len, "%s/%s/index.theme", basedir, theme_name);
+	char *path = format_str("%s/%s/index.theme", basedir, theme_name);
 	FILE *theme_file = fopen(path, "r");
 	free(path);
 	if (!theme_file) {
@@ -416,26 +408,20 @@ static char *find_icon_in_subdir(char *name, char *basedir, char *theme,
 #endif
 	};
 
-	size_t path_len = snprintf(NULL, 0, "%s/%s/%s/%s.EXT", basedir, theme,
-			subdir, name) + 1;
-	char *path = malloc(path_len);
-
 	for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); ++i) {
-		snprintf(path, path_len, "%s/%s/%s/%s.%s", basedir, theme, subdir,
-				name, extensions[i]);
+		char *path = format_str("%s/%s/%s/%s.%s",
+			basedir, theme, subdir, name, extensions[i]);
 		if (access(path, R_OK) == 0) {
 			return path;
 		}
+		free(path);
 	}
 
-	free(path);
 	return NULL;
 }
 
 static bool theme_exists_in_basedir(char *theme, char *basedir) {
-	size_t path_len = snprintf(NULL, 0, "%s/%s", basedir, theme) + 1;
-	char *path = malloc(path_len);
-	snprintf(path, path_len, "%s/%s", basedir, theme);
+	char *path = format_str("%s/%s", basedir, theme);
 	bool ret = dir_exists(path);
 	free(path);
 	return ret;

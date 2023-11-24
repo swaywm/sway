@@ -96,7 +96,7 @@ static struct cmd_results *bar_cmd_bind(int argc, char **argv, bool code,
 	}
 	if (message) {
 		free_bar_binding(binding);
-		error = cmd_results_new(CMD_INVALID, message);
+		error = cmd_results_new(CMD_INVALID, "%s", message);
 		free(message);
 		return error;
 	} else if (!binding->button) {

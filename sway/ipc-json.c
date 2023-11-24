@@ -1019,6 +1019,17 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 			uint32_t button = libinput_device_config_scroll_get_button(device);
 			json_object_object_add(object, "scroll_button",
 					json_object_new_int(button));
+			const char *lock = "unknown";
+			switch (libinput_device_config_scroll_get_button_lock(device)) {
+			case LIBINPUT_CONFIG_SCROLL_BUTTON_LOCK_ENABLED:
+				lock = "enabled";
+				break;
+			case LIBINPUT_CONFIG_SCROLL_BUTTON_LOCK_DISABLED:
+				lock = "disabled";
+				break;
+			}
+			json_object_object_add(object, "scroll_button_lock",
+					json_object_new_string(lock));
 		}
 	}
 

@@ -7,7 +7,6 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -100,22 +99,10 @@ void seat_destroy(struct sway_seat *seat) {
 
 void seat_idle_notify_activity(struct sway_seat *seat,
 		enum sway_input_idle_source source) {
-	uint32_t mask = seat->idle_inhibit_sources;
-	struct wlr_idle_timeout *timeout;
-	int ntimers = 0, nidle = 0;
-	wl_list_for_each(timeout, &server.idle->idle_timers, link) {
-		++ntimers;
-		if (timeout->idle_state) {
-			++nidle;
-		}
+	if ((source & seat->idle_inhibit_sources) == 0) {
+		return;
 	}
-	if (nidle == ntimers) {
-		mask = seat->idle_wake_sources;
-	}
-	if ((source & mask) > 0) {
-		wlr_idle_notify_activity(server.idle, seat->wlr_seat);
-		wlr_idle_notifier_v1_notify_activity(server.idle_notifier_v1, seat->wlr_seat);
-	}
+	wlr_idle_notifier_v1_notify_activity(server.idle_notifier_v1, seat->wlr_seat);
 }
 
 /**
@@ -367,7 +354,7 @@ static void handle_new_node(struct wl_listener *listener, void *data) {
 }
 
 static void drag_icon_damage_whole(struct sway_drag_icon *icon) {
-	if (!icon->wlr_drag_icon->mapped) {
+	if (!icon->wlr_drag_icon->surface->mapped) {
 		return;
 	}
 	desktop_damage_surface(icon->wlr_drag_icon->surface, icon->x, icon->y, true);
@@ -511,9 +498,9 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 		icon->surface_commit.notify = drag_icon_handle_surface_commit;
 		wl_signal_add(&wlr_drag_icon->surface->events.commit, &icon->surface_commit);
 		icon->unmap.notify = drag_icon_handle_unmap;
-		wl_signal_add(&wlr_drag_icon->events.unmap, &icon->unmap);
+		wl_signal_add(&wlr_drag_icon->surface->events.unmap, &icon->unmap);
 		icon->map.notify = drag_icon_handle_map;
-		wl_signal_add(&wlr_drag_icon->events.map, &icon->map);
+		wl_signal_add(&wlr_drag_icon->surface->events.map, &icon->map);
 		icon->destroy.notify = drag_icon_handle_destroy;
 		wl_signal_add(&wlr_drag_icon->events.destroy, &icon->destroy);
 
@@ -671,7 +658,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 	} else {
 		wlr_seat_set_capabilities(seat->wlr_seat, caps);
 		if ((previous_caps & WL_SEAT_CAPABILITY_POINTER) == 0) {
-			cursor_set_image(seat->cursor, "left_ptr", NULL);
+			cursor_set_image(seat->cursor, "default", NULL);
 		}
 	}
 }
@@ -718,12 +705,21 @@ static bool is_touch_or_tablet_tool(struct sway_seat_device *seat_device) {
 	}
 }
 
-static void seat_apply_input_config(struct sway_seat *seat,
+static void seat_apply_input_mapping(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	struct input_config *ic =
 		input_device_get_config(sway_device->input_device);
 
-	sway_log(SWAY_DEBUG, "Applying input config to %s",
+	switch (sway_device->input_device->wlr_device->type) {
+	case WLR_INPUT_DEVICE_POINTER:
+	case WLR_INPUT_DEVICE_TOUCH:
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		break;
+	default:
+		return; // these devices don't support mappings
+	}
+
+	sway_log(SWAY_DEBUG, "Applying input mapping to %s",
 		sway_device->input_device->identifier);
 
 	const char *mapped_to_output = ic == NULL ? NULL : ic->mapped_to_output;
@@ -807,12 +803,9 @@ static void seat_apply_input_config(struct sway_seat *seat,
 
 static void seat_configure_pointer(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
-	if ((seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER) == 0) {
-		seat_configure_xcursor(seat);
-	}
+	seat_configure_xcursor(seat);
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
-	seat_apply_input_config(seat, sway_device);
 	wl_event_source_timer_update(
 			seat->cursor->hide_source, cursor_get_timeout(seat->cursor));
 }
@@ -847,7 +840,6 @@ static void seat_configure_switch(struct sway_seat *seat,
 	if (!seat_device->switch_device) {
 		sway_switch_create(seat, seat_device);
 	}
-	seat_apply_input_config(seat, seat_device);
 	sway_switch_configure(seat_device->switch_device);
 }
 
@@ -855,7 +847,6 @@ static void seat_configure_touch(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
-	seat_apply_input_config(seat, sway_device);
 }
 
 static void seat_configure_tablet_tool(struct sway_seat *seat,
@@ -866,7 +857,6 @@ static void seat_configure_tablet_tool(struct sway_seat *seat,
 	sway_configure_tablet(sway_device->tablet);
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
-	seat_apply_input_config(seat, sway_device);
 }
 
 static void seat_configure_tablet_pad(struct sway_seat *seat,
@@ -923,6 +913,18 @@ void seat_configure_device(struct sway_seat *seat,
 			seat_configure_tablet_pad(seat, seat_device);
 			break;
 	}
+
+	seat_apply_input_mapping(seat, seat_device);
+}
+
+void seat_configure_device_mapping(struct sway_seat *seat,
+		struct sway_input_device *input_device) {
+	struct sway_seat_device *seat_device = seat_get_device(seat, input_device);
+	if (!seat_device) {
+		return;
+	}
+
+	seat_apply_input_mapping(seat, seat_device);
 }
 
 void seat_reset_device(struct sway_seat *seat,
@@ -1039,7 +1041,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 			wlr_xcursor_manager_load(server.xwayland.xcursor_manager, 1);
 			struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
-				server.xwayland.xcursor_manager, "left_ptr", 1);
+				server.xwayland.xcursor_manager, "default", 1);
 			if (xcursor != NULL) {
 				struct wlr_xcursor_image *image = xcursor->images[0];
 				wlr_xwayland_set_cursor(
@@ -1065,26 +1067,27 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 			sway_log(SWAY_ERROR,
 				"Cannot create XCursor manager for theme '%s'", cursor_theme);
 		}
-	}
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *sway_output = root->outputs->items[i];
-		struct wlr_output *output = sway_output->wlr_output;
-		bool result =
-			wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
-				output->scale);
-		if (!result) {
-			sway_log(SWAY_ERROR,
-				"Cannot load xcursor theme for output '%s' with scale %f",
-				output->name, output->scale);
+
+		for (int i = 0; i < root->outputs->length; ++i) {
+			struct sway_output *sway_output = root->outputs->items[i];
+			struct wlr_output *output = sway_output->wlr_output;
+			bool result =
+				wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
+					output->scale);
+			if (!result) {
+				sway_log(SWAY_ERROR,
+					"Cannot load xcursor theme for output '%s' with scale %f",
+					output->name, output->scale);
+			}
 		}
-	}
 
-	// Reset the cursor so that we apply it to outputs that just appeared
-	cursor_set_image(seat->cursor, NULL, NULL);
-	cursor_set_image(seat->cursor, "left_ptr", NULL);
-	wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
-		seat->cursor->cursor->y);
+		// Reset the cursor so that we apply it to outputs that just appeared
+		cursor_set_image(seat->cursor, NULL, NULL);
+		cursor_set_image(seat->cursor, "default", NULL);
+		wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
+			seat->cursor->cursor->y);
+	}
 }
 
 bool seat_is_input_allowed(struct sway_seat *seat,
@@ -1295,11 +1298,15 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 }
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
-	if (seat->focused_layer) {
+	// Prevents the layer from losing focus if it has keyboard exclusivity
+	if (seat->has_exclusive_layer) {
 		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
 		seat_set_focus_layer(seat, NULL);
 		seat_set_workspace_focus(seat, node);
 		seat_set_focus_layer(seat, layer);
+	} else if (seat->focused_layer) {
+		seat_set_focus_layer(seat, NULL);
+		seat_set_workspace_focus(seat, node);
 	} else {
 		seat_set_workspace_focus(seat, node);
 	}
@@ -1347,14 +1354,20 @@ void seat_set_focus_layer(struct sway_seat *seat,
 			seat_set_focus(seat, previous);
 		}
 		return;
-	} else if (!layer || seat->focused_layer == layer) {
+	} else if (!layer) {
 		return;
 	}
-	assert(layer->mapped);
-	seat_set_focus_surface(seat, layer->surface, true);
-	if (layer->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
-		seat->focused_layer = layer;
+	assert(layer->surface->mapped);
+	if (layer->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP &&
+			layer->current.keyboard_interactive
+			== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
+		seat->has_exclusive_layer = true;
 	}
+	if (seat->focused_layer == layer) {
+		return;
+	}
+	seat_set_focus_surface(seat, layer->surface, true);
+	seat->focused_layer = layer;
 }
 
 void seat_set_exclusive_client(struct sway_seat *seat,
@@ -1638,6 +1651,12 @@ void seatop_touch_down(struct sway_seat *seat, struct wlr_touch_down_event *even
 	}
 }
 
+void seatop_touch_cancel(struct sway_seat *seat, struct wlr_touch_cancel_event *event) {
+	if (seat->seatop_impl->touch_cancel) {
+		seat->seatop_impl->touch_cancel(seat, event);
+	}
+}
+
 void seatop_tablet_tool_tip(struct sway_seat *seat,
 		struct sway_tablet_tool *tool, uint32_t time_msec,
 		enum wlr_tablet_tool_tip_state state) {
@@ -1726,10 +1745,9 @@ void seatop_end(struct sway_seat *seat) {
 	seat->seatop_impl = NULL;
 }
 
-void seatop_render(struct sway_seat *seat, struct sway_output *output,
-		const pixman_region32_t *damage) {
+void seatop_render(struct sway_seat *seat, struct render_context *ctx) {
 	if (seat->seatop_impl->render) {
-		seat->seatop_impl->render(seat, output, damage);
+		seat->seatop_impl->render(seat, ctx);
 	}
 }
 

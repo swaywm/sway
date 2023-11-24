@@ -43,6 +43,7 @@ struct criteria {
 	struct pattern *window_role;
 	enum atom_name window_type;
 #endif
+	bool all;
 	bool floating;
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest

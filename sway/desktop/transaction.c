@@ -344,7 +344,7 @@ static void transaction_progress(void) {
 	server.queued_transaction = NULL;
 
 	if (!server.pending_transaction) {
-		sway_idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
+		sway_idle_inhibit_v1_check_active();
 		return;
 	}
 

@@ -389,8 +389,8 @@ runtime.
 		for_window <criteria> move container to output <output>
 
 *bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
-[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [Group<1-4>+]<key combo> \
-<command>
+[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [--inhibited] \
+[Group<1-4>+]<key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*wev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
@@ -454,7 +454,8 @@ runtime.
 ```
 
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
-[--locked] [--input-device=<device>] [--no-warn] [Group<1-4>+]<code> <command>
+[--locked] [--input-device=<device>] [--no-warn] [--no-repeat] [--inhibited] \
+[Group<1-4>+]<code> <command>
 	is also available for binding with key/button codes instead of key/button names.
 
 *bindswitch* [--locked] [--no-warn] [--reload] <switch>:<state> <command>
@@ -960,6 +961,9 @@ You may like to use swaymsg -t get_tree for finding the values of these
 properties in practice for your applications.
 
 The following attributes may be matched with:
+
+*all*
+	Matches all windows.
 
 *app_id*
 	Compare value against the app id. Can be a regular expression. If value is

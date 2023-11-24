@@ -271,14 +271,13 @@ void output_disable(struct sway_output *output) {
 	list_del(root->outputs, index);
 
 	output->enabled = false;
-	output->current_mode = NULL;
 
 	arrange_root();
 
 	// Reconfigure all devices, since devices with map_to_output directives for
 	// an output that goes offline should stop sending events as long as the
 	// output remains offline.
-	input_manager_configure_all_inputs();
+	input_manager_configure_all_input_mappings();
 }
 
 void output_begin_destroy(struct sway_output *output) {

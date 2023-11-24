@@ -32,7 +32,7 @@ static struct cmd_results *do_split(int layout) {
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static struct cmd_results *do_unsplit() {
+static struct cmd_results *do_unsplit(void) {
 	struct sway_container *con = config->handler_context.container;
 	struct sway_workspace *ws = config->handler_context.workspace;
 

@@ -26,7 +26,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 				"Can't run this command while there's no outputs connected.");
 	}
 	if (strcasecmp(argv[0], "workspace") != 0) {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 
 	int argn = 1;
@@ -65,7 +65,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	++argn; // move past "to"
 
 	if (argn >= argc) {
-		return cmd_results_new(CMD_INVALID, expected_syntax);
+		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 
 	char *new_name = join_args(argv + argn, argc - argn);
