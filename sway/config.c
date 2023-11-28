@@ -975,7 +975,7 @@ char *do_var_replacement(char *str) {
 				int offset = find - str;
 				strncpy(newptr, str, offset);
 				newptr += offset;
-				strncpy(newptr, var->value, vvlen);
+				memcpy(newptr, var->value, vvlen);
 				newptr += vvlen;
 				strcpy(newptr, find + vnlen);
 				free(str);
