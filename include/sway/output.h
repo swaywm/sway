@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_damage_ring.h>
+#include <wlr/types/wlr_frame_scheduler.h>
 #include <wlr/types/wlr_output.h>
 #include "config.h"
 #include "sway/tree/node.h"
@@ -52,10 +53,7 @@ struct sway_output {
 		struct wl_signal disable;
 	} events;
 
-	struct timespec last_presentation;
-	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
-	struct wl_event_source *repaint_timer;
 	bool gamma_lut_changed;
 };
 
@@ -71,6 +69,21 @@ struct render_context {
 	const pixman_region32_t *output_damage;
 
 	struct wlr_render_pass *pass;
+};
+
+struct sway_timer_frame_scheduler {
+	struct wlr_frame_scheduler base;
+
+	int max_render_time;
+
+	struct wl_event_source *idle;
+	struct wl_event_source *timer;
+
+	bool frame_pending;
+	bool needs_frame;
+
+	struct wl_listener commit;
+	struct wl_listener present;
 };
 
 struct sway_output *output_create(struct wlr_output *wlr_output);
@@ -118,6 +131,8 @@ void output_sort_workspaces(struct sway_output *output);
 void output_enable(struct sway_output *output);
 
 void output_disable(struct sway_output *output);
+
+void output_set_max_render_time(struct sway_output *output, int max_render_time);
 
 bool output_has_opaque_overlay_layer_surface(struct sway_output *output);
 

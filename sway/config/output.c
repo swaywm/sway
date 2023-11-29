@@ -584,7 +584,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	if (oc && oc->max_render_time >= 0) {
 		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
 			oc->name, oc->max_render_time);
-		output->max_render_time = oc->max_render_time;
+		output_set_max_render_time(output, oc->max_render_time);
 	}
 
 	// Reconfigure all devices, since input config may have been applied before
