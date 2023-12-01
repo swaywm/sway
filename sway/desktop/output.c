@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/region.h>
+#include <wlr/util/transform.h>
 #include "config.h"
 #include "log.h"
 #include "sway/config.h"
@@ -963,6 +964,11 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wlr_output_transformed_resolution(output->wlr_output, &width, &height);
 		wlr_damage_ring_set_bounds(&output->damage_ring, width, height);
 		wlr_output_schedule_frame(output->wlr_output);
+	}
+
+	// Next time the output is enabled, try to re-apply the gamma LUT
+	if ((event->state->committed & WLR_OUTPUT_STATE_ENABLED) && !output->wlr_output->enabled) {
+		output->gamma_lut_changed = true;
 	}
 }
 

@@ -375,8 +375,6 @@ int main(int argc, char **argv) {
 
 	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
-	root = root_create();
-
 	if (!server_init(&server)) {
 		return 1;
 	}

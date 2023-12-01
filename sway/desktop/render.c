@@ -13,6 +13,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/region.h>
+#include <wlr/util/transform.h>
 #include "log.h"
 #include "config.h"
 #include "sway/config.h"
