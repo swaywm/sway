@@ -53,7 +53,6 @@ void root_destroy(struct sway_root *root) {
 	list_free(root->scratchpad);
 	list_free(root->non_desktop_outputs);
 	list_free(root->outputs);
-	wlr_output_layout_destroy(root->output_layout);
 	free(root);
 }
 
