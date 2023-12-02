@@ -405,24 +405,28 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		bool hidden = node_is_view(node) && !node->destroying &&
 			!view_is_visible(node->sway_container->view);
 		if (should_configure(node, instruction)) {
-			instruction->serial = view_configure(node->sway_container->view,
+			bool successful = view_configure(node->sway_container->view,
+					&instruction->serial,
 					instruction->container_state.content_x,
 					instruction->container_state.content_y,
 					instruction->container_state.content_width,
 					instruction->container_state.content_height);
-			if (!hidden) {
-				instruction->waiting = true;
-				++transaction->num_waiting;
-			}
 
-			// From here on we are rendering a saved buffer of the view, which
-			// means we can send a frame done event to make the client redraw it
-			// as soon as possible. Additionally, this is required if a view is
-			// mapping and its default geometry doesn't intersect an output.
-			struct timespec now;
-			clock_gettime(CLOCK_MONOTONIC, &now);
-			wlr_surface_send_frame_done(
-					node->sway_container->view->surface, &now);
+			if (successful) {
+				if (!hidden) {
+					instruction->waiting = true;
+					++transaction->num_waiting;
+				}
+
+				// From here on we are rendering a saved buffer of the view, which
+				// means we can send a frame done event to make the client redraw it
+				// as soon as possible. Additionally, this is required if a view is
+				// mapping and its default geometry doesn't intersect an output.
+				struct timespec now;
+				clock_gettime(CLOCK_MONOTONIC, &now);
+				wlr_surface_send_frame_done(
+						node->sway_container->view->surface, &now);
+			}
 		}
 		if (!hidden && node_is_view(node) &&
 				wl_list_empty(&node->sway_container->view->saved_buffers)) {
