@@ -112,6 +112,7 @@ static const struct cmd_handler config_handlers[] = {
 
 /* Runtime-only commands. Keep alphabetized */
 static const struct cmd_handler command_handlers[] = {
+	{ "allow_tearing", cmd_allow_tearing },
 	{ "border", cmd_border },
 	{ "create_output", cmd_create_output },
 	{ "exit", cmd_exit },
@@ -136,7 +137,6 @@ static const struct cmd_handler command_handlers[] = {
 	{ "splitv", cmd_splitv },
 	{ "sticky", cmd_sticky },
 	{ "swap", cmd_swap },
-	{ "tearing_allowed", cmd_tearing_allowed },
 	{ "title_format", cmd_title_format },
 	{ "unmark", cmd_unmark },
 	{ "urgent", cmd_urgent },

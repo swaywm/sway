@@ -42,6 +42,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/allow_tearing.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
@@ -111,7 +112,6 @@ sway_sources = files(
 	'commands/swaybg_command.c',
 	'commands/swaynag_command.c',
 	'commands/swap.c',
-	'commands/tearing_allowed.c',
 	'commands/tiling_drag.c',
 	'commands/tiling_drag_threshold.c',
 	'commands/title_align.c',
@@ -189,6 +189,7 @@ sway_sources = files(
 	'commands/input/xkb_variant.c',
 
 	'commands/output/adaptive_sync.c',
+	'commands/output/allow_tearing.c',
 	'commands/output/background.c',
 	'commands/output/disable.c',
 	'commands/output/dpms.c',
@@ -201,7 +202,6 @@ sway_sources = files(
 	'commands/output/scale.c',
 	'commands/output/scale_filter.c',
 	'commands/output/subpixel.c',
-	'commands/output/tearing_allowed.c',
 	'commands/output/toggle.c',
 	'commands/output/transform.c',
 	'commands/output/unplug.c',

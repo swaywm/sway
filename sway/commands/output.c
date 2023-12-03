@@ -8,6 +8,7 @@
 // must be in order for the bsearch
 static const struct cmd_handler output_handlers[] = {
 	{ "adaptive_sync", output_cmd_adaptive_sync },
+	{ "allow_tearing", output_cmd_allow_tearing },
 	{ "background", output_cmd_background },
 	{ "bg", output_cmd_background },
 	{ "color_profile", output_cmd_color_profile },
@@ -26,7 +27,6 @@ static const struct cmd_handler output_handlers[] = {
 	{ "scale", output_cmd_scale },
 	{ "scale_filter", output_cmd_scale_filter },
 	{ "subpixel", output_cmd_subpixel },
-	{ "tearing_allowed", output_cmd_tearing_allowed },
 	{ "toggle", output_cmd_toggle },
 	{ "transform", output_cmd_transform },
 	{ "unplug", output_cmd_unplug },

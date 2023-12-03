@@ -189,8 +189,8 @@ must be separated by one space. For example:
 	This command is experimental, and may be removed or changed in the future. It
 	may have no effect or produce unexpected output when used together with future
 	HDR support features.
-	
-*output* <name> tearing_allowed yes|no
+
+*output* <name> allow_tearing yes|no
 	Allows or disallows screen tearing as a result of asynchronous page flips,
 	and an immediate presentation mode from a client.
 
@@ -199,7 +199,7 @@ must be separated by one space. For example:
 	(VSync). This prevents stutter and reduces latency in games.
 
 	To adjust whether tearing is allowed for specific applications, see
-	*tearing_allowed* in *sway*(5).
+	*allow_tearing* in *sway*(5).
 
 	This setting only has effect on fullscreen windows.
 
