@@ -2,12 +2,12 @@
 #include "sway/config.h"
 #include "util.h"
 
-struct cmd_results *output_cmd_tearing_allowed(int argc, char **argv) {
+struct cmd_results *output_cmd_allow_tearing(int argc, char **argv) {
   if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
 	if (argc == 0) {
-		return cmd_results_new(CMD_INVALID, "Missing tearing_allowed argument");
+		return cmd_results_new(CMD_INVALID, "Missing allow_tearing argument");
 	}
 
   if (parse_boolean(argv[0], true)) {
