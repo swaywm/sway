@@ -3,9 +3,9 @@
 #include "sway/tree/view.h"
 #include "util.h"
 
-struct cmd_results *cmd_tearing_allowed(int argc, char **argv) {
+struct cmd_results *cmd_allow_tearing(int argc, char **argv) {
   struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "tearing_allowed", EXPECTED_AT_LEAST, 1))) {
+	if ((error = checkarg(argc, "allow_tearing", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 

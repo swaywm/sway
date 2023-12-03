@@ -580,7 +580,7 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	}
 	
 	if (oc && oc->tearing_allowed >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s tearing allowed to %d", 
+		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d", 
 			oc->name, oc->tearing_allowed);
 		output->tearing_allowed = oc->tearing_allowed;
 	}
