@@ -1371,15 +1371,6 @@ void seat_set_focus_layer(struct sway_seat *seat,
 
 void seat_set_exclusive_client(struct sway_seat *seat,
 		struct wl_client *client) {
-	if (!client) {
-		// Triggers a refocus of the topmost surface layer if necessary
-		// TODO: Make layer surface focus per-output based on cursor position
-		for (int i = 0; i < root->outputs->length; ++i) {
-			struct sway_output *output = root->outputs->items[i];
-			arrange_layers(output);
-		}
-		return;
-	}
 	if (seat->focused_layer) {
 		if (wl_resource_get_client(seat->focused_layer->resource) != client) {
 			seat_set_focus_layer(seat, NULL);
