@@ -4,6 +4,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
+#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/surface.h"
@@ -129,7 +130,6 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat_set_exclusive_client(seat, NULL);
 		// copied from seat_set_focus_layer -- deduplicate?
 		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);
 		if (previous) {
@@ -137,6 +137,13 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 			seat_set_focus(seat, NULL);
 			seat_set_focus(seat, previous);
 		}
+	}
+
+	// Triggers a refocus of the topmost surface layer if necessary
+	// TODO: Make layer surface focus per-output based on cursor position
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		arrange_layers(output);
 	}
 
 	// redraw everything
