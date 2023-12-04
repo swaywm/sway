@@ -198,8 +198,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface_v1 *layer);
 
-void seat_set_exclusive_client(struct sway_seat *seat,
-		struct wl_client *client);
+void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client);
 
 struct sway_node *seat_get_focus(struct sway_seat *seat);
 
