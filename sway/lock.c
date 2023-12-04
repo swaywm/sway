@@ -184,7 +184,7 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat_set_exclusive_client(seat, client);
+		seat_unfocus_unless_client(seat, client);
 	}
 
 	wl_signal_add(&lock->events.new_surface, &server.session_lock.lock_new_surface);
