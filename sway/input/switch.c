@@ -33,8 +33,8 @@ static bool sway_switch_trigger_test(enum sway_switch_trigger trigger,
 }
 
 static void execute_binding(struct sway_switch *sway_switch) {
-	struct sway_seat* seat = sway_switch->seat_device->sway_seat;
-	bool input_inhibited = server.session_lock.locked;
+	struct sway_seat *seat = sway_switch->seat_device->sway_seat;
+	bool locked = server.session_lock.locked;
 
 	list_t *bindings = config->current_mode->switch_bindings;
 	struct sway_switch_binding *matched_binding = NULL;
@@ -51,13 +51,13 @@ static void execute_binding(struct sway_switch *sway_switch) {
 			continue;
 		}
 		bool binding_locked = binding->flags & BINDING_LOCKED;
-		if (!binding_locked && input_inhibited) {
+		if (!binding_locked && locked) {
 			continue;
 		}
 
 		matched_binding = binding;
 
-		if (binding_locked == input_inhibited) {
+		if (binding_locked == locked) {
 			break;
 		}
 	}

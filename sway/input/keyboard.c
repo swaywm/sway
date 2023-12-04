@@ -405,7 +405,7 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	char *device_identifier = input_device_get_identifier(wlr_device);
 	bool exact_identifier = keyboard->wlr->group != NULL;
 	seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
-	bool input_inhibited = server.session_lock.locked;
+	bool locked = server.session_lock.locked;
 	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
 		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
 	bool shortcuts_inhibited = sway_inhibitor && sway_inhibitor->inhibitor->active;
@@ -423,17 +423,17 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	struct sway_binding *binding_released = NULL;
 	get_active_binding(&keyboard->state_keycodes,
 			config->current_mode->keycode_bindings, &binding_released,
-			keyinfo.code_modifiers, true, input_inhibited,
+			keyinfo.code_modifiers, true, locked,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 	get_active_binding(&keyboard->state_keysyms_raw,
 			config->current_mode->keysym_bindings, &binding_released,
-			keyinfo.raw_modifiers, true, input_inhibited,
+			keyinfo.raw_modifiers, true, locked,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 	get_active_binding(&keyboard->state_keysyms_translated,
 			config->current_mode->keysym_bindings, &binding_released,
-			keyinfo.translated_modifiers, true, input_inhibited,
+			keyinfo.translated_modifiers, true, locked,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 
@@ -455,17 +455,17 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		get_active_binding(&keyboard->state_keycodes,
 				config->current_mode->keycode_bindings, &binding,
-				keyinfo.code_modifiers, false, input_inhibited,
+				keyinfo.code_modifiers, false, locked,
 				shortcuts_inhibited, device_identifier,
 				exact_identifier, keyboard->effective_layout);
 		get_active_binding(&keyboard->state_keysyms_raw,
 				config->current_mode->keysym_bindings, &binding,
-				keyinfo.raw_modifiers, false, input_inhibited,
+				keyinfo.raw_modifiers, false, locked,
 				shortcuts_inhibited, device_identifier,
 				exact_identifier, keyboard->effective_layout);
 		get_active_binding(&keyboard->state_keysyms_translated,
 				config->current_mode->keysym_bindings, &binding,
-				keyinfo.translated_modifiers, false, input_inhibited,
+				keyinfo.translated_modifiers, false, locked,
 				shortcuts_inhibited, device_identifier,
 				exact_identifier, keyboard->effective_layout);
 	}
