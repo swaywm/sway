@@ -41,7 +41,6 @@ struct sway_server {
 	struct wlr_allocator *allocator;
 
 	struct wlr_compositor *compositor;
-	struct wl_listener compositor_new_surface;
 
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
@@ -170,7 +169,6 @@ void server_run(struct sway_server *server);
 
 void restore_nofile_limit(void);
 
-void handle_compositor_new_surface(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);

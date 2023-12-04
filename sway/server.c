@@ -201,9 +201,6 @@ bool server_init(struct sway_server *server) {
 
 	server->compositor = wlr_compositor_create(server->wl_display, 6,
 		server->renderer);
-	server->compositor_new_surface.notify = handle_compositor_new_surface;
-	wl_signal_add(&server->compositor->events.new_surface,
-		&server->compositor_new_surface);
 
 	wlr_subcompositor_create(server->wl_display);
 

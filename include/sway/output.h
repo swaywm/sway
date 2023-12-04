@@ -41,7 +41,6 @@ struct sway_output {
 	struct wl_list shell_layers[4]; // sway_layer_surface::link
 	struct wlr_box usable_area;
 
-	struct timespec last_frame;
 	struct wlr_damage_ring damage_ring;
 
 	int lx, ly; // layout coords
@@ -58,9 +57,7 @@ struct sway_output {
 	struct wl_listener destroy;
 	struct wl_listener commit;
 	struct wl_listener present;
-	struct wl_listener damage;
 	struct wl_listener frame;
-	struct wl_listener needs_frame;
 	struct wl_listener request_state;
 
 	struct {
