@@ -1092,19 +1092,19 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 bool seat_is_input_allowed(struct sway_seat *seat,
 		struct wlr_surface *surface) {
-	if (server.session_lock.locked) {
-		if (server.session_lock.lock == NULL) {
-			return false;
-		}
-		struct wlr_session_lock_surface_v1 *lock_surf;
-		wl_list_for_each(lock_surf, &server.session_lock.lock->surfaces, link) {
-			if (lock_surf->surface == surface) {
-				return true;
-			}
-		}
+	if (!server.session_lock.locked) {
+		return true;
+	}
+	if (server.session_lock.lock == NULL) {
 		return false;
 	}
-	return true;
+	struct wlr_session_lock_surface_v1 *lock_surf;
+	wl_list_for_each(lock_surf, &server.session_lock.lock->surfaces, link) {
+		if (lock_surf->surface == surface) {
+			return true;
+		}
+	}
+	return false;
 }
 
 static void send_unfocus(struct sway_container *con, void *data) {
