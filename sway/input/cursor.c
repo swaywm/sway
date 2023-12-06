@@ -80,6 +80,7 @@ struct sway_node *node_at_coords(
 		while (true) {
 			struct sway_container *con = scene_descriptor_try_get(current,
 				SWAY_SCENE_DESC_CONTAINER);
+
 			if (!con) {
 				struct sway_view *view = scene_descriptor_try_get(current,
 					SWAY_SCENE_DESC_VIEW);
@@ -88,10 +89,16 @@ struct sway_node *node_at_coords(
 				}
 			}
 
-			if (con) {
-				if (!con->view || con->view->surface) {
-					return &con->node;
+			if (!con) {
+				struct sway_xdg_popup *popup =
+					scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP);
+				if (popup) {
+					con = popup->view->container;
 				}
+			}
+
+			if (con && (!con->view || con->view->surface)) {
+				return &con->node;
 			}
 
 			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_LAYER_SHELL)) {
