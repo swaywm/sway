@@ -289,8 +289,14 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 	}
 
 	struct wlr_scene_node *current = &buffer->node;
-
 	while (true) {
+		struct sway_view *view = scene_descriptor_try_get(current,
+			SWAY_SCENE_DESC_VIEW);
+		if (view) {
+			view_max_render_time = view->max_render_time;
+			break;
+		}
+
 		if (!current->parent) {
 			break;
 		}
