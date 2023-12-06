@@ -891,8 +891,7 @@ static void update_output_manager_config(struct sway_server *server) {
 	ipc_event_output();
 }
 
-static void handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, destroy);
+static void begin_destroy(struct sway_output *output) {
 	struct sway_server *server = output->server;
 
 	if (output->enabled) {
@@ -903,6 +902,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	wl_list_remove(&output->link);
 
+	wl_list_remove(&output->layout_destroy.link);
 	wl_list_remove(&output->destroy.link);
 	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->present.link);
@@ -919,6 +919,16 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 
 	update_output_manager_config(server);
+}
+
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, destroy);
+	begin_destroy(output);
+}
+
+static void handle_layout_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, layout_destroy);
+	begin_destroy(output);
 }
 
 static void update_textures(struct sway_container *con, void *data) {
@@ -1035,6 +1045,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->server = server;
 	wlr_damage_ring_init(&output->damage_ring);
 
+	wl_signal_add(&root->output_layout->events.destroy, &output->layout_destroy);
+	output->layout_destroy.notify = handle_layout_destroy;
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_output->events.commit, &output->commit);
