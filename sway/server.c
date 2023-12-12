@@ -128,16 +128,25 @@ static void detect_proprietary(struct wlr_backend *backend, void *data) {
 		return;
 	}
 
+	bool is_unsupported = false;
 	if (strcmp(version->name, "nvidia-drm") == 0) {
-		if (allow_unsupported_gpu) {
-			sway_log(SWAY_ERROR, "!!! Proprietary Nvidia drivers are in use !!!");
-		} else {
-			sway_log(SWAY_ERROR,
-				"Proprietary Nvidia drivers are NOT supported. "
-				"Use Nouveau. To launch sway anyway, launch with "
-				"--unsupported-gpu and DO NOT report issues.");
-			exit(EXIT_FAILURE);
+		is_unsupported = true;
+		sway_log(SWAY_ERROR, "!!! Proprietary Nvidia drivers are in use !!!");
+		if (!allow_unsupported_gpu) {
+			sway_log(SWAY_ERROR, "Use Nouveau instead");
 		}
+	}
+
+	if (strcmp(version->name, "evdi") == 0) {
+		is_unsupported = true;
+		sway_log(SWAY_ERROR, "!!! Proprietary DisplayLink drivers are in use !!!");
+	}
+
+	if (!allow_unsupported_gpu && is_unsupported) {
+		sway_log(SWAY_ERROR,
+			"Proprietary drivers are NOT supported. To launch sway anyway, "
+			"launch with --unsupported-gpu and DO NOT report issues.");
+		exit(EXIT_FAILURE);
 	}
 
 	drmFreeVersion(version);
