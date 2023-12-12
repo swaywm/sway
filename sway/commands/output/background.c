@@ -123,7 +123,10 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 					src);
 			config_add_swaynag_warning("Unable to access background file '%s'",
 					src);
+			struct cmd_results *result = cmd_results_new(CMD_FAILURE,
+					"unable to access background file '%s'", src);
 			free(src);
+			return result;
 		} else {
 			output->background = src;
 			output->background_option = strdup(mode);
