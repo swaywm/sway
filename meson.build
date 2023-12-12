@@ -77,8 +77,7 @@ pixman = dependency('pixman-1')
 libevdev = dependency('libevdev')
 libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
 xcb = dependency('xcb', required: get_option('xwayland'))
-drm_full = dependency('libdrm') # only needed for drm_fourcc.h
-drm = drm_full.partial_dependency(compile_args: true, includes: true)
+drm = dependency('libdrm')
 libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_dep
 math = cc.find_library('m')
 rt = cc.find_library('rt')

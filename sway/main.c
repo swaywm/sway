@@ -49,32 +49,6 @@ void sig_handler(int signal) {
 	sway_terminate(EXIT_SUCCESS);
 }
 
-void detect_proprietary(int allow_unsupported_gpu) {
-	FILE *f = fopen("/proc/modules", "r");
-	if (!f) {
-		return;
-	}
-	char *line = NULL;
-	size_t line_size = 0;
-	while (getline(&line, &line_size, f) != -1) {
-		if (strncmp(line, "nvidia ", 7) == 0) {
-			if (allow_unsupported_gpu) {
-				sway_log(SWAY_ERROR,
-						"!!! Proprietary Nvidia drivers are in use !!!");
-			} else {
-				sway_log(SWAY_ERROR,
-					"Proprietary Nvidia drivers are NOT supported. "
-					"Use Nouveau. To launch sway anyway, launch with "
-					"--unsupported-gpu and DO NOT report issues.");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		}
-	}
-	free(line);
-	fclose(f);
-}
-
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -243,7 +217,7 @@ static const char usage[] =
 	"\n";
 
 int main(int argc, char **argv) {
-	static bool verbose = false, debug = false, validate = false, allow_unsupported_gpu = false;
+	static bool verbose = false, debug = false, validate = false;
 
 	char *config_path = NULL;
 
@@ -351,7 +325,6 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	detect_proprietary(allow_unsupported_gpu);
 	increase_nofile_limit();
 
 	// handle SIGTERM signals
