@@ -70,18 +70,6 @@ void detect_proprietary(int allow_unsupported_gpu) {
 			}
 			break;
 		}
-		if (strstr(line, "fglrx")) {
-			if (allow_unsupported_gpu) {
-				sway_log(SWAY_ERROR,
-						"!!! Proprietary AMD drivers are in use !!!");
-			} else {
-				sway_log(SWAY_ERROR, "Proprietary AMD drivers do NOT support "
-					"Wayland. Use radeon. To try anyway, launch sway with "
-					"--unsupported-gpu and DO NOT report issues.");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		}
 	}
 	free(line);
 	fclose(f);
