@@ -37,6 +37,7 @@
 #include <wlr/types/wlr_xdg_foreign_v1.h>
 #include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <xf86drm.h>
 #include "config.h"
 #include "list.h"
 #include "log.h"
@@ -59,6 +60,8 @@
 
 #define SWAY_XDG_SHELL_VERSION 2
 #define SWAY_LAYER_SHELL_VERSION 4
+
+bool allow_unsupported_gpu = false;
 
 #if WLR_HAS_DRM_BACKEND
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
@@ -113,6 +116,33 @@ static bool filter_global(const struct wl_client *client,
 	return true;
 }
 
+static void detect_proprietary(struct wlr_backend *backend, void *data) {
+	int drm_fd = wlr_backend_get_drm_fd(backend);
+	if (drm_fd < 0) {
+		return;
+	}
+
+	drmVersion *version = drmGetVersion(drm_fd);
+	if (version == NULL) {
+		sway_log(SWAY_ERROR, "drmGetVersion() failed");
+		return;
+	}
+
+	if (strcmp(version->name, "nvidia-drm") == 0) {
+		if (allow_unsupported_gpu) {
+			sway_log(SWAY_ERROR, "!!! Proprietary Nvidia drivers are in use !!!");
+		} else {
+			sway_log(SWAY_ERROR,
+				"Proprietary Nvidia drivers are NOT supported. "
+				"Use Nouveau. To launch sway anyway, launch with "
+				"--unsupported-gpu and DO NOT report issues.");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	drmFreeVersion(version);
+}
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
@@ -127,6 +157,8 @@ bool server_init(struct sway_server *server) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
 		return false;
 	}
+
+	wlr_multi_for_each_backend(server->backend, detect_proprietary, NULL);
 
 	server->renderer = wlr_renderer_autocreate(server->backend);
 	if (!server->renderer) {
