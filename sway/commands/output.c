@@ -111,7 +111,10 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	if (!config->reloading && !config->validating) {
 		apply_output_config_to_outputs(output);
 		if (background) {
-			spawn_swaybg();
+			if (!spawn_swaybg()) {
+				return cmd_results_new(CMD_FAILURE,
+					"Failed to apply background configuration");
+			}
 		}
 	}
 
