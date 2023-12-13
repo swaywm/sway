@@ -1,6 +1,5 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
 #define _POSIX_C_SOURCE 200112L
-#include <linux/input-event-codes.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -10,27 +9,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/un.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
+#include <linux/input-event-codes.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include "list.h"
+#include "log.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/desktop/transaction.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "list.h"
-#include "log.h"
-#include "util.h"
 
 static int ipc_socket = -1;
 static struct wl_event_source *ipc_event_source =  NULL;

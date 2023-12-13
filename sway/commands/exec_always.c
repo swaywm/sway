@@ -1,10 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
 #include <signal.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
@@ -12,8 +14,6 @@
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
-#include "stringop.h"
 
 struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	struct cmd_results *error = NULL;

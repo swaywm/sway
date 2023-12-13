@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <strings.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/tree/view.h"
-#include "log.h"
 
 struct cmd_results *cmd_opacity(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -2,12 +2,12 @@
 #define _SWAY_ROOT_H
 #include <wayland-server-core.h>
 #include <wayland-util.h>
-#include <wlr/types/wlr_output_layout.h>
 #include <wlr/render/wlr_texture.h>
-#include "sway/tree/container.h"
-#include "sway/tree/node.h"
+#include <wlr/types/wlr_output_layout.h>
 #include "config.h"
 #include "list.h"
+#include "sway/tree/container.h"
+#include "sway/tree/node.h"
 
 extern struct sway_root *root;
 

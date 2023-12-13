@@ -1,7 +1,7 @@
 #include <string.h>
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "stringop.h"
 
 struct cmd_results *seat_cmd_keyboard_grouping(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -8,16 +8,16 @@
 #include "log.h"
 #include "sway/decoration.h"
 #include "sway/desktop.h"
+#include "sway/output.h"
+#include "sway/xdg_decoration.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/xdg_decoration.h"
 
 static const struct sway_view_child_impl popup_impl;
 

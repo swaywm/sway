@@ -1,12 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
+#include "list.h"
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
-#include "list.h"
-#include "log.h"
-#include "stringop.h"
 
 static void remove_all_marks_iterator(struct sway_container *con, void *data) {
 	container_clear_marks(con);

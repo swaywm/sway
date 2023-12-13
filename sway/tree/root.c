@@ -4,17 +4,17 @@
 #include <string.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/transform.h>
-#include "sway/desktop/transaction.h"
-#include "sway/input/seat.h"
+#include "list.h"
+#include "log.h"
+#include "util.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/desktop/transaction.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
-#include "list.h"
-#include "log.h"
-#include "util.h"
 
 struct sway_root *root;
 

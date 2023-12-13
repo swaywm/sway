@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
-#include <limits.h>
 #include <float.h>
+#include <limits.h>
+#include <stdlib.h>
+#include "log.h"
 #include "sway/config.h"
 #include "sway/input/keyboard.h"
-#include "log.h"
 
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));

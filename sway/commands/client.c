@@ -1,9 +1,9 @@
 #include "log.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
-#include "util.h"
 
 static void rebuild_textures_iterator(struct sway_container *con, void *data) {
 	container_update_marks_textures(con);

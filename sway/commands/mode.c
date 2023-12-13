@@ -1,12 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/ipc-server.h"
 
 // Must be in order for the bsearch
 static const struct cmd_handler mode_handlers[] = {

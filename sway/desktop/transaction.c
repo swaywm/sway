@@ -4,19 +4,19 @@
 #include <string.h>
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
+#include "list.h"
+#include "log.h"
 #include "sway/config.h"
 #include "sway/desktop.h"
+#include "sway/output.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
-#include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "list.h"
-#include "log.h"
 
 struct sway_transaction {
 	struct wl_event_source *timer;

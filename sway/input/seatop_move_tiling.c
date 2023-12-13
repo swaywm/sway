@@ -3,11 +3,11 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/util/edges.h>
 #include "sway/desktop.h"
+#include "sway/ipc-server.h"
+#include "sway/output.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
-#include "sway/ipc-server.h"
-#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/node.h"
 #include "sway/tree/view.h"

@@ -4,21 +4,21 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <xf86drmMode.h>
+#include <pango/pangocairo.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/util/box.h>
 #include <xkbcommon/xkbcommon.h>
-#include <xf86drmMode.h>
-#include "../include/config.h"
 #include "gesture.h"
 #include "list.h"
 #include "stringop.h"
 #include "swaynag.h"
-#include "tree/container.h"
+#include "../include/config.h"
 #include "sway/input/tablet.h"
 #include "sway/tree/root.h"
+#include "tree/container.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
-#include <pango/pangocairo.h>
 
 // TODO: Refactor this shit
 

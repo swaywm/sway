@@ -3,14 +3,14 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include "log.h"
+#include "util.h"
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
-#include "sway/server.h"
-#include "log.h"
-#include "util.h"
 
 enum wlr_direction opposite_direction(enum wlr_direction d) {
 	switch (d) {

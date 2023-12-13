@@ -6,14 +6,14 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include "log.h"
-#include "sway/desktop/transaction.h"
-#include "sway/input/cursor.h"
-#include "sway/input/input-manager.h"
-#include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/surface.h"
+#include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
 

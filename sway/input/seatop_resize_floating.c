@@ -6,9 +6,9 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/tree/container.h"
 
 struct seatop_resize_floating_event {
 	struct sway_container *con;

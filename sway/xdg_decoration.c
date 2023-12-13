@@ -1,10 +1,10 @@
 #include <stdlib.h>
-#include "sway/desktop/transaction.h"
+#include "log.h"
 #include "sway/server.h"
+#include "sway/xdg_decoration.h"
+#include "sway/desktop/transaction.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
-#include "sway/xdg_decoration.h"
-#include "log.h"
 
 static void xdg_decoration_handle_destroy(struct wl_listener *listener,
 		void *data) {

@@ -1,13 +1,13 @@
-#include <libevdev/libevdev.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/input/cursor.h"
+#include <libevdev/libevdev.h>
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/input/cursor.h"
 
 static struct cmd_results *binding_add(struct bar_binding *binding,
 		list_t *mode_bindings) {

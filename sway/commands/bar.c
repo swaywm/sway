@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/ipc-server.h"
-#include "log.h"
 
 // Must be in alphabetical order for bsearch
 static const struct cmd_handler bar_handlers[] = {

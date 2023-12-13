@@ -1,7 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>

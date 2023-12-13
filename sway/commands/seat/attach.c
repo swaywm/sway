@@ -1,8 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "stringop.h"
 
 struct cmd_results *seat_cmd_attach(int argc, char **argv) {
 	struct cmd_results *error = NULL;

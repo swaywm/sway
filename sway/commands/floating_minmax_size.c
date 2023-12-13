@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "sway/commands.h"
 #include "log.h"
+#include "sway/commands.h"
 
 static const char min_usage[] =
 	"Expected 'floating_minimum_size <width> x <height>'";

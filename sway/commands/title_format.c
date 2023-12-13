@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/view.h"
-#include "log.h"
-#include "stringop.h"
 
 struct cmd_results *cmd_title_format(int argc, char **argv) {
 	struct cmd_results *error = NULL;

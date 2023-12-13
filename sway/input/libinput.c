@@ -5,9 +5,9 @@
 #include <wlr/backend/libinput.h>
 #include "log.h"
 #include "sway/config.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
-#include "sway/ipc-server.h"
 
 static void log_status(enum libinput_config_status status) {
 	if (status != LIBINPUT_CONFIG_STATUS_SUCCESS) {

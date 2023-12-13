@@ -1,12 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/input/seat.h"
-#include "sway/input/cursor.h"
-#include "sway/server.h"
 #include "stringop.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/server.h"
+#include "sway/input/cursor.h"
+#include "sway/input/seat.h"
 
 struct cmd_results *seat_cmd_hide_cursor(int argc, char **argv) {
 	struct cmd_results *error = NULL;

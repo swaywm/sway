@@ -1,8 +1,8 @@
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/criteria.h"
 #include "list.h"
 #include "log.h"
+#include "sway/commands.h"
+#include "sway/criteria.h"
 
 struct cmd_results *cmd_no_focus(int argc, char **argv) {
 	struct cmd_results *error = NULL;

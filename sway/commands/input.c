@@ -1,10 +1,10 @@
 #include <string.h>
 #include <strings.h>
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
-#include "log.h"
-#include "stringop.h"
 
 // must be in order for the bsearch
 static const struct cmd_handler input_handlers[] = {

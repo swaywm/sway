@@ -3,9 +3,9 @@
 #include <time.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/surface.h"
-#include "sway/output.h"
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_surface *surface = wl_container_of(listener, surface, destroy);

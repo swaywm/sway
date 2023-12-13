@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include "sway/commands.h"
-#include "sway/config.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 // sort in order of longest->shortest
 static int compare_set_qsort(const void *_l, const void *_r) {

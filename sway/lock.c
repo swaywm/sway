@@ -1,12 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include "log.h"
-#include "sway/input/cursor.h"
-#include "sway/input/keyboard.h"
-#include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/surface.h"
+#include "sway/input/cursor.h"
+#include "sway/input/keyboard.h"
+#include "sway/input/seat.h"
 
 struct sway_session_lock_surface {
 	struct wlr_session_lock_surface_v1 *lock_surface;

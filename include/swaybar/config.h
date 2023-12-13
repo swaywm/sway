@@ -3,10 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-client.h>
-#include "../include/config.h"
+#include <pango/pangocairo.h>
 #include "list.h"
 #include "util.h"
-#include <pango/pangocairo.h>
+#include "../include/config.h"
 
 struct box_colors {
 	uint32_t border;

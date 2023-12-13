@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include "config.h"
-#include "sway/commands.h"
-#include "sway/config.h"
 #include "list.h"
 #include "log.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 #if HAVE_TRAY

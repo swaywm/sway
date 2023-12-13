@@ -1,14 +1,14 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/tree/root.h"
-#include "sway/tree/view.h"
-#include "sway/output.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/output.h"
+#include "sway/tree/root.h"
+#include "sway/tree/view.h"
 
 static void rebuild_marks_iterator(struct sway_container *con, void *data) {
 	container_update_marks_textures(con);

@@ -1,18 +1,18 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <errno.h>
 #include <math.h>
+#include <strings.h>
+#include <time.h>
 #include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
-#include <errno.h>
-#include <time.h>
-#include <strings.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_pointer.h>
-#include <wlr/types/wlr_touch.h>
-#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_tablet_pad.h>
 #include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/types/wlr_tablet_v2.h>
+#include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/region.h>
 #include "config.h"
@@ -20,11 +20,11 @@
 #include "util.h"
 #include "sway/commands.h"
 #include "sway/desktop.h"
+#include "sway/layers.h"
+#include "sway/output.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
-#include "sway/layers.h"
-#include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"

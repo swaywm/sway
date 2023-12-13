@@ -1,12 +1,12 @@
 #include <string.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/tree/arrange.h"
-#include "sway/tree/view.h"
-#include "sway/tree/container.h"
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/tree/arrange.h"
+#include "sway/tree/container.h"
+#include "sway/tree/view.h"
 
 struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "smart_gaps", EXPECTED_AT_LEAST, 1);

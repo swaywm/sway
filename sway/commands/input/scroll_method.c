@@ -1,7 +1,7 @@
 #include <string.h>
 #include <strings.h>
-#include "sway/config.h"
 #include "sway/commands.h"
+#include "sway/config.h"
 #include "sway/input/input-manager.h"
 
 struct cmd_results *input_cmd_scroll_method(int argc, char **argv) {

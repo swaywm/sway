@@ -3,11 +3,11 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_touch.h>
+#include "log.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/tree/view.h"
-#include "sway/desktop/transaction.h"
-#include "log.h"
 
 struct seatop_touch_point_event {
 	double ref_lx, ref_ly;         // touch's x/y at start of op

@@ -1,9 +1,9 @@
 #ifndef _SWAY_PANGO_H
 #define _SWAY_PANGO_H
+#include <cairo.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <cairo.h>
 #include <pango/pangocairo.h>
 #include "stringop.h"
 

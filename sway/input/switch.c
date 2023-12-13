@@ -1,6 +1,6 @@
+#include "log.h"
 #include "sway/config.h"
 #include "sway/input/switch.h"
-#include "log.h"
 
 struct sway_switch *sway_switch_create(struct sway_seat *seat,
 		struct sway_seat_device *device) {

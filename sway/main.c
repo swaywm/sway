@@ -1,30 +1,30 @@
 #define _POSIX_C_SOURCE 200809L
 #include <getopt.h>
-#include <pango/pangocairo.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <pango/pangocairo.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/un.h>
-#include <unistd.h>
-#include <wlr/util/log.h>
+#include <sys/wait.h>
 #include <wlr/version.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/server.h"
-#include "sway/swaynag.h"
-#include "sway/desktop/transaction.h"
-#include "sway/tree/root.h"
-#include "sway/ipc-server.h"
+#include <wlr/util/log.h>
 #include "ipc-client.h"
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/ipc-server.h"
+#include "sway/server.h"
+#include "sway/swaynag.h"
+#include "sway/desktop/transaction.h"
+#include "sway/tree/root.h"
 
 static bool terminate_request = false;
 static int exit_value = 0;

@@ -1,10 +1,10 @@
 #ifndef _SWAY_LOG_H
 #define _SWAY_LOG_H
 
-#include <stdbool.h>
-#include <stdarg.h>
-#include <string.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
 
 typedef enum {
 	SWAY_SILENT = 0,

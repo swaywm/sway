@@ -1,10 +1,10 @@
 #ifndef _SWAY_BUFFERS_H
 #define _SWAY_BUFFERS_H
 #include <cairo.h>
-#include <pango/pangocairo.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-client.h>
+#include <pango/pangocairo.h>
 
 struct pool_buffer {
 	struct wl_buffer *buffer;

@@ -1,37 +1,37 @@
 #define _XOPEN_SOURCE 700 // for realpath
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <dirent.h>
 #include <libgen.h>
-#include <wordexp.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <signal.h>
 #include <libinput.h>
 #include <limits.h>
-#include <dirent.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
+#include <unistd.h>
+#include <wordexp.h>
 #include <linux/input-event-codes.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <wlr/types/wlr_output.h>
-#include "sway/input/input-manager.h"
-#include "sway/input/seat.h"
-#include "sway/input/switch.h"
+#include "cairo_util.h"
+#include "list.h"
+#include "log.h"
+#include "pango.h"
+#include "stringop.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
-#include "sway/desktop/transaction.h"
 #include "sway/swaynag.h"
+#include "sway/desktop/transaction.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
+#include "sway/input/switch.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
-#include "cairo_util.h"
-#include "pango.h"
-#include "stringop.h"
-#include "list.h"
-#include "log.h"
-#include "util.h"
 
 struct sway_config *config = NULL;
 

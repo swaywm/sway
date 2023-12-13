@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
-#include "sway/input/seat.h"
+#include "log.h"
 #include "sway/output.h"
 #include "sway/desktop/launcher.h"
-#include "sway/tree/node.h"
+#include "sway/input/seat.h"
 #include "sway/tree/container.h"
-#include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
 #include "sway/tree/root.h"
-#include "log.h"
+#include "sway/tree/workspace.h"
 
 /**
  * Get the pid of a parent process given the pid of a child process.

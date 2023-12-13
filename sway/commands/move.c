@@ -7,19 +7,19 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "list.h"
+#include "log.h"
+#include "stringop.h"
+#include "util.h"
 #include "sway/commands.h"
-#include "sway/input/cursor.h"
-#include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/input/cursor.h"
+#include "sway/input/seat.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
-#include "stringop.h"
-#include "list.h"
-#include "log.h"
-#include "util.h"
 
 static const char expected_syntax[] =
 	"Expected 'move <left|right|up|down> <[px] px>' or "

@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "config.h"
 #include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
@@ -9,7 +10,6 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "stringop.h"
 
 static const char expected_syntax[] =
 	"Expected 'swap container with id|con_id|mark <arg>'";

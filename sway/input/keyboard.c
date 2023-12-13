@@ -7,13 +7,13 @@
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
+#include "log.h"
 #include "sway/commands.h"
+#include "sway/ipc-server.h"
+#include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
-#include "sway/input/cursor.h"
-#include "sway/ipc-server.h"
-#include "log.h"
 
 #if WLR_HAS_SESSION
 #include <wlr/backend/session.h>

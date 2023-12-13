@@ -1,7 +1,7 @@
 #ifndef _SWAY_NODE_H
 #define _SWAY_NODE_H
-#include <wayland-server-core.h>
 #include <stdbool.h>
+#include <wayland-server-core.h>
 #include "list.h"
 
 #define MIN_SANE_W 100

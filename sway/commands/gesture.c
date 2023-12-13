@@ -1,10 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
-#include "sway/config.h"
-
 #include "gesture.h"
 #include "log.h"
 #include "stringop.h"
 #include "sway/commands.h"
+#include "sway/config.h"
 
 void free_gesture_binding(struct sway_gesture_binding *binding) {
 	if (!binding) {

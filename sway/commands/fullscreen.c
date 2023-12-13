@@ -1,12 +1,12 @@
 #include <strings.h>
 #include "log.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "util.h"
 
 // fullscreen [enable|disable|toggle] [global]
 struct cmd_results *cmd_fullscreen(int argc, char **argv) {

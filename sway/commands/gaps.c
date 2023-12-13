@@ -1,12 +1,12 @@
+#include <math.h>
 #include <string.h>
 #include <strings.h>
+#include "log.h"
+#include "stringop.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
-#include "stringop.h"
-#include <math.h>
 
 enum gaps_op {
 	GAPS_OP_SET,

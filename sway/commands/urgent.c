@@ -1,10 +1,10 @@
 #include "log.h"
+#include "util.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
-#include "util.h"
 
 struct cmd_results *cmd_urgent(int argc, char **argv) {
 	struct cmd_results *error = NULL;
