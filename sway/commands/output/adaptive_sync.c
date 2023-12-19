@@ -10,21 +10,19 @@ struct cmd_results *output_cmd_adaptive_sync(int argc, char **argv) {
 	if (argc == 0) {
 		return cmd_results_new(CMD_INVALID, "Missing adaptive_sync argument");
 	}
+
+	bool current_value = true;
 	
-	int current_value = 1;
-	
-	if(strcmp(argv[0], "toggle") == 0) {
+	if (strcmp(argv[0], "toggle") == 0) {
 		struct output_config *oc = config->handler_context.output_config;
 		struct sway_output *sway_output = all_output_by_name_or_id(oc->name);
-		if (sway_output == NULL) {
+
+		if (!sway_output || !sway_output->wlr_output) {
 			return cmd_results_new(CMD_FAILURE,
-				"Cannot apply toggle to unknown output %s", oc->name);
+				   "Cannot apply toggle to unknown output %s", oc->name);
 		}
-		oc = find_output_config(sway_output);
-		
-		current_value = !oc || oc->adaptive_sync;
-		
-		free(oc);
+		current_value =
+			sway_output->wlr_output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 	}
 	
 	config->handler_context.output_config->adaptive_sync = parse_boolean(argv[0], current_value);
