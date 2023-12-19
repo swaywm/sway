@@ -7,12 +7,12 @@
 #include <string.h>
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/image.h"
 #include "swaybar/input.h"
 #include "swaybar/tray/host.h"
 #include "swaybar/tray/icon.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
-#include "background-image.h"
 #include "cairo_util.h"
 #include "list.h"
 #include "log.h"
@@ -431,7 +431,7 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 		list_free(icon_search_paths);
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
-			sni->icon = load_background_image(icon_path);
+			sni->icon = load_image(icon_path);
 			free(icon_path);
 			return;
 		}

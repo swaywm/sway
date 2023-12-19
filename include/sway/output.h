@@ -39,6 +39,7 @@ struct sway_output {
 
 	struct sway_output_state current;
 
+	struct wl_listener layout_destroy;
 	struct wl_listener destroy;
 	struct wl_listener commit;
 	struct wl_listener present;

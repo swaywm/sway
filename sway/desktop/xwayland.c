@@ -170,6 +170,7 @@ static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void handle_map(struct wl_listener *listener, void *data);
+static void handle_associate(struct wl_listener *listener, void *data);
 
 struct sway_xwayland_view *create_xwayland_view(struct wlr_xwayland_surface *xsurface);
 
@@ -178,14 +179,22 @@ static void unmanaged_handle_override_redirect(struct wl_listener *listener, voi
 		wl_container_of(listener, surface, override_redirect);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	bool mapped = xsurface->surface != NULL && xsurface->surface->mapped;
+	bool associated = xsurface->surface != NULL;
+	bool mapped = associated && xsurface->surface->mapped;
 	if (mapped) {
 		unmanaged_handle_unmap(&surface->unmap, NULL);
+	}
+	if (associated) {
+		unmanaged_handle_dissociate(&surface->dissociate, NULL);
 	}
 
 	unmanaged_handle_destroy(&surface->destroy, NULL);
 	xsurface->data = NULL;
+
 	struct sway_xwayland_view *xwayland_view = create_xwayland_view(xsurface);
+	if (associated) {
+		handle_associate(&xwayland_view->associate, NULL);
+	}
 	if (mapped) {
 		handle_map(&xwayland_view->map, xsurface);
 	}
@@ -531,20 +540,30 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
+static void handle_dissociate(struct wl_listener *listener, void *data);
+
 static void handle_override_redirect(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, override_redirect);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
-	bool mapped = xsurface->surface != NULL && xsurface->surface->mapped;
+	bool associated = xsurface->surface != NULL;
+	bool mapped = associated && xsurface->surface->mapped;
 	if (mapped) {
 		handle_unmap(&xwayland_view->unmap, NULL);
+	}
+	if (associated) {
+		handle_dissociate(&xwayland_view->dissociate, NULL);
 	}
 
 	handle_destroy(&xwayland_view->destroy, view);
 	xsurface->data = NULL;
+
 	struct sway_xwayland_unmanaged *unmanaged = create_unmanaged(xsurface);
+	if (associated) {
+		unmanaged_handle_associate(&unmanaged->associate, NULL);
+	}
 	if (mapped) {
 		unmanaged_handle_map(&unmanaged->map, xsurface);
 	}

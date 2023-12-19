@@ -24,8 +24,9 @@
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
-#include <wlr/types/wlr_single_pixel_buffer_v1.h>
+#include <wlr/types/wlr_security_context_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_single_pixel_buffer_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_viewporter.h>
@@ -36,6 +37,7 @@
 #include <wlr/types/wlr_xdg_foreign_v1.h>
 #include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <xf86drm.h>
 #include "config.h"
 #include "list.h"
 #include "log.h"
@@ -59,6 +61,8 @@
 #define SWAY_XDG_SHELL_VERSION 2
 #define SWAY_LAYER_SHELL_VERSION 4
 
+bool allow_unsupported_gpu = false;
+
 #if WLR_HAS_DRM_BACKEND
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	/* We only offer non-desktop outputs, but in the future we might want to do
@@ -73,6 +77,24 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 }
 #endif
 
+static bool is_privileged(const struct wl_global *global) {
+	return
+		global == server.output_manager_v1->global ||
+		global == server.output_power_manager_v1->global ||
+		global == server.input_method->global ||
+		global == server.foreign_toplevel_manager->global ||
+		global == server.data_control_manager_v1->global ||
+		global == server.screencopy_manager_v1->global ||
+		global == server.export_dmabuf_manager_v1->global ||
+		global == server.security_context_manager_v1->global ||
+		global == server.gamma_control_manager_v1->global ||
+		global == server.layer_shell->global ||
+		global == server.session_lock.manager->global ||
+		global == server.input->keyboard_shortcuts_inhibit->global ||
+		global == server.input->virtual_keyboard->global ||
+		global == server.input->virtual_pointer->global;
+}
+
 static bool filter_global(const struct wl_client *client,
 		const struct wl_global *global, void *data) {
 #if HAVE_XWAYLAND
@@ -82,7 +104,52 @@ static bool filter_global(const struct wl_client *client,
 	}
 #endif
 
+	// Restrict usage of privileged protocols to unsandboxed clients
+	// TODO: add a way for users to configure an allow-list
+	const struct wlr_security_context_v1_state *security_context =
+		wlr_security_context_manager_v1_lookup_client(
+		server.security_context_manager_v1, (struct wl_client *)client);
+	if (is_privileged(global)) {
+		return security_context == NULL;
+	}
+
 	return true;
+}
+
+static void detect_proprietary(struct wlr_backend *backend, void *data) {
+	int drm_fd = wlr_backend_get_drm_fd(backend);
+	if (drm_fd < 0) {
+		return;
+	}
+
+	drmVersion *version = drmGetVersion(drm_fd);
+	if (version == NULL) {
+		sway_log(SWAY_ERROR, "drmGetVersion() failed");
+		return;
+	}
+
+	bool is_unsupported = false;
+	if (strcmp(version->name, "nvidia-drm") == 0) {
+		is_unsupported = true;
+		sway_log(SWAY_ERROR, "!!! Proprietary Nvidia drivers are in use !!!");
+		if (!allow_unsupported_gpu) {
+			sway_log(SWAY_ERROR, "Use Nouveau instead");
+		}
+	}
+
+	if (strcmp(version->name, "evdi") == 0) {
+		is_unsupported = true;
+		sway_log(SWAY_ERROR, "!!! Proprietary DisplayLink drivers are in use !!!");
+	}
+
+	if (!allow_unsupported_gpu && is_unsupported) {
+		sway_log(SWAY_ERROR,
+			"Proprietary drivers are NOT supported. To launch sway anyway, "
+			"launch with --unsupported-gpu and DO NOT report issues.");
+		exit(EXIT_FAILURE);
+	}
+
+	drmFreeVersion(version);
 }
 
 bool server_init(struct sway_server *server) {
@@ -92,11 +159,15 @@ bool server_init(struct sway_server *server) {
 
 	wl_display_set_global_filter(server->wl_display, filter_global, NULL);
 
+	root = root_create(server->wl_display);
+
 	server->backend = wlr_backend_autocreate(server->wl_display, &server->session);
 	if (!server->backend) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
 		return false;
 	}
+
+	wlr_multi_for_each_backend(server->backend, detect_proprietary, NULL);
 
 	server->renderer = wlr_renderer_autocreate(server->backend);
 	if (!server->renderer) {
@@ -155,9 +226,9 @@ bool server_init(struct sway_server *server) {
 
 	server->xdg_shell = wlr_xdg_shell_create(server->wl_display,
 		SWAY_XDG_SHELL_VERSION);
-	wl_signal_add(&server->xdg_shell->events.new_surface,
-		&server->xdg_shell_surface);
-	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
+	wl_signal_add(&server->xdg_shell->events.new_toplevel,
+		&server->xdg_shell_toplevel);
+	server->xdg_shell_toplevel.notify = handle_xdg_shell_toplevel;
 
 	server->tablet_v2 = wlr_tablet_v2_create(server->wl_display);
 
@@ -226,9 +297,10 @@ bool server_init(struct sway_server *server) {
 	}
 #endif
 
-	wlr_export_dmabuf_manager_v1_create(server->wl_display);
-	wlr_screencopy_manager_v1_create(server->wl_display);
-	wlr_data_control_manager_v1_create(server->wl_display);
+	server->export_dmabuf_manager_v1 = wlr_export_dmabuf_manager_v1_create(server->wl_display);
+	server->screencopy_manager_v1 = wlr_screencopy_manager_v1_create(server->wl_display);
+	server->data_control_manager_v1 = wlr_data_control_manager_v1_create(server->wl_display);
+	server->security_context_manager_v1 = wlr_security_context_manager_v1_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
 	wlr_single_pixel_buffer_manager_v1_create(server->wl_display);
 	server->content_type_manager_v1 =

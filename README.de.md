@@ -2,13 +2,13 @@
 Sway ist ein [i3](https://i3wm.org/)-kompatibler [Wayland](http://wayland.freedesktop.org/)-Compositor. Lies die [FAQ](https://github.com/swaywm/sway/wiki). Tritt dem [IRC Channel](https://web.libera.chat/gamja/?channels=#sway) bei (#sway on irc.libera.chat; Englisch).
 
 ## Signaturen
-Jedes Release wird mit dem PGP-Schlüssel [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) signiert und auf GitHub veröffentlicht.
+Jedes Release wird mit dem PGP-Schlüssel [E88F5E48](https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48) signiert und [auf GitHub](https://github.com/swaywm/sway/releases) veröffentlicht.
 
 ## Installation
-### Mit der Paketverwaltung
-Sway kann in vielen Distributionen direkt durch die Paketverwaltung installiert werden. Das Paket sollte "sway" heißen. Falls es kein solches Paket gibt, kannst du im [Wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages) (englisch) nach mehr Informationen bezüglich deiner Distribution suchen.
 
-Falls du sway für deine eigene Distribution als Paket bereitstellen möchtest, solltest du die Entwickler per IRC oder E-Mail (sir@cmpwn.com) kontaktieren.
+### Über die Paketverwaltung
+
+Sway kann in vielen Distributionen direkt durch die Paketverwaltung installiert werden. Versuche einfach das Packet "sway" zu installieren.
 
 ### Quellcode selbst kompilieren
 
@@ -23,8 +23,8 @@ sway benötigt die folgenden Pakete:
 * pango
 * cairo
 * gdk-pixbuf2 (Optional, wird für das Benachrichtigungsfeld (System Tray) benötigt)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc)\* (Optional, wird für die Dokumentation (Man Pages) benötigt)
-* git\*
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (Optional, wird für die Dokumentation (Man Pages) benötigt)\*
+* git (Optional: Versionsinfo)\*
 
 _\*Werden nur während des Kompilierens benötigt_
 

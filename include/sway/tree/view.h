@@ -226,6 +226,7 @@ struct sway_xdg_popup {
 
 	struct wlr_xdg_popup *wlr_xdg_popup;
 
+	struct wl_listener surface_commit;
 	struct wl_listener new_popup;
 	struct wl_listener destroy;
 };

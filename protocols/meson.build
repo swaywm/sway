@@ -16,7 +16,6 @@ protocols = [
 	wl_protocol_dir / 'staging/cursor-shape/cursor-shape-v1.xml',
 	'wlr-layer-shell-unstable-v1.xml',
 	'idle.xml',
-	'wlr-input-inhibitor-unstable-v1.xml',
 	'wlr-output-power-management-unstable-v1.xml',
 ]
 

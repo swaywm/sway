@@ -108,9 +108,6 @@ struct sway_seat {
 	// If the exclusive layer is set, views cannot receive keyboard focus
 	bool has_exclusive_layer;
 
-	// If exclusive_client is set, no other clients will receive input events
-	struct wl_client *exclusive_client;
-
 	// Last touch point
 	int32_t touch_id;
 	double touch_x, touch_y;
@@ -201,8 +198,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface_v1 *layer);
 
-void seat_set_exclusive_client(struct sway_seat *seat,
-		struct wl_client *client);
+void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client);
 
 struct sway_node *seat_get_focus(struct sway_seat *seat);
 

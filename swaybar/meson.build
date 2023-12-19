@@ -26,6 +26,7 @@ executable(
 		'bar.c',
 		'config.c',
 		'i3bar.c',
+		'image.c',
 		'input.c',
 		'ipc.c',
 		'main.c',

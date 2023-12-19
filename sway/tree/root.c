@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/util/transform.h>
 #include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
@@ -23,14 +24,14 @@ static void output_layout_handle_change(struct wl_listener *listener,
 	transaction_commit_dirty();
 }
 
-struct sway_root *root_create(void) {
+struct sway_root *root_create(struct wl_display *wl_display) {
 	struct sway_root *root = calloc(1, sizeof(struct sway_root));
 	if (!root) {
 		sway_log(SWAY_ERROR, "Unable to allocate sway_root");
 		return NULL;
 	}
 	node_init(&root->node, N_ROOT, root);
-	root->output_layout = wlr_output_layout_create();
+	root->output_layout = wlr_output_layout_create(wl_display);
 	wl_list_init(&root->all_outputs);
 #if HAVE_XWAYLAND
 	wl_list_init(&root->xwayland_unmanaged);
@@ -52,7 +53,6 @@ void root_destroy(struct sway_root *root) {
 	list_free(root->scratchpad);
 	list_free(root->non_desktop_outputs);
 	list_free(root->outputs);
-	wlr_output_layout_destroy(root->output_layout);
 	free(root);
 }
 

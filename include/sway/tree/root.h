@@ -41,7 +41,7 @@ struct sway_root {
 	} events;
 };
 
-struct sway_root *root_create(void);
+struct sway_root *root_create(struct wl_display *display);
 
 void root_destroy(struct sway_root *root);
 
