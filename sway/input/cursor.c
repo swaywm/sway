@@ -1348,8 +1348,7 @@ const char *get_mouse_button_name(uint32_t button) {
 static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 	struct wlr_pointer_constraint_v1 *constraint = cursor->active_constraint;
 
-	if (constraint->current.committed &
-			WLR_POINTER_CONSTRAINT_V1_STATE_CURSOR_HINT) {
+	if (constraint->current.cursor_hint.enabled) {
 		double sx = constraint->current.cursor_hint.x;
 		double sy = constraint->current.cursor_hint.y;
 
