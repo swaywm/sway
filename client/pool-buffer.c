@@ -103,30 +103,29 @@ void destroy_buffer(struct pool_buffer *buffer) {
 }
 
 struct pool_buffer *get_next_buffer(struct wl_shm *shm,
-		struct pool_buffer pool[static 2], uint32_t width, uint32_t height) {
-	struct pool_buffer *buffer = NULL;
+                                    struct pool_buffer pool[static 2],
+                                    uint32_t width, uint32_t height) {
+    for (size_t i = 0; i < 2; ++i) {
+        if (!pool[i].busy &&
+            (pool[i].width == width && pool[i].height == height)) {
+            pool[i].busy = true;
+            return &pool[i];
+        }
+    }
 
-	for (size_t i = 0; i < 2; ++i) {
-		if (pool[i].busy) {
-			continue;
-		}
-		buffer = &pool[i];
-	}
+    for (size_t i = 0; i < 2; ++i) {
+        if (!pool[i].busy) {
+            if (pool[i].width != width || pool[i].height != height) {
+                destroy_buffer(&pool[i]);
+            }
+            if (create_buffer(shm, &pool[i], width, height, WL_SHM_FORMAT_ARGB8888)) {
+                pool[i].busy = true;
+                return &pool[i];
+            } else {
+                break; // Unable to create buffer
+            }
+        }
+    }
 
-	if (!buffer) {
-		return NULL;
-	}
-
-	if (buffer->width != width || buffer->height != height) {
-		destroy_buffer(buffer);
-	}
-
-	if (!buffer->buffer) {
-		if (!create_buffer(shm, buffer, width, height,
-					WL_SHM_FORMAT_ARGB8888)) {
-			return NULL;
-		}
-	}
-	buffer->busy = true;
-	return buffer;
+    return NULL; // No available buffer found
 }
