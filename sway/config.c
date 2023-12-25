@@ -494,56 +494,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 	config->reading = true;
 
-	// Read security configs
-	// TODO: Security
-	bool success = true;
-	/*
-	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
-	if (!dir) {
-		sway_log(SWAY_ERROR,
-			"%s does not exist, sway will have no security configuration"
-			" and will probably be broken", SYSCONFDIR "/sway/security.d");
-	} else {
-		list_t *secconfigs = create_list();
-		char *base = SYSCONFDIR "/sway/security.d/";
-		struct dirent *ent = readdir(dir);
-		struct stat s;
-		while (ent != NULL) {
-			char *_path = malloc(strlen(ent->d_name) + strlen(base) + 1);
-			strcpy(_path, base);
-			strcat(_path, ent->d_name);
-			lstat(_path, &s);
-			if (S_ISREG(s.st_mode) && ent->d_name[0] != '.') {
-				list_add(secconfigs, _path);
-			}
-			else {
-				free(_path);
-			}
-			ent = readdir(dir);
-		}
-		closedir(dir);
-
-		list_qsort(secconfigs, qstrcmp);
-		for (int i = 0; i < secconfigs->length; ++i) {
-			char *_path = secconfigs->items[i];
-			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 ||
-					(((s.st_mode & 0777) != 0644) &&
-					(s.st_mode & 0777) != 0444)) {
-				sway_log(SWAY_ERROR,
-					"Refusing to load %s - it must be owned by root "
-					"and mode 644 or 444", _path);
-				success = false;
-			} else {
-				success = success && load_config(_path, config);
-			}
-		}
-
-		list_free_items_and_destroy(secconfigs);
-	}
-	*/
-
-	success = success && load_config(path, config,
-			&config->swaynag_config_errors);
+	bool success = load_config(path, config, &config->swaynag_config_errors);
 
 	if (validating) {
 		free_config(config);
