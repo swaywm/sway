@@ -92,7 +92,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		if (config->reading && *src != '/') {
 			// src file is inside configuration dir
 
-			char *conf = strdup(config->current_config_path);
+			char *conf = strdup(config->current_config->path);
 			if (!conf) {
 				sway_log(SWAY_ERROR, "Failed to duplicate string");
 				free(src);
