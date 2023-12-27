@@ -151,7 +151,7 @@ static void render_surface_iterator(struct sway_output *output,
 	render_texture(data->ctx, texture,
 		&src_box, &dst_box, &clip_box, surface->current.transform, alpha);
 
-	wlr_presentation_surface_textured_on_output(server.presentation, surface,
+	wlr_presentation_surface_textured_on_output(surface,
 		wlr_output);
 }
 

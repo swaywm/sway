@@ -531,7 +531,7 @@ static bool scan_out_fullscreen_view(struct sway_output *output,
 		return false;
 	}
 
-	wlr_presentation_surface_scanned_out_on_output(server.presentation, surface,
+	wlr_presentation_surface_scanned_out_on_output(surface,
 		wlr_output);
 
 	return wlr_output_commit_state(wlr_output, pending);
