@@ -216,6 +216,8 @@ struct launcher_ctx *launcher_ctx_create(struct wlr_xdg_activation_token_v1 *tok
 	ctx->fallback_name = strdup(fallback_name);
 	ctx->token = token;
 	ctx->node = node;
+	// Having surface set means that the focus check in wlroots has passed
+	ctx->had_focused_surface = token->surface != NULL;
 
 	ctx->node_destroy.notify = ctx_handle_node_destroy;
 	wl_signal_add(&ctx->node->events.destroy, &ctx->node_destroy);
