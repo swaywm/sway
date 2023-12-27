@@ -412,6 +412,12 @@ void view_request_activate(struct sway_view *view, struct sway_seat *seat) {
 	transaction_commit_dirty();
 }
 
+void view_request_urgent(struct sway_view *view) {
+	if (config->focus_on_window_activation != FOWA_NONE) {
+		view_set_urgent(view, true);
+	}
+}
+
 void view_set_csd_from_server(struct sway_view *view, bool enabled) {
 	sway_log(SWAY_DEBUG, "Telling view %p to set CSD to %i", view, enabled);
 	if (view->xdg_decoration) {

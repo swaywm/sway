@@ -14,6 +14,7 @@ struct launcher_ctx {
 	struct wl_listener seat_destroy;
 
 	bool activated;
+	bool had_focused_surface;
 
 	struct sway_node *node;
 	struct wl_listener node_destroy;
