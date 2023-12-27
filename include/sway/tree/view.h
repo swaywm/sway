@@ -277,6 +277,11 @@ void view_set_activated(struct sway_view *view, bool activated);
  */
 void view_request_activate(struct sway_view *view, struct sway_seat *seat);
 
+/*
+ * Called when the view requests urgent state
+ */
+void view_request_urgent(struct sway_view *view);
+
 /**
  * If possible, instructs the client to change their decoration mode.
  */

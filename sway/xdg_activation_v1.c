@@ -43,8 +43,11 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		seat = ctx->token->seat ? ctx->token->seat->data : NULL;
 	}
 
-	if (seat) {
+	if (seat && ctx->had_focused_surface) {
 		view_request_activate(view, seat);
+	} else {
+		// The token is valid, but cannot be used to activate a window
+		view_request_urgent(view);
 	}
 }
 
