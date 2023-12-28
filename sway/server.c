@@ -259,8 +259,7 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->pointer_constraints->events.new_constraint,
 		&server->pointer_constraint);
 
-	server->presentation =
-		wlr_presentation_create(server->wl_display, server->backend);
+	wlr_presentation_create(server->wl_display, server->backend);
 
 	server->output_manager_v1 =
 		wlr_output_manager_v1_create(server->wl_display);

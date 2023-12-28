@@ -82,8 +82,6 @@ struct sway_server {
 	struct wlr_drm_lease_v1_manager *drm_lease_manager;
 	struct wl_listener drm_lease_request;
 
-	struct wlr_presentation *presentation;
-
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
 	struct wl_listener pointer_constraint;
 
