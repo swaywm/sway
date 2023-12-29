@@ -562,6 +562,7 @@ struct sway_config {
 	enum edge_border_types hide_edge_borders;
 	enum edge_border_smart_types hide_edge_borders_smart;
 	bool hide_lone_tab;
+	bool hide_lone_title;
 
 	// border colors
 	struct {
