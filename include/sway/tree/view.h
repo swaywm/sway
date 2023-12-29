@@ -369,6 +369,8 @@ void view_execute_criteria(struct sway_view *view);
  */
 bool view_is_visible(struct sway_view *view);
 
+bool view_is_only_visible(struct sway_view *view);
+
 void view_set_urgent(struct sway_view *view, bool enable);
 
 bool view_is_urgent(struct sway_view *view);

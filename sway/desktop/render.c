@@ -718,9 +718,11 @@ static void render_containers_linear(struct render_context *ctx, struct parent_d
 			}
 
 			if (state->border == B_NORMAL) {
-				render_titlebar(ctx, child, floor(state->x),
-						floor(state->y), state->width, colors,
-						title_texture, marks_texture);
+				if(!config->hide_lone_title || !view_is_only_visible(view)) {
+					render_titlebar(ctx, child, floor(state->x),
+							floor(state->y), state->width, colors,
+							title_texture, marks_texture);
+				}
 			} else if (state->border == B_PIXEL) {
 				render_top_border(ctx, child, colors);
 			}
