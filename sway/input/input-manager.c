@@ -534,6 +534,13 @@ void input_manager_configure_all_input_mappings(void) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			seat_configure_device_mapping(seat, input_device);
 		}
+
+#if WLR_HAS_LIBINPUT_BACKEND
+		// Input devices mapped to unavailable outputs get their libinput
+		// send_events setting switched to false. We need to re-enable this
+		// when the output appears.
+		sway_input_configure_libinput_device_send_events(input_device);
+#endif
 	}
 }
 
