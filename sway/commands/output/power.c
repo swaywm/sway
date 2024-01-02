@@ -16,8 +16,14 @@ struct cmd_results *output_cmd_power(int argc, char **argv) {
 	if (strcasecmp(argv[0], "toggle") == 0) {
 		const char *oc_name = config->handler_context.output_config->name;
 		if (strcmp(oc_name, "*") == 0) {
-			return cmd_results_new(CMD_INVALID,
-				"Cannot apply toggle to all outputs");
+			for (int i = 0; i < config->output_configs->length; i++) {
+				struct output_config *oc = config->output_configs->items[i];
+				oc->power = !oc->power;
+			}
+
+			config->handler_context.leftovers.argc = argc - 1;
+			config->handler_context.leftovers.argv = argv + 1;
+			return NULL;
 		}
 
 		struct sway_output *sway_output = all_output_by_name_or_id(oc_name);
