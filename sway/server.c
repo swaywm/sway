@@ -77,6 +77,17 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 #endif
 
 static bool is_privileged(const struct wl_global *global) {
+#if WLR_HAS_DRM_BACKEND
+	if (server.drm_lease_manager != NULL) {
+		struct wlr_drm_lease_device_v1 *drm_lease_dev;
+		wl_list_for_each(drm_lease_dev, &server.drm_lease_manager->devices, link) {
+			if (drm_lease_dev->global == global) {
+				return true;
+			}
+		}
+	}
+#endif
+
 	return
 		global == server.output_manager_v1->global ||
 		global == server.output_power_manager_v1->global ||
