@@ -140,6 +140,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->power != -1) {
 		dst->power = src->power;
 	}
+	if (src->color_format) {
+		dst->color_format = src->color_format;
+	}
 }
 
 static void merge_wildcard_on_all(struct output_config *wildcard) {
@@ -234,11 +237,11 @@ struct output_config *store_output_config(struct output_config *oc) {
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
-		"(max render time: %d)",
+		"(max render time: %d), color format %d",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
 		oc->transform, oc->background, oc->background_option, oc->power,
-		oc->max_render_time);
+		oc->max_render_time, oc->color_format);
 
 	return oc;
 }
@@ -400,6 +403,11 @@ static void queue_output_config(struct output_config *oc,
 
 	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 	wlr_output_state_set_enabled(pending, true);
+
+	if (oc && oc->color_format) {
+		wlr_output_state_set_color_format(pending, oc->color_format);
+		sway_log(SWAY_DEBUG, "Set preferred signal format to %d", oc->color_format);
+	}
 
 	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
 		sway_log(SWAY_DEBUG, "Set %s modeline",
