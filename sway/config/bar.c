@@ -236,10 +236,14 @@ static void invoke_swaybar(struct bar_config *bar) {
 			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
 
 			// run custom swaybar
-			char *const cmd[] = {
-					bar->swaybar_command ? bar->swaybar_command : "swaybar",
-					"-b", bar->id, NULL};
+			const char *swaybarcmd =
+				bar->swaybar_command ? bar->swaybar_command : "exec swaybar";
+			int cmdlen = snprintf(NULL, 0, "%s -b %s", swaybarcmd, bar->id) + 1;
+			char *full_cmd = malloc(cmdlen);
+			sprintf(full_cmd, "%s -b %s", swaybarcmd, bar->id);
+			char *const cmd[] = {"sh", "-c", full_cmd};
 			execvp(cmd[0], cmd);
+			free(full_cmd);
 			_exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
