@@ -201,6 +201,7 @@ static const struct option long_options[] = {
 	{"verbose", no_argument, NULL, 'V'},
 	{"get-socketpath", no_argument, NULL, 'p'},
 	{"unsupported-gpu", no_argument, NULL, 'u'},
+	{"ready-fd", required_argument, NULL, 'R'},
 	{0, 0, 0, 0}
 };
 
@@ -214,17 +215,19 @@ static const char usage[] =
 	"  -v, --version          Show the version number and quit.\n"
 	"  -V, --verbose          Enables more verbose logging.\n"
 	"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
+	"  -R  --ready-fd <fd>    Send readiness notification to the given file descriptor.\n"
 	"\n";
 
 int main(int argc, char **argv) {
 	static bool verbose = false, debug = false, validate = false;
 
 	char *config_path = NULL;
+	int ready_fd;
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdD:vVc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdD:vVc:R:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -264,6 +267,9 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "sway socket not detected.\n");
 				exit(EXIT_FAILURE);
 			}
+			break;
+		case 'R': // --ready-fd
+			ready_fd = strtol(optarg, NULL, 10);
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
@@ -369,6 +375,17 @@ int main(int argc, char **argv) {
 
 	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);
+	}
+
+	if (ready_fd >= 0) {
+		// s6 wants a newline and ignores any text before that, systemd wants
+		// READY=1, so use the least common denominator
+		const char ready_str[] = "READY=1\n";
+		if (write(ready_fd, ready_str, strlen(ready_str)) != (ssize_t) strlen(ready_str)) {
+			sway_log(SWAY_INFO, "Failed to send readiness notification");
+		}
+		close(ready_fd);
+		ready_fd = -1;
 	}
 
 	server_run(&server);
