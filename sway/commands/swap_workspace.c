@@ -90,10 +90,13 @@ static void set_new_focus(struct sway_workspace *ws, struct sway_seat *seat) {
 	if (ws->tiling->length) {
 		// this needs to be more specific (focus not just every container,
 		// but single windows
-		struct sway_container *first_view;
 		struct sway_container *container = ws->tiling->items[0];
+		struct sway_container *first_view = container_get_first_view(container);
 
-		container_get_first_view(container, &first_view);
+		if (!first_view) {
+			seat_set_focus(seat, &ws->node);
+		}
+
 		seat_set_focus(seat, &first_view->node);
 	} else if (ws->floating->length) {
 		seat_set_focus(seat, ws->floating->items[0]);

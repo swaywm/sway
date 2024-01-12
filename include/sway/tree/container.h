@@ -164,8 +164,7 @@ struct sway_container *tiling_container_at(
 		struct sway_node *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
 
-void container_get_first_view(struct sway_container *container,
-		struct sway_container **view);
+struct sway_container *container_get_first_view(struct sway_container *container);
 
 void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
