@@ -137,6 +137,7 @@ static const struct cmd_handler command_handlers[] = {
 	{ "splitv", cmd_splitv },
 	{ "sticky", cmd_sticky },
 	{ "swap", cmd_swap },
+	{ "swap_workspace", cmd_swap_workspace_content },
 	{ "title_format", cmd_title_format },
 	{ "unmark", cmd_unmark },
 	{ "urgent", cmd_urgent },

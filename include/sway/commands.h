@@ -184,6 +184,7 @@ sway_cmd cmd_sticky;
 sway_cmd cmd_swaybg_command;
 sway_cmd cmd_swaynag_command;
 sway_cmd cmd_swap;
+sway_cmd cmd_swap_workspace_content;
 sway_cmd cmd_tiling_drag;
 sway_cmd cmd_tiling_drag_threshold;
 sway_cmd cmd_title_align;

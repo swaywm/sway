@@ -111,6 +111,7 @@ sway_sources = files(
 	'commands/swaybg_command.c',
 	'commands/swaynag_command.c',
 	'commands/swap.c',
+	'commands/swap_workspace.c',
 	'commands/tiling_drag.c',
 	'commands/tiling_drag_threshold.c',
 	'commands/title_align.c',

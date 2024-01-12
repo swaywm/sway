@@ -353,6 +353,10 @@ set|plus|minus|toggle <amount>
 	becomes fullscreen on the same workspace as the first container. In either
 	of those cases, the second container will gain focus.
 
+*swap_workspace* with [number] <name>
+	Swaps the content of the currently focused workspace with the content
+	of the workspace specified as an argument.
+
 *title_format* <format>
 	Sets the format of window titles. The following placeholders may be used:
 
