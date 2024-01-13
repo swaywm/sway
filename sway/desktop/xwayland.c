@@ -321,6 +321,16 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	wlr_xwayland_surface_set_fullscreen(surface, fullscreen);
 }
 
+static void set_withdrawn(struct sway_view *view, bool withdrawn) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	if (surface->withdrawn != withdrawn) {
+		wlr_xwayland_surface_set_withdrawn(surface, withdrawn);
+	}
+}
+
 static bool wants_floating(struct sway_view *view) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return false;
@@ -420,6 +430,7 @@ static const struct sway_view_impl view_impl = {
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
+	.set_withdrawn = set_withdrawn,
 	.wants_floating = wants_floating,
 	.is_transient_for = is_transient_for,
 	.close = _close,

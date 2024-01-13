@@ -212,12 +212,25 @@ static void transaction_add_node(struct sway_transaction *transaction,
 	}
 }
 
+void container_iterator(struct sway_container *con, void *data) {
+	bool *is_current = data;
+	if (con->view) {
+		view_set_withdrawn(con->view, !*is_current);
+	}
+}
+
+void workspace_iterator(struct sway_workspace *ws, void *data) {
+	bool is_current = workspace_is_visible(ws);
+	workspace_for_each_container(ws, container_iterator, &is_current);
+}
+
 static void apply_output_state(struct sway_output *output,
 		struct sway_output_state *state) {
 	output_damage_whole(output);
 	list_free(output->current.workspaces);
 	memcpy(&output->current, state, sizeof(struct sway_output_state));
 	output_damage_whole(output);
+	output_for_each_workspace(output, workspace_iterator, NULL);
 }
 
 static void apply_workspace_state(struct sway_workspace *ws,
