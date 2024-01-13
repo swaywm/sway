@@ -360,23 +360,6 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
-static void unmap(struct sway_layer_surface *sway_layer) {
-	struct sway_seat *seat;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		if (seat->focused_layer == sway_layer->layer_surface) {
-			seat_set_focus_layer(seat, NULL);
-		}
-	}
-
-	cursor_rebase_all();
-
-	struct wlr_output *wlr_output = sway_layer->layer_surface->output;
-	sway_assert(wlr_output, "wlr_layer_surface_v1 has null output");
-	struct sway_output *output = wlr_output->data;
-	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
-		sway_layer->layer_surface->surface, true);
-}
-
 static void layer_subsurface_destroy(struct sway_layer_subsurface *subsurface);
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -384,9 +367,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_layer, destroy);
 	sway_log(SWAY_DEBUG, "Layer surface destroyed (%s)",
 		sway_layer->layer_surface->namespace);
-	if (sway_layer->layer_surface->surface->mapped) {
-		unmap(sway_layer);
-	}
 
 	struct sway_layer_subsurface *subsurface, *subsurface_tmp;
 	wl_list_for_each_safe(subsurface, subsurface_tmp, &sway_layer->subsurfaces, link) {
@@ -426,7 +406,20 @@ static void handle_map(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer = wl_container_of(
 			listener, sway_layer, unmap);
-	unmap(sway_layer);
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (seat->focused_layer == sway_layer->layer_surface) {
+			seat_set_focus_layer(seat, NULL);
+		}
+	}
+
+	cursor_rebase_all();
+
+	struct wlr_output *wlr_output = sway_layer->layer_surface->output;
+	sway_assert(wlr_output, "wlr_layer_surface_v1 has null output");
+	struct sway_output *output = wlr_output->data;
+	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
+		sway_layer->layer_surface->surface, true);
 }
 
 static void subsurface_damage(struct sway_layer_subsurface *subsurface,
