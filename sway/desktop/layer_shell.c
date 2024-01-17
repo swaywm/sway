@@ -324,10 +324,15 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	struct wlr_output *wlr_output = layer_surface->output;
 	sway_assert(wlr_output, "wlr_layer_surface_v1 has null output");
 	struct sway_output *output = wlr_output->data;
+
+	if (layer_surface->initial_commit) {
+		surface_enter_output(layer_surface->surface, output);
+	}
+
 	struct wlr_box old_extent = layer->extent;
 
 	bool layer_changed = false;
-	if (layer_surface->current.committed != 0
+	if (layer_surface->initial_commit || layer_surface->current.committed != 0
 			|| layer->mapped != layer_surface->surface->mapped) {
 		layer->mapped = layer_surface->surface->mapped;
 		layer_changed = layer->layer != layer_surface->current.layer;
@@ -708,13 +713,4 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 
 	wl_list_insert(&output->layers[layer_surface->pending.layer],
 			&sway_layer->link);
-
-	surface_enter_output(layer_surface->surface, output);
-
-	// Temporarily set the layer's current state to pending
-	// So that we can easily arrange it
-	struct wlr_layer_surface_v1_state old_state = layer_surface->current;
-	layer_surface->current = layer_surface->pending;
-	arrange_layers(output);
-	layer_surface->current = old_state;
 }
