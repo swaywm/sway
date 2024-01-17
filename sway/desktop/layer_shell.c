@@ -131,6 +131,9 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 			&full_area.width, &full_area.height);
 	wl_list_for_each(sway_layer, list, link) {
 		struct wlr_layer_surface_v1 *layer = sway_layer->layer_surface;
+		if (!layer->initialized) {
+			return;
+		}
 		struct wlr_layer_surface_v1_state *state = &layer->current;
 		if (exclusive != (state->exclusive_zone > 0)) {
 			continue;
@@ -327,6 +330,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 
 	if (layer_surface->initial_commit) {
 		surface_enter_output(layer_surface->surface, output);
+	} else if (!layer_surface->initialized) {
+		return;
 	}
 
 	struct wlr_box old_extent = layer->extent;
