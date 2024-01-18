@@ -87,9 +87,41 @@ static void restore_workspaces(struct sway_output *output) {
 	output_sort_workspaces(output);
 }
 
+static void destroy_scene_layers(struct sway_output *output) {
+	wlr_scene_node_destroy(&output->fullscreen_background->node);
+
+	scene_node_disown_children(output->layers.tiling);
+	scene_node_disown_children(output->layers.fullscreen);
+
+	wlr_scene_node_destroy(&output->layers.tiling->node);
+	wlr_scene_node_destroy(&output->layers.fullscreen->node);
+}
+
 struct sway_output *output_create(struct wlr_output *wlr_output) {
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	node_init(&output->node, N_OUTPUT, output);
+
+	bool failed = false;
+	output->layers.tiling = alloc_scene_tree(root->staging, &failed);
+	output->layers.fullscreen = alloc_scene_tree(root->staging, &failed);
+
+	if (!failed) {
+		output->fullscreen_background = wlr_scene_rect_create(
+			output->layers.fullscreen, 0, 0, (float[4]){0.f, 0.f, 0.f, 1.f});
+
+		if (!output->fullscreen_background) {
+			sway_log(SWAY_ERROR, "Unable to allocate a background rect");
+			failed = true;
+		}
+	}
+
+	if (failed) {
+		destroy_scene_layers(output);
+		wlr_scene_output_destroy(output->scene_output);
+		free(output);
+		return NULL;
+	}
+
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->detected_subpixel = wlr_output->subpixel;
@@ -238,6 +270,8 @@ void output_destroy(struct sway_output *output) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+
+	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
 	wl_event_source_remove(output->repaint_timer);

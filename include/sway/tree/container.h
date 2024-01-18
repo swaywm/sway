@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_scene.h>
 #include "list.h"
 #include "sway/tree/node.h"
 
@@ -67,6 +68,26 @@ struct sway_container_state {
 struct sway_container {
 	struct sway_node node;
 	struct sway_view *view;
+
+	struct wlr_scene_tree *scene_tree;
+
+	struct {
+		struct wlr_scene_tree *tree;
+
+		struct wlr_scene_tree *border;
+		struct wlr_scene_tree *background;
+	} title_bar;
+
+	struct {
+		struct wlr_scene_tree *tree;
+
+		struct wlr_scene_rect *top;
+		struct wlr_scene_rect *bottom;
+		struct wlr_scene_rect *left;
+		struct wlr_scene_rect *right;
+	} border;
+
+	struct wlr_scene_tree *content_tree;
 
 	struct sway_container_state current;
 	struct sway_container_state pending;
