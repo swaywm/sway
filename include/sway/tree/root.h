@@ -47,15 +47,14 @@ struct sway_root {
 		struct wlr_scene_tree *shell_top;
 		struct wlr_scene_tree *fullscreen;
 		struct wlr_scene_tree *fullscreen_global;
+#if HAVE_XWAYLAND
+		struct wlr_scene_tree *unmanaged;
+#endif
 		struct wlr_scene_tree *shell_overlay;
 		struct wlr_scene_tree *popup;
 		struct wlr_scene_tree *seat;
 		struct wlr_scene_tree *session_lock;
 	} layers;
-
-#if HAVE_XWAYLAND
-	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
-#endif
 
 	// Includes disabled outputs
 	struct wl_list all_outputs; // sway_output::link

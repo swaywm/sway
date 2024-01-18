@@ -141,12 +141,6 @@ void output_view_for_each_popup_surface(struct sway_output *output,
 		struct sway_view *view, sway_surface_iterator_func_t iterator,
 		void *user_data);
 
-#if HAVE_XWAYLAND
-void output_unmanaged_for_each_surface(struct sway_output *output,
-	struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
-	void *user_data);
-#endif
-
 void output_for_each_workspace(struct sway_output *output,
 		void (*f)(struct sway_workspace *ws, void *data), void *data);
 
