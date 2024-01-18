@@ -54,6 +54,9 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->layers.shell_top = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.fullscreen = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.fullscreen_global = alloc_scene_tree(root->layer_tree, &failed);
+#if HAVE_XWAYLAND
+	root->layers.unmanaged = alloc_scene_tree(root->layer_tree, &failed);
+#endif
 	root->layers.shell_overlay = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.popup = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.seat = alloc_scene_tree(root->layer_tree, &failed);
@@ -74,9 +77,6 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 
 	root->output_layout = wlr_output_layout_create(wl_display);
 	wl_list_init(&root->all_outputs);
-#if HAVE_XWAYLAND
-	wl_list_init(&root->xwayland_unmanaged);
-#endif
 	wl_signal_init(&root->events.new_node);
 	root->outputs = create_list();
 	root->non_desktop_outputs = create_list();

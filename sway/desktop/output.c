@@ -182,23 +182,6 @@ void output_view_for_each_popup_surface(struct sway_output *output,
 	view_for_each_popup_surface(view, output_for_each_surface_iterator, &data);
 }
 
-#if HAVE_XWAYLAND
-void output_unmanaged_for_each_surface(struct sway_output *output,
-		struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_xwayland_unmanaged *unmanaged_surface;
-	wl_list_for_each(unmanaged_surface, unmanaged, link) {
-		struct wlr_xwayland_surface *xsurface =
-			unmanaged_surface->wlr_xwayland_surface;
-		double ox = unmanaged_surface->lx - output->lx;
-		double oy = unmanaged_surface->ly - output->ly;
-
-		output_surface_for_each_surface(output, xsurface->surface, ox, oy,
-			iterator, user_data);
-	}
-}
-#endif
-
 static int scale_length(int length, int offset, float scale) {
 	return roundf((offset + length) * scale) - roundf(offset * scale);
 }

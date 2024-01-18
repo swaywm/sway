@@ -107,6 +107,12 @@ struct sway_node *node_at_coords(
 				return NULL;
 			}
 
+#if HAVE_XWAYLAND
+			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
+				return NULL;
+			}
+#endif
+
 			if (!current->parent) {
 				break;
 			}
