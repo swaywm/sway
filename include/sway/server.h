@@ -28,6 +28,19 @@
 
 struct sway_transaction;
 
+struct sway_session_lock {
+	struct wlr_session_lock_v1 *lock;
+	struct wlr_surface *focused;
+	bool abandoned;
+
+	struct wl_list outputs; // struct sway_session_lock_output
+
+	// invalid if the session is abandoned
+	struct wl_listener new_surface;
+	struct wl_listener unlock;
+	struct wl_listener destroy;
+};
+
 struct sway_server {
 	struct wl_display *wl_display;
 	struct wl_event_loop *wl_event_loop;
@@ -92,14 +105,8 @@ struct sway_server {
 	struct wl_listener gamma_control_set_gamma;
 
 	struct {
-		bool locked;
+		struct sway_session_lock *lock;
 		struct wlr_session_lock_manager_v1 *manager;
-
-		struct wlr_session_lock_v1 *lock;
-		struct wlr_surface *focused;
-		struct wl_listener lock_new_surface;
-		struct wl_listener lock_unlock;
-		struct wl_listener lock_destroy;
 
 		struct wl_listener new_lock;
 		struct wl_listener manager_destroy;
@@ -174,6 +181,10 @@ void handle_new_output(struct wl_listener *listener, void *data);
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void sway_session_lock_init(void);
+void sway_session_lock_add_output(struct sway_session_lock *lock,
+	struct sway_output *output);
+bool sway_session_lock_has_surface(struct sway_session_lock *lock,
+	struct wlr_surface *surface);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

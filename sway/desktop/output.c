@@ -798,6 +798,10 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->repaint_timer = wl_event_loop_add_timer(server->wl_event_loop,
 		output_repaint_timer_handler, output);
 
+	if (server->session_lock.lock) {
+		sway_session_lock_add_output(server->session_lock.lock, output);
+	}
+
 	struct output_config *oc = find_output_config(output);
 	apply_output_config(oc, output);
 	free_output_config(oc);

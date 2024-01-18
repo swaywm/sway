@@ -24,6 +24,7 @@ struct sway_output {
 	struct {
 		struct wlr_scene_tree *tiling;
 		struct wlr_scene_tree *fullscreen;
+		struct wlr_scene_tree *session_lock;
 	} layers;
 
 	// when a container is fullscreen, in case the fullscreen surface is
