@@ -182,66 +182,6 @@ void output_view_for_each_popup_surface(struct sway_output *output,
 	view_for_each_popup_surface(view, output_for_each_surface_iterator, &data);
 }
 
-void output_layer_for_each_surface(struct sway_output *output,
-		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_layer_surface *layer_surface;
-	wl_list_for_each(layer_surface, layer_surfaces, link) {
-		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
-			layer_surface->layer_surface;
-		struct wlr_surface *surface = wlr_layer_surface_v1->surface;
-		struct surface_iterator_data data = {
-			.user_iterator = iterator,
-			.user_data = user_data,
-			.output = output,
-			.view = NULL,
-			.ox = layer_surface->geo.x,
-			.oy = layer_surface->geo.y,
-			.width = surface->current.width,
-			.height = surface->current.height,
-		};
-		wlr_layer_surface_v1_for_each_surface(wlr_layer_surface_v1,
-			output_for_each_surface_iterator, &data);
-	}
-}
-
-void output_layer_for_each_toplevel_surface(struct sway_output *output,
-		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_layer_surface *layer_surface;
-	wl_list_for_each(layer_surface, layer_surfaces, link) {
-		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
-			layer_surface->layer_surface;
-		output_surface_for_each_surface(output, wlr_layer_surface_v1->surface,
-			layer_surface->geo.x, layer_surface->geo.y, iterator,
-			user_data);
-	}
-}
-
-
-void output_layer_for_each_popup_surface(struct sway_output *output,
-		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_layer_surface *layer_surface;
-	wl_list_for_each(layer_surface, layer_surfaces, link) {
-		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
-			layer_surface->layer_surface;
-		struct wlr_surface *surface = wlr_layer_surface_v1->surface;
-		struct surface_iterator_data data = {
-			.user_iterator = iterator,
-			.user_data = user_data,
-			.output = output,
-			.view = NULL,
-			.ox = layer_surface->geo.x,
-			.oy = layer_surface->geo.y,
-			.width = surface->current.width,
-			.height = surface->current.height,
-		};
-		wlr_layer_surface_v1_for_each_popup_surface(wlr_layer_surface_v1,
-			output_for_each_surface_iterator, &data);
-	}
-}
-
 #if HAVE_XWAYLAND
 void output_unmanaged_for_each_surface(struct sway_output *output,
 		struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
@@ -280,31 +220,6 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 		return output->workspaces->items[0];
 	}
 	return focus->sway_workspace;
-}
-
-bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
-	struct sway_layer_surface *sway_layer_surface;
-	wl_list_for_each(sway_layer_surface,
-			&output->shell_layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
-		struct wlr_surface *wlr_surface = sway_layer_surface->layer_surface->surface;
-		pixman_box32_t output_box = {
-			.x2 = output->width,
-			.y2 = output->height,
-		};
-		pixman_region32_t surface_opaque_box;
-		pixman_region32_init(&surface_opaque_box);
-		pixman_region32_copy(&surface_opaque_box, &wlr_surface->opaque_region);
-		pixman_region32_translate(&surface_opaque_box,
-			sway_layer_surface->geo.x, sway_layer_surface->geo.y);
-		pixman_region_overlap_t contains =
-			pixman_region32_contains_rectangle(&surface_opaque_box, &output_box);
-		pixman_region32_fini(&surface_opaque_box);
-
-		if (contains == PIXMAN_REGION_IN) {
-			return true;
-		}
-	}
-	return false;
 }
 
 struct send_frame_done_data {

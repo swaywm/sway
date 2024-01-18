@@ -22,8 +22,12 @@ struct sway_output {
 	struct sway_node node;
 
 	struct {
+		struct wlr_scene_tree *shell_background;
+		struct wlr_scene_tree *shell_bottom;
 		struct wlr_scene_tree *tiling;
 		struct wlr_scene_tree *fullscreen;
+		struct wlr_scene_tree *shell_top;
+		struct wlr_scene_tree *shell_overlay;
 		struct wlr_scene_tree *session_lock;
 	} layers;
 
@@ -39,7 +43,6 @@ struct sway_output {
 	struct sway_server *server;
 	struct wl_list link;
 
-	struct wl_list shell_layers[4]; // sway_layer_surface::link
 	struct wlr_box usable_area;
 
 	struct wlr_damage_ring damage_ring;
@@ -124,8 +127,6 @@ void output_enable(struct sway_output *output);
 
 void output_disable(struct sway_output *output);
 
-bool output_has_opaque_overlay_layer_surface(struct sway_output *output);
-
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 
 void output_surface_for_each_surface(struct sway_output *output,
@@ -139,18 +140,6 @@ void output_view_for_each_surface(struct sway_output *output,
 void output_view_for_each_popup_surface(struct sway_output *output,
 		struct sway_view *view, sway_surface_iterator_func_t iterator,
 		void *user_data);
-
-void output_layer_for_each_surface(struct sway_output *output,
-	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
-	void *user_data);
-
-void output_layer_for_each_toplevel_surface(struct sway_output *output,
-	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
-	void *user_data);
-
-void output_layer_for_each_popup_surface(struct sway_output *output,
-	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
-	void *user_data);
 
 #if HAVE_XWAYLAND
 void output_unmanaged_for_each_surface(struct sway_output *output,

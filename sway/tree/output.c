@@ -93,8 +93,12 @@ static void destroy_scene_layers(struct sway_output *output) {
 	scene_node_disown_children(output->layers.tiling);
 	scene_node_disown_children(output->layers.fullscreen);
 
+	wlr_scene_node_destroy(&output->layers.shell_background->node);
+	wlr_scene_node_destroy(&output->layers.shell_bottom->node);
 	wlr_scene_node_destroy(&output->layers.tiling->node);
 	wlr_scene_node_destroy(&output->layers.fullscreen->node);
+	wlr_scene_node_destroy(&output->layers.shell_top->node);
+	wlr_scene_node_destroy(&output->layers.shell_overlay->node);
 	wlr_scene_node_destroy(&output->layers.session_lock->node);
 }
 
@@ -103,8 +107,12 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	node_init(&output->node, N_OUTPUT, output);
 
 	bool failed = false;
+	output->layers.shell_background = alloc_scene_tree(root->staging, &failed);
+	output->layers.shell_bottom = alloc_scene_tree(root->staging, &failed);
 	output->layers.tiling = alloc_scene_tree(root->staging, &failed);
 	output->layers.fullscreen = alloc_scene_tree(root->staging, &failed);
+	output->layers.shell_top = alloc_scene_tree(root->staging, &failed);
+	output->layers.shell_overlay = alloc_scene_tree(root->staging, &failed);
 	output->layers.session_lock = alloc_scene_tree(root->staging, &failed);
 
 	if (!failed) {
@@ -135,11 +143,6 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
-
-	size_t len = sizeof(output->shell_layers) / sizeof(output->shell_layers[0]);
-	for (size_t i = 0; i < len; ++i) {
-		wl_list_init(&output->shell_layers[i]);
-	}
 
 	return output;
 }
