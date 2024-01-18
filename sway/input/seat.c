@@ -1060,19 +1060,10 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 bool seat_is_input_allowed(struct sway_seat *seat,
 		struct wlr_surface *surface) {
-	if (!server.session_lock.locked) {
-		return true;
+	if (server.session_lock.lock) {
+		return sway_session_lock_has_surface(server.session_lock.lock, surface);
 	}
-	if (server.session_lock.lock == NULL) {
-		return false;
-	}
-	struct wlr_session_lock_surface_v1 *lock_surf;
-	wl_list_for_each(lock_surf, &server.session_lock.lock->surfaces, link) {
-		if (lock_surf->surface == surface) {
-			return true;
-		}
-	}
-	return false;
+	return true;
 }
 
 static void send_unfocus(struct sway_container *con, void *data) {
@@ -1277,8 +1268,8 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	} else {
 		seat_set_workspace_focus(seat, node);
 	}
-	if (server.session_lock.locked) {
-		seat_set_focus_surface(seat, server.session_lock.focused, false);
+	if (server.session_lock.lock) {
+		seat_set_focus_surface(seat, server.session_lock.lock->focused, false);
 	}
 }
 

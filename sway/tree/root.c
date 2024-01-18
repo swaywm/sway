@@ -50,6 +50,7 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->layers.fullscreen = alloc_scene_tree(&root_scene->tree, &failed);
 	root->layers.fullscreen_global = alloc_scene_tree(&root_scene->tree, &failed);
 	root->layers.seat = alloc_scene_tree(&root_scene->tree, &failed);
+	root->layers.session_lock = alloc_scene_tree(&root_scene->tree, &failed);
 
 	if (failed) {
 		wlr_scene_node_destroy(&root_scene->tree.node);
