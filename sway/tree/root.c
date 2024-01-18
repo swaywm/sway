@@ -47,10 +47,15 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->staging = alloc_scene_tree(&root_scene->tree, &failed);
 	root->layer_tree = alloc_scene_tree(&root_scene->tree, &failed);
 
+	root->layers.shell_background = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.shell_bottom = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.tiling = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.floating = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.shell_top = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.fullscreen = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.fullscreen_global = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.shell_overlay = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.popup = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.seat = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.session_lock = alloc_scene_tree(root->layer_tree, &failed);
 

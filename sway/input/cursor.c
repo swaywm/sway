@@ -94,6 +94,12 @@ struct sway_node *node_at_coords(
 				}
 			}
 
+			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_LAYER_SHELL)) {
+				// We don't want to feed through the current workspace on
+				// layer shells
+				return NULL;
+			}
+
 			if (!current->parent) {
 				break;
 			}
