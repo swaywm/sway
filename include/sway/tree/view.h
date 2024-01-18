@@ -2,6 +2,7 @@
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_scene.h>
 #include "sway/config.h"
 #if HAVE_XWAYLAND
 #include <wlr/xwayland.h>
@@ -68,6 +69,9 @@ struct sway_saved_buffer {
 struct sway_view {
 	enum sway_view_type type;
 	const struct sway_view_impl *impl;
+
+	struct wlr_scene_tree *scene_tree;
+	struct wlr_scene_tree *content_tree;
 
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views

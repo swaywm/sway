@@ -5,6 +5,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_scene.h>
 #include "config.h"
 #include "sway/tree/node.h"
 #include "sway/tree/view.h"
@@ -19,7 +20,21 @@ struct sway_output_state {
 
 struct sway_output {
 	struct sway_node node;
+
+	struct {
+		struct wlr_scene_tree *tiling;
+		struct wlr_scene_tree *fullscreen;
+	} layers;
+
+	// when a container is fullscreen, in case the fullscreen surface is
+	// translucent (can see behind) we must make sure that the background is a
+	// solid color in order to conform to the wayland protocol. This rect
+	// ensures that when looking through a surface, all that will be seen
+	// is black.
+	struct wlr_scene_rect *fullscreen_background;
+
 	struct wlr_output *wlr_output;
+	struct wlr_scene_output *scene_output;
 	struct sway_server *server;
 	struct wl_list link;
 

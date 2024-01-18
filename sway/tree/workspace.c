@@ -71,6 +71,18 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 		return NULL;
 	}
 	node_init(&ws->node, N_WORKSPACE, ws);
+
+	bool failed = false;
+	ws->layers.tiling = alloc_scene_tree(root->staging, &failed);
+	ws->layers.fullscreen = alloc_scene_tree(root->staging, &failed);
+
+	if (failed) {
+		wlr_scene_node_destroy(&ws->layers.tiling->node);
+		wlr_scene_node_destroy(&ws->layers.fullscreen->node);
+		free(ws);
+		return NULL;
+	}
+
 	ws->name = strdup(name);
 	ws->prev_split_layout = L_NONE;
 	ws->layout = output_get_default_layout(output);
@@ -130,6 +142,11 @@ void workspace_destroy(struct sway_workspace *workspace) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+
+	scene_node_disown_children(workspace->layers.tiling);
+	scene_node_disown_children(workspace->layers.fullscreen);
+	wlr_scene_node_destroy(&workspace->layers.tiling->node);
+	wlr_scene_node_destroy(&workspace->layers.fullscreen->node);
 
 	free(workspace->name);
 	free(workspace->representation);

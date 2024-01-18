@@ -3,6 +3,7 @@
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/render/wlr_texture.h>
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
@@ -16,6 +17,31 @@ struct sway_root {
 	struct wlr_output_layout *output_layout;
 
 	struct wl_listener output_layout_change;
+
+	// scene node layout:
+	// - root
+	// 	- staging
+	// 	- layer shell stuff
+	// 	- tiling
+	// 	- floating
+	// 	- fullscreen stuff
+	// 	- seat stuff
+	// 	- ext_session_lock
+	struct wlr_scene *root_scene;
+
+	// since wlr_scene nodes can't be orphaned and must always
+	// have a parent, use this staging scene_tree so that a
+	// node always have a valid parent. Nothing in this
+	// staging node will be visible.
+	struct wlr_scene_tree *staging;
+
+	struct {
+		struct wlr_scene_tree *tiling;
+		struct wlr_scene_tree *floating;
+		struct wlr_scene_tree *fullscreen;
+		struct wlr_scene_tree *fullscreen_global;
+	} layers;
+
 #if HAVE_XWAYLAND
 	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
 #endif

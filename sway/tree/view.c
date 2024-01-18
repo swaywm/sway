@@ -37,6 +37,14 @@
 
 bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
+	bool failed = false;
+	view->scene_tree = alloc_scene_tree(root->staging, &failed);
+	view->content_tree = alloc_scene_tree(view->scene_tree, &failed);
+	if (failed) {
+		wlr_scene_node_destroy(&view->scene_tree->node);
+		return false;
+	}
+
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
@@ -67,7 +75,7 @@ void view_destroy(struct sway_view *view) {
 	list_free(view->executed_criteria);
 
 	view_assign_ctx(view, NULL);
-
+	wlr_scene_node_destroy(&view->scene_tree->node);
 	free(view->title_format);
 
 	if (view->impl->destroy) {
