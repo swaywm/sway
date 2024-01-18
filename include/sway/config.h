@@ -473,6 +473,11 @@ enum xwayland_mode {
 	XWAYLAND_MODE_IMMEDIATE,
 };
 
+enum titlebar_position {
+	TITLEBAR_TOP,
+	TITLEBAR_BOTTOM
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -534,6 +539,7 @@ struct sway_config {
 	bool show_marks;
 	enum alignment title_align;
 	bool primary_selection;
+	enum titlebar_position titlebar_position;
 
 	bool tiling_drag;
 	int tiling_drag_threshold;
