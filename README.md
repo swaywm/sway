@@ -31,7 +31,7 @@ Install dependencies:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (optional: system tray)
+* gdk-pixbuf2 (optional: additional image formats for system tray)
 * [swaybg] (optional: wallpaper)
 * [scdoc] (optional: man pages) \*
 * git (optional: version info) \*
