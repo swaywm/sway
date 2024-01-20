@@ -156,6 +156,7 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
+	bool legacy_wl_drm;    // Enable the legacy wl_drm interface
 };
 
 extern struct sway_debug debug;
