@@ -140,6 +140,9 @@ static struct sway_layer_surface *find_mapped_layer_by_client(
 		wl_list_for_each (node, &output->layers.shell_overlay->children, link) {
 			struct sway_layer_surface *surface = scene_descriptor_try_get(node,
 				SWAY_SCENE_DESC_LAYER_SHELL);
+			if (!surface) {
+				continue;
+			}
 
 			struct wlr_layer_surface_v1 *layer_surface = surface->layer_surface;
 			struct wl_resource *resource = layer_surface->resource;
