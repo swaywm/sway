@@ -406,6 +406,9 @@ static void handle_im_popup_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&popup->popup_surface_commit.link);
 	wl_list_remove(&popup->popup_destroy.link);
 	wl_list_remove(&popup->link);
+	if (popup->scene_tree != NULL) {
+		wlr_scene_node_destroy(&popup->scene_tree->node);
+	}
 
 	free(popup);
 }
