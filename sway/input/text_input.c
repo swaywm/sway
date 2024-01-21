@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "log.h"
 #include "sway/input/seat.h"
+#include "sway/output.h"
 #include "sway/tree/view.h"
 #include "sway/input/text_input.h"
 #include "sway/layers.h"
@@ -287,43 +288,40 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	struct wlr_surface *focused_surface = text_input->input->focused_surface;
 	struct wlr_box cursor = text_input->input->current.cursor_rectangle;
 
-	struct wlr_output *output;
+	struct sway_output *swayoutput;
 	struct wlr_box output_box;
 	struct wlr_box parent;
 	struct wlr_layer_surface_v1 *layer_surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(focused_surface);
 
-	// NOTE: since the surface is under container->scene_tree, so need to add the title_height
-	int title_height = 0;
-
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
 			layer_surface->data;
 
-		output = layer->layer_surface->output;
+		struct wlr_output* output = layer->layer_surface->output;
+		swayoutput = output_from_wlr_output(output);
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
 		int lx, ly;
 		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
-		parent.x = lx;
-		parent.y = ly;
-		popup->scene_tree = wlr_scene_subsurface_tree_create(layer->scene->tree, popup->popup_surface->surface);
+		parent.x = lx - swayoutput->scene_output->x;
+		parent.y = ly - swayoutput->scene_output->y;
+
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
 		int lx, ly;
-		wlr_scene_node_coords(&view->container->scene_tree->node, &lx, &ly);
-		output = wlr_output_layout_output_at(root->output_layout,
+		wlr_scene_node_coords(&view->scene_tree->node, &lx, &ly);
+		struct wlr_output *output = wlr_output_layout_output_at(root->output_layout,
 			view->container->pending.content_x + view->geometry.x,
 			view->container->pending.content_y + view->geometry.y);
+		swayoutput = output_from_wlr_output(output);
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
-		parent.x = lx;
-		parent.y = ly;
+		parent.x = lx - swayoutput->scene_output->x;
+		parent.y = ly - swayoutput->scene_output->y;
 
 		parent.width = view->geometry.width;
 		parent.height = view->geometry.height;
-		title_height = view->container->border.top->height;
-		popup->scene_tree = wlr_scene_subsurface_tree_create(view->container->scene_tree, popup->popup_surface->surface);
-
 	}
+	popup->scene_tree = wlr_scene_subsurface_tree_create(swayoutput->layers.shell_top, popup->popup_surface->surface);
 
 	if (!cursor_rect) {
 		cursor.x = 0;
@@ -353,8 +351,8 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		y = y1 - popup_height;
 	}
 
-	popup->x = x - parent.x;
-	popup->y = y - parent.y + title_height;
+	popup->x = x;
+	popup->y = y;
 
 	// Hide popup if cursor position is completely out of bounds
 	bool x1_in_bounds = (cursor.x >= 0 && cursor.x < parent.width);
