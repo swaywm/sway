@@ -117,7 +117,7 @@ static void handle_im_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void relay_send_im_state(struct sway_input_method_relay *relay,
-		struct wlr_text_input_v3 *input) {
+		struct wlr_text_input_v3 *input, bool need_refresh) {
 	struct wlr_input_method_v2 *input_method = relay->input_method;
 	if (!input_method) {
 		sway_log(SWAY_INFO, "Sending IM_DONE but im is gone");
@@ -138,6 +138,9 @@ static void relay_send_im_state(struct sway_input_method_relay *relay,
 	}
 	struct sway_input_popup *popup;
 	wl_list_for_each(popup, &relay->input_popups, link) {
+		if (!need_refresh) {
+			popup->scene_tree = NULL;
+		}
 		// send_text_input_rectangle is called in this function
 		input_popup_update(popup);
 	}
@@ -153,7 +156,7 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 		return;
 	}
 	wlr_input_method_v2_send_activate(text_input->relay->input_method);
-	relay_send_im_state(text_input->relay, text_input->input);
+	relay_send_im_state(text_input->relay, text_input->input, false);
 }
 
 static void handle_text_input_commit(struct wl_listener *listener,
@@ -169,7 +172,7 @@ static void handle_text_input_commit(struct wl_listener *listener,
 		sway_log(SWAY_INFO, "Text input committed, but input method is gone");
 		return;
 	}
-	relay_send_im_state(text_input->relay, text_input->input);
+	relay_send_im_state(text_input->relay, text_input->input, true);
 }
 
 static void relay_disable_text_input(struct sway_input_method_relay *relay,
@@ -179,7 +182,7 @@ static void relay_disable_text_input(struct sway_input_method_relay *relay,
 		return;
 	}
 	wlr_input_method_v2_send_deactivate(relay->input_method);
-	relay_send_im_state(relay, text_input->input);
+	relay_send_im_state(relay, text_input->input, false);
 }
 
 static void handle_text_input_disable(struct wl_listener *listener,
@@ -424,6 +427,7 @@ static void handle_im_focused_surface_unmap(
 	struct sway_input_popup *popup =
 		wl_container_of(listener, popup, focused_surface_unmap);
 	//input_popup_send_outputs(popup, surface_send_leave_iterator);
+	popup->scene_tree = NULL;
 	input_popup_update(popup);
 }
 
