@@ -63,7 +63,7 @@ static void arrange_surface(struct sway_output *output, const struct wlr_box *fu
 		}
 
 		if (!surface->scene->layer_surface->initialized) {
-			return;
+			continue;
 		}
 
 		wlr_scene_layer_surface_v1_configure(surface->scene, full_area, usable_area);
