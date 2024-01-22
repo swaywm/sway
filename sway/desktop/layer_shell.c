@@ -205,9 +205,6 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, surface_commit);
 
 	struct wlr_layer_surface_v1 *layer_surface = surface->layer_surface;
-	if (!layer_surface->initialized) {
-		return;
-	}
 
 	uint32_t committed = layer_surface->current.committed;
 	if (committed & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
