@@ -796,8 +796,9 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	if (!handled) {
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-			event->orientation, scroll_factor * event->delta,
-			roundf(scroll_factor * event->delta_discrete), event->source);
+			event->orientation, scroll_factor * event->delta, 
+			roundf(scroll_factor * event->delta_discrete), event->source,
+			event->relative_direction);
 	}
 }
 
