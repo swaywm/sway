@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "log.h"
 #include "sway/input/seat.h"
-#include "sway/output.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/input/text_input.h"
 #include "sway/layers.h"
@@ -285,7 +285,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	struct wlr_surface *focused_surface = text_input->input->focused_surface;
 	struct wlr_box cursor = text_input->input->current.cursor_rectangle;
 
-	struct sway_output *swayoutput;
 	struct wlr_box output_box;
 	struct wlr_box parent;
 	struct wlr_layer_surface_v1 *layer_surface =
@@ -296,12 +295,11 @@ static void input_popup_update(struct sway_input_popup *popup) {
 			layer_surface->data;
 
 		struct wlr_output* output = layer->layer_surface->output;
-		swayoutput = output_from_wlr_output(output);
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
 		int lx, ly;
 		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
-		parent.x = lx - swayoutput->scene_output->x;
-		parent.y = ly - swayoutput->scene_output->y;
+		parent.x = lx;
+		parent.y = ly;
 
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
@@ -310,15 +308,14 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		struct wlr_output *output = wlr_output_layout_output_at(root->output_layout,
 			view->container->pending.content_x + view->geometry.x,
 			view->container->pending.content_y + view->geometry.y);
-		swayoutput = output_from_wlr_output(output);
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
-		parent.x = lx - swayoutput->scene_output->x;
-		parent.y = ly - swayoutput->scene_output->y;
+		parent.x = lx;
+		parent.y = ly;
 
 		parent.width = view->geometry.width;
 		parent.height = view->geometry.height;
 	}
-	popup->scene_tree = wlr_scene_subsurface_tree_create(swayoutput->layers.shell_top, popup->popup_surface->surface);
+	popup->scene_tree = wlr_scene_subsurface_tree_create(root->layer_tree, popup->popup_surface->surface);
 
 	if (!cursor_rect) {
 		cursor.x = 0;
