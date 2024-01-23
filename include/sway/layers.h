@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include "sway/tree/view.h"
 
 struct sway_layer_surface {
 	struct wl_listener map;
@@ -14,10 +15,12 @@ struct sway_layer_surface {
 
 	bool mapped;
 
+	struct wlr_scene_tree *popups;
+	struct sway_popup_desc desc;
+
 	struct sway_output *output;
 	struct wlr_scene_layer_surface_v1 *scene;
 	struct wlr_scene_tree *tree;
-	struct wlr_scene_tree *popups;
 	struct wlr_layer_surface_v1 *layer_surface;
 };
 
