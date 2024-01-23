@@ -122,6 +122,16 @@ static struct sway_layer_surface *sway_layer_surface_create(
 		return NULL;
 	}
 
+	surface->desc.relative = &scene->tree->node;
+
+	if (!scene_descriptor_assign(&popups->node,
+			SWAY_SCENE_DESC_POPUP, &surface->desc)) {
+		sway_log(SWAY_ERROR, "Failed to allocate a popup scene descriptor");
+		wlr_scene_node_destroy(&popups->node);
+		free(surface);
+		return NULL;
+	}
+
 	surface->tree = scene->tree;
 	surface->scene = scene;
 	surface->layer_surface = scene->layer_surface;
@@ -224,10 +234,6 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		arrange_layers(surface->output);
 		transaction_commit_dirty();
 	}
-
-	int lx, ly;
-	wlr_scene_node_coords(&surface->scene->tree->node, &lx, &ly);
-	wlr_scene_node_set_position(&surface->popups->node, lx, ly);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {

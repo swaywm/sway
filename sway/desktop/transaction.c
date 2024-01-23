@@ -612,13 +612,9 @@ void arrange_popups(struct wlr_scene_tree *popups) {
 		struct sway_popup_desc *popup = scene_descriptor_try_get(node,
 			SWAY_SCENE_DESC_POPUP);
 
-		// the popup layer may have popups from layer_shell surfaces, in this
-		// case those don't have a scene descriptor, so lets skip those here.
-		if (popup) {
-			int lx, ly;
-			wlr_scene_node_coords(popup->relative, &lx, &ly);
-			wlr_scene_node_set_position(node, lx, ly);
-		}
+		int lx, ly;
+		wlr_scene_node_coords(popup->relative, &lx, &ly);
+		wlr_scene_node_set_position(node, lx, ly);
 	}
 }
 
