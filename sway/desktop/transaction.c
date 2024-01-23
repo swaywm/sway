@@ -609,17 +609,15 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 void arrange_popups(struct wlr_scene_tree *popups) {
 	struct wlr_scene_node *node;
 	wl_list_for_each(node, &popups->children, link) {
-		struct sway_xdg_popup *popup = scene_descriptor_try_get(node,
+		struct sway_popup_desc *popup = scene_descriptor_try_get(node,
 			SWAY_SCENE_DESC_POPUP);
 
 		// the popup layer may have popups from layer_shell surfaces, in this
 		// case those don't have a scene descriptor, so lets skip those here.
 		if (popup) {
-			struct wlr_scene_tree *tree = popup->view->content_tree;
-
 			int lx, ly;
-			wlr_scene_node_coords(&tree->node, &lx, &ly);
-			wlr_scene_node_set_position(&popup->scene_tree->node, lx, ly);
+			wlr_scene_node_coords(popup->relative, &lx, &ly);
+			wlr_scene_node_set_position(node, lx, ly);
 		}
 	}
 }

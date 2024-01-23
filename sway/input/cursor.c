@@ -90,7 +90,7 @@ struct sway_node *node_at_coords(
 			}
 
 			if (!con) {
-				struct sway_xdg_popup *popup =
+				struct sway_popup_desc *popup =
 					scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP);
 				if (popup) {
 					con = popup->view->container;

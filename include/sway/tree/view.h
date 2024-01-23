@@ -177,12 +177,19 @@ struct sway_xwayland_unmanaged {
 };
 #endif
 
+struct sway_popup_desc {
+	struct wlr_scene_node *relative;
+	struct sway_view *view;
+};
+
 struct sway_xdg_popup {
 	struct sway_view *view;
 
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *xdg_surface_tree;
 	struct wlr_xdg_popup *wlr_xdg_popup;
+
+	struct sway_popup_desc desc;
 
 	struct wl_listener surface_commit;
 	struct wl_listener new_popup;
