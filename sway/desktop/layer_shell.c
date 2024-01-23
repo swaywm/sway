@@ -85,6 +85,8 @@ void arrange_layers(struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
 		output->usable_area = usable_area;
 		arrange_output(output);
+	} else {
+		arrange_popups(root->layers.popup);
 	}
 }
 
