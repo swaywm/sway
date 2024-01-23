@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "log.h"
 #include "sway/input/seat.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/input/text_input.h"
@@ -300,6 +301,13 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
 		parent.x = lx;
 		parent.y = ly;
+		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layer_tree, popup->popup_surface->surface);
+		if (!scene_descriptor_assign(&popup->scene_tree->node,
+					SWAY_SCENE_DESC_LAYER_SHELL, layer_surface)) {
+			wlr_scene_node_destroy(&popup->scene_tree->node);
+			popup->scene_tree = NULL;
+			return;
+		}
 
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
@@ -314,8 +322,14 @@ static void input_popup_update(struct sway_input_popup *popup) {
 
 		parent.width = view->geometry.width;
 		parent.height = view->geometry.height;
+		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layer_tree, popup->popup_surface->surface);
+		if (!scene_descriptor_assign(&popup->scene_tree->node,
+					SWAY_SCENE_DESC_VIEW, view)) {
+			wlr_scene_node_destroy(&popup->scene_tree->node);
+			popup->scene_tree = NULL;
+			return;
+		}
 	}
-	popup->scene_tree = wlr_scene_subsurface_tree_create(root->layer_tree, popup->popup_surface->surface);
 
 	if (!cursor_rect) {
 		cursor.x = 0;
