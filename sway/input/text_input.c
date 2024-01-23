@@ -351,16 +351,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	popup->x = x;
 	popup->y = y;
 
-	// Hide popup if cursor position is completely out of bounds
-	bool x1_in_bounds = (cursor.x >= 0 && cursor.x < parent.width);
-	bool y1_in_bounds = (cursor.y >= 0 && cursor.y < parent.height);
-	bool x2_in_bounds = (cursor.x + cursor.width >= 0
-		&& cursor.x + cursor.width < parent.width);
-	bool y2_in_bounds = (cursor.y + cursor.height >= 0
-		&& cursor.y + cursor.height < parent.height);
-	popup->visible =
-		(x1_in_bounds && y1_in_bounds) || (x2_in_bounds && y2_in_bounds);
-
 	if (cursor_rect) {
 		struct wlr_box box = {
 			.x = x1 - x,
@@ -395,8 +385,6 @@ static void input_popup_set_focus(struct sway_input_popup *popup,
 
 	struct sway_view *view = view_from_wlr_surface(surface);
 	wl_signal_add(&view->events.unmap, &popup->focused_surface_unmap);
-
-	// Since the focus has changed, the popup may have to adjust
 }
 
 static void handle_im_popup_destroy(struct wl_listener *listener, void *data) {
@@ -424,7 +412,6 @@ static void handle_im_focused_surface_unmap(
 		struct wl_listener *listener, void *data) {
 	struct sway_input_popup *popup =
 		wl_container_of(listener, popup, focused_surface_unmap);
-	//input_popup_send_outputs(popup, surface_send_leave_iterator);
 	input_popup_update(popup);
 }
 

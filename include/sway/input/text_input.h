@@ -42,7 +42,6 @@ struct sway_input_popup {
 	struct wlr_input_popup_surface_v2 *popup_surface;
 
 	int x, y;
-	bool visible;
 
 	struct wl_list link;
 
