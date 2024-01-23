@@ -97,8 +97,11 @@ static struct sway_xdg_popup *popup_create(struct wlr_xdg_popup *wlr_popup,
 		return NULL;
 	}
 
+	popup->desc.relative = &view->content_tree->node;
+	popup->desc.view = view;
+
 	if (!scene_descriptor_assign(&popup->scene_tree->node,
-			SWAY_SCENE_DESC_POPUP, popup)) {
+			SWAY_SCENE_DESC_POPUP, &popup->desc)) {
 		sway_log(SWAY_ERROR, "Failed to allocate a popup scene descriptor");
 		wlr_scene_node_destroy(&popup->scene_tree->node);
 		free(popup);
