@@ -606,9 +606,9 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 	}
 }
 
-static void arrange_popup(struct wlr_scene_tree *popup) {
+void arrange_popups(struct wlr_scene_tree *popups) {
 	struct wlr_scene_node *node;
-	wl_list_for_each(node, &popup->children, link) {
+	wl_list_for_each(node, &popups->children, link) {
 		struct sway_xdg_popup *popup = scene_descriptor_try_get(node,
 			SWAY_SCENE_DESC_POPUP);
 
@@ -679,7 +679,7 @@ static void arrange_root(struct sway_root *root) {
 		}
 	}
 
-	arrange_popup(root->layers.popup);
+	arrange_popups(root->layers.popup);
 }
 
 /**
