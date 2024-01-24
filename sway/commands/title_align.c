@@ -4,6 +4,10 @@
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 
+static void arrange_title_bar_iterator(struct sway_container *con, void *data) {
+	container_arrange_title_bar(con);
+}
+
 struct cmd_results *cmd_title_align(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "title_align", EXPECTED_AT_LEAST, 1))) {
@@ -21,10 +25,7 @@ struct cmd_results *cmd_title_align(int argc, char **argv) {
 				"Expected 'title_align left|center|right'");
 	}
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		output_damage_whole(output);
-	}
+	root_for_each_container(arrange_title_bar_iterator, NULL);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -87,9 +87,51 @@ static void restore_workspaces(struct sway_output *output) {
 	output_sort_workspaces(output);
 }
 
+static void destroy_scene_layers(struct sway_output *output) {
+	wlr_scene_node_destroy(&output->fullscreen_background->node);
+
+	scene_node_disown_children(output->layers.tiling);
+	scene_node_disown_children(output->layers.fullscreen);
+
+	wlr_scene_node_destroy(&output->layers.shell_background->node);
+	wlr_scene_node_destroy(&output->layers.shell_bottom->node);
+	wlr_scene_node_destroy(&output->layers.tiling->node);
+	wlr_scene_node_destroy(&output->layers.fullscreen->node);
+	wlr_scene_node_destroy(&output->layers.shell_top->node);
+	wlr_scene_node_destroy(&output->layers.shell_overlay->node);
+	wlr_scene_node_destroy(&output->layers.session_lock->node);
+}
+
 struct sway_output *output_create(struct wlr_output *wlr_output) {
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	node_init(&output->node, N_OUTPUT, output);
+
+	bool failed = false;
+	output->layers.shell_background = alloc_scene_tree(root->staging, &failed);
+	output->layers.shell_bottom = alloc_scene_tree(root->staging, &failed);
+	output->layers.tiling = alloc_scene_tree(root->staging, &failed);
+	output->layers.fullscreen = alloc_scene_tree(root->staging, &failed);
+	output->layers.shell_top = alloc_scene_tree(root->staging, &failed);
+	output->layers.shell_overlay = alloc_scene_tree(root->staging, &failed);
+	output->layers.session_lock = alloc_scene_tree(root->staging, &failed);
+
+	if (!failed) {
+		output->fullscreen_background = wlr_scene_rect_create(
+			output->layers.fullscreen, 0, 0, (float[4]){0.f, 0.f, 0.f, 1.f});
+
+		if (!output->fullscreen_background) {
+			sway_log(SWAY_ERROR, "Unable to allocate a background rect");
+			failed = true;
+		}
+	}
+
+	if (failed) {
+		destroy_scene_layers(output);
+		wlr_scene_output_destroy(output->scene_output);
+		free(output);
+		return NULL;
+	}
+
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->detected_subpixel = wlr_output->subpixel;
@@ -101,11 +143,6 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
-
-	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
-	for (size_t i = 0; i < len; ++i) {
-		wl_list_init(&output->layers[i]);
-	}
 
 	return output;
 }
@@ -238,18 +275,12 @@ void output_destroy(struct sway_output *output) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+
+	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
 	wl_event_source_remove(output->repaint_timer);
 	free(output);
-}
-
-static void untrack_output(struct sway_container *con, void *data) {
-	struct sway_output *output = data;
-	int index = list_find(con->outputs, output);
-	if (index != -1) {
-		list_del(con->outputs, index);
-	}
 }
 
 void output_disable(struct sway_output *output) {
@@ -265,8 +296,6 @@ void output_disable(struct sway_output *output) {
 	wl_signal_emit_mutable(&output->events.disable, output);
 
 	output_evacuate(output);
-
-	root_for_each_container(untrack_output, output);
 
 	list_del(root->outputs, index);
 

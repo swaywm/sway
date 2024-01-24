@@ -2,6 +2,7 @@
 #define _SWAY_NODE_H
 #include <wayland-server-core.h>
 #include <stdbool.h>
+#include <wlr/types/wlr_scene.h>
 #include "list.h"
 
 #define MIN_SANE_W 100
@@ -74,5 +75,16 @@ struct sway_node *node_get_parent(struct sway_node *node);
 list_t *node_get_children(struct sway_node *node);
 
 bool node_has_ancestor(struct sway_node *node, struct sway_node *ancestor);
+
+// when destroying a sway tree, it's not known which order the tree will be
+// destroyed. To prevent freeing of scene_nodes recursing up the tree,
+// let's use this helper function to disown them to the staging node.
+void scene_node_disown_children(struct wlr_scene_tree *tree);
+
+// a helper function used to allocate tree nodes. If an allocation failure
+// occurs a flag is flipped that can be checked later to destroy a parent
+// of this scene node preventing memory leaks.
+struct wlr_scene_tree *alloc_scene_tree(struct wlr_scene_tree *parent,
+		bool *failed);
 
 #endif

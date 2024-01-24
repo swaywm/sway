@@ -1,6 +1,7 @@
 #ifndef _SWAY_TRANSACTION_H
 #define _SWAY_TRANSACTION_H
 #include <stdint.h>
+#include <stdbool.h>
 
 /**
  * Transactions enable us to perform atomic layout updates.
@@ -38,8 +39,11 @@ void transaction_commit_dirty_client(void);
  * Notify the transaction system that a view is ready for the new layout.
  *
  * When all views in the transaction are ready, the layout will be applied.
+ *
+ * A success boolean is returned denoting that this part of the transaction is
+ * ready.
  */
-void transaction_notify_view_ready_by_serial(struct sway_view *view,
+bool transaction_notify_view_ready_by_serial(struct sway_view *view,
 		uint32_t serial);
 
 /**
@@ -47,8 +51,11 @@ void transaction_notify_view_ready_by_serial(struct sway_view *view,
  * identifying the instruction by geometry rather than by serial.
  *
  * This is used by xwayland views, as they don't have serials.
+ *
+ * A success boolean is returned denoting that this part of the transaction is
+ * ready.
  */
-void transaction_notify_view_ready_by_geometry(struct sway_view *view,
+bool transaction_notify_view_ready_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height);
 
 #endif

@@ -2,6 +2,7 @@
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_scene.h>
 #include "sway/config.h"
 #if HAVE_XWAYLAND
 #include <wlr/xwayland.h>
@@ -45,10 +46,6 @@ struct sway_view_impl {
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	void (*set_resizing)(struct sway_view *view, bool resizing);
 	bool (*wants_floating)(struct sway_view *view);
-	void (*for_each_surface)(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data);
-	void (*for_each_popup_surface)(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data);
 	bool (*is_transient_for)(struct sway_view *child,
 			struct sway_view *ancestor);
 	void (*close)(struct sway_view *view);
@@ -56,18 +53,13 @@ struct sway_view_impl {
 	void (*destroy)(struct sway_view *view);
 };
 
-struct sway_saved_buffer {
-	struct wlr_client_buffer *buffer;
-	int x, y;
-	int width, height;
-	enum wl_output_transform transform;
-	struct wlr_fbox source_box;
-	struct wl_list link; // sway_view::saved_buffers
-};
-
 struct sway_view {
 	enum sway_view_type type;
 	const struct sway_view_impl *impl;
+
+	struct wlr_scene_tree *scene_tree;
+	struct wlr_scene_tree *content_tree;
+	struct wlr_scene_tree *saved_surface_tree;
 
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
@@ -88,15 +80,9 @@ struct sway_view {
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
 
-	struct wl_list saved_buffers; // sway_saved_buffer::link
-
 	// The geometry for whatever the client is committing, regardless of
 	// transaction state. Updated on every commit.
 	struct wlr_box geometry;
-
-	// The "old" geometry during a transaction. Used to damage the old location
-	// when a transaction is applied.
-	struct wlr_box saved_geometry;
 
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;
@@ -118,8 +104,6 @@ struct sway_view {
 	struct {
 		struct wl_signal unmap;
 	} events;
-
-	struct wl_listener surface_new_subsurface;
 
 	int max_render_time; // In milliseconds
 
@@ -145,6 +129,8 @@ struct sway_xdg_shell_view {
 struct sway_xwayland_view {
 	struct sway_view view;
 
+	struct wlr_scene_tree *surface_tree;
+
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
@@ -166,18 +152,18 @@ struct sway_xwayland_view {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener override_redirect;
+
+	struct wl_listener surface_tree_destroy;
 };
 
 struct sway_xwayland_unmanaged {
 	struct wlr_xwayland_surface *wlr_xwayland_surface;
-	struct wl_list link;
 
-	int lx, ly;
+	struct wlr_scene_surface *surface_scene;
 
 	struct wl_listener request_activate;
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
-	struct wl_listener commit;
 	struct wl_listener set_geometry;
 	struct wl_listener associate;
 	struct wl_listener dissociate;
@@ -187,43 +173,12 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener override_redirect;
 };
 #endif
-struct sway_view_child;
-
-struct sway_view_child_impl {
-	void (*get_view_coords)(struct sway_view_child *child, int *sx, int *sy);
-	void (*destroy)(struct sway_view_child *child);
-};
-
-/**
- * A view child is a surface in the view tree, such as a subsurface or a popup.
- */
-struct sway_view_child {
-	const struct sway_view_child_impl *impl;
-	struct wl_list link;
-
-	struct sway_view *view;
-	struct sway_view_child *parent;
-	struct wl_list children; // sway_view_child::link
-	struct wlr_surface *surface;
-	bool mapped;
-
-	struct wl_listener surface_commit;
-	struct wl_listener surface_new_subsurface;
-	struct wl_listener surface_map;
-	struct wl_listener surface_unmap;
-	struct wl_listener surface_destroy;
-	struct wl_listener view_unmap;
-};
-
-struct sway_subsurface {
-	struct sway_view_child child;
-
-	struct wl_listener destroy;
-};
 
 struct sway_xdg_popup {
-	struct sway_view_child child;
+	struct sway_view *view;
 
+	struct wlr_scene_tree *scene_tree;
+	struct wlr_scene_tree *xdg_surface_tree;
 	struct wlr_xdg_popup *wlr_xdg_popup;
 
 	struct wl_listener surface_commit;
@@ -295,23 +250,9 @@ void view_close(struct sway_view *view);
 
 void view_close_popups(struct sway_view *view);
 
-void view_damage_from(struct sway_view *view);
-
-/**
- * Iterate all surfaces of a view (toplevels + popups).
- */
-void view_for_each_surface(struct sway_view *view,
-	wlr_surface_iterator_func_t iterator, void *user_data);
-
-/**
- * Iterate all popup surfaces of a view.
- */
-void view_for_each_popup_surface(struct sway_view *view,
-	wlr_surface_iterator_func_t iterator, void *user_data);
-
 // view implementation
 
-void view_init(struct sway_view *view, enum sway_view_type type,
+bool view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
 
 void view_destroy(struct sway_view *view);
@@ -333,14 +274,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 void view_unmap(struct sway_view *view);
 
 void view_update_size(struct sway_view *view);
-void view_center_surface(struct sway_view *view);
-
-void view_child_init(struct sway_view_child *child,
-	const struct sway_view_child_impl *impl, struct sway_view *view,
-	struct wlr_surface *surface);
-
-void view_child_destroy(struct sway_view_child *child);
-
+void view_center_and_clip_surface(struct sway_view *view);
 
 struct sway_view *view_from_wlr_xdg_surface(
 	struct wlr_xdg_surface *xdg_surface);
@@ -380,5 +314,7 @@ void view_save_buffer(struct sway_view *view);
 bool view_is_transient_for(struct sway_view *child, struct sway_view *ancestor);
 
 void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx);
+
+void view_send_frame_done(struct sway_view *view);
 
 #endif

@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/util/transform.h>
 #include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
@@ -30,13 +32,51 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 		sway_log(SWAY_ERROR, "Unable to allocate sway_root");
 		return NULL;
 	}
+
+	struct wlr_scene *root_scene = wlr_scene_create();
+	if (!root_scene) {
+		sway_log(SWAY_ERROR, "Unable to allocate root scene node");
+		free(root);
+		return NULL;
+	}
+
 	node_init(&root->node, N_ROOT, root);
+	root->root_scene = root_scene;
+
+	bool failed = false;
+	root->staging = alloc_scene_tree(&root_scene->tree, &failed);
+	root->layer_tree = alloc_scene_tree(&root_scene->tree, &failed);
+
+	root->layers.shell_background = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.shell_bottom = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.tiling = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.floating = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.shell_top = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.fullscreen = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.fullscreen_global = alloc_scene_tree(root->layer_tree, &failed);
+#if HAVE_XWAYLAND
+	root->layers.unmanaged = alloc_scene_tree(root->layer_tree, &failed);
+#endif
+	root->layers.shell_overlay = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.popup = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.seat = alloc_scene_tree(root->layer_tree, &failed);
+	root->layers.session_lock = alloc_scene_tree(root->layer_tree, &failed);
+
+	if (!failed && !scene_descriptor_assign(&root->layers.seat->node,
+			SWAY_SCENE_DESC_NON_INTERACTIVE, (void *)1)) {
+		failed = true;
+	}
+
+	if (failed) {
+		wlr_scene_node_destroy(&root_scene->tree.node);
+		free(root);
+		return NULL;
+	}
+
+	wlr_scene_node_set_enabled(&root->staging->node, false);
+
 	root->output_layout = wlr_output_layout_create(wl_display);
 	wl_list_init(&root->all_outputs);
-#if HAVE_XWAYLAND
-	wl_list_init(&root->xwayland_unmanaged);
-#endif
-	wl_list_init(&root->drag_icons);
 	wl_signal_init(&root->events.new_node);
 	root->outputs = create_list();
 	root->non_desktop_outputs = create_list();
@@ -53,6 +93,7 @@ void root_destroy(struct sway_root *root) {
 	list_free(root->scratchpad);
 	list_free(root->non_desktop_outputs);
 	list_free(root->outputs);
+	wlr_scene_node_destroy(&root->root_scene->tree.node);
 	free(root);
 }
 

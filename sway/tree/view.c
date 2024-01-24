@@ -16,7 +16,6 @@
 #include "log.h"
 #include "sway/criteria.h"
 #include "sway/commands.h"
-#include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/launcher.h"
@@ -24,8 +23,9 @@
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/input/seat.h"
+#include "sway/scene_descriptor.h"
 #include "sway/server.h"
-#include "sway/surface.h"
+#include "sway/sway_text_node.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -35,15 +35,29 @@
 #include "pango.h"
 #include "stringop.h"
 
-void view_init(struct sway_view *view, enum sway_view_type type,
+bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
+	bool failed = false;
+	view->scene_tree = alloc_scene_tree(root->staging, &failed);
+	view->content_tree = alloc_scene_tree(view->scene_tree, &failed);
+
+	if (!failed && !scene_descriptor_assign(&view->scene_tree->node,
+			SWAY_SCENE_DESC_VIEW, view)) {
+		failed = true;
+	}
+
+	if (failed) {
+		wlr_scene_node_destroy(&view->scene_tree->node);
+		return false;
+	}
+
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
-	wl_list_init(&view->saved_buffers);
 	view->allow_request_urgent = true;
 	view->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
 	wl_signal_init(&view->events.unmap);
+	return true;
 }
 
 void view_destroy(struct sway_view *view) {
@@ -60,13 +74,10 @@ void view_destroy(struct sway_view *view) {
 		return;
 	}
 	wl_list_remove(&view->events.unmap.listener_list);
-	if (!wl_list_empty(&view->saved_buffers)) {
-		view_remove_saved_buffer(view);
-	}
 	list_free(view->executed_criteria);
 
 	view_assign_ctx(view, NULL);
-
+	wlr_scene_node_destroy(&view->scene_tree->node);
 	free(view->title_format);
 
 	if (view->impl->destroy) {
@@ -443,52 +454,6 @@ void view_close_popups(struct sway_view *view) {
 	}
 }
 
-void view_damage_from(struct sway_view *view) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		output_damage_from_view(output, view);
-	}
-}
-
-void view_for_each_surface(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (!view->surface) {
-		return;
-	}
-	if (view->impl->for_each_surface) {
-		view->impl->for_each_surface(view, iterator, user_data);
-	} else {
-		wlr_surface_for_each_surface(view->surface, iterator, user_data);
-	}
-}
-
-void view_for_each_popup_surface(struct sway_view *view,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
-	if (!view->surface) {
-		return;
-	}
-	if (view->impl->for_each_popup_surface) {
-		view->impl->for_each_popup_surface(view, iterator, user_data);
-	}
-}
-
-static void view_subsurface_create(struct sway_view *view,
-	struct wlr_subsurface *subsurface);
-
-static void view_init_subsurfaces(struct sway_view *view,
-	struct wlr_surface *surface);
-
-static void view_child_init_subsurfaces(struct sway_view_child *view_child,
-	struct wlr_surface *surface);
-
-static void view_handle_surface_new_subsurface(struct wl_listener *listener,
-		void *data) {
-	struct sway_view *view =
-		wl_container_of(listener, view, surface_new_subsurface);
-	struct wlr_subsurface *subsurface = data;
-	view_subsurface_create(view, subsurface);
-}
-
 static bool view_has_executed_criteria(struct sway_view *view,
 		struct criteria *criteria) {
 	for (int i = 0; i < view->executed_criteria->length; ++i) {
@@ -809,11 +774,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 	ipc_event_window(view->container, "new");
 
-	view_init_subsurfaces(view, wlr_surface);
-	wl_signal_add(&wlr_surface->events.new_subsurface,
-			&view->surface_new_subsurface);
-	view->surface_new_subsurface.notify = view_handle_surface_new_subsurface;
-
 	if (decoration) {
 		view_update_csd_from_client(view, decoration);
 	}
@@ -880,8 +840,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 void view_unmap(struct sway_view *view) {
 	wl_signal_emit_mutable(&view->events.unmap, view);
 
-	wl_list_remove(&view->surface_new_subsurface.link);
-
 	view->executed_criteria->length = 0;
 
 	if (view->urgent_timer) {
@@ -935,260 +893,28 @@ void view_update_size(struct sway_view *view) {
 	container_set_geometry_from_content(con);
 }
 
-void view_center_surface(struct sway_view *view) {
+void view_center_and_clip_surface(struct sway_view *view) {
 	struct sway_container *con = view->container;
-	// We always center the current coordinates rather than the next, as the
-	// geometry immediately affects the currently active rendering.
-	con->surface_x = fmax(con->current.content_x, con->current.content_x +
-			(con->current.content_width - view->geometry.width) / 2);
-	con->surface_y = fmax(con->current.content_y, con->current.content_y +
-			(con->current.content_height - view->geometry.height) / 2);
-}
 
-static const struct sway_view_child_impl subsurface_impl;
+	if (container_is_floating(con)) {
+		// We always center the current coordinates rather than the next, as the
+		// geometry immediately affects the currently active rendering.
+		int x = (int) fmax(0, (con->current.content_width - view->geometry.width) / 2);
+		int y = (int) fmax(0, (con->current.content_height - view->geometry.height) / 2);
 
-static void subsurface_get_view_coords(struct sway_view_child *child,
-		int *sx, int *sy) {
-	struct wlr_surface *surface = child->surface;
-	if (child->parent && child->parent->impl &&
-			child->parent->impl->get_view_coords) {
-		child->parent->impl->get_view_coords(child->parent, sx, sy);
+		wlr_scene_node_set_position(&view->content_tree->node, x, y);
 	} else {
-		*sx = *sy = 0;
-	}
-	struct wlr_subsurface *subsurface =
-		wlr_subsurface_try_from_wlr_surface(surface);
-	*sx += subsurface->current.x;
-	*sy += subsurface->current.y;
-}
-
-static void subsurface_destroy(struct sway_view_child *child) {
-	if (!sway_assert(child->impl == &subsurface_impl,
-			"Expected a subsurface")) {
-		return;
-	}
-	struct sway_subsurface *subsurface = (struct sway_subsurface *)child;
-	wl_list_remove(&subsurface->destroy.link);
-	free(subsurface);
-}
-
-static const struct sway_view_child_impl subsurface_impl = {
-	.get_view_coords = subsurface_get_view_coords,
-	.destroy = subsurface_destroy,
-};
-
-static void subsurface_handle_destroy(struct wl_listener *listener,
-		void *data) {
-	struct sway_subsurface *subsurface =
-		wl_container_of(listener, subsurface, destroy);
-	struct sway_view_child *child = &subsurface->child;
-	view_child_destroy(child);
-}
-
-static void view_child_damage(struct sway_view_child *child, bool whole);
-
-static void view_subsurface_create(struct sway_view *view,
-		struct wlr_subsurface *wlr_subsurface) {
-	struct sway_subsurface *subsurface =
-		calloc(1, sizeof(struct sway_subsurface));
-	if (subsurface == NULL) {
-		sway_log(SWAY_ERROR, "Allocation failed");
-		return;
-	}
-	view_child_init(&subsurface->child, &subsurface_impl, view,
-		wlr_subsurface->surface);
-
-	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
-	subsurface->destroy.notify = subsurface_handle_destroy;
-
-	subsurface->child.mapped = true;
-
-	view_child_damage(&subsurface->child, true);
-}
-
-static void view_child_subsurface_create(struct sway_view_child *child,
-		struct wlr_subsurface *wlr_subsurface) {
-	struct sway_subsurface *subsurface =
-		calloc(1, sizeof(struct sway_subsurface));
-	if (subsurface == NULL) {
-		sway_log(SWAY_ERROR, "Allocation failed");
-		return;
-	}
-	subsurface->child.parent = child;
-	wl_list_insert(&child->children, &subsurface->child.link);
-	view_child_init(&subsurface->child, &subsurface_impl, child->view,
-		wlr_subsurface->surface);
-
-	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
-	subsurface->destroy.notify = subsurface_handle_destroy;
-
-	subsurface->child.mapped = true;
-
-	view_child_damage(&subsurface->child, true);
-}
-
-static bool view_child_is_mapped(struct sway_view_child *child) {
-	while (child) {
-		if (!child->mapped) {
-			return false;
-		}
-		child = child->parent;
-	}
-	return true;
-}
-
-static void view_child_damage(struct sway_view_child *child, bool whole) {
-	if (!child || !view_child_is_mapped(child) || !child->view || !child->view->container) {
-		return;
-	}
-	int sx, sy;
-	child->impl->get_view_coords(child, &sx, &sy);
-	desktop_damage_surface(child->surface,
-			child->view->container->pending.content_x -
-				child->view->geometry.x + sx,
-			child->view->container->pending.content_y -
-				child->view->geometry.y + sy, whole);
-}
-
-static void view_child_handle_surface_commit(struct wl_listener *listener,
-		void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, surface_commit);
-	view_child_damage(child, false);
-}
-
-static void view_child_handle_surface_new_subsurface(
-		struct wl_listener *listener, void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, surface_new_subsurface);
-	struct wlr_subsurface *subsurface = data;
-	view_child_subsurface_create(child, subsurface);
-}
-
-static void view_child_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, surface_destroy);
-	view_child_destroy(child);
-}
-
-static void view_init_subsurfaces(struct sway_view *view,
-		struct wlr_surface *surface) {
-	struct wlr_subsurface *subsurface;
-	wl_list_for_each(subsurface, &surface->current.subsurfaces_below,
-			current.link) {
-		view_subsurface_create(view, subsurface);
-	}
-	wl_list_for_each(subsurface, &surface->current.subsurfaces_above,
-			current.link) {
-		view_subsurface_create(view, subsurface);
-	}
-}
-
-static void view_child_init_subsurfaces(struct sway_view_child *view_child,
-		struct wlr_surface *surface) {
-	struct wlr_subsurface *subsurface;
-	wl_list_for_each(subsurface, &surface->current.subsurfaces_below,
-			current.link) {
-		view_child_subsurface_create(view_child, subsurface);
-	}
-	wl_list_for_each(subsurface, &surface->current.subsurfaces_above,
-			current.link) {
-		view_child_subsurface_create(view_child, subsurface);
-	}
-}
-
-static void view_child_handle_surface_map(struct wl_listener *listener,
-		void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, surface_map);
-	child->mapped = true;
-	view_child_damage(child, true);
-}
-
-static void view_child_handle_surface_unmap(struct wl_listener *listener,
-		void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, surface_unmap);
-	view_child_damage(child, true);
-	child->mapped = false;
-}
-
-static void view_child_handle_view_unmap(struct wl_listener *listener,
-		void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, view_unmap);
-	view_child_damage(child, true);
-	child->mapped = false;
-}
-
-void view_child_init(struct sway_view_child *child,
-		const struct sway_view_child_impl *impl, struct sway_view *view,
-		struct wlr_surface *surface) {
-	child->impl = impl;
-	child->view = view;
-	child->surface = surface;
-	wl_list_init(&child->children);
-
-	wl_signal_add(&surface->events.commit, &child->surface_commit);
-	child->surface_commit.notify = view_child_handle_surface_commit;
-	wl_signal_add(&surface->events.new_subsurface,
-		&child->surface_new_subsurface);
-	child->surface_new_subsurface.notify =
-		view_child_handle_surface_new_subsurface;
-	wl_signal_add(&surface->events.destroy, &child->surface_destroy);
-	child->surface_destroy.notify = view_child_handle_surface_destroy;
-
-	// Not all child views have a map/unmap event
-	child->surface_map.notify = view_child_handle_surface_map;
-	wl_list_init(&child->surface_map.link);
-	child->surface_unmap.notify = view_child_handle_surface_unmap;
-	wl_list_init(&child->surface_unmap.link);
-
-	wl_signal_add(&view->events.unmap, &child->view_unmap);
-	child->view_unmap.notify = view_child_handle_view_unmap;
-
-	struct sway_container *container = child->view->container;
-	if (container != NULL) {
-		struct sway_workspace *workspace = container->pending.workspace;
-		if (workspace) {
-			surface_enter_output(child->surface, workspace->output);
-		}
+		wlr_scene_node_set_position(&view->content_tree->node, 0, 0);
 	}
 
-	view_child_init_subsurfaces(child, surface);
-}
-
-void view_child_destroy(struct sway_view_child *child) {
-	if (view_child_is_mapped(child) && child->view->container != NULL) {
-		view_child_damage(child, true);
-	}
-
-	if (child->parent != NULL) {
-		wl_list_remove(&child->link);
-		child->parent = NULL;
-	}
-
-	struct sway_view_child *subchild, *tmpchild;
-	wl_list_for_each_safe(subchild, tmpchild, &child->children, link) {
-		wl_list_remove(&subchild->link);
-		subchild->parent = NULL;
-		// The subchild lost its parent link, so it cannot see that the parent
-		// is unmapped. Unmap it directly.
-		subchild->mapped = false;
-	}
-
-	wl_list_remove(&child->surface_commit.link);
-	wl_list_remove(&child->surface_destroy.link);
-	wl_list_remove(&child->surface_map.link);
-	wl_list_remove(&child->surface_unmap.link);
-	wl_list_remove(&child->view_unmap.link);
-	wl_list_remove(&child->surface_new_subsurface.link);
-
-	if (child->impl && child->impl->destroy) {
-		child->impl->destroy(child);
-	} else {
-		free(child);
+	// only make sure to clip the content if there is content to clip
+	if (!wl_list_empty(&con->view->content_tree->children)) {
+		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &(struct wlr_box){
+			.x = con->view->geometry.x,
+			.y = con->view->geometry.y,
+			.width = con->current.content_width,
+			.height = con->current.content_height,
+		});
 	}
 }
 
@@ -1321,7 +1047,13 @@ void view_update_title(struct sway_view *view, bool force) {
 	view->container->title = title ? strdup(title) : NULL;
 
 	// Update title after the global font height is updated
-	container_update_title_textures(view->container);
+	if (view->container->title_bar.title_text && len) {
+		sway_text_node_set_text(view->container->title_bar.title_text,
+			view->container->formatted_title);
+		container_arrange_title_bar(view->container);
+	} else {
+		container_update_title_bar(view->container);
+	}
 
 	ipc_event_window(view->container, "title");
 
@@ -1388,6 +1120,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 			return;
 		}
 		clock_gettime(CLOCK_MONOTONIC, &view->urgent);
+		container_update_itself_and_parents(view->container);
 	} else {
 		view->urgent = (struct timespec){ 0 };
 		if (view->urgent_timer) {
@@ -1395,7 +1128,6 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 			view->urgent_timer = NULL;
 		}
 	}
-	container_damage_whole(view->container);
 
 	ipc_event_window(view->container, "urgent");
 
@@ -1409,44 +1141,74 @@ bool view_is_urgent(struct sway_view *view) {
 }
 
 void view_remove_saved_buffer(struct sway_view *view) {
-	if (!sway_assert(!wl_list_empty(&view->saved_buffers), "Expected a saved buffer")) {
+	if (!sway_assert(view->saved_surface_tree, "Expected a saved buffer")) {
 		return;
 	}
-	struct sway_saved_buffer *saved_buf, *tmp;
-	wl_list_for_each_safe(saved_buf, tmp, &view->saved_buffers, link) {
-		wlr_buffer_unlock(&saved_buf->buffer->base);
-		wl_list_remove(&saved_buf->link);
-		free(saved_buf);
-	}
+
+	wlr_scene_node_destroy(&view->saved_surface_tree->node);
+	view->saved_surface_tree = NULL;
+	wlr_scene_node_set_enabled(&view->content_tree->node, true);
 }
 
-static void view_save_buffer_iterator(struct wlr_surface *surface,
+static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
 		int sx, int sy, void *data) {
-	struct sway_view *view = data;
+	struct wlr_scene_tree *tree = data;
 
-	if (surface && surface->buffer) {
-		wlr_buffer_lock(&surface->buffer->base);
-		struct sway_saved_buffer *saved_buffer = calloc(1, sizeof(struct sway_saved_buffer));
-		saved_buffer->buffer = surface->buffer;
-		saved_buffer->width = surface->current.width;
-		saved_buffer->height = surface->current.height;
-		saved_buffer->x = view->container->surface_x + sx;
-		saved_buffer->y = view->container->surface_y + sy;
-		saved_buffer->transform = surface->current.transform;
-		wlr_surface_get_buffer_source_box(surface, &saved_buffer->source_box);
-		wl_list_insert(view->saved_buffers.prev, &saved_buffer->link);
+	struct wlr_scene_buffer *sbuf = wlr_scene_buffer_create(tree, NULL);
+	if (!sbuf) {
+		sway_log(SWAY_ERROR, "Could not allocate a scene buffer when saving a surface");
+		return;
 	}
+
+	wlr_scene_buffer_set_dest_size(sbuf,
+		buffer->dst_width, buffer->dst_height);
+	wlr_scene_buffer_set_opaque_region(sbuf, &buffer->opaque_region);
+	wlr_scene_buffer_set_source_box(sbuf, &buffer->src_box);
+	wlr_scene_node_set_position(&sbuf->node, sx, sy);
+	wlr_scene_buffer_set_transform(sbuf, buffer->transform);
+	wlr_scene_buffer_set_buffer(sbuf, buffer->buffer);
 }
 
 void view_save_buffer(struct sway_view *view) {
-	if (!sway_assert(wl_list_empty(&view->saved_buffers), "Didn't expect saved buffer")) {
+	if (!sway_assert(!view->saved_surface_tree, "Didn't expect saved buffer")) {
 		view_remove_saved_buffer(view);
 	}
-	view_for_each_surface(view, view_save_buffer_iterator, view);
+
+	view->saved_surface_tree = wlr_scene_tree_create(view->scene_tree);
+	if (!view->saved_surface_tree) {
+		sway_log(SWAY_ERROR, "Could not allocate a scene tree node when saving a surface");
+		return;
+	}
+
+	// Enable and disable the saved surface tree like so to atomitaclly update
+	// the tree. This will prevent over damaging or other weirdness.
+	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, false);
+
+	wlr_scene_node_for_each_buffer(&view->content_tree->node,
+		view_save_buffer_iterator, view->saved_surface_tree);
+
+	wlr_scene_node_set_enabled(&view->content_tree->node, false);
+	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, true);
 }
 
 bool view_is_transient_for(struct sway_view *child,
 		struct sway_view *ancestor) {
 	return child->impl->is_transient_for &&
 		child->impl->is_transient_for(child, ancestor);
+}
+
+static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
+		int x, int y, void *data) {
+	struct timespec *when = data;
+	wl_signal_emit_mutable(&scene_buffer->events.frame_done, when);
+}
+
+void view_send_frame_done(struct sway_view *view) {
+	struct timespec when;
+	clock_gettime(CLOCK_MONOTONIC, &when);
+
+	struct wlr_scene_node *node;
+	wl_list_for_each(node, &view->content_tree->children, link) {
+		wlr_scene_node_for_each_buffer(node, send_frame_done_iterator, &when);
+	}
 }

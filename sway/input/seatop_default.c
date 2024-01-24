@@ -12,6 +12,7 @@
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
@@ -55,6 +56,9 @@ static bool edge_is_external(struct sway_container *cont, enum wlr_edges edge) {
 	while (cont) {
 		if (container_parent_layout(cont) == layout) {
 			list_t *siblings = container_get_siblings(cont);
+			if (!siblings) {
+				return false;
+			}
 			int index = list_find(siblings, cont);
 			if (index > 0 && (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_TOP)) {
 				return false;
@@ -620,12 +624,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 	}
 
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, &root->drag_icons, link) {
-		if (drag_icon->seat == seat) {
-			drag_icon_update_position(drag_icon);
-		}
-	}
+	drag_icons_update_position(seat);
 
 	e->previous_node = node;
 }
@@ -655,12 +654,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 	}
 
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, &root->drag_icons, link) {
-		if (drag_icon->seat == seat) {
-			drag_icon_update_position(drag_icon);
-		}
-	}
+	drag_icons_update_position(seat);
 
 	e->previous_node = node;
 }
@@ -802,8 +796,9 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	if (!handled) {
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-			event->orientation, scroll_factor * event->delta,
-			roundf(scroll_factor * event->delta_discrete), event->source);
+			event->orientation, scroll_factor * event->delta, 
+			roundf(scroll_factor * event->delta_discrete), event->source,
+			event->relative_direction);
 	}
 }
 
