@@ -172,7 +172,7 @@ bool server_init(struct sway_server *server) {
 
 	root = root_create(server->wl_display);
 
-	server->backend = wlr_backend_autocreate(server->wl_display, &server->session);
+	server->backend = wlr_backend_autocreate(server->wl_event_loop, &server->session);
 	if (!server->backend) {
 		sway_log(SWAY_ERROR, "Unable to create backend");
 		return false;
@@ -355,7 +355,7 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
-	server->headless_backend = wlr_headless_backend_create(server->wl_display);
+	server->headless_backend = wlr_headless_backend_create(server->wl_event_loop);
 	if (!server->headless_backend) {
 		sway_log(SWAY_ERROR, "Failed to create secondary headless backend");
 		wlr_backend_destroy(server->backend);
