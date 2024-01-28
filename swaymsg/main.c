@@ -193,7 +193,7 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "current_workspace", &ws);
 	json_object_object_get_ex(o, "non_desktop", &non_desktop);
 	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
-		*transform, *max_render_time, *adaptive_sync_status, *tearing_allowed;
+		*transform, *max_render_time, *adaptive_sync_status, *allow_tearing;
 	json_object_object_get_ex(o, "make", &make);
 	json_object_object_get_ex(o, "model", &model);
 	json_object_object_get_ex(o, "serial", &serial);
@@ -203,7 +203,7 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "transform", &transform);
 	json_object_object_get_ex(o, "max_render_time", &max_render_time);
 	json_object_object_get_ex(o, "adaptive_sync_status", &adaptive_sync_status);
-	json_object_object_get_ex(o, "tearing_allowed", &tearing_allowed);
+	json_object_object_get_ex(o, "allow_tearing", &allow_tearing);
 	json_object *x, *y;
 	json_object_object_get_ex(rect, "x", &x);
 	json_object_object_get_ex(rect, "y", &y);
@@ -258,8 +258,8 @@ static void pretty_print_output(json_object *o) {
 		printf("  Adaptive sync: %s\n",
 			json_object_get_string(adaptive_sync_status));
 
-		printf("  Tearing allowed: %s\n",
-			json_object_get_boolean(tearing_allowed) ? "yes" : "no");
+		printf("  Allow tearing: %s\n",
+			json_object_get_boolean(allow_tearing) ? "yes" : "no");
 	} else {
 		printf(
 			"Output %s '%s %s %s' (disabled)\n",

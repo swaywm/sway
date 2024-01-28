@@ -4,6 +4,7 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_tearing_control_v1.h>
 #include "sway/config.h"
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
@@ -119,7 +120,7 @@ struct sway_view {
 	enum seat_config_shortcuts_inhibit shortcuts_inhibit;
 
 	enum sway_view_tearing_mode tearing_mode;
-	bool tearing_hint;
+	enum wp_tearing_control_v1_presentation_hint tearing_hint;
 };
 
 struct sway_xdg_shell_view {

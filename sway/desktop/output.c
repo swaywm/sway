@@ -85,20 +85,6 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 	return focus->sway_workspace;
 }
 
-bool output_can_tear_fullscreen_view(struct sway_output *output, 
-		struct sway_view *view) {
-	if (!view) {
-		return false;
-	}
-#ifdef WLR_HAS_DRM_BACKEND
-	if (wlr_backend_is_drm(output->wlr_output->backend) && 
-			output->tearing_allowed && view_can_tear(view)) {
-		return true;
-	}
-#endif
-	return false;
-}
-
 struct send_frame_done_data {
 	struct timespec when;
 	int msec_until_refresh;
@@ -153,6 +139,20 @@ static struct buffer_timer *buffer_timer_get_or_create(struct wlr_scene_buffer *
 	wl_signal_add(&buffer->node.events.destroy, &timer->destroy);
 
 	return timer;
+}
+
+static bool output_can_tear_fullscreen_view(struct sway_output *output, 
+		struct sway_view *view) {
+	if (!view) {
+		return false;
+	}
+#ifdef WLR_HAS_DRM_BACKEND
+	if (wlr_backend_is_drm(output->wlr_output->backend) && 
+			output->allow_tearing && view_can_tear(view)) {
+		return true;
+	}
+#endif
+	return false;
 }
 
 static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
@@ -255,6 +255,60 @@ static void output_configure_scene(struct sway_output *output,
 	}
 }
 
+static int output_repaint_timer_handler(void *data) {
+	struct sway_output *output = data;
+
+	if (!output->enabled) {
+		return 0;
+	}
+
+	output->wlr_output->frame_pending = false;
+
+	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
+
+	if (output->gamma_lut_changed || output->tearing_state_changed) {
+		struct wlr_output_state pending;
+		struct wlr_gamma_control_v1 *gamma_control = NULL;
+		bool tearing_state_updated = false;
+
+		wlr_output_state_init(&pending);
+		if (!wlr_scene_output_build_state(output->scene_output, &pending, NULL)) {
+			return 0;
+		}
+
+		if (output->gamma_lut_changed) {
+			output->gamma_lut_changed = false;
+			gamma_control = wlr_gamma_control_manager_v1_get_control(
+				server.gamma_control_manager_v1, output->wlr_output);
+			if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
+				wlr_output_state_finish(&pending);
+				return 0;
+			}
+		}
+
+		if (output->tearing_state_changed) {
+			output->tearing_state_changed = false;
+			pending.tearing_page_flip = output->tearing_state;
+			tearing_state_updated = true;
+		}
+
+		if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
+			if (tearing_state_updated) {
+				output->allow_tearing = false;
+			}
+			wlr_output_state_finish(&pending);
+			return 0;
+		}
+
+		wlr_output_state_finish(&pending);
+		return 0;
+	}
+
+	wlr_scene_output_commit(output->scene_output, NULL);
+	return 0;
+}
+
 static struct sway_view *output_get_fullscreen_view(
 		struct sway_output *output) {
 	struct sway_workspace *workspace = output->current.active_workspace;
@@ -271,51 +325,6 @@ static struct sway_view *output_get_fullscreen_view(
 	}
 
 	return NULL;
-}
-
-static int output_repaint_timer_handler(void *data) {
-	struct sway_output *output = data;
-
-	if (!output->enabled) {
-		return 0;
-	}
-
-	output->wlr_output->frame_pending = false;
-
-	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
-
-	struct wlr_scene_output_state_options opts = {
-		.color_transform = output->color_transform,
-	};
-
-	if (output->gamma_lut_changed) {
-		struct wlr_output_state pending;
-		wlr_output_state_init(&pending);
-		if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
-			return 0;
-		}
-
-		output->gamma_lut_changed = false;
-		struct wlr_gamma_control_v1 *gamma_control =
-			wlr_gamma_control_manager_v1_get_control(
-			server.gamma_control_manager_v1, output->wlr_output);
-		if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
-			wlr_output_state_finish(&pending);
-			return 0;
-		}
-
-		if (!wlr_output_commit_state(output->wlr_output, &pending)) {
-			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
-			wlr_output_state_finish(&pending);
-			return 0;
-		}
-
-		wlr_output_state_finish(&pending);
-		return 0;
-	}
-
-	wlr_scene_output_commit(output->scene_output, &opts);
-	return 0;
 }
 
 static void handle_frame(struct wl_listener *listener, void *user_data) {
@@ -366,13 +375,15 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	int delay = msec_until_refresh - output->max_render_time;
 
 	struct sway_view *fullscreen_view = output_get_fullscreen_view(output);
-	if (output_can_tear_fullscreen_view(output, fullscreen_view)) {
-		delay = 0;
+	bool can_tear = output_can_tear_fullscreen_view(output, fullscreen_view);
+	if (can_tear != output->tearing_state) {
+		output->tearing_state_changed = true;
 	}
+	output->tearing_state = can_tear;
 
 	// If the delay is less than 1 millisecond (which is the least we can wait)
-	// then just render right away.
-	if (delay < 1) {
+	// or if the output is allowed to tear, then just render right away.
+	if (delay < 1 || can_tear) {
 		output_repaint_timer_handler(output);
 	} else {
 		output->wlr_output->frame_pending = true;
