@@ -400,7 +400,7 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 
 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
 
-	json_object_object_add(object, "tearing_allowed", json_object_new_boolean(output->tearing_allowed));
+	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
 }
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
@@ -595,7 +595,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 	json_object_object_add(object, "max_render_time", json_object_new_int(c->view->max_render_time));
 
-	json_object_object_add(object, "tearing_allowed", json_object_new_boolean(view_can_tear(c->view)));
+	json_object_object_add(object, "allow_tearing", json_object_new_boolean(view_can_tear(c->view)));
 
 	json_object_object_add(object, "shell", json_object_new_string(view_get_shell(c->view)));
 

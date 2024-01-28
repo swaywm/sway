@@ -73,7 +73,8 @@ struct sway_output {
 	int max_render_time; // In milliseconds
 	struct wl_event_source *repaint_timer;
 	bool gamma_lut_changed;
-	bool tearing_allowed;
+	bool allow_tearing;
+	bool tearing_state, tearing_state_changed;
 };
 
 struct sway_output_non_desktop {

@@ -1268,7 +1268,8 @@ bool view_can_tear(struct sway_view *view) {
 	case TEARING_OVERRIDE_TRUE:
 		return true;
 	case TEARING_WINDOW_HINT:
-		return view->tearing_hint;
+		return view->tearing_hint == 
+			WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC;
 	}
 	return false;
 }

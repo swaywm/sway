@@ -1,6 +1,8 @@
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_tearing_control_v1.h>
 #include "sway/server.h"
 #include "sway/tree/view.h"
+#include "sway/output.h"
 #include "log.h"
 
 struct sway_tearing_controller {
@@ -19,12 +21,12 @@ static void handle_tearing_controller_set_hint(struct wl_listener *listener,
 	struct sway_view *view = view_from_wlr_surface(
 		controller->tearing_control->surface);
 	if (view) {
-		view->tearing_hint = controller->tearing_control->hint;
+		view->tearing_hint = controller->tearing_control->current;
 	}
 }
 
 static void handle_tearing_controller_destroy(struct wl_listener *listener, 
-    void *data) {
+		void *data) {
 	struct sway_tearing_controller *controller = 
 		wl_container_of(listener, controller, destroy);
 	wl_list_remove(&controller->link);

@@ -11,9 +11,9 @@ struct cmd_results *output_cmd_allow_tearing(int argc, char **argv) {
 	}
 
   if (parse_boolean(argv[0], true)) {
-    config->handler_context.output_config->tearing_allowed = 1;
+    config->handler_context.output_config->allow_tearing = 1;
   } else {
-    config->handler_context.output_config->tearing_allowed = 0;
+    config->handler_context.output_config->allow_tearing = 0;
   }
 
   config->handler_context.leftovers.argc = argc - 1;

@@ -289,7 +289,7 @@ struct output_config {
 	enum render_bit_depth render_bit_depth;
 	bool set_color_transform;
 	struct wlr_color_transform *color_transform;
-	int tearing_allowed;
+	int allow_tearing;
 
 	char *background;
 	char *background_option;
