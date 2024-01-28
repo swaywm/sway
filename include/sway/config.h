@@ -285,7 +285,7 @@ struct output_config {
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
-	int tearing_allowed;
+	int allow_tearing;
 
 	char *background;
 	char *background_option;
