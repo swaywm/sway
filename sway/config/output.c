@@ -822,7 +822,9 @@ static bool _spawn_swaybg(char **command) {
 			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
 
 			execvp(command[0], command);
-			sway_log_errno(SWAY_ERROR, "execvp failed");
+			sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
+				"(background configuration probably not applied)",
+				command[0]);
 			_exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
@@ -832,12 +834,13 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "close failed");
 		return false;
 	}
-	if (waitpid(pid, NULL, 0) < 0) {
+	int fork_status = 0;
+	if (waitpid(pid, &fork_status, 0) < 0) {
 		sway_log_errno(SWAY_ERROR, "waitpid failed");
 		return false;
 	}
 
-	return true;
+	return WIFEXITED(fork_status) && WEXITSTATUS(fork_status) == EXIT_SUCCESS;
 }
 
 bool spawn_swaybg(void) {
