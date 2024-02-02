@@ -203,6 +203,11 @@ sway_sources = files(
 	'commands/output/transform.c',
 	'commands/output/unplug.c',
 
+	'commands/xwayland/enable.c',
+	'commands/xwayland/disable.c',
+	'commands/xwayland/force.c',
+	'commands/xwayland/scale.c',
+
 	'tree/arrange.c',
 	'tree/container.c',
 	'tree/node.c',
