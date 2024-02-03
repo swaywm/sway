@@ -475,6 +475,11 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 				old_config->xwayland ? "enabled" : "disabled");
 		config->xwayland = old_config->xwayland;
 
+		// primary_selection can only be enabled/disabled at launch
+		sway_log(SWAY_DEBUG, "primary_selection will remain %s",
+				old_config->primary_selection ? "enabled" : "disabled");
+		config->primary_selection = old_config->primary_selection;
+
 		if (!config->validating) {
 			if (old_config->swaybg_client != NULL) {
 				wl_client_destroy(old_config->swaybg_client);
