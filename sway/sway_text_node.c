@@ -58,11 +58,11 @@ struct text_buffer {
 };
 
 static int get_text_width(struct sway_text_node *props) {
+	int width = props->width;
 	if (props->max_width) {
-		return MIN(props->max_width, props->width);
+		width = MIN(width, props->max_width);
 	}
-
-	return props->width;
+	return MAX(width, 0);
 }
 
 static void update_source_box(struct text_buffer *buffer) {
