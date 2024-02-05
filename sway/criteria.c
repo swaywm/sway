@@ -159,6 +159,31 @@ static bool has_container_criteria(struct criteria *criteria) {
 
 static bool criteria_matches_container(struct criteria *criteria,
 		struct sway_container *container) {
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_view *focused = focus ? focus->view : NULL;
+
+	if (criteria->workspace) {
+		struct sway_workspace *ws = container->pending.workspace;
+		if (!ws) {
+			return false;
+		}
+
+		switch (criteria->workspace->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused &&
+					strcmp(ws->name, focused->container->pending.workspace->name)) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(ws->name, criteria->workspace->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
 	if (criteria->con_mark) {
 		bool exists = false;
 		struct sway_container *con = container;
@@ -355,27 +380,6 @@ static bool criteria_matches_view(struct criteria *criteria,
 		list_free(urgent_views);
 		if (view != target) {
 			return false;
-		}
-	}
-
-	if (criteria->workspace) {
-		struct sway_workspace *ws = view->container->pending.workspace;
-		if (!ws) {
-			return false;
-		}
-
-		switch (criteria->workspace->match_type) {
-		case PATTERN_FOCUSED:
-			if (focused &&
-					strcmp(ws->name, focused->container->pending.workspace->name)) {
-				return false;
-			}
-			break;
-		case PATTERN_PCRE2:
-			if (regex_cmp(ws->name, criteria->workspace->regex) < 0) {
-				return false;
-			}
-			break;
 		}
 	}
 

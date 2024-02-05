@@ -1031,7 +1031,7 @@ The following attributes may be matched with:
 	applications and requires XWayland.
 
 *workspace*
-	Compare against the workspace name for this view. Can be a regular
+	Compare against the workspace name for this container. Can be a regular
 	expression. If the value is \_\_focused\_\_, then all the views on the
 	currently focused workspace matches.
 
