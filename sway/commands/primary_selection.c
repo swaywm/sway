@@ -17,7 +17,7 @@ struct cmd_results *cmd_primary_selection(int argc, char **argv) {
 				"primary_selection can only be enabled/disabled at launch");
 	}
 
-	config->primary_selection = parse_boolean(argv[0], true);
+	config->primary_selection = primary_selection;
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
