@@ -12,6 +12,8 @@ struct cmd_results *cmd_primary_selection(int argc, char **argv) {
 
 	bool primary_selection = parse_boolean(argv[0], true);
 
+	// config->primary_selection is reset to the previous value on reload in
+	// load_main_config()
 	if (config->reloading && config->primary_selection != primary_selection) {
 		return cmd_results_new(CMD_FAILURE,
 				"primary_selection can only be enabled/disabled at launch");
