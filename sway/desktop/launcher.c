@@ -238,7 +238,7 @@ struct launcher_ctx *launcher_ctx_create_internal(void) {
 
 	struct wlr_xdg_activation_token_v1 *token =
 		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
-	token->seat = seat->wlr_seat;
+	wlr_xdg_activation_token_v1_set_seat(token, seat->wlr_seat);
 
 	struct launcher_ctx *ctx = launcher_ctx_create(token, &ws->node);
 	if (!ctx) {
