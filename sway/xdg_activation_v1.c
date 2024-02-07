@@ -17,11 +17,15 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		return;
 	}
 
+	struct launcher_ctx *ctx = event->token->data;
+	if (ctx == NULL) {
+		return;
+	}
+
 	if (!xdg_surface->surface->mapped) {
 		// This is a startup notification. If we are tracking it, the data
 		// field is a launcher_ctx.
-		struct launcher_ctx *ctx = event->token->data;
-		if (!ctx || ctx->activated) {
+		if (ctx->activated) {
 			// This ctx has already been activated and cannot be used again
 			// for a startup notification. It will be destroyed
 			return;
@@ -32,9 +36,16 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		return;
 	}
 
-	struct wlr_seat *wlr_seat = event->token->seat;
-	struct sway_seat *seat = wlr_seat ? wlr_seat->data : NULL;
-	view_request_activate(view, seat);
+	// This is an activation request. If this context is internal we have ctx->seat.
+	struct sway_seat *seat = ctx->seat;
+	if (!seat) {
+		// Otherwise, use the seat indicated by the launcher client in set_serial
+		seat = ctx->token->seat ? ctx->token->seat->data : NULL;
+	}
+
+	if (seat) {
+		view_request_activate(view, seat);
+	}
 }
 
 void xdg_activation_v1_handle_new_token(struct wl_listener *listener, void *data) {
