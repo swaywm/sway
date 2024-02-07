@@ -134,6 +134,9 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	// Operate on parent container, like i3.
 	if (container) {
 		container = container->pending.parent;
+		if (container && container->pending.children->length == 1) {
+			container = container->pending.parent;
+		}
 	}
 
 	// We could be working with a container OR a workspace. These are different
