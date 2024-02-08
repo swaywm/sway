@@ -3,13 +3,16 @@
 #include <stdbool.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
+#include <wlr/config.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#if WLR_HAS_DRM_BACKEND
 #include <wlr/types/wlr_drm_lease_v1.h>
+#endif
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
@@ -91,8 +94,10 @@ struct sway_server {
 	struct wl_listener xdg_decoration;
 	struct wl_list xdg_decorations; // sway_xdg_decoration::link
 
+#if WLR_HAS_DRM_BACKEND
 	struct wlr_drm_lease_v1_manager *drm_lease_manager;
 	struct wl_listener drm_lease_request;
+#endif
 
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
 	struct wl_listener pointer_constraint;
