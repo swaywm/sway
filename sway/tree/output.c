@@ -9,6 +9,7 @@
 #include "sway/tree/workspace.h"
 #include "sway/server.h"
 #include "log.h"
+#include "stringop.h"
 #include "util.h"
 
 enum wlr_direction opposite_direction(enum wlr_direction d) {
@@ -404,7 +405,7 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	} else if (isdigit(b->name[0])) {
 		return 1;
 	}
-	return 0;
+	return lenient_strcmp(a->name, b->name);
 }
 
 void output_sort_workspaces(struct sway_output *output) {
