@@ -84,6 +84,9 @@ struct sway_view {
 	// transaction state. Updated on every commit.
 	struct wlr_box geometry;
 
+	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
+	struct wl_listener ext_foreign_destroy;
+
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;
 	struct wl_listener foreign_fullscreen_request;
@@ -283,6 +286,8 @@ struct sway_view *view_from_wlr_xwayland_surface(
 	struct wlr_xwayland_surface *xsurface);
 #endif
 struct sway_view *view_from_wlr_surface(struct wlr_surface *surface);
+
+void view_update_app_id(struct sway_view *view);
 
 /**
  * Re-read the view's title property and update any relevant title bars.

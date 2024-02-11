@@ -60,6 +60,7 @@
 
 #define SWAY_XDG_SHELL_VERSION 2
 #define SWAY_LAYER_SHELL_VERSION 4
+#define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 
 bool allow_unsupported_gpu = false;
 
@@ -93,6 +94,7 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.output_manager_v1->global ||
 		global == server.output_power_manager_v1->global ||
 		global == server.input_method->global ||
+		global == server.foreign_toplevel_list->global ||
 		global == server.foreign_toplevel_manager->global ||
 		global == server.data_control_manager_v1->global ||
 		global == server.screencopy_manager_v1->global ||
@@ -289,6 +291,8 @@ bool server_init(struct sway_server *server) {
 		&server->output_power_manager_set_mode);
 	server->input_method = wlr_input_method_manager_v2_create(server->wl_display);
 	server->text_input = wlr_text_input_manager_v3_create(server->wl_display);
+	server->foreign_toplevel_list =
+		wlr_ext_foreign_toplevel_list_v1_create(server->wl_display, SWAY_FOREIGN_TOPLEVEL_LIST_VERSION);
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
 
