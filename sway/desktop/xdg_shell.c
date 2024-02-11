@@ -337,6 +337,7 @@ static void handle_set_app_id(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, set_app_id);
 	struct sway_view *view = &xdg_shell_view->view;
+	view_update_app_id(view);
 	view_execute_criteria(view);
 }
 
