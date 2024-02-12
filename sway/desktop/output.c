@@ -140,11 +140,26 @@ static struct buffer_timer *buffer_timer_get_or_create(struct wlr_scene_buffer *
 	return timer;
 }
 
+static bool output_can_tear_fullscreen_view(struct sway_output *output, 
+		struct sway_view *view) {
+	if (!view) {
+		return false;
+	}
+#ifdef WLR_HAS_DRM_BACKEND
+	if (wlr_backend_is_drm(output->wlr_output->backend) && 
+			output->allow_tearing && view_can_tear(view)) {
+		return true;
+	}
+#endif
+	return false;
+}
+
 static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 		int x, int y, void *user_data) {
 	struct send_frame_done_data *data = user_data;
 	struct sway_output *output = data->output;
 	int view_max_render_time = 0;
+	bool view_can_tear = false;
 
 	if (buffer->primary_output != data->output->scene_output) {
 		return;
@@ -156,6 +171,10 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 			SWAY_SCENE_DESC_VIEW);
 		if (view) {
 			view_max_render_time = view->max_render_time;
+
+			if (view->container && container_is_fullscreen_or_child(view->container)) {
+				view_can_tear = output_can_tear_fullscreen_view(output, view);
+			}
 			break;
 		}
 
@@ -168,6 +187,10 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 
 	int delay = data->msec_until_refresh - output->max_render_time
 			- view_max_render_time;
+
+	if (view_can_tear) {
+		delay = 0;
+	}
 
 	struct buffer_timer *timer = NULL;
 
@@ -234,24 +257,37 @@ static int output_repaint_timer_handler(void *data) {
 
 	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
 
-	if (output->gamma_lut_changed) {
+	if (output->gamma_lut_changed || output->tearing_state_changed) {
 		struct wlr_output_state pending;
+		struct wlr_gamma_control_v1 *gamma_control = NULL;
+		bool tearing_state_updated = false;
+
 		wlr_output_state_init(&pending);
 		if (!wlr_scene_output_build_state(output->scene_output, &pending, NULL)) {
 			return 0;
 		}
 
-		output->gamma_lut_changed = false;
-		struct wlr_gamma_control_v1 *gamma_control =
-			wlr_gamma_control_manager_v1_get_control(
-			server.gamma_control_manager_v1, output->wlr_output);
-		if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
-			wlr_output_state_finish(&pending);
-			return 0;
+		if (output->gamma_lut_changed) {
+			output->gamma_lut_changed = false;
+			gamma_control = wlr_gamma_control_manager_v1_get_control(
+				server.gamma_control_manager_v1, output->wlr_output);
+			if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
+				wlr_output_state_finish(&pending);
+				return 0;
+			}
+		}
+
+		if (output->tearing_state_changed) {
+			output->tearing_state_changed = false;
+			pending.tearing_page_flip = output->tearing_state;
+			tearing_state_updated = true;
 		}
 
 		if (!wlr_output_commit_state(output->wlr_output, &pending)) {
 			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
+			if (tearing_state_updated) {
+				output->allow_tearing = false;
+			}
 			wlr_output_state_finish(&pending);
 			return 0;
 		}
@@ -262,6 +298,24 @@ static int output_repaint_timer_handler(void *data) {
 
 	wlr_scene_output_commit(output->scene_output, NULL);
 	return 0;
+}
+
+static struct sway_view *output_get_fullscreen_view(
+		struct sway_output *output) {
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (!workspace) {
+		return NULL;
+	}
+
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+	if (fullscreen_con) {
+		return fullscreen_con->view;
+	}
+
+	return NULL;
 }
 
 static void handle_frame(struct wl_listener *listener, void *user_data) {
@@ -311,9 +365,16 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 
 	int delay = msec_until_refresh - output->max_render_time;
 
+	struct sway_view *fullscreen_view = output_get_fullscreen_view(output);
+	bool can_tear = output_can_tear_fullscreen_view(output, fullscreen_view);
+	if (can_tear != output->tearing_state) {
+		output->tearing_state_changed = true;
+	}
+	output->tearing_state = can_tear;
+
 	// If the delay is less than 1 millisecond (which is the least we can wait)
-	// then just render right away.
-	if (delay < 1) {
+	// or if the output is allowed to tear, then just render right away.
+	if (delay < 1 || can_tear) {
 		output_repaint_timer_handler(output);
 	} else {
 		output->wlr_output->frame_pending = true;

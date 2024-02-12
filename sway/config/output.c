@@ -76,6 +76,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
 	oc->power = -1;
+	oc->allow_tearing = -1;
 	return oc;
 }
 
@@ -140,6 +141,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->power != -1) {
 		dst->power = src->power;
 	}
+	if (src->allow_tearing != -1) {
+		dst->allow_tearing = src->allow_tearing;
+	}
 }
 
 static void merge_wildcard_on_all(struct output_config *wildcard) {
@@ -188,12 +192,13 @@ static void merge_id_on_name(struct output_config *oc) {
 			list_add(config->output_configs, ion_oc);
 			sway_log(SWAY_DEBUG, "Generated id on name output config \"%s\""
 				" (enabled: %d) (%dx%d@%fHz position %d,%d scale %f "
-				"transform %d) (bg %s %s) (power %d) (max render time: %d)",
+				"transform %d) (bg %s %s) (power %d) (max render time: %d) "
+				"(allow tearing: %d)",
 				ion_oc->name, ion_oc->enabled, ion_oc->width, ion_oc->height,
 				ion_oc->refresh_rate, ion_oc->x, ion_oc->y, ion_oc->scale,
 				ion_oc->transform, ion_oc->background,
 				ion_oc->background_option, ion_oc->power,
-				ion_oc->max_render_time);
+				ion_oc->max_render_time, ion_oc->allow_tearing);
 		}
 	}
 	free(id_on_name);
@@ -234,11 +239,11 @@ struct output_config *store_output_config(struct output_config *oc) {
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
-		"(max render time: %d)",
+		"(max render time: %d) (allow tearing: %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
 		oc->transform, oc->background, oc->background_option, oc->power,
-		oc->max_render_time);
+		oc->max_render_time, oc->allow_tearing);
 
 	return oc;
 }
@@ -584,6 +589,12 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		output->max_render_time = oc->max_render_time;
 	}
 
+	if (oc && oc->allow_tearing >= 0) {
+		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d", 
+			oc->name, oc->allow_tearing);
+		output->allow_tearing = oc->allow_tearing;
+	}
+
 	// Reconfigure all devices, since input config may have been applied before
 	// this output came online, and some config items (like map_to_output) are
 	// dependent on an output being present.
@@ -620,6 +631,7 @@ static void default_output_config(struct output_config *oc,
 	oc->subpixel = output->detected_subpixel;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
 	oc->max_render_time = 0;
+	oc->allow_tearing = 0;
 }
 
 static struct output_config *get_output_config(char *identifier,
@@ -671,11 +683,11 @@ static struct output_config *get_output_config(char *identifier,
 
 		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
 			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
-			" (power %d) (max render time: %d)", result->name, result->enabled,
-			result->width, result->height, result->refresh_rate,
-			result->x, result->y, result->scale, result->transform,
-			result->background, result->background_option, result->power,
-			result->max_render_time);
+			" (power %d) (max render time: %d) (allow tearing: %d)", 
+			result->name, result->enabled, result->width, result->height, 
+			result->refresh_rate, result->x, result->y, result->scale, 
+			result->transform, result->background, result->background_option,
+			result->power, result->max_render_time, result->allow_tearing);
 	} else if (oc_name) {
 		// No identifier config, just return a copy of the name config
 		free(result->name);

@@ -8,6 +8,7 @@
 // must be in order for the bsearch
 static const struct cmd_handler output_handlers[] = {
 	{ "adaptive_sync", output_cmd_adaptive_sync },
+	{ "allow_tearing", output_cmd_allow_tearing },
 	{ "background", output_cmd_background },
 	{ "bg", output_cmd_background },
 	{ "disable", output_cmd_disable },

@@ -215,6 +215,20 @@ set|plus|minus|toggle <amount>
 	effect on the output the window is currently on. See *sway-output*(5) for
 	further details.
 
+*allow_tearing* yes|no
+	Allows or disallows screen tearing as a result of asynchronous page flips
+	for a fullscreen application.
+
+	When this option is not set, the tearing hints provided by the application
+	determine whether tearing is allowed. When _yes_ is specified,
+	the application allows tearing regardless of the tearing hints.
+	When _no_ is specified, tearing will never be allowed on the application,
+	regardless of the tearing hints.
+
+	This setting only has an effect if tearing is allowed on the output through
+	the per-output *allow_tearing* setting. See *sway-output*(5) 
+	for further details.
+
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. The optional _px_
 	argument specifies how many pixels to move the container. If unspecified,
