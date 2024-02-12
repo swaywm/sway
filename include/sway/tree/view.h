@@ -85,7 +85,6 @@ struct sway_view {
 	struct wlr_box geometry;
 
 	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
-	struct wl_listener ext_foreign_destroy;
 
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;

@@ -765,8 +765,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	};
 	view->ext_foreign_toplevel =
 		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list, &foreign_toplevel_state);
-	wl_signal_add(&view->ext_foreign_toplevel->events.destroy,
-			&view->ext_foreign_destroy);
 
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
