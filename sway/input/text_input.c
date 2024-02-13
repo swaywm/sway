@@ -341,43 +341,42 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		cursor_area.width = parent.width;
 		cursor_area.height = parent.height;
 	}
-	wlr_scene_node_set_position(&relative->node, cursor_area.x + cursor_area.width, cursor_area.y + cursor_area.height);
 
 	int popup_width = popup->popup_surface->surface->current.width;
 	int popup_height = popup->popup_surface->surface->current.height;
-	int x1 = parent.x + cursor_area.x;
-	int x2 = parent.x + cursor_area.x + cursor_area.width;
-	int y1 = parent.y + cursor_area.y;
-	int y2 = parent.y + cursor_area.y + cursor_area.height;
-	int x = x1;
-	int y = y2;
+	int x1 = cursor_area.x;
+	int x2 = cursor_area.x + cursor_area.width;
+	int y1 = cursor_area.y;
+	int y2 = cursor_area.y + cursor_area.height;
+	int relate_x = x1;
+	int relate_y = y2;
 
 	int available_right = output_box.x + output_box.width - x1;
 	int available_left = x2 - output_box.x;
 	if (available_right < popup_width && available_left > available_right) {
-		x = x2 - popup_width;
+		relate_x = x2 - popup_width;
 	}
 
 	int available_down = output_box.y + output_box.height - y2;
 	int available_up = y1 - output_box.y;
 	if (available_down < popup_height && available_up > available_down) {
-		y = y1 - popup_height;
+		relate_y = y1 - popup_height;
 	}
+	int x = parent.x + relate_x;
+	int y = parent.y + relate_y;
 
-	popup->x = x;
-	popup->y = y;
-
+	wlr_scene_node_set_position(&relative->node, relate_x, relate_y);
 	if (cursor_rect) {
 		struct wlr_box box = {
-			.x = x1 - x,
-			.y = y1 - y,
+			.x = x1 - relate_x,
+			.y = y1 - relate_y,
 			.width = cursor_area.width,
 			.height = cursor_area.height,
 		};
 		wlr_input_popup_surface_v2_send_text_input_rectangle(
 			popup->popup_surface, &box);
 	}
-	wlr_scene_node_set_position(&popup->scene_tree->node, popup->x, popup->y);
+	wlr_scene_node_set_position(&popup->scene_tree->node, x, y);
 }
 
 static void input_popup_set_focus(struct sway_input_popup *popup,

@@ -10,8 +10,6 @@ struct sway_input_popup {
 	struct sway_popup_desc desc;
 	struct wlr_input_popup_surface_v2 *popup_surface;
 
-	int x, y;
-
 	struct wl_list link;
 
 	struct wl_listener popup_destroy;
