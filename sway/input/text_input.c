@@ -6,6 +6,7 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/input/text_input.h"
+#include "sway/input/text_input_popup.h"
 #include "sway/layers.h"
 static void input_popup_update(struct sway_input_popup *popup);
 
@@ -279,18 +280,22 @@ static void input_popup_update(struct sway_input_popup *popup) {
 
 	if (popup->scene_tree != NULL) {
 		wlr_scene_node_destroy(&popup->scene_tree->node);
+		if (popup->desc.relative != NULL) {
+			wlr_scene_node_destroy(popup->desc.relative);
+		}
+
 	}
 
 	bool cursor_rect = text_input->input->current.features
 		& WLR_TEXT_INPUT_V3_FEATURE_CURSOR_RECTANGLE;
 	struct wlr_surface *focused_surface = text_input->input->focused_surface;
-	struct wlr_box cursor = text_input->input->current.cursor_rectangle;
+	struct wlr_box cursor_area = text_input->input->current.cursor_rectangle;
 
 	struct wlr_box output_box;
 	struct wlr_box parent;
 	struct wlr_layer_surface_v1 *layer_surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(focused_surface);
-
+	struct wlr_scene_tree *relative;
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
 			layer_surface->data;
@@ -301,14 +306,9 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
 		parent.x = lx;
 		parent.y = ly;
-		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layer_tree, popup->popup_surface->surface);
-		if (!scene_descriptor_assign(&popup->scene_tree->node,
-					SWAY_SCENE_DESC_LAYER_SHELL, layer_surface)) {
-			wlr_scene_node_destroy(&popup->scene_tree->node);
-			popup->scene_tree = NULL;
-			return;
-		}
-
+		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
+		popup->desc.view = NULL;
+		relative = wlr_scene_tree_create(layer->scene->tree);
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
 		int lx, ly;
@@ -322,28 +322,33 @@ static void input_popup_update(struct sway_input_popup *popup) {
 
 		parent.width = view->geometry.width;
 		parent.height = view->geometry.height;
-		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layer_tree, popup->popup_surface->surface);
-		if (!scene_descriptor_assign(&popup->scene_tree->node,
-					SWAY_SCENE_DESC_VIEW, view)) {
-			wlr_scene_node_destroy(&popup->scene_tree->node);
-			popup->scene_tree = NULL;
-			return;
-		}
+		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
+		popup->desc.view = view;
+		relative = wlr_scene_tree_create(view->scene_tree);
+	}
+
+	popup->desc.relative = &relative->node;
+	if (!scene_descriptor_assign(&popup->scene_tree->node,
+			SWAY_SCENE_DESC_POPUP, &popup->desc)) {
+		wlr_scene_node_destroy(&popup->scene_tree->node);
+		popup->scene_tree = NULL;
+		return;
 	}
 
 	if (!cursor_rect) {
-		cursor.x = 0;
-		cursor.y = 0;
-		cursor.width = parent.width;
-		cursor.height = parent.height;
+		cursor_area.x = 0;
+		cursor_area.y = 0;
+		cursor_area.width = parent.width;
+		cursor_area.height = parent.height;
 	}
+	wlr_scene_node_set_position(&relative->node, cursor_area.x + cursor_area.width, cursor_area.y + cursor_area.height);
 
 	int popup_width = popup->popup_surface->surface->current.width;
 	int popup_height = popup->popup_surface->surface->current.height;
-	int x1 = parent.x + cursor.x;
-	int x2 = parent.x + cursor.x + cursor.width;
-	int y1 = parent.y + cursor.y;
-	int y2 = parent.y + cursor.y + cursor.height;
+	int x1 = parent.x + cursor_area.x;
+	int x2 = parent.x + cursor_area.x + cursor_area.width;
+	int y1 = parent.y + cursor_area.y;
+	int y2 = parent.y + cursor_area.y + cursor_area.height;
 	int x = x1;
 	int y = y2;
 
@@ -366,8 +371,8 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		struct wlr_box box = {
 			.x = x1 - x,
 			.y = y1 - y,
-			.width = cursor.width,
-			.height = cursor.height,
+			.width = cursor_area.width,
+			.height = cursor_area.height,
 		};
 		wlr_input_popup_surface_v2_send_text_input_rectangle(
 			popup->popup_surface, &box);

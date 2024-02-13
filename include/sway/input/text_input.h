@@ -35,21 +35,6 @@ struct sway_input_method_relay {
 	struct wl_listener input_method_keyboard_grab_destroy;
 };
 
-struct sway_input_popup {
-	struct sway_input_method_relay *relay;
-
-	struct wlr_scene_tree *scene_tree;
-	struct wlr_input_popup_surface_v2 *popup_surface;
-
-	int x, y;
-
-	struct wl_list link;
-
-	struct wl_listener popup_destroy;
-	struct wl_listener popup_surface_commit;
-
-	struct wl_listener focused_surface_unmap;
-};
 
 struct sway_text_input {
 	struct sway_input_method_relay *relay;
