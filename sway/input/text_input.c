@@ -5,6 +5,7 @@
 #include "sway/scene_descriptor.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
+#include "sway/output.h"
 #include "sway/input/text_input.h"
 #include "sway/input/text_input_popup.h"
 #include "sway/layers.h"
@@ -266,6 +267,37 @@ static void relay_handle_text_input(struct wl_listener *listener,
 	sway_text_input_create(relay, wlr_text_input);
 }
 
+static struct sway_layer_surface *find_layer_by_surface(
+		struct wlr_layer_surface_v1 *layer) {
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		// For now we'll only check the overlay and top layer
+		struct wlr_scene_node *node;
+		wl_list_for_each (node, &output->layers.shell_top->children, link) {
+			struct sway_layer_surface *surface = scene_descriptor_try_get(node,
+				SWAY_SCENE_DESC_LAYER_SHELL);
+			if (!surface) {
+				continue;
+			}
+			if (surface->layer_surface == layer) {
+				return surface;
+			}
+		}
+		wl_list_for_each (node, &output->layers.shell_overlay->children, link) {
+			struct sway_layer_surface *surface = scene_descriptor_try_get(node,
+				SWAY_SCENE_DESC_LAYER_SHELL);
+			if (!surface) {
+				continue;
+			}
+			if (surface->layer_surface == layer) {
+				return surface;
+			}
+		}
+	}
+	return NULL;
+}
+
+
 static void input_popup_update(struct sway_input_popup *popup) {
 	struct sway_text_input *text_input =
 		relay_get_focused_text_input(popup->relay);
@@ -298,7 +330,10 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	struct wlr_scene_tree *relative;
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
-			layer_surface->data;
+			find_layer_by_surface(layer_surface);
+		if (layer == NULL) {
+			return;
+		}
 
 		struct wlr_output* output = layer->layer_surface->output;
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
@@ -391,9 +426,8 @@ static void input_popup_set_focus(struct sway_input_popup *popup,
 	struct wlr_layer_surface_v1 *layer_surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(surface);
 	if (layer_surface != NULL) {
-		struct sway_layer_surface *layer = layer_surface->data;
 		wl_signal_add(
-			&layer->layer_surface->surface->events.unmap, &popup->focused_surface_unmap);
+			&layer_surface->surface->events.unmap, &popup->focused_surface_unmap);
 		input_popup_update(popup);
 		return;
 	}
