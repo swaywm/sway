@@ -312,15 +312,15 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	}
 
 	if (!popup->popup_surface->surface->mapped) {
+		popup->scene_tree = NULL;
+		popup->desc.view = NULL;
 		return;
 	}
 
-	if (popup->scene_tree != NULL) {
-		wlr_scene_node_destroy(&popup->scene_tree->node);
-		if (popup->desc.relative != NULL) {
-			wlr_scene_node_destroy(popup->desc.relative);
-		}
-	}
+	wlr_scene_node_destroy(&popup->scene_tree->node);
+	wlr_scene_node_destroy(popup->desc.relative);
+	popup->scene_tree = NULL;
+	popup->desc.view = NULL;
 
 	bool cursor_rect = text_input->input->current.features
 		& WLR_TEXT_INPUT_V3_FEATURE_CURSOR_RECTANGLE;
