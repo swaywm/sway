@@ -1,4 +1,5 @@
 #include <wlr/types/wlr_xdg_activation_v1.h>
+#include <wlr/types/wlr_xdg_shell.h>
 #include "sway/desktop/launcher.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
