@@ -4,7 +4,9 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_subcompositor.h>
+#include <wlr/types/wlr_xdg_shell.h>
 #include "log.h"
 #include "sway/scene_descriptor.h"
 #include "sway/desktop/transaction.h"
@@ -16,7 +18,6 @@
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
-#include <wlr/types/wlr_scene.h>
 
 struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 		struct wlr_surface *surface) {

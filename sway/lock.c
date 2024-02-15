@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_session_lock_v1.h>
 #include "log.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"

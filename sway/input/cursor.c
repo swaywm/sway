@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_tablet_pad.h>
