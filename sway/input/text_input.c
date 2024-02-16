@@ -288,13 +288,17 @@ static struct sway_layer_surface *find_layer_by_surface(
 		struct wlr_layer_surface_v1 *layer) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		// For now we'll only check the overlay and top layer
+		// For now we'll only check the overlay, top layer and bottom layer
 		struct sway_layer_surface *surface;
 		surface = loop_layer_surface(output->layers.shell_top->children, layer);
 		if (surface != NULL) {
 			return surface;
 		}
 		surface = loop_layer_surface(output->layers.shell_overlay->children, layer);
+		if (surface != NULL) {
+			return surface;
+		}
+		surface = loop_layer_surface(output->layers.shell_bottom->children, layer);
 		if (surface != NULL) {
 			return surface;
 		}
