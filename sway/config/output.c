@@ -515,6 +515,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	output->enabling = (!oc || oc->enabled);
 
 	struct wlr_output_state pending = {0};
+	wlr_output_state_init(&pending, output->wlr_output);
 	queue_output_config(oc, output, &pending);
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
@@ -599,6 +600,7 @@ bool test_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	struct wlr_output_state pending = {0};
+	wlr_output_state_init(&pending, output->wlr_output);
 	queue_output_config(oc, output, &pending);
 	return wlr_output_test_state(output->wlr_output, &pending);
 }
