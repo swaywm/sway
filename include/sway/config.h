@@ -684,7 +684,8 @@ void merge_output_config(struct output_config *dst, struct output_config *src);
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output);
 
-bool test_output_config(struct output_config *oc, struct sway_output *output);
+void queue_output_config(struct output_config *oc,
+	struct sway_output *output, struct wlr_output_state *pending);
 
 struct output_config *store_output_config(struct output_config *oc);
 

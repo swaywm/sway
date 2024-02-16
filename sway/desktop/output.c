@@ -545,64 +545,64 @@ void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
 	wlr_output_schedule_frame(output->wlr_output);
 }
 
+static struct output_config *output_manager_create_config(struct sway_output *output,
+		struct wlr_output_configuration_head_v1 *config_head) {
+	sway_assert(output != root->fallback_output, "Tried configuring fallback output");
+
+	struct output_config *oc = new_output_config(output->wlr_output->name);
+	oc->enabled = config_head->state.enabled;
+	if (!oc->enabled) {
+		return oc;
+	}
+
+	if (config_head->state.mode != NULL) {
+		struct wlr_output_mode *mode = config_head->state.mode;
+		oc->width = mode->width;
+		oc->height = mode->height;
+		oc->refresh_rate = mode->refresh / 1000.f;
+	} else {
+		oc->width = config_head->state.custom_mode.width;
+		oc->height = config_head->state.custom_mode.height;
+		oc->refresh_rate =
+			config_head->state.custom_mode.refresh / 1000.f;
+	}
+	oc->x = config_head->state.x;
+	oc->y = config_head->state.y;
+	oc->transform = config_head->state.transform;
+	oc->scale = config_head->state.scale;
+	oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
+
+	return oc;
+}
+
 static void output_manager_apply(struct sway_server *server,
 		struct wlr_output_configuration_v1 *config, bool test_only) {
 	// TODO: perform atomic tests on the whole backend atomically
 
+	size_t states_len = wl_list_length(&config->heads);
+	struct wlr_output_state *states = calloc(states_len, sizeof(states[0]));
+	struct output_config **configs = calloc(states_len, sizeof(configs[0]));
+
+	size_t i = 0;
 	struct wlr_output_configuration_head_v1 *config_head;
-	// First disable outputs we need to disable
-	bool ok = true;
 	wl_list_for_each(config_head, &config->heads, link) {
 		struct wlr_output *wlr_output = config_head->state.output;
 		struct sway_output *output = wlr_output->data;
-		if (!output->enabled || config_head->state.enabled) {
-			continue;
-		}
-		struct output_config *oc = new_output_config(output->wlr_output->name);
-		oc->enabled = false;
-
-		if (test_only) {
-			ok &= test_output_config(oc, output);
-		} else {
-			oc = store_output_config(oc);
-			ok &= apply_output_config(oc, output);
-		}
+		struct output_config *oc = output_manager_create_config(output, config_head);
+		queue_output_config(oc, output, &states[i]);
+		// TODO: populate buffer if output is enabled
+		configs[i] = oc;
+		i++;
 	}
 
-	// Then enable outputs that need to
-	wl_list_for_each(config_head, &config->heads, link) {
-		struct wlr_output *wlr_output = config_head->state.output;
-		struct sway_output *output = wlr_output->data;
-		if (!config_head->state.enabled) {
-			continue;
-		}
-		struct output_config *oc = new_output_config(output->wlr_output->name);
-		oc->enabled = true;
-		if (config_head->state.mode != NULL) {
-			struct wlr_output_mode *mode = config_head->state.mode;
-			oc->width = mode->width;
-			oc->height = mode->height;
-			oc->refresh_rate = mode->refresh / 1000.f;
-		} else {
-			oc->width = config_head->state.custom_mode.width;
-			oc->height = config_head->state.custom_mode.height;
-			oc->refresh_rate =
-				config_head->state.custom_mode.refresh / 1000.f;
-		}
-		oc->x = config_head->state.x;
-		oc->y = config_head->state.y;
-		oc->transform = config_head->state.transform;
-		oc->scale = config_head->state.scale;
-		oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
-
-		if (test_only) {
-			ok &= test_output_config(oc, output);
-		} else {
-			oc = store_output_config(oc);
-			ok &= apply_output_config(oc, output);
-		}
+	bool ok = wlr_backend_test(server->backend, states, states_len);
+	if (!ok || test_only) {
+		goto out;
 	}
 
+	ok = wlr_backend_commit(server->backend, states, states_len);
+
+out:
 	if (ok) {
 		wlr_output_configuration_v1_send_succeeded(config);
 	} else {
@@ -610,9 +610,21 @@ static void output_manager_apply(struct sway_server *server,
 	}
 	wlr_output_configuration_v1_destroy(config);
 
-	if (!test_only) {
+	if (ok && !test_only) {
+		for (size_t i = 0; i < states_len; i++) {
+			struct output_config *oc = store_output_config(configs[i]);
+			apply_output_config(oc, states[i].output->data);
+		}
+
 		update_output_manager_config(server);
 	}
+
+	for (size_t i = 0; i < states_len; i++) {
+		wlr_output_state_finish(&states[i]);
+	}
+	free(states);
+
+	free(configs);
 }
 
 void handle_output_manager_apply(struct wl_listener *listener, void *data) {
