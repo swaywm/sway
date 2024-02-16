@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/container.h"

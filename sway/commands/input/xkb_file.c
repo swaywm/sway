@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <unistd.h>
 #include <errno.h>
 #include "sway/config.h"

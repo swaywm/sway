@@ -1,3 +1,4 @@
+#undef _POSIX_C_SOURCE
 #define _XOPEN_SOURCE 700 // for realpath
 #include <stdio.h>
 #include <stdbool.h>

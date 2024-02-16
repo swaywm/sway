@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
