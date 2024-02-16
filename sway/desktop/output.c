@@ -238,7 +238,7 @@ static int output_repaint_timer_handler(void *data) {
 
 	if (output->gamma_lut_changed) {
 		struct wlr_output_state pending;
-		wlr_output_state_init(&pending);
+		wlr_output_state_init(&pending, output->wlr_output);
 		if (!wlr_scene_output_build_state(output->scene_output, &pending, NULL)) {
 			return 0;
 		}
