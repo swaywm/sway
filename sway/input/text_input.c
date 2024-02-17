@@ -276,9 +276,17 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		return;
 	}
 
-	if (!popup->popup_surface->surface->mapped) {
+	if (popup->scene_tree != NULL) {
+		wlr_scene_node_destroy(&popup->scene_tree->node);
 		popup->scene_tree = NULL;
-		popup->desc.view = NULL;
+	}
+	if (popup->desc.relative != NULL) {
+		wlr_scene_node_destroy(popup->desc.relative);
+		popup->desc.relative = NULL;
+	}
+	popup->desc.view = NULL;
+
+	if (!popup->popup_surface->surface->mapped) {
 		return;
 	}
 
