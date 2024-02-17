@@ -1,7 +1,9 @@
-# Sway
+# sway
 
-Sway er en [i3]-kompatibel [Wayland] compositor. Læs [Ofte stillede spørgsmål].
-Deltag på [IRC kanalen][IRC kanal] \(#sway på irc.libera.chat).
+[English][en] - [Česky][cs] - [Deutsch][de] - **[Dansk][dk]** - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+
+Sway er en [i3]-kompatibel [Wayland] compositor. Læs [Ofte stillede spørgsmål][FAQ].
+Deltag på [IRC kanalen][IRC channel] \(#sway på irc.libera.chat).
 
 ## Udgivelses Signaturer
 
@@ -20,7 +22,7 @@ IRC kanalen eller sende en email til sir@cmpwn.com for rådgivning.
 
 ### Kompilering fra kildekode
 
-Se [denne wiki-side][Opsætning til udvikling] hvis du vil bygge HEAD af sway og
+Se [denne wiki-side][Development setup] hvis du vil bygge HEAD af sway og
 wlroots til test eller udvikling.
 
 Installationsafhængigheder:
@@ -57,12 +59,36 @@ Hvis du allerede bruger i3 kan du bare kopiere din i3 konfiguration til
 Kør `sway` fra en TTY. Nogle display managers kan fungere, men Sway yder ikke
 support til dem (gdm er kendt for at fungere temmelig godt).
 
+[en]: https://github.com/swaywm/sway#readme
+[cs]: README.cs.md
+[de]: README.de.md
+[dk]: README.dk.md
+[es]: README.es.md
+[fr]: README.fr.md
+[gr]: README.gr.md
+[hi]: README.hi.md
+[hu]: README.hu.md
+[ir]: README.ir.md
+[it]: README.it.md
+[ja]: README.ja.md
+[ko]: README.ko.md
+[nl]: README.nl.md
+[no]: README.no.md
+[pl]: README.pl.md
+[pt]: README.pt.md
+[ro]: README.ro.md
+[ru]: README.ru.md
+[sv]: README.sv.md
+[tr]: README.tr.md
+[uk]: README.uk.md
+[zh-CN]: README.zh-CN.md
+[zh-TW]: README.zh-TW.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
-[Ofte stillede spørgsmål]: https://github.com/swaywm/sway/wiki
-[IRC kanal]: https://web.libera.chat/gamja/?channels=#sway
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
 [E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
 [GitHub releases]: https://github.com/swaywm/sway/releases
-[Opsætning til udvikling]: https://github.com/swaywm/sway/wiki/Development-Setup
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
 [wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
 [scdoc]: https://git.sr.ht/~sircmpwn/scdoc
