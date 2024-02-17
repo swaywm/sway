@@ -71,9 +71,6 @@ with *i3-msg*(1) or even with *i3*(1).
 
 The following environment variables have an effect on sway:
 
-_SWAYSOCK_
-	Specifies the path to the sway IPC socket.
-
 _XKB\_DEFAULT\_RULES_, _XKB\_DEFAULT\_MODEL_, _XKB\_DEFAULT\_LAYOUT_,
 _XKB\_DEFAULT\_VARIANT_, _XKB\_DEFAULT\_OPTIONS_
 	Configures the xkb keyboard settings. See *xkeyboard-config*(7). The
