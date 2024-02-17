@@ -316,7 +316,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		if (relative == NULL) {
 			return;
 		}
-		struct wlr_output* output = layer->layer_surface->output;
+		struct wlr_output *output = layer->layer_surface->output;
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
 		int lx, ly;
 		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
@@ -324,7 +324,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		parent.y = ly;
 		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
 		popup->desc.view = NULL;
-
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
 		relative = wlr_scene_tree_create(view->scene_tree);
