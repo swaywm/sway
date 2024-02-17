@@ -137,6 +137,7 @@ static struct sway_layer_surface *sway_layer_surface_create(
 	surface->scene = scene;
 	surface->layer_surface = scene->layer_surface;
 	surface->popups = popups;
+	surface->layer_surface->data = surface;
 
 	return surface;
 }
@@ -209,6 +210,8 @@ static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&layer->surface_commit.link);
 	wl_list_remove(&layer->node_destroy.link);
 	wl_list_remove(&layer->output_destroy.link);
+
+	layer->layer_surface->data = NULL;
 
 	free(layer);
 }

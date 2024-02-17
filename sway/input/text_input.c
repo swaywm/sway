@@ -267,46 +267,6 @@ static void relay_handle_text_input(struct wl_listener *listener,
 	sway_text_input_create(relay, wlr_text_input);
 }
 
-static struct sway_layer_surface *loop_layer_surface(struct wl_list children,
-		struct wlr_layer_surface_v1 *layer)
-{
-	struct wlr_scene_node *node;
-	wl_list_for_each (node, &children, link) {
-		struct sway_layer_surface *surface = scene_descriptor_try_get(node,
-			SWAY_SCENE_DESC_LAYER_SHELL);
-		if (!surface) {
-			continue;
-		}
-		if (surface->layer_surface == layer) {
-			return surface;
-		}
-	}
-	return NULL;
-}
-
-static struct sway_layer_surface *find_layer_by_surface(
-		struct wlr_layer_surface_v1 *layer) {
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
-		// For now we'll only check the overlay, top layer and bottom layer
-		struct sway_layer_surface *surface;
-		surface = loop_layer_surface(output->layers.shell_top->children, layer);
-		if (surface != NULL) {
-			return surface;
-		}
-		surface = loop_layer_surface(output->layers.shell_overlay->children, layer);
-		if (surface != NULL) {
-			return surface;
-		}
-		surface = loop_layer_surface(output->layers.shell_bottom->children, layer);
-		if (surface != NULL) {
-			return surface;
-		}
-	}
-	return NULL;
-}
-
-
 static void input_popup_update(struct sway_input_popup *popup) {
 	struct sway_text_input *text_input =
 		relay_get_focused_text_input(popup->relay);
@@ -338,7 +298,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	struct wlr_scene_tree *relative;
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
-			find_layer_by_surface(layer_surface);
+			layer_surface->data;
 		if (layer == NULL) {
 			return;
 		}
