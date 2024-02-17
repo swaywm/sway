@@ -109,6 +109,9 @@ static void handle_im_destroy(struct wl_listener *listener, void *data) {
 		input_method_destroy);
 	struct wlr_input_method_v2 *context = data;
 	assert(context == relay->input_method);
+	wl_list_remove(&relay->input_method_commit.link);
+	wl_list_remove(&relay->input_method_grab_keyboard.link);
+	wl_list_remove(&relay->input_method_destroy.link);
 	wl_list_remove(&relay->input_method_new_popup_surface.link);
 	relay->input_method = NULL;
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
