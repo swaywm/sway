@@ -304,7 +304,8 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	struct wlr_box parent;
 	struct wlr_layer_surface_v1 *layer_surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(focused_surface);
-	struct wlr_scene_tree *relative;
+	struct wlr_scene_tree *relative_parent;
+
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
 			layer_surface->data;
@@ -312,10 +313,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 			return;
 		}
 
-		relative = wlr_scene_tree_create(layer->scene->tree);
-		if (relative == NULL) {
-			return;
-		}
+		relative_parent = layer->scene->tree;
 		struct wlr_output *output = layer->layer_surface->output;
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
 		int lx, ly;
@@ -326,10 +324,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		popup->desc.view = NULL;
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
-		relative = wlr_scene_tree_create(view->scene_tree);
-		if (relative == NULL) {
-			return;
-		}
+		relative_parent = view->scene_tree;
 		int lx, ly;
 		wlr_scene_node_coords(&view->scene_tree->node, &lx, &ly);
 		struct wlr_output *output = wlr_output_layout_output_at(root->output_layout,
@@ -344,6 +339,8 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
 		popup->desc.view = view;
 	}
+
+	struct wlr_scene_tree *relative = wlr_scene_tree_create(relative_parent);
 
 	popup->desc.relative = &relative->node;
 	if (!scene_descriptor_assign(&popup->scene_tree->node,
@@ -381,7 +378,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		y = y1 - popup_height;
 	}
 
-	wlr_scene_node_set_position(&relative->node, x, y);
+	wlr_scene_node_set_position(&relative->node, x - parent.x, y - parent.y);
 	if (cursor_rect) {
 		struct wlr_box box = {
 			.x = x1 - x,
