@@ -306,6 +306,8 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		wlr_layer_surface_v1_try_from_wlr_surface(focused_surface);
 	struct wlr_scene_tree *relative_parent;
 
+	struct wlr_box geo = {0};
+
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
 			layer_surface->data;
@@ -325,6 +327,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
 		relative_parent = view->scene_tree;
+		geo = view->geometry;
 		int lx, ly;
 		wlr_scene_node_coords(&view->scene_tree->node, &lx, &ly);
 		struct wlr_output *output = wlr_output_layout_output_at(root->output_layout,
@@ -378,7 +381,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		y = y1 - popup_height;
 	}
 
-	wlr_scene_node_set_position(&relative->node, x - parent.x, y - parent.y);
+	wlr_scene_node_set_position(&relative->node, x - parent.x - geo.x, y - parent.y - geo.y);
 	if (cursor_rect) {
 		struct wlr_box box = {
 			.x = x1 - x,
@@ -389,7 +392,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		wlr_input_popup_surface_v2_send_text_input_rectangle(
 			popup->popup_surface, &box);
 	}
-	wlr_scene_node_set_position(&popup->scene_tree->node, x, y);
+	wlr_scene_node_set_position(&popup->scene_tree->node, x - geo.x, y - geo.y);
 }
 
 static void input_popup_set_focus(struct sway_input_popup *popup,
