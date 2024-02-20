@@ -293,7 +293,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	wlr_scene_node_destroy(&popup->scene_tree->node);
 	wlr_scene_node_destroy(popup->desc.relative);
 	popup->scene_tree = NULL;
-	popup->desc.view = NULL;
 
 	bool cursor_rect = text_input->input->current.features
 		& WLR_TEXT_INPUT_V3_FEATURE_CURSOR_RECTANGLE;
@@ -308,6 +307,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 
 	struct wlr_box geo = {0};
 
+	popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer =
 			layer_surface->data;
@@ -322,7 +322,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
 		parent.x = lx;
 		parent.y = ly;
-		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
 		popup->desc.view = NULL;
 	} else {
 		struct sway_view *view = view_from_wlr_surface(focused_surface);
@@ -339,7 +338,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 
 		parent.width = view->geometry.width;
 		parent.height = view->geometry.height;
-		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
 		popup->desc.view = view;
 	}
 
@@ -424,9 +422,6 @@ static void handle_im_popup_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&popup->popup_surface_commit.link);
 	wl_list_remove(&popup->popup_destroy.link);
 	wl_list_remove(&popup->link);
-	if (popup->scene_tree != NULL) {
-		wlr_scene_node_destroy(&popup->scene_tree->node);
-	}
 
 	free(popup);
 }
