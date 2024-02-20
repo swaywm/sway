@@ -300,7 +300,7 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	struct wlr_box cursor_area = text_input->input->current.cursor_rectangle;
 
 	struct wlr_box output_box;
-	struct wlr_box parent;
+	struct wlr_box parent = {0};
 	struct wlr_layer_surface_v1 *layer_surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(focused_surface);
 	struct wlr_scene_tree *relative_parent;
