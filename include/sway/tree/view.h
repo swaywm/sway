@@ -84,6 +84,8 @@ struct sway_view {
 	// transaction state. Updated on every commit.
 	struct wlr_box geometry;
 
+	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
+
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	struct wl_listener foreign_activate_request;
 	struct wl_listener foreign_fullscreen_request;
@@ -174,12 +176,19 @@ struct sway_xwayland_unmanaged {
 };
 #endif
 
+struct sway_popup_desc {
+	struct wlr_scene_node *relative;
+	struct sway_view *view;
+};
+
 struct sway_xdg_popup {
 	struct sway_view *view;
 
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *xdg_surface_tree;
 	struct wlr_xdg_popup *wlr_xdg_popup;
+
+	struct sway_popup_desc desc;
 
 	struct wl_listener surface_commit;
 	struct wl_listener new_popup;
@@ -233,6 +242,11 @@ void view_set_activated(struct sway_view *view, bool activated);
  */
 void view_request_activate(struct sway_view *view, struct sway_seat *seat);
 
+/*
+ * Called when the view requests urgent state
+ */
+void view_request_urgent(struct sway_view *view);
+
 /**
  * If possible, instructs the client to change their decoration mode.
  */
@@ -283,6 +297,8 @@ struct sway_view *view_from_wlr_xwayland_surface(
 	struct wlr_xwayland_surface *xsurface);
 #endif
 struct sway_view *view_from_wlr_surface(struct wlr_surface *surface);
+
+void view_update_app_id(struct sway_view *view);
 
 /**
  * Re-read the view's title property and update any relevant title bars.
