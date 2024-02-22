@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_tablet_pad.h>
@@ -90,9 +91,9 @@ struct sway_node *node_at_coords(
 			}
 
 			if (!con) {
-				struct sway_xdg_popup *popup =
+				struct sway_popup_desc *popup =
 					scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP);
-				if (popup) {
+				if (popup && popup->view) {
 					con = popup->view->container;
 				}
 			}

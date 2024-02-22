@@ -67,6 +67,9 @@ void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 	}
 	wl_list_remove(&ctx->node_destroy.link);
 	wl_list_remove(&ctx->token_destroy.link);
+	if (ctx->seat) {
+		wl_list_remove(&ctx->seat_destroy.link);
+	}
 	wl_list_remove(&ctx->link);
 	wlr_xdg_activation_token_v1_destroy(ctx->token);
 	free(ctx->fallback_name);
@@ -213,6 +216,8 @@ struct launcher_ctx *launcher_ctx_create(struct wlr_xdg_activation_token_v1 *tok
 	ctx->fallback_name = strdup(fallback_name);
 	ctx->token = token;
 	ctx->node = node;
+	// Having surface set means that the focus check in wlroots has passed
+	ctx->had_focused_surface = token->surface != NULL;
 
 	ctx->node_destroy.notify = ctx_handle_node_destroy;
 	wl_signal_add(&ctx->node->events.destroy, &ctx->node_destroy);
@@ -227,6 +232,12 @@ struct launcher_ctx *launcher_ctx_create(struct wlr_xdg_activation_token_v1 *tok
 	return ctx;
 }
 
+static void launch_ctx_handle_seat_destroy(struct wl_listener *listener, void *data) {
+	struct launcher_ctx *ctx = wl_container_of(listener, ctx, seat_destroy);
+	ctx->seat = NULL;
+	wl_list_remove(&ctx->seat_destroy.link);
+}
+
 // Creates a context with a new token for the internal launcher
 struct launcher_ctx *launcher_ctx_create_internal(void) {
 	struct sway_seat *seat = input_manager_current_seat();
@@ -238,13 +249,15 @@ struct launcher_ctx *launcher_ctx_create_internal(void) {
 
 	struct wlr_xdg_activation_token_v1 *token =
 		wlr_xdg_activation_token_v1_create(server.xdg_activation_v1);
-	token->seat = seat->wlr_seat;
 
 	struct launcher_ctx *ctx = launcher_ctx_create(token, &ws->node);
 	if (!ctx) {
 		wlr_xdg_activation_token_v1_destroy(token);
 		return NULL;
 	}
+	ctx->seat = seat;
+	ctx->seat_destroy.notify = launch_ctx_handle_seat_destroy;
+	wl_signal_add(&seat->wlr_seat->events.destroy, &ctx->seat_destroy);
 
 	return ctx;
 }
