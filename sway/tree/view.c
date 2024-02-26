@@ -1,9 +1,10 @@
-#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <strings.h>
 #include <wayland-server-core.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -410,6 +411,12 @@ void view_request_activate(struct sway_view *view, struct sway_seat *seat) {
 	transaction_commit_dirty();
 }
 
+void view_request_urgent(struct sway_view *view) {
+	if (config->focus_on_window_activation != FOWA_NONE) {
+		view_set_urgent(view, true);
+	}
+}
+
 void view_set_csd_from_server(struct sway_view *view, bool enabled) {
 	sway_log(SWAY_DEBUG, "Telling view %p to set CSD to %i", view, enabled);
 	if (view->xdg_decoration) {
@@ -582,6 +589,14 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	return NULL;
 }
 
+static void update_ext_foreign_toplevel(struct sway_view *view) {
+	struct wlr_ext_foreign_toplevel_handle_v1_state toplevel_state = {
+		.app_id = view_get_app_id(view),
+		.title = view_get_title(view),
+	};
+	wlr_ext_foreign_toplevel_handle_v1_update_state(view->ext_foreign_toplevel, &toplevel_state);
+}
+
 static bool should_focus(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *prev_con = seat_get_focused_container(seat);
@@ -751,6 +766,13 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		}
 	}
 
+	struct wlr_ext_foreign_toplevel_handle_v1_state foreign_toplevel_state = {
+		.app_id = view_get_app_id(view),
+		.title = view_get_title(view),
+	};
+	view->ext_foreign_toplevel =
+		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list, &foreign_toplevel_state);
+
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
 	view->foreign_activate_request.notify = handle_foreign_activate_request;
@@ -828,6 +850,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		input_manager_set_focus(&view->container->node);
 	}
 
+	if (view->ext_foreign_toplevel) {
+		update_ext_foreign_toplevel(view);
+	}
+
 	const char *app_id;
 	const char *class;
 	if ((app_id = view_get_app_id(view)) != NULL) {
@@ -845,6 +871,11 @@ void view_unmap(struct sway_view *view) {
 	if (view->urgent_timer) {
 		wl_event_source_remove(view->urgent_timer);
 		view->urgent_timer = NULL;
+	}
+
+	if (view->ext_foreign_toplevel) {
+		wlr_ext_foreign_toplevel_handle_v1_destroy(view->ext_foreign_toplevel);
+		view->ext_foreign_toplevel = NULL;
 	}
 
 	if (view->foreign_toplevel) {
@@ -1014,6 +1045,18 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	return len;
 }
 
+void view_update_app_id(struct sway_view *view) {
+	const char *app_id = view_get_app_id(view);
+
+	if (view->foreign_toplevel && app_id) {
+		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, app_id);
+	}
+
+	if (view->ext_foreign_toplevel) {
+		update_ext_foreign_toplevel(view);
+	}
+}
+
 void view_update_title(struct sway_view *view, bool force) {
 	const char *title = view_get_title(view);
 
@@ -1059,6 +1102,10 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	if (view->foreign_toplevel && title) {
 		wlr_foreign_toplevel_handle_v1_set_title(view->foreign_toplevel, title);
+	}
+
+	if (view->ext_foreign_toplevel) {
+		update_ext_foreign_toplevel(view);
 	}
 }
 

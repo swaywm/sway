@@ -2,6 +2,7 @@
 #define _SWAY_TRANSACTION_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <wlr/types/wlr_scene.h>
 
 /**
  * Transactions enable us to perform atomic layout updates.
@@ -57,5 +58,7 @@ bool transaction_notify_view_ready_by_serial(struct sway_view *view,
  */
 bool transaction_notify_view_ready_by_geometry(struct sway_view *view,
 		double x, double y, int width, int height);
+
+void arrange_popups(struct wlr_scene_tree *popups);
 
 #endif

@@ -4,7 +4,9 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_subcompositor.h>
+#include <wlr/types/wlr_xdg_shell.h>
 #include "log.h"
 #include "sway/scene_descriptor.h"
 #include "sway/desktop/transaction.h"
@@ -16,7 +18,6 @@
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
-#include <wlr/types/wlr_scene.h>
 
 struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 		struct wlr_surface *surface) {
@@ -85,6 +86,8 @@ void arrange_layers(struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
 		output->usable_area = usable_area;
 		arrange_output(output);
+	} else {
+		arrange_popups(root->layers.popup);
 	}
 }
 
@@ -120,10 +123,21 @@ static struct sway_layer_surface *sway_layer_surface_create(
 		return NULL;
 	}
 
+	surface->desc.relative = &scene->tree->node;
+
+	if (!scene_descriptor_assign(&popups->node,
+			SWAY_SCENE_DESC_POPUP, &surface->desc)) {
+		sway_log(SWAY_ERROR, "Failed to allocate a popup scene descriptor");
+		wlr_scene_node_destroy(&popups->node);
+		free(surface);
+		return NULL;
+	}
+
 	surface->tree = scene->tree;
 	surface->scene = scene;
 	surface->layer_surface = scene->layer_surface;
 	surface->popups = popups;
+	surface->layer_surface->data = surface;
 
 	return surface;
 }
@@ -197,6 +211,8 @@ static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&layer->node_destroy.link);
 	wl_list_remove(&layer->output_destroy.link);
 
+	layer->layer_surface->data = NULL;
+
 	free(layer);
 }
 
@@ -222,10 +238,6 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		arrange_layers(surface->output);
 		transaction_commit_dirty();
 	}
-
-	int lx, ly;
-	wlr_scene_node_coords(&surface->scene->tree->node, &lx, &ly);
-	wlr_scene_node_set_position(&surface->popups->node, lx, ly);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {

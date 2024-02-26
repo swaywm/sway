@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <float.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_tablet_v2.h>

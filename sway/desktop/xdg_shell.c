@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -97,8 +96,11 @@ static struct sway_xdg_popup *popup_create(struct wlr_xdg_popup *wlr_popup,
 		return NULL;
 	}
 
+	popup->desc.relative = &view->content_tree->node;
+	popup->desc.view = view;
+
 	if (!scene_descriptor_assign(&popup->scene_tree->node,
-			SWAY_SCENE_DESC_POPUP, popup)) {
+			SWAY_SCENE_DESC_POPUP, &popup->desc)) {
 		sway_log(SWAY_ERROR, "Failed to allocate a popup scene descriptor");
 		wlr_scene_node_destroy(&popup->scene_tree->node);
 		free(popup);
@@ -337,6 +339,7 @@ static void handle_set_app_id(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, set_app_id);
 	struct sway_view *view = &xdg_shell_view->view;
+	view_update_app_id(view);
 	view_execute_criteria(view);
 }
 
