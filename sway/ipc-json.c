@@ -288,6 +288,7 @@ static json_object *ipc_json_create_node(int id, const char* type, char *name,
 	json_object_object_add(object, "focus", focus);
 	json_object_object_add(object, "fullscreen_mode", json_object_new_int(0));
 	json_object_object_add(object, "sticky", json_object_new_boolean(false));
+	json_object_object_add(object, "floating", NULL);
 
 	return object;
 }
@@ -675,7 +676,8 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 static void ipc_json_describe_container(struct sway_container *c, json_object *object) {
 	json_object_object_add(object, "name",
 			c->title ? json_object_new_string(c->title) : NULL);
-	if (container_is_floating(c)) {
+	bool floating = container_is_floating(c);
+	if (floating) {
 		json_object_object_add(object, "type",
 				json_object_new_string("floating_con"));
 	}
@@ -692,6 +694,10 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 		view_is_urgent(c->view) : container_has_urgent_child(c);
 	json_object_object_add(object, "urgent", json_object_new_boolean(urgent));
 	json_object_object_add(object, "sticky", json_object_new_boolean(c->is_sticky));
+
+	// sway doesn't track the floating reason, so we can't use "auto_on" or "user_off"
+	json_object_object_add(object, "floating",
+			json_object_new_string(floating ? "user_on" : "auto_off"));
 
 	json_object_object_add(object, "fullscreen_mode",
 			json_object_new_int(c->pending.fullscreen_mode));

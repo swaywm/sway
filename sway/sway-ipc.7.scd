@@ -376,6 +376,9 @@ node and will have the following properties:
 :  integer
 :  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means
    full workspace, and 2 means global fullscreen
+|- floating
+:  string
+:  Floating state of container. Can be either "auto_off" or "user_on"
 |- app_id
 :  string
 :  (Only views) For an xdg-shell view, the name of the application, if set.
