@@ -289,6 +289,7 @@ static json_object *ipc_json_create_node(int id, const char* type, char *name,
 	json_object_object_add(object, "fullscreen_mode", json_object_new_int(0));
 	json_object_object_add(object, "sticky", json_object_new_boolean(false));
 	json_object_object_add(object, "floating", NULL);
+	json_object_object_add(object, "scratchpad_state", NULL);
 
 	return object;
 }
@@ -701,6 +702,10 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 
 	json_object_object_add(object, "fullscreen_mode",
 			json_object_new_int(c->pending.fullscreen_mode));
+
+	// sway doesn't track if window was resized in scratchpad, so we can't use "changed"
+	json_object_object_add(object, "scratchpad_state",
+			json_object_new_string(!c->scratchpad ? "none" : "fresh"));
 
 	struct sway_node *parent = node_get_parent(&c->node);
 	struct wlr_box parent_box = {0, 0, 0, 0};

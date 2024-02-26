@@ -379,6 +379,9 @@ node and will have the following properties:
 |- floating
 :  string
 :  Floating state of container. Can be either "auto_off" or "user_on"
+|- scratchpad_state
+:  string
+:  Whether the window is in the scratchpad. Can be either "none" or "fresh"
 |- app_id
 :  string
 :  (Only views) For an xdg-shell view, the name of the application, if set.
