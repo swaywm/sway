@@ -65,7 +65,7 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
-#define SWAY_XDG_SHELL_VERSION 2
+#define SWAY_XDG_SHELL_VERSION 3
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 
