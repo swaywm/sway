@@ -289,6 +289,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		}
 		// XXX: https://github.com/swaywm/sway/issues/2176
 		wlr_xdg_surface_schedule_configure(xdg_surface);
+		// TODO: wlr_xdg_toplevel_set_bounds()
 		return;
 	}
 
@@ -574,4 +575,7 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data) {
 	wlr_scene_xdg_surface_create(xdg_shell_view->view.content_tree, xdg_toplevel->base);
 
 	xdg_toplevel->base->data = xdg_shell_view;
+
+	wlr_xdg_toplevel_set_wm_capabilities(xdg_toplevel,
+		XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN);
 }
