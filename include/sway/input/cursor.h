@@ -114,7 +114,7 @@ void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
 	struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
-	enum wlr_button_state state);
+	enum wl_pointer_button_state state);
 
 void dispatch_cursor_axis(struct sway_cursor *cursor,
 		struct wlr_pointer_axis_event *event);

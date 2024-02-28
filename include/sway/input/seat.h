@@ -17,7 +17,7 @@ struct sway_seat;
 struct sway_seatop_impl {
 	void (*button)(struct sway_seat *seat, uint32_t time_msec,
 			struct wlr_input_device *device, uint32_t button,
-			enum wlr_button_state state);
+			enum wl_pointer_button_state state);
 	void (*pointer_motion)(struct sway_seat *seat, uint32_t time_msec);
 	void (*pointer_axis)(struct sway_seat *seat,
 			struct wlr_pointer_axis_event *event);
@@ -286,13 +286,13 @@ struct sway_container *seat_get_focus_inactive_floating(struct sway_seat *seat,
 		struct sway_workspace *workspace);
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
-		uint32_t button, enum wlr_button_state state);
+		uint32_t button, enum wl_pointer_button_state state);
 
 void seat_consider_warp_to_focus(struct sway_seat *seat);
 
 void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state);
+		enum wl_pointer_button_state state);
 
 void seatop_pointer_motion(struct sway_seat *seat, uint32_t time_msec);
 
