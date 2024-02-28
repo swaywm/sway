@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <wlr/types/wlr_cursor.h>
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
