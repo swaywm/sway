@@ -288,16 +288,12 @@ static void arrange_container(struct sway_container *con,
 
 static void arrange_children(enum sway_container_layout layout, list_t *children,
 		struct sway_container *active, struct wlr_scene_tree *content,
-		int width, int height, int gaps) {
-	int title_bar_height = container_titlebar_height();
+		int width, int height, int gaps, bool parent_asks_for_title_bars) {
 
 	if (layout == L_TABBED) {
-		struct sway_container *first = children->length == 1 ?
-			((struct sway_container *)children->items[0]) : NULL;
-		if (config->hide_lone_tab && first && first->view &&
-				first->current.border != B_NORMAL) {
-			title_bar_height = 0;
-		}
+		bool show_titlebar = parent_asks_for_title_bars || !config->hide_lone_tab ||
+			(children->length > 1) || (children->length == 1 && !((struct sway_container *) children->items[0])->view);
+		int title_bar_height = show_titlebar ? container_titlebar_height() : 0;
 
 		double w = (double) width / children->length;
 		int title_offset = 0;
@@ -314,7 +310,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 
 			int net_height = height - title_bar_height;
 			if (activated && width > 0 && net_height > 0) {
-				arrange_container(child, width, net_height, title_bar_height == 0, 0);
+				arrange_container(child, width, net_height, false, 0);
 			} else {
 				disable_container(child);
 			}
@@ -322,12 +318,9 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			title_offset = next_title_offset;
 		}
 	} else if (layout == L_STACKED) {
-		struct sway_container *first = children->length == 1 ?
-			((struct sway_container *)children->items[0]) : NULL;
-		if (config->hide_lone_tab && first && first->view &&
-				first->current.border != B_NORMAL) {
-			title_bar_height = 0;
-		}
+		bool show_titlebar = parent_asks_for_title_bars || !config->hide_lone_tab ||
+			(children->length > 1) || (children->length == 1 && !((struct sway_container *) children->items[0])->view);
+		int title_bar_height = show_titlebar ? container_titlebar_height() : 0;
 
 		int title_height = title_bar_height * children->length;
 
@@ -343,7 +336,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 
 			int net_height = height - title_bar_height;
 			if (activated && width > 0 && net_height > 0) {
-				arrange_container(child, width, net_height, title_bar_height == 0, 0);
+				arrange_container(child, width, net_height, false, 0);
 			} else {
 				disable_container(child);
 			}
@@ -351,6 +344,8 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			y += title_bar_height;
 		}
 	} else if (layout == L_VERT) {
+		bool show_titlebar = parent_asks_for_title_bars || !config->hide_lone_tab ||
+			(children->length > 1);
 		int off = 0;
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
@@ -360,13 +355,15 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			wlr_scene_node_set_position(&child->scene_tree->node, 0, off);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
 			if (width > 0 && cheight > 0) {
-				arrange_container(child, width, cheight, true, gaps);
+				arrange_container(child, width, cheight, show_titlebar, gaps);
 				off += cheight + gaps;
 			} else {
 				disable_container(child);
 			}
 		}
 	} else if (layout == L_HORIZ) {
+		bool show_titlebar = parent_asks_for_title_bars || !config->hide_lone_tab ||
+			(children->length > 1);
 		int off = 0;
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
@@ -376,7 +373,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			wlr_scene_node_set_position(&child->scene_tree->node, off, 0);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
 			if (cwidth > 0 && height > 0) {
-				arrange_container(child, cwidth, height, true, gaps);
+				arrange_container(child, cwidth, height, show_titlebar, gaps);
 				off += cwidth + gaps;
 			} else {
 				disable_container(child);
@@ -462,7 +459,7 @@ static void arrange_container(struct sway_container *con,
 
 		arrange_children(con->current.layout, con->current.children,
 			con->current.focused_inactive_child, con->content_tree,
-			width, height, gaps);
+			width, height, gaps, title_bar);
 	}
 }
 
@@ -542,7 +539,7 @@ static void arrange_workspace_tiling(struct sway_workspace *ws,
 		int width, int height) {
 	arrange_children(ws->current.layout, ws->current.tiling,
 		ws->current.focused_inactive_child, ws->layers.tiling,
-		width, height, ws->gaps_inner);
+		width, height, ws->gaps_inner, false);
 }
 
 static void disable_workspace(struct sway_workspace *ws) {
