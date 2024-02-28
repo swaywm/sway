@@ -352,6 +352,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 		}
 	} else if (layout == L_VERT) {
 		int off = 0;
+		bool show_titlebar = !config->hide_lone_tab || (children->length > 1);
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
 			int cheight = child->current.height;
@@ -359,11 +360,12 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			wlr_scene_node_set_enabled(&child->border.tree->node, true);
 			wlr_scene_node_set_position(&child->scene_tree->node, 0, off);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
-			arrange_container(child, width, cheight, true, gaps);
+			arrange_container(child, width, cheight, show_titlebar, gaps);
 			off += cheight + gaps;
 		}
 	} else if (layout == L_HORIZ) {
 		int off = 0;
+		bool show_titlebar = !config->hide_lone_tab || (children->length > 1);
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
 			int cwidth = child->current.width;
@@ -371,7 +373,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			wlr_scene_node_set_enabled(&child->border.tree->node, true);
 			wlr_scene_node_set_position(&child->scene_tree->node, off, 0);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
-			arrange_container(child, cwidth, height, true, gaps);
+			arrange_container(child, cwidth, height, show_titlebar, gaps);
 			off += cwidth + gaps;
 		}
 	} else {
