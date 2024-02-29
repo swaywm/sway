@@ -45,7 +45,7 @@ static struct sway_container *container_get_resize_sibling(
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	struct seatop_resize_tiling_event *e = seat->seatop_data;
 
 	if (seat->cursor->pressed_button_count == 0) {
