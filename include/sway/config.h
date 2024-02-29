@@ -508,6 +508,7 @@ struct sway_config {
 	int font_height;
 	int font_baseline;
 	bool pango_markup;
+	bool hide_titlebar;
 	int titlebar_border_thickness;
 	int titlebar_h_padding;
 	int titlebar_v_padding;
