@@ -508,7 +508,7 @@ struct sway_config {
 	int font_height;
 	int font_baseline;
 	bool pango_markup;
-	bool hide_titlebar;
+
 	int titlebar_border_thickness;
 	int titlebar_h_padding;
 	int titlebar_v_padding;
@@ -533,6 +533,7 @@ struct sway_config {
 	bool validating;
 	bool auto_back_and_forth;
 	bool show_marks;
+	bool disable_titlebar;
 	enum alignment title_align;
 	bool primary_selection;
 
@@ -542,7 +543,7 @@ struct sway_config {
 	enum smart_gaps_mode smart_gaps;
 	int gaps_inner;
 	struct side_gaps gaps_outer;
-
+	
 	list_t *config_chain;
 	bool user_config_path;
 	const char *current_config_path;

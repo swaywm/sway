@@ -249,7 +249,6 @@ static void config_defaults(struct sway_config *config) {
 	config->popup_during_fullscreen = POPUP_SMART;
 	config->xwayland = XWAYLAND_MODE_LAZY;
 
-	config->hide_titlebar = false;
 	config->titlebar_border_thickness = 1;
 	config->titlebar_h_padding = 5;
 	config->titlebar_v_padding = 4;
@@ -271,6 +270,7 @@ static void config_defaults(struct sway_config *config) {
 	config->auto_back_and_forth = false;
 	config->reading = false;
 	config->show_marks = true;
+	config->disable_titlebar = false;
 	config->title_align = ALIGN_LEFT;
 	config->tiling_drag = true;
 	config->tiling_drag_threshold = 9;

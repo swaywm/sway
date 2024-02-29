@@ -726,6 +726,9 @@ The default colors are:
 	should be greater than titlebar_border_thickness. If _vertical_ value is
 	not specified it is set to the _horizontal_ value.
 
+*disable_titlebar* yes|no.
+	Remove titlebar. Default is _no_.
+
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
@@ -747,7 +750,7 @@ The default colors are:
 	tabbed and stacked containers with one child. The _smart_|_smart_no_gaps_
 	options are equivalent to setting _smart_borders_ smart|no_gaps and
 	_hide_edge_borders_ none.
-
+	
 *input* <input_device> <input-subcommands...>
 	For details on input subcommands, see *sway-input*(5).
 
@@ -849,6 +852,7 @@ The default colors are:
 	Sets the title alignment. If _right_ is selected and _show_marks_ is set
 	to _yes_, the marks will be shown on the _left_ side instead of the
 	_right_ side.
+
 
 *unbindswitch* <switch>:<state>
 	Removes a binding for when <switch> changes to <state>.
