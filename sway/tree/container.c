@@ -670,6 +670,10 @@ void container_update_representation(struct sway_container *con) {
 }
 
 size_t container_titlebar_height(void) {
+	if(config->disable_titlebar) {
+		return 0;
+	}
+	
 	return config->font_height + config->titlebar_v_padding * 2;
 }
 
