@@ -716,7 +716,7 @@ static void render_containers_linear(struct render_context *ctx, struct parent_d
 				marks_texture = child->marks_unfocused;
 			}
 
-			if (state->border == B_NORMAL) {
+			if (state->border == B_NORMAL && !config->disable_titlebar) {
 				render_titlebar(ctx, child, floor(state->x),
 						floor(state->y), state->width, colors,
 						title_texture, marks_texture);
@@ -790,8 +790,10 @@ static void render_containers_tabbed(struct render_context *ctx, struct parent_d
 			tab_width = parent->box.width - tab_width * i;
 		}
 
-		render_titlebar(ctx, child, x, parent->box.y, tab_width,
-				colors, title_texture, marks_texture);
+		if (!config->disable_titlebar) {
+			render_titlebar(ctx, child, x, parent->box.y, tab_width,
+					colors, title_texture, marks_texture);
+		}
 
 		if (child == current) {
 			current_colors = colors;
@@ -851,9 +853,11 @@ static void render_containers_stacked(struct render_context *ctx, struct parent_
 			marks_texture = child->marks_unfocused;
 		}
 
-		int y = parent->box.y + titlebar_height * i;
-		render_titlebar(ctx, child, parent->box.x, y,
-				parent->box.width, colors, title_texture, marks_texture);
+		if (!config->disable_titlebar) {
+			int y = parent->box.y + titlebar_height * i;
+			render_titlebar(ctx, child, parent->box.x, y,
+					parent->box.width, colors, title_texture, marks_texture);
+		}
 
 		if (child == current) {
 			current_colors = colors;
@@ -949,7 +953,7 @@ static void render_floating_container(struct render_context *ctx,
 			marks_texture = con->marks_unfocused;
 		}
 
-		if (con->current.border == B_NORMAL) {
+		if (con->current.border == B_NORMAL && !config->disable_titlebar) {
 			render_titlebar(ctx, con, floor(con->current.x),
 					floor(con->current.y), con->current.width, colors,
 					title_texture, marks_texture);

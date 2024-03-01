@@ -270,6 +270,7 @@ static void config_defaults(struct sway_config *config) {
 	config->auto_back_and_forth = false;
 	config->reading = false;
 	config->show_marks = true;
+	config->disable_titlebar = false;
 	config->title_align = ALIGN_LEFT;
 	config->tiling_drag = true;
 	config->tiling_drag_threshold = 9;
