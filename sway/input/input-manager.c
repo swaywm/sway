@@ -111,7 +111,7 @@ const char *input_device_get_type(struct sway_input_device *device) {
 		return "keyboard";
 	case WLR_INPUT_DEVICE_TOUCH:
 		return "touch";
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return "tablet_tool";
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return "tablet_pad";
