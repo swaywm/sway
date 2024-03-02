@@ -243,7 +243,7 @@ static enum sway_input_idle_source idle_source_from_device(
 		return IDLE_SOURCE_POINTER;
 	case WLR_INPUT_DEVICE_TOUCH:
 		return IDLE_SOURCE_TOUCH;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return IDLE_SOURCE_TABLET_TOOL;
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return IDLE_SOURCE_TABLET_PAD;
@@ -518,7 +518,7 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 	double x1 = region->x1, x2 = region->x2;
 	double y1 = region->y1, y2 = region->y2;
 
-	if (region->mm && device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
+	if (region->mm && device->type == WLR_INPUT_DEVICE_TABLET) {
 		struct wlr_tablet *tablet = wlr_tablet_from_input_device(device);
 		if (tablet->width_mm == 0 || tablet->height_mm == 0) {
 			return;
