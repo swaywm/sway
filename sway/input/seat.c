@@ -1255,13 +1255,15 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 }
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
+	struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+
 	// Prevents the layer from losing focus if it has keyboard exclusivity
-	if (seat->has_exclusive_layer) {
-		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+	if (layer && layer->current.keyboard_interactive ==
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
 		seat_set_focus_layer(seat, NULL);
 		seat_set_workspace_focus(seat, node);
 		seat_set_focus_layer(seat, layer);
-	} else if (seat->focused_layer) {
+	} else if (layer) {
 		seat_set_focus_layer(seat, NULL);
 		seat_set_workspace_focus(seat, node);
 	} else {
@@ -1315,11 +1317,6 @@ void seat_set_focus_layer(struct sway_seat *seat,
 		return;
 	}
 	assert(layer->surface->mapped);
-	if (layer->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP &&
-			layer->current.keyboard_interactive
-			== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
-		seat->has_exclusive_layer = true;
-	}
 	if (seat->focused_layer == layer) {
 		return;
 	}
