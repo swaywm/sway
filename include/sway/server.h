@@ -115,7 +115,6 @@ struct sway_server {
 
 	struct wlr_action_binder_v1 *action_binder;
 	struct wl_listener action_binder_bind;
-	struct wl_listener action_binder_unbind;
 	struct wl_listener action_binder_destroy;
 
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
