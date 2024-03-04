@@ -118,6 +118,7 @@ struct sway_seat {
 
 	struct sway_input_method_relay im_relay;
 
+	struct wl_listener destroy;
 	struct wl_listener focus_destroy;
 	struct wl_listener new_node;
 	struct wl_listener request_start_drag;
@@ -150,8 +151,6 @@ struct sway_keyboard_shortcuts_inhibitor {
 };
 
 struct sway_seat *seat_create(const char *seat_name);
-
-void seat_destroy(struct sway_seat *seat);
 
 void seat_add_device(struct sway_seat *seat,
 		struct sway_input_device *device);

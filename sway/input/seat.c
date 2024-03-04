@@ -66,9 +66,13 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 	free(seat_node);
 }
 
-void seat_destroy(struct sway_seat *seat) {
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, destroy);
 	if (seat == config->handler_context.seat) {
 		config->handler_context.seat = input_manager_get_default_seat();
+		if (seat == config->handler_context.seat) {
+			config->handler_context.seat = NULL;
+		}
 	}
 	struct sway_seat_device *seat_device, *next;
 	wl_list_for_each_safe(seat_device, next, &seat->devices, link) {
@@ -82,12 +86,12 @@ void seat_destroy(struct sway_seat *seat) {
 	sway_input_method_relay_finish(&seat->im_relay);
 	sway_cursor_destroy(seat->cursor);
 	wl_list_remove(&seat->new_node.link);
+	wl_list_remove(&seat->destroy.link);
 	wl_list_remove(&seat->request_start_drag.link);
 	wl_list_remove(&seat->start_drag.link);
 	wl_list_remove(&seat->request_set_selection.link);
 	wl_list_remove(&seat->request_set_primary_selection.link);
 	wl_list_remove(&seat->link);
-	wlr_seat_destroy(seat->wlr_seat);
 	for (int i = 0; i < seat->deferred_bindings->length; i++) {
 		free_sway_binding(seat->deferred_bindings->items[i]);
 	}
@@ -554,6 +558,9 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 	wl_signal_add(&root->events.new_node, &seat->new_node);
 	seat->new_node.notify = handle_new_node;
+
+	wl_signal_add(&seat->wlr_seat->events.destroy, &seat->destroy);
+	seat->destroy.notify = handle_destroy;
 
 	wl_signal_add(&seat->wlr_seat->events.request_start_drag,
 		&seat->request_start_drag);
