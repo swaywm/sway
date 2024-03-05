@@ -43,13 +43,20 @@ static struct xkb_state *keysym_translation_state_create(
 		context,
 		&rules,
 		XKB_KEYMAP_COMPILE_NO_FLAGS);
-
 	xkb_context_unref(context);
+	if (xkb_keymap == NULL) {
+		sway_log(SWAY_ERROR, "Failed to compile keysym translation XKB keymap");
+		return NULL;
+	}
+
 	return xkb_state_new(xkb_keymap);
 }
 
 static void keysym_translation_state_destroy(
 		struct xkb_state *state) {
+	if (state == NULL) {
+		return;
+	}
 	xkb_keymap_unref(xkb_state_get_keymap(state));
 	xkb_state_unref(state);
 }
@@ -339,6 +346,9 @@ static void config_defaults(struct sway_config *config) {
 	struct xkb_rule_names rules = {0};
 	config->keysym_translation_state =
 		keysym_translation_state_create(rules);
+	if (config->keysym_translation_state == NULL) {
+		goto cleanup;
+	}
 
 	return;
 cleanup:
@@ -987,6 +997,11 @@ void translate_keysyms(struct input_config *input_config) {
 	input_config_fill_rule_names(input_config, &rules);
 	config->keysym_translation_state =
 		keysym_translation_state_create(rules);
+	if (config->keysym_translation_state == NULL) {
+		sway_log(SWAY_ERROR, "Failed to create keysym translation XKB state "
+			"for device '%s'", input_config->identifier);
+		return;
+	}
 
 	for (int i = 0; i < config->modes->length; ++i) {
 		struct sway_mode *mode = config->modes->items[i];
