@@ -183,7 +183,15 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 	}
 }
 
-static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output) {
+static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output,
+		struct wlr_scene_buffer *buffer) {
+	// if we are scaling down, we should always choose linear
+	if (buffer->dst_width > 0 && buffer->dst_height > 0 && (
+			buffer->dst_width < buffer->buffer_width ||
+			buffer->dst_height < buffer->buffer_height)) {
+		return WLR_SCALE_FILTER_BILINEAR;
+	}
+
 	switch (output->scale_filter) {
 	case SCALE_FILTER_LINEAR:
 		return WLR_SCALE_FILTER_BILINEAR;
@@ -212,7 +220,7 @@ static void output_configure_scene(struct sway_output *output,
 		// hack: don't call the scene setter because that will damage all outputs
 		// We don't want to damage outputs that aren't our current output that
 		// we're configuring
-		buffer->filter_mode = get_scale_filter(output);
+		buffer->filter_mode = get_scale_filter(output, buffer);
 
 		wlr_scene_buffer_set_opacity(buffer, opacity);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
