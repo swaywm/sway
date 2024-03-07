@@ -1097,10 +1097,6 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		json_object_new_string(device->identifier));
 	json_object_object_add(object, "name",
 		json_object_new_string(device->wlr_device->name));
-	json_object_object_add(object, "vendor",
-		json_object_new_int(device->wlr_device->vendor));
-	json_object_object_add(object, "product",
-		json_object_new_int(device->wlr_device->product));
 	json_object_object_add(object, "type",
 		json_object_new_string(
 			input_device_get_type(device)));
@@ -1154,6 +1150,10 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		libinput_dev = wlr_libinput_get_device_handle(device->wlr_device);
 		json_object_object_add(object, "libinput",
 				describe_libinput_device(libinput_dev));
+		json_object_object_add(object, "vendor",
+			json_object_new_int(libinput_device_get_id_vendor(libinput_dev)));
+		json_object_object_add(object, "product",
+			json_object_new_int(libinput_device_get_id_product(libinput_dev)));
 	}
 #endif
 
