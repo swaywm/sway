@@ -65,8 +65,15 @@ struct sway_seat *input_manager_sway_seat_from_wlr_seat(struct wlr_seat *wlr_sea
 }
 
 char *input_device_get_identifier(struct wlr_input_device *device) {
-	int vendor = device->vendor;
-	int product = device->product;
+	int vendor = 0, product = 0;
+#if WLR_HAS_LIBINPUT_BACKEND
+	if (wlr_input_device_is_libinput(device)) {
+		struct libinput_device *libinput_dev = wlr_libinput_get_device_handle(device);
+		vendor = libinput_device_get_id_vendor(libinput_dev);
+		product = libinput_device_get_id_product(libinput_dev);
+	}
+#endif
+
 	char *name = strdup(device->name ? device->name : "");
 	strip_whitespace(name);
 
