@@ -644,6 +644,12 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 		oc->power = 1;
 		break;
 	}
-	oc = store_output_config(oc);
-	apply_output_config(oc, output);
+
+	struct output_config *current = find_output_config(output);
+	if (!current) {
+		current = new_output_config(oc->name);
+		merge_output_config(current, oc);
+	}
+	apply_output_config(current, output);
+	free_output_config(current);
 }
