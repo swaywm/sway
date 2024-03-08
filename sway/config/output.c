@@ -705,31 +705,44 @@ struct output_config *find_output_config(struct sway_output *output) {
 	return get_output_config(id, output);
 }
 
+static void apply_output_config_to_output(struct output_config *oc, struct sway_output *sway_output) {
+	char id[128];
+	output_get_identifier(id, sizeof(id), sway_output);
+	struct output_config *current = get_output_config(id, sway_output);
+	if (!current) {
+		// No stored output config matched, apply oc directly
+		sway_log(SWAY_DEBUG, "Applying oc directly");
+		current = new_output_config(oc->name);
+		merge_output_config(current, oc);
+	}
+	apply_output_config(current, sway_output);
+	free_output_config(current);
+}
+
 void apply_output_config_to_outputs(struct output_config *oc) {
 	// Try to find the output container and apply configuration now. If
 	// this is during startup then there will be no container and config
 	// will be applied during normal "new output" event from wlroots.
+	char id[128];
 	bool wildcard = strcmp(oc->name, "*") == 0;
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		if (output_match_name_or_id(sway_output, oc->name)) {
-			char id[128];
+		if (!wildcard && !output_match_name_or_id(sway_output, oc->name)) {
+			const char *name = sway_output->wlr_output->name;
 			output_get_identifier(id, sizeof(id), sway_output);
-			struct output_config *current = get_output_config(id, sway_output);
-			if (!current) {
-				// No stored output config matched, apply oc directly
-				sway_log(SWAY_DEBUG, "Applying oc directly");
-				current = new_output_config(oc->name);
-				merge_output_config(current, oc);
+			char *id_on_name = format_str("%s on %s", id, name);
+			bool skip = !id_on_name || strcmp(oc->name, id_on_name) != 0;
+			free(id_on_name);
+			if (skip) {
+				continue;
 			}
-			apply_output_config(current, sway_output);
-			free_output_config(current);
+		}
 
-			if (!wildcard) {
-				// Stop looking if the output config isn't applicable to all
-				// outputs
-				break;
-			}
+		apply_output_config_to_output(oc, sway_output);
+		if (!wildcard) {
+			// Stop looking if the output config isn't applicable to all
+			// outputs
+			break;
 		}
 	}
 
