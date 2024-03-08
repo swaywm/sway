@@ -638,9 +638,11 @@ static void default_output_config(struct output_config *oc,
 	oc->max_render_time = 0;
 }
 
-static struct output_config *get_output_config(char *identifier,
-		struct sway_output *sway_output) {
+struct output_config *find_output_config(struct sway_output *sway_output) {
+	char identifier[128];
+	output_get_identifier(identifier, sizeof(identifier), sway_output);
 	const char *name = sway_output->wlr_output->name;
+
 	struct output_config *oc = NULL;
 
 	// Look for "id on name" output config, which will be stored if configs
@@ -693,16 +695,8 @@ found:;
 	return result;
 }
 
-struct output_config *find_output_config(struct sway_output *output) {
-	char id[128];
-	output_get_identifier(id, sizeof(id), output);
-	return get_output_config(id, output);
-}
-
 static void apply_output_config_to_output(struct output_config *oc, struct sway_output *sway_output) {
-	char id[128];
-	output_get_identifier(id, sizeof(id), sway_output);
-	struct output_config *current = get_output_config(id, sway_output);
+	struct output_config *current = find_output_config(sway_output);
 	if (!current) {
 		// No stored output config matched, apply oc directly
 		sway_log(SWAY_DEBUG, "Applying oc directly");
