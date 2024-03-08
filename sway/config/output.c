@@ -719,9 +719,7 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	struct sway_output *sway_output, *tmp;
 	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
 		if (output_match_name_or_id(sway_output, oc->name)) {
-			char id[128];
-			output_get_identifier(id, sizeof(id), sway_output);
-			struct output_config *current = get_output_config(id, sway_output);
+			struct output_config *current = find_output_config(sway_output);
 			if (!current) {
 				// No stored output config matched, apply oc directly
 				sway_log(SWAY_DEBUG, "Applying oc directly");
