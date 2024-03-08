@@ -221,37 +221,39 @@ done:
 
 struct output_config *store_output_config(struct output_config *oc) {
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	if (wildcard) {
-		merge_wildcard_on_all(oc);
-	} else {
-		merge_id_on_name(oc);
+	struct output_config *merged_config = wildcard ?
+			merge_wildcard_on_all(oc) :
+			merge_id_on_name(oc);
+
+	if (merged_config != NULL) {
+		// Our configuration was merged with an existing config, so let us just
+		// return that instead.
+		free_output_config(oc);
+		oc = merged_config;
+		goto done;
 	}
 
-	int i = list_seq_find(config->output_configs, output_name_cmp, oc->name);
+	// If this was a specific output, there were no configs that matched this
+	// output ID or name, so we need a new config which should be merged with
+	// an existing wildcard if any before adding it to the list.
+	//
+	// If this was a wildcard config, there was no existing wildcard config.
+	// The search will not find anything and the config will be added directly
+	// to the list.
+	int i = list_seq_find(config->output_configs, output_name_cmp, "*");
 	if (i >= 0) {
-		sway_log(SWAY_DEBUG, "Merging on top of existing output config");
-		struct output_config *current = config->output_configs->items[i];
+		sway_log(SWAY_DEBUG, "Merging on top of output * config");
+		struct output_config *current = new_output_config(oc->name);
+		merge_output_config(current, config->output_configs->items[i]);
 		merge_output_config(current, oc);
 		free_output_config(oc);
 		oc = current;
-	} else if (!wildcard) {
-		sway_log(SWAY_DEBUG, "Adding non-wildcard output config");
-		i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			sway_log(SWAY_DEBUG, "Merging on top of output * config");
-			struct output_config *current = new_output_config(oc->name);
-			merge_output_config(current, config->output_configs->items[i]);
-			merge_output_config(current, oc);
-			free_output_config(oc);
-			oc = current;
-		}
-		list_add(config->output_configs, oc);
-	} else {
-		// New wildcard config. Just add it
-		sway_log(SWAY_DEBUG, "Adding output * config");
-		list_add(config->output_configs, oc);
 	}
 
+	sway_log(SWAY_DEBUG, "Adding output config");
+	list_add(config->output_configs, oc);
+
+done:
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
 		"(max render time: %d)",
