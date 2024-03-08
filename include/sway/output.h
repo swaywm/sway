@@ -50,7 +50,7 @@ struct sway_output {
 	enum wl_output_subpixel detected_subpixel;
 	enum scale_filter_mode scale_filter;
 
-	bool enabling, enabled;
+	bool enabled;
 	list_t *workspaces;
 
 	struct sway_output_state current;
