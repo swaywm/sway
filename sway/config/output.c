@@ -510,9 +510,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	// Flag to prevent the output mode event handler from calling us
-	output->enabling = (!oc || oc->enabled);
-
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
@@ -522,11 +519,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		// Leave the output disabled for now and try again when the output gets
 		// the mode we asked for.
 		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
-		output->enabling = false;
 		return false;
 	}
-
-	output->enabling = false;
 
 	if (oc && !oc->enabled) {
 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
