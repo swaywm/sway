@@ -641,84 +641,55 @@ static void default_output_config(struct output_config *oc,
 static struct output_config *get_output_config(char *identifier,
 		struct sway_output *sway_output) {
 	const char *name = sway_output->wlr_output->name;
+	struct output_config *oc = NULL;
 
-	struct output_config *oc_id_on_name = NULL;
-	struct output_config *oc_name = NULL;
-	struct output_config *oc_id = NULL;
-
+	// Look for "id on name" output config, which will be stored if configs
+	// have been made for both an output's name and its identifier.
 	char *id_on_name = format_str("%s on %s", identifier, name);
 	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
+	free(id_on_name);
 	if (i >= 0) {
-		oc_id_on_name = config->output_configs->items[i];
-	} else {
-		i = list_seq_find(config->output_configs, output_name_cmp, name);
-		if (i >= 0) {
-			oc_name = config->output_configs->items[i];
-		}
-
-		i = list_seq_find(config->output_configs, output_name_cmp, identifier);
-		if (i >= 0) {
-			oc_id = config->output_configs->items[i];
-		}
+		oc = config->output_configs->items[i];
+		goto found;
 	}
+
+	// There was no combined "id on name", but there may be either a name or an
+	// identifier config. Look for both, giving priority to the identifier.
+	i = list_seq_find(config->output_configs, output_name_cmp, identifier);
+	if (i >= 0) {
+		oc = config->output_configs->items[i];
+		goto found;
+	}
+	i = list_seq_find(config->output_configs, output_name_cmp, name);
+	if (i >= 0) {
+		oc = config->output_configs->items[i];
+		goto found;
+	}
+
+	// There is no output-specific config, but there may be a wildcard.
+	i = list_seq_find(config->output_configs, output_name_cmp, "*");
+	if (i >= 0) {
+		oc = config->output_configs->items[i];
+		goto found;
+	}
+
+	if (!config->reloading) {
+		// No name, identifier, or wildcard config. Since we are not
+		// reloading with defaults, the output config will be empty, so
+		// just return NULL
+		return NULL;
+	}
+
+found:;
 
 	struct output_config *result = new_output_config("temp");
 	if (config->reloading) {
 		default_output_config(result, sway_output->wlr_output);
 	}
-	if (oc_id_on_name) {
-		// Already have an identifier on name config, use that
-		free(result->name);
-		result->name = strdup(id_on_name);
-		merge_output_config(result, oc_id_on_name);
-	} else if (oc_name && oc_id) {
-		// Generate a config named `<identifier> on <name>` which contains a
-		// merged copy of the identifier on name. This will make sure that both
-		// identifier and name configs are respected, with identifier getting
-		// priority
-		struct output_config *temp = new_output_config(id_on_name);
-		merge_output_config(temp, oc_name);
-		merge_output_config(temp, oc_id);
-		list_add(config->output_configs, temp);
 
-		free(result->name);
-		result->name = strdup(id_on_name);
-		merge_output_config(result, temp);
-
-		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
-			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
-			" (power %d) (max render time: %d)", result->name, result->enabled,
-			result->width, result->height, result->refresh_rate,
-			result->x, result->y, result->scale, result->transform,
-			result->background, result->background_option, result->power,
-			result->max_render_time);
-	} else if (oc_name) {
-		// No identifier config, just return a copy of the name config
-		free(result->name);
-		result->name = strdup(name);
-		merge_output_config(result, oc_name);
-	} else if (oc_id) {
-		// No name config, just return a copy of the identifier config
-		free(result->name);
-		result->name = strdup(identifier);
-		merge_output_config(result, oc_id);
-	} else {
-		i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			// No name or identifier config, but there is a wildcard config
-			free(result->name);
-			result->name = strdup("*");
-			merge_output_config(result, config->output_configs->items[i]);
-		} else if (!config->reloading) {
-			// No name, identifier, or wildcard config. Since we are not
-			// reloading with defaults, the output config will be empty, so
-			// just return NULL
-			free_output_config(result);
-			result = NULL;
-		}
-	}
-
-	free(id_on_name);
+	free(result->name);
+	result->name = strdup(oc->name);
+	merge_output_config(result, oc);
 	return result;
 }
 
