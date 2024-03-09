@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -59,7 +58,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	}
 
 	free(mark);
-	container_update_marks_textures(container);
+	container_update_marks(container);
 	if (container->view) {
 		view_execute_criteria(container->view);
 	}

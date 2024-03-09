@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <libgen.h>
 #include <stdio.h>
 #include <string.h>

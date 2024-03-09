@@ -1,7 +1,7 @@
 project(
 	'sway',
 	'c',
-	version: '1.9-dev',
+	version: '1.10-dev',
 	license: 'MIT',
 	meson_version: '>=0.60.0',
 	default_options: [
@@ -14,6 +14,7 @@ project(
 add_project_arguments(
 	[
 		'-DWLR_USE_UNSTABLE',
+		'-D_POSIX_C_SOURCE=200809L',
 
 		'-Wno-unused-parameter',
 		'-Wno-unused-result',

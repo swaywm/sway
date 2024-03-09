@@ -37,6 +37,7 @@ struct cmd_results *cmd_opacity(int argc, char **argv) {
 	}
 
 	con->alpha = val;
-	container_damage_whole(con);
+	container_update(con);
+
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

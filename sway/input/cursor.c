@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <math.h>
 #include <libevdev/libevdev.h>
@@ -9,6 +8,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_tablet_pad.h>
@@ -19,12 +19,12 @@
 #include "log.h"
 #include "util.h"
 #include "sway/commands.h"
-#include "sway/desktop.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
@@ -37,43 +37,6 @@ static uint32_t get_current_time_msec(void) {
 	return now.tv_sec * 1000 + now.tv_nsec / 1000000;
 }
 
-static struct wlr_surface *layer_surface_at(struct sway_output *output,
-		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
-	struct sway_layer_surface *sway_layer;
-	wl_list_for_each_reverse(sway_layer, layer, link) {
-		double _sx = ox - sway_layer->geo.x;
-		double _sy = oy - sway_layer->geo.y;
-		struct wlr_surface *sub = wlr_layer_surface_v1_surface_at(
-			sway_layer->layer_surface, _sx, _sy, sx, sy);
-		if (sub) {
-			return sub;
-		}
-	}
-	return NULL;
-}
-
-static bool surface_is_xdg_popup(struct wlr_surface *surface) {
-	struct wlr_xdg_surface *xdg_surface =
-		wlr_xdg_surface_try_from_wlr_surface(surface);
-	return xdg_surface != NULL && xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP &&
-		xdg_surface->popup != NULL;
-}
-
-static struct wlr_surface *layer_surface_popup_at(struct sway_output *output,
-		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
-	struct sway_layer_surface *sway_layer;
-	wl_list_for_each_reverse(sway_layer, layer, link) {
-		double _sx = ox - sway_layer->geo.x;
-		double _sy = oy - sway_layer->geo.y;
-		struct wlr_surface *sub = wlr_layer_surface_v1_surface_at(
-			sway_layer->layer_surface, _sx, _sy, sx, sy);
-		if (sub && surface_is_xdg_popup(sub)) {
-			return sub;
-		}
-	}
-	return NULL;
-}
-
 /**
  * Returns the node at the cursor's position. If there is a surface at that
  * location, it is stored in **surface (it may not be a view).
@@ -81,134 +44,98 @@ static struct wlr_surface *layer_surface_popup_at(struct sway_output *output,
 struct sway_node *node_at_coords(
 		struct sway_seat *seat, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	// find the output the cursor is on
+	struct wlr_scene_node *scene_node = NULL;
+
+	struct wlr_scene_node *node;
+	wl_list_for_each_reverse(node, &root->layer_tree->children, link) {
+		struct wlr_scene_tree *layer = wlr_scene_tree_from_node(node);
+
+		bool non_interactive = scene_descriptor_try_get(&layer->node,
+			SWAY_SCENE_DESC_NON_INTERACTIVE);
+		if (non_interactive) {
+			continue;
+		}
+
+		scene_node = wlr_scene_node_at(&layer->node, lx, ly, sx, sy);
+		if (scene_node) {
+			break;
+		}
+	}
+
+	if (scene_node) {
+		// determine what wlr_surface we clicked on
+		if (scene_node->type == WLR_SCENE_NODE_BUFFER) {
+			struct wlr_scene_buffer *scene_buffer =
+				wlr_scene_buffer_from_node(scene_node);
+			struct wlr_scene_surface *scene_surface =
+				wlr_scene_surface_try_from_buffer(scene_buffer);
+
+			if (scene_surface) {
+				*surface = scene_surface->surface;
+			}
+		}
+
+		// determine what container we clicked on
+		struct wlr_scene_node *current = scene_node;
+		while (true) {
+			struct sway_container *con = scene_descriptor_try_get(current,
+				SWAY_SCENE_DESC_CONTAINER);
+
+			if (!con) {
+				struct sway_view *view = scene_descriptor_try_get(current,
+					SWAY_SCENE_DESC_VIEW);
+				if (view) {
+					con = view->container;
+				}
+			}
+
+			if (!con) {
+				struct sway_popup_desc *popup =
+					scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP);
+				if (popup && popup->view) {
+					con = popup->view->container;
+				}
+			}
+
+			if (con && (!con->view || con->view->surface)) {
+				return &con->node;
+			}
+
+			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_LAYER_SHELL)) {
+				// We don't want to feed through the current workspace on
+				// layer shells
+				return NULL;
+			}
+
+#if HAVE_XWAYLAND
+			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
+				return NULL;
+			}
+#endif
+
+			if (!current->parent) {
+				break;
+			}
+
+			current = &current->parent->node;
+		}
+	}
+
+	// if we aren't on a container, determine what workspace we are on
 	struct wlr_output *wlr_output = wlr_output_layout_output_at(
 			root->output_layout, lx, ly);
 	if (wlr_output == NULL) {
 		return NULL;
 	}
+
 	struct sway_output *output = wlr_output->data;
 	if (!output || !output->enabled) {
 		// output is being destroyed or is being enabled
 		return NULL;
 	}
-	double ox = lx, oy = ly;
-	wlr_output_layout_output_coords(root->output_layout, wlr_output, &ox, &oy);
 
-	if (server.session_lock.locked) {
-		if (server.session_lock.lock == NULL) {
-			return NULL;
-		}
-		struct wlr_session_lock_surface_v1 *lock_surf;
-		wl_list_for_each(lock_surf, &server.session_lock.lock->surfaces, link) {
-			if (lock_surf->output != wlr_output) {
-				continue;
-			}
-
-			*surface = wlr_surface_surface_at(lock_surf->surface, ox, oy, sx, sy);
-			if (*surface != NULL) {
-				return NULL;
-			}
-		}
-		return NULL;
-	}
-
-	// layer surfaces on the overlay layer are rendered on top
-	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
-
-	// check for unmanaged views
-#if HAVE_XWAYLAND
-	struct wl_list *unmanaged = &root->xwayland_unmanaged;
-	struct sway_xwayland_unmanaged *unmanaged_surface;
-	wl_list_for_each_reverse(unmanaged_surface, unmanaged, link) {
-		struct wlr_xwayland_surface *xsurface =
-			unmanaged_surface->wlr_xwayland_surface;
-
-		double _sx = lx - unmanaged_surface->lx;
-		double _sy = ly - unmanaged_surface->ly;
-		if (wlr_surface_point_accepts_input(xsurface->surface, _sx, _sy)) {
-			*surface = xsurface->surface;
-			*sx = _sx;
-			*sy = _sy;
-			return NULL;
-		}
-	}
-#endif
-
-	if (root->fullscreen_global) {
-		// Try fullscreen container
-		struct sway_container *con = tiling_container_at(
-				&root->fullscreen_global->node, lx, ly, surface, sx, sy);
-		if (con) {
-			return &con->node;
-		}
-		return NULL;
-	}
-
-	// find the focused workspace on the output for this seat
 	struct sway_workspace *ws = output_get_active_workspace(output);
 	if (!ws) {
-		return NULL;
-	}
-
-	if (ws->fullscreen) {
-		// Try transient containers
-		for (int i = 0; i < ws->floating->length; ++i) {
-			struct sway_container *floater = ws->floating->items[i];
-			if (container_is_transient_for(floater, ws->fullscreen)) {
-				struct sway_container *con = tiling_container_at(
-						&floater->node, lx, ly, surface, sx, sy);
-				if (con) {
-					return &con->node;
-				}
-			}
-		}
-		// Try fullscreen container
-		struct sway_container *con =
-			tiling_container_at(&ws->fullscreen->node, lx, ly, surface, sx, sy);
-		if (con) {
-			return &con->node;
-		}
-		return NULL;
-	}
-	if ((*surface = layer_surface_popup_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
-	if ((*surface = layer_surface_popup_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
-	if ((*surface = layer_surface_popup_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
-	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
-
-	struct sway_container *c;
-	if ((c = container_at(ws, lx, ly, surface, sx, sy))) {
-		return &c->node;
-	}
-
-	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
-				ox, oy, sx, sy))) {
-		return NULL;
-	}
-	if ((*surface = layer_surface_at(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
-				ox, oy, sx, sy))) {
 		return NULL;
 	}
 
@@ -316,7 +243,7 @@ static enum sway_input_idle_source idle_source_from_device(
 		return IDLE_SOURCE_POINTER;
 	case WLR_INPUT_DEVICE_TOUCH:
 		return IDLE_SOURCE_TOUCH;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return IDLE_SOURCE_TABLET_TOOL;
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return IDLE_SOURCE_TABLET_PAD;
@@ -429,7 +356,7 @@ static void handle_pointer_motion_absolute(
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
 		struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	if (time_msec == 0) {
 		time_msec = get_current_time_msec();
 	}
@@ -441,7 +368,7 @@ static void handle_pointer_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
 	struct wlr_pointer_button_event *event = data;
 
-	if (event->state == WLR_BUTTON_PRESSED) {
+	if (event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		cursor->pressed_button_count++;
 	} else {
 		if (cursor->pressed_button_count > 0) {
@@ -503,7 +430,7 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
 			cursor->pointer_touch_up = true;
 			dispatch_cursor_button(cursor, &event->touch->base,
-				event->time_msec, BTN_LEFT, WLR_BUTTON_RELEASED);
+				event->time_msec, BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
 		}
 	} else {
 		seatop_touch_up(seat, event);
@@ -521,7 +448,7 @@ static void handle_touch_cancel(struct wl_listener *listener, void *data) {
 		if (cursor->pointer_touch_id == cursor->seat->touch_id) {
 			cursor->pointer_touch_up = true;
 			dispatch_cursor_button(cursor, &event->touch->base,
-				event->time_msec, BTN_LEFT, WLR_BUTTON_RELEASED);
+				event->time_msec, BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
 		}
 	} else {
 		seatop_touch_cancel(seat, event);
@@ -543,12 +470,8 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;
 		seat->touch_y = ly;
-		struct sway_drag_icon *drag_icon;
-		wl_list_for_each(drag_icon, &root->drag_icons, link) {
-			if (drag_icon->seat == seat) {
-				drag_icon_update_position(drag_icon);
-			}
-		}
+
+		drag_icons_update_position(seat);
 	}
 
 	if (cursor->simulating_pointer_from_touch) {
@@ -595,7 +518,7 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 	double x1 = region->x1, x2 = region->x2;
 	double y1 = region->y1, y2 = region->y2;
 
-	if (region->mm && device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
+	if (region->mm && device->type == WLR_INPUT_DEVICE_TABLET) {
 		struct wlr_tablet *tablet = wlr_tablet_from_input_device(device);
 		if (tablet->width_mm == 0 || tablet->height_mm == 0) {
 			return;
@@ -738,7 +661,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 			event->state == WLR_TABLET_TOOL_TIP_UP) {
 		cursor->simulating_pointer_from_tool_tip = false;
 		dispatch_cursor_button(cursor, &event->tablet->base, event->time_msec,
-			BTN_LEFT, WLR_BUTTON_RELEASED);
+			BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	} else if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
 		// If we started holding the tool tip down on a surface that accepts
@@ -750,7 +673,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		} else {
 			cursor->simulating_pointer_from_tool_tip = true;
 			dispatch_cursor_button(cursor, &event->tablet->base,
-				event->time_msec, BTN_LEFT, WLR_BUTTON_PRESSED);
+				event->time_msec, BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
 			wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 		}
 	} else {
@@ -853,13 +776,13 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 		case WLR_BUTTON_PRESSED:
 			if (cursor->tool_buttons == 0) {
 				dispatch_cursor_button(cursor, &event->tablet->base,
-						event->time_msec, BTN_RIGHT, event->state);
+					event->time_msec, BTN_RIGHT, WL_POINTER_BUTTON_STATE_PRESSED);
 			}
 			break;
 		case WLR_BUTTON_RELEASED:
 			if (cursor->tool_buttons <= 1) {
 				dispatch_cursor_button(cursor, &event->tablet->base,
-						event->time_msec, BTN_RIGHT, event->state);
+					event->time_msec, BTN_RIGHT, WL_POINTER_BUTTON_STATE_RELEASED);
 			}
 			break;
 		}
@@ -1348,8 +1271,7 @@ const char *get_mouse_button_name(uint32_t button) {
 static void warp_to_constraint_cursor_hint(struct sway_cursor *cursor) {
 	struct wlr_pointer_constraint_v1 *constraint = cursor->active_constraint;
 
-	if (constraint->current.committed &
-			WLR_POINTER_CONSTRAINT_V1_STATE_CURSOR_HINT) {
+	if (constraint->current.cursor_hint.enabled) {
 		double sx = constraint->current.cursor_hint.x;
 		double sy = constraint->current.cursor_hint.y;
 

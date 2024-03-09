@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809
 #include <limits.h>
 #include <poll.h>
 #include <stdio.h>

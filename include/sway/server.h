@@ -2,23 +2,6 @@
 #define _SWAY_SERVER_H
 #include <stdbool.h>
 #include <wayland-server-core.h>
-#include <wlr/backend.h>
-#include <wlr/render/allocator.h>
-#include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_compositor.h>
-#include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_input_method_v2.h>
-#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
-#include <wlr/types/wlr_drm_lease_v1.h>
-#include <wlr/types/wlr_layer_shell_v1.h>
-#include <wlr/types/wlr_output_management_v1.h>
-#include <wlr/types/wlr_output_power_management_v1.h>
-#include <wlr/types/wlr_presentation_time.h>
-#include <wlr/types/wlr_relative_pointer_v1.h>
-#include <wlr/types/wlr_session_lock_v1.h>
-#include <wlr/types/wlr_server_decoration.h>
-#include <wlr/types/wlr_text_input_v3.h>
-#include <wlr/types/wlr_xdg_shell.h>
 #include "config.h"
 #include "list.h"
 #include "sway/desktop/idle_inhibit_v1.h"
@@ -27,6 +10,19 @@
 #endif
 
 struct sway_transaction;
+
+struct sway_session_lock {
+	struct wlr_session_lock_v1 *lock;
+	struct wlr_surface *focused;
+	bool abandoned;
+
+	struct wl_list outputs; // struct sway_session_lock_output
+
+	// invalid if the session is abandoned
+	struct wl_listener new_surface;
+	struct wl_listener unlock;
+	struct wl_listener destroy;
+};
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -41,7 +37,6 @@ struct sway_server {
 	struct wlr_allocator *allocator;
 
 	struct wlr_compositor *compositor;
-	struct wl_listener compositor_new_surface;
 
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
@@ -82,8 +77,6 @@ struct sway_server {
 	struct wlr_drm_lease_v1_manager *drm_lease_manager;
 	struct wl_listener drm_lease_request;
 
-	struct wlr_presentation *presentation;
-
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
 	struct wl_listener pointer_constraint;
 
@@ -95,14 +88,8 @@ struct sway_server {
 	struct wl_listener gamma_control_set_gamma;
 
 	struct {
-		bool locked;
+		struct sway_session_lock *lock;
 		struct wlr_session_lock_manager_v1 *manager;
-
-		struct wlr_session_lock_v1 *lock;
-		struct wlr_surface *focused;
-		struct wl_listener lock_new_surface;
-		struct wl_listener lock_unlock;
-		struct wl_listener lock_destroy;
 
 		struct wl_listener new_lock;
 		struct wl_listener manager_destroy;
@@ -112,6 +99,7 @@ struct sway_server {
 	struct wl_listener output_power_manager_set_mode;
 	struct wlr_input_method_manager_v2 *input_method;
 	struct wlr_text_input_manager_v3 *text_input;
+	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_content_type_manager_v1 *content_type_manager_v1;
 	struct wlr_data_control_manager_v1 *data_control_manager_v1;
@@ -152,13 +140,7 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
-	bool noscanout;        // Disable direct scan-out
-
-	enum {
-		DAMAGE_DEFAULT,    // Default behaviour
-		DAMAGE_HIGHLIGHT,  // Highlight regions of the screen being damaged
-		DAMAGE_RERENDER,   // Render the full output when any damage occurs
-	} damage;
+	bool legacy_wl_drm;    // Enable the legacy wl_drm interface
 };
 
 extern struct sway_debug debug;
@@ -172,12 +154,15 @@ void server_run(struct sway_server *server);
 
 void restore_nofile_limit(void);
 
-void handle_compositor_new_surface(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void sway_session_lock_init(void);
+void sway_session_lock_add_output(struct sway_session_lock *lock,
+	struct sway_output *output);
+bool sway_session_lock_has_surface(struct sway_session_lock *lock,
+	struct wlr_surface *surface);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

@@ -3,14 +3,18 @@
 
 #include <stdlib.h>
 #include <wayland-server-core.h>
+#include "sway/input/seat.h"
 
 struct launcher_ctx {
 	pid_t pid;
 	char *fallback_name;
 	struct wlr_xdg_activation_token_v1 *token;
 	struct wl_listener token_destroy;
+	struct sway_seat *seat;
+	struct wl_listener seat_destroy;
 
 	bool activated;
+	bool had_focused_surface;
 
 	struct sway_node *node;
 	struct wl_listener node_destroy;

@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -82,7 +81,6 @@ static const struct cmd_handler handlers[] = {
 	{ "no_focus", cmd_no_focus },
 	{ "output", cmd_output },
 	{ "popup_during_fullscreen", cmd_popup_during_fullscreen },
-	{ "primary_selection", cmd_primary_selection },
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
 	{ "show_marks", cmd_show_marks },
@@ -105,6 +103,7 @@ static const struct cmd_handler handlers[] = {
 static const struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
 	{ "include", cmd_include },
+	{ "primary_selection", cmd_primary_selection },
 	{ "swaybg_command", cmd_swaybg_command },
 	{ "swaynag_command", cmd_swaynag_command },
 	{ "workspace_layout", cmd_workspace_layout },

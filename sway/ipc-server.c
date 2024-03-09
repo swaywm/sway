@@ -1,5 +1,4 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
-#define _POSIX_C_SOURCE 200112L
 #include <linux/input-event-codes.h>
 #include <assert.h>
 #include <errno.h>

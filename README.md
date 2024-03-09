@@ -31,7 +31,8 @@ Install dependencies:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (optional: system tray)
+* gdk-pixbuf2 (optional: additional image formats for system tray)
+* [swaybg] (optional: wallpaper)
 * [scdoc] (optional: man pages) \*
 * git (optional: version info) \*
 
@@ -89,4 +90,5 @@ sway (gdm is known to work fairly well).
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
 [wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[swaybg]: https://github.com/swaywm/swaybg/
 [scdoc]: https://git.sr.ht/~sircmpwn/scdoc
