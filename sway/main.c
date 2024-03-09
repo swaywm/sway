@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <getopt.h>
 #include <pango/pangocairo.h>
 #include <signal.h>
@@ -154,11 +153,7 @@ void restore_nofile_limit(void) {
 }
 
 void enable_debug_flag(const char *flag) {
-	if (strcmp(flag, "damage=highlight") == 0) {
-		debug.damage = DAMAGE_HIGHLIGHT;
-	} else if (strcmp(flag, "damage=rerender") == 0) {
-		debug.damage = DAMAGE_RERENDER;
-	} else if (strcmp(flag, "noatomic") == 0) {
+	if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
 	} else if (strcmp(flag, "txn-wait") == 0) {
 		debug.txn_wait = true;
@@ -166,8 +161,8 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_timings = true;
 	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
 		server.txn_timeout_ms = atoi(&flag[12]);
-	} else if (strcmp(flag, "noscanout") == 0) {
-		debug.noscanout = true;
+	} else if (strcmp(flag, "legacy-wl-drm") == 0) {
+		debug.legacy_wl_drm = true;
 	} else {
 		sway_log(SWAY_ERROR, "Unknown debug flag: %s", flag);
 	}
@@ -338,6 +333,10 @@ int main(int argc, char **argv) {
 
 	if (!server_init(&server)) {
 		return 1;
+	}
+
+	if (server.linux_dmabuf_v1) {
+		wlr_scene_set_linux_dmabuf_v1(root->root_scene, server.linux_dmabuf_v1);
 	}
 
 	if (validate) {

@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <float.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_tablet_v2.h>
@@ -137,12 +136,13 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	wlr_seat_pointer_notify_axis(seat->wlr_seat, event->time_msec,
 		event->orientation, scroll_factor * event->delta,
-		roundf(scroll_factor * event->delta_discrete), event->source);
+		roundf(scroll_factor * event->delta_discrete), event->source,
+		event->relative_direction);
 }
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	seat_pointer_notify_button(seat, time_msec, button, state);
 
 	if (seat->cursor->pressed_button_count == 0) {

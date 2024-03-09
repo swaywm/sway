@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <drm_fourcc.h>
 #include <stdbool.h>
@@ -511,9 +510,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	// Flag to prevent the output mode event handler from calling us
-	output->enabling = (!oc || oc->enabled);
-
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
@@ -523,11 +519,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		// Leave the output disabled for now and try again when the output gets
 		// the mode we asked for.
 		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
-		output->enabling = false;
 		return false;
 	}
-
-	output->enabling = false;
 
 	if (oc && !oc->enabled) {
 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
@@ -536,10 +529,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 			wlr_output_layout_remove(root->output_layout, wlr_output);
 		}
 		return true;
-	}
-
-	if (config->reloading) {
-		output_damage_whole(output);
 	}
 
 	if (oc) {
@@ -558,6 +547,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		if (scale_filter_old != output->scale_filter) {
 			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
 				sway_output_scale_filter_to_string(output->scale_filter));
+			wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
 		}
 	}
 
@@ -825,7 +815,9 @@ static bool _spawn_swaybg(char **command) {
 			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
 
 			execvp(command[0], command);
-			sway_log_errno(SWAY_ERROR, "execvp failed");
+			sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
+				"(background configuration probably not applied)",
+				command[0]);
 			_exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
@@ -835,12 +827,13 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "close failed");
 		return false;
 	}
-	if (waitpid(pid, NULL, 0) < 0) {
+	int fork_status = 0;
+	if (waitpid(pid, &fork_status, 0) < 0) {
 		sway_log_errno(SWAY_ERROR, "waitpid failed");
 		return false;
 	}
 
-	return true;
+	return WIFEXITED(fork_status) && WEXITSTATUS(fork_status) == EXIT_SUCCESS;
 }
 
 bool spawn_swaybg(void) {

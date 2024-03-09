@@ -6,6 +6,6 @@ option('swaybar', type: 'boolean', value: true, description: 'Enable support for
 option('swaynag', type: 'boolean', value: true, description: 'Enable support for swaynag')
 option('xwayland', type: 'feature', value: 'auto', description: 'Enable support for X11 applications')
 option('tray', type: 'feature', value: 'auto', description: 'Enable support for swaybar tray')
-option('gdk-pixbuf', type: 'feature', value: 'auto', description: 'Enable support for more image formats in swaybg')
+option('gdk-pixbuf', type: 'feature', value: 'auto', description: 'Enable support for more image formats in swaybar tray')
 option('man-pages', type: 'feature', value: 'auto', description: 'Generate and install man pages')
 option('sd-bus-provider', type: 'combo', choices: ['auto', 'libsystemd', 'libelogind', 'basu'], value: 'auto', description: 'Provider of the sd-bus library')

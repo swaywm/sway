@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -66,8 +65,15 @@ struct sway_seat *input_manager_sway_seat_from_wlr_seat(struct wlr_seat *wlr_sea
 }
 
 char *input_device_get_identifier(struct wlr_input_device *device) {
-	int vendor = device->vendor;
-	int product = device->product;
+	int vendor = 0, product = 0;
+#if WLR_HAS_LIBINPUT_BACKEND
+	if (wlr_input_device_is_libinput(device)) {
+		struct libinput_device *libinput_dev = wlr_libinput_get_device_handle(device);
+		vendor = libinput_device_get_id_vendor(libinput_dev);
+		product = libinput_device_get_id_product(libinput_dev);
+	}
+#endif
+
 	char *name = strdup(device->name ? device->name : "");
 	strip_whitespace(name);
 
@@ -112,7 +118,7 @@ const char *input_device_get_type(struct sway_input_device *device) {
 		return "keyboard";
 	case WLR_INPUT_DEVICE_TOUCH:
 		return "touch";
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return "tablet_tool";
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return "tablet_pad";
@@ -534,6 +540,13 @@ void input_manager_configure_all_input_mappings(void) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			seat_configure_device_mapping(seat, input_device);
 		}
+
+#if WLR_HAS_LIBINPUT_BACKEND
+		// Input devices mapped to unavailable outputs get their libinput
+		// send_events setting switched to false. We need to re-enable this
+		// when the output appears.
+		sway_input_configure_libinput_device_send_events(input_device);
+#endif
 	}
 }
 

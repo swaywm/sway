@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <float.h>
 #include <libevdev/libevdev.h>
 #include <wlr/types/wlr_cursor.h>
@@ -12,6 +11,7 @@
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/scene_descriptor.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
@@ -55,6 +55,9 @@ static bool edge_is_external(struct sway_container *cont, enum wlr_edges edge) {
 	while (cont) {
 		if (container_parent_layout(cont) == layout) {
 			list_t *siblings = container_get_siblings(cont);
+			if (!siblings) {
+				return false;
+			}
 			int index = list_find(siblings, cont);
 			if (index > 0 && (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_TOP)) {
 				return false;
@@ -287,7 +290,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 
 static bool trigger_pointer_button_binding(struct sway_seat *seat,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state, uint32_t modifiers,
+		enum wl_pointer_button_state state, uint32_t modifiers,
 		bool on_titlebar, bool on_border, bool on_contents, bool on_workspace) {
 	// We can reach this for non-pointer devices if we're currently emulating
 	// pointer input for one. Emulated input should not trigger bindings. The
@@ -301,7 +304,7 @@ static bool trigger_pointer_button_binding(struct sway_seat *seat,
 	char *device_identifier = device ? input_device_get_identifier(device)
 		: strdup("*");
 	struct sway_binding *binding = NULL;
-	if (state == WLR_BUTTON_PRESSED) {
+	if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		state_add_button(e, button);
 		binding = get_active_mouse_binding(e,
 			config->current_mode->mouse_bindings, modifiers, false,
@@ -326,7 +329,7 @@ static bool trigger_pointer_button_binding(struct sway_seat *seat,
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	struct sway_cursor *cursor = seat->cursor;
 
 	// Determine what's under the cursor
@@ -359,7 +362,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle clicking an empty workspace
 	if (node && node->type == N_WORKSPACE) {
-		if (state == WLR_BUTTON_PRESSED) {
+		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
 			seat_set_focus(seat, node);
 			transaction_commit_dirty();
 		}
@@ -374,7 +377,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 			seat_set_focus_layer(seat, layer);
 			transaction_commit_dirty();
 		}
-		if (state == WLR_BUTTON_PRESSED) {
+		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
 			seatop_begin_down_on_surface(seat, surface, sx, sy);
 		}
 		seat_pointer_notify_button(seat, time_msec, button, state);
@@ -383,7 +386,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle tiling resize via border
 	if (cont && resize_edge && button == BTN_LEFT &&
-			state == WLR_BUTTON_PRESSED && !is_floating) {
+			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating) {
 		// If a resize is triggered on a tabbed or stacked container, change
 		// focus to the tab which already had inactive focus -- otherwise, we'd
 		// change the active tab when the user probably just wanted to resize.
@@ -401,7 +404,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	// Handle tiling resize via mod
 	bool mod_pressed = modifiers & config->floating_mod;
 	if (cont && !is_floating_or_child && mod_pressed &&
-			state == WLR_BUTTON_PRESSED) {
+			state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
 		if (button == btn_resize) {
@@ -429,7 +432,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle changing focus when clicking on a container
-	if (cont && state == WLR_BUTTON_PRESSED) {
+	if (cont && state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		// Default case: focus the container that was just clicked.
 		node = &cont->node;
 
@@ -450,7 +453,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle beginning floating move
 	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
-			state == WLR_BUTTON_PRESSED) {
+			state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && (mod_pressed || on_titlebar)) {
 			seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
@@ -460,7 +463,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle beginning floating resize
 	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
-			state == WLR_BUTTON_PRESSED) {
+			state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		// Via border
 		if (button == BTN_LEFT && resize_edge != WLR_EDGE_NONE) {
 			seat_set_focus_container(seat, cont);
@@ -486,7 +489,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle moving a tiling container
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
-			state == WLR_BUTTON_PRESSED && !is_floating_or_child &&
+			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating_or_child &&
 			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
 		// If moving a container by its title bar, use a threshold for the drag
 		if (!mod_pressed && config->tiling_drag_threshold > 0) {
@@ -499,14 +502,14 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle mousedown on a container surface
-	if (surface && cont && state == WLR_BUTTON_PRESSED) {
+	if (surface && cont && state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		seatop_begin_down(seat, cont, sx, sy);
-		seat_pointer_notify_button(seat, time_msec, button, WLR_BUTTON_PRESSED);
+		seat_pointer_notify_button(seat, time_msec, button, WL_POINTER_BUTTON_STATE_PRESSED);
 		return;
 	}
 
 	// Handle clicking a container surface or decorations
-	if (cont && state == WLR_BUTTON_PRESSED) {
+	if (cont && state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
@@ -620,12 +623,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 	}
 
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, &root->drag_icons, link) {
-		if (drag_icon->seat == seat) {
-			drag_icon_update_position(drag_icon);
-		}
-	}
+	drag_icons_update_position(seat);
 
 	e->previous_node = node;
 }
@@ -655,12 +653,7 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 	}
 
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, &root->drag_icons, link) {
-		if (drag_icon->seat == seat) {
-			drag_icon_update_position(drag_icon);
-		}
-	}
+	drag_icons_update_position(seat);
 
 	e->previous_node = node;
 }
@@ -691,7 +684,7 @@ static void handle_touch_down(struct sway_seat *seat,
 		pointer_motion(cursor, event->time_msec, &event->touch->base, dx, dy,
 				dx, dy);
 		dispatch_cursor_button(cursor, &event->touch->base, event->time_msec,
-				BTN_LEFT, WLR_BUTTON_PRESSED);
+				BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
 	}
 }
 
@@ -701,9 +694,9 @@ static void handle_touch_down(struct sway_seat *seat,
 
 static uint32_t wl_axis_to_button(struct wlr_pointer_axis_event *event) {
 	switch (event->orientation) {
-	case WLR_AXIS_ORIENTATION_VERTICAL:
+	case WL_POINTER_AXIS_VERTICAL_SCROLL:
 		return event->delta < 0 ? SWAY_SCROLL_UP : SWAY_SCROLL_DOWN;
-	case WLR_AXIS_ORIENTATION_HORIZONTAL:
+	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
 		return event->delta < 0 ? SWAY_SCROLL_LEFT : SWAY_SCROLL_RIGHT;
 	default:
 		sway_log(SWAY_DEBUG, "Unknown axis orientation");
@@ -802,8 +795,9 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	if (!handled) {
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-			event->orientation, scroll_factor * event->delta,
-			roundf(scroll_factor * event->delta_discrete), event->source);
+			event->orientation, scroll_factor * event->delta, 
+			roundf(scroll_factor * event->delta_discrete), event->source,
+			event->relative_direction);
 	}
 }
 

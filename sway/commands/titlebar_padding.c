@@ -33,7 +33,6 @@ struct cmd_results *cmd_titlebar_padding(int argc, char **argv) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
 		arrange_workspace(output_get_active_workspace(output));
-		output_damage_whole(output);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

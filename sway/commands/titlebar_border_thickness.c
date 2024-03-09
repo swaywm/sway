@@ -27,7 +27,6 @@ struct cmd_results *cmd_titlebar_border_thickness(int argc, char **argv) {
 					"Expected output to have a workspace");
 		}
 		arrange_workspace(ws);
-		output_damage_whole(output);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
