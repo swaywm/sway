@@ -72,13 +72,10 @@ must be separated by one space. For example:
 
 *output* <name> scale <factor>
 	Scales the specified output by the specified scale _factor_. An integer is
-	recommended, but fractional values are also supported. If a fractional
-	value are specified, be warned that it is not possible to faithfully
-	represent the contents of your windows - they will be rendered at the next
-	highest integer scale factor and downscaled. You may be better served by
-	setting an integer scale factor and adjusting the font size of your
-	applications to taste. HiDPI isn't supported with Xwayland clients (windows
-	will blur).
+	recommended, but fractional values are also supported. You may be better
+	served by setting an integer scale factor and adjusting the font size of
+	your applications to taste. HiDPI isn't supported with Xwayland clients
+	(windows will blur).
 
 *output* <name> scale_filter linear|nearest|smart
 	Indicates how to scale application buffers that are rendered at a scale
