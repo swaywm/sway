@@ -1576,6 +1576,14 @@ void seatop_pointer_axis(struct sway_seat *seat,
 	}
 }
 
+void seatop_tablet_tool_axis_scroll(struct sway_seat *seat,
+		struct sway_tablet_tool *tool,
+		struct wlr_tablet_tool_axis_scroll_event *event) {
+	if (seat->seatop_impl->tablet_tool_axis_scroll) {
+		seat->seatop_impl->tablet_tool_axis_scroll(seat, tool, event);
+	}
+}
+
 void seatop_touch_motion(struct sway_seat *seat, struct wlr_touch_motion_event *event,
 		double lx, double ly) {
 	if (seat->seatop_impl->touch_motion) {

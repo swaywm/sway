@@ -140,6 +140,22 @@ static void handle_pointer_axis(struct sway_seat *seat,
 		event->relative_direction);
 }
 
+static void handle_tablet_tool_axis_scroll(struct sway_seat *seat,
+		struct sway_tablet_tool *tool, struct wlr_tablet_tool_axis_scroll_event *event) {
+	struct sway_input_device *input_device =
+		event->tablet ? event->tablet->base.data : NULL;
+	struct input_config *ic =
+		input_device ? input_device_get_config(input_device) : NULL;
+	float scroll_factor =
+		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
+
+	wlr_tablet_v2_tablet_tool_notify_scroll(tool->tablet_v2_tool, event->time_msec,
+			event->orientation, scroll_factor * event->delta,
+			event->source,
+			event->relative_direction);
+	seatop_begin_default(seat);
+}
+
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
 		enum wl_pointer_button_state state) {
@@ -208,6 +224,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.pointer_axis = handle_pointer_axis,
 	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
+	.tablet_tool_axis_scroll = handle_tablet_tool_axis_scroll,
 	.touch_motion = handle_touch_motion,
 	.touch_up = handle_touch_up,
 	.touch_down = handle_touch_down,
