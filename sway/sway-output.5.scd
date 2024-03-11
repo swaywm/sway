@@ -75,7 +75,8 @@ must be separated by one space. For example:
 	recommended, but fractional values are also supported. You may be better
 	served by setting an integer scale factor and adjusting the font size of
 	your applications to taste. HiDPI isn't supported with Xwayland clients
-	(windows will blur).
+	(windows will blur). A fractional scale may be slightly adjusted to match
+	requirements of the protocol.
 
 *output* <name> scale_filter linear|nearest|smart
 	Indicates how to scale application buffers that are rendered at a scale
