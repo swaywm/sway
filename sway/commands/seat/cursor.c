@@ -84,12 +84,12 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 
 static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 		char *action, char *button_str) {
-	enum wlr_button_state state;
+	enum wl_pointer_button_state state;
 	uint32_t button;
 	if (strcasecmp(action, "press") == 0) {
-		state = WLR_BUTTON_PRESSED;
+		state = WL_POINTER_BUTTON_STATE_PRESSED;
 	} else if (strcasecmp(action, "release") == 0) {
-		state = WLR_BUTTON_RELEASED;
+		state = WL_POINTER_BUTTON_STATE_RELEASED;
 	} else {
 		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
@@ -104,16 +104,16 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN
 			|| button == SWAY_SCROLL_LEFT || button == SWAY_SCROLL_RIGHT) {
 		// Dispatch axis event
-		enum wlr_axis_orientation orientation =
+		enum wl_pointer_axis orientation =
 			(button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN)
-			? WLR_AXIS_ORIENTATION_VERTICAL
-			: WLR_AXIS_ORIENTATION_HORIZONTAL;
+			? WL_POINTER_AXIS_VERTICAL_SCROLL
+			: WL_POINTER_AXIS_HORIZONTAL_SCROLL;
 		double delta = (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_LEFT)
 			? -1 : 1;
 		struct wlr_pointer_axis_event event = {
 			.pointer = NULL,
 			.time_msec = 0,
-			.source = WLR_AXIS_SOURCE_WHEEL,
+			.source = WL_POINTER_AXIS_SOURCE_WHEEL,
 			.orientation = orientation,
 			.delta = delta * 15,
 			.delta_discrete = delta

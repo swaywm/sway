@@ -293,10 +293,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		return;
 	}
 
-	wlr_scene_node_destroy(&popup->scene_tree->node);
-	wlr_scene_node_destroy(popup->desc.relative);
-	popup->scene_tree = NULL;
-
 	bool cursor_rect = text_input->input->current.features
 		& WLR_TEXT_INPUT_V3_FEATURE_CURSOR_RECTANGLE;
 	struct wlr_surface *focused_surface = text_input->input->focused_surface;

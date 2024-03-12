@@ -20,7 +20,7 @@ struct seatop_resize_floating_event {
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	struct seatop_resize_floating_event *e = seat->seatop_data;
 	struct sway_container *con = e->con;
 

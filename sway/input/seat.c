@@ -607,7 +607,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 		case WLR_INPUT_DEVICE_TOUCH:
 			caps |= WL_SEAT_CAPABILITY_TOUCH;
 			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET:
 			caps |= WL_SEAT_CAPABILITY_POINTER;
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
@@ -665,7 +665,7 @@ static const char *get_builtin_output_name(void) {
 static bool is_touch_or_tablet_tool(struct sway_seat_device *seat_device) {
 	switch (seat_device->input_device->wlr_device->type) {
 	case WLR_INPUT_DEVICE_TOUCH:
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return true;
 	default:
 		return false;
@@ -680,7 +680,7 @@ static void seat_apply_input_mapping(struct sway_seat *seat,
 	switch (sway_device->input_device->wlr_device->type) {
 	case WLR_INPUT_DEVICE_POINTER:
 	case WLR_INPUT_DEVICE_TOUCH:
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		break;
 	default:
 		return; // these devices don't support mappings
@@ -873,7 +873,7 @@ void seat_configure_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_TOUCH:
 			seat_configure_touch(seat, seat_device);
 			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET:
 			seat_configure_tablet_tool(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
@@ -912,7 +912,7 @@ void seat_reset_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_TOUCH:
 			seat_reset_input_config(seat, seat_device);
 			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET:
 			seat_reset_input_config(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
@@ -1520,7 +1520,7 @@ struct seat_config *seat_get_config_by_name(const char *name) {
 }
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
-		uint32_t button, enum wlr_button_state state) {
+		uint32_t button, enum wl_pointer_button_state state) {
 	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
 			time_msec, button, state);
 }
@@ -1557,7 +1557,7 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
 
 void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	if (seat->seatop_impl->button) {
 		seat->seatop_impl->button(seat, time_msec, device, button, state);
 	}
