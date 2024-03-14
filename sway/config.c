@@ -198,7 +198,7 @@ static void destroy_removed_seats(struct sway_config *old_config,
 				seat_name_cmp, seat_config->name) < 0) {
 			seat = input_manager_get_seat(seat_config->name, false);
 			if (seat) {
-				seat_destroy(seat);
+				wlr_seat_destroy(seat->wlr_seat);
 			}
 		}
 	}
