@@ -19,9 +19,3 @@ override_dh_auto_configure:
 override_dh_missing:
 	dh_missing --fail-missing
 
-.PHONY: override_dh_install
-override_dh_install:
-	if ! dh_install; then \
-		tree debian/tmp;    \
-    exit 1;             \
-	fi
