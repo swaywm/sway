@@ -809,6 +809,34 @@ out:
 	return ok;
 }
 
+void apply_all_output_configs(void) {
+	size_t configs_len = wl_list_length(&root->all_outputs);
+	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
+	if (!configs) {
+		return;
+	}
+
+	int config_idx = 0;
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
+		if (sway_output == root->fallback_output) {
+			configs_len--;
+			continue;
+		}
+
+		struct matched_output_config *config = &configs[config_idx++];
+		config->output = sway_output;
+		config->config = find_output_config(sway_output);
+	}
+
+	apply_output_configs(configs, configs_len, false);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		free_output_config(cfg->config);
+	}
+	free(configs);
+}
+
 void apply_output_config_to_outputs(struct output_config *oc) {
 	size_t configs_len = wl_list_length(&root->all_outputs);
 	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
