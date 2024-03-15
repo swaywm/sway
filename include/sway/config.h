@@ -695,6 +695,8 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output);
 bool apply_output_configs(struct matched_output_config *configs,
 		size_t configs_len, bool test_only);
 
+void apply_all_output_configs(void);
+
 bool test_output_config(struct output_config *oc, struct sway_output *output);
 
 struct output_config *store_output_config(struct output_config *oc);
