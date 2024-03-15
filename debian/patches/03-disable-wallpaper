@@ -1,0 +1,10 @@
+Index: sway-regolith/meson_options.txt
+===================================================================
+--- sway-regolith.orig/meson_options.txt
++++ sway-regolith/meson_options.txt
+@@ -1,4 +1,4 @@
+-option('default-wallpaper', type: 'boolean', value: true, description: 'Install the default wallpaper.')
++option('default-wallpaper', type: 'boolean', value: false, description: 'Install the default wallpaper.')
+ option('zsh-completions', type: 'boolean', value: true, description: 'Install zsh shell completions.')
+ option('bash-completions', type: 'boolean', value: true, description: 'Install bash shell completions.')
+ option('fish-completions', type: 'boolean', value: true, description: 'Install fish shell completions.')
