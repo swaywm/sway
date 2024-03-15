@@ -1,0 +1,1 @@
+rm_conffile /etc/sway/config-vars.d/00-set-term-foot.conf 1.5-7~

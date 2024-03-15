@@ -1,0 +1,47 @@
+Source: sway-regolith
+Section: x11
+Priority: optional
+Maintainer: Sway and related packages team <team+swaywm@tracker.debian.org>
+Uploaders: Birger Schacht <birger@debian.org>,
+           nicoo <nicoo@debian.org>
+Build-Depends: debhelper-compat (= 13),
+               libcairo2-dev,
+               libcap-dev,
+               libdbus-1-dev (>= 1.10),
+               libevdev-dev,
+               libgdk-pixbuf2.0-dev,
+               libinput-dev (>= 1.6.0),
+               libjson-c-dev (>= 0.13),
+               libpam0g-dev,
+               libpango1.0-dev,
+               libpcre2-dev,
+               libpixman-1-dev,
+               libseat-dev,
+               libsystemd-dev (>= 239) | libelogind-dev (>= 239),
+               libtrawldb,
+               libwayland-dev (>= 1.20.0),
+               libwayland-egl1,
+               libwlroots-dev (>= 0.15.0),
+               libxkbcommon-dev,
+               meson (>=0.48),
+               pkgconf,
+               scdoc (>= 1.9.2),
+               tree,
+               wayland-protocols (>= 1.24)
+Standards-Version: 4.6.1.0
+Homepage: http://swaywm.org
+Vcs-Browser: https://salsa.debian.org/swaywm-team/sway
+Vcs-Git: https://salsa.debian.org/swaywm-team/sway.git
+Rules-Requires-Root: no
+
+Package: sway-regolith
+Architecture: any
+Depends: libgl1-mesa-dri, swaybg, policykit-1, libtrawldb, ${misc:Depends}, ${shlibs:Depends}
+Recommends: suckless-tools, sway-backgrounds, foot
+Suggests: swayidle, swaylock, xdg-desktop-portal-wlr
+Description: i3-compatible Wayland compositor for the Regolith desktop environment
+ sway (SirCmpwn's Wayland compositor) is a tiling Wayland compositor and a
+ drop-in replacement for the i3 window manager for X11. It works with your
+ existing i3 configuration and supports most of i3's features, plus a few
+ extras. This means it is a minimalist, tiling window manager.  This variant
+ supports trawl integration.

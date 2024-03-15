@@ -1,0 +1,871 @@
+sway-regolith (1.9-1) noble; urgency=medium
+
+  [ Regolith Linux ]
+  * Remove applied patch
+  * Add libtrawldb dependency
+  * Add trawl dep
+
+  [ Filip Szczepański ]
+  * Fix crash in xdg_activation_v1.c
+
+  [ Alex Maese ]
+  * sway: Add non-desktop-output type
+  * sway: add non-desktop outputs to json when running `swaymsg -t get_outputs`
+  * swaymsg: show non-desktop property when pretty printing outputs
+
+  [ マリウス ]
+  * man: Add XWayland information
+
+  [ Simon Ser ]
+  * ipc: expose mode picture aspect ratio
+  * swaymsg: show mode picture aspect ratio
+  * build: simplify protocol paths
+
+  [ Andri Yngvason ]
+  * sway/commands/output: Add command for unplugging non-physical outputs
+
+  [ ohno418 ]
+  * Improve Japanese translation
+
+  [ Ferdinand Schober ]
+  * allow pointer_constraints on layer_shell surfaces
+  * check for NULL
+  * use seat directly
+  * Use keyboard_state.focused_surface directly
+
+  [ Tudor Brindus ]
+  * input: focus floating container when clicked on border
+  * input: focus container when scrolling on titlebar
+
+  [ Simon Ser ]
+  * Fix leaks in criteria_destroy()
+
+  [ cparm ]
+  * Avoid double free in criteria_destroy()
+
+  [ Simon Ser ]
+  * Add support for ext-idle-notify-v1
+
+  [ Tudor Brindus ]
+  * input: tweak focus behavior to allow focusing parent containers
+
+  [ Yaroslav de la Peña Smirnov ]
+  * Fix keymap being NULL and segfaulting on dev add
+
+  [ Daniel De Graaf ]
+  * Rework session lock keyboard focus handling
+  * Fix focus tracking when session lock is active
+
+  [ Alexander Orzechowski ]
+  * container_floating_set_default_size: Store workspace size box on the stack
+
+  [ pudiva chip líquida ]
+  * Support libinput's 1.21 new dwtp option
+
+  [ Puck Meerburg ]
+  * tree: support formatting null titles
+  * criteria: allow matching on empty (NULL) titles
+
+  [ Callum Andrew ]
+  * criteria: allow matching for NULL string criteria
+
+  [ Kirill Primak ]
+  * ci: install hwdata
+
+  [ Simon Ser ]
+  * Use wl_signal_emit_mutable()
+
+  [ Kirill Primak ]
+  * Use wlr_damage_ring
+
+  [ Simon Ser ]
+  * lock: fix crash on output destroy
+
+  [ Baltazár Radics ]
+  * container_get_siblings: handle NULL workspace
+
+  [ Joe Kappus ]
+  * build: bump wlroots dependency to 0.17.0
+
+  [ Alexander Orzechowski ]
+  * workspace_create: Don't allow NULL name
+
+  [ Kirill Primak ]
+  * output: set damage ring bounds to pixel values
+
+  [ Simon Zeni ]
+  * sway/server: specify wlr-layer-shell version on creation
+
+  [ Simon Ser ]
+  * input/seat: locally compute drag icon offset
+  * Listen to the output request_state event
+  * ipc: add view content type
+  * Update for wlroots!3814
+
+  [ Manuel Stoeckl ]
+  * Use shm_open instead of mkstemp
+
+  [ Simon Ser ]
+  * build: drop wayland-scanner fallback
+  * build: unify server & client protocol generation
+  * build: drop "server" from target name for protocol code
+  * build: drop intermediate libraries for protocols
+
+  [ Ronan Pigott ]
+  * root: move the workspace matching code to its own file
+  * node: prettify node type names
+  * launcher: track workspaces by node
+  * launcher: use xdga tokens
+  * launcher: rename pid_workspace to launcher_ctx
+  * view: associate launch contexts with views
+  * launcher: initialize launcher_ctxs once on startup
+  * launcher: fudge the interface a bit
+  * launcher: export xdga tokens and use them for workspace matching
+  * launcher: export X startup ids and use them for workspace matching
+
+  [ Joan Bruguera ]
+  * swaybar: Prioritize hotspot events to bar bindings
+  * swaybar: Make hotspots block bar release bindings
+
+  [ Simon Ser ]
+  * build: drop unused wayland-egl dependency
+  * build: bump version to 1.9-dev
+
+  [ AsciiWolf ]
+  * Translate README to Czech
+
+  [ Simon Ser ]
+  * Make GLES2 optional
+  * Make DRM backend optional
+  * Make session optional
+  * Make libinput backend optional
+  * build: remove trailing newline at end of file
+
+  [ nerdopolis ]
+  * Fix build on Debian Stable
+
+  [ Simon Ser ]
+  * build: move completions to separate file
+  * build: fix have_xwayland when xcb-icccm is not found
+
+  [ AsciiWolf ]
+  * Fix typo in Czech README translation
+
+  [ Simon Ser ]
+  * Chase breaking changes in wlroots!39037ubuntu1
+
+  [ Simon Zeni ]
+  * sway/desktop/output: listen to output mode in commit handle
+  * sway/lock: handle mode in output commit handler
+
+  [ Kenny Levinsen ]
+  * seat: Avoid sending redundant keymaps on reload
+
+  [ Aidan Dang ]
+  * Add `primary_selection` config option
+
+  [ Simon Ser ]
+  * ci: install Xwayland .pc file7ubuntu1
+  * Add libinput RotationAngle
+
+  [ Baltazár Radics ]
+  * Fix input command order (rotation_angle)
+
+  [ Ankit Pandey ]
+  * commands/move: Warp cursor after moving workspace to another output
+
+  [ Kenny Levinsen ]
+  * seat: Set keyboard if seat keyboard is NULL
+
+  [ Simon Ser ]
+  * swaynag: fix NULL font description
+  * swaynag: drop swaynag_type.font
+  * man: fix typo in output disable docs
+  * tree/container: drop unnecessary check in container_get_siblings()
+
+  [ Carl Smedstad ]
+  * Remove duplicate declarations
+  * Add missing includes & remove duplicates
+  * Make cmd_handler.command const
+  * Remove redundant return statements
+  * Replace math functions that promote float to double
+  * Use correct length for strncmp comparison
+
+  [ Alexander Orzechowski ]
+  * warp_to_constraint_cursor_hint: Handle NULL view
+
+  [ John Chadwick ]
+  * Improve tablet tool button handling.
+
+  [ Ronan Pigott ]
+  * input: enable user xkb configs with cap_sys_nice
+
+  [ Manuel Stoeckl ]
+  * swaynag: call swaynag_destroy on clean exit
+
+  [ Kirill Primak ]
+  * input/tablet: handle focusing NULL surface
+
+  [ Simon Ser ]
+  * Send wl_surface.enter for ext-session-lock surfaces
+  * Fix indentation in surface_is_xdg_popup()
+  * Fix pointer events for ext-session-lock surfaces
+
+  [ Tobias Bengfort ]
+  * focus_on_window_activation: raise if floating
+
+  [ Simon Ser ]
+  * Check return value of wlr_renderer_begin()
+
+  [ Alexander Courtis ]
+  * Apply new adaptive sync value from wlr-output-management
+
+  [ Simon Ser ]
+  * Switch default menu to wmenu
+
+  [ Cedric Sodhi ]
+  * Added reference for event types to swaymsg manpage
+
+  [ Simon Ser ]
+  * ipc: add support for output event
+  * Convert to wlr_xwayland_surface_try_from_wlr_surface()
+
+  [ Tobias Predel ]
+  * root: free non_desktop_outputs list on root_destroy
+
+  [ Simon Ser ]
+  * Convert to *_try_from_wlr_surface()
+
+  [ Radical ]
+  * Add Norwegian READMR
+
+  [ Simon Ser ]
+  * swaymsg: print output power status
+  * swaymsg: s/inactive/disabled/
+  * ci: install hwdata-dev on Alpine
+
+  [ Ronan Pigott ]
+  * view: make request_activate take a seat
+  * launcher: make launcher context seat aware
+  * launcher: support external launcher tokens
+
+  [ Baltazár Radics ]
+  * ipc: add ability to subscribe to output event
+
+  [ Simon Ser ]
+  * Use wlr_linux_dmabuf_feedback_v1_init_with_options()
+
+  [ Ronan Pigott ]
+  * xdg-activation: fix urgency when the client does not specify a seat
+
+  [ Łukasz Adamczak ]
+  * Correct window_rect.y with hide_edge_borders
+  * Clarify documentation for window_rect
+
+  [ Simon Ser ]
+  * Introduce surface_{enter,leave}_output()
+  * Add support for fractional-scale-v1
+
+  [ Daniel Hill ]
+  * Fix map_to_output * turning off device
+
+  [ Ronan Pigott ]
+  * container: rehome the container_swap function into container.c
+
+  [ Simon Ser ]
+  * Update surface fractional scale on output change
+  * layer-shell: enter output before surface is mapped
+
+  [ Stacy Harper ]
+  * Implement seatop_touch
+
+  [ Simon Ser ]
+  * Adjust scale for fractional-scale-v1
+  * Constify pixman_region32_t for rendering functions
+  * Move output commit out of output_render()
+  * Check for empty damage before attaching render buffer
+
+  [ Robin Jarry ]
+  * Allow windows in scratchpad to set the urgent flag
+
+  [ rj1 ]
+  * fix typo
+
+  [ llyyr ]
+  * sway{,bar}: use default font hint style
+
+  [ novenary ]
+  * Disable direct scanout for surfaces with popups
+
+  [ Simon Zeni ]
+  * ci: add libdisplay-info dependency
+
+  [ Stanislav Ochotnický ]7ubuntu1
+  * root: Try to preserve relative positions of floating containers
+  * root: Set inactive focus when scratchpad is moved to new workspace
+
+  [ Erik Reider ]
+  * Init the damage_ring bounds on output creation
+
+  [ Simon Ser ]
+  * man: deprecate seat cursor move/set/press/release
+
+  [ Ronan Pigott ]
+  * Add a .mailmap file
+
+  [ Simon Ser ]
+  * ipc: add LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM entry
+
+  [ Alexander Orzechowski ]
+  * swaybar: Set opaque region properly
+  * swaybar: Lift background clearing out of main rendering function
+
+  [ Erik Reider ]
+  * Fix damage-ring bounds not being set when unplugging -> plugging in monitor
+
+  [ Simon Ser ]
+  * Remove duplicate wlr_damage_ring_set_bounds() call
+
+  [ Alexander Orzechowski ]
+  * Chase wlroots!4067
+
+  [ Simon Ser ]
+  * Pass version to wlr_compositor_create()
+  * Skip direct scan-out commit when damage is empty
+  * Set output damage during direct scan-out
+
+  [ Elyes Haouas ]
+  * Fix old style function definitions
+
+  [ Simon Ser ]
+  * Introduce output_match_name_or_id()
+  * Use all_output_by_name_or_id() in merge_id_on_name()
+  * Use output_match_name_or_id() in apply_output_config_to_outputs()
+  * Use output_match_name_or_id() in workspace functions
+  * Add format_str() and vformat_str()
+  * pango: add printf attribute
+  * commands/floating_minmax_size: fix error strings
+  * commands: add printf attribute to cmd_results_new()
+  * config: add printf attribute to config_add_swaynag_warning()
+  * swaynag: add printf attribute to swaynag_log()
+  * common/gesture: use format_str()
+  * Use format_str() throughout
+
+  [ Alexander Orzechowski ]
+  * xdg_shell: Fix crash if popup generates while toplevel is in the scratchpad
+  * render: pass rendering state together in a struct7ubuntu1
+  * Don't crash if there is no damage during render
+
+  [ hrdl ]
+  * Add support for touch cancel events
+  * handle_touch_cancel: fix begin default
+
+  [ Mukundan314 ]
+  * swaybar: always subscribe to mode and workspace
+
+  [ Kenny Levinsen ]
+  * render: Apply clip to rendered texture correctly
+  * render: Clear using wlr_output dimensions
+
+  [ Simon Ser ]
+  * render: fix titlebar texture clipping
+
+  [ hrdl ]
+  * seatop_down: Call seatop_begin_default after sending touch events
+
+  [ Erik Reider ]
+  * Fix layer old damage not being offset by the monitor layout coords
+
+  [ Kirill Primak ]
+  * xwayland: don't rely on event source being data
+  * chore: chase wlroots map logic unification
+  * lock: listen to the correct map signal
+  * xwayland: fix mapped state check in OR handlers
+
+  [ Artturin ]
+  * chase wlroots wlr_renderer_begin_buffer_pass change
+
+  [ Erik Reider ]
+  * Add support for wlr-layer-shell ON_DEMAND keyboard interactivity
+
+  [ Simon Ser ]7ubuntu1
+
+  [ Shaked Flur ]
+  * man: add --inhibited and --no-repeat to bindsym and bindcode usage
+
+  [ 33KK ]
+  * Fix `bindsym --to-code` not respecting input configs
+
+  [ Alexander Orzechowski ]
+  * gamma_control_v1: Reset dirty flag
+
+  [ Rouven Czerwinski ]
+  * gamma_control_v1: handle destroyed output
+
+  [ Cezary Drożak ]
+  * input/libinput: add scroll_button_lock method
+
+  [ Alexander Orzechowski ]
+  * render: Use wlroots scale filter
+
+  [ Simon Ser ]
+  * Use wlr_cursor_set_xcursor()
+  * Use wlr_cursor_unset_image()
+  * idle-inhibit-v1: simplify with server global
+
+  [ Hodong ]
+  * swaybar: remove the argument of StatusNotifierHostRegistered
+
+  [ Simon Ser ]
+  * Use "default" XCursor instead of "left_ptr"
+
+  [ Mark Bolhuis ]
+  * input: Move wlr_pointer_gestures_v1 to sway_input_manager
+
+  [ llyyr ]
+  * swaybar: don't set current workspace as not visible
+
+  [ Manuel Stoeckl ]
+  * swaybar: handle wayland-cursor failures
+
+  [ Simon Ser ]
+  * Send wl_surface.preferred_buffer_scale
+
+  [ nukoseer ]
+  * Calculate tiled resize amount relative to parent container
+
+  [ Artturin ]
+  * chase wlroots 'presentation-time: add separate helper for zero-copy '
+
+  [ Simon Ser ]
+  * swaynag: handle wayland-cursor failures
+  * Deprecate seat idle_wake
+
+  [ Nick Kipshidze ]
+  * Add Georgian README
+
+  [ bretello ]
+  * fix crash when resizing tiled scratchpad windows
+
+  [ Simon Ser ]
+  * Add support for cursor-shape-v1
+
+  [ Alexander Orzechowski ]
+  * swaybar: Implement wp_cursor_shape_v1
+  * swaynag: Implement wp_cursor_shape_v1
+
+  [ Simon Ser ]
+  * desktop/output: drop logic to handle backend-applied mode
+  * desktop/output: drop handle_mode()
+  * desktop/output: fix output manager enabled state
+  * output: drop current_mode
+
+  [ ookami ]
+  * Rebase all cursors in handle_surface_map
+
+  [ Simon Ser ]
+  * Move contrib/ to separate repository
+
+  [ Leonardo Hernández Hernández ]
+  * chase wlroots!4316
+
+  [ Kirill Primak ]
+  * chore: chase wlroots xdg-surface role rework
+
+  [ luzpaz ]
+  * Fix typo
+
+  [ Simon Ser ]7ubuntu1
+  * view: update wlr_toplevel size on client resizes
+  * Revert "view: update wlr_toplevel size on client resizes"
+  * xdg_shell: update wlr_toplevel size on client resizes
+
+  [ denppa ]
+  * build: fix build with wayland-scanner subproject
+
+  [ iff ]
+  * commands/input/map_from_region: don't treat 0x prefix as hex identifier
+
+  [ Johan Sköld ]
+  * i3 compat: Adding support for the `all` criteria
+
+  [ Manuel Stoeckl ]
+  * sway/server: Fix null pointer crash when Xwayland disabled
+
+  [ Jan Beich ]
+  * readme: Stop recommending setuid bit for non-logind systems
+
+  [ Ashraf ]
+  * Translate README to Arabic7ubuntu1
+
+  [ Simon Ser ]
+  * Drop support for KDE's idle protocol
+
+  [ iff ]
+  * Update sway-input.5.scd
+
+  [ Alexander Orzechowski ]
+  * Chase wlroots!4331
+
+  [ Tamino Bauknecht ]
+  * gitignore: Ignore clangd-generated directory .cache/
+  * config/output: Allow approximation of output refresh rate
+
+  [ Kirill Primak ]
+  * view: check if the buffer was uploaded on save
+
+  [ Dudemanguy ]
+  * xdg_shell: don't update wlr_toplevel if the container has no size yet
+
+  [ Kirill Primak ]
+  * xdg-shell: send maximized if tiled isn't supported
+
+  [ Bill Li ]
+  * chase wlroots!4411
+
+  [ Sergei Trofimovich ]
+  * swaynag/config.c: fix build against gcc-14 (-Walloc-size)
+
+  [ Simon Ser ]
+  * input/seat: don't configure mappings for switches
+  * input/seat: rename seat_apply_input_config
+  * Only reconfigure input mappings on output change
+  * input/input-manager: drop input_manager_configure_all_inputs
+
+  [ Lina Banik ]
+  * seat: Fix reloading cursor theme after change
+
+  [ NemuiBanila ]7ubuntu1
+
+  [ EBADBEEF ]
+  * view: re-apply criteria when window gets unmapped
+
+  [ Simon Ser ]
+  * Apply gamma LUT when an output re-enabled
+  * Add support for security-context-v1
+  * Fix reference to wlr_output_event_commit.committed
+
+  [ Matt Fellenz ]
+  * Use locale time format for default bar command
+
+  [ Simon Ser ]
+  * ci: checkout wlroots 0.17
+
+  [ Sergei Trofimovich ]
+  * sway/config.c: use `memcpy()` for known buffer size
+
+  [ mrusme ]7ubuntu1
+  * Update sway.5.scd
+
+  [ Simon Ser ]
+  * desktop/xwayland: correctly handle association on o-r change
+
+  [ Tamino Bauknecht ]
+  * sway: raise error on non-accessible background file
+
+  [ Alexander Orzechowski ]
+  * output: Destroy when output layout is destroyed
+
+  [ Simon Ser ]
+  * input: reconfigure send_events on output hotplug
+  * readme: add swaybg as optional dep
+  * Mark DRM lease protocol privileged
+  * Clarify gdk-pixbuf dependency purpose
+  * build: bump version to 1.9-rc.1
+
+  [ Tamino Bauknecht ]
+  * sway/output: Improve logging of swaybg execvp failure and more checks
+
+  [ Simon Ser ]
+  * build: bump version to 1.9-rc.2
+
+  [ Violet Purcell ]
+  * sway/config.c: only reset primary_selection at launch
+
+  [ Simon Ser ]
+  * build: bump version to 1.9-rc.3
+  * commands: make primary_selection a config-only command
+  * Fix build with wlroots DRM backend disabled
+
+  [ Ronan Pigott ]
+  * launcher: track the seat in the launcher ctx
+
+  [ Aleksei Bavshin ]
+  * xdg-activation: distinguish activation and urgency requests
+
+  [ Simon Ser ]
+  * build: bump version to 1.9-rc.4
+  * build: bump version to 1.9
+
+ -- Regolith Linux <regolith.linux@gmail.com>  Mon, 11 Mar 2024 08:53:45 -0700
+
+sway-regolith (1.7) focal; urgency=medium
+
+  [ Birger Schacht ]
+  * Backport patch to replace strncpy with memcpy (Closes: #1013044)
+  * Backport patch to remove buffer destruction condition in swaynag
+  * Bump standards-version to 4.6.1.0 (no changes required)
+
+ -- Regolith Linux <regolith.linux@gmail.com>  Fri, 02 Sep 2022 15:38:16 -0700
+
+sway (1.7-2) unstable; urgency=medium
+
+  * Upload to unstable (Closes: #1008461)
+
+ -- Birger Schacht <birger@debian.org>  Fri, 01 Apr 2022 11:20:59 +0200
+
+sway (1.7-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Bump min. version of wlroots build dependency to 0.15
+  * Bump min. version of wayland-protocols to 1.24
+  * Set min version of libwayland-dev to 1.20
+  * Drop filenamemangle option from d/watch
+  * Update patch for default configuration file
+  * Update year range in d/copyright stanza for debian/*
+
+ -- Birger Schacht <birger@debian.org>  Wed, 16 Feb 2022 10:00:35 +0100
+
+sway (1.6.1-2) unstable; urgency=medium
+
+  * Replace dependency on pcre with pcre2 (Closes: #999950)
+  * Upload to unstable
+  * Update year range in d/copyright stanza for debian/*
+
+ -- Birger Schacht <birger@debian.org>  Fri, 17 Dec 2021 07:42:23 +0100
+
+sway (1.6.1-1) experimental; urgency=medium
+
+  * New upstream release (Closes: #989274)
+  * Add libseat-dev to build-depends
+  * Bump min. version of wlroots build dependency to 0.14
+  * Bump standards-version to 4.6.0.1 (no changes required)
+  * Fix d/watch
+
+ -- Birger Schacht <birger@debian.org>  Thu, 18 Nov 2021 16:00:28 +0100
+
+sway (1.6-1) experimental; urgency=medium
+
+  * New upstream release (Closes: #986649)
+  * d/control:
+   + Bump min. version of wlroots build dependency to 0.13
+
+ -- Birger Schacht <birger@debian.org>  Tue, 27 Apr 2021 17:50:54 +0200
+
+sway (1.5.1-2) unstable; urgency=medium
+
+  * Update dependency on wlroots (0.12 or higher)
+  * d/gbp.conf: Update debian-branch.
+
+ -- nicoo <nicoo@debian.org>  Sun, 14 Feb 2021 12:36:51 +0100
+
+sway (1.5.1-1) experimental; urgency=medium
+
+  * New upstream release
+    Compatible with wlroots v0.12
+
+  * Update nicoo's name
+  * d/upstream: Update signing key
+  * d/gbp.conf: Update debian-branch for experimental
+
+ -- nicoo <nicoo@debian.org>  Wed, 03 Feb 2021 18:42:21 +0100
+
+sway (1.5-7) unstable; urgency=medium
+
+  * Upload to unstable with new package `grimshot`
+  * Add Bug-Tracking information to d/upstream/metadata
+  * Drop config snippet that sets the default term and set this
+    in the default configuration instead
+  * Add d/sway.maintscript to remove obsolete config file
+  * Add a config file to set environment variables in systemd
+    environment
+
+ -- Birger Schacht <birger@debian.org>  Thu, 05 Nov 2020 22:40:59 +0100
+
+sway (1.5-6) experimental; urgency=medium
+
+  * Add a new binary package that contains the `grimshot` script
+    and its documentation from the contrib folder (Closes: #960044)
+
+ -- Birger Schacht <birger@debian.org>  Tue, 03 Nov 2020 20:37:56 +0100
+
+sway (1.5-5) unstable; urgency=medium
+
+  * Only recommend foot, so users have a usable sway config
+    on installation (Closes: #972569)
+  * Add xdg-desktop-portal-wlr to suggestions
+  * Add support for overriding configfile variables in default
+    config (Closes: #969427)
+  * Drop patch that hardcodes `foot` as term
+  * Add a config file overriding the default $term variable
+    and setting it to foot
+
+ -- Birger Schacht <birger@debian.org>  Sun, 25 Oct 2020 13:38:25 +0100
+
+sway (1.5-4) unstable; urgency=medium
+
+  * d/control: do not use a virtual package as primary
+    recommendation (Closes: #972199)
+  * d/patches: set default terminal to foot in the system wide
+    configuration file
+
+ -- Birger Schacht <birger@debian.org>  Wed, 14 Oct 2020 20:48:12 +0200
+
+sway (1.5-3) unstable; urgency=medium
+
+  * Add policykit-1 to dependencies (Closes: #968643)
+
+ -- Birger Schacht <birger@debian.org>  Sun, 23 Aug 2020 10:44:15 +0200
+
+sway (1.5-2) unstable; urgency=medium
+
+  * Upload to unstable (Closes: #965337)
+
+ -- Birger Schacht <birger@debian.org>  Fri, 24 Jul 2020 17:42:00 +0200
+
+sway (1.5-1) experimental; urgency=medium
+
+  * Upload to experimental
+  * New upstream version
+  * d/control
+   + Update uploader address
+   + Bump min. version of wlroots build dependency to 0.11.0
+   + Bump debhelper-compat version to 13
+  * Update d/copyright
+
+ -- Birger Schacht <birger@debian.org>  Tue, 21 Jul 2020 09:00:51 +0200
+
+sway (1.4-2) unstable; urgency=medium
+
+  * Source only upload as-is.
+
+ -- Birger Schacht <birger@rantanplan.org>  Mon, 17 Feb 2020 22:14:32 +0100
+
+sway (1.4-1) unstable; urgency=medium
+
+  * New upstream version (Closes: #949984)
+  * Upload to unstable, now that wlroots is in unstable
+  * d/control:
+    - Bump version of wlroots build dependency to 0.10.0
+    - Bump standards version to 4.5.0 (no changes required)
+  * d/patches:
+    - Update 0001-Install-zsh-completions-into-the-correct-directory.patch
+    - Replace 0002-Replace-urxvt-with-x-terminal-emulator.patch with
+      0002-Replace-default-terminal-with-x-terminal-emulator.patch
+  * d/sway.install
+    - Update path of fish completions
+
+ -- Birger Schacht <birger@rantanplan.org>  Wed, 05 Feb 2020 09:32:26 +0100
+
+sway (1.2-1) experimental; urgency=medium
+
+  * New upstream version (Closes: #940862)
+  * d/control:
+    - Bump version of wlroots build dependency to 0.7.0-2
+      (new upstream version need wlroots 0.7.0)
+    - Bump standards version to 4.4.0 (no changes required to
+      make package compliant)
+    - Set maintainer field to new team address and add nicoo to
+      uploaders
+  * d/patches:
+    - Drop patch setting the project version - upstream fixed
+      it in meson.build
+  * d/rules:
+    - Set DEB_CFLAGS_MAINT_APPEND so we don't fail on deprecation warnings
+      This is a workaround for https://github.com/swaywm/sway/issues/4553
+  * d/gitlab-ci.yml:
+    - Added configuration file for gitlab ci
+
+ -- Birger Schacht <birger@rantanplan.org>  Fri, 27 Sep 2019 08:58:00 +0200
+
+sway (1.1.1-1) experimental; urgency=medium
+
+  * New upstream version (Closes: #927723)
+  * d/control:
+   - Add swaybg to dependencies as proposed by upstream
+     ("swaybg is a required dependency of sway")
+   - Add suckless-tools and x-terminal-emulator to Recommends,
+     because the default sway config uses dmenu(1) (Closes: #924063)
+   - Remove workaround for libwlroots run dependency from Depends:
+     field. Since libwlroots1 we can rely on dpkg-shlibdeps
+   - Make build-deps libsystemd-dev and libelogind-dev alternatives
+   - Set meson version for build-dep like upstream
+     does in meson.build (Closes: #927915)
+   - Add libgl1-mesa-dri as dependency (Closes: #927990)
+   - Set strict version of libwlroots dependency: the library breaks
+     ABI between versions so we need the right version for building sway
+   - Run wrap-and-sort on d/control
+   - Add missing build-dependencies: libevdev-dev, libpixman-1-dev,
+     libwayland-egl1 and libxbcommon-dev
+
+  * d/patches
+   - Add patch to install zsh completions into correct directory
+     (Closes: #922777)
+   - Add patch to replace urxvt in the default config file with
+     x-terminal-emulator
+   - Add patch to use the correct version string
+
+  * d/copyright
+   - Add missing files
+   - Bump copyright years on debian/
+
+  * d/sway.install
+   - Add directory for manpages in section 7
+   - Update path of zsh completions directory
+
+ -- Birger Schacht <birger@rantanplan.org>  Sun, 09 Jun 2019 07:38:17 +0200
+
+sway (1.0~rc3-1) experimental; urgency=medium
+
+  * New upstream version
+
+ -- Birger Schacht <birger@rantanplan.org>  Tue, 19 Feb 2019 13:28:38 +0100
+
+sway (1.0~rc2-1) experimental; urgency=medium
+
+  * New upstream version
+  * d/rules: remove sway_version argument, as the version
+    is now set in the build file
+
+ -- Birger Schacht <birger@rantanplan.org>  Tue, 12 Feb 2019 19:49:19 +0100
+
+sway (1.0~rc1-1) experimental; urgency=medium
+
+  * New upstream release
+  * Remove swaylock and swayidle: they are now separate packages
+  * Tidied up d/sway.install: now that swaylock and swayidle
+    are separate source packages, its easier to use wildcards
+  * Specify versioned build-dependencies as required by upstream.
+    Thus explicitly listing wayland-protocols and libsystemd as
+    build-dep with versions and adding versions to scdoc build-dep.
+  * Adding libelogind build-dep
+  * Bump version of libwlroots-dev build-dep
+  * Remove references to swaygrab (it was removed from the upstream
+    package; see grim(1) for an alternative)
+  * Update Recommends and Suggests: one of the sway wallpapers is
+    configured as background in the shipped config file, thus the
+    package containing the wallpapers is recommended. swayidle and
+    swaylock are also configured in the shipped config file, but
+    commented, thus they are only suggested
+  * Make versioned run dependency on libwlroots0 explicit
+
+ -- Birger Schacht <birger@rantanplan.org>  Sun, 10 Feb 2019 09:48:12 +0100
+
+sway (1.0~beta.2-3) experimental; urgency=medium
+
+  * Try upload again.
+
+ -- Birger Schacht <birger@rantanplan.org>  Thu, 31 Jan 2019 12:57:01 +0100
+
+sway (1.0~beta.2-2) experimental; urgency=medium
+
+  * Fixed license identifier in d/copyright
+
+ -- Birger Schacht <birger@rantanplan.org>  Wed, 30 Jan 2019 23:26:43 +0100
+
+sway (1.0~beta.2-1) experimental; urgency=medium
+
+  [ nicoo & Birger Schacht ]
+  * Initial packaging (Closes: 897246, 821397)
+
+ -- Birger Schacht <birger@rantanplan.org>  Wed, 30 Jan 2019 21:11:27 +0100

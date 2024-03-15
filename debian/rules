@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+export DH_VERBOSE=1
+export DH_OPTIONS=-v
+
+include /usr/share/dpkg/pkg-info.mk
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -Wno-error=deprecated-declarations
+
+%:
+	dh $@
+
+.PHONY: override_dh_auto_configure
+override_dh_auto_configure:
+	dh_auto_configure -- --libexecdir=lib
+
+.PHONY: override_dh_missing
+override_dh_missing:
+	dh_missing --fail-missing
+
+.PHONY: override_dh_install
+override_dh_install:
+	if ! dh_install; then \
+		tree debian/tmp;    \
+    exit 1;             \
+	fi
