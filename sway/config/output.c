@@ -503,25 +503,12 @@ static void queue_output_config(struct output_config *oc,
 	}
 }
 
-bool apply_output_config(struct output_config *oc, struct sway_output *output) {
+static bool finalize_output_config(struct output_config *oc, struct sway_output *output) {
 	if (output == root->fallback_output) {
 		return false;
 	}
 
 	struct wlr_output *wlr_output = output->wlr_output;
-
-	struct wlr_output_state pending = {0};
-	queue_output_config(oc, output, &pending);
-
-	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
-	if (!wlr_output_commit_state(wlr_output, &pending)) {
-		// Failed to commit output changes, maybe the output is missing a CRTC.
-		// Leave the output disabled for now and try again when the output gets
-		// the mode we asked for.
-		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
-		return false;
-	}
-
 	if (oc && !oc->enabled) {
 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
 		if (output->enabled) {
@@ -575,6 +562,30 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
 			oc->name, oc->max_render_time);
 		output->max_render_time = oc->max_render_time;
+	}
+
+	return true;
+}
+
+bool apply_output_config(struct output_config *oc, struct sway_output *output) {
+	if (output == root->fallback_output) {
+		return false;
+	}
+
+	struct wlr_output_state pending = {0};
+	queue_output_config(oc, output, &pending);
+
+	sway_log(SWAY_DEBUG, "Committing output %s", output->wlr_output->name);
+	if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+		// Failed to commit output changes, maybe the output is missing a CRTC.
+		// Leave the output disabled for now and try again when the output gets
+		// the mode we asked for.
+		sway_log(SWAY_ERROR, "Failed to commit output %s", output->wlr_output->name);
+		return false;
+	}
+
+	if (!finalize_output_config(oc, output)) {
+		return false;
 	}
 
 	// Reconfigure all devices, since input config may have been applied before
