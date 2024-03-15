@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_swapchain_manager.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
@@ -716,39 +717,138 @@ struct output_config *find_output_config(struct sway_output *output) {
 	return get_output_config(id, output);
 }
 
-void apply_output_config_to_outputs(struct output_config *oc) {
-	// Try to find the output container and apply configuration now. If
-	// this is during startup then there will be no container and config
-	// will be applied during normal "new output" event from wlroots.
-	bool wildcard = strcmp(oc->name, "*") == 0;
-	struct sway_output *sway_output, *tmp;
-	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		if (output_match_name_or_id(sway_output, oc->name)) {
-			char id[128];
-			output_get_identifier(id, sizeof(id), sway_output);
-			struct output_config *current = get_output_config(id, sway_output);
-			if (!current) {
-				// No stored output config matched, apply oc directly
-				sway_log(SWAY_DEBUG, "Applying oc directly");
-				current = new_output_config(oc->name);
-				merge_output_config(current, oc);
-			}
-			apply_output_config(current, sway_output);
-			free_output_config(current);
+bool apply_output_configs(struct matched_output_config *configs,
+		size_t configs_len, bool test_only) {
+	struct wlr_backend_output_state *states = calloc(configs_len, sizeof(*states));
+	if (!states) {
+		return false;
+	}
 
-			if (!wildcard) {
-				// Stop looking if the output config isn't applicable to all
-				// outputs
-				break;
-			}
+	sway_log(SWAY_DEBUG, "Committing %zd outputs", configs_len);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		struct wlr_backend_output_state *backend_state = &states[idx];
+
+		backend_state->output = cfg->output->wlr_output;
+		wlr_output_state_init(&backend_state->base);
+
+		sway_log(SWAY_DEBUG, "Preparing config for %s",
+			cfg->output->wlr_output->name);
+		queue_output_config(cfg->config, cfg->output, &backend_state->base);
+	}
+
+	struct wlr_output_swapchain_manager swapchain_mgr;
+	wlr_output_swapchain_manager_init(&swapchain_mgr, server.backend);
+
+	bool ok = wlr_output_swapchain_manager_prepare(&swapchain_mgr, states, configs_len);
+	if (!ok) {
+		sway_log(SWAY_ERROR, "Swapchain prepare failed");
+		goto out;
+	}
+
+	if (test_only) {
+		// The swapchain manager already did a test for us
+		goto out;
+	}
+
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		struct wlr_backend_output_state *backend_state = &states[idx];
+
+		struct wlr_scene_output_state_options opts = {
+			.swapchain = wlr_output_swapchain_manager_get_swapchain(
+				&swapchain_mgr, backend_state->output),
+		};
+		struct wlr_scene_output *scene_output = cfg->output->scene_output;
+		struct wlr_output_state *state = &backend_state->base;
+		if (!wlr_scene_output_build_state(scene_output, state, &opts)) {
+			sway_log(SWAY_ERROR, "Building output state for '%s' failed",
+				backend_state->output->name);
+			goto out;
 		}
 	}
+
+	ok = wlr_backend_commit(server.backend, states, configs_len);
+	if (!ok) {
+		sway_log(SWAY_ERROR, "Backend commit failed");
+		goto out;
+	}
+
+	sway_log(SWAY_DEBUG, "Commit of %zd outputs succeeded", configs_len);
+
+	wlr_output_swapchain_manager_apply(&swapchain_mgr);
+
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		sway_log(SWAY_DEBUG, "Finalizing config for %s",
+			cfg->output->wlr_output->name);
+		finalize_output_config(cfg->config, cfg->output);
+	}
+
+out:
+	wlr_output_swapchain_manager_finish(&swapchain_mgr);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct wlr_backend_output_state *backend_state = &states[idx];
+		wlr_output_state_finish(&backend_state->base);
+	}
+	free(states);
+
+	// Reconfigure all devices, since input config may have been applied before
+	// this output came online, and some config items (like map_to_output) are
+	// dependent on an output being present.
+	input_manager_configure_all_input_mappings();
+	// Reconfigure the cursor images, since the scale may have changed.
+	input_manager_configure_xcursor();
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 		cursor_rebase(seat->cursor);
 	}
+
+	return ok;
+}
+
+void apply_output_config_to_outputs(struct output_config *oc) {
+	size_t configs_len = wl_list_length(&root->all_outputs);
+	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
+	if (!configs) {
+		return;
+	}
+
+	// Try to find the output container and apply configuration now. If
+	// this is during startup then there will be no container and config
+	// will be applied during normal "new output" event from wlroots.
+	int config_idx = 0;
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
+		if (sway_output == root->fallback_output) {
+			configs_len--;
+			continue;
+		}
+
+		struct matched_output_config *config = &configs[config_idx++];
+		config->output = sway_output;
+		config->config = find_output_config(sway_output);
+
+		if (!output_match_name_or_id(sway_output, oc->name)) {
+			continue;
+		}
+
+		if (!config->config && oc) {
+			// No stored output config matched, apply oc directly
+			sway_log(SWAY_DEBUG, "Applying oc directly");
+			config->config = new_output_config(oc->name);
+			merge_output_config(config->config, oc);
+		}
+	}
+
+	apply_output_configs(configs, configs_len, false);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		free_output_config(cfg->config);
+	}
+	free(configs);
 }
 
 void reset_outputs(void) {

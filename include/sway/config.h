@@ -292,6 +292,14 @@ struct output_config {
 };
 
 /**
+ * An output config pre-matched to an output
+ */
+struct matched_output_config {
+	struct sway_output *output;
+	struct output_config *config;
+};
+
+/**
  * Stores size of gaps for each side
  */
 struct side_gaps {
@@ -683,6 +691,9 @@ struct output_config *new_output_config(const char *name);
 void merge_output_config(struct output_config *dst, struct output_config *src);
 
 bool apply_output_config(struct output_config *oc, struct sway_output *output);
+
+bool apply_output_configs(struct matched_output_config *configs,
+		size_t configs_len, bool test_only);
 
 bool test_output_config(struct output_config *oc, struct sway_output *output);
 
