@@ -693,7 +693,14 @@ bool apply_output_configs(struct matched_output_config *configs,
 
 void apply_all_output_configs(void);
 
-struct output_config *store_output_config(struct output_config *oc);
+/**
+ * store_output_config stores a new output config. An output may be matched by
+ * three different config types, in order of precedence: Identifier, name and
+ * wildcard. When storing a config type of lower precedence, assume that the
+ * user wants the config to take immediate effect by superseding (clearing) the
+ * same values from higher presedence configuration.
+ */
+void store_output_config(struct output_config *oc);
 
 struct output_config *find_output_config(struct sway_output *output);
 
