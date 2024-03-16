@@ -688,8 +688,6 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 
 struct output_config *new_output_config(const char *name);
 
-void merge_output_config(struct output_config *dst, struct output_config *src);
-
 bool apply_output_configs(struct matched_output_config *configs,
 		size_t configs_len, bool test_only);
 
