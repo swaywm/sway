@@ -568,36 +568,6 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	return true;
 }
 
-bool apply_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->fallback_output) {
-		return false;
-	}
-
-	struct wlr_output_state pending = {0};
-	queue_output_config(oc, output, &pending);
-
-	sway_log(SWAY_DEBUG, "Committing output %s", output->wlr_output->name);
-	if (!wlr_output_commit_state(output->wlr_output, &pending)) {
-		// Failed to commit output changes, maybe the output is missing a CRTC.
-		// Leave the output disabled for now and try again when the output gets
-		// the mode we asked for.
-		sway_log(SWAY_ERROR, "Failed to commit output %s", output->wlr_output->name);
-		return false;
-	}
-
-	if (!finalize_output_config(oc, output)) {
-		return false;
-	}
-
-	// Reconfigure all devices, since input config may have been applied before
-	// this output came online, and some config items (like map_to_output) are
-	// dependent on an output being present.
-	input_manager_configure_all_input_mappings();
-	// Reconfigure the cursor images, since the scale may have changed.
-	input_manager_configure_xcursor();
-	return true;
-}
-
 bool test_output_config(struct output_config *oc, struct sway_output *output) {
 	if (output == root->fallback_output) {
 		return false;
