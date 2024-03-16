@@ -568,16 +568,6 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	return true;
 }
 
-bool test_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->fallback_output) {
-		return false;
-	}
-
-	struct wlr_output_state pending = {0};
-	queue_output_config(oc, output, &pending);
-	return wlr_output_test_state(output->wlr_output, &pending);
-}
-
 static void default_output_config(struct output_config *oc,
 		struct wlr_output *wlr_output) {
 	oc->enabled = 1;
