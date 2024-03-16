@@ -29,7 +29,7 @@ struct cmd_results *output_cmd_toggle(int argc, char **argv) {
 		config->handler_context.output_config->enabled = 1;
 	}
 
-	free(oc);
+	free_output_config(oc);
 	config->handler_context.leftovers.argc = argc;
 	config->handler_context.leftovers.argv = argv;
 	return NULL;
