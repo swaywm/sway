@@ -807,59 +807,6 @@ void apply_all_output_configs(void) {
 	free(configs);
 }
 
-void apply_output_config_to_outputs(struct output_config *oc) {
-	size_t configs_len = wl_list_length(&root->all_outputs);
-	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
-	if (!configs) {
-		return;
-	}
-
-	// Try to find the output container and apply configuration now. If
-	// this is during startup then there will be no container and config
-	// will be applied during normal "new output" event from wlroots.
-	int config_idx = 0;
-	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root->all_outputs, link) {
-		if (sway_output == root->fallback_output) {
-			configs_len--;
-			continue;
-		}
-
-		struct matched_output_config *config = &configs[config_idx++];
-		config->output = sway_output;
-		config->config = find_output_config(sway_output);
-
-		if (!output_match_name_or_id(sway_output, oc->name)) {
-			continue;
-		}
-
-		if (!config->config && oc) {
-			// No stored output config matched, apply oc directly
-			sway_log(SWAY_DEBUG, "Applying oc directly");
-			config->config = new_output_config(oc->name);
-			merge_output_config(config->config, oc);
-		}
-	}
-
-	apply_output_configs(configs, configs_len, false);
-	for (size_t idx = 0; idx < configs_len; idx++) {
-		struct matched_output_config *cfg = &configs[idx];
-		free_output_config(cfg->config);
-	}
-	free(configs);
-}
-
-void reset_outputs(void) {
-	struct output_config *oc = NULL;
-	int i = list_seq_find(config->output_configs, output_name_cmp, "*");
-	if (i >= 0) {
-		oc = config->output_configs->items[i];
-	} else {
-		oc = store_output_config(new_output_config("*"));
-	}
-	apply_output_config_to_outputs(oc);
-}
-
 void free_output_config(struct output_config *oc) {
 	if (!oc) {
 		return;
