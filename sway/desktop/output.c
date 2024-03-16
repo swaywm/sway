@@ -550,63 +550,88 @@ void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
 	wlr_output_schedule_frame(output->wlr_output);
 }
 
+static struct output_config *output_config_for_config_head(
+		struct wlr_output_configuration_head_v1 *config_head,
+		struct sway_output *output) {
+	struct output_config *oc = new_output_config(output->wlr_output->name);
+	oc->enabled = config_head->state.enabled;
+	if (!oc->enabled) {
+		return oc;
+	}
+
+	if (config_head->state.mode != NULL) {
+		struct wlr_output_mode *mode = config_head->state.mode;
+		oc->width = mode->width;
+		oc->height = mode->height;
+		oc->refresh_rate = mode->refresh / 1000.f;
+	} else {
+		oc->width = config_head->state.custom_mode.width;
+		oc->height = config_head->state.custom_mode.height;
+		oc->refresh_rate =
+			config_head->state.custom_mode.refresh / 1000.f;
+	}
+	oc->x = config_head->state.x;
+	oc->y = config_head->state.y;
+	oc->transform = config_head->state.transform;
+	oc->scale = config_head->state.scale;
+	oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
+	return oc;
+}
+
 static void output_manager_apply(struct sway_server *server,
 		struct wlr_output_configuration_v1 *config, bool test_only) {
-	// TODO: perform atomic tests on the whole backend atomically
+	size_t configs_len = wl_list_length(&root->all_outputs);
+	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
+	if (!configs) {
+		return;
+	}
 
-	struct wlr_output_configuration_head_v1 *config_head;
-	// First disable outputs we need to disable
-	bool ok = true;
-	wl_list_for_each(config_head, &config->heads, link) {
-		struct wlr_output *wlr_output = config_head->state.output;
-		struct sway_output *output = wlr_output->data;
-		if (!output->enabled || config_head->state.enabled) {
+	int config_idx = 0;
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
+		if (sway_output == root->fallback_output) {
+			configs_len--;
 			continue;
 		}
-		struct output_config *oc = new_output_config(output->wlr_output->name);
-		oc->enabled = false;
 
-		if (test_only) {
-			ok &= test_output_config(oc, output);
-		} else {
-			oc = store_output_config(oc);
-			ok &= apply_output_config(oc, output);
+		struct matched_output_config *cfg = &configs[config_idx++];
+		cfg->output = sway_output;
+
+		struct wlr_output_configuration_head_v1 *config_head;
+		wl_list_for_each(config_head, &config->heads, link) {
+			if (config_head->state.output == sway_output->wlr_output) {
+				cfg->config = output_config_for_config_head(config_head, sway_output);
+				break;
+			}
+		}
+		if (!cfg->config) {
+			cfg->config = find_output_config(sway_output);
 		}
 	}
 
-	// Then enable outputs that need to
-	wl_list_for_each(config_head, &config->heads, link) {
-		struct wlr_output *wlr_output = config_head->state.output;
-		struct sway_output *output = wlr_output->data;
-		if (!config_head->state.enabled) {
-			continue;
-		}
-		struct output_config *oc = new_output_config(output->wlr_output->name);
-		oc->enabled = true;
-		if (config_head->state.mode != NULL) {
-			struct wlr_output_mode *mode = config_head->state.mode;
-			oc->width = mode->width;
-			oc->height = mode->height;
-			oc->refresh_rate = mode->refresh / 1000.f;
-		} else {
-			oc->width = config_head->state.custom_mode.width;
-			oc->height = config_head->state.custom_mode.height;
-			oc->refresh_rate =
-				config_head->state.custom_mode.refresh / 1000.f;
-		}
-		oc->x = config_head->state.x;
-		oc->y = config_head->state.y;
-		oc->transform = config_head->state.transform;
-		oc->scale = config_head->state.scale;
-		oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
+	bool ok = apply_output_configs(configs, configs_len, test_only);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
 
-		if (test_only) {
-			ok &= test_output_config(oc, output);
+		// Only store new configs for successful non-test commits. Old configs,
+		// test-only and failed commits just get freed.
+		bool store_config = false;
+		if (!test_only && ok) {
+			struct wlr_output_configuration_head_v1 *config_head;
+			wl_list_for_each(config_head, &config->heads, link) {
+				if (config_head->state.output == sway_output->wlr_output) {
+					store_config = true;
+					break;
+				}
+			}
+		}
+		if (store_config) {
+			store_output_config(cfg->config);
 		} else {
-			oc = store_output_config(oc);
-			ok &= apply_output_config(oc, output);
+			free_output_config(cfg->config);
 		}
 	}
+	free(configs);
 
 	if (ok) {
 		wlr_output_configuration_v1_send_succeeded(config);
