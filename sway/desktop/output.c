@@ -521,9 +521,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		sway_session_lock_add_output(server->session_lock.lock, output);
 	}
 
-	struct output_config *oc = find_output_config(output);
-	apply_output_config(oc, output);
-	free_output_config(oc);
+	apply_all_output_configs();
 
 	transaction_commit_dirty();
 
@@ -652,6 +650,6 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 		oc->power = 1;
 		break;
 	}
-	oc = store_output_config(oc);
-	apply_output_config(oc, output);
+	store_output_config(oc);
+	apply_all_output_configs();
 }
