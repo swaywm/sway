@@ -81,51 +81,22 @@ struct output_config *new_output_config(const char *name) {
 
 // supersede_output_config clears all fields in dst that were set in src
 static void supersede_output_config(struct output_config *dst, struct output_config *src) {
-	if (src->enabled != -1) {
-		dst->enabled = -1;
-	}
-	if (src->width != -1) {
-		dst->width = -1;
-	}
-	if (src->height != -1) {
-		dst->height = -1;
-	}
-	if (src->x != -1) {
-		dst->x = -1;
-	}
-	if (src->y != -1) {
-		dst->y = -1;
-	}
-	if (src->scale != -1) {
-		dst->scale = -1;
-	}
-	if (src->scale_filter != SCALE_FILTER_DEFAULT) {
-		dst->scale_filter = SCALE_FILTER_DEFAULT;
-	}
-	if (src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
-		dst->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
-	}
-	if (src->refresh_rate != -1) {
-		dst->refresh_rate = -1;
-	}
-	if (src->custom_mode != -1) {
-		dst->custom_mode = -1;
-	}
-	if (src->drm_mode.type != (uint32_t) -1) {
-		dst->drm_mode.type = -1;
-	}
-	if (src->transform != -1) {
-		dst->transform = -1;
-	}
-	if (src->max_render_time != -1) {
-		dst->max_render_time = -1;
-	}
-	if (src->adaptive_sync != -1) {
-		dst->adaptive_sync = -1;
-	}
-	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
-		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
-	}
+	dst->enabled = src->enabled != -1 ? -1 : dst->enabled;
+	dst->width = src->width != -1 ? -1 : dst->width;
+	dst->height = src->height != -1 ? -1 : dst->height;
+	dst->x = src->x != -1 ? -1 : dst->x;
+	dst->y = src->y != -1 ? -1 : dst->y;
+	dst->scale = src->scale != -1 ? -1 : dst->scale;
+	dst->scale_filter = src->scale_filter != SCALE_FILTER_DEFAULT ? SCALE_FILTER_DEFAULT : dst->scale_filter;
+	dst->subpixel = src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN ? WL_OUTPUT_SUBPIXEL_UNKNOWN : dst->subpixel;
+	dst->refresh_rate = src->refresh_rate != -1 ? -1 : dst->refresh_rate;
+	dst->custom_mode = src->custom_mode != -1 ? -1 : dst->custom_mode;
+	dst->transform = src->transform != -1 ? -1 : dst->transform;
+	dst->max_render_time = src->max_render_time != -1 ? -1 : dst->max_render_time;
+	dst->adaptive_sync = src->adaptive_sync != -1 ? -1 : dst->adaptive_sync;
+	dst->render_bit_depth = src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT ? RENDER_BIT_DEPTH_DEFAULT : dst->render_bit_depth;
+	dst->power = src->power != -1 ? -1 : dst->power;
+
 	if (src->background) {
 		free(dst->background);
 		dst->background = NULL;
@@ -138,57 +109,28 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 		free(dst->background_fallback);
 		dst->background_fallback = NULL;
 	}
-	if (src->power != -1) {
-		dst->power = -1;
-	}
 }
 
 // merge_output_config sets all fields in dst that were set in src
 static void merge_output_config(struct output_config *dst, struct output_config *src) {
-	if (src->enabled != -1) {
-		dst->enabled = src->enabled;
-	}
-	if (src->width != -1) {
-		dst->width = src->width;
-	}
-	if (src->height != -1) {
-		dst->height = src->height;
-	}
-	if (src->x != -1) {
-		dst->x = src->x;
-	}
-	if (src->y != -1) {
-		dst->y = src->y;
-	}
-	if (src->scale != -1) {
-		dst->scale = src->scale;
-	}
-	if (src->scale_filter != SCALE_FILTER_DEFAULT) {
-		dst->scale_filter = src->scale_filter;
-	}
-	if (src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
-		dst->subpixel = src->subpixel;
-	}
-	if (src->refresh_rate != -1) {
-		dst->refresh_rate = src->refresh_rate;
-	}
-	if (src->custom_mode != -1) {
-		dst->custom_mode = src->custom_mode;
-	}
+	dst->enabled = src->enabled != -1 ? src->enabled : dst->enabled;
+	dst->width = src->width != -1 ? src->width : dst->width;
+	dst->height = src->height != -1 ? src->height : dst->height;
+	dst->x = src->x != -1 ? src->x : dst->x;
+	dst->y = src->y != -1 ? src->y : dst->y;
+	dst->scale = src->scale != -1 ? src->scale : dst->scale;
+	dst->scale_filter = src->scale_filter != SCALE_FILTER_DEFAULT ? src->scale_filter : dst->scale_filter;
+	dst->subpixel = src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN ? src->subpixel : dst->subpixel;
+	dst->refresh_rate = src->refresh_rate != -1 ? src->refresh_rate : dst->refresh_rate;
+	dst->custom_mode = src->custom_mode != -1 ? src->custom_mode : dst->custom_mode;
+	dst->transform = src->transform != -1 ? src->transform : dst->transform;
+	dst->max_render_time = src->max_render_time != -1 ? src->max_render_time : dst->max_render_time;
+	dst->adaptive_sync = src->adaptive_sync != -1 ? src->adaptive_sync : dst->adaptive_sync;
+	dst->render_bit_depth = src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT ? src->render_bit_depth : dst->render_bit_depth;
+	dst->power = src->power != -1 ? src->power : dst->power;
+
 	if (src->drm_mode.type != (uint32_t) -1) {
 		memcpy(&dst->drm_mode, &src->drm_mode, sizeof(src->drm_mode));
-	}
-	if (src->transform != -1) {
-		dst->transform = src->transform;
-	}
-	if (src->max_render_time != -1) {
-		dst->max_render_time = src->max_render_time;
-	}
-	if (src->adaptive_sync != -1) {
-		dst->adaptive_sync = src->adaptive_sync;
-	}
-	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
-		dst->render_bit_depth = src->render_bit_depth;
 	}
 	if (src->background) {
 		free(dst->background);
@@ -201,9 +143,6 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	if (src->background_fallback) {
 		free(dst->background_fallback);
 		dst->background_fallback = strdup(src->background_fallback);
-	}
-	if (src->power != -1) {
-		dst->power = src->power;
 	}
 }
 
