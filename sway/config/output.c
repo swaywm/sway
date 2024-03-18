@@ -383,7 +383,7 @@ static const uint32_t *bit_depth_preferences[] = {
 	},
 };
 
-static void queue_output_config(struct output_config *oc,
+void queue_output_config(struct output_config *oc,
 		struct sway_output *output, struct wlr_output_state *pending) {
 	if (output == root->fallback_output) {
 		return;
@@ -511,6 +511,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	struct wlr_output_state pending = {0};
+	wlr_output_state_init(&pending, output->wlr_output);
 	queue_output_config(oc, output, &pending);
 
 	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
@@ -584,16 +585,6 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	// Reconfigure the cursor images, since the scale may have changed.
 	input_manager_configure_xcursor();
 	return true;
-}
-
-bool test_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->fallback_output) {
-		return false;
-	}
-
-	struct wlr_output_state pending = {0};
-	queue_output_config(oc, output, &pending);
-	return wlr_output_test_state(output->wlr_output, &pending);
 }
 
 static void default_output_config(struct output_config *oc,
