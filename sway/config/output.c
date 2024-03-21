@@ -273,6 +273,9 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 		}
 	}
 	if (best) {
+		if (best == output->current_mode) {
+			return;
+		}
 		sway_log(SWAY_INFO, "Assigning configured mode (%dx%d@%.3fHz) to %s",
 			best->width, best->height, best->refresh / 1000.f, output->name);
 	} else {
@@ -292,14 +295,42 @@ static void set_modeline(struct wlr_output *output,
 		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 		return;
 	}
-	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
-	if (mode) {
+	if (mode && output->current_mode != mode) {
+		sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 		wlr_output_state_set_mode(pending, mode);
 	}
 #else
 	sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 #endif
+}
+
+static void set_preferred_mode(struct wlr_output *wlr_output,
+		struct wlr_output_state *pending) {
+	struct wlr_output_mode *preferred_mode =
+		wlr_output_preferred_mode(wlr_output);
+	if (wlr_output->current_mode == preferred_mode) {
+		return;
+	}
+
+	sway_log(SWAY_DEBUG, "Set %s preferred mode", wlr_output->name);
+	wlr_output_state_set_mode(pending, preferred_mode);
+
+	if (!wlr_output_test_state(wlr_output, pending)) {
+		sway_log(SWAY_DEBUG, "Preferred mode rejected, "
+			"falling back to another mode");
+		struct wlr_output_mode *mode;
+		wl_list_for_each(mode, &wlr_output->modes, link) {
+			if (mode == preferred_mode) {
+				continue;
+			}
+
+			wlr_output_state_set_mode(pending, mode);
+			if (wlr_output_test_state(wlr_output, pending)) {
+				break;
+			}
+		}
+	}
 }
 
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
@@ -391,14 +422,18 @@ static void queue_output_config(struct output_config *oc,
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (oc && (!oc->enabled || oc->power == 0)) {
-		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
-		wlr_output_state_set_enabled(pending, false);
-		return;
+	pending->allow_reconfiguration = true;
+
+	bool enabled = !oc || (oc->enabled != 0 && oc->power != 0);
+	if (wlr_output->enabled != enabled) {
+		sway_log(SWAY_DEBUG, "Turning %s output %s",
+			enabled ? "on" : "off", wlr_output->name);
+		wlr_output_state_set_enabled(pending, enabled);
 	}
 
-	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
-	wlr_output_state_set_enabled(pending, true);
+	if (!enabled) {
+		return;
+	}
 
 	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
 		sway_log(SWAY_DEBUG, "Set %s modeline",
@@ -410,26 +445,7 @@ static void queue_output_config(struct output_config *oc,
 		set_mode(wlr_output, pending, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		sway_log(SWAY_DEBUG, "Set preferred mode");
-		struct wlr_output_mode *preferred_mode =
-			wlr_output_preferred_mode(wlr_output);
-		wlr_output_state_set_mode(pending, preferred_mode);
-
-		if (!wlr_output_test_state(wlr_output, pending)) {
-			sway_log(SWAY_DEBUG, "Preferred mode rejected, "
-				"falling back to another mode");
-			struct wlr_output_mode *mode;
-			wl_list_for_each(mode, &wlr_output->modes, link) {
-				if (mode == preferred_mode) {
-					continue;
-				}
-
-				wlr_output_state_set_mode(pending, mode);
-				if (wlr_output_test_state(wlr_output, pending)) {
-					break;
-				}
-			}
-		}
+		set_preferred_mode(wlr_output, pending);
 	}
 
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
@@ -476,7 +492,8 @@ static void queue_output_config(struct output_config *oc,
 		wlr_output_state_set_scale(pending, scale);
 	}
 
-	if (oc && oc->adaptive_sync != -1) {
+	bool cur_adaptive_sync = wlr_output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
+	if (oc && oc->adaptive_sync != -1 && oc->adaptive_sync != cur_adaptive_sync) {
 		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
 			oc->adaptive_sync);
 		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
@@ -513,8 +530,17 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output_state pending = {0};
 	queue_output_config(oc, output, &pending);
 
-	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
-	if (!wlr_output_commit_state(wlr_output, &pending)) {
+	sway_log(SWAY_DEBUG, "HEY 0x%x", pending.committed);
+
+	bool ok;
+	if (pending.committed == 0 && wlr_output->commit_seq != 0) {
+		sway_log(SWAY_DEBUG, "Skipping no-op commit for output %s", wlr_output->name);
+		ok = true;
+	} else {
+		sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
+		ok = wlr_output_commit_state(wlr_output, &pending);
+	}
+	if (!ok) {
 		// Failed to commit output changes, maybe the output is missing a CRTC.
 		// Leave the output disabled for now and try again when the output gets
 		// the mode we asked for.
