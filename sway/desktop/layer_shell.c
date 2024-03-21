@@ -233,19 +233,33 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		wlr_scene_node_reparent(&surface->scene->tree->node, output_layer);
 	}
 
+	bool commit = false;
 	if (layer_surface->initial_commit || committed || layer_surface->surface->mapped != surface->mapped) {
 		surface->mapped = layer_surface->surface->mapped;
 		arrange_layers(surface->output);
+		commit = true;
+	}
+
+	if (layer_surface->current.keyboard_interactive ==
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
+		struct sway_seat *seat;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			seat_set_focus_layer(seat, layer_surface);
+		}
+		commit = true;
+	}
+
+	if (commit) {
 		transaction_commit_dirty();
 	}
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
-	struct sway_layer_surface *surface = wl_container_of(listener,
-			surface, map);
+	struct sway_layer_surface *surface = wl_container_of(listener, surface, map);
+	struct wlr_layer_surface_v1 *layer_surface = surface->scene->layer_surface;
 
-	struct wlr_layer_surface_v1 *layer_surface =
-				surface->scene->layer_surface;
+	bool exclusive = layer_surface->current.keyboard_interactive ==
+		ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE;
 
 	// focus on new surface
 	if (layer_surface->current.keyboard_interactive &&
@@ -254,12 +268,15 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		struct sway_seat *seat;
 		wl_list_for_each(seat, &server.input->seats, link) {
 			// but only if the currently focused layer has a lower precedence
-			if (!seat->focused_layer ||
-					seat->focused_layer->current.layer >= layer_surface->current.layer) {
+			if (!seat->focused_layer || exclusive || (
+					seat->focused_layer->current.keyboard_interactive !=
+						ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
+					seat->focused_layer->current.layer >= layer_surface->current.layer)) {
 				seat_set_focus_layer(seat, layer_surface);
 			}
 		}
 		arrange_layers(surface->output);
+		transaction_commit_dirty();
 	}
 
 	cursor_rebase_all();
