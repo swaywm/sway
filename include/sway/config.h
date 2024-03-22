@@ -285,6 +285,7 @@ struct output_config {
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
+	enum wlr_output_color_format color_format;
 
 	char *background;
 	char *background_option;

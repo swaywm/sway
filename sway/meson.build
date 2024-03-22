@@ -202,6 +202,7 @@ sway_sources = files(
 	'commands/output/toggle.c',
 	'commands/output/transform.c',
 	'commands/output/unplug.c',
+	'commands/output/color_format.c',
 
 	'tree/arrange.c',
 	'tree/container.c',
