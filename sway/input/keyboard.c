@@ -32,6 +32,7 @@ static struct modifier_key {
 	{ XKB_MOD_NAME_NUM, WLR_MODIFIER_MOD2 },
 	{ "Mod3", WLR_MODIFIER_MOD3 },
 	{ XKB_MOD_NAME_LOGO, WLR_MODIFIER_LOGO },
+	{ "Super", WLR_MODIFIER_LOGO },
 	{ "Mod5", WLR_MODIFIER_MOD5 },
 };
 
