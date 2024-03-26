@@ -230,7 +230,10 @@ void cursor_notify_key_press(struct sway_cursor *cursor) {
 	}
 
 	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_ENABLE) {
-		cursor_hide(cursor);
+		if (cursor->pressed_button_count == 0) {
+			// Do not hide cursor unless all buttons are released
+			cursor_hide(cursor);
+		}
 	}
 }
 
