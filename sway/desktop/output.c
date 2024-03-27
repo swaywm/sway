@@ -365,6 +365,26 @@ static void update_output_manager_config(struct sway_server *server) {
 	ipc_event_output();
 }
 
+static int timer_modeset_handle(void *data) {
+	struct sway_server *server = data;
+	wl_event_source_remove(server->delayed_modeset);
+	server->delayed_modeset = NULL;
+
+	apply_all_output_configs();
+	transaction_commit_dirty();
+	update_output_manager_config(server);
+
+	return 0;
+}
+
+static void request_modeset(struct sway_server *server) {
+	if (server->delayed_modeset == NULL) {
+		server->delayed_modeset = wl_event_loop_add_timer(server->wl_event_loop,
+			timer_modeset_handle, server);
+		wl_event_source_timer_update(server->delayed_modeset, 10);
+	}
+}
+
 static void begin_destroy(struct sway_output *output) {
 	struct sway_server *server = output->server;
 
@@ -388,9 +408,7 @@ static void begin_destroy(struct sway_output *output) {
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
 
-	transaction_commit_dirty();
-
-	update_output_manager_config(server);
+	request_modeset(server);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -524,11 +542,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		sway_session_lock_add_output(server->session_lock.lock, output);
 	}
 
-	apply_all_output_configs();
-
-	transaction_commit_dirty();
-
-	update_output_manager_config(server);
+	request_modeset(server);
 }
 
 void handle_output_layout_change(struct wl_listener *listener,
@@ -680,5 +694,5 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 		break;
 	}
 	store_output_config(oc);
-	apply_all_output_configs();
+	request_modeset(output->server);
 }
