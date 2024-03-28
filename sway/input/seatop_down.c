@@ -20,6 +20,7 @@ struct seatop_down_event {
 	struct sway_seat *seat;
 	struct wl_listener surface_destroy;
 	struct wlr_surface *surface;
+	struct wlr_seat_client *seat_client;
 	double ref_lx, ref_ly;         // cursor's x/y at start of op
 	double ref_con_lx, ref_con_ly; // container's x/y at start of op
 	struct wl_list point_events;   // seatop_touch_point_event::link
@@ -116,8 +117,8 @@ static void handle_touch_cancel(struct sway_seat *seat,
 		}
 	}
 
-	if (e->surface) {
-		wlr_seat_touch_notify_cancel(seat->wlr_seat, e->surface);
+	if (e->seat_client) {
+		wlr_seat_touch_notify_cancel(seat->wlr_seat, e->seat_client);
 	}
 
 	if (wl_list_empty(&e->point_events)) {
@@ -256,4 +257,10 @@ void seatop_begin_down_on_surface(struct sway_seat *seat,
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
+
+	if (surface) {
+		struct wl_client *client = wl_resource_get_client(surface->resource);
+		e->seat_client = wlr_seat_client_for_wl_client(
+			seat->wlr_seat, client);
+	}
 }
