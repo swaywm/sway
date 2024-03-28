@@ -609,7 +609,8 @@ static void output_manager_apply(struct sway_server *server,
 		}
 	}
 
-	bool ok = apply_output_configs(configs, configs_len, test_only);
+	sort_output_configs_by_priority(configs, configs_len);
+	bool ok = apply_output_configs(configs, configs_len, test_only, false);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 

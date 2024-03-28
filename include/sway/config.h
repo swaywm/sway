@@ -689,9 +689,12 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 struct output_config *new_output_config(const char *name);
 
 bool apply_output_configs(struct matched_output_config *configs,
-		size_t configs_len, bool test_only);
+		size_t configs_len, bool test_only, bool degrade_to_off);
 
 void apply_all_output_configs(void);
+
+void sort_output_configs_by_priority(struct matched_output_config *configs,
+		size_t configs_len);
 
 /**
  * store_output_config stores a new output config. An output may be matched by
