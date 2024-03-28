@@ -795,10 +795,26 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 	if (!handled) {
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-			event->orientation, scroll_factor * event->delta, 
+			event->orientation, scroll_factor * event->delta,
 			roundf(scroll_factor * event->delta_discrete), event->source,
 			event->relative_direction);
 	}
+}
+
+static void handle_tablet_tool_axis_scroll(struct sway_seat *seat,
+		struct sway_tablet_tool *tool, struct wlr_tablet_tool_axis_scroll_event *event) {
+	// FIXME: Do nothing except pass it to clients for now
+	struct sway_input_device *input_device =
+		event->tablet ? event->tablet->base.data : NULL;
+	struct input_config *ic =
+		input_device ? input_device_get_config(input_device) : NULL;
+	float scroll_factor =
+		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
+
+	wlr_tablet_v2_tablet_tool_notify_scroll(tool->tablet_v2_tool, event->time_msec,
+			event->orientation, scroll_factor * event->delta,
+			event->source,
+			event->relative_direction);
 }
 
 /*------------------------------------\
@@ -1128,6 +1144,7 @@ static const struct sway_seatop_impl seatop_impl = {
 	.pointer_axis = handle_pointer_axis,
 	.tablet_tool_tip = handle_tablet_tool_tip,
 	.tablet_tool_motion = handle_tablet_tool_motion,
+	.tablet_tool_axis_scroll = handle_tablet_tool_axis_scroll,
 	.hold_begin = handle_hold_begin,
 	.hold_end = handle_hold_end,
 	.pinch_begin = handle_pinch_begin,
