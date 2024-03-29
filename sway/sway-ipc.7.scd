@@ -1046,7 +1046,7 @@ An object with a single string property containing the contents of the config
 *Example Reply:*
 ```
 {
-	"config": "set $mod Mod4\nbindsym $mod+q exit\n"
+	"config": "set $mod Mod4\\nbindsym $mod+q exit\\n"
 }
 ```
 
