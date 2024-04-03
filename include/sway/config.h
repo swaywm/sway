@@ -292,6 +292,14 @@ struct output_config {
 };
 
 /**
+ * An output config pre-matched to an output
+ */
+struct matched_output_config {
+	struct sway_output *output;
+	struct output_config *config;
+};
+
+/**
  * Stores size of gaps for each side
  */
 struct side_gaps {
@@ -680,19 +688,14 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 
 struct output_config *new_output_config(const char *name);
 
-void merge_output_config(struct output_config *dst, struct output_config *src);
+bool apply_output_configs(struct matched_output_config *configs,
+		size_t configs_len, bool test_only);
 
-bool apply_output_config(struct output_config *oc, struct sway_output *output);
-
-bool test_output_config(struct output_config *oc, struct sway_output *output);
+void apply_all_output_configs(void);
 
 struct output_config *store_output_config(struct output_config *oc);
 
 struct output_config *find_output_config(struct sway_output *output);
-
-void apply_output_config_to_outputs(struct output_config *oc);
-
-void reset_outputs(void);
 
 void free_output_config(struct output_config *oc);
 

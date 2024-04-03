@@ -65,7 +65,7 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
-#define SWAY_XDG_SHELL_VERSION 2
+#define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 
@@ -112,7 +112,8 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.session_lock.manager->global ||
 		global == server.input->keyboard_shortcuts_inhibit->global ||
 		global == server.input->virtual_keyboard->global ||
-		global == server.input->virtual_pointer->global;
+		global == server.input->virtual_pointer->global ||
+		global == server.input->transient_seat_manager->global;
 }
 
 static bool filter_global(const struct wl_client *client,
@@ -172,6 +173,45 @@ static void detect_proprietary(struct wlr_backend *backend, void *data) {
 	drmFreeVersion(version);
 }
 
+static void handle_renderer_lost(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+
+	sway_log(SWAY_INFO, "Re-creating renderer after GPU reset");
+
+	struct wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
+	if (renderer == NULL) {
+		sway_log(SWAY_ERROR, "Unable to create renderer");
+		return;
+	}
+
+	struct wlr_allocator *allocator =
+		wlr_allocator_autocreate(server->backend, renderer);
+	if (allocator == NULL) {
+		sway_log(SWAY_ERROR, "Unable to create allocator");
+		wlr_renderer_destroy(renderer);
+		return;
+	}
+
+	struct wlr_renderer *old_renderer = server->renderer;
+	struct wlr_allocator *old_allocator = server->allocator;
+	server->renderer = renderer;
+	server->allocator = allocator;
+
+	wl_list_remove(&server->renderer_lost.link);
+	wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
+
+	wlr_compositor_set_renderer(server->compositor, renderer);
+
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		wlr_output_init_render(output->wlr_output,
+			server->allocator, server->renderer);
+	}
+
+	wlr_allocator_destroy(old_allocator);
+	wlr_renderer_destroy(old_renderer);
+}
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
@@ -194,6 +234,9 @@ bool server_init(struct sway_server *server) {
 		sway_log(SWAY_ERROR, "Failed to create renderer");
 		return false;
 	}
+
+	server->renderer_lost.notify = handle_renderer_lost;
+	wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
 
 	wlr_renderer_init_wl_shm(server->renderer, server->wl_display);
 
@@ -399,6 +442,7 @@ void server_fini(struct sway_server *server) {
 	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 #endif
 	wl_display_destroy_clients(server->wl_display);
+	wlr_backend_destroy(server->backend);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
 }
