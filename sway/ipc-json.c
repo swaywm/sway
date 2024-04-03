@@ -549,7 +549,7 @@ static void get_deco_rect(struct sway_container *c, struct wlr_box *deco_rect) {
 		deco_rect->y = c->pending.y - c->pending.workspace->y;
 	}
 	deco_rect->width = c->pending.width;
-	deco_rect->height = container_titlebar_height();
+	deco_rect->height = container_titlebar_height(c);
 
 	if (!container_is_floating(c)) {
 		if (parent_layout == L_TABBED) {

@@ -332,7 +332,7 @@ void container_arrange_title_bar(struct sway_container *con) {
 	enum alignment title_align = config->title_align;
 	int marks_buffer_width = 0;
 	int width = con->title_width;
-	int height = container_titlebar_height();
+	int height = container_titlebar_height(con);
 
 	pixman_region32_t text_area;
 	pixman_region32_init(&text_area);
@@ -721,8 +721,13 @@ void container_update_representation(struct sway_container *con) {
 	}
 }
 
-size_t container_titlebar_height(void) {
-	return config->font_height + config->titlebar_v_padding * 2;
+size_t container_titlebar_height(struct sway_container *con) {
+	if(con != NULL && con->pending.border == B_NORMAL)
+	{
+		return config->font_height + config->titlebar_v_padding * 2;
+	} else {
+		return 0;
+	}
 }
 
 void floating_calculate_constraints(int *min_width, int *max_width,
@@ -977,7 +982,7 @@ void container_set_geometry_from_content(struct sway_container *con) {
 	if (con->pending.border != B_CSD && !con->pending.fullscreen_mode) {
 		border_width = con->pending.border_thickness * (con->pending.border != B_NONE);
 		top = con->pending.border == B_NORMAL ?
-			container_titlebar_height() : border_width;
+			container_titlebar_height(con) : border_width;
 	}
 
 	con->pending.x = con->pending.content_x - border_width;

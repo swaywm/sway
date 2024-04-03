@@ -316,10 +316,10 @@ void view_autoconfigure(struct sway_view *view) {
 		if (show_titlebar) {
 			enum sway_container_layout layout = container_parent_layout(con);
 			if (layout == L_TABBED) {
-				y_offset = container_titlebar_height();
+				y_offset = container_titlebar_height(con);
 				con->pending.border_top = false;
 			} else if (layout == L_STACKED) {
-				y_offset = container_titlebar_height() * siblings->length;
+				y_offset = container_titlebar_height(con) * siblings->length;
 				con->pending.border_top = false;
 			}
 		}
@@ -356,8 +356,8 @@ void view_autoconfigure(struct sway_view *view) {
 			height = con->pending.height - y_offset
 				- con->pending.border_thickness * con->pending.border_bottom;
 		} else {
-			y = con->pending.y + container_titlebar_height();
-			height = con->pending.height - container_titlebar_height()
+			y = con->pending.y + container_titlebar_height(con);
+			height = con->pending.height - container_titlebar_height(con)
 				- con->pending.border_thickness * con->pending.border_bottom;
 		}
 		break;

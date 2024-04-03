@@ -193,7 +193,7 @@ void container_update_representation(struct sway_container *container);
 /**
  * Return the height of a regular title bar.
  */
-size_t container_titlebar_height(void);
+size_t container_titlebar_height(struct sway_container *container);
 
 void floating_calculate_constraints(int *min_width, int *max_width,
 		int *min_height, int *max_height);
