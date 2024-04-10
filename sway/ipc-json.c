@@ -992,6 +992,18 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		}
 		json_object_object_add(object, "click_method",
 				json_object_new_string(click_method));
+
+		const char *button_map = "unknown";
+		switch (libinput_device_config_click_get_clickfinger_button_map(device)) {
+		case LIBINPUT_CONFIG_CLICKFINGER_MAP_LRM:
+			button_map = "lrm";
+			break;
+		case LIBINPUT_CONFIG_CLICKFINGER_MAP_LMR:
+			button_map = "lmr";
+			break;
+		}
+		json_object_object_add(object, "clickfinger_button_map",
+				json_object_new_string(button_map));
 	}
 
 	if (libinput_device_config_middle_emulation_is_available(device)) {
@@ -1109,9 +1121,9 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		struct xkb_keymap *keymap = keyboard->keymap;
 		struct xkb_state *state = keyboard->xkb_state;
 
-		json_object_object_add(object, "repeat_delay", 
+		json_object_object_add(object, "repeat_delay",
 			json_object_new_int(keyboard->repeat_info.delay));
-		json_object_object_add(object, "repeat_rate", 
+		json_object_object_add(object, "repeat_rate",
 			json_object_new_int(keyboard->repeat_info.rate));
 
 		json_object *layouts_arr = json_object_new_array();
