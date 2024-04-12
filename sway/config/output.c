@@ -211,10 +211,6 @@ void store_output_config(struct output_config *oc) {
 	bool merged = false;
 	bool wildcard = strcmp(oc->name, "*") == 0;
 	struct sway_output *output = wildcard ? NULL : output_by_name_or_id(oc->name);
-	if (!output && !wildcard) {
-		// There is no config by this name, just add it in
-		goto done;
-	}
 
 	char id[128];
 	if (output) {
@@ -249,7 +245,6 @@ void store_output_config(struct output_config *oc) {
 		}
 	}
 
-done:
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
 		"(max render time: %d)",
