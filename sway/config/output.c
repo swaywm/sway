@@ -217,7 +217,10 @@ void store_output_config(struct output_config *oc) {
 	}
 
 	char id[128];
-	output_get_identifier(id, sizeof(id), output);
+	if (output) {
+		output_get_identifier(id, sizeof(id), output);
+	}
+
 	for (int i = 0; i < config->output_configs->length; i++) {
 		struct output_config *old = config->output_configs->items[i];
 
@@ -240,7 +243,7 @@ void store_output_config(struct output_config *oc) {
 
 		// If the new config matches an output's name, and the old config
 		// matches on that output's identifier, supersede it.
-		if (strcmp(old->name, id) == 0 &&
+		if (output && strcmp(old->name, id) == 0 &&
 				strcmp(oc->name, output->wlr_output->name) == 0) {
 			supersede_output_config(old, oc);
 		}
