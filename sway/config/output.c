@@ -641,6 +641,30 @@ struct search_context {
 	bool degrade_to_off;
 };
 
+static void dump_output_state(struct wlr_output *wlr_output, struct wlr_output_state *state) {
+	sway_log(SWAY_DEBUG, "Output state for %s", wlr_output->name);
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		sway_log(SWAY_DEBUG, "    enabled:       %s", state->enabled ? "yes" : "no");
+	}
+	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+		sway_log(SWAY_DEBUG, "    render_format: %d", state->render_format);
+	}
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		if (state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM) {
+			sway_log(SWAY_DEBUG, "    custom mode:   %dx%d@%dmHz",
+				state->custom_mode.width, state->custom_mode.height, state->custom_mode.refresh);
+		} else {
+			sway_log(SWAY_DEBUG, "    mode:          %dx%d@%dmHz%s",
+				state->mode->width, state->mode->height, state->mode->refresh,
+				state->mode->preferred ? " (preferred)" : "");
+		}
+	}
+	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
+		sway_log(SWAY_DEBUG, "    adaptive_sync: %s",
+			state->adaptive_sync_enabled ? "enabled": "disabled");
+	}
+}
+
 static bool search_valid_config(struct search_context *ctx, size_t output_idx);
 
 static void reset_output_state(struct wlr_output_state *state) {
@@ -664,7 +688,12 @@ static void clear_later_output_states(struct wlr_backend_output_state *states,
 }
 
 static bool search_finish(struct search_context *ctx, size_t output_idx) {
+	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
+	struct wlr_output_state *state = &backend_state->base;
+	struct wlr_output *wlr_output = backend_state->output;
+
 	clear_later_output_states(ctx->states, ctx->configs_len, output_idx);
+	dump_output_state(wlr_output, state);
 	return wlr_output_swapchain_manager_prepare(ctx->swapchain_mgr, ctx->states, ctx->configs_len) &&
 		search_valid_config(ctx, output_idx+1);
 }
@@ -681,8 +710,6 @@ static bool search_adaptive_sync(struct search_context *ctx, size_t output_idx) 
 		}
 	}
 	if (!cfg->config || cfg->config->adaptive_sync != -1) {
-		sway_log(SWAY_DEBUG, "Trying with adaptive sync disabled for: %s",
-			backend_state->output->name);
 		wlr_output_state_set_adaptive_sync_enabled(state, false);
 		if (search_finish(ctx, output_idx)) {
 			return true;
@@ -690,8 +717,6 @@ static bool search_adaptive_sync(struct search_context *ctx, size_t output_idx) 
 	}
 	// If adaptive sync has not been set, or fallback in case we are on a
 	// backend that cannot disable adaptive sync such as the wayland backend.
-	sway_log(SWAY_DEBUG, "Trying with adaptive sync unset for: %s",
-		backend_state->output->name);
 	state->committed &= ~WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 	return search_finish(ctx, output_idx);
 }
@@ -708,7 +733,6 @@ static bool search_mode(struct search_context *ctx, size_t output_idx) {
 
 	struct wlr_output_mode *preferred_mode = wlr_output_preferred_mode(wlr_output);
 	if (preferred_mode) {
-		sway_log(SWAY_DEBUG, "Trying with preferred mode for: %s", backend_state->output->name);
 		wlr_output_state_set_mode(state, preferred_mode);
 		if (search_adaptive_sync(ctx, output_idx)) {
 			return true;
@@ -725,8 +749,6 @@ static bool search_mode(struct search_context *ctx, size_t output_idx) {
 		if (mode == preferred_mode) {
 			continue;
 		}
-		sway_log(SWAY_DEBUG, "Trying with mode %dx%d@%dmHz for: %s",
-			mode->width, mode->height, mode->refresh, backend_state->output->name);
 		wlr_output_state_set_mode(state, mode);
 		if (search_adaptive_sync(ctx, output_idx)) {
 			return true;
@@ -765,8 +787,6 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 			// This is not a supported format for this output
 			continue;
 		}
-		sway_log(SWAY_DEBUG, "Trying with render format %d for: %s", fmts[idx],
-			wlr_output->name);
 		wlr_output_state_set_render_format(state, fmts[idx]);
 		if (search_mode(ctx, output_idx)) {
 			return true;
@@ -784,9 +804,7 @@ static bool search_valid_config(struct search_context *ctx, size_t output_idx) {
 	struct matched_output_config *cfg = &ctx->configs[output_idx];
 	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
 	struct wlr_output_state *state = &backend_state->base;
-
-	sway_log(SWAY_DEBUG, "Finding valid config for: %s",
-		backend_state->output->name);
+	struct wlr_output *wlr_output = backend_state->output;
 
 	if (!output_config_is_disabling(cfg->config)) {
 		// Search through our possible configurations, doing a depth-first
@@ -800,8 +818,8 @@ static bool search_valid_config(struct search_context *ctx, size_t output_idx) {
 		}
 		// We could not get anything to work, try to disable this output to see
 		// if we can at least make the outputs before us work.
-		sway_log(SWAY_DEBUG, "Trying with disabled output for: %s",
-			backend_state->output->name);
+		sway_log(SWAY_DEBUG, "Unable to find valid config with output %s, disabling",
+			wlr_output->name);
 		reset_output_state(state);
 	}
 
