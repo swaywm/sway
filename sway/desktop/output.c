@@ -619,7 +619,7 @@ static void output_manager_apply(struct sway_server *server,
 		if (!test_only && ok) {
 			struct wlr_output_configuration_head_v1 *config_head;
 			wl_list_for_each(config_head, &config->heads, link) {
-				if (config_head->state.output == sway_output->wlr_output) {
+				if (config_head->state.output == cfg->output->wlr_output) {
 					store_config = true;
 					break;
 				}
