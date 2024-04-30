@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_scene.h>
@@ -431,6 +432,12 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	}
 
 	surface->output = output;
+
+	// now that the surface's output is known, we can advertise its scale
+	wlr_fractional_scale_v1_notify_scale(surface->layer_surface->surface,
+		layer_surface->output->scale);
+	wlr_surface_set_preferred_buffer_scale(surface->layer_surface->surface,
+		ceil(layer_surface->output->scale));
 
 	surface->surface_commit.notify = handle_surface_commit;
 	wl_signal_add(&layer_surface->surface->events.commit,
