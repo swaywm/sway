@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -36,6 +35,7 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&popup->new_popup.link);
 	wl_list_remove(&popup->destroy.link);
 	wl_list_remove(&popup->surface_commit.link);
+	wl_list_remove(&popup->reposition.link);
 	wlr_scene_node_destroy(&popup->scene_tree->node);
 	free(popup);
 }
@@ -69,6 +69,11 @@ static void popup_handle_surface_commit(struct wl_listener *listener, void *data
 	if (popup->wlr_xdg_popup->base->initial_commit) {
 		popup_unconstrain(popup);
 	}
+}
+
+static void popup_handle_reposition(struct wl_listener *listener, void *data) {
+	struct sway_xdg_popup *popup = wl_container_of(listener, popup, reposition);
+	popup_unconstrain(popup);
 }
 
 static struct sway_xdg_popup *popup_create(struct wlr_xdg_popup *wlr_popup,
@@ -117,6 +122,8 @@ static struct sway_xdg_popup *popup_create(struct wlr_xdg_popup *wlr_popup,
 	popup->surface_commit.notify = popup_handle_surface_commit;
 	wl_signal_add(&xdg_surface->events.new_popup, &popup->new_popup);
 	popup->new_popup.notify = popup_handle_new_popup;
+	wl_signal_add(&wlr_popup->events.reposition, &popup->reposition);
+	popup->reposition.notify = popup_handle_reposition;
 	wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
 	popup->destroy.notify = popup_handle_destroy;
 
@@ -282,6 +289,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		}
 		// XXX: https://github.com/swaywm/sway/issues/2176
 		wlr_xdg_surface_schedule_configure(xdg_surface);
+		// TODO: wlr_xdg_toplevel_set_bounds()
 		return;
 	}
 
@@ -567,4 +575,7 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data) {
 	wlr_scene_xdg_surface_create(xdg_shell_view->view.content_tree, xdg_toplevel->base);
 
 	xdg_toplevel->base->data = xdg_shell_view;
+
+	wlr_xdg_toplevel_set_wm_capabilities(xdg_toplevel,
+		XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN);
 }

@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <linux/input-event-codes.h>
 #include <string.h>
@@ -68,6 +67,12 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 }
 
 void seat_destroy(struct sway_seat *seat) {
+	wlr_seat_destroy(seat->wlr_seat);
+}
+
+static void handle_seat_destroy(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, destroy);
+
 	if (seat == config->handler_context.seat) {
 		config->handler_context.seat = input_manager_get_default_seat();
 	}
@@ -88,7 +93,7 @@ void seat_destroy(struct sway_seat *seat) {
 	wl_list_remove(&seat->request_set_selection.link);
 	wl_list_remove(&seat->request_set_primary_selection.link);
 	wl_list_remove(&seat->link);
-	wlr_seat_destroy(seat->wlr_seat);
+	wl_list_remove(&seat->destroy.link);
 	for (int i = 0; i < seat->deferred_bindings->length; i++) {
 		free_sway_binding(seat->deferred_bindings->items[i]);
 	}
@@ -535,6 +540,9 @@ struct sway_seat *seat_create(const char *seat_name) {
 		return NULL;
 	}
 
+	seat->destroy.notify = handle_seat_destroy;
+	wl_signal_add(&seat->wlr_seat->events.destroy, &seat->destroy);
+
 	seat->idle_inhibit_sources = seat->idle_wake_sources =
 		IDLE_SOURCE_KEYBOARD |
 		IDLE_SOURCE_POINTER |
@@ -608,7 +616,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 		case WLR_INPUT_DEVICE_TOUCH:
 			caps |= WL_SEAT_CAPABILITY_TOUCH;
 			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET:
 			caps |= WL_SEAT_CAPABILITY_POINTER;
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
@@ -666,7 +674,7 @@ static const char *get_builtin_output_name(void) {
 static bool is_touch_or_tablet_tool(struct sway_seat_device *seat_device) {
 	switch (seat_device->input_device->wlr_device->type) {
 	case WLR_INPUT_DEVICE_TOUCH:
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return true;
 	default:
 		return false;
@@ -681,7 +689,7 @@ static void seat_apply_input_mapping(struct sway_seat *seat,
 	switch (sway_device->input_device->wlr_device->type) {
 	case WLR_INPUT_DEVICE_POINTER:
 	case WLR_INPUT_DEVICE_TOUCH:
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		break;
 	default:
 		return; // these devices don't support mappings
@@ -874,7 +882,7 @@ void seat_configure_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_TOUCH:
 			seat_configure_touch(seat, seat_device);
 			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET:
 			seat_configure_tablet_tool(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
@@ -913,7 +921,7 @@ void seat_reset_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_TOUCH:
 			seat_reset_input_config(seat, seat_device);
 			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET:
 			seat_reset_input_config(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
@@ -1521,7 +1529,7 @@ struct seat_config *seat_get_config_by_name(const char *name) {
 }
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
-		uint32_t button, enum wlr_button_state state) {
+		uint32_t button, enum wl_pointer_button_state state) {
 	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
 			time_msec, button, state);
 }
@@ -1558,7 +1566,7 @@ void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
 
 void seatop_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	if (seat->seatop_impl->button) {
 		seat->seatop_impl->button(seat, time_msec, device, button, state);
 	}

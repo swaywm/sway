@@ -109,6 +109,9 @@ static void handle_im_destroy(struct wl_listener *listener, void *data) {
 		input_method_destroy);
 	struct wlr_input_method_v2 *context = data;
 	assert(context == relay->input_method);
+	wl_list_remove(&relay->input_method_commit.link);
+	wl_list_remove(&relay->input_method_grab_keyboard.link);
+	wl_list_remove(&relay->input_method_destroy.link);
 	wl_list_remove(&relay->input_method_new_popup_surface.link);
 	relay->input_method = NULL;
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
@@ -289,10 +292,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 	if (!popup->popup_surface->surface->mapped) {
 		return;
 	}
-
-	wlr_scene_node_destroy(&popup->scene_tree->node);
-	wlr_scene_node_destroy(popup->desc.relative);
-	popup->scene_tree = NULL;
 
 	bool cursor_rect = text_input->input->current.features
 		& WLR_TEXT_INPUT_V3_FEATURE_CURSOR_RECTANGLE;

@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -770,15 +769,6 @@ static struct cmd_results *cmd_move_in_direction(
 		ipc_event_window(container, "move");
 	}
 
-	// Hack to re-focus container
-	seat_set_raw_focus(config->handler_context.seat, &new_ws->node);
-	seat_set_focus_container(config->handler_context.seat, container);
-
-	if (old_ws != new_ws) {
-		ipc_event_workspace(old_ws, new_ws, "focus");
-		workspace_detect_urgent(old_ws);
-		workspace_detect_urgent(new_ws);
-	}
 	container_end_mouse_operation(container);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

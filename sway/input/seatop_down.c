@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <float.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_tablet_v2.h>
@@ -118,7 +117,11 @@ static void handle_touch_cancel(struct sway_seat *seat,
 	}
 
 	if (e->surface) {
-		wlr_seat_touch_notify_cancel(seat->wlr_seat, e->surface);
+		struct wl_client *client = wl_resource_get_client(e->surface->resource);
+		struct wlr_seat_client *seat_client = wlr_seat_client_for_wl_client(seat->wlr_seat, client);
+		if (seat_client != NULL) {
+			wlr_seat_touch_notify_cancel(seat->wlr_seat, seat_client);
+		}
 	}
 
 	if (wl_list_empty(&e->point_events)) {
@@ -143,7 +146,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	seat_pointer_notify_button(seat, time_msec, button, state);
 
 	if (seat->cursor->pressed_button_count == 0) {

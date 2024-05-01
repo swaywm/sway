@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <wlr/types/wlr_cursor.h>
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
@@ -22,7 +21,7 @@ static void finalize_move(struct sway_seat *seat) {
 
 static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		struct wlr_input_device *device, uint32_t button,
-		enum wlr_button_state state) {
+		enum wl_pointer_button_state state) {
 	if (seat->cursor->pressed_button_count == 0) {
 		finalize_move(seat);
 	}

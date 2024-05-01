@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <drm_fourcc.h>
 #include <stdbool.h>
@@ -10,6 +9,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_swapchain_manager.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
@@ -79,7 +79,72 @@ struct output_config *new_output_config(const char *name) {
 	return oc;
 }
 
-void merge_output_config(struct output_config *dst, struct output_config *src) {
+// supersede_output_config clears all fields in dst that were set in src
+static void supersede_output_config(struct output_config *dst, struct output_config *src) {
+	if (src->enabled != -1) {
+		dst->enabled = -1;
+	}
+	if (src->width != -1) {
+		dst->width = -1;
+	}
+	if (src->height != -1) {
+		dst->height = -1;
+	}
+	if (src->x != -1) {
+		dst->x = -1;
+	}
+	if (src->y != -1) {
+		dst->y = -1;
+	}
+	if (src->scale != -1) {
+		dst->scale = -1;
+	}
+	if (src->scale_filter != SCALE_FILTER_DEFAULT) {
+		dst->scale_filter = SCALE_FILTER_DEFAULT;
+	}
+	if (src->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
+		dst->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
+	}
+	if (src->refresh_rate != -1) {
+		dst->refresh_rate = -1;
+	}
+	if (src->custom_mode != -1) {
+		dst->custom_mode = -1;
+	}
+	if (src->drm_mode.type != (uint32_t) -1) {
+		dst->drm_mode.type = -1;
+	}
+	if (src->transform != -1) {
+		dst->transform = -1;
+	}
+	if (src->max_render_time != -1) {
+		dst->max_render_time = -1;
+	}
+	if (src->adaptive_sync != -1) {
+		dst->adaptive_sync = -1;
+	}
+	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
+		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	}
+	if (src->background) {
+		free(dst->background);
+		dst->background = NULL;
+	}
+	if (src->background_option) {
+		free(dst->background_option);
+		dst->background_option = NULL;
+	}
+	if (src->background_fallback) {
+		free(dst->background_fallback);
+		dst->background_fallback = NULL;
+	}
+	if (src->power != -1) {
+		dst->power = -1;
+	}
+}
+
+// merge_output_config sets all fields in dst that were set in src
+static void merge_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->enabled != -1) {
 		dst->enabled = src->enabled;
 	}
@@ -142,94 +207,42 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 }
 
-static void merge_wildcard_on_all(struct output_config *wildcard) {
-	for (int i = 0; i < config->output_configs->length; i++) {
-		struct output_config *oc = config->output_configs->items[i];
-		if (strcmp(wildcard->name, oc->name) != 0) {
-			sway_log(SWAY_DEBUG, "Merging output * config on %s", oc->name);
-			merge_output_config(oc, wildcard);
-		}
-	}
-}
-
-static void merge_id_on_name(struct output_config *oc) {
-	struct sway_output *output = all_output_by_name_or_id(oc->name);
-	if (output == NULL) {
-		return;
-	}
-
-	const char *name = output->wlr_output->name;
-	char id[128];
-	output_get_identifier(id, sizeof(id), output);
-
-	char *id_on_name = format_str("%s on %s", id, name);
-	if (!id_on_name) {
-		return;
-	}
-
-	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
-	if (i >= 0) {
-		sway_log(SWAY_DEBUG, "Merging on top of existing id on name config");
-		merge_output_config(config->output_configs->items[i], oc);
-	} else {
-		// If both a name and identifier config, exist generate an id on name
-		int ni = list_seq_find(config->output_configs, output_name_cmp, name);
-		int ii = list_seq_find(config->output_configs, output_name_cmp, id);
-		if ((ni >= 0 && ii >= 0) || (ni >= 0 && strcmp(oc->name, id) == 0)
-				|| (ii >= 0 && strcmp(oc->name, name) == 0)) {
-			struct output_config *ion_oc = new_output_config(id_on_name);
-			if (ni >= 0) {
-				merge_output_config(ion_oc, config->output_configs->items[ni]);
-			}
-			if (ii >= 0) {
-				merge_output_config(ion_oc, config->output_configs->items[ii]);
-			}
-			merge_output_config(ion_oc, oc);
-			list_add(config->output_configs, ion_oc);
-			sway_log(SWAY_DEBUG, "Generated id on name output config \"%s\""
-				" (enabled: %d) (%dx%d@%fHz position %d,%d scale %f "
-				"transform %d) (bg %s %s) (power %d) (max render time: %d)",
-				ion_oc->name, ion_oc->enabled, ion_oc->width, ion_oc->height,
-				ion_oc->refresh_rate, ion_oc->x, ion_oc->y, ion_oc->scale,
-				ion_oc->transform, ion_oc->background,
-				ion_oc->background_option, ion_oc->power,
-				ion_oc->max_render_time);
-		}
-	}
-	free(id_on_name);
-}
-
-struct output_config *store_output_config(struct output_config *oc) {
+void store_output_config(struct output_config *oc) {
+	bool merged = false;
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	if (wildcard) {
-		merge_wildcard_on_all(oc);
-	} else {
-		merge_id_on_name(oc);
+	struct sway_output *output = wildcard ? NULL : output_by_name_or_id(oc->name);
+
+	char id[128];
+	if (output) {
+		output_get_identifier(id, sizeof(id), output);
 	}
 
-	int i = list_seq_find(config->output_configs, output_name_cmp, oc->name);
-	if (i >= 0) {
-		sway_log(SWAY_DEBUG, "Merging on top of existing output config");
-		struct output_config *current = config->output_configs->items[i];
-		merge_output_config(current, oc);
-		free_output_config(oc);
-		oc = current;
-	} else if (!wildcard) {
-		sway_log(SWAY_DEBUG, "Adding non-wildcard output config");
-		i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			sway_log(SWAY_DEBUG, "Merging on top of output * config");
-			struct output_config *current = new_output_config(oc->name);
-			merge_output_config(current, config->output_configs->items[i]);
-			merge_output_config(current, oc);
-			free_output_config(oc);
-			oc = current;
+	for (int i = 0; i < config->output_configs->length; i++) {
+		struct output_config *old = config->output_configs->items[i];
+
+		// If the old config matches the new config's name, regardless of
+		// whether it was name or identifier, merge on top of the existing
+		// config. If the new config is a wildcard, this also merges on top of
+		// old wildcard configs.
+		if (strcmp(old->name, oc->name) == 0) {
+			merge_output_config(old, oc);
+			merged = true;
+			continue;
 		}
-		list_add(config->output_configs, oc);
-	} else {
-		// New wildcard config. Just add it
-		sway_log(SWAY_DEBUG, "Adding output * config");
-		list_add(config->output_configs, oc);
+
+		// If the new config is a wildcard config we supersede all non-wildcard
+		// configs. Old wildcard configs have already been handled above.
+		if (wildcard) {
+			supersede_output_config(old, oc);
+			continue;
+		}
+
+		// If the new config matches an output's name, and the old config
+		// matches on that output's identifier, supersede it.
+		if (output && strcmp(old->name, id) == 0 &&
+				strcmp(oc->name, output->wlr_output->name) == 0) {
+			supersede_output_config(old, oc);
+		}
 	}
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
@@ -240,7 +253,13 @@ struct output_config *store_output_config(struct output_config *oc) {
 		oc->transform, oc->background, oc->background_option, oc->power,
 		oc->max_render_time);
 
-	return oc;
+	// If the configuration was not merged into an existing configuration, add
+	// it to the list. Otherwise we're done with it and can free it.
+	if (!merged) {
+		list_add(config->output_configs, oc);
+	} else {
+		free_output_config(oc);
+	}
 }
 
 static void set_mode(struct wlr_output *output, struct wlr_output_state *pending,
@@ -504,31 +523,12 @@ static void queue_output_config(struct output_config *oc,
 	}
 }
 
-bool apply_output_config(struct output_config *oc, struct sway_output *output) {
+static bool finalize_output_config(struct output_config *oc, struct sway_output *output) {
 	if (output == root->fallback_output) {
 		return false;
 	}
 
 	struct wlr_output *wlr_output = output->wlr_output;
-
-	// Flag to prevent the output mode event handler from calling us
-	output->enabling = (!oc || oc->enabled);
-
-	struct wlr_output_state pending = {0};
-	queue_output_config(oc, output, &pending);
-
-	sway_log(SWAY_DEBUG, "Committing output %s", wlr_output->name);
-	if (!wlr_output_commit_state(wlr_output, &pending)) {
-		// Failed to commit output changes, maybe the output is missing a CRTC.
-		// Leave the output disabled for now and try again when the output gets
-		// the mode we asked for.
-		sway_log(SWAY_ERROR, "Failed to commit output %s", wlr_output->name);
-		output->enabling = false;
-		return false;
-	}
-
-	output->enabling = false;
-
 	if (oc && !oc->enabled) {
 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
 		if (output->enabled) {
@@ -584,23 +584,7 @@ bool apply_output_config(struct output_config *oc, struct sway_output *output) {
 		output->max_render_time = oc->max_render_time;
 	}
 
-	// Reconfigure all devices, since input config may have been applied before
-	// this output came online, and some config items (like map_to_output) are
-	// dependent on an output being present.
-	input_manager_configure_all_input_mappings();
-	// Reconfigure the cursor images, since the scale may have changed.
-	input_manager_configure_xcursor();
 	return true;
-}
-
-bool test_output_config(struct output_config *oc, struct sway_output *output) {
-	if (output == root->fallback_output) {
-		return false;
-	}
-
-	struct wlr_output_state pending = {0};
-	queue_output_config(oc, output, &pending);
-	return wlr_output_test_state(output->wlr_output, &pending);
 }
 
 static void default_output_config(struct output_config *oc,
@@ -622,140 +606,167 @@ static void default_output_config(struct output_config *oc,
 	oc->max_render_time = 0;
 }
 
-static struct output_config *get_output_config(char *identifier,
-		struct sway_output *sway_output) {
+// find_output_config returns a merged output_config containing all stored
+// configuration that applies to the specified output.
+struct output_config *find_output_config(struct sway_output *sway_output) {
 	const char *name = sway_output->wlr_output->name;
+	struct output_config *oc = NULL;
 
-	struct output_config *oc_id_on_name = NULL;
-	struct output_config *oc_name = NULL;
-	struct output_config *oc_id = NULL;
-
-	char *id_on_name = format_str("%s on %s", identifier, name);
-	int i = list_seq_find(config->output_configs, output_name_cmp, id_on_name);
-	if (i >= 0) {
-		oc_id_on_name = config->output_configs->items[i];
-	} else {
-		i = list_seq_find(config->output_configs, output_name_cmp, name);
-		if (i >= 0) {
-			oc_name = config->output_configs->items[i];
-		}
-
-		i = list_seq_find(config->output_configs, output_name_cmp, identifier);
-		if (i >= 0) {
-			oc_id = config->output_configs->items[i];
-		}
-	}
-
-	struct output_config *result = new_output_config("temp");
+	struct output_config *result = new_output_config(name);
 	if (config->reloading) {
 		default_output_config(result, sway_output->wlr_output);
 	}
-	if (oc_id_on_name) {
-		// Already have an identifier on name config, use that
-		free(result->name);
-		result->name = strdup(id_on_name);
-		merge_output_config(result, oc_id_on_name);
-	} else if (oc_name && oc_id) {
-		// Generate a config named `<identifier> on <name>` which contains a
-		// merged copy of the identifier on name. This will make sure that both
-		// identifier and name configs are respected, with identifier getting
-		// priority
-		struct output_config *temp = new_output_config(id_on_name);
-		merge_output_config(temp, oc_name);
-		merge_output_config(temp, oc_id);
-		list_add(config->output_configs, temp);
 
-		free(result->name);
-		result->name = strdup(id_on_name);
-		merge_output_config(result, temp);
+	char id[128];
+	output_get_identifier(id, sizeof(id), sway_output);
 
-		sway_log(SWAY_DEBUG, "Generated output config \"%s\" (enabled: %d)"
-			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
-			" (power %d) (max render time: %d)", result->name, result->enabled,
-			result->width, result->height, result->refresh_rate,
-			result->x, result->y, result->scale, result->transform,
-			result->background, result->background_option, result->power,
-			result->max_render_time);
-	} else if (oc_name) {
-		// No identifier config, just return a copy of the name config
-		free(result->name);
-		result->name = strdup(name);
-		merge_output_config(result, oc_name);
-	} else if (oc_id) {
-		// No name config, just return a copy of the identifier config
-		free(result->name);
-		result->name = strdup(identifier);
-		merge_output_config(result, oc_id);
-	} else {
-		i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			// No name or identifier config, but there is a wildcard config
-			free(result->name);
-			result->name = strdup("*");
-			merge_output_config(result, config->output_configs->items[i]);
-		} else if (!config->reloading) {
-			// No name, identifier, or wildcard config. Since we are not
-			// reloading with defaults, the output config will be empty, so
-			// just return NULL
-			free_output_config(result);
-			result = NULL;
-		}
+	int i;
+	bool match = false;
+	if ((i = list_seq_find(config->output_configs, output_name_cmp, "*")) >= 0) {
+		match = true;
+		oc = config->output_configs->items[i];
+		merge_output_config(result, oc);
+	}
+	if ((i = list_seq_find(config->output_configs, output_name_cmp, name)) >= 0) {
+		match = true;
+		oc = config->output_configs->items[i];
+		merge_output_config(result, oc);
+	}
+	if ((i = list_seq_find(config->output_configs, output_name_cmp, id)) >= 0) {
+		match = true;
+		oc = config->output_configs->items[i];
+		merge_output_config(result, oc);
 	}
 
-	free(id_on_name);
+	if (!match && !config->reloading) {
+		// No name, identifier, or wildcard config. Since we are not
+		// reloading with defaults, the output config will be empty, so
+		// just return NULL
+		free_output_config(result);
+		return NULL;
+	}
+
 	return result;
 }
 
-struct output_config *find_output_config(struct sway_output *output) {
-	char id[128];
-	output_get_identifier(id, sizeof(id), output);
-	return get_output_config(id, output);
-}
+bool apply_output_configs(struct matched_output_config *configs,
+		size_t configs_len, bool test_only) {
+	struct wlr_backend_output_state *states = calloc(configs_len, sizeof(*states));
+	if (!states) {
+		return false;
+	}
 
-void apply_output_config_to_outputs(struct output_config *oc) {
-	// Try to find the output container and apply configuration now. If
-	// this is during startup then there will be no container and config
-	// will be applied during normal "new output" event from wlroots.
-	bool wildcard = strcmp(oc->name, "*") == 0;
-	struct sway_output *sway_output, *tmp;
-	wl_list_for_each_safe(sway_output, tmp, &root->all_outputs, link) {
-		if (output_match_name_or_id(sway_output, oc->name)) {
-			char id[128];
-			output_get_identifier(id, sizeof(id), sway_output);
-			struct output_config *current = get_output_config(id, sway_output);
-			if (!current) {
-				// No stored output config matched, apply oc directly
-				sway_log(SWAY_DEBUG, "Applying oc directly");
-				current = new_output_config(oc->name);
-				merge_output_config(current, oc);
-			}
-			apply_output_config(current, sway_output);
-			free_output_config(current);
+	sway_log(SWAY_DEBUG, "Committing %zd outputs", configs_len);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		struct wlr_backend_output_state *backend_state = &states[idx];
 
-			if (!wildcard) {
-				// Stop looking if the output config isn't applicable to all
-				// outputs
-				break;
-			}
+		backend_state->output = cfg->output->wlr_output;
+		wlr_output_state_init(&backend_state->base);
+
+		sway_log(SWAY_DEBUG, "Preparing config for %s",
+			cfg->output->wlr_output->name);
+		queue_output_config(cfg->config, cfg->output, &backend_state->base);
+	}
+
+	struct wlr_output_swapchain_manager swapchain_mgr;
+	wlr_output_swapchain_manager_init(&swapchain_mgr, server.backend);
+
+	bool ok = wlr_output_swapchain_manager_prepare(&swapchain_mgr, states, configs_len);
+	if (!ok) {
+		sway_log(SWAY_ERROR, "Swapchain prepare failed");
+		goto out;
+	}
+
+	if (test_only) {
+		// The swapchain manager already did a test for us
+		goto out;
+	}
+
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		struct wlr_backend_output_state *backend_state = &states[idx];
+
+		struct wlr_scene_output_state_options opts = {
+			.swapchain = wlr_output_swapchain_manager_get_swapchain(
+				&swapchain_mgr, backend_state->output),
+		};
+		struct wlr_scene_output *scene_output = cfg->output->scene_output;
+		struct wlr_output_state *state = &backend_state->base;
+		if (!wlr_scene_output_build_state(scene_output, state, &opts)) {
+			sway_log(SWAY_ERROR, "Building output state for '%s' failed",
+				backend_state->output->name);
+			goto out;
 		}
 	}
+
+	ok = wlr_backend_commit(server.backend, states, configs_len);
+	if (!ok) {
+		sway_log(SWAY_ERROR, "Backend commit failed");
+		goto out;
+	}
+
+	sway_log(SWAY_DEBUG, "Commit of %zd outputs succeeded", configs_len);
+
+	wlr_output_swapchain_manager_apply(&swapchain_mgr);
+
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		sway_log(SWAY_DEBUG, "Finalizing config for %s",
+			cfg->output->wlr_output->name);
+		finalize_output_config(cfg->config, cfg->output);
+	}
+
+out:
+	wlr_output_swapchain_manager_finish(&swapchain_mgr);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct wlr_backend_output_state *backend_state = &states[idx];
+		wlr_output_state_finish(&backend_state->base);
+	}
+	free(states);
+
+	// Reconfigure all devices, since input config may have been applied before
+	// this output came online, and some config items (like map_to_output) are
+	// dependent on an output being present.
+	input_manager_configure_all_input_mappings();
+	// Reconfigure the cursor images, since the scale may have changed.
+	input_manager_configure_xcursor();
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
 		cursor_rebase(seat->cursor);
 	}
+
+	return ok;
 }
 
-void reset_outputs(void) {
-	struct output_config *oc = NULL;
-	int i = list_seq_find(config->output_configs, output_name_cmp, "*");
-	if (i >= 0) {
-		oc = config->output_configs->items[i];
-	} else {
-		oc = store_output_config(new_output_config("*"));
+void apply_all_output_configs(void) {
+	size_t configs_len = wl_list_length(&root->all_outputs);
+	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
+	if (!configs) {
+		return;
 	}
-	apply_output_config_to_outputs(oc);
+
+	int config_idx = 0;
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
+		if (sway_output == root->fallback_output) {
+			configs_len--;
+			continue;
+		}
+
+		struct matched_output_config *config = &configs[config_idx++];
+		config->output = sway_output;
+		config->config = find_output_config(sway_output);
+	}
+
+	apply_output_configs(configs, configs_len, false);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		free_output_config(cfg->config);
+	}
+	free(configs);
 }
 
 void free_output_config(struct output_config *oc) {

@@ -376,6 +376,12 @@ node and will have the following properties:
 :  integer
 :  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means
    full workspace, and 2 means global fullscreen
+|- floating
+:  string
+:  Floating state of container. Can be either "auto_off" or "user_on"
+|- scratchpad_state
+:  string
+:  Whether the window is in the scratchpad. Can be either "none" or "fresh"
 |- app_id
 :  string
 :  (Only views) For an xdg-shell view, the name of the application, if set.
@@ -1040,7 +1046,7 @@ An object with a single string property containing the contents of the config
 *Example Reply:*
 ```
 {
-	"config": "set $mod Mod4\nbindsym $mod+q exit\n"
+	"config": "set $mod Mod4\\nbindsym $mod+q exit\\n"
 }
 ```
 

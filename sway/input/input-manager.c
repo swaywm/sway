@@ -1,9 +1,10 @@
-#define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include <wlr/config.h>
+#include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
@@ -66,8 +67,15 @@ struct sway_seat *input_manager_sway_seat_from_wlr_seat(struct wlr_seat *wlr_sea
 }
 
 char *input_device_get_identifier(struct wlr_input_device *device) {
-	int vendor = device->vendor;
-	int product = device->product;
+	int vendor = 0, product = 0;
+#if WLR_HAS_LIBINPUT_BACKEND
+	if (wlr_input_device_is_libinput(device)) {
+		struct libinput_device *libinput_dev = wlr_libinput_get_device_handle(device);
+		vendor = libinput_device_get_id_vendor(libinput_dev);
+		product = libinput_device_get_id_product(libinput_dev);
+	}
+#endif
+
 	char *name = strdup(device->name ? device->name : "");
 	strip_whitespace(name);
 
@@ -112,7 +120,7 @@ const char *input_device_get_type(struct sway_input_device *device) {
 		return "keyboard";
 	case WLR_INPUT_DEVICE_TOUCH:
 		return "touch";
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return "tablet_tool";
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		return "tablet_pad";
@@ -425,6 +433,20 @@ void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void handle_transient_seat_manager_create_seat(
+		struct wl_listener *listener, void *data) {
+	struct wlr_transient_seat_v1 *transient_seat = data;
+	static uint64_t i;
+	char name[256];
+	snprintf(name, sizeof(name), "transient-%"PRIx64, i++);
+	struct sway_seat *seat = seat_create(name);
+	if (seat && seat->wlr_seat) {
+		wlr_transient_seat_v1_ready(transient_seat, seat->wlr_seat);
+	} else {
+		wlr_transient_seat_v1_deny(transient_seat);
+	}
+}
+
 struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	struct sway_input_manager *input =
 		calloc(1, sizeof(struct sway_input_manager));
@@ -459,6 +481,15 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 			&input->keyboard_shortcuts_inhibit_new_inhibitor);
 
 	input->pointer_gestures = wlr_pointer_gestures_v1_create(server->wl_display);
+
+	input->transient_seat_manager =
+		wlr_transient_seat_manager_v1_create(server->wl_display);
+	assert(input->transient_seat_manager);
+
+	input->transient_seat_create.notify =
+		handle_transient_seat_manager_create_seat;
+	wl_signal_add(&input->transient_seat_manager->events.create_seat,
+			&input->transient_seat_create);
 
 	return input;
 }
