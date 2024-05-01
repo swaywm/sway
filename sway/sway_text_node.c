@@ -58,7 +58,7 @@ struct text_buffer {
 
 static int get_text_width(struct sway_text_node *props) {
 	int width = props->width;
-	if (props->max_width) {
+	if (props->max_width >= 0) {
 		width = MIN(width, props->max_width);
 	}
 	return MAX(width, 0);
@@ -78,6 +78,11 @@ static void update_source_box(struct text_buffer *buffer) {
 
 static void render_backing_buffer(struct text_buffer *buffer) {
 	if (!buffer->visible) {
+		return;
+	}
+
+	if (buffer->props.max_width == 0) {
+		wlr_scene_buffer_set_buffer(buffer->buffer_node, NULL);
 		return;
 	}
 
@@ -236,6 +241,7 @@ struct sway_text_node *sway_text_node_create(struct wlr_scene_tree *parent,
 
 	buffer->buffer_node = node;
 	buffer->props.node = &node->node;
+	buffer->props.max_width = -1;
 	buffer->text = strdup(text);
 	if (!buffer->text) {
 		free(buffer);
