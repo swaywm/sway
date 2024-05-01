@@ -210,7 +210,7 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 void store_output_config(struct output_config *oc) {
 	bool merged = false;
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	struct sway_output *output = wildcard ? NULL : output_by_name_or_id(oc->name);
+	struct sway_output *output = wildcard ? NULL : all_output_by_name_or_id(oc->name);
 
 	char id[128];
 	if (output) {
