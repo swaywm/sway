@@ -210,7 +210,7 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 void store_output_config(struct output_config *oc) {
 	bool merged = false;
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	struct sway_output *output = wildcard ? NULL : output_by_name_or_id(oc->name);
+	struct sway_output *output = wildcard ? NULL : all_output_by_name_or_id(oc->name);
 
 	char id[128];
 	if (output) {
@@ -386,22 +386,18 @@ static int compute_default_scale(struct wlr_output *output,
 	return 2;
 }
 
-/* Lists of formats to try, in order, when a specific render bit depth has
- * been asked for. The second to last format in each list should always
- * be XRGB8888, as a reliable backup in case the others are not available;
- * the last should be DRM_FORMAT_INVALID, to indicate the end of the list. */
-static const uint32_t *bit_depth_preferences[] = {
-	[RENDER_BIT_DEPTH_8] = (const uint32_t []){
-		DRM_FORMAT_XRGB8888,
-		DRM_FORMAT_INVALID,
-	},
-	[RENDER_BIT_DEPTH_10] = (const uint32_t []){
-		DRM_FORMAT_XRGB2101010,
-		DRM_FORMAT_XBGR2101010,
-		DRM_FORMAT_XRGB8888,
-		DRM_FORMAT_INVALID,
-	},
-};
+static bool render_format_is_10bit(uint32_t render_format) {
+	return render_format == DRM_FORMAT_XRGB2101010 ||
+		render_format == DRM_FORMAT_XBGR2101010;
+}
+
+static bool render_format_is_bgr(uint32_t fmt) {
+	return fmt == DRM_FORMAT_XBGR2101010 || fmt == DRM_FORMAT_XBGR8888;
+}
+
+static bool output_config_is_disabling(struct output_config *oc) {
+	return oc && (!oc->enabled || oc->power == 0);
+}
 
 static void queue_output_config(struct output_config *oc,
 		struct sway_output *output, struct wlr_output_state *pending) {
@@ -411,7 +407,7 @@ static void queue_output_config(struct output_config *oc,
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (oc && (!oc->enabled || oc->power == 0)) {
+	if (output_config_is_disabling(oc)) {
 		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
 		wlr_output_state_set_enabled(pending, false);
 		return;
@@ -434,22 +430,6 @@ static void queue_output_config(struct output_config *oc,
 		struct wlr_output_mode *preferred_mode =
 			wlr_output_preferred_mode(wlr_output);
 		wlr_output_state_set_mode(pending, preferred_mode);
-
-		if (!wlr_output_test_state(wlr_output, pending)) {
-			sway_log(SWAY_DEBUG, "Preferred mode rejected, "
-				"falling back to another mode");
-			struct wlr_output_mode *mode;
-			wl_list_for_each(mode, &wlr_output->modes, link) {
-				if (mode == preferred_mode) {
-					continue;
-				}
-
-				wlr_output_state_set_mode(pending, mode);
-				if (wlr_output_test_state(wlr_output, pending)) {
-					break;
-				}
-			}
-		}
 	}
 
 	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
@@ -500,25 +480,17 @@ static void queue_output_config(struct output_config *oc,
 		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
 			oc->adaptive_sync);
 		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
-		if (oc->adaptive_sync == 1 && !wlr_output_test_state(wlr_output, pending)) {
-			sway_log(SWAY_DEBUG, "Adaptive sync failed, ignoring");
-			wlr_output_state_set_adaptive_sync_enabled(pending, false);
-		}
 	}
 
 	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
-		const uint32_t *fmts = bit_depth_preferences[oc->render_bit_depth];
-		assert(fmts);
-
-		for (size_t i = 0; fmts[i] != DRM_FORMAT_INVALID; i++) {
-			wlr_output_state_set_render_format(pending, fmts[i]);
-			if (wlr_output_test_state(wlr_output, pending)) {
-				break;
-			}
-
-			sway_log(SWAY_DEBUG, "Preferred output format 0x%08x "
-				"failed to work, falling back to next in "
-				"list, 0x%08x", fmts[i], fmts[i + 1]);
+		if (oc->render_bit_depth == RENDER_BIT_DEPTH_10 &&
+			render_format_is_10bit(output->wlr_output->render_format)) {
+			// 10-bit was set successfully before, try to save some tests by reusing the format
+			wlr_output_state_set_render_format(pending, output->wlr_output->render_format);
+		} else if (oc->render_bit_depth == RENDER_BIT_DEPTH_10) {
+			wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB2101010);
+		} else {
+			wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 		}
 	}
 }
@@ -649,8 +621,245 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 	return result;
 }
 
+static bool config_has_auto_mode(struct output_config *oc) {
+	if (!oc) {
+		return true;
+	}
+	if (oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t)-1) {
+		return true;
+	} else if (oc->width > 0 && oc->height > 0) {
+		return true;
+	}
+	return false;
+}
+
+struct search_context {
+	struct wlr_output_swapchain_manager *swapchain_mgr;
+	struct wlr_backend_output_state *states;
+	struct matched_output_config *configs;
+	size_t configs_len;
+	bool degrade_to_off;
+};
+
+static void dump_output_state(struct wlr_output *wlr_output, struct wlr_output_state *state) {
+	sway_log(SWAY_DEBUG, "Output state for %s", wlr_output->name);
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		sway_log(SWAY_DEBUG, "    enabled:       %s", state->enabled ? "yes" : "no");
+	}
+	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+		sway_log(SWAY_DEBUG, "    render_format: %d", state->render_format);
+	}
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		if (state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM) {
+			sway_log(SWAY_DEBUG, "    custom mode:   %dx%d@%dmHz",
+				state->custom_mode.width, state->custom_mode.height, state->custom_mode.refresh);
+		} else {
+			sway_log(SWAY_DEBUG, "    mode:          %dx%d@%dmHz%s",
+				state->mode->width, state->mode->height, state->mode->refresh,
+				state->mode->preferred ? " (preferred)" : "");
+		}
+	}
+	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
+		sway_log(SWAY_DEBUG, "    adaptive_sync: %s",
+			state->adaptive_sync_enabled ? "enabled": "disabled");
+	}
+}
+
+static bool search_valid_config(struct search_context *ctx, size_t output_idx);
+
+static void reset_output_state(struct wlr_output_state *state) {
+	wlr_output_state_finish(state);
+	wlr_output_state_init(state);
+	state->committed = 0;
+}
+
+static void clear_later_output_states(struct wlr_backend_output_state *states,
+		size_t configs_len, size_t output_idx) {
+
+	// Clear and disable all output states after this one to avoid conflict
+	// with previous tests.
+	for (size_t idx = output_idx+1; idx < configs_len; idx++) {
+		struct wlr_backend_output_state *backend_state = &states[idx];
+		struct wlr_output_state *state = &backend_state->base;
+
+		reset_output_state(state);
+		wlr_output_state_set_enabled(state, false);
+	}
+}
+
+static bool search_finish(struct search_context *ctx, size_t output_idx) {
+	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
+	struct wlr_output_state *state = &backend_state->base;
+	struct wlr_output *wlr_output = backend_state->output;
+
+	clear_later_output_states(ctx->states, ctx->configs_len, output_idx);
+	dump_output_state(wlr_output, state);
+	return wlr_output_swapchain_manager_prepare(ctx->swapchain_mgr, ctx->states, ctx->configs_len) &&
+		search_valid_config(ctx, output_idx+1);
+}
+
+static bool search_adaptive_sync(struct search_context *ctx, size_t output_idx) {
+	struct matched_output_config *cfg = &ctx->configs[output_idx];
+	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
+	struct wlr_output_state *state = &backend_state->base;
+
+	if (cfg->config && cfg->config->adaptive_sync == 1) {
+		wlr_output_state_set_adaptive_sync_enabled(state, true);
+		if (search_finish(ctx, output_idx)) {
+			return true;
+		}
+	}
+	if (!cfg->config || cfg->config->adaptive_sync != -1) {
+		wlr_output_state_set_adaptive_sync_enabled(state, false);
+		if (search_finish(ctx, output_idx)) {
+			return true;
+		}
+	}
+	// If adaptive sync has not been set, or fallback in case we are on a
+	// backend that cannot disable adaptive sync such as the wayland backend.
+	state->committed &= ~WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
+	return search_finish(ctx, output_idx);
+}
+
+static bool search_mode(struct search_context *ctx, size_t output_idx) {
+	struct matched_output_config *cfg = &ctx->configs[output_idx];
+	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
+	struct wlr_output_state *state = &backend_state->base;
+	struct wlr_output *wlr_output = backend_state->output;
+
+	if (!config_has_auto_mode(cfg->config)) {
+		return search_adaptive_sync(ctx, output_idx);
+	}
+
+	struct wlr_output_mode *preferred_mode = wlr_output_preferred_mode(wlr_output);
+	if (preferred_mode) {
+		wlr_output_state_set_mode(state, preferred_mode);
+		if (search_adaptive_sync(ctx, output_idx)) {
+			return true;
+		}
+	}
+
+	if (wl_list_empty(&wlr_output->modes)) {
+		state->committed &= ~WLR_OUTPUT_STATE_MODE;
+		return search_adaptive_sync(ctx, output_idx);
+	}
+
+	struct wlr_output_mode *mode;
+	wl_list_for_each(mode, &backend_state->output->modes, link) {
+		if (mode == preferred_mode) {
+			continue;
+		}
+		wlr_output_state_set_mode(state, mode);
+		if (search_adaptive_sync(ctx, output_idx)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool search_render_format(struct search_context *ctx, size_t output_idx) {
+	struct matched_output_config *cfg = &ctx->configs[output_idx];
+	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
+	struct wlr_output_state *state = &backend_state->base;
+	struct wlr_output *wlr_output = backend_state->output;
+
+	uint32_t fmts[] = {
+		DRM_FORMAT_XRGB2101010,
+		DRM_FORMAT_XBGR2101010,
+		DRM_FORMAT_XRGB8888,
+		DRM_FORMAT_INVALID,
+	};
+	if (render_format_is_bgr(wlr_output->render_format)) {
+		// Start with BGR in the unlikely event that we previously required it.
+		fmts[0] = DRM_FORMAT_XBGR2101010;
+		fmts[1] = DRM_FORMAT_XRGB2101010;
+	}
+
+	const struct wlr_drm_format_set *primary_formats =
+		wlr_output_get_primary_formats(wlr_output, WLR_BUFFER_CAP_DMABUF);
+	bool need_10bit = cfg->config && cfg->config->render_bit_depth == RENDER_BIT_DEPTH_10;
+	for (size_t idx = 0; fmts[idx] != DRM_FORMAT_INVALID; idx++) {
+		if (!need_10bit && render_format_is_10bit(fmts[idx])) {
+			continue;
+		}
+		if (!wlr_drm_format_set_get(primary_formats, fmts[idx])) {
+			// This is not a supported format for this output
+			continue;
+		}
+		wlr_output_state_set_render_format(state, fmts[idx]);
+		if (search_mode(ctx, output_idx)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool search_valid_config(struct search_context *ctx, size_t output_idx) {
+	if (output_idx >= ctx->configs_len) {
+		// We reached the end of the search, all good!
+		return true;
+	}
+
+	struct matched_output_config *cfg = &ctx->configs[output_idx];
+	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
+	struct wlr_output_state *state = &backend_state->base;
+	struct wlr_output *wlr_output = backend_state->output;
+
+	if (!output_config_is_disabling(cfg->config)) {
+		// Search through our possible configurations, doing a depth-first
+		// through render_format, modes, adaptive_sync and the next output's
+		// config.
+		queue_output_config(cfg->config, cfg->output, &backend_state->base);
+		if (search_render_format(ctx, output_idx)) {
+			return true;
+		} else if (!ctx->degrade_to_off) {
+			return false;
+		}
+		// We could not get anything to work, try to disable this output to see
+		// if we can at least make the outputs before us work.
+		sway_log(SWAY_DEBUG, "Unable to find valid config with output %s, disabling",
+			wlr_output->name);
+		reset_output_state(state);
+	}
+
+	wlr_output_state_set_enabled(state, false);
+	return search_finish(ctx, output_idx);
+}
+
+static int compare_matched_output_config_priority(const void *a, const void *b) {
+
+	const struct matched_output_config *amc = a;
+	const struct matched_output_config *bmc = b;
+	bool a_disabling = output_config_is_disabling(amc->config);
+	bool b_disabling = output_config_is_disabling(bmc->config);
+	bool a_enabled = amc->output->enabled;
+	bool b_enabled = bmc->output->enabled;
+
+	// We want to give priority to existing enabled outputs. To do so, we want
+	// the configuration order to be:
+	// 1. Existing, enabled outputs
+	// 2. Outputs that need to be enabled
+	// 3. Disabled or disabling outputs
+	if (a_enabled && !a_disabling) {
+		return -1;
+	} else if (b_enabled && !b_disabling) {
+		return 1;
+	} else if (b_disabling && !a_disabling) {
+		return -1;
+	} else if (a_disabling && !b_disabling) {
+		return 1;
+	}
+	return 0;
+}
+
+void sort_output_configs_by_priority(struct matched_output_config *configs,
+		size_t configs_len) {
+	qsort(configs, configs_len, sizeof(*configs), compare_matched_output_config_priority);
+}
+
 bool apply_output_configs(struct matched_output_config *configs,
-		size_t configs_len, bool test_only) {
+		size_t configs_len, bool test_only, bool degrade_to_off) {
 	struct wlr_backend_output_state *states = calloc(configs_len, sizeof(*states));
 	if (!states) {
 		return false;
@@ -674,8 +883,18 @@ bool apply_output_configs(struct matched_output_config *configs,
 
 	bool ok = wlr_output_swapchain_manager_prepare(&swapchain_mgr, states, configs_len);
 	if (!ok) {
-		sway_log(SWAY_ERROR, "Swapchain prepare failed");
-		goto out;
+		sway_log(SWAY_ERROR, "Requested backend configuration failed, searching for valid fallbacks");
+		struct search_context ctx = {
+			.swapchain_mgr = &swapchain_mgr,
+			.states = states,
+			.configs = configs,
+			.configs_len = configs_len,
+			.degrade_to_off = degrade_to_off,
+		};
+		if (!search_valid_config(&ctx, 0)) {
+			sway_log(SWAY_ERROR, "Search for valid config failed");
+			goto out;
+		}
 	}
 
 	if (test_only) {
@@ -761,7 +980,8 @@ void apply_all_output_configs(void) {
 		config->config = find_output_config(sway_output);
 	}
 
-	apply_output_configs(configs, configs_len, false);
+	sort_output_configs_by_priority(configs, configs_len);
+	apply_output_configs(configs, configs_len, false, true);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		free_output_config(cfg->config);
