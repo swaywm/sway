@@ -352,6 +352,8 @@ void container_arrange_title_bar(struct sway_container *con) {
 
 		int alloc_width = MIN((int)node->width,
 			width - h_padding - config->titlebar_h_padding);
+		alloc_width = MAX(alloc_width, 0);
+
 		sway_text_node_set_max_width(node, alloc_width);
 		wlr_scene_node_set_position(node->node,
 			h_padding, (height - node->height) >> 1);
@@ -376,6 +378,8 @@ void container_arrange_title_bar(struct sway_container *con) {
 
 		int alloc_width = MIN((int) node->width,
 			width - h_padding - config->titlebar_h_padding);
+		alloc_width = MAX(alloc_width, 0);
+
 		sway_text_node_set_max_width(node, alloc_width);
 		wlr_scene_node_set_position(node->node,
 			h_padding, (height - node->height) >> 1);
