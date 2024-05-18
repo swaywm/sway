@@ -231,7 +231,7 @@ sway_deps = [
 	xcb_icccm,
 ]
 
-if have_xwayland
+if wlroots_features['xwayland']
 	sway_sources += 'desktop/xwayland.c'
 endif
 

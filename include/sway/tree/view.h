@@ -1,10 +1,11 @@
 #ifndef _SWAY_VIEW_H
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
 #include "sway/config.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
 #include "sway/input/input-manager.h"
@@ -15,7 +16,7 @@ struct sway_xdg_decoration;
 
 enum sway_view_type {
 	SWAY_VIEW_XDG_SHELL,
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	SWAY_VIEW_XWAYLAND,
 #endif
 };
@@ -27,7 +28,7 @@ enum sway_view_prop {
 	VIEW_PROP_INSTANCE,
 	VIEW_PROP_WINDOW_TYPE,
 	VIEW_PROP_WINDOW_ROLE,
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	VIEW_PROP_X11_WINDOW_ID,
 	VIEW_PROP_X11_PARENT_ID,
 #endif
@@ -98,7 +99,7 @@ struct sway_view {
 
 	union {
 		struct wlr_xdg_toplevel *wlr_xdg_toplevel;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 #endif
 	};
@@ -127,7 +128,7 @@ struct sway_xdg_shell_view {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 struct sway_xwayland_view {
 	struct sway_view view;
 
@@ -293,7 +294,7 @@ void view_center_and_clip_surface(struct sway_view *view);
 
 struct sway_view *view_from_wlr_xdg_surface(
 	struct wlr_xdg_surface *xdg_surface);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 struct sway_view *view_from_wlr_xwayland_surface(
 	struct wlr_xwayland_surface *xsurface);
 #endif

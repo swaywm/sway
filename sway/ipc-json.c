@@ -154,7 +154,7 @@ static json_object *ipc_json_output_mode_description(
 	return mode_object;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static const char *ipc_json_xwindow_type_description(struct sway_view *view) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	struct sway_xwayland *xwayland = &server.xwayland;
@@ -633,7 +633,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 			json_object_new_string(ipc_json_content_type_description(content_type)));
 	}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (c->view->type == SWAY_VIEW_XWAYLAND) {
 		json_object_object_add(object, "window",
 				json_object_new_int(view_get_x11_window_id(c->view)));

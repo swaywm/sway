@@ -190,7 +190,7 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 		node->sway_container->view : NULL;
 
 	if (view && seat_is_input_allowed(seat, view->surface)) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		if (view->type == SWAY_VIEW_XWAYLAND) {
 			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
@@ -1002,7 +1002,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 			setenv("XCURSOR_THEME", cursor_theme, 1);
 		}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		if (server.xwayland.wlr_xwayland && (!server.xwayland.xcursor_manager ||
 				!xcursor_manager_is_named(server.xwayland.xcursor_manager,
 					cursor_theme) ||

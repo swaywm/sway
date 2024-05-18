@@ -10,7 +10,7 @@ struct cmd_results *cmd_xwayland(int argc, char **argv) {
 		return error;
 	}
 
-#ifdef HAVE_XWAYLAND
+#ifdef WLR_HAS_XWAYLAND
 	enum xwayland_mode xwayland;
 	if (strcmp(argv[0], "force") == 0) {
 		xwayland = XWAYLAND_MODE_IMMEDIATE;

@@ -57,10 +57,6 @@ foreach name, _ : wlroots_features
 	wlroots_features += { name: have }
 endforeach
 
-if get_option('xwayland').enabled() and not wlroots_features['xwayland']
-	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
-endif
-
 null_dep = dependency('', required: false)
 
 jsonc = dependency('json-c', version: '>=0.13')
@@ -77,15 +73,13 @@ gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 libevdev = dependency('libevdev')
 libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
-xcb = dependency('xcb', required: get_option('xwayland'))
+xcb = wlroots_features['xwayland'] ? dependency('xcb') : null_dep
 drm = dependency('libdrm')
 libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_dep
 math = cc.find_library('m')
 rt = cc.find_library('rt')
-xcb_icccm = dependency('xcb-icccm', required: get_option('xwayland'))
+xcb_icccm = wlroots_features['xwayland'] ? dependency('xcb-icccm') : null_dep
 threads = dependency('threads') # for pthread_setschedparam
-
-have_xwayland = xcb.found() and xcb_icccm.found() and wlroots_features['xwayland']
 
 if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
@@ -110,7 +104,6 @@ have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
 conf_data = configuration_data()
 
-conf_data.set10('HAVE_XWAYLAND', have_xwayland)
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd')
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
@@ -271,7 +264,6 @@ endif
 subdir('completions')
 
 summary({
-	'xwayland': have_xwayland,
 	'gdk-pixbuf': gdk_pixbuf.found(),
 	'tray': have_tray,
 	'man-pages': scdoc.found(),

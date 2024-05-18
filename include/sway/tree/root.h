@@ -2,12 +2,12 @@
 #define _SWAY_ROOT_H
 #include <wayland-server-core.h>
 #include <wayland-util.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/render/wlr_texture.h>
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
-#include "config.h"
 #include "list.h"
 
 extern struct sway_root *root;
@@ -47,7 +47,7 @@ struct sway_root {
 		struct wlr_scene_tree *shell_top;
 		struct wlr_scene_tree *fullscreen;
 		struct wlr_scene_tree *fullscreen_global;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		struct wlr_scene_tree *unmanaged;
 #endif
 		struct wlr_scene_tree *shell_overlay;
