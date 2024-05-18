@@ -448,7 +448,7 @@ static void queue_output_config(struct output_config *oc,
 #endif
 	}
 	if (wlr_output->transform != tr) {
-		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, tr);
+		sway_log(SWAY_DEBUG, "Set %s transform to %d", wlr_output->name, tr);
 		wlr_output_state_set_transform(pending, tr);
 	}
 
