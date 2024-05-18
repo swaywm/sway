@@ -56,7 +56,7 @@
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
 #include "sway/xwayland.h"
 #endif
@@ -118,7 +118,7 @@ static bool is_privileged(const struct wl_global *global) {
 
 static bool filter_global(const struct wl_client *client,
 		const struct wl_global *global, void *data) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 	if (xwayland && global == xwayland->shell_v1->global) {
 		return xwayland->server != NULL && client == xwayland->server->client;
@@ -437,7 +437,7 @@ bool server_init(struct sway_server *server) {
 
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 #endif
 	wl_display_destroy_clients(server->wl_display);
@@ -447,7 +447,7 @@ void server_fini(struct sway_server *server) {
 }
 
 bool server_start(struct sway_server *server) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (config->xwayland != XWAYLAND_MODE_DISABLED) {
 		sway_log(SWAY_DEBUG, "Initializing Xwayland (lazy=%d)",
 				config->xwayland == XWAYLAND_MODE_LAZY);

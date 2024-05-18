@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <wayland-server-core.h>
+#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
@@ -9,8 +10,7 @@
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
-#include "config.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
 #include "list.h"
@@ -126,7 +126,7 @@ const char *view_get_instance(struct sway_view *view) {
 	}
 	return NULL;
 }
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 uint32_t view_get_x11_window_id(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
@@ -159,7 +159,7 @@ const char *view_get_shell(struct sway_view *view) {
 	switch(view->type) {
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
 #endif
@@ -499,7 +499,7 @@ void view_execute_criteria(struct sway_view *view) {
 static void view_populate_pid(struct sway_view *view) {
 	pid_t pid;
 	switch (view->type) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:;
 		struct wlr_xwayland_surface *surf =
 			wlr_xwayland_surface_try_from_wlr_surface(view->surface);
@@ -838,7 +838,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	bool set_focus = should_focus(view);
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
 		set_focus &= wlr_xwayland_icccm_input_model(xsurface) !=
@@ -954,7 +954,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xdg_surface(xdg_surface);
 	}
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xwayland_surface(xsurface);

@@ -15,7 +15,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include "sway/xwayland.h"
 #endif
 
@@ -234,7 +234,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		node->sway_container : NULL;
 
 	struct wlr_layer_surface_v1 *layer;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 #endif
 	if ((layer = wlr_layer_surface_v1_try_from_wlr_surface(surface)) &&
@@ -268,7 +268,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		seat_set_focus_container(seat, cont);
 		seatop_begin_down(seat, node->sway_container, sx, sy);
 	}
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	// Handle tapping on an xwayland unmanaged view
 	else if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(surface)) &&
 			xsurface->override_redirect &&
@@ -514,7 +514,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		return;
 	}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	// Handle clicking on xwayland unmanaged view
 	struct wlr_xwayland_surface *xsurface;
 	if (surface &&
