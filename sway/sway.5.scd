@@ -579,6 +579,11 @@ runtime.
 	*client.unfocused*
 		A view that does not have focus.
 
+	*client.unfocused_tab_title*
+		Title of a tab or stack container that does not have focus. Defaults to
+		unfocused if not specified and does not use the indicator and child_border
+		colors.
+
 	*client.urgent*
 		A view with an urgency hint. *Note*: Native Wayland windows do not
 		support urgency. Urgency only works for Xwayland windows.
@@ -640,6 +645,12 @@ The default colors are:
 :  #888888
 :  #292d2e
 :  #222222
+|  *unfocused_tab_title*
+:  #333333
+:  #222222
+:  #888888
+:  n/a
+:  n/a
 |  *urgent*
 :  #2f343a
 :  #900000
