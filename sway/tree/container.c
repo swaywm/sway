@@ -175,6 +175,14 @@ static bool container_has_focused_child(struct sway_container *con) {
 	return container_find_child(con, container_is_focused, NULL);
 }
 
+static bool container_is_container(struct sway_container *con, void *data) {
+	return true;  // intentional tautology
+}
+
+static bool container_has_child(struct sway_container *con) {
+	return container_find_child(con, container_is_container, NULL);
+}
+
 static bool container_is_current_parent_focused(struct sway_container *con) {
 	if (con->current.parent) {
 		struct sway_container *parent = con->current.parent;
@@ -211,6 +219,8 @@ static struct border_colors *container_get_current_colors(
 		colors = &config->border_colors.focused_tab_title;
 	} else if (con == active_child) {
 		colors = &config->border_colors.focused_inactive;
+	} else if (config->has_unfocused_tab_title && container_has_child(con)) {
+		colors = &config->border_colors.unfocused_tab_title;
 	} else {
 		colors = &config->border_colors.unfocused;
 	}
