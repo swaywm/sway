@@ -234,6 +234,9 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		arrange_layers(output);
 	}
+
+	// Views are now visible, so check if we need to activate inhibition again.
+	sway_idle_inhibit_v1_check_active();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
@@ -297,6 +300,10 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 
 	wlr_session_lock_v1_send_locked(lock);
 	server.session_lock.lock = sway_lock;
+
+	// The lock screen covers everything, so check if any active inhibition got
+	// deactivated due to lost visibility.
+	sway_idle_inhibit_v1_check_active();
 }
 
 static void handle_session_lock_destroy(struct wl_listener *listener, void *data) {
