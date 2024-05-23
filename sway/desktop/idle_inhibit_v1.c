@@ -126,9 +126,9 @@ bool sway_idle_inhibit_v1_is_active(struct sway_idle_inhibitor_v1 *inhibitor) {
 			return wlr_surface->mapped;
 		}
 
-		// If there is no view associated with the inhibitor, assume visible
+		// If there is no view associated with the inhibitor, assume invisible
 		struct sway_view *view = view_from_wlr_surface(wlr_surface);
-		return !view || !view->container || view_is_visible(view);
+		return view && view->container && view_is_visible(view);
 	case INHIBIT_IDLE_FOCUS:;
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &server.input->seats, link) {
