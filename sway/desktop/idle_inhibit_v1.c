@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
+#include <wlr/types/wlr_session_lock_v1.h>
 #include "log.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/seat.h"
@@ -103,6 +104,19 @@ void sway_idle_inhibit_v1_user_inhibitor_destroy(
 }
 
 bool sway_idle_inhibit_v1_is_active(struct sway_idle_inhibitor_v1 *inhibitor) {
+	if (server.session_lock.lock) {
+		// A session lock is active. In this case, only application inhibitors
+		// on the session lock surface can have any effect.
+		if (inhibitor->mode != INHIBIT_IDLE_APPLICATION) {
+			return false;
+		}
+		struct wlr_surface *wlr_surface = inhibitor->wlr_inhibitor->surface;
+		if (!wlr_session_lock_surface_v1_try_from_wlr_surface(wlr_surface)) {
+			return false;
+		}
+		return wlr_surface->mapped;
+	}
+
 	switch (inhibitor->mode) {
 	case INHIBIT_IDLE_APPLICATION:;
 		// If there is no view associated with the inhibitor, assume visible
