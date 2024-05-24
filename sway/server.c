@@ -113,7 +113,8 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input->keyboard_shortcuts_inhibit->global ||
 		global == server.input->virtual_keyboard->global ||
 		global == server.input->virtual_pointer->global ||
-		global == server.input->transient_seat_manager->global;
+		global == server.input->transient_seat_manager->global ||
+		global == server.xdg_output_manager_v1->global;
 }
 
 static bool filter_global(const struct wl_client *client,
@@ -275,7 +276,8 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&root->output_layout->events.change,
 		&server->output_layout_change);
 
-	wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
+	server->xdg_output_manager_v1 =
+		wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
 
 	server->idle_notifier_v1 = wlr_idle_notifier_v1_create(server->wl_display);
 	sway_idle_inhibit_manager_v1_init();
