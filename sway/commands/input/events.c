@@ -5,6 +5,7 @@
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "sway/server.h"
 #include "log.h"
 
 #if WLR_HAS_LIBINPUT_BACKEND

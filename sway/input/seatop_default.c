@@ -11,6 +11,7 @@
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/scene_descriptor.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"

@@ -5,9 +5,10 @@
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/types/wlr_transient_seat_v1.h>
-#include "sway/server.h"
 #include "sway/config.h"
 #include "list.h"
+
+struct sway_server;
 
 struct sway_input_device {
 	char *identifier;

@@ -13,6 +13,7 @@
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
+#include "sway/server.h"
 #include "log.h"
 
 #if WLR_HAS_SESSION

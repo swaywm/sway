@@ -23,6 +23,7 @@
 #include "sway/config.h"
 #include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
+#include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"

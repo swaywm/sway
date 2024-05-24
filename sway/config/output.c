@@ -13,6 +13,7 @@
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/root.h"
 #include "log.h"
 #include "util.h"
