@@ -9,6 +9,8 @@
 #include "sway/input/text_input.h"
 #include "sway/input/text_input_popup.h"
 #include "sway/layers.h"
+#include "sway/server.h"
+
 static void input_popup_update(struct sway_input_popup *popup);
 
 static struct sway_text_input *relay_get_focusable_text_input(

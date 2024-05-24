@@ -3,6 +3,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/seat.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 

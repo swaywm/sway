@@ -7,6 +7,7 @@
 #include "sway/criteria.h"
 #include "sway/tree/container.h"
 #include "sway/config.h"
+#include "sway/server.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"

@@ -7,6 +7,10 @@
 #include "list.h"
 #include "tree/view.h"
 
+#if WLR_HAS_XWAYLAND
+#include "sway/xwayland.h"
+#endif
+
 enum criteria_type {
 	CT_COMMAND                 = 1 << 0,
 	CT_ASSIGN_OUTPUT           = 1 << 1,

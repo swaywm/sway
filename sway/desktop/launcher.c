@@ -4,6 +4,7 @@
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/desktop/launcher.h"
+#include "sway/server.h"
 #include "sway/tree/node.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"

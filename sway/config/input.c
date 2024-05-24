@@ -3,6 +3,7 @@
 #include <float.h>
 #include "sway/config.h"
 #include "sway/input/keyboard.h"
+#include "sway/server.h"
 #include "log.h"
 
 struct input_config *new_input_config(const char* identifier) {

@@ -25,6 +25,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
