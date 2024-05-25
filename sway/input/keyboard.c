@@ -1074,7 +1074,9 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 				keyboard->repeat_rate, keyboard->repeat_delay);
 	}
 
-	sway_keyboard_set_layout(keyboard, input_config);
+	if (!keyboard->seat_device->input_device->is_virtual) {
+		sway_keyboard_set_layout(keyboard, input_config);
+	}
 
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_signal_add(&keyboard->wlr->events.key, &keyboard->keyboard_key);
