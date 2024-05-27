@@ -508,12 +508,13 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	}
 
 	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-		// If the pressed event was sent to a client, also send the released
+		// If the pressed event was sent to a client and we have a focused
+		// surface immediately before this event, also send the released
 		// event. In particular, don't send the released event to the IM grab.
 		bool pressed_sent = update_shortcut_state(
 			&keyboard->state_pressed_sent, event->keycode,
 			event->state, keyinfo.keycode, 0);
-		if (pressed_sent) {
+		if (pressed_sent && seat->wlr_seat->keyboard_state.focused_surface) {
 			wlr_seat_set_keyboard(wlr_seat, keyboard->wlr);
 			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 				event->keycode, event->state);
