@@ -37,15 +37,20 @@ if is_freebsd
 	add_project_arguments('-D_C11_SOURCE', language: 'c')
 endif
 
-# Execute the wlroots subproject, if any
+wlroots_version_major = '0.18'
 wlroots_version = ['>=0.18.0', '<0.19.0']
-subproject(
+# Execute the wlroots subproject, if any
+wlroots_subproject = subproject(
 	'wlroots',
 	default_options: ['examples=false'],
 	required: false,
 	version: wlroots_version,
 )
-wlroots = dependency('wlroots', version: wlroots_version)
+if wlroots_subproject.found()
+    wlroots = dependency('wlroots', version: wlroots_version)
+else
+    wlroots = dependency('wlroots-' + wlroots_version_major, version: wlroots_version)
+endif
 wlroots_features = {
 	'xwayland': false,
 	'libinput_backend': false,
