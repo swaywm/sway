@@ -448,6 +448,11 @@ static void handle_im_new_popup_surface(struct wl_listener *listener,
 	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
 		input_method_new_popup_surface);
 	struct sway_input_popup *popup = calloc(1, sizeof(*popup));
+	if (!popup) {
+		sway_log(SWAY_ERROR, "Failed to allocate an input method popup");
+		return;
+	}
+
 	popup->relay = relay;
 	popup->popup_surface = data;
 	popup->popup_surface->data = popup;
