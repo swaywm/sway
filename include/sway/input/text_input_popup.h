@@ -9,6 +9,7 @@ struct sway_input_popup {
 	struct wlr_scene_tree *scene_tree;
 	struct sway_popup_desc desc;
 	struct wlr_input_popup_surface_v2 *popup_surface;
+	struct wlr_output *fixed_output;
 
 	struct wl_list link;
 
