@@ -927,6 +927,7 @@ bool apply_output_configs(struct matched_output_config *configs,
 		struct wlr_scene_output_state_options opts = {
 			.swapchain = wlr_output_swapchain_manager_get_swapchain(
 				&swapchain_mgr, backend_state->output),
+			.color_transform = cfg->output->color_transform,
 		};
 		struct wlr_scene_output *scene_output = cfg->output->scene_output;
 		struct wlr_output_state *state = &backend_state->base;
