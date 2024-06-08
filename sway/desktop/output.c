@@ -243,10 +243,14 @@ static int output_repaint_timer_handler(void *data) {
 
 	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
 
+	struct wlr_scene_output_state_options opts = {
+		.color_transform = output->color_transform,
+	};
+
 	if (output->gamma_lut_changed) {
 		struct wlr_output_state pending;
 		wlr_output_state_init(&pending);
-		if (!wlr_scene_output_build_state(output->scene_output, &pending, NULL)) {
+		if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
 			return 0;
 		}
 
@@ -269,9 +273,6 @@ static int output_repaint_timer_handler(void *data) {
 		return 0;
 	}
 
-	struct wlr_scene_output_state_options opts = {
-		.color_transform = output->color_transform,
-	};
 	wlr_scene_output_commit(output->scene_output, &opts);
 	return 0;
 }
