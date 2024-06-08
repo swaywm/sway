@@ -132,6 +132,9 @@ static void constrain_popup(struct sway_input_popup *popup) {
 	struct sway_text_input *text_input =
 		relay_get_focused_text_input(popup->relay);
 
+	if (!popup->desc.relative) {
+		return;
+	}
 
 	struct wlr_box parent = {0};
 	wlr_scene_node_coords(&popup->desc.relative->parent->node, &parent.x, &parent.y);
@@ -199,7 +202,10 @@ static void constrain_popup(struct sway_input_popup *popup) {
 		wlr_input_popup_surface_v2_send_text_input_rectangle(
 			popup->popup_surface, &box);
 	}
-	wlr_scene_node_set_position(&popup->scene_tree->node, x - geo.x, y - geo.y);
+
+	if (popup->scene_tree) {
+		wlr_scene_node_set_position(&popup->scene_tree->node, x - geo.x, y - geo.y);
+	}
 }
 
 static void relay_send_im_state(struct sway_input_method_relay *relay,
@@ -376,7 +382,6 @@ static void input_popup_update(struct sway_input_popup *popup) {
 		wlr_layer_surface_v1_try_from_wlr_surface(focused_surface);
 	struct wlr_scene_tree *relative_parent;
 
-	popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup, popup->popup_surface->surface);
 	if (layer_surface != NULL) {
 		struct sway_layer_surface *layer = layer_surface->data;
 		if (layer == NULL) {
@@ -431,18 +436,37 @@ static void handle_im_popup_destroy(struct wl_listener *listener, void *data) {
 	struct sway_input_popup *popup =
 		wl_container_of(listener, popup, popup_destroy);
 	wl_list_remove(&popup->focused_surface_unmap.link);
-	wl_list_remove(&popup->popup_surface_commit.link);
+	wl_list_remove(&popup->popup_surface_map.link);
+	wl_list_remove(&popup->popup_surface_unmap.link);
 	wl_list_remove(&popup->popup_destroy.link);
 	wl_list_remove(&popup->link);
 
 	free(popup);
 }
 
-static void handle_im_popup_surface_commit(struct wl_listener *listener,
-		void *data) {
+static void handle_im_popup_surface_map(struct wl_listener *listener, void *data) {
 	struct sway_input_popup *popup =
-		wl_container_of(listener, popup, popup_surface_commit);
-	input_popup_update(popup);
+		wl_container_of(listener, popup, popup_surface_map);
+	popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup,
+		popup->popup_surface->surface);
+
+	struct sway_text_input *text_input = relay_get_focused_text_input(popup->relay);
+	if (text_input != NULL) {
+		input_popup_set_focus(popup, text_input->input->focused_surface);
+	} else {
+		input_popup_set_focus(popup, NULL);
+	}
+}
+
+static void handle_im_popup_surface_unmap(struct wl_listener *listener, void *data) {
+	struct sway_input_popup *popup =
+		wl_container_of(listener, popup, popup_surface_unmap);
+
+	// relative should already be freed as it should be a child of the just unmapped scene
+	popup->desc.relative = NULL;
+
+	wlr_scene_node_destroy(&popup->scene_tree->node);
+	input_popup_set_focus(popup, NULL);
 }
 
 static void handle_im_focused_surface_unmap(
@@ -466,14 +490,19 @@ static void handle_im_new_popup_surface(struct wl_listener *listener,
 	popup->popup_surface = data;
 	popup->popup_surface->data = popup;
 
-	wl_signal_add(
-		&popup->popup_surface->events.destroy, &popup->popup_destroy);
+	wl_signal_add(&popup->popup_surface->events.destroy, &popup->popup_destroy);
 	popup->popup_destroy.notify = handle_im_popup_destroy;
-	wl_signal_add(&popup->popup_surface->surface->events.commit,
-		&popup->popup_surface_commit);
-	popup->popup_surface_commit.notify = handle_im_popup_surface_commit;
+	wl_signal_add(&popup->popup_surface->surface->events.map, &popup->popup_surface_map);
+	popup->popup_surface_map.notify = handle_im_popup_surface_map;
+	wl_signal_add(&popup->popup_surface->surface->events.unmap, &popup->popup_surface_unmap);
+	popup->popup_surface_unmap.notify = handle_im_popup_surface_unmap;
 	wl_list_init(&popup->focused_surface_unmap.link);
 	popup->focused_surface_unmap.notify = handle_im_focused_surface_unmap;
+
+	if (popup->popup_surface->surface->mapped) {
+		popup->scene_tree = wlr_scene_subsurface_tree_create(root->layers.popup,
+			popup->popup_surface->surface);
+	}
 
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
 	if (text_input != NULL) {
