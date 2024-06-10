@@ -1168,7 +1168,7 @@ following properties will be included for devices that support them:
 :  Whether tap to click is enabled. It can be _enabled_ or _disabled_
 |- tap_button_map
 :  string
-:  The finger to button mapping in use. It can be _lmr_ or _lrm_
+:  The finger to button mapping in use for tapping. It can be _lmr_ or _lrm_
 |- tap_drag
 :  string
 :  Whether tap-and-drag is enabled. It can be _enabled_ or _disabled_
@@ -1190,6 +1190,9 @@ following properties will be included for devices that support them:
 |- click_method
 :  string
 :  The click method in use. It can be _none_, _button_areas_, or _clickfinger_
+|- click_button_map
+:  string
+:  The finger to button mapping in use for clickfinger. It can be _lmr_ or _lrm_
 |- middle_emulation
 :  string
 :  Whether middle emulation is enabled. It can be _enabled_ or _disabled_

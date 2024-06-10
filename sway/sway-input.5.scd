@@ -143,6 +143,12 @@ The following commands may only be used in the configuration file.
 *input* <identifier> click_method none|button_areas|clickfinger
 	Changes the click method for the specified device.
 
+*input* <identifier> clickfinger_button_map lrm|lmr
+	Specifies which button mapping to use for clickfinger. _lrm_ treats 1 finger as
+	left click, 2 fingers as right click, and 3 fingers as middle click. _lmr_
+	treats 1 finger as left click, 2 fingers as middle click, and 3 fingers as
+	right click.
+
 *input* <identifier> drag enabled|disabled
 	Enables or disables tap-and-drag for specified input device.
 

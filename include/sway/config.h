@@ -149,6 +149,7 @@ struct input_config {
 	int accel_profile;
 	struct calibration_matrix calibration_matrix;
 	int click_method;
+	int clickfinger_button_map;
 	int drag;
 	int drag_lock;
 	int dwt;
