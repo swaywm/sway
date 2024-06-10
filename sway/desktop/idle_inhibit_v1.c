@@ -120,10 +120,13 @@ bool sway_idle_inhibit_v1_is_active(struct sway_idle_inhibitor_v1 *inhibitor) {
 	switch (inhibitor->mode) {
 	case INHIBIT_IDLE_APPLICATION:;
 		struct wlr_surface *wlr_surface = inhibitor->wlr_inhibitor->surface;
-		if (wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface)) {
+		struct wlr_layer_surface_v1 *layer_surface =
+				wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
+		if (layer_surface) {
 			// Layer surfaces can be occluded but are always on screen after
 			// they have been mapped.
-			return wlr_surface->mapped;
+			return layer_surface->output && layer_surface->output->enabled &&
+					wlr_surface->mapped;
 		}
 
 		// If there is no view associated with the inhibitor, assume invisible
