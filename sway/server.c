@@ -9,6 +9,7 @@
 #include <wlr/config.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_action_binder_v1.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
@@ -393,6 +394,14 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&cursor_shape_manager->events.request_set_shape, &server->request_set_cursor_shape);
 
 	wl_list_init(&server->pending_launcher_ctxs);
+
+	server->action_binder = wlr_action_binder_v1_create(server->wl_display);
+	server->action_binder_bind.notify = action_binder_v1_bind;
+	wl_signal_add(&server->action_binder->events.bind,
+			&server->action_binder_bind);
+	server->action_binder_destroy.notify = action_binder_v1_delete;
+	wl_signal_add(&server->action_binder->events.destroy,
+			&server->action_binder_destroy);
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
