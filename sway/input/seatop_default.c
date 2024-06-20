@@ -795,6 +795,8 @@ static void handle_pointer_axis(struct sway_seat *seat,
 	free(dev_id);
 
 	if (!handled) {
+		wlr_seat_client_notify_modifiers(cursor->seat->wlr_seat,
+			cursor->seat->wlr_seat->pointer_state.focused_client);
 		wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
 			event->orientation, scroll_factor * event->delta, 
 			roundf(scroll_factor * event->delta_discrete), event->source,
