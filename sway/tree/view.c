@@ -173,9 +173,9 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 		view->impl->get_constraints(view,
 				min_width, max_width, min_height, max_height);
 	} else {
-		*min_width = DBL_MIN;
+		*min_width = 1;
 		*max_width = DBL_MAX;
-		*min_height = DBL_MIN;
+		*min_height = 1;
 		*max_height = DBL_MAX;
 	}
 }
