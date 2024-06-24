@@ -365,8 +365,8 @@ void view_autoconfigure(struct sway_view *view) {
 
 	con->pending.content_x = x;
 	con->pending.content_y = y;
-	con->pending.content_width = width;
-	con->pending.content_height = height;
+	con->pending.content_width = fmax(width, 1);
+	con->pending.content_height = fmax(height, 1);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
