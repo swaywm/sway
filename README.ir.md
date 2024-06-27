@@ -1,7 +1,9 @@
 # sway
 
-&rlm;sway یک کامپوزیتور الهام گرفته از [i3](https://i3wm.org/) بر روی [Wayland](http://wayland.freedesktop.org/) است. [سوال‌های متداول](https://github.com/swaywm/sway/wiki) را بخوانید. در [کانال
-IRC](http://web.libera.chat/gamja/?channels=sway&uio=d4) عضو شوید (&lrm;#sway&rlm; در
+[English][en] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - **[فارسی][ir]** - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+
+&rlm;sway یک کامپوزیتور الهام گرفته از [i3] بر روی [Wayland] است. [سوال‌های متداول][FAQ] را بخوانید. در [کانال
+IRC][IRC channel] عضو شوید (&lrm;#sway&rlm; در
 irc.libera.chat).
 
 برای حمایت از تیم توسعه sway به [صفحه
@@ -9,7 +11,7 @@ Patreon با نام کاربری SirCmpwn](https://patreon.com/sircmpwn) مرا�
 
 ## امضای نسخه‌ها
 
-امضای نسخه‌ها با [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) در [GitHub](https://github.com/swaywm/sway/releases) منتشر می‌شود.
+امضای نسخه‌ها با [E88F5E48] در [GitHub][Github releases] منتشر می‌شود.
 
 ## شیوه نصب
 
@@ -21,12 +23,12 @@ Patreon با نام کاربری SirCmpwn](https://patreon.com/sircmpwn) مرا�
 
 ### کامپایل کردن کد
 
-چنانچه می‌خواهید آخرین نسخه کد sway و wlroots را برای آزمایش یا توسعه بسازید به این [صفحه راهنما](https://github.com/swaywm/sway/wiki/Development-Setup) مراجعه کنید.
+چنانچه می‌خواهید آخرین نسخه کد sway و wlroots را برای آزمایش یا توسعه بسازید به این [صفحه راهنما][Development setup] مراجعه کنید.
 
 بسته‌های مورد نیاز:
 
 * meson \*
-* [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots)
+* [wlroots]
 * wayland
 * wayland-protocols \*
 * pcre2
@@ -34,7 +36,7 @@ Patreon با نام کاربری SirCmpwn](https://patreon.com/sircmpwn) مرا�
 * pango
 * cairo
 * gdk-pixbuf2 (انتخابی: برای system tray)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (انتخابی: برای صفحه‌های راهنما) \*
+* [scdoc] (انتخابی: برای صفحه‌های راهنما) \*
 * git (انتخابی: برای اطلاع در خصوص نسخه‌ها) \*
 
 _\*نیازمندی‌های زمان کامپایل برنامه_
@@ -52,3 +54,37 @@ _\*نیازمندی‌های زمان کامپایل برنامه_
 ## اجرا
 
 در محیط TTY کافیست `sway` را اجرا کنید. ممکن است ابزارهای مدیریت نمایشگری نیز برای این کار وجود داشته باشند اما از طرف sway پشتیبانی نمی‌شوند (gdm عملکرد خوبی در این زمینه دارد).
+
+[en]: https://github.com/swaywm/sway#readme
+[cs]: README.cs.md
+[de]: README.de.md
+[dk]: README.dk.md
+[es]: README.es.md
+[fr]: README.fr.md
+[gr]: README.gr.md
+[hi]: README.hi.md
+[hu]: README.hu.md
+[ir]: README.ir.md
+[it]: README.it.md
+[ja]: README.ja.md
+[ko]: README.ko.md
+[nl]: README.nl.md
+[no]: README.no.md
+[pl]: README.pl.md
+[pt]: README.pt.md
+[ro]: README.ro.md
+[ru]: README.ru.md
+[sv]: README.sv.md
+[tr]: README.tr.md
+[uk]: README.uk.md
+[zh-CN]: README.zh-CN.md
+[zh-TW]: README.zh-TW.md
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc

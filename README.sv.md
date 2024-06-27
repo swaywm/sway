@@ -1,9 +1,9 @@
 # sway
 
-[English][en] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - **[Svenska][sv]** - [Ελληνικά][gr] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+[English][en] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - **[Svenska][sv]** - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway är en [i3]-kompatibel [Wayland] compositor. Läs våran [FAQ]-sida. Gå med i vår
-[IRC-kanal] \(#sway på irc.libera.chat).
+[IRC-kanal][IRC channel] \(#sway på irc.libera.chat).
 
 ## Utgåvosignaturer
 
@@ -52,22 +52,25 @@ Kör `man 5 sway` för mer information kring konfigurationen.
 Kör `sway` från en TTY. Vissa inloggningahanterare kan fungera men inte vara stödda av sway (gdm ska fungera hyfsat bra).
 
 [en]: https://github.com/swaywm/sway#readme
+[cs]: README.cs.md
 [de]: README.de.md
 [dk]: README.dk.md
 [es]: README.es.md
 [fr]: README.fr.md
-[sv]: README.sv.md
 [gr]: README.gr.md
+[hi]: README.hi.md
 [hu]: README.hu.md
 [ir]: README.ir.md
 [it]: README.it.md
 [ja]: README.ja.md
 [ko]: README.ko.md
 [nl]: README.nl.md
+[no]: README.no.md
 [pl]: README.pl.md
 [pt]: README.pt.md
 [ro]: README.ro.md
 [ru]: README.ru.md
+[sv]: README.sv.md
 [tr]: README.tr.md
 [uk]: README.uk.md
 [zh-CN]: README.zh-CN.md
@@ -75,7 +78,7 @@ Kör `sway` från en TTY. Vissa inloggningahanterare kan fungera men inte vara s
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
-[IRC-kanal]: https://web.libera.chat/gamja/?channels=#sway
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
 [E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
