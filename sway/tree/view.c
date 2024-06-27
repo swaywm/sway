@@ -1185,7 +1185,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 	ipc_event_window(view->container, "urgent");
 
-	if (!container_is_scratchpad_hidden(view->container)) {
+	if (!container_is_scratchpad_hidden_or_child(view->container)) {
 		workspace_detect_urgent(view->container->pending.workspace);
 	}
 }
