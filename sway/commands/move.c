@@ -510,6 +510,7 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 				}
 			}
 			ws = workspace_create(NULL, ws_name);
+			arrange_workspace(ws);
 		}
 		free(ws_name);
 		struct sway_container *dst = seat_get_focus_inactive_tiling(seat, ws);
