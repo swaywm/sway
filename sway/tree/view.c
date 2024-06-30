@@ -6,6 +6,7 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -174,9 +175,9 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 		view->impl->get_constraints(view,
 				min_width, max_width, min_height, max_height);
 	} else {
-		*min_width = DBL_MIN;
+		*min_width = 1;
 		*max_width = DBL_MAX;
-		*min_height = DBL_MIN;
+		*min_height = 1;
 		*max_height = DBL_MAX;
 	}
 }
@@ -366,8 +367,8 @@ void view_autoconfigure(struct sway_view *view) {
 
 	con->pending.content_x = x;
 	con->pending.content_y = y;
-	con->pending.content_width = width;
-	con->pending.content_height = height;
+	con->pending.content_width = fmax(width, 1);
+	con->pending.content_height = fmax(height, 1);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -740,6 +741,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 	if (!ws) {
 		ws = select_workspace(view);
+	}
+
+	if (ws && ws->output) {
+		// Once the output is determined, we can notify the client early about
+		// scale to reduce startup jitter.
+		float scale = ws->output->wlr_output->scale;
+		wlr_fractional_scale_v1_notify_scale(wlr_surface, scale);
+		wlr_surface_set_preferred_buffer_scale(wlr_surface, ceil(scale));
 	}
 
 	struct sway_seat *seat = input_manager_current_seat();
@@ -1186,7 +1195,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 	ipc_event_window(view->container, "urgent");
 
-	if (!container_is_scratchpad_hidden(view->container)) {
+	if (!container_is_scratchpad_hidden_or_child(view->container)) {
 		workspace_detect_urgent(view->container->pending.workspace);
 	}
 }
