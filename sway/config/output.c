@@ -721,21 +721,18 @@ static bool search_adaptive_sync(struct search_context *ctx, size_t output_idx) 
 	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
 	struct wlr_output_state *state = &backend_state->base;
 
+	if (!backend_state->output->adaptive_sync_supported) {
+		return search_finish(ctx, output_idx);
+	}
+
 	if (cfg->config && cfg->config->adaptive_sync == 1) {
 		wlr_output_state_set_adaptive_sync_enabled(state, true);
 		if (search_finish(ctx, output_idx)) {
 			return true;
 		}
 	}
-	if (!cfg->config || cfg->config->adaptive_sync != -1) {
-		wlr_output_state_set_adaptive_sync_enabled(state, false);
-		if (search_finish(ctx, output_idx)) {
-			return true;
-		}
-	}
-	// If adaptive sync has not been set, or fallback in case we are on a
-	// backend that cannot disable adaptive sync such as the wayland backend.
-	state->committed &= ~WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
+
+	wlr_output_state_set_adaptive_sync_enabled(state, false);
 	return search_finish(ctx, output_idx);
 }
 
