@@ -38,14 +38,14 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 	}
 
 	// This is an activation request. If this context is internal we have ctx->seat.
-	struct sway_seat *seat = ctx->seat;
-	if (!seat) {
-		// Otherwise, use the seat indicated by the launcher client in set_serial
-		seat = ctx->token->seat ? ctx->token->seat->data : NULL;
+	if (ctx->seat) {
+		view_request_activate(view, ctx->seat);
+		return;
 	}
 
-	if (seat && ctx->had_focused_surface) {
-		view_request_activate(view, seat);
+	// Otherwise, activate if passed from another focused client
+	if (ctx->token->seat && ctx->had_focused_surface) {
+		view_request_activate(view, ctx->token->seat->data);
 	} else {
 		// The token is valid, but cannot be used to activate a window
 		view_request_urgent(view);
