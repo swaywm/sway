@@ -247,13 +247,13 @@ static int output_repaint_timer_handler(void *data) {
 		.color_transform = output->color_transform,
 	};
 
-	if (output->gamma_lut_changed) {
-		struct wlr_output_state pending;
-		wlr_output_state_init(&pending);
-		if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
-			return 0;
-		}
+	struct wlr_output_state pending;
+	wlr_output_state_init(&pending);
+	if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
+		return 0;
+	}
 
+	if (output->gamma_lut_changed) {
 		output->gamma_lut_changed = false;
 		struct wlr_gamma_control_v1 *gamma_control =
 			wlr_gamma_control_manager_v1_get_control(
@@ -263,17 +263,16 @@ static int output_repaint_timer_handler(void *data) {
 			return 0;
 		}
 
-		if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+		if (!wlr_output_test_state(output->wlr_output, &pending)) {
 			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
-			wlr_output_state_finish(&pending);
-			return 0;
+			wlr_output_state_set_gamma_lut(&pending, 0, NULL, NULL, NULL);
 		}
-
-		wlr_output_state_finish(&pending);
-		return 0;
 	}
 
-	wlr_scene_output_commit(output->scene_output, &opts);
+	if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+		sway_log(SWAY_ERROR, "Page-flip failed on output %s", output->wlr_output->name);
+	}
+	wlr_output_state_finish(&pending);
 	return 0;
 }
 
