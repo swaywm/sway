@@ -135,6 +135,8 @@ struct sway_server {
 	// Stores the nodes that have been marked as "dirty" and will be put into
 	// the pending transaction.
 	list_t *dirty_nodes;
+
+	struct wl_event_source *delayed_modeset;
 };
 
 extern struct sway_server server;
