@@ -23,6 +23,7 @@
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
+#include <wlr/types/wlr_linux_drm_syncobj_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
@@ -247,6 +248,11 @@ bool server_init(struct sway_server *server) {
 		if (debug.legacy_wl_drm) {
 			wlr_drm_create(server->wl_display, server->renderer);
 		}
+	}
+	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
+			server->renderer->features.timeline) {
+		wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
+			wlr_renderer_get_drm_fd(server->renderer));
 	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
