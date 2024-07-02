@@ -601,7 +601,9 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 			focus = seat_get_focus_inactive(seat, &old_parent->node);
 		}
 		if (!focus && old_ws) {
-			focus = seat_get_focus_inactive(seat, &old_ws->node);
+			struct sway_container *container =
+				seat_get_focus_inactive_view(seat, &old_ws->node);
+			focus = &container->node;
 		}
 	}
 	seat_set_focus(seat, focus);
