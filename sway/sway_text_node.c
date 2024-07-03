@@ -294,6 +294,9 @@ void sway_text_node_set_text(struct sway_text_node *node, char *text) {
 
 void sway_text_node_set_max_width(struct sway_text_node *node, int max_width) {
 	struct text_buffer *buffer = wl_container_of(node, buffer, props);
+	if (max_width == buffer->props.max_width) {
+		return;
+	}
 	buffer->props.max_width = max_width;
 	wlr_scene_buffer_set_dest_size(buffer->buffer_node,
 		get_text_width(&buffer->props), buffer->props.height);
@@ -303,6 +306,9 @@ void sway_text_node_set_max_width(struct sway_text_node *node, int max_width) {
 
 void sway_text_node_set_background(struct sway_text_node *node, float background[4]) {
 	struct text_buffer *buffer = wl_container_of(node, buffer, props);
+	if (memcmp(&node->background, background, sizeof(*background) * 4) == 0) {
+		return;
+	}
 	memcpy(&node->background, background, sizeof(*background) * 4);
 	render_backing_buffer(buffer);
 }
