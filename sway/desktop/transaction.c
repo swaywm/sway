@@ -314,7 +314,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 
 			if (activated) {
 				arrange_container(child, width, height - title_bar_height,
-					false, 0);
+					title_bar_height == 0, 0);
 			} else {
 				disable_container(child);
 			}
@@ -343,7 +343,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 
 			if (activated) {
 				arrange_container(child, width, height - title_height,
-					false, 0);
+					title_bar_height == 0, 0);
 			} else {
 				disable_container(child);
 			}
