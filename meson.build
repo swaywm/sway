@@ -72,7 +72,7 @@ pangocairo = dependency('pangocairo')
 gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 libevdev = dependency('libevdev')
-libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
+libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.26.0') : null_dep
 xcb = wlroots_features['xwayland'] ? dependency('xcb') : null_dep
 drm = dependency('libdrm')
 libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_dep
