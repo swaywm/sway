@@ -303,9 +303,15 @@ static int output_repaint_timer_handler(void *data) {
 		pending.tearing_page_flip = true;
 		
 		if (!wlr_output_test_state(output->wlr_output, &pending)) {
-			output->allow_tearing = false;
-			wlr_output_state_finish(&pending);
-			return 0;
+			sway_log(SWAY_ERROR, "Output test failed on '%s', retrying without tearing page-flip",
+				output->wlr_output->name);
+				
+			pending.tearing_page_flip = false;
+			
+			if (!wlr_output_test_state(output->wlr_output, &pending)) {
+				wlr_output_state_finish(&pending);
+				return 0;
+			}
 		}
 	}
 
