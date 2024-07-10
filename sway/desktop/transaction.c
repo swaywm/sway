@@ -632,6 +632,15 @@ static void arrange_root(struct sway_root *root) {
 	for (int i = 0; i < root->scratchpad->length; i++) {
 		struct sway_container *con = root->scratchpad->items[i];
 
+		// When a container is moved to a scratchpad, it's possible that it
+		// was moved into a floating container as part of the same transaction.
+		// In this case, we need to make sure we reparent all the container's
+		// children so that disabling the container will disable all descendants.
+		if (!con->view) for (int ii = 0; ii < con->current.children->length; ii++) {
+			struct sway_container *child = con->current.children->items[ii];
+			wlr_scene_node_reparent(&child->scene_tree->node, con->content_tree);
+		}
+
 		wlr_scene_node_set_enabled(&con->scene_tree->node, false);
 	}
 
