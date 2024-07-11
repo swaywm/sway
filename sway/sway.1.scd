@@ -89,9 +89,6 @@ _DISPLAY_
 _I3SOCK_
 	For compatibility with i3, specifies the path to the sway IPC socket.
 
-_SWAYSOCK_
-	Specifies the path to the sway IPC socket.
-
 _WAYLAND_DISPLAY_
 	Specifies the name of the Wayland display that sway is running on.
 
