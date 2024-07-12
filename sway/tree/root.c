@@ -53,7 +53,7 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->layers.shell_top = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.fullscreen = alloc_scene_tree(root->layer_tree, &failed);
 	root->layers.fullscreen_global = alloc_scene_tree(root->layer_tree, &failed);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	root->layers.unmanaged = alloc_scene_tree(root->layer_tree, &failed);
 #endif
 	root->layers.shell_overlay = alloc_scene_tree(root->layer_tree, &failed);

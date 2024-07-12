@@ -5,7 +5,7 @@
 #include "config.h"
 #include "list.h"
 #include "sway/desktop/idle_inhibit_v1.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include "sway/xwayland.h"
 #endif
 
@@ -59,7 +59,7 @@ struct sway_server {
 
 	struct wlr_tablet_manager_v2 *tablet_v2;
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
@@ -80,6 +80,8 @@ struct sway_server {
 
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
 	struct wl_listener pointer_constraint;
+
+	struct wlr_xdg_output_manager_v1 *xdg_output_manager_v1;
 
 	struct wlr_output_manager_v1 *output_manager_v1;
 	struct wl_listener output_manager_apply;
@@ -133,6 +135,8 @@ struct sway_server {
 	// Stores the nodes that have been marked as "dirty" and will be put into
 	// the pending transaction.
 	list_t *dirty_nodes;
+
+	struct wl_event_source *delayed_modeset;
 };
 
 extern struct sway_server server;
@@ -165,7 +169,7 @@ void sway_session_lock_add_output(struct sway_session_lock *lock,
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	struct wlr_surface *surface);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif
 void handle_server_decoration(struct wl_listener *listener, void *data);

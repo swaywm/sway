@@ -11,6 +11,7 @@
 #include "log.h"
 #include "sway/config.h"
 #include "sway/ipc-json.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -154,7 +155,7 @@ static json_object *ipc_json_output_mode_description(
 	return mode_object;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static const char *ipc_json_xwindow_type_description(struct sway_view *view) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	struct sway_xwayland *xwayland = &server.xwayland;
@@ -577,9 +578,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	bool visible = view_is_visible(c->view);
 	json_object_object_add(object, "visible", json_object_new_boolean(visible));
 
+	bool has_titlebar = c->title_bar.tree->node.enabled;
 	struct wlr_box window_box = {
 		c->pending.content_x - c->pending.x,
-		(c->current.border == B_PIXEL) ? c->pending.content_y - c->pending.y : 0,
+		has_titlebar ? 0 : c->pending.content_y - c->pending.y,
 		c->pending.content_width,
 		c->pending.content_height
 	};
@@ -633,7 +635,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 			json_object_new_string(ipc_json_content_type_description(content_type)));
 	}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (c->view->type == SWAY_VIEW_XWAYLAND) {
 		json_object_object_add(object, "window",
 				json_object_new_int(view_get_x11_window_id(c->view)));
@@ -990,6 +992,18 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		}
 		json_object_object_add(object, "click_method",
 				json_object_new_string(click_method));
+
+		const char *button_map = "unknown";
+		switch (libinput_device_config_click_get_clickfinger_button_map(device)) {
+		case LIBINPUT_CONFIG_CLICKFINGER_MAP_LRM:
+			button_map = "lrm";
+			break;
+		case LIBINPUT_CONFIG_CLICKFINGER_MAP_LMR:
+			button_map = "lmr";
+			break;
+		}
+		json_object_object_add(object, "clickfinger_button_map",
+				json_object_new_string(button_map));
 	}
 
 	if (libinput_device_config_middle_emulation_is_available(device)) {
@@ -1107,9 +1121,9 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		struct xkb_keymap *keymap = keyboard->keymap;
 		struct xkb_state *state = keyboard->xkb_state;
 
-		json_object_object_add(object, "repeat_delay", 
+		json_object_object_add(object, "repeat_delay",
 			json_object_new_int(keyboard->repeat_info.delay));
-		json_object_object_add(object, "repeat_rate", 
+		json_object_object_add(object, "repeat_rate",
 			json_object_new_int(keyboard->repeat_info.rate));
 
 		json_object *layouts_arr = json_object_new_array();

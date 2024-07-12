@@ -13,6 +13,7 @@
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/root.h"
 #include "log.h"
 #include "util.h"
@@ -75,6 +76,8 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	oc->set_color_transform = false;
+	oc->color_transform = NULL;
 	oc->power = -1;
 	return oc;
 }
@@ -189,6 +192,14 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = src->render_bit_depth;
+	}
+	if (src->set_color_transform) {
+		if (src->color_transform) {
+			wlr_color_transform_ref(src->color_transform);
+		}
+		wlr_color_transform_unref(dst->color_transform);
+		dst->set_color_transform = true;
+		dst->color_transform = src->color_transform;
 	}
 	if (src->background) {
 		free(dst->background);
@@ -448,7 +459,7 @@ static void queue_output_config(struct output_config *oc,
 #endif
 	}
 	if (wlr_output->transform != tr) {
-		sway_log(SWAY_DEBUG, "Set %s transform to %d", oc->name, tr);
+		sway_log(SWAY_DEBUG, "Set %s transform to %d", wlr_output->name, tr);
 		wlr_output_state_set_transform(pending, tr);
 	}
 
@@ -556,6 +567,13 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		output->max_render_time = oc->max_render_time;
 	}
 
+	if (oc && oc->set_color_transform) {
+		if (oc->color_transform) {
+			wlr_color_transform_ref(oc->color_transform);
+		}
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = oc->color_transform;
+	}
 	return true;
 }
 
@@ -703,21 +721,18 @@ static bool search_adaptive_sync(struct search_context *ctx, size_t output_idx) 
 	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
 	struct wlr_output_state *state = &backend_state->base;
 
+	if (!backend_state->output->adaptive_sync_supported) {
+		return search_finish(ctx, output_idx);
+	}
+
 	if (cfg->config && cfg->config->adaptive_sync == 1) {
 		wlr_output_state_set_adaptive_sync_enabled(state, true);
 		if (search_finish(ctx, output_idx)) {
 			return true;
 		}
 	}
-	if (!cfg->config || cfg->config->adaptive_sync != -1) {
-		wlr_output_state_set_adaptive_sync_enabled(state, false);
-		if (search_finish(ctx, output_idx)) {
-			return true;
-		}
-	}
-	// If adaptive sync has not been set, or fallback in case we are on a
-	// backend that cannot disable adaptive sync such as the wayland backend.
-	state->committed &= ~WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
+
+	wlr_output_state_set_adaptive_sync_enabled(state, false);
 	return search_finish(ctx, output_idx);
 }
 
@@ -909,6 +924,7 @@ bool apply_output_configs(struct matched_output_config *configs,
 		struct wlr_scene_output_state_options opts = {
 			.swapchain = wlr_output_swapchain_manager_get_swapchain(
 				&swapchain_mgr, backend_state->output),
+			.color_transform = cfg->output->color_transform,
 		};
 		struct wlr_scene_output *scene_output = cfg->output->scene_output;
 		struct wlr_output_state *state = &backend_state->base;
@@ -996,6 +1012,7 @@ void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc->background);
 	free(oc->background_option);
+	wlr_color_transform_unref(oc->color_transform);
 	free(oc);
 }
 

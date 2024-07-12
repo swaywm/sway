@@ -155,6 +155,7 @@ sway_sources = files(
 	'commands/input/accel_profile.c',
 	'commands/input/calibration_matrix.c',
 	'commands/input/click_method.c',
+	'commands/input/clickfinger_button_map.c',
 	'commands/input/drag.c',
 	'commands/input/drag_lock.c',
 	'commands/input/dwt.c',
@@ -203,6 +204,7 @@ sway_sources = files(
 	'commands/output/toggle.c',
 	'commands/output/transform.c',
 	'commands/output/unplug.c',
+	'commands/output/color_profile.c',
 
 	'tree/arrange.c',
 	'tree/container.c',
@@ -232,7 +234,7 @@ sway_deps = [
 	xcb_icccm,
 ]
 
-if have_xwayland
+if wlroots_features['xwayland']
 	sway_sources += 'desktop/xwayland.c'
 endif
 

@@ -7,6 +7,7 @@
 #include "sway/criteria.h"
 #include "sway/tree/container.h"
 #include "sway/config.h"
+#include "sway/server.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -22,7 +23,7 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->app_id
 		&& !criteria->con_mark
 		&& !criteria->con_id
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		&& !criteria->class
 		&& !criteria->id
 		&& !criteria->instance
@@ -90,7 +91,7 @@ void criteria_destroy(struct criteria *criteria) {
 	pattern_destroy(criteria->title);
 	pattern_destroy(criteria->shell);
 	pattern_destroy(criteria->app_id);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	pattern_destroy(criteria->class);
 	pattern_destroy(criteria->instance);
 	pattern_destroy(criteria->window_role);
@@ -110,7 +111,7 @@ static int regex_cmp(const char *item, const pcre2_code *regex) {
 	return result;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 	if (view->type != SWAY_VIEW_XWAYLAND) {
 		return false;
@@ -251,7 +252,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 		return false;
 	}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (criteria->id) { // X11 window ID
 		uint32_t x11_window_id = view_get_x11_window_id(view);
 		if (!x11_window_id || x11_window_id != criteria->id) {
@@ -428,7 +429,7 @@ list_t *criteria_get_containers(struct criteria *criteria) {
 	return matches;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static enum atom_name parse_window_type(const char *type) {
 	if (strcasecmp(type, "normal") == 0) {
 		return NET_WM_WINDOW_TYPE_NORMAL;
@@ -461,7 +462,7 @@ enum criteria_token {
 	T_CON_ID,
 	T_CON_MARK,
 	T_FLOATING,
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	T_CLASS,
 	T_ID,
 	T_INSTANCE,
@@ -487,7 +488,7 @@ static enum criteria_token token_from_name(char *name) {
 		return T_CON_ID;
 	} else if (strcmp(name, "con_mark") == 0) {
 		return T_CON_MARK;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	} else if (strcmp(name, "class") == 0) {
 		return T_CLASS;
 	} else if (strcmp(name, "id") == 0) {
@@ -566,7 +567,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_CON_MARK:
 		pattern_create(&criteria->con_mark, value);
 		break;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case T_CLASS:
 		pattern_create(&criteria->class, value);
 		break;
@@ -674,7 +675,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	++head;
 
 	struct criteria *criteria = calloc(1, sizeof(struct criteria));
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	criteria->window_type = ATOM_LAST; // default value
 #endif
 	char *name = NULL, *value = NULL;

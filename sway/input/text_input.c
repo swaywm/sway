@@ -9,6 +9,8 @@
 #include "sway/input/text_input.h"
 #include "sway/input/text_input_popup.h"
 #include "sway/layers.h"
+#include "sway/server.h"
+
 static void input_popup_update(struct sway_input_popup *popup);
 
 static struct sway_text_input *relay_get_focusable_text_input(
@@ -66,11 +68,13 @@ static void handle_im_keyboard_grab_destroy(struct wl_listener *listener, void *
 	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
 		input_method_keyboard_grab_destroy);
 	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
+	struct wlr_seat *wlr_seat = keyboard_grab->input_method->seat;
 	wl_list_remove(&relay->input_method_keyboard_grab_destroy.link);
 
 	if (keyboard_grab->keyboard) {
 		// send modifier state to original client
-		wlr_seat_keyboard_notify_modifiers(keyboard_grab->input_method->seat,
+		wlr_seat_set_keyboard(wlr_seat, keyboard_grab->keyboard);
+		wlr_seat_keyboard_notify_modifiers(wlr_seat,
 			&keyboard_grab->keyboard->modifiers);
 	}
 }

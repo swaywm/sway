@@ -10,6 +10,7 @@
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
@@ -707,6 +708,11 @@ void workspace_for_each_container(struct sway_workspace *ws,
 struct sway_container *workspace_find_container(struct sway_workspace *ws,
 		bool (*test)(struct sway_container *con, void *data), void *data) {
 	struct sway_container *result = NULL;
+    if (ws == NULL){
+        sway_log(SWAY_ERROR, "Cannot find container with no workspace.");
+        return NULL;
+    }
+
 	// Tiling
 	for (int i = 0; i < ws->tiling->length; ++i) {
 		struct sway_container *child = ws->tiling->items[i];

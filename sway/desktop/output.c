@@ -243,13 +243,17 @@ static int output_repaint_timer_handler(void *data) {
 
 	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
 
-	if (output->gamma_lut_changed) {
-		struct wlr_output_state pending;
-		wlr_output_state_init(&pending);
-		if (!wlr_scene_output_build_state(output->scene_output, &pending, NULL)) {
-			return 0;
-		}
+	struct wlr_scene_output_state_options opts = {
+		.color_transform = output->color_transform,
+	};
 
+	struct wlr_output_state pending;
+	wlr_output_state_init(&pending);
+	if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
+		return 0;
+	}
+
+	if (output->gamma_lut_changed) {
 		output->gamma_lut_changed = false;
 		struct wlr_gamma_control_v1 *gamma_control =
 			wlr_gamma_control_manager_v1_get_control(
@@ -259,17 +263,16 @@ static int output_repaint_timer_handler(void *data) {
 			return 0;
 		}
 
-		if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+		if (!wlr_output_test_state(output->wlr_output, &pending)) {
 			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
-			wlr_output_state_finish(&pending);
-			return 0;
+			wlr_output_state_set_gamma_lut(&pending, 0, NULL, NULL, NULL);
 		}
-
-		wlr_output_state_finish(&pending);
-		return 0;
 	}
 
-	wlr_scene_output_commit(output->scene_output, NULL);
+	if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+		sway_log(SWAY_ERROR, "Page-flip failed on output %s", output->wlr_output->name);
+	}
+	wlr_output_state_finish(&pending);
 	return 0;
 }
 
@@ -362,6 +365,26 @@ static void update_output_manager_config(struct sway_server *server) {
 	ipc_event_output();
 }
 
+static int timer_modeset_handle(void *data) {
+	struct sway_server *server = data;
+	wl_event_source_remove(server->delayed_modeset);
+	server->delayed_modeset = NULL;
+
+	apply_all_output_configs();
+	transaction_commit_dirty();
+	update_output_manager_config(server);
+
+	return 0;
+}
+
+static void request_modeset(struct sway_server *server) {
+	if (server->delayed_modeset == NULL) {
+		server->delayed_modeset = wl_event_loop_add_timer(server->wl_event_loop,
+			timer_modeset_handle, server);
+		wl_event_source_timer_update(server->delayed_modeset, 10);
+	}
+}
+
 static void begin_destroy(struct sway_output *output) {
 	struct sway_server *server = output->server;
 
@@ -385,9 +408,7 @@ static void begin_destroy(struct sway_output *output) {
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
 
-	transaction_commit_dirty();
-
-	update_output_manager_config(server);
+	request_modeset(server);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -521,11 +542,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		sway_session_lock_add_output(server->session_lock.lock, output);
 	}
 
-	apply_all_output_configs();
-
-	transaction_commit_dirty();
-
-	update_output_manager_config(server);
+	request_modeset(server);
 }
 
 void handle_output_layout_change(struct wl_listener *listener,
@@ -677,5 +694,5 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 		break;
 	}
 	store_output_config(oc);
-	apply_all_output_configs();
+	request_modeset(output->server);
 }
