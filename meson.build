@@ -38,14 +38,14 @@ if is_freebsd
 endif
 
 # Execute the wlroots subproject, if any
-wlroots_version = ['>=0.18.0', '<0.19.0']
+wlroots_version = ['>=0.19.0', '<0.20.0']
 subproject(
 	'wlroots',
 	default_options: ['examples=false'],
 	required: false,
 	version: wlroots_version,
 )
-wlroots = dependency('wlroots-0.18', version: wlroots_version, fallback: 'wlroots')
+wlroots = dependency('wlroots-0.19', version: wlroots_version, fallback: 'wlroots')
 wlroots_features = {
 	'xwayland': false,
 	'libinput_backend': false,
