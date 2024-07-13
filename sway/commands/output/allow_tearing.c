@@ -10,7 +10,8 @@ struct cmd_results *output_cmd_allow_tearing(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Missing allow_tearing argument");
 	}
 
-	if (parse_boolean(argv[0], true)) {
+	if (parse_boolean(argv[0],
+			(config->handler_context.output_config->allow_tearing == 1))) {
 		config->handler_context.output_config->allow_tearing = 1;
 	} else {
 		config->handler_context.output_config->allow_tearing = 0;
