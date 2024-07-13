@@ -1262,7 +1262,7 @@ bool view_is_transient_for(struct sway_view *child,
 }
 
 bool view_can_tear(struct sway_view *view) {
-	switch(view->tearing_mode) {
+	switch (view->tearing_mode) {
 	case TEARING_OVERRIDE_FALSE:
 		return false;
 	case TEARING_OVERRIDE_TRUE:

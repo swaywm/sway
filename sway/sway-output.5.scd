@@ -191,17 +191,19 @@ must be separated by one space. For example:
 	HDR support features.
 
 *output* <name> allow_tearing yes|no
-	Allows or disallows screen tearing as a result of asynchronous page flips,
-	and an immediate presentation mode from a client.
+	Allows or disallows screen tearing as a result of immediate page flips,
+	and an immediate presentation mode from a client. The default is that no
+	screen tearing is allowed.
 
-	With asynchronous page flips, frames from the client are presented as soon
+	With immediate page flips, frames from the client are presented as soon
 	as possible instead of synchronizing with the monitor's vblank interval 
-	(VSync). This prevents stutter and reduces latency in games.
+	(VSync).
 
 	To adjust whether tearing is allowed for specific applications, see
-	*allow_tearing* in *sway*(5).
+	*allow_tearing* in *sway*(5). Note that tearing will only be enabled
+	when it's allowed for both the output and the application.
 
-	This setting only has effect on fullscreen windows.
+	This setting only has effect when a window is fullscreen on the output.
 
 # SEE ALSO
 

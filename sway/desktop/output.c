@@ -299,19 +299,14 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 	
-	if (output->can_tear) {
+	if (output->enable_tearing) {
 		pending.tearing_page_flip = true;
 		
 		if (!wlr_output_test_state(output->wlr_output, &pending)) {
-			sway_log(SWAY_ERROR, "Output test failed on '%s', retrying without tearing page-flip",
+			sway_log(SWAY_DEBUG, "Output test failed on '%s', retrying without tearing page-flip",
 				output->wlr_output->name);
 				
 			pending.tearing_page_flip = false;
-			
-			if (!wlr_output_test_state(output->wlr_output, &pending)) {
-				wlr_output_state_finish(&pending);
-				return 0;
-			}
 		}
 	}
 
@@ -388,11 +383,11 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	int delay = msec_until_refresh - output->max_render_time;
 
 	struct sway_view *fullscreen_view = output_get_fullscreen_view(output);
-	output->can_tear = output_can_tear_fullscreen_view(output, fullscreen_view);
+	output->enable_tearing = output_can_tear_fullscreen_view(output, fullscreen_view);
 
 	// If the delay is less than 1 millisecond (which is the least we can wait)
 	// or if the output is allowed to tear, then just render right away.
-	if (delay < 1 || output->can_tear) {
+	if (delay < 1 || output->enable_tearing) {
 		output_repaint_timer_handler(output);
 	} else {
 		output->wlr_output->frame_pending = true;

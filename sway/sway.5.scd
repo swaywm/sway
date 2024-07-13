@@ -216,7 +216,7 @@ set|plus|minus|toggle <amount>
 	further details.
 
 *allow_tearing* yes|no
-	Allows or disallows screen tearing as a result of asynchronous page flips
+	Allows or disallows screen tearing as a result of immediate page flips
 	for a fullscreen application.
 
 	When this option is not set, the tearing hints provided by the application
