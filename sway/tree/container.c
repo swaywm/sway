@@ -1002,6 +1002,24 @@ bool container_is_floating(struct sway_container *container) {
 	return false;
 }
 
+bool container_has_titlebar(struct sway_container *container) {
+	switch (container->pending.layout) {
+	case L_NONE:
+		return false;
+	case L_HORIZ:
+	case L_VERT:
+		return container->pending.border == B_NORMAL;
+	case L_STACKED:
+		return container->pending.border == B_NORMAL ||
+			!container->pending.stacking_titlebar_follows_border;
+	case L_TABBED:
+		return container->pending.border == B_NORMAL ||
+			!container->pending.tabbed_titlebar_follows_border;
+	default:
+		abort();
+	}
+}
+
 void container_get_box(struct sway_container *container, struct wlr_box *box) {
 	box->x = container->pending.x;
 	box->y = container->pending.y;
