@@ -544,6 +544,7 @@ struct sway_config {
 	bool validating;
 	bool auto_back_and_forth;
 	bool show_marks;
+	bool disable_titlebar;
 	enum alignment title_align;
 	bool primary_selection;
 
