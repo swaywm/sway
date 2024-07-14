@@ -247,6 +247,13 @@ static int output_repaint_timer_handler(void *data) {
 		.color_transform = output->color_transform,
 	};
 
+	struct wlr_output *wlr_output = output->wlr_output;
+	struct wlr_scene_output *scene_output = output->scene_output;
+	if (!wlr_output->needs_frame && !output->gamma_lut_changed &&
+			!pixman_region32_not_empty(&scene_output->pending_commit_damage)) {
+		return 0;
+	}
+
 	struct wlr_output_state pending;
 	wlr_output_state_init(&pending);
 	if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
