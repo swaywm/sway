@@ -31,6 +31,12 @@ sway - An i3-compatible Wayland compositor
 *--get-socketpath*
 	Gets the IPC socket path and prints it, then exits.
 
+*--socket NAME*
+	Sets the Wayland socket name (for Wayland socket handover)
+
+*--wayland-fd FD*
+	Sets the Wayland socket file descriptor (for Wayland socket handover)
+
 # DESCRIPTION
 
 sway was created to fill the need of an i3-like window manager for Wayland. The
