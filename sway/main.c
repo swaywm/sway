@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <getopt.h>
 #include <pango/pangocairo.h>
 #include <signal.h>
@@ -289,6 +290,14 @@ int main(int argc, char **argv) {
 	if (!getenv("XDG_RUNTIME_DIR") && optind == argc) {
 		fprintf(stderr,
 				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Fail if only one of --socket and --wayland-fd are given.
+	if ((socket_name == NULL) ^ (socket_fd == -1)) {
+		fprintf(stderr,
+				"Both --socket and --wayland-fd are required for Wayland "
+				"socket handover, but only one was provided. Aborting.\n");
 		exit(EXIT_FAILURE);
 	}
 
