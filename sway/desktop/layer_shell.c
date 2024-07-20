@@ -90,6 +90,43 @@ void arrange_layers(struct sway_output *output) {
 	} else {
 		arrange_popups(root->layers.popup);
 	}
+
+	// Find topmost keyboard interactive layer, if such a layer exists
+	struct wlr_scene_tree *layers_above_shell[] = {
+		output->layers.shell_overlay,
+		output->layers.shell_top,
+	};
+	size_t nlayers = sizeof(layers_above_shell) / sizeof(layers_above_shell[0]);
+	struct wlr_scene_node *node;
+	struct sway_layer_surface *topmost = NULL;
+	for (size_t i = 0; i < nlayers; ++i) {
+		wl_list_for_each_reverse(node,
+				&layers_above_shell[i]->children, link) {
+			struct sway_layer_surface *surface = scene_descriptor_try_get(node,
+				SWAY_SCENE_DESC_LAYER_SHELL);
+			if (surface && surface->layer_surface->current.keyboard_interactive
+					== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
+					surface->layer_surface->surface->mapped) {
+				topmost = surface;
+				break;
+			}
+		}
+		if (topmost != NULL) {
+			break;
+		}
+	}
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		seat->has_exclusive_layer = false;
+		if (topmost != NULL) {
+			seat_set_focus_layer(seat, topmost->layer_surface);
+		} else if (seat->focused_layer &&
+				seat->focused_layer->current.keyboard_interactive
+					!= ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
+			seat_set_focus_layer(seat, NULL);
+		}
+	}
 }
 
 static struct wlr_scene_tree *sway_layer_get_scene(struct sway_output *output,
