@@ -10,6 +10,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
 #include "sway/tree/view.h"
@@ -313,7 +314,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 
 			if (activated) {
 				arrange_container(child, width, height - title_bar_height,
-					false, 0);
+					title_bar_height == 0, 0);
 			} else {
 				disable_container(child);
 			}
@@ -342,7 +343,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 
 			if (activated) {
 				arrange_container(child, width, height - title_height,
-					false, 0);
+					title_bar_height == 0, 0);
 			} else {
 				disable_container(child);
 			}
@@ -761,7 +762,7 @@ static bool should_configure(struct sway_node *node,
 	}
 	struct sway_container_state *cstate = &node->sway_container->current;
 	struct sway_container_state *istate = &instruction->container_state;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	// Xwayland views are position-aware and need to be reconfigured
 	// when their position changes.
 	if (node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {

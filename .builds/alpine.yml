@@ -4,6 +4,7 @@ packages:
   - eudev-dev
   - gdk-pixbuf-dev
   - json-c-dev
+  - lcms2-dev
   - libdisplay-info-dev
   - libevdev-dev
   - libinput-dev
@@ -38,8 +39,13 @@ tasks:
       cd sway
       ninja -C build
   - build-no-xwayland: |
-      cd sway
+      cd wlroots
       meson configure build -Dxwayland=disabled
+      ninja -C build
+      sudo ninja -C build install
+
+      cd ../sway
+      meson configure build --clearcache
       ninja -C build
   - build-static: |
       cd sway

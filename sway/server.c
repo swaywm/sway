@@ -56,7 +56,7 @@
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
 #include "sway/xwayland.h"
 #endif
@@ -113,12 +113,13 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input->keyboard_shortcuts_inhibit->global ||
 		global == server.input->virtual_keyboard->global ||
 		global == server.input->virtual_pointer->global ||
-		global == server.input->transient_seat_manager->global;
+		global == server.input->transient_seat_manager->global ||
+		global == server.xdg_output_manager_v1->global;
 }
 
 static bool filter_global(const struct wl_client *client,
 		const struct wl_global *global, void *data) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 	if (xwayland && global == xwayland->shell_v1->global) {
 		return xwayland->server != NULL && client == xwayland->server->client;
@@ -240,13 +241,12 @@ bool server_init(struct sway_server *server) {
 
 	wlr_renderer_init_wl_shm(server->renderer, server->wl_display);
 
-	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer) != NULL) {
+	if (wlr_renderer_get_texture_formats(server->renderer, WLR_BUFFER_CAP_DMABUF) != NULL) {
 		server->linux_dmabuf_v1 = wlr_linux_dmabuf_v1_create_with_renderer(
 			server->wl_display, 4, server->renderer);
-	}
-	if (wlr_renderer_get_dmabuf_texture_formats(server->renderer) != NULL &&
-			debug.legacy_wl_drm) {
-		wlr_drm_create(server->wl_display, server->renderer);
+		if (debug.legacy_wl_drm) {
+			wlr_drm_create(server->wl_display, server->renderer);
+		}
 	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
@@ -276,7 +276,8 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&root->output_layout->events.change,
 		&server->output_layout_change);
 
-	wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
+	server->xdg_output_manager_v1 =
+		wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
 
 	server->idle_notifier_v1 = wlr_idle_notifier_v1_create(server->wl_display);
 	sway_idle_inhibit_manager_v1_init();
@@ -438,7 +439,7 @@ bool server_init(struct sway_server *server) {
 
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 #endif
 	wl_display_destroy_clients(server->wl_display);
@@ -448,7 +449,7 @@ void server_fini(struct sway_server *server) {
 }
 
 bool server_start(struct sway_server *server) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (config->xwayland != XWAYLAND_MODE_DISABLED) {
 		sway_log(SWAY_DEBUG, "Initializing Xwayland (lazy=%d)",
 				config->xwayland == XWAYLAND_MODE_LAZY);

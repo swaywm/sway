@@ -1,16 +1,17 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <wayland-server-core.h>
+#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
-#include "config.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
 #include "list.h"
@@ -126,7 +127,7 @@ const char *view_get_instance(struct sway_view *view) {
 	}
 	return NULL;
 }
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 uint32_t view_get_x11_window_id(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
@@ -159,7 +160,7 @@ const char *view_get_shell(struct sway_view *view) {
 	switch(view->type) {
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
 #endif
@@ -173,9 +174,9 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 		view->impl->get_constraints(view,
 				min_width, max_width, min_height, max_height);
 	} else {
-		*min_width = DBL_MIN;
+		*min_width = 1;
 		*max_width = DBL_MAX;
-		*min_height = DBL_MIN;
+		*min_height = 1;
 		*max_height = DBL_MAX;
 	}
 }
@@ -365,8 +366,8 @@ void view_autoconfigure(struct sway_view *view) {
 
 	con->pending.content_x = x;
 	con->pending.content_y = y;
-	con->pending.content_width = width;
-	con->pending.content_height = height;
+	con->pending.content_width = fmax(width, 1);
+	con->pending.content_height = fmax(height, 1);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -499,7 +500,7 @@ void view_execute_criteria(struct sway_view *view) {
 static void view_populate_pid(struct sway_view *view) {
 	pid_t pid;
 	switch (view->type) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:;
 		struct wlr_xwayland_surface *surf =
 			wlr_xwayland_surface_try_from_wlr_surface(view->surface);
@@ -741,6 +742,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		ws = select_workspace(view);
 	}
 
+	if (ws && ws->output) {
+		// Once the output is determined, we can notify the client early about
+		// scale to reduce startup jitter.
+		float scale = ws->output->wlr_output->scale;
+		wlr_fractional_scale_v1_notify_scale(wlr_surface, scale);
+		wlr_surface_set_preferred_buffer_scale(wlr_surface, ceil(scale));
+	}
+
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_node *node =
 		seat_get_focus_inactive(seat, ws ? &ws->node : &root->node);
@@ -838,10 +847,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	bool set_focus = should_focus(view);
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
-		set_focus &= wlr_xwayland_icccm_input_model(xsurface) !=
+		set_focus &= wlr_xwayland_surface_icccm_input_model(xsurface) !=
 				WLR_ICCCM_INPUT_MODEL_NONE;
 	}
 #endif
@@ -927,11 +936,14 @@ void view_update_size(struct sway_view *view) {
 void view_center_and_clip_surface(struct sway_view *view) {
 	struct sway_container *con = view->container;
 
+	bool clip_to_geometry = true;
+
 	if (container_is_floating(con)) {
 		// We always center the current coordinates rather than the next, as the
 		// geometry immediately affects the currently active rendering.
 		int x = (int) fmax(0, (con->current.content_width - view->geometry.width) / 2);
 		int y = (int) fmax(0, (con->current.content_height - view->geometry.height) / 2);
+		clip_to_geometry = !view->using_csd;
 
 		wlr_scene_node_set_position(&view->content_tree->node, x, y);
 	} else {
@@ -940,12 +952,16 @@ void view_center_and_clip_surface(struct sway_view *view) {
 
 	// only make sure to clip the content if there is content to clip
 	if (!wl_list_empty(&con->view->content_tree->children)) {
-		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &(struct wlr_box){
-			.x = con->view->geometry.x,
-			.y = con->view->geometry.y,
-			.width = con->current.content_width,
-			.height = con->current.content_height,
-		});
+		struct wlr_box clip = {0};
+		if (clip_to_geometry) {
+			clip = (struct wlr_box){
+				.x = con->view->geometry.x,
+				.y = con->view->geometry.y,
+				.width = con->current.content_width,
+				.height = con->current.content_height,
+			};
+		}
+		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &clip);
 	}
 }
 
@@ -954,7 +970,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xdg_surface(xdg_surface);
 	}
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xwayland_surface(xsurface);
@@ -1178,7 +1194,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 	ipc_event_window(view->container, "urgent");
 
-	if (!container_is_scratchpad_hidden(view->container)) {
+	if (!container_is_scratchpad_hidden_or_child(view->container)) {
 		workspace_detect_urgent(view->container->pending.workspace);
 	}
 }

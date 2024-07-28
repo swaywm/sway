@@ -7,6 +7,7 @@
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/util/box.h>
+#include <wlr/render/color.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xf86drmMode.h>
 #include "../include/config.h"
@@ -148,6 +149,7 @@ struct input_config {
 	int accel_profile;
 	struct calibration_matrix calibration_matrix;
 	int click_method;
+	int clickfinger_button_map;
 	int drag;
 	int drag_lock;
 	int dwt;
@@ -285,6 +287,8 @@ struct output_config {
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
+	bool set_color_transform;
+	struct wlr_color_transform *color_transform;
 
 	char *background;
 	char *background_option;
@@ -689,11 +693,21 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 struct output_config *new_output_config(const char *name);
 
 bool apply_output_configs(struct matched_output_config *configs,
-		size_t configs_len, bool test_only);
+		size_t configs_len, bool test_only, bool degrade_to_off);
 
 void apply_all_output_configs(void);
 
-struct output_config *store_output_config(struct output_config *oc);
+void sort_output_configs_by_priority(struct matched_output_config *configs,
+		size_t configs_len);
+
+/**
+ * store_output_config stores a new output config. An output may be matched by
+ * three different config types, in order of precedence: Identifier, name and
+ * wildcard. When storing a config type of lower precedence, assume that the
+ * user wants the config to take immediate effect by superseding (clearing) the
+ * same values from higher presedence configuration.
+ */
+void store_output_config(struct output_config *oc);
 
 struct output_config *find_output_config(struct sway_output *output);
 

@@ -175,8 +175,6 @@ struct sway_container *container_obstructing_fullscreen_container(struct sway_co
 bool container_has_ancestor(struct sway_container *container,
 		struct sway_container *ancestor);
 
-void container_update_textures_recursive(struct sway_container *con);
-
 void container_reap_empty(struct sway_container *con);
 
 struct sway_container *container_flatten(struct sway_container *container);

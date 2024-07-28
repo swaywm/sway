@@ -8,6 +8,7 @@ packages:
 - devel/pkgconf
 - graphics/cairo
 - graphics/gdk-pixbuf2
+- graphics/lcms2
 - graphics/wayland
 - graphics/wayland-protocols
 - textproc/scdoc
@@ -26,7 +27,7 @@ packages:
 - x11/libX11
 - x11/pixman
 - x11/xcb-util-wm
-- x11-servers/xwayland-devel
+- x11-servers/xwayland
 - misc/hwdata
 sources:
 - https://github.com/swaywm/sway

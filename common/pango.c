@@ -53,6 +53,8 @@ size_t escape_markup_text(const char *src, char *dest) {
 PangoLayout *get_pango_layout(cairo_t *cairo, const PangoFontDescription *desc,
 		const char *text, double scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
+	pango_context_set_round_glyph_positions(pango_layout_get_context(layout), false);
+
 	PangoAttrList *attrs;
 	if (markup) {
 		char *buf;
@@ -104,6 +106,7 @@ void get_text_size(cairo_t *cairo, const PangoFontDescription *desc, int *width,
 void get_text_metrics(const PangoFontDescription *description, int *height, int *baseline) {
 	cairo_t *cairo = cairo_create(NULL);
 	PangoContext *pango = pango_cairo_create_context(cairo);
+	pango_context_set_round_glyph_positions(pango, false);
 	// When passing NULL as a language, pango uses the current locale.
 	PangoFontMetrics *metrics = pango_context_get_metrics(pango, description, NULL);
 

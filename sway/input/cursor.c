@@ -25,6 +25,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
@@ -107,7 +108,7 @@ struct sway_node *node_at_coords(
 				return NULL;
 			}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
 				return NULL;
 			}
@@ -577,7 +578,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	//   tablet events until the drag is released, even if we are now over a
 	//   non-tablet surface.
 	if (!cursor->simulating_pointer_from_tool_tip &&
-			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
+			((surface && wlr_surface_accepts_tablet_v2(surface, tablet->tablet_v2)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
 		seatop_tablet_tool_motion(seat, tool, time_msec);
 	} else {
@@ -663,7 +664,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		dispatch_cursor_button(cursor, &event->tablet->base, event->time_msec,
 			BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-	} else if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+	} else if (!surface || !wlr_surface_accepts_tablet_v2(surface, tablet_v2)) {
 		// If we started holding the tool tip down on a surface that accepts
 		// tablet v2, we should notify that surface if it gets released over a
 		// surface that doesn't support v2.
@@ -748,7 +749,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	bool mod_pressed = modifiers & config->floating_mod;
 
 	bool surface_supports_tablet_events =
-		surface && wlr_surface_accepts_tablet_v2(tablet_v2, surface);
+		surface && wlr_surface_accepts_tablet_v2(surface, tablet_v2);
 
 	// Simulate pointer when:
 	// 1. The modifier key is pressed, OR

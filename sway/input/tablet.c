@@ -7,6 +7,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/input/tablet.h"
+#include "sway/server.h"
 
 #if WLR_HAS_LIBINPUT_BACKEND
 #include <wlr/backend/libinput.h>
@@ -362,7 +363,7 @@ void sway_tablet_pad_set_focus(struct sway_tablet_pad *tablet_pad,
 	}
 
 	if (surface == NULL ||
-			!wlr_surface_accepts_tablet_v2(tablet_pad->tablet->tablet_v2, surface)) {
+			!wlr_surface_accepts_tablet_v2(surface, tablet_pad->tablet->tablet_v2)) {
 		return;
 	}
 
