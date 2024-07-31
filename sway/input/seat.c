@@ -984,13 +984,9 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 	unsigned cursor_size = 24;
 	const char *cursor_theme = NULL;
 
-	const struct seat_config *seat_config = seat_get_config(seat);
-	if (!seat_config) {
-		seat_config = seat_get_config_by_name("*");
-	}
-	if (seat_config) {
-		cursor_size = seat_config->xcursor_theme.size;
-		cursor_theme = seat_config->xcursor_theme.name;
+	if (seat->config) {
+		cursor_size = seat->config->xcursor_theme.size;
+		cursor_theme = seat->config->xcursor_theme.name;
 	}
 
 	if (seat == input_manager_get_default_seat()) {
@@ -1493,38 +1489,13 @@ void seat_apply_config(struct sway_seat *seat,
 		return;
 	}
 
-	seat->idle_inhibit_sources = seat_config->idle_inhibit_sources;
-	seat->idle_wake_sources = seat_config->idle_wake_sources;
+	seat->config = seat_config;
 
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_configure_device(seat, seat_device->input_device);
 		cursor_handle_activity_from_device(seat->cursor,
 			seat_device->input_device->wlr_device);
 	}
-}
-
-struct seat_config *seat_get_config(struct sway_seat *seat) {
-	struct seat_config *seat_config = NULL;
-	for (int i = 0; i < config->seat_configs->length; ++i ) {
-		seat_config = config->seat_configs->items[i];
-		if (strcmp(seat->wlr_seat->name, seat_config->name) == 0) {
-			return seat_config;
-		}
-	}
-
-	return NULL;
-}
-
-struct seat_config *seat_get_config_by_name(const char *name) {
-	struct seat_config *seat_config = NULL;
-	for (int i = 0; i < config->seat_configs->length; ++i ) {
-		seat_config = config->seat_configs->items[i];
-		if (strcmp(name, seat_config->name) == 0) {
-			return seat_config;
-		}
-	}
-
-	return NULL;
 }
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
