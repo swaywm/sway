@@ -632,7 +632,7 @@ void input_manager_apply_seat_config(struct seat_config *seat_config) {
 	if (strcmp(seat_config->name, "*") == 0) {
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &server.input->seats, link) {
-			// Only apply the wildcard config directly if there is no seatz
+			// Only apply the wildcard config directly if there is no seat
 			// specific config
 			struct seat_config *sc = seat->config;
 			if (!sc) {
