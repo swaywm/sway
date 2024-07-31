@@ -831,10 +831,7 @@ static void sway_keyboard_group_remove_invalid(struct sway_keyboard *keyboard) {
 	}
 
 	struct sway_seat *seat = keyboard->seat_device->sway_seat;
-	struct seat_config *sc = seat_get_config(seat);
-	if (!sc) {
-		sc = seat_get_config_by_name("*");
-	}
+	struct seat_config *sc = seat->config;
 
 	switch (sc ? sc->keyboard_grouping : KEYBOARD_GROUP_DEFAULT) {
 	case KEYBOARD_GROUP_NONE:
@@ -854,15 +851,11 @@ static void sway_keyboard_group_remove_invalid(struct sway_keyboard *keyboard) {
 static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 	struct sway_input_device *device = keyboard->seat_device->input_device;
 	struct sway_seat *seat = keyboard->seat_device->sway_seat;
-	struct seat_config *sc = seat_get_config(seat);
+	struct seat_config *sc = seat->config;
 
 	if (device->is_virtual) {
 		// Virtual devices should not be grouped
 		return;
-	}
-
-	if (!sc) {
-		sc = seat_get_config_by_name("*");
 	}
 
 	if (sc && sc->keyboard_grouping == KEYBOARD_GROUP_NONE) {
