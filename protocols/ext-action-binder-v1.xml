@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="action_binder_v1">
+  <copyright>
+    Copyright © 2015-2017 Quentin “Sardem FF7” Glidic, 2023 Anna "navi" Figueiredo Gomes
+
+    Permission to use, copy, modify, distribute, and sell this
+    software and its documentation for any purpose is hereby granted
+    without fee, provided that the above copyright notice appear in
+    all copies and that both that copyright notice and this permission
+    notice appear in supporting documentation, and that the name of
+    the copyright holders not be used in advertising or publicity
+    pertaining to distribution of the software without specific,
+    written prior permission. The copyright holders make no
+    representations about the suitability of this software for any
+    purpose. It is provided "as is" without express or implied
+    warranty.
+
+    THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
+    SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+    FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN
+    AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+    ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+    THIS SOFTWARE.
+  </copyright>
+
+  <interface name="ext_action_binder_v1" version="1">
+    <description summary="action binder">
+      This interface is designed to allow any application to bind
+      an action.
+
+      An action is an arbitrary couple of a namespace and a name describing the
+      wanted behaviour. These two strings are not meant to be user-visible.
+      Some namespaces are well-known and shared by applications while each
+      application can have its own namespaces for internal actions.
+      It is possible to have the same action in several namespaces, e.g. to
+      allow application-specific bindings in addition to global actions.
+
+      It is left to the compositor to determine which client will get events.
+      The choice can be based on policy, heuristic, user configuration, or any
+      other mechanism that may be relevant.
+      Here are some examples of dispatching choice: all applications, last
+      focused, user-defined preference order, latest fullscreened application.
+
+      This interface is exposed as global
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="unbind the actions">
+        The client no longer wants to receive events for any action.
+      </description>
+    </request>
+
+    <request name="create_binding">
+      <description summary="create a binding"/>
+      <arg name="binding" type="new_id" interface="ext_action_binding_v1" summary="the new binding" />
+    </request>
+  </interface>
+
+  <interface name="ext_action_binding_v1" version="1">
+    <request name="destroy" type="destructor">
+      <description summary="unbind the actions">
+        The client no longer wants to receive events for this binding.
+      </description>
+    </request>
+
+    <request name="set_name">
+      <description summary="sets the namespace:name of a binding">
+        Sets the namespace:name of the binding. This a kind of action.
+      </description>
+      <arg name="action_namespace" type="string" summary="the action namespace" />
+      <arg name="action_name" type="string" summary="the action name" />
+    </request>
+
+    <request name="set_description">
+      <description summary="sets the human-readable description of a binding">
+        This description may be used by the compositor to render a ui for bindings.
+      </description>
+      <arg name="description" type="string" summary="a human-readable description of what the binding does" />
+    </request>
+
+    <request name="set_trigger_hint">
+      <description summary="sets the machine-readable trigger of a binding">
+        The trigger is a suggestion to the compositor, and the action should not rely
+        to being set to that specific trigger.
+        The client does not know which trigger was actually set, but when a binding is
+        bound, it recieves from the compositor a human readable string describing the trigger,
+        if any, so it could show it in a ui.
+      </description>
+      <arg name="preferred_trigger" type="string" summary="a trigger that the client would like to trigger the action" />
+    </request>
+
+    <request name="bind">
+      <description summary="binds an action">
+        Bind an action to the object. this is a one-time request.
+        After calling bind, either the "bound" or "rejected" event is sent.
+        Subsequent calls to bind should be ignored.
+        If no action has been set for the binding, the error "invalid_action" is raised.
+      </description>
+    </request>
+
+    <enum name="error">
+      <entry name="invalid_action" value="0" summary="the binding has no action set"/>
+    </enum>
+
+    <event name="bound">
+      <description summary="the compositor bound the binding to an action">
+        After the compositor processes a bind request, if the action was
+        bound to this binding, it calls this event to notify the client of the result.
+      </description>
+      <arg name="trigger" type="string" summary="human-readable string describing the trigger for the action" />
+    </event>
+
+    <event name="rejected">
+      <description summary="the compositor rejected the binding">
+        After the compositor processes a bind request, if the binding was
+        rejected, it calls this event to notify the client of the result.
+        This event may be sent after a binding was bound, should the compositor
+        want to remove the binding.
+        After this event, the binding is destroyed and can't be used anymore.
+      </description>
+    </event>
+
+    <enum name="trigger_type">
+      <description summary="type of binding triggered">
+        Depending on the user configuration, an action can be either one-off or
+        sustained. The client must handle all the three event types and either make
+        sense of them or ignore them properly.
+      </description>
+      <entry name="one_shot" value="0"
+        summary="a one shot action was triggered" />
+      <entry name="pressed" value="1"
+        summary="a sustained action was started" />
+      <entry name="released" value="2"
+        summary="a sustained action ended" />
+    </enum>
+
+    <event name="triggered">
+      <description summary="the action triggered">
+        This event is sent when actions are triggered.
+        If a binding would trigger both triggered and started events, the
+        started event must be sent first.
+      </description>
+      <arg name="type" type="uint" enum="trigger_type" summary="the type of trigger that was sent" />
+    </event>
+  </interface>
+</protocol>

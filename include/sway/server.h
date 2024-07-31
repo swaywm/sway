@@ -116,6 +116,10 @@ struct sway_server {
 
 	struct wl_listener request_set_cursor_shape;
 
+	struct wlr_action_binder_v1 *action_binder;
+	struct wl_listener action_binder_bind;
+	struct wl_listener action_binder_destroy;
+
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
 	// The timeout for transactions, after which a transaction is applied
@@ -179,6 +183,9 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 	void *data);
 void xdg_activation_v1_handle_new_token(struct wl_listener *listener,
 	void *data);
+void action_binder_v1_bind(struct wl_listener *listener, void *data);
+void action_binder_v1_unbind(struct wl_listener *listener, void *data);
+void action_binder_v1_delete(struct wl_listener *listener, void *data);
 
 void set_rr_scheduling(void);
 

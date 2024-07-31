@@ -1,4 +1,5 @@
 sway_sources = files(
+    'action-binder-v1.c',
 	'commands.c',
 	'config.c',
 	'criteria.c',
@@ -41,6 +42,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/action.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
