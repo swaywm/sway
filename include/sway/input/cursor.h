@@ -74,10 +74,6 @@ struct sway_cursor {
 
 	struct wl_event_source *hide_source;
 	bool hidden;
-	// This field is just a cache of the field in seat_config in order to avoid
-	// costly seat_config lookups on every keypress. HIDE_WHEN_TYPING_DEFAULT
-	// indicates that there is no cached value.
-	enum seat_config_hide_cursor_when_typing hide_when_typing;
 
 	size_t pressed_button_count;
 };
