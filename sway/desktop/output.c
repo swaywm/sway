@@ -232,6 +232,23 @@ static void output_configure_scene(struct sway_output *output,
 	}
 }
 
+static bool output_can_tear(struct sway_output *output) {
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (!workspace) {
+		return false;
+	}
+
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+	if (fullscreen_con && fullscreen_con->view) {
+		return (output->allow_tearing && view_can_tear(fullscreen_con->view));
+	}
+
+	return false;
+}
+
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
@@ -276,7 +293,7 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 	
-	if (output->enable_tearing) {
+	if (output_can_tear(output)) {
 		pending.tearing_page_flip = true;
 		
 		if (!wlr_output_test_state(output->wlr_output, &pending)) {
@@ -292,23 +309,6 @@ static int output_repaint_timer_handler(void *data) {
 	}
 	wlr_output_state_finish(&pending);
 	return 0;
-}
-
-static bool output_can_tear(struct sway_output *output) {
-	struct sway_workspace *workspace = output->current.active_workspace;
-	if (!workspace) {
-		return false;
-	}
-
-	struct sway_container *fullscreen_con = root->fullscreen_global;
-	if (!fullscreen_con) {
-		fullscreen_con = workspace->current.fullscreen;
-	}
-	if (fullscreen_con && fullscreen_con->view) {
-		return (output->allow_tearing && view_can_tear(fullscreen_con->view));
-	}
-
-	return false;
 }
 
 static void handle_frame(struct wl_listener *listener, void *user_data) {
@@ -358,11 +358,9 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 
 	int delay = msec_until_refresh - output->max_render_time;
 
-	output->enable_tearing = output_can_tear(output);
-
 	// If the delay is less than 1 millisecond (which is the least we can wait)
-	// or if the output is allowed to tear, then just render right away.
-	if (delay < 1 || output->enable_tearing) {
+	// then just render right away.
+	if (delay < 1) {
 		output_repaint_timer_handler(output);
 	} else {
 		output->wlr_output->frame_pending = true;
