@@ -10,7 +10,7 @@ struct sway_layer_surface {
 	struct wl_listener unmap;
 	struct wl_listener surface_commit;
 	struct wl_listener output_destroy;
-	struct wl_listener node_destroy;
+	struct wl_listener layer_surface_destroy;
 	struct wl_listener new_popup;
 
 	bool mapped;
@@ -19,8 +19,7 @@ struct sway_layer_surface {
 	struct sway_popup_desc desc;
 
 	struct sway_output *output;
-	struct wlr_scene_layer_surface_v1 *scene;
-	struct wlr_scene_tree *tree;
+	struct wlr_scene_tree *scene_tree;
 	struct wlr_layer_surface_v1 *layer_surface;
 };
 
