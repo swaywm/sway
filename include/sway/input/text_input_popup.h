@@ -15,6 +15,8 @@ struct sway_input_popup {
 
 	struct wl_listener popup_destroy;
 	struct wl_listener popup_surface_commit;
+	struct wl_listener popup_surface_map;
+	struct wl_listener popup_surface_unmap;
 
 	struct wl_listener focused_surface_unmap;
 };
