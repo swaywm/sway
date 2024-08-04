@@ -197,7 +197,12 @@ must be separated by one space. For example:
 
 	With immediate page flips, frames from the client are presented as soon
 	as possible instead of synchronizing with the monitor's vblank interval 
-	(VSync).
+	(VSync). 
+	
+	It is recommended to set *max_render_time* to *off*. In that case a page flip
+	happens as soon as a client updates. Otherwise, tearing will only happen if
+	rendering takes longer than the configured milliseconds before the next
+	display refresh.
 
 	To adjust whether tearing is allowed for specific applications, see
 	*allow_tearing* in *sway*(5). Note that tearing will only be enabled
