@@ -232,6 +232,23 @@ static void output_configure_scene(struct sway_output *output,
 	}
 }
 
+static bool output_can_tear(struct sway_output *output) {
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (!workspace) {
+		return false;
+	}
+
+	struct sway_container *fullscreen_con = root->fullscreen_global;
+	if (!fullscreen_con) {
+		fullscreen_con = workspace->current.fullscreen;
+	}
+	if (fullscreen_con && fullscreen_con->view) {
+		return (output->allow_tearing && view_can_tear(fullscreen_con->view));
+	}
+
+	return false;
+}
+
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
@@ -273,6 +290,17 @@ static int output_repaint_timer_handler(void *data) {
 		if (!wlr_output_test_state(output->wlr_output, &pending)) {
 			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
 			wlr_output_state_set_gamma_lut(&pending, 0, NULL, NULL, NULL);
+		}
+	}
+	
+	if (output_can_tear(output)) {
+		pending.tearing_page_flip = true;
+		
+		if (!wlr_output_test_state(output->wlr_output, &pending)) {
+			sway_log(SWAY_DEBUG, "Output test failed on '%s', retrying without tearing page-flip",
+				output->wlr_output->name);
+				
+			pending.tearing_page_flip = false;
 		}
 	}
 

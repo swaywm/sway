@@ -79,6 +79,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->set_color_transform = false;
 	oc->color_transform = NULL;
 	oc->power = -1;
+	oc->allow_tearing = -1;
 	return oc;
 }
 
@@ -216,6 +217,9 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	if (src->power != -1) {
 		dst->power = src->power;
 	}
+	if (src->allow_tearing != -1) {
+		dst->allow_tearing = src->allow_tearing;
+	}
 }
 
 void store_output_config(struct output_config *oc) {
@@ -258,11 +262,11 @@ void store_output_config(struct output_config *oc) {
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
-		"(max render time: %d)",
+		"(max render time: %d) (allow tearing: %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
 		oc->transform, oc->background, oc->background_option, oc->power,
-		oc->max_render_time);
+		oc->max_render_time, oc->allow_tearing);
 
 	// If the configuration was not merged into an existing configuration, add
 	// it to the list. Otherwise we're done with it and can free it.
@@ -574,6 +578,13 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		wlr_color_transform_unref(output->color_transform);
 		output->color_transform = oc->color_transform;
 	}
+	
+	if (oc && oc->allow_tearing >= 0) {
+		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d", 
+			oc->name, oc->allow_tearing);
+		output->allow_tearing = oc->allow_tearing;
+	}
+
 	return true;
 }
 
@@ -594,6 +605,7 @@ static void default_output_config(struct output_config *oc,
 	oc->subpixel = output->detected_subpixel;
 	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
 	oc->max_render_time = 0;
+	oc->allow_tearing = 0;
 }
 
 // find_output_config returns a merged output_config containing all stored
