@@ -371,6 +371,13 @@ bool server_init(struct sway_server *server) {
 	server->content_type_manager_v1 =
 		wlr_content_type_manager_v1_create(server->wl_display, 1);
 	wlr_fractional_scale_manager_v1_create(server->wl_display, 1);
+	
+	server->tearing_control_v1 = 
+		wlr_tearing_control_manager_v1_create(server->wl_display, 1);
+	server->tearing_control_new_object.notify = handle_new_tearing_hint;
+	wl_signal_add(&server->tearing_control_v1->events.new_object,
+		&server->tearing_control_new_object);
+	wl_list_init(&server->tearing_controllers);
 
 	struct wlr_xdg_foreign_registry *foreign_registry =
 		wlr_xdg_foreign_registry_create(server->wl_display);

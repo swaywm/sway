@@ -14,6 +14,7 @@ protocols = [
 	wl_protocol_dir / 'unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml',
 	wl_protocol_dir / 'staging/content-type/content-type-v1.xml',
 	wl_protocol_dir / 'staging/cursor-shape/cursor-shape-v1.xml',
+	wl_protocol_dir / 'staging/tearing-control/tearing-control-v1.xml',
 	'wlr-layer-shell-unstable-v1.xml',
 	'idle.xml',
 	'wlr-output-power-management-unstable-v1.xml',
