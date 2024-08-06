@@ -18,6 +18,7 @@ sway_sources = files(
 	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
 	'desktop/output.c',
+	'desktop/tearing.c',
 	'desktop/transaction.c',
 	'desktop/xdg_shell.c',
 	'desktop/launcher.c',
@@ -41,6 +42,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/allow_tearing.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
@@ -188,6 +190,7 @@ sway_sources = files(
 	'commands/input/xkb_variant.c',
 
 	'commands/output/adaptive_sync.c',
+	'commands/output/allow_tearing.c',
 	'commands/output/background.c',
 	'commands/output/disable.c',
 	'commands/output/dpms.c',

@@ -190,6 +190,26 @@ must be separated by one space. For example:
 	may have no effect or produce unexpected output when used together with future
 	HDR support features.
 
+*output* <name> allow_tearing yes|no
+	Allows or disallows screen tearing as a result of immediate page flips,
+	and an immediate presentation mode from a client. The default is that no
+	screen tearing is allowed.
+
+	With immediate page flips, frames from the client are presented as soon
+	as possible instead of synchronizing with the monitor's vblank interval 
+	(VSync). 
+	
+	It is recommended to set *max_render_time* to *off*. In that case a page flip
+	happens as soon as a client updates. Otherwise, tearing will only happen if
+	rendering takes longer than the configured milliseconds before the next
+	display refresh.
+
+	To adjust whether tearing is allowed for specific applications, see
+	*allow_tearing* in *sway*(5). Note that tearing will only be enabled
+	when it's allowed for both the output and the application.
+
+	This setting only has effect when a window is fullscreen on the output.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)
