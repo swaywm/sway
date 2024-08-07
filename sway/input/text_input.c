@@ -318,11 +318,11 @@ static void input_popup_update(struct sway_input_popup *popup) {
 			return;
 		}
 
-		relative_parent = layer->scene->tree;
+		relative_parent = layer->scene_tree;
 		struct wlr_output *output = layer->layer_surface->output;
 		wlr_output_layout_get_box(root->output_layout, output, &output_box);
 		int lx, ly;
-		wlr_scene_node_coords(&layer->tree->node, &lx, &ly);
+		wlr_scene_node_coords(&layer->scene_tree->node, &lx, &ly);
 		parent.x = lx;
 		parent.y = ly;
 		popup->desc.view = NULL;

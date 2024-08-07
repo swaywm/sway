@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/util/rectpack.h>
 #include "log.h"
 #include "sway/scene_descriptor.h"
 #include "sway/desktop/transaction.h"
@@ -53,10 +54,10 @@ struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 	} while (true);
 }
 
-static void arrange_surface(struct sway_output *output, const struct wlr_box *full_area,
-		struct wlr_box *usable_area, struct wlr_scene_tree *tree) {
+static void arrange_surface(struct sway_output *output, const struct wlr_box *bounds,
+		pixman_region32_t *exclusive, struct wlr_scene_tree *tree, bool configure_exclusive) {
 	struct wlr_scene_node *node;
-	wl_list_for_each(node, &tree->children, link) {
+	wl_list_for_each_reverse(node, &tree->children, link) {
 		struct sway_layer_surface *surface = scene_descriptor_try_get(node,
 			SWAY_SCENE_DESC_LAYER_SHELL);
 		// surface could be null during destruction
@@ -64,24 +65,59 @@ static void arrange_surface(struct sway_output *output, const struct wlr_box *fu
 			continue;
 		}
 
-		if (!surface->scene->layer_surface->initialized) {
+		if (!surface->layer_surface->initialized) {
+			continue;
+		}
+		if ((surface->layer_surface->current.exclusive_zone > 0) != configure_exclusive) {
 			continue;
 		}
 
-		wlr_scene_layer_surface_v1_configure(surface->scene, full_area, usable_area);
+		struct wlr_box box;
+		if (!wlr_rectpack_place_wlr_layer_surface_v1(bounds, exclusive, surface->layer_surface, &box)) {
+			sway_log(SWAY_ERROR, "Failed to allocate an area for a layer surface");
+			continue;
+		}
+
+		wlr_scene_node_set_position(&surface->scene_tree->node, box.x, box.y);
+		wlr_layer_surface_v1_configure(surface->layer_surface, box.width, box.height);
 	}
 }
 
 void arrange_layers(struct sway_output *output) {
-	struct wlr_box usable_area = { 0 };
-	wlr_output_effective_resolution(output->wlr_output,
-			&usable_area.width, &usable_area.height);
-	const struct wlr_box full_area = usable_area;
+	struct wlr_box bounds = {0};
+	wlr_output_effective_resolution(output->wlr_output, &bounds.width, &bounds.height);
 
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay);
+	pixman_region32_t exclusive;
+	pixman_region32_init(&exclusive);
+
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_overlay, true);
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_top, true);
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_bottom, true);
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_background, true);
+
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_overlay, false);
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_top, false);
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_bottom, false);
+	arrange_surface(output, &bounds, &exclusive, output->layers.shell_background, false);
+
+	struct wlr_rectpack_rules window_rules = {
+		.grow_width = true,
+		.grow_height = true,
+	};
+
+	static const int min_size = 50; // Arbitrary
+	struct wlr_box usable_area = {
+		.x = bounds.width / 2 - min_size / 2,
+		.y = bounds.height / 2 - min_size / 2,
+		.width = min_size,
+		.height = min_size,
+	};
+	if (!wlr_rectpack_place(&bounds, &exclusive, &usable_area, &window_rules, &usable_area)) {
+		sway_log(SWAY_ERROR, "Failed to allocate an area for windows, "
+			"falling back to the whole output area");
+		usable_area = bounds;
+	}
+	pixman_region32_fini(&exclusive);
 
 	if (!wlr_box_equal(&usable_area, &output->usable_area)) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
@@ -147,7 +183,7 @@ static struct wlr_scene_tree *sway_layer_get_scene(struct sway_output *output,
 }
 
 static struct sway_layer_surface *sway_layer_surface_create(
-		struct wlr_scene_layer_surface_v1 *scene) {
+		struct wlr_layer_surface_v1 *layer_surface, struct wlr_scene_tree *scene_tree) {
 	struct sway_layer_surface *surface = calloc(1, sizeof(*surface));
 	if (!surface) {
 		sway_log(SWAY_ERROR, "Could not allocate a scene_layer surface");
@@ -161,7 +197,7 @@ static struct sway_layer_surface *sway_layer_surface_create(
 		return NULL;
 	}
 
-	surface->desc.relative = &scene->tree->node;
+	surface->desc.relative = &scene_tree->node;
 
 	if (!scene_descriptor_assign(&popups->node,
 			SWAY_SCENE_DESC_POPUP, &surface->desc)) {
@@ -171,9 +207,8 @@ static struct sway_layer_surface *sway_layer_surface_create(
 		return NULL;
 	}
 
-	surface->tree = scene->tree;
-	surface->scene = scene;
-	surface->layer_surface = scene->layer_surface;
+	surface->scene_tree = scene_tree;
+	surface->layer_surface = layer_surface;
 	surface->popups = popups;
 	surface->layer_surface->data = surface;
 
@@ -212,16 +247,15 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, layer, output_destroy);
 
 	layer->output = NULL;
-	wlr_scene_node_destroy(&layer->scene->tree->node);
+	wlr_scene_node_destroy(&layer->scene_tree->node);
 }
 
-static void handle_node_destroy(struct wl_listener *listener, void *data) {
-	struct sway_layer_surface *layer =
-		wl_container_of(listener, layer, node_destroy);
+static void handle_layer_surface_destroy(struct wl_listener *listener, void *data) {
+	struct sway_layer_surface *layer = wl_container_of(listener, layer, layer_surface_destroy);
 
 	// destroy the scene descriptor straight away if it exists, otherwise
 	// we will try to reflow still considering the destroyed node.
-	scene_descriptor_destroy(&layer->tree->node, SWAY_SCENE_DESC_LAYER_SHELL);
+	scene_descriptor_destroy(&layer->scene_tree->node, SWAY_SCENE_DESC_LAYER_SHELL);
 
 	// Determine if this layer is being used by an exclusive client. If it is,
 	// try and find another layer owned by this client to pass focus to.
@@ -246,7 +280,7 @@ static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&layer->map.link);
 	wl_list_remove(&layer->unmap.link);
 	wl_list_remove(&layer->surface_commit.link);
-	wl_list_remove(&layer->node_destroy.link);
+	wl_list_remove(&layer->layer_surface_destroy.link);
 	wl_list_remove(&layer->output_destroy.link);
 
 	layer->layer_surface->data = NULL;
@@ -268,7 +302,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		enum zwlr_layer_shell_v1_layer layer_type = layer_surface->current.layer;
 		struct wlr_scene_tree *output_layer = sway_layer_get_scene(
 			surface->output, layer_type);
-		wlr_scene_node_reparent(&surface->scene->tree->node, output_layer);
+		wlr_scene_node_reparent(&surface->scene_tree->node, output_layer);
 	}
 
 	if (layer_surface->initial_commit || committed || layer_surface->surface->mapped != surface->mapped) {
@@ -282,8 +316,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *surface = wl_container_of(listener,
 			surface, map);
 
-	struct wlr_layer_surface_v1 *layer_surface =
-				surface->scene->layer_surface;
+	struct wlr_layer_surface_v1 *layer_surface = surface->layer_surface;
 
 	// focus on new surface
 	if (layer_surface->current.keyboard_interactive &&
@@ -337,7 +370,7 @@ static void popup_unconstrain(struct sway_layer_popup *popup) {
 	}
 
 	int lx, ly;
-	wlr_scene_node_coords(&popup->toplevel->scene->tree->node, &lx, &ly);
+	wlr_scene_node_coords(&popup->toplevel->scene_tree->node, &lx, &ly);
 
 	// the output box expressed in the coordinate system of the toplevel parent
 	// of the popup
@@ -443,24 +476,23 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	enum zwlr_layer_shell_v1_layer layer_type = layer_surface->pending.layer;
 	struct wlr_scene_tree *output_layer = sway_layer_get_scene(
 		output, layer_type);
-	struct wlr_scene_layer_surface_v1 *scene_surface =
-		wlr_scene_layer_surface_v1_create(output_layer, layer_surface);
+	struct wlr_scene_tree *scene_surface =
+		wlr_scene_subsurface_tree_create(output_layer, layer_surface->surface);
 	if (!scene_surface) {
 		sway_log(SWAY_ERROR, "Could not allocate a layer_surface_v1");
 		return;
 	}
 
-	struct sway_layer_surface *surface =
-		sway_layer_surface_create(scene_surface);
+	struct sway_layer_surface *surface = sway_layer_surface_create(layer_surface, scene_surface);
 	if (!surface) {
 		wlr_layer_surface_v1_destroy(layer_surface);
+		wlr_scene_node_destroy(&scene_surface->node);
 
 		sway_log(SWAY_ERROR, "Could not allocate a sway_layer_surface");
 		return;
 	}
 
-	if (!scene_descriptor_assign(&scene_surface->tree->node,
-			SWAY_SCENE_DESC_LAYER_SHELL, surface)) {
+	if (!scene_descriptor_assign(&scene_surface->node, SWAY_SCENE_DESC_LAYER_SHELL, surface)) {
 		sway_log(SWAY_ERROR, "Failed to allocate a layer surface descriptor");
 		// destroying the layer_surface will also destroy its corresponding
 		// scene node
@@ -489,6 +521,6 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	surface->output_destroy.notify = handle_output_destroy;
 	wl_signal_add(&output->events.disable, &surface->output_destroy);
 
-	surface->node_destroy.notify = handle_node_destroy;
-	wl_signal_add(&scene_surface->tree->node.events.destroy, &surface->node_destroy);
+	surface->layer_surface_destroy.notify = handle_layer_surface_destroy;
+	wl_signal_add(&layer_surface->events.destroy, &surface->layer_surface_destroy);
 }
