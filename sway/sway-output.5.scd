@@ -154,7 +154,7 @@ must be separated by one space. For example:
 	This setting only has an effect on Wayland and DRM backends, as support for
 	presentation timestamps and predicted output refresh rate is required.
 
-*output* <name> adaptive_sync on|off
+*output* <name> adaptive_sync on|off|toggle
 	Enables or disables adaptive synchronization (often referred to as Variable
 	Refresh Rate, or by the vendor-specific names FreeSync/G-Sync).
 
