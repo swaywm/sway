@@ -65,6 +65,10 @@ _swaymsg_ [options...] [message]
 	  anything beyond that point as an option. For example, use
 	  _swaymsg -- mark --add test_ instead of _swaymsg mark --add test_.
 
+*create_output*
+	Creates a new headless output by the name of HEADLESS-x where x is a
+	is initially 1. Each subsequent usage will increment x by 1. 
+
 *get\_workspaces*
 	Gets a list of workspaces and their status.
 
