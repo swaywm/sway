@@ -4,6 +4,7 @@
 #include <wlr/config.h>
 #include <wlr/backend/multi.h>
 #include <wlr/interfaces/wlr_keyboard.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
@@ -267,6 +268,7 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
 		const xkb_keysym_t *pressed_keysyms, uint32_t modifiers, size_t keysyms_len) {
 	for (size_t i = 0; i < keysyms_len; ++i) {
 		xkb_keysym_t keysym = pressed_keysyms[i];
+
 		if (keysym >= XKB_KEY_XF86Switch_VT_1 &&
 				keysym <= XKB_KEY_XF86Switch_VT_12) {
 #if WLR_HAS_SESSION
@@ -275,6 +277,36 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
 				wlr_session_change_vt(server.session, vt);
 			}
 #endif
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool keyboard_execute_pointer_keysyms(struct sway_keyboard *keyboard,
+		uint32_t time, const xkb_keysym_t *pressed_keysyms, size_t keysyms_len,
+		enum wl_keyboard_key_state state) {
+	struct sway_cursor *cursor = keyboard->seat_device->sway_seat->cursor;
+
+	for (size_t i = 0; i < keysyms_len; ++i) {
+		xkb_keysym_t keysym = pressed_keysyms[i];
+
+		uint32_t button = wlr_keyboard_keysym_to_pointer_button(keysym);
+		if (button != 0) {
+			dispatch_cursor_button(cursor, &keyboard->wlr->base, time, button,
+				(enum wl_pointer_button_state)state);
+			wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
+			return true;
+		}
+
+		int dx, dy;
+		wlr_keyboard_keysym_to_pointer_motion(keysym, &dx, &dy);
+		if (state == WL_KEYBOARD_KEY_STATE_PRESSED && (dx != 0 || dy != 0)) {
+			dx *= 10;
+			dy *= 10;
+			pointer_motion(cursor, time, &keyboard->wlr->base, dx, dy, dx, dy);
+			wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 			return true;
 		}
 	}
@@ -506,6 +538,11 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		handled = keyboard_execute_compositor_binding(
 				keyboard, keyinfo.raw_keysyms, keyinfo.raw_modifiers,
 				keyinfo.raw_keysyms_len);
+	}
+	if (!handled) {
+		handled = keyboard_execute_pointer_keysyms(keyboard, event->time_msec,
+			keyinfo.translated_keysyms, keyinfo.translated_keysyms_len,
+			event->state);
 	}
 
 	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
