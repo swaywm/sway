@@ -308,7 +308,7 @@ void view_autoconfigure(struct sway_view *view) {
 		}
 	}
 
-	if (!container_is_floating(con)) {
+	if (!container_is_floating(con) && container_has_titlebar(con)) {
 		// In a tabbed or stacked container, the container's y is the top of the
 		// title area. We have to offset the surface y by the height of the title,
 		// bar, and disable any top border because we'll always have the title bar.
@@ -819,6 +819,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view->container->pending.border_thickness = config->border_thickness;
 		view_set_tiled(view, true);
 	}
+	view->container->pending.stacking_titlebar_follows_border =
+		config->stacking_titlebar_follows_border;
+	view->container->pending.tabbed_titlebar_follows_border =
+		config->tabbed_titlebar_follows_border;
 
 	if (config->popup_during_fullscreen == POPUP_LEAVE &&
 			container->pending.workspace &&
