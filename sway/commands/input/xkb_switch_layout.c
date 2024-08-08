@@ -95,10 +95,18 @@ struct cmd_results *input_cmd_xkb_switch_layout(int argc, char **argv) {
 			continue;
 		}
 
+		struct wlr_keyboard *keyboard =
+			wlr_keyboard_from_input_device(dev->wlr_device);
+		if (keyboard->keymap == NULL && dev->is_virtual) {
+			// The `sway_keyboard_set_layout` function is by default skipped
+			// when configuring virtual keyboards.
+			continue;
+		}
+
 		struct xkb_switch_layout_action *action =
 			&actions[actions_len++];
+		action->keyboard = keyboard;
 
-		action->keyboard = wlr_keyboard_from_input_device(dev->wlr_device);
 		if (relative) {
 			action->layout = get_layout_relative(action->keyboard, relative);
 		} else {
