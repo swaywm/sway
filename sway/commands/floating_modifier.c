@@ -19,13 +19,22 @@ struct cmd_results *cmd_floating_modifier(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Invalid modifier");
 	}
 
-	if (argc == 1 || strcasecmp(argv[1], "normal") == 0) {
-		config->floating_mod_inverse = false;
-	} else if (strcasecmp(argv[1], "inverse") == 0) {
-		config->floating_mod_inverse = true;
-	} else {
-		return cmd_results_new(CMD_INVALID,
-				"Usage: floating_modifier <mod> [inverse|normal]");
+	argv++;
+	argc--;
+	while (argc > 0)
+	{
+		if (strcasecmp(argv[0], "normal") == 0) {
+			config->floating_mod_inverse = false;
+		} else if (strcasecmp(argv[0], "inverse") == 0) {
+			config->floating_mod_inverse = true;
+		} else if (strcasecmp(argv[0], "--inhibited") == 0){
+			config->floating_mod_inhibited = true;
+		} else {
+			return cmd_results_new(CMD_INVALID,
+					"Usage: floating_modifier <mod> [inverse|normal [--inhibited]");
+		}
+		argv++;
+		argc--;
 	}
 
 	config->floating_mod = mod;
