@@ -292,14 +292,13 @@ static int output_repaint_timer_handler(void *data) {
 			wlr_output_state_set_gamma_lut(&pending, 0, NULL, NULL, NULL);
 		}
 	}
-	
+
 	if (output_can_tear(output)) {
 		pending.tearing_page_flip = true;
-		
+
 		if (!wlr_output_test_state(output->wlr_output, &pending)) {
 			sway_log(SWAY_DEBUG, "Output test failed on '%s', retrying without tearing page-flip",
 				output->wlr_output->name);
-				
 			pending.tearing_page_flip = false;
 		}
 	}

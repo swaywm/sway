@@ -578,9 +578,9 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		wlr_color_transform_unref(output->color_transform);
 		output->color_transform = oc->color_transform;
 	}
-	
+
 	if (oc && oc->allow_tearing >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d", 
+		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d",
 			oc->name, oc->allow_tearing);
 		output->allow_tearing = oc->allow_tearing;
 	}
