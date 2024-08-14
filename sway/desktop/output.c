@@ -266,8 +266,7 @@ static int output_repaint_timer_handler(void *data) {
 
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_scene_output *scene_output = output->scene_output;
-	if (!wlr_output->needs_frame && !output->gamma_lut_changed &&
-			!pixman_region32_not_empty(&scene_output->pending_commit_damage)) {
+	if (!wlr_scene_output_needs_frame(scene_output)) {
 		return 0;
 	}
 
