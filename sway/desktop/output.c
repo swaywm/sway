@@ -264,7 +264,6 @@ static int output_repaint_timer_handler(void *data) {
 		.color_transform = output->color_transform,
 	};
 
-	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_scene_output *scene_output = output->scene_output;
 	if (!wlr_scene_output_needs_frame(scene_output)) {
 		return 0;
@@ -274,22 +273,6 @@ static int output_repaint_timer_handler(void *data) {
 	wlr_output_state_init(&pending);
 	if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts)) {
 		return 0;
-	}
-
-	if (output->gamma_lut_changed) {
-		output->gamma_lut_changed = false;
-		struct wlr_gamma_control_v1 *gamma_control =
-			wlr_gamma_control_manager_v1_get_control(
-			server.gamma_control_manager_v1, output->wlr_output);
-		if (!wlr_gamma_control_v1_apply(gamma_control, &pending)) {
-			wlr_output_state_finish(&pending);
-			return 0;
-		}
-
-		if (!wlr_output_test_state(output->wlr_output, &pending)) {
-			wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
-			wlr_output_state_set_gamma_lut(&pending, 0, NULL, NULL, NULL);
-		}
 	}
 
 	if (output_can_tear(output)) {
@@ -472,11 +455,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 
 		update_output_manager_config(output->server);
 	}
-
-	// Next time the output is enabled, try to re-apply the gamma LUT
-	if ((event->state->committed & WLR_OUTPUT_STATE_ENABLED) && !output->wlr_output->enabled) {
-		output->gamma_lut_changed = true;
-	}
 }
 
 static void handle_present(struct wl_listener *listener, void *data) {
@@ -583,21 +561,6 @@ void handle_output_layout_change(struct wl_listener *listener,
 	struct sway_server *server =
 		wl_container_of(listener, server, output_layout_change);
 	update_output_manager_config(server);
-}
-
-void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data) {
-	struct sway_server *server =
-		wl_container_of(listener, server, gamma_control_set_gamma);
-	const struct wlr_gamma_control_manager_v1_set_gamma_event *event = data;
-
-	struct sway_output *output = event->output->data;
-
-	if(!output) {
-		return;
-	}
-
-	output->gamma_lut_changed = true;
-	wlr_output_schedule_frame(output->wlr_output);
 }
 
 static struct output_config *output_config_for_config_head(

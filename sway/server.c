@@ -272,9 +272,8 @@ bool server_init(struct sway_server *server) {
 
 	server->gamma_control_manager_v1 =
 		wlr_gamma_control_manager_v1_create(server->wl_display);
-	server->gamma_control_set_gamma.notify = handle_gamma_control_set_gamma;
-	wl_signal_add(&server->gamma_control_manager_v1->events.set_gamma,
-		&server->gamma_control_set_gamma);
+	wlr_scene_set_gamma_control_manager_v1(root->root_scene,
+		server->gamma_control_manager_v1);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
