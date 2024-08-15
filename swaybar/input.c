@@ -246,6 +246,15 @@ bool handle_workspace_button(struct swaybar_output *output,
 		}
 		ipc_send_workspace_command(output->bar, ws);
 		return true;
+	} else if (button == SWAY_SCROLL_UP || button == SWAY_SCROLL_DOWN ||
+			button == SWAY_SCROLL_LEFT || button == SWAY_SCROLL_RIGHT) {
+		if (released) {
+			return true;
+		}
+
+		workspace_next(output->bar, output,
+				button == SWAY_SCROLL_UP || button == SWAY_SCROLL_LEFT);
+		return true;
 	}
 
 	return false;
@@ -266,6 +275,7 @@ static void process_discrete_scroll(struct swaybar_seat *seat,
 		return;
 	}
 
+	// If no hotspot nor binding handles the event, scroll through workspaces
 	struct swaybar_config *config = seat->bar->config;
 	double amt = wl_fixed_to_double(value);
 	if (amt == 0.0 || !config->workspace_buttons) {
