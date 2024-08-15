@@ -236,6 +236,21 @@ static void workspace_next(struct swaybar *bar, struct swaybar_output *output,
 	}
 }
 
+bool handle_workspace_button(struct swaybar_output *output,
+	uint32_t button, bool released, const char *ws) {
+	if (button == BTN_LEFT) {
+		if (released) {
+			// Since we handle the pressed event, also handle the released event
+			// to block it from falling through to a binding in the bar
+			return true;
+		}
+		ipc_send_workspace_command(output->bar, ws);
+		return true;
+	}
+
+	return false;
+}
+
 static void process_discrete_scroll(struct swaybar_seat *seat,
 		struct swaybar_output *output, struct swaybar_pointer *pointer,
 		uint32_t axis, wl_fixed_t value) {
