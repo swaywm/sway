@@ -651,9 +651,9 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 	return result;
 }
 
-static bool config_has_auto_mode(struct output_config *oc) {
+static bool config_has_manual_mode(struct output_config *oc) {
 	if (!oc) {
-		return true;
+		return false;
 	}
 	if (oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t)-1) {
 		return true;
@@ -754,7 +754,8 @@ static bool search_mode(struct search_context *ctx, size_t output_idx) {
 	struct wlr_output_state *state = &backend_state->base;
 	struct wlr_output *wlr_output = backend_state->output;
 
-	if (!config_has_auto_mode(cfg->config)) {
+	// We only search for mode if one is not explicitly specified in the config
+	if (config_has_manual_mode(cfg->config)) {
 		return search_adaptive_sync(ctx, output_idx);
 	}
 
