@@ -465,7 +465,7 @@ static void handle_present(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	output->last_presentation = *output_event->when;
+	output->last_presentation = output_event->when;
 	output->refresh_nsec = output_event->refresh;
 }
 
