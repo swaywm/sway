@@ -773,11 +773,11 @@ void floating_fix_coordinates(struct sway_container *con, struct wlr_box *old, s
 		// Fall back to centering on the workspace.
 		container_floating_move_to_center(con);
 	} else {
-		int rel_x = con->pending.x - old->x + (con->pending.width / 2);
-		int rel_y = con->pending.y - old->y + (con->pending.height / 2);
+		double rel_x = con->pending.x - old->x + (con->pending.width / 2);
+		double rel_y = con->pending.y - old->y + (con->pending.height / 2);
 
-		con->pending.x = new->x + (double)(rel_x * new->width) / old->width - (con->pending.width / 2);
-		con->pending.y = new->y + (double)(rel_y * new->height) / old->height - (con->pending.height / 2);
+		con->pending.x = new->x + (rel_x * new->width) / old->width - (con->pending.width / 2);
+		con->pending.y = new->y + (rel_y * new->height) / old->height - (con->pending.height / 2);
 
 		sway_log(SWAY_DEBUG, "Transformed container %p to coords (%f, %f)", con, con->pending.x, con->pending.y);
 	}
