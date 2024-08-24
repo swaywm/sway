@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -247,6 +248,87 @@ void arrange_container(struct sway_container *container) {
 	container_get_box(container, &box);
 	arrange_children(container->pending.children, container->pending.layout, &box);
 	node_set_dirty(&container->node);
+}
+
+void next_sibling_container_geometry(struct sway_container *child, struct sway_container *sibling, bool fullscreen) {
+	assert(child->view);
+	struct sway_workspace *workspace = child->pending.workspace;
+	if (!workspace->output || workspace->width == 0 || workspace->height == 0) {
+		return;
+	}
+	if (workspace->fullscreen && !fullscreen) {
+		return;
+	}
+
+	struct sway_output *output = workspace->output;
+	if (fullscreen) {
+		child->pending.x = output->lx;
+		child->pending.y = output->ly;
+		child->pending.width = output->width;
+		child->pending.height = output->height;
+		view_autoconfigure(child->view);
+		return;
+	}
+
+	list_t *siblings;
+	struct wlr_box box;
+	enum sway_container_layout layout;
+
+	if (sibling && sibling->pending.parent) {
+		struct sway_container *parent = sibling->pending.parent;
+		siblings = parent->pending.children;
+		layout = parent->pending.layout;
+		workspace_get_box(workspace, &box);
+	} else {
+		siblings = workspace->tiling;
+		layout = workspace->layout;
+		workspace_get_box(workspace, &box);
+	}
+
+	// We only want to mutate the specified child, not its siblings. Make a
+	// shallow cloned list of siblings and containers so that their updated
+	// geometry can be thrown away.
+	list_t *children = create_list();
+	if (!children) {
+		return;
+	}
+	struct sway_container *cons = calloc(siblings->length-1, sizeof(*cons));
+	if (!cons) {
+		list_free(children);
+		return;
+	}
+	for (int idx = 0, ydx = 0; idx < siblings->length; idx++, ydx++) {
+		if (siblings->items[idx] == child) {
+			list_add(children, child);
+			ydx--;
+			continue;
+		}
+		cons[ydx] = *(struct sway_container *)siblings->items[idx];
+		list_add(children, &cons[ydx]);
+	}
+
+	// Update the geometry
+	switch (layout) {
+	case L_HORIZ:
+		apply_horiz_layout(children, &box);
+		break;
+	case L_VERT:
+		apply_vert_layout(children, &box);
+		break;
+	case L_TABBED:
+		apply_tabbed_layout(children, &box);
+		break;
+	case L_STACKED:
+		apply_stacked_layout(children, &box);
+		break;
+	case L_NONE:
+		apply_horiz_layout(children, &box);
+		break;
+	}
+
+	view_autoconfigure(child->view);
+	list_free(children);
+	free(cons);
 }
 
 void arrange_workspace(struct sway_workspace *workspace) {
