@@ -335,10 +335,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	struct sway_cursor *cursor = seat->cursor;
 
 	// Determine what's under the cursor
-	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(
-		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_scene_node *scene_node =
+		scene_node_at_coords(cursor->cursor->x, cursor->cursor->y, &sx, &sy);
+	struct wlr_surface *surface = scene_node ? surface_try_from_scene_node(scene_node) : NULL;
+	struct sway_node *node = sway_node_try_from_scene_node(scene_node,
+		cursor->cursor->x, cursor->cursor->y);
 
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
@@ -380,10 +382,10 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle clicking a layer surface and its popups/subsurfaces
-	struct wlr_layer_surface_v1 *layer = NULL;
-	if ((layer = toplevel_layer_surface_from_surface(surface))) {
-		if (layer->current.keyboard_interactive) {
-			seat_set_focus_layer(seat, layer);
+	struct sway_layer_surface *layer = NULL;
+	if ((layer = scene_descriptor_find(scene_node, SWAY_SCENE_DESC_LAYER_SHELL))) {
+		if (layer->layer_surface->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, layer->layer_surface);
 			transaction_commit_dirty();
 		}
 		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
@@ -548,15 +550,14 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 			return;
 		}
 
-		struct wlr_surface *surface = NULL;
-		double sx, sy;
-		node_at_coords(seat->cursor->cursor->x, seat->cursor->cursor->y, &surface, &sx, &sy);
+		struct wlr_scene_node *node = scene_node_at_coords(
+			seat->cursor->cursor->x, seat->cursor->cursor->y, NULL, NULL);
 
 		// Focus topmost layer surface
-		struct wlr_layer_surface_v1 *layer = NULL;
-		if ((layer = toplevel_layer_surface_from_surface(surface)) &&
-				layer->current.keyboard_interactive) {
-			seat_set_focus_layer(seat, layer);
+		struct sway_layer_surface *layer = NULL;
+		if ((layer = scene_descriptor_find(node, SWAY_SCENE_DESC_LAYER_SHELL)) &&
+				layer->layer_surface->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, layer->layer_surface);
 			transaction_commit_dirty();
 			return;
 		}
