@@ -38,4 +38,14 @@ void *scene_descriptor_try_get(struct wlr_scene_node *node,
 void scene_descriptor_destroy(struct wlr_scene_node *node,
 	enum sway_scene_descriptor_type type);
 
+/*
+ * Searches the scene node and all its parents for this scene descriptor.
+ *
+ * Note that while searching, SWAY_SCENE_DESC_POPUP types will start tracking
+ * its relative node. With popups, they are part of a seperate layer in the scene
+ * graph, but that's irrelavent to users of this function.
+ */
+void *scene_descriptor_find(struct wlr_scene_node *node,
+	enum sway_scene_descriptor_type type);
+
 #endif

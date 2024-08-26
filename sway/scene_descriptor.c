@@ -36,6 +36,31 @@ void *scene_descriptor_try_get(struct wlr_scene_node *node,
 	return desc->data;
 }
 
+void *scene_descriptor_find(struct wlr_scene_node *node,
+		enum sway_scene_descriptor_type type) {
+	while (node) {
+		struct scene_descriptor *desc = scene_node_get_descriptor(node, type);
+		if (desc) {
+			return desc->data;
+		}
+
+		struct sway_popup_desc *popup =
+			scene_descriptor_try_get(node, SWAY_SCENE_DESC_POPUP);
+		if (popup) {
+			node = popup->relative;
+			continue;
+		}
+
+		if (!node->parent) {
+			break;
+		}
+
+		node = &node->parent->node;
+	}
+
+	return NULL;
+}
+
 void scene_descriptor_destroy(struct wlr_scene_node *node,
 		enum sway_scene_descriptor_type type) {
 	struct scene_descriptor *desc = scene_node_get_descriptor(node, type);
