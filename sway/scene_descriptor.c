@@ -92,3 +92,14 @@ bool scene_descriptor_assign(struct wlr_scene_node *node,
 	desc->data = data;
 	return true;
 }
+
+bool scene_descriptor_reassign(struct wlr_scene_node *node,
+		enum sway_scene_descriptor_type type, void *data) {
+	struct scene_descriptor *desc = scene_node_get_descriptor(node, type);
+	if (desc) {
+		desc->data = data;
+		return true;
+	}
+
+	return scene_descriptor_assign(node, type, data);
+}

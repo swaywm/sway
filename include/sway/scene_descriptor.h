@@ -32,6 +32,9 @@ enum sway_scene_descriptor_type {
 bool scene_descriptor_assign(struct wlr_scene_node *node,
 	enum sway_scene_descriptor_type type, void *data);
 
+bool scene_descriptor_reassign(struct wlr_scene_node *node,
+	enum sway_scene_descriptor_type type, void *data);
+
 void *scene_descriptor_try_get(struct wlr_scene_node *node,
 	enum sway_scene_descriptor_type type);
 
