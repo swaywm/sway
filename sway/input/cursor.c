@@ -70,42 +70,30 @@ struct sway_node *node_at_coords(
 			}
 		}
 
-		// determine what container we clicked on
-		struct wlr_scene_node *current = scene_node;
-		while (true) {
-			struct sway_container *con = scene_descriptor_try_get(current,
-				SWAY_SCENE_DESC_CONTAINER);
+		struct sway_container *con =
+			scene_descriptor_find(scene_node, SWAY_SCENE_DESC_CONTAINER);
 
-			if (!con) {
-				struct sway_popup_desc *popup =
-					scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP);
-				if (popup && popup->view) {
-					con = popup->view->container;
-				}
-			}
-
-			if (con && (!con->view || con->view->surface)) {
-				return &con->node;
-			}
-
-			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_LAYER_SHELL)) {
-				// We don't want to feed through the current workspace on
-				// layer shells
+		if (con) {
+			// If this condition succeeds, the container is currently in the
+			// process of being destroyed. In this case, ignore the container
+			if (con->view && !con->view->surface) {
 				return NULL;
 			}
+
+			return &con->node;
+		}
+
+		// if we clicked on a layer shell or unmanaged xwayland we don't
+		// want to return the workspace node.
+		if (scene_descriptor_find(scene_node, SWAY_SCENE_DESC_LAYER_SHELL)) {
+			return NULL;
+		}
 
 #if WLR_HAS_XWAYLAND
-			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
-				return NULL;
-			}
-#endif
-
-			if (!current->parent) {
-				break;
-			}
-
-			current = &current->parent->node;
+		if (scene_descriptor_find(scene_node, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
+			return NULL;
 		}
+#endif
 	}
 
 	// if we aren't on a container, determine what workspace we are on
