@@ -36,8 +36,7 @@
  * Returns the node at the cursor's position. If there is a surface at that
  * location, it is stored in **surface (it may not be a view).
  */
-struct sway_node *node_at_coords(
-		struct sway_seat *seat, double lx, double ly,
+struct sway_node *node_at_coords(double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	struct wlr_scene_node *scene_node = NULL;
 
@@ -279,8 +278,7 @@ void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	if (cursor->active_constraint && device->type == WLR_INPUT_DEVICE_POINTER) {
 		struct wlr_surface *surface = NULL;
 		double sx, sy;
-		node_at_coords(cursor->seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+		node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 		if (cursor->active_constraint->surface != surface) {
 			return;
@@ -539,7 +537,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
 	struct sway_seat *seat = cursor->seat;
-	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	// The logic for whether we should send a tablet event or an emulated pointer
 	// event is tricky. It comes down to:
@@ -629,8 +627,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
-	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
-		&surface, &sx, &sy);
+	node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (cursor->simulating_pointer_from_tool_tip &&
 			event->state == WLR_TABLET_TOOL_TIP_UP) {
@@ -714,8 +711,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
 
-	node_at_coords(cursor->seat, cursor->cursor->x, cursor->cursor->y,
-		&surface, &sx, &sy);
+	node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	// TODO: floating resize should support graphics tablet events
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(cursor->seat->wlr_seat);

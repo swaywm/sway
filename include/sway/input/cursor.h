@@ -85,8 +85,7 @@ struct sway_cursor {
 struct sway_node;
 
 struct sway_node *node_at_coords(
-		struct sway_seat *seat, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy);
+		double lx, double ly, struct wlr_surface **surface, double *sx, double *sy);
 
 void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
