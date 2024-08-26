@@ -10,6 +10,14 @@
 #define _SWAY_SCENE_DESCRIPTOR_H
 #include <wlr/types/wlr_scene.h>
 
+struct sway_view;
+
+// used for SWAY_SCENE_DESC_POPUP
+struct sway_popup_desc {
+	struct wlr_scene_node *relative;
+	struct sway_view *view;
+};
+
 enum sway_scene_descriptor_type {
 	SWAY_SCENE_DESC_BUFFER_TIMER,
 	SWAY_SCENE_DESC_NON_INTERACTIVE,
