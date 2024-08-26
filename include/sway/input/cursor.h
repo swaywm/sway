@@ -84,6 +84,14 @@ struct sway_cursor {
 
 struct sway_node;
 
+struct wlr_scene_node *scene_node_at_coords(
+		double lx, double ly, double *sx, double *sy);
+
+struct wlr_surface *surface_try_from_scene_node(struct wlr_scene_node *node);
+
+struct sway_node *sway_node_try_from_scene_node(struct wlr_scene_node *node,
+		double lx, double ly);
+
 struct sway_node *node_at_coords(
 		double lx, double ly, struct wlr_surface **surface, double *sx, double *sy);
 
