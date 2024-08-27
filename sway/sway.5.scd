@@ -52,11 +52,12 @@ Throughout the documentation, *|* is used to distinguish between arguments for
 which you may only select one. *[...]* is used for optional arguments, and
 *<...>* for arguments where you are expected to supply some value.
 
-# COMMANDS - CONFIG ONLY
+# COMMANDS
 
 This section only lists general commands. For input and output commands, refer
 to *sway-input*(5) and *sway-output*(5).
 
+## Config only commands
 The following commands may only be used in the configuration file.
 
 *bar* [<bar-id>] <bar-subcommands...>
@@ -98,8 +99,7 @@ The following commands may only be used in the configuration file.
 	machines, it may be desirable to have Xwayland started immediately by
 	using _force_ instead of _enable_.
 
-# COMMANDS - RUNTIME ONLY
-
+## Runtime only commands
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 
@@ -387,8 +387,7 @@ set|plus|minus|toggle <amount>
 
 	The default format is "%title".
 
-# COMMANDS - CONFIG OR RUNTIME
-
+## Config or runtime commands
 The following commands may be used either in the configuration file or at
 runtime.
 
