@@ -777,16 +777,20 @@ static struct cmd_results *cmd_move_in_direction(
 }
 
 static struct cmd_results *cmd_move_to_position_pointer(
-		struct sway_container *container) {
+		struct sway_container *container, bool next) {
 	struct sway_seat *seat = config->handler_context.seat;
 	if (!seat->cursor) {
 		return cmd_results_new(CMD_FAILURE, "No cursor device");
 	}
 	struct wlr_cursor *cursor = seat->cursor->cursor;
 	/* Determine where to put the window. */
-	double lx = cursor->x - container->pending.width / 2;
-	double ly = cursor->y - container->pending.height / 2;
-
+	double lx = cursor->x;
+	double ly = cursor->y;
+	if (!next) {
+		lx -= container->pending.width / 2;
+		ly -= container->pending.height / 2;
+	}
+	
 	/* Correct target coordinates to be in bounds (on screen). */
 	struct wlr_output *output = wlr_output_layout_output_at(
 			root->output_layout, cursor->x, cursor->y);
@@ -811,7 +815,7 @@ static struct cmd_results *cmd_move_to_position_pointer(
 static const char expected_position_syntax[] =
 	"Expected 'move [absolute] position <x> [px] <y> [px]' or "
 	"'move [absolute] position center' or "
-	"'move position cursor|mouse|pointer'";
+	"'move position [next] cursor|mouse|pointer'";
 
 static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	struct sway_container *container = config->handler_context.container;
@@ -840,13 +844,23 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID, "%s", expected_position_syntax);
 	}
+
+	bool next = false;
+	if (strcmp(argv[0], "next") == 0) {
+		next = true;
+		--argc;
+		++argv;
+	}
 	if (strcmp(argv[0], "cursor") == 0 || strcmp(argv[0], "mouse") == 0 ||
 			strcmp(argv[0], "pointer") == 0) {
 		if (absolute) {
 			return cmd_results_new(CMD_INVALID, "%s", expected_position_syntax);
 		}
-		return cmd_move_to_position_pointer(container);
-	} else if (strcmp(argv[0], "center") == 0) {
+		return cmd_move_to_position_pointer(container, next);
+	} else if (next) {
+		return cmd_results_new(CMD_INVALID, "%s", expected_position_syntax);
+	}
+	if (strcmp(argv[0], "center") == 0) {
 		double lx, ly;
 		if (absolute) {
 			lx = root->x + (root->width - container->pending.width) / 2;
