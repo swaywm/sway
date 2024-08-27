@@ -52,7 +52,7 @@ Throughout the documentation, *|* is used to distinguish between arguments for
 which you may only select one. *[...]* is used for optional arguments, and
 *<...>* for arguments where you are expected to supply some value.
 
-# COMMANDS
+# COMMANDS - CONFIG ONLY
 
 This section only lists general commands. For input and output commands, refer
 to *sway-input*(5) and *sway-output*(5).
@@ -97,6 +97,8 @@ The following commands may only be used in the configuration file.
 	until the first client attempts to connect. In some cases, such as slower
 	machines, it may be desirable to have Xwayland started immediately by
 	using _force_ instead of _enable_.
+
+# COMMANDS - RUNTIME ONLY
 
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
@@ -384,6 +386,8 @@ set|plus|minus|toggle <amount>
 	Note that markup requires pango to be enabled via the *font* command.
 
 	The default format is "%title".
+
+# COMMANDS - CONFIG OR RUNTIME
 
 The following commands may be used either in the configuration file or at
 runtime.
