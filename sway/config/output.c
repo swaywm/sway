@@ -401,9 +401,15 @@ static int compute_default_scale(struct wlr_output *output,
 	return 2;
 }
 
-static bool render_format_is_10bit(uint32_t render_format) {
-	return render_format == DRM_FORMAT_XRGB2101010 ||
-		render_format == DRM_FORMAT_XBGR2101010;
+static enum render_bit_depth bit_depth_from_format(uint32_t render_format) {
+	if (render_format == DRM_FORMAT_XRGB2101010 || render_format == DRM_FORMAT_XBGR2101010) {
+		return RENDER_BIT_DEPTH_10;
+	} else if (render_format == DRM_FORMAT_XRGB8888 || render_format == DRM_FORMAT_ARGB8888) {
+		return RENDER_BIT_DEPTH_8;
+	} else if (render_format == DRM_FORMAT_RGB565) {
+		return RENDER_BIT_DEPTH_6;
+	}
+	return RENDER_BIT_DEPTH_DEFAULT;
 }
 
 static bool render_format_is_bgr(uint32_t fmt) {
@@ -499,11 +505,13 @@ static void queue_output_config(struct output_config *oc,
 
 	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		if (oc->render_bit_depth == RENDER_BIT_DEPTH_10 &&
-			render_format_is_10bit(output->wlr_output->render_format)) {
+			bit_depth_from_format(output->wlr_output->render_format) == oc->render_bit_depth) {
 			// 10-bit was set successfully before, try to save some tests by reusing the format
 			wlr_output_state_set_render_format(pending, output->wlr_output->render_format);
 		} else if (oc->render_bit_depth == RENDER_BIT_DEPTH_10) {
 			wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB2101010);
+		} else if (oc->render_bit_depth == RENDER_BIT_DEPTH_6){
+			wlr_output_state_set_render_format(pending, DRM_FORMAT_RGB565);
 		} else {
 			wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 		}
@@ -797,6 +805,7 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 		DRM_FORMAT_XBGR2101010,
 		DRM_FORMAT_XRGB8888,
 		DRM_FORMAT_ARGB8888,
+		DRM_FORMAT_RGB565,
 		DRM_FORMAT_INVALID,
 	};
 	if (render_format_is_bgr(wlr_output->render_format)) {
@@ -807,9 +816,13 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 
 	const struct wlr_drm_format_set *primary_formats =
 		wlr_output_get_primary_formats(wlr_output, WLR_BUFFER_CAP_DMABUF);
-	bool need_10bit = cfg->config && cfg->config->render_bit_depth == RENDER_BIT_DEPTH_10;
+	enum render_bit_depth needed_bits = RENDER_BIT_DEPTH_8;
+	if (cfg->config && cfg->config->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
+		needed_bits = cfg->config->render_bit_depth;
+	}
 	for (size_t idx = 0; fmts[idx] != DRM_FORMAT_INVALID; idx++) {
-		if (!need_10bit && render_format_is_10bit(fmts[idx])) {
+		enum render_bit_depth format_bits = bit_depth_from_format(fmts[idx]);
+		if (needed_bits < format_bits) {
 			continue;
 		}
 		if (!wlr_drm_format_set_get(primary_formats, fmts[idx])) {
