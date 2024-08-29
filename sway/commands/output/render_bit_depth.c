@@ -11,7 +11,10 @@ struct cmd_results *output_cmd_render_bit_depth(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Missing bit depth argument.");
 	}
 
-	if (strcmp(*argv, "8") == 0) {
+	if (strcmp(*argv, "6") == 0) {
+		config->handler_context.output_config->render_bit_depth =
+			RENDER_BIT_DEPTH_6;
+	} else if (strcmp(*argv, "8") == 0) {
 		config->handler_context.output_config->render_bit_depth =
 			RENDER_BIT_DEPTH_8;
 	} else if (strcmp(*argv, "10") == 0) {
@@ -19,7 +22,7 @@ struct cmd_results *output_cmd_render_bit_depth(int argc, char **argv) {
 			RENDER_BIT_DEPTH_10;
 	} else {
 		return cmd_results_new(CMD_INVALID,
-			"Invalid bit depth. Must be a value in (8|10).");
+			"Invalid bit depth. Must be a value in (6|8|10).");
 	}
 
 	config->handler_context.leftovers.argc = argc - 1;
