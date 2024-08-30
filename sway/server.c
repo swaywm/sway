@@ -23,6 +23,7 @@
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
+#include <wlr/types/wlr_linux_drm_syncobj_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
@@ -248,6 +249,11 @@ bool server_init(struct sway_server *server) {
 			wlr_drm_create(server->wl_display, server->renderer);
 		}
 	}
+	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
+			server->renderer->features.timeline) {
+		wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
+			wlr_renderer_get_drm_fd(server->renderer));
+	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
 		server->renderer);
@@ -266,9 +272,8 @@ bool server_init(struct sway_server *server) {
 
 	server->gamma_control_manager_v1 =
 		wlr_gamma_control_manager_v1_create(server->wl_display);
-	server->gamma_control_set_gamma.notify = handle_gamma_control_set_gamma;
-	wl_signal_add(&server->gamma_control_manager_v1->events.set_gamma,
-		&server->gamma_control_set_gamma);
+	wlr_scene_set_gamma_control_manager_v1(root->root_scene,
+		server->gamma_control_manager_v1);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
@@ -371,6 +376,13 @@ bool server_init(struct sway_server *server) {
 	server->content_type_manager_v1 =
 		wlr_content_type_manager_v1_create(server->wl_display, 1);
 	wlr_fractional_scale_manager_v1_create(server->wl_display, 1);
+
+	server->tearing_control_v1 =
+		wlr_tearing_control_manager_v1_create(server->wl_display, 1);
+	server->tearing_control_new_object.notify = handle_new_tearing_hint;
+	wl_signal_add(&server->tearing_control_v1->events.new_object,
+		&server->tearing_control_new_object);
+	wl_list_init(&server->tearing_controllers);
 
 	struct wlr_xdg_foreign_registry *foreign_registry =
 		wlr_xdg_foreign_registry_create(server->wl_display);
