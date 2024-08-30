@@ -183,7 +183,10 @@ void cursor_update_image(struct sway_cursor *cursor,
 static void cursor_hide(struct sway_cursor *cursor) {
 	wlr_cursor_unset_image(cursor->cursor);
 	cursor->hidden = true;
-	wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
+	if (cursor->seat->config->hide_cursor_but_keep_active
+	    != HIDE_CURSOR_BUT_KEEP_ACTIVE_ENABLE) {
+	    wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
+	}
 }
 
 static int hide_notify(void *data) {
