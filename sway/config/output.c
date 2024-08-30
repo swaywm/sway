@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_swapchain_manager.h>
+#include <xf86drm.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/output.h"
@@ -685,7 +686,9 @@ static void dump_output_state(struct wlr_output *wlr_output, struct wlr_output_s
 		sway_log(SWAY_DEBUG, "    enabled:       %s", state->enabled ? "yes" : "no");
 	}
 	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
-		sway_log(SWAY_DEBUG, "    render_format: %d", state->render_format);
+		char *format_name = drmGetFormatName(state->render_format);
+		sway_log(SWAY_DEBUG, "    render_format: %s", format_name);
+		free(format_name);
 	}
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		if (state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM) {
