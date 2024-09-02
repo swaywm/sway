@@ -80,8 +80,6 @@ struct sway_view {
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
 
-	char *title_format;
-
 	bool using_csd;
 
 	struct timespec urgent;
