@@ -22,6 +22,7 @@
 #include "sway/tree/workspace.h"
 #include "sway/xdg_decoration.h"
 #include "list.h"
+#include "pango.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -499,6 +500,7 @@ void container_destroy(struct sway_container *con) {
 	}
 	free(con->title);
 	free(con->formatted_title);
+	free(con->title_format);
 	list_free(con->pending.children);
 	list_free(con->current.children);
 
@@ -645,6 +647,87 @@ bool container_has_ancestor(struct sway_container *descendant,
 	return false;
 }
 
+static char *escape_pango_markup(const char *buffer) {
+	size_t length = escape_markup_text(buffer, NULL);
+	char *escaped_title = calloc(length + 1, sizeof(char));
+	escape_markup_text(buffer, escaped_title);
+	return escaped_title;
+}
+
+static size_t append_prop(char *buffer, const char *value) {
+	if (!value) {
+		return 0;
+	}
+	// If using pango_markup in font, we need to escape all markup chars
+	// from values to make sure tags are not inserted by clients
+	if (config->pango_markup) {
+		char *escaped_value = escape_pango_markup(value);
+		lenient_strcat(buffer, escaped_value);
+		size_t len = strlen(escaped_value);
+		free(escaped_value);
+		return len;
+	} else {
+		lenient_strcat(buffer, value);
+		return strlen(value);
+	}
+}
+
+/**
+ * Calculate and return the length of the formatted title.
+ * If buffer is not NULL, also populate the buffer with the formatted title.
+ */
+size_t parse_title_format(struct sway_container *container, char *buffer) {
+	if (!container->title_format || strcmp(container->title_format, "%title") == 0) {
+		if (container->view) {
+			return append_prop(buffer, view_get_title(container->view));
+		} else {
+			return container_build_representation(container->pending.layout, container->pending.children, buffer);
+		}
+	}
+
+	size_t len = 0;
+	char *format = container->title_format;
+	char *next = strchr(format, '%');
+	while (next) {
+		// Copy everything up to the %
+		lenient_strncat(buffer, format, next - format);
+		len += next - format;
+		format = next;
+
+		if (strncmp(next, "%title", 6) == 0) {
+			if (container->view) {
+				len += append_prop(buffer, view_get_title(container->view));
+			} else {
+				len += container_build_representation(container->pending.layout, container->pending.children, buffer);
+			}
+			format += 6;
+		} else if (container->view) {
+			if (strncmp(next, "%app_id", 7) == 0) {
+				len += append_prop(buffer, view_get_app_id(container->view));
+				format += 7;
+			} else if (strncmp(next, "%class", 6) == 0) {
+				len += append_prop(buffer, view_get_class(container->view));
+				format += 6;
+			} else if (strncmp(next, "%instance", 9) == 0) {
+				len += append_prop(buffer, view_get_instance(container->view));
+				format += 9;
+			} else if (strncmp(next, "%shell", 6) == 0) {
+				len += append_prop(buffer, view_get_shell(container->view));
+				format += 6;
+			}
+		} else {
+			lenient_strcat(buffer, "%");
+			++format;
+			++len;
+		}
+		next = strchr(format, '%');
+	}
+	lenient_strcat(buffer, format);
+	len += strlen(format);
+
+	return len;
+}
+
 /**
  * Calculate and return the length of the tree representation.
  * An example tree representation is: V[Terminal, Firefox]
@@ -700,16 +783,14 @@ size_t container_build_representation(enum sway_container_layout layout,
 
 void container_update_representation(struct sway_container *con) {
 	if (!con->view) {
-		size_t len = container_build_representation(con->pending.layout,
-				con->pending.children, NULL);
+		size_t len = parse_title_format(con, NULL);
 		free(con->formatted_title);
 		con->formatted_title = calloc(len + 1, sizeof(char));
 		if (!sway_assert(con->formatted_title,
 					"Unable to allocate title string")) {
 			return;
 		}
-		container_build_representation(con->pending.layout, con->pending.children,
-				con->formatted_title);
+		parse_title_format(con, con->formatted_title);
 
 		if (con->title_bar.title_text) {
 			sway_text_node_set_text(con->title_bar.title_text, con->formatted_title);
