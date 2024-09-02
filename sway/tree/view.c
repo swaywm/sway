@@ -34,7 +34,6 @@
 #include "sway/tree/workspace.h"
 #include "sway/config.h"
 #include "sway/xdg_decoration.h"
-#include "pango.h"
 #include "stringop.h"
 
 bool view_init(struct sway_view *view, enum sway_view_type type,
@@ -81,8 +80,6 @@ void view_destroy(struct sway_view *view) {
 
 	view_assign_ctx(view, NULL);
 	wlr_scene_node_destroy(&view->scene_tree->node);
-	free(view->title_format);
-
 	if (view->impl->destroy) {
 		view->impl->destroy(view);
 	} else {
@@ -991,77 +988,6 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	return NULL;
 }
 
-static char *escape_pango_markup(const char *buffer) {
-	size_t length = escape_markup_text(buffer, NULL);
-	char *escaped_title = calloc(length + 1, sizeof(char));
-	escape_markup_text(buffer, escaped_title);
-	return escaped_title;
-}
-
-static size_t append_prop(char *buffer, const char *value) {
-	if (!value) {
-		return 0;
-	}
-	// If using pango_markup in font, we need to escape all markup chars
-	// from values to make sure tags are not inserted by clients
-	if (config->pango_markup) {
-		char *escaped_value = escape_pango_markup(value);
-		lenient_strcat(buffer, escaped_value);
-		size_t len = strlen(escaped_value);
-		free(escaped_value);
-		return len;
-	} else {
-		lenient_strcat(buffer, value);
-		return strlen(value);
-	}
-}
-
-/**
- * Calculate and return the length of the formatted title.
- * If buffer is not NULL, also populate the buffer with the formatted title.
- */
-static size_t parse_title_format(struct sway_view *view, char *buffer) {
-	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
-		return append_prop(buffer, view_get_title(view));
-	}
-
-	size_t len = 0;
-	char *format = view->title_format;
-	char *next = strchr(format, '%');
-	while (next) {
-		// Copy everything up to the %
-		lenient_strncat(buffer, format, next - format);
-		len += next - format;
-		format = next;
-
-		if (strncmp(next, "%title", 6) == 0) {
-			len += append_prop(buffer, view_get_title(view));
-			format += 6;
-		} else if (strncmp(next, "%app_id", 7) == 0) {
-			len += append_prop(buffer, view_get_app_id(view));
-			format += 7;
-		} else if (strncmp(next, "%class", 6) == 0) {
-			len += append_prop(buffer, view_get_class(view));
-			format += 6;
-		} else if (strncmp(next, "%instance", 9) == 0) {
-			len += append_prop(buffer, view_get_instance(view));
-			format += 9;
-		} else if (strncmp(next, "%shell", 6) == 0) {
-			len += append_prop(buffer, view_get_shell(view));
-			format += 6;
-		} else {
-			lenient_strcat(buffer, "%");
-			++format;
-			++len;
-		}
-		next = strchr(format, '%');
-	}
-	lenient_strcat(buffer, format);
-	len += strlen(format);
-
-	return len;
-}
-
 void view_update_app_id(struct sway_view *view) {
 	const char *app_id = view_get_app_id(view);
 
@@ -1090,7 +1016,7 @@ void view_update_title(struct sway_view *view, bool force) {
 	free(view->container->title);
 	free(view->container->formatted_title);
 
-	size_t len = parse_title_format(view, NULL);
+	size_t len = parse_title_format(view->container, NULL);
 
 	if (len) {
 		char *buffer = calloc(len + 1, sizeof(char));
@@ -1098,7 +1024,7 @@ void view_update_title(struct sway_view *view, bool force) {
 			return;
 		}
 
-		parse_title_format(view, buffer);
+		parse_title_format(view->container, buffer);
 		view->container->formatted_title = buffer;
 	} else {
 		view->container->formatted_title = NULL;

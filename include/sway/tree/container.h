@@ -102,6 +102,8 @@ struct sway_container {
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
 	int title_width;
+	
+	char *title_format;
 
 	enum sway_container_layout prev_split_layout;
 
@@ -182,6 +184,8 @@ struct sway_container *container_flatten(struct sway_container *container);
 void container_update_title_bar(struct sway_container *container);
 
 void container_update_marks(struct sway_container *container);
+
+size_t parse_title_format(struct sway_container *container, char *buffer);
 
 size_t container_build_representation(enum sway_container_layout layout,
 		list_t *children, char *buffer);
