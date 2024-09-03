@@ -543,13 +543,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	request_modeset(server);
 }
 
-void handle_output_layout_change(struct wl_listener *listener,
-		void *data) {
-	struct sway_server *server =
-		wl_container_of(listener, server, output_layout_change);
-	update_output_manager_config(server);
-}
-
 static struct output_config *output_config_for_config_head(
 		struct wlr_output_configuration_head_v1 *config_head,
 		struct sway_output *output) {

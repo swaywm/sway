@@ -19,12 +19,6 @@
 
 struct sway_root *root;
 
-static void output_layout_handle_change(struct wl_listener *listener,
-		void *data) {
-	arrange_root();
-	transaction_commit_dirty();
-}
-
 struct sway_root *root_create(struct wl_display *wl_display) {
 	struct sway_root *root = calloc(1, sizeof(struct sway_root));
 	if (!root) {
@@ -81,14 +75,10 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->non_desktop_outputs = create_list();
 	root->scratchpad = create_list();
 
-	root->output_layout_change.notify = output_layout_handle_change;
-	wl_signal_add(&root->output_layout->events.change,
-		&root->output_layout_change);
 	return root;
 }
 
 void root_destroy(struct sway_root *root) {
-	wl_list_remove(&root->output_layout_change.link);
 	list_free(root->scratchpad);
 	list_free(root->non_desktop_outputs);
 	list_free(root->outputs);
