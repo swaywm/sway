@@ -149,4 +149,6 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 
 struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr_output);
 
+void update_output_manager_config(struct sway_server *server);
+
 #endif
