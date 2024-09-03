@@ -16,8 +16,6 @@ struct sway_root {
 	struct sway_node node;
 	struct wlr_output_layout *output_layout;
 
-	struct wl_listener output_layout_change;
-
 	// scene node layout:
 	// - root
 	// 	- staging
