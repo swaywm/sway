@@ -356,7 +356,7 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	wlr_scene_output_for_each_buffer(output->scene_output, send_frame_done_iterator, &data);
 }
 
-static void update_output_manager_config(struct sway_server *server) {
+void update_output_manager_config(struct sway_server *server) {
 	struct wlr_output_configuration_v1 *config =
 		wlr_output_configuration_v1_create();
 
@@ -387,9 +387,6 @@ static int timer_modeset_handle(void *data) {
 	server->delayed_modeset = NULL;
 
 	apply_all_output_configs();
-	transaction_commit_dirty();
-	update_output_manager_config(server);
-
 	return 0;
 }
 
@@ -414,7 +411,6 @@ static void begin_destroy(struct sway_output *output) {
 
 	wl_list_remove(&output->layout_destroy.link);
 	wl_list_remove(&output->destroy.link);
-	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->present.link);
 	wl_list_remove(&output->frame.link);
 	wl_list_remove(&output->request_state.link);
@@ -437,26 +433,6 @@ static void handle_layout_destroy(struct wl_listener *listener, void *data) {
 	begin_destroy(output);
 }
 
-static void handle_commit(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, commit);
-	struct wlr_output_event_commit *event = data;
-
-	if (!output->enabled) {
-		return;
-	}
-
-	if (event->state->committed & (
-			WLR_OUTPUT_STATE_MODE |
-			WLR_OUTPUT_STATE_TRANSFORM |
-			WLR_OUTPUT_STATE_SCALE)) {
-		arrange_layers(output);
-		arrange_output(output);
-		transaction_commit_dirty();
-
-		update_output_manager_config(output->server);
-	}
-}
-
 static void handle_present(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, present);
 	struct wlr_output_event_present *output_event = data;
@@ -473,7 +449,20 @@ static void handle_request_state(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, request_state);
 	const struct wlr_output_event_request_state *event = data;
+
+	uint32_t committed = event->state->committed;
 	wlr_output_commit_state(output->wlr_output, event->state);
+
+	if (committed & (
+			WLR_OUTPUT_STATE_MODE |
+			WLR_OUTPUT_STATE_TRANSFORM |
+			WLR_OUTPUT_STATE_SCALE)) {
+		arrange_layers(output);
+		arrange_output(output);
+		transaction_commit_dirty();
+
+		update_output_manager_config(output->server);
+	}
 }
 
 static unsigned int last_headless_num = 0;
@@ -537,8 +526,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->layout_destroy.notify = handle_layout_destroy;
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
-	wl_signal_add(&wlr_output->events.commit, &output->commit);
-	output->commit.notify = handle_commit;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);

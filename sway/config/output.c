@@ -11,9 +11,12 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_swapchain_manager.h>
 #include "sway/config.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
+#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
 #include "log.h"
 #include "util.h"
@@ -963,7 +966,12 @@ bool apply_output_configs(struct matched_output_config *configs,
 		sway_log(SWAY_DEBUG, "Finalizing config for %s",
 			cfg->output->wlr_output->name);
 		finalize_output_config(cfg->config, cfg->output);
+		arrange_layers(cfg->output);
 	}
+
+	arrange_root();
+	update_output_manager_config(&server);
+	transaction_commit_dirty();
 
 out:
 	wlr_output_swapchain_manager_finish(&swapchain_mgr);
