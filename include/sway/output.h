@@ -57,7 +57,6 @@ struct sway_output {
 
 	struct wl_listener layout_destroy;
 	struct wl_listener destroy;
-	struct wl_listener commit;
 	struct wl_listener present;
 	struct wl_listener frame;
 	struct wl_listener request_state;
@@ -145,5 +144,7 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 	void *data);
 
 struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr_output);
+
+void update_output_manager_config(struct sway_server *server);
 
 #endif
