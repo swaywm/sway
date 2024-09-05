@@ -25,13 +25,6 @@
 #include <wlr/backend/drm.h>
 #endif
 
-int output_name_cmp(const void *item, const void *data) {
-	const struct output_config *output = item;
-	const char *name = data;
-
-	return strcmp(output->name, name);
-}
-
 void output_get_identifier(char *identifier, size_t len,
 		struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -615,8 +608,6 @@ static void default_output_config(struct output_config *oc,
 // configuration that applies to the specified output.
 struct output_config *find_output_config(struct sway_output *sway_output) {
 	const char *name = sway_output->wlr_output->name;
-	struct output_config *oc = NULL;
-
 	struct output_config *result = new_output_config(name);
 	if (config->reloading) {
 		default_output_config(result, sway_output->wlr_output);
@@ -625,25 +616,21 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 	char id[128];
 	output_get_identifier(id, sizeof(id), sway_output);
 
-	int i;
-	bool match = false;
-	if ((i = list_seq_find(config->output_configs, output_name_cmp, "*")) >= 0) {
-		match = true;
-		oc = config->output_configs->items[i];
-		merge_output_config(result, oc);
-	}
-	if ((i = list_seq_find(config->output_configs, output_name_cmp, name)) >= 0) {
-		match = true;
-		oc = config->output_configs->items[i];
-		merge_output_config(result, oc);
-	}
-	if ((i = list_seq_find(config->output_configs, output_name_cmp, id)) >= 0) {
-		match = true;
-		oc = config->output_configs->items[i];
-		merge_output_config(result, oc);
+	// We take a new config and merge on top, in order, the wildcard config,
+	// output config by name, and output config by identifier to form the final
+	// config. If there are multiple matches, they are merged in order.
+	struct output_config *oc = NULL;
+	const char *names[] = {"*", name, id, NULL};
+	for (const char **name = &names[0]; *name; name++) {
+		for (int idx = 0; idx < config->output_configs->length; idx++) {
+			oc = config->output_configs->items[idx];
+			if (strcmp(oc->name, *name) == 0) {
+				merge_output_config(result, oc);
+			}
+		}
 	}
 
-	if (!match && !config->reloading) {
+	if (oc == NULL && !config->reloading) {
 		// No name, identifier, or wildcard config. Since we are not
 		// reloading with defaults, the output config will be empty, so
 		// just return NULL
