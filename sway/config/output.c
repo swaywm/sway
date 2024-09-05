@@ -666,6 +666,11 @@ static bool config_has_manual_mode(struct output_config *oc) {
 	return false;
 }
 
+struct matched_output_config {
+	struct sway_output *output;
+	struct output_config *config;
+};
+
 struct search_context {
 	struct wlr_output_swapchain_manager *swapchain_mgr;
 	struct wlr_backend_output_state *states;
@@ -884,12 +889,12 @@ static int compare_matched_output_config_priority(const void *a, const void *b) 
 	return 0;
 }
 
-void sort_output_configs_by_priority(struct matched_output_config *configs,
+static void sort_output_configs_by_priority(struct matched_output_config *configs,
 		size_t configs_len) {
 	qsort(configs, configs_len, sizeof(*configs), compare_matched_output_config_priority);
 }
 
-bool apply_output_configs(struct matched_output_config *configs,
+static bool apply_output_configs(struct matched_output_config *configs,
 		size_t configs_len, bool test_only, bool degrade_to_off) {
 	struct wlr_backend_output_state *states = calloc(configs_len, sizeof(*states));
 	if (!states) {
