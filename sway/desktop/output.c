@@ -633,10 +633,6 @@ static void output_manager_apply(struct sway_server *server,
 		wlr_output_configuration_v1_send_failed(config);
 	}
 	wlr_output_configuration_v1_destroy(config);
-
-	if (!test_only) {
-		update_output_manager_config(server);
-	}
 }
 
 void handle_output_manager_apply(struct wl_listener *listener, void *data) {
