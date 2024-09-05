@@ -314,6 +314,9 @@ void arrange_output(struct sway_output *output) {
 	if (config->reloading) {
 		return;
 	}
+	if (!output->wlr_output->enabled) {
+		return;
+	}
 	for (int i = 0; i < output->workspaces->length; ++i) {
 		struct sway_workspace *workspace = output->workspaces->items[i];
 		arrange_workspace(workspace);
