@@ -533,7 +533,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		}
 		sway_switch_retrigger_bindings_for_all();
 
-		apply_all_output_configs();
+		apply_all_output_configs(false, true);
 		spawn_swaybg();
 
 		config->reloading = false;

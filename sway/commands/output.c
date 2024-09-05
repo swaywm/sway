@@ -111,7 +111,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	// entire config and before the deferred commands so that an auto generated
 	// workspace name is not given to re-enabled outputs.
 	if (!config->reloading && !config->validating) {
-		apply_all_output_configs();
+		apply_all_output_configs(false, true);
 		if (background) {
 			if (!spawn_swaybg()) {
 				return cmd_results_new(CMD_FAILURE,

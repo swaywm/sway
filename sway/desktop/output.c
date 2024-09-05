@@ -386,7 +386,7 @@ static int timer_modeset_handle(void *data) {
 	wl_event_source_remove(server->delayed_modeset);
 	server->delayed_modeset = NULL;
 
-	apply_all_output_configs();
+	apply_all_output_configs(false, true);
 	return 0;
 }
 

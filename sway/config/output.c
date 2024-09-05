@@ -997,11 +997,11 @@ out:
 	return ok;
 }
 
-void apply_all_output_configs(void) {
+bool apply_all_output_configs(bool test_only, bool degrade_to_off) {
 	size_t configs_len = wl_list_length(&root->all_outputs);
 	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
 	if (!configs) {
-		return;
+		return false;
 	}
 
 	int config_idx = 0;
@@ -1018,12 +1018,13 @@ void apply_all_output_configs(void) {
 	}
 
 	sort_output_configs_by_priority(configs, configs_len);
-	apply_output_configs(configs, configs_len, false, true);
+	bool ok = apply_output_configs(configs, configs_len, test_only, degrade_to_off);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		free_output_config(cfg->config);
 	}
 	free(configs);
+	return ok;
 }
 
 void free_output_config(struct output_config *oc) {
