@@ -218,6 +218,19 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	}
 }
 
+void remove_temp_output_config(struct output_config *oc) {
+	size_t idx = list_find(config->output_configs, oc);
+	if (idx) {
+		list_del(config->output_configs, idx);
+	}
+}
+
+void store_temp_output_config(struct output_config *oc) {
+	// Add it directly so the config can be removed later
+	list_add(config->output_configs, oc);
+	return;
+}
+
 void store_output_config(struct output_config *oc) {
 	bool merged = false;
 	bool wildcard = strcmp(oc->name, "*") == 0;

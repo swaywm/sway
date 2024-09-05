@@ -710,6 +710,14 @@ void sort_output_configs_by_priority(struct matched_output_config *configs,
  */
 void store_output_config(struct output_config *oc);
 
+/**
+ * Store a temporary output config that will not be merged for testing
+ * purposes. This must be removed again after test, before any calls to
+ * store_output_config that could result in merge with the temporary config.
+ */
+void store_temp_output_config(struct output_config *oc);
+void remove_temp_output_config(struct output_config *oc);
+
 struct output_config *find_output_config(struct sway_output *output);
 
 void free_output_config(struct output_config *oc);
