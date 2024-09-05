@@ -544,9 +544,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 }
 
 static struct output_config *output_config_for_config_head(
-		struct wlr_output_configuration_head_v1 *config_head,
-		struct sway_output *output) {
-	struct output_config *oc = new_output_config(output->wlr_output->name);
+		struct wlr_output_configuration_head_v1 *config_head) {
+	struct output_config *oc = new_output_config(config_head->state.output->name);
 	oc->enabled = config_head->state.enabled;
 	if (!oc->enabled) {
 		return oc;
@@ -573,56 +572,31 @@ static struct output_config *output_config_for_config_head(
 
 static void output_manager_apply(struct sway_server *server,
 		struct wlr_output_configuration_v1 *config, bool test_only) {
-	size_t configs_len = wl_list_length(&root->all_outputs);
-	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
+	size_t configs_len = wl_list_length(&config->heads);
+	struct output_config **configs = calloc(configs_len, sizeof(*configs));
 	if (!configs) {
 		return;
 	}
 
 	int config_idx = 0;
-	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root->all_outputs, link) {
-		if (sway_output == root->fallback_output) {
-			configs_len--;
-			continue;
-		}
-
-		struct matched_output_config *cfg = &configs[config_idx++];
-		cfg->output = sway_output;
-
-		struct wlr_output_configuration_head_v1 *config_head;
-		wl_list_for_each(config_head, &config->heads, link) {
-			if (config_head->state.output == sway_output->wlr_output) {
-				cfg->config = output_config_for_config_head(config_head, sway_output);
-				break;
-			}
-		}
-		if (!cfg->config) {
-			cfg->config = find_output_config(sway_output);
-		}
+	struct wlr_output_configuration_head_v1 *config_head;
+	wl_list_for_each(config_head, &config->heads, link) {
+		// Generate the configuration and store it as a temporary
+		// config. We keep a record of it so we can remove it later.
+		struct output_config *oc = output_config_for_config_head(config_head);
+		store_temp_output_config(oc);
+		configs[config_idx++] = oc;
 	}
+	configs_len = config_idx;
 
-	sort_output_configs_by_priority(configs, configs_len);
-	bool ok = apply_output_configs(configs, configs_len, test_only, false);
+	bool ok = apply_all_output_configs(test_only, false);
 	for (size_t idx = 0; idx < configs_len; idx++) {
-		struct matched_output_config *cfg = &configs[idx];
-
-		// Only store new configs for successful non-test commits. Old configs,
-		// test-only and failed commits just get freed.
-		bool store_config = false;
+		struct output_config *cfg = configs[idx];
+		remove_temp_output_config(cfg);
 		if (!test_only && ok) {
-			struct wlr_output_configuration_head_v1 *config_head;
-			wl_list_for_each(config_head, &config->heads, link) {
-				if (config_head->state.output == cfg->output->wlr_output) {
-					store_config = true;
-					break;
-				}
-			}
-		}
-		if (store_config) {
-			store_output_config(cfg->config);
+			store_output_config(cfg);
 		} else {
-			free_output_config(cfg->config);
+			free_output_config(cfg);
 		}
 	}
 	free(configs);
