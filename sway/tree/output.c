@@ -180,8 +180,6 @@ void output_enable(struct sway_output *output) {
 		ws->layout = output_get_default_layout(output);
 	}
 
-	input_manager_configure_xcursor();
-
 	wl_signal_emit_mutable(&root->events.new_node, &output->node);
 }
 
