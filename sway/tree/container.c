@@ -714,6 +714,10 @@ size_t parse_title_format(struct sway_container *container, char *buffer) {
 			} else if (strncmp(next, "%shell", 6) == 0) {
 				len += append_prop(buffer, view_get_shell(container->view));
 				format += 6;
+			} else {
+				lenient_strcat(buffer, "%");
+				++format;
+				++len;
 			}
 		} else {
 			lenient_strcat(buffer, "%");
