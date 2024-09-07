@@ -1,6 +1,6 @@
 # sway
 
-[English][en] - **[Česky][cs]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Svenska][sv] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
+[English][en] - [عربي][ar] - **[Česky][cs]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [ქართული][ge] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Svenska][sv] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
 
 sway je s [i3] kompatibilní [Wayland] kompozitor. Přečtěte si [FAQ]. Připojte se na
 [IRC kanál][IRC channel] \(#sway na irc.libera.chat).
@@ -32,10 +32,11 @@ Nainstalujte závislosti:
 * pango
 * cairo
 * gdk-pixbuf2 (volitelné: oznamovací oblast)
+* [swaybg] (volitelné: tapeta)
 * [scdoc] (volitelné: manuálové stránky) \*
 * git (volitelné: informace o verzi) \*
 
-_\* Závislost pouze pro sestavení_
+_\* Závislost pouze pro kompilaci_
 
 Spusťte tyto příkazy:
 
@@ -56,12 +57,13 @@ Spusťte `sway` z TTY. Některé správce zobrazení mohou fungovat, ale nejsou
 podporovány sway (je známo, že gdm funguje docela dobře).
 
 [en]: https://github.com/swaywm/sway#readme
+[ar]: README.ar.md
 [cs]: README.cs.md
 [de]: README.de.md
 [dk]: README.dk.md
 [es]: README.es.md
 [fr]: README.fr.md
-[sv]: README.sv.md
+[ge]: README.ge.md
 [gr]: README.gr.md
 [hi]: README.hi.md
 [hu]: README.hu.md
@@ -70,10 +72,12 @@ podporovány sway (je známo, že gdm funguje docela dobře).
 [ja]: README.ja.md
 [ko]: README.ko.md
 [nl]: README.nl.md
+[no]: README.no.md
 [pl]: README.pl.md
 [pt]: README.pt.md
 [ro]: README.ro.md
 [ru]: README.ru.md
+[sv]: README.sv.md
 [tr]: README.tr.md
 [uk]: README.uk.md
 [zh-CN]: README.zh-CN.md
@@ -86,4 +90,5 @@ podporovány sway (je známo, že gdm funguje docela dobře).
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
 [wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[swaybg]: https://github.com/swaywm/swaybg/
 [scdoc]: https://git.sr.ht/~sircmpwn/scdoc
