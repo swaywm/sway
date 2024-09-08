@@ -1,6 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
+#include <glib.h>
 #include "sway/commands.h"
+
+extern char **child_envp;
 
 struct cmd_results *cmd_env(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -8,7 +11,7 @@ struct cmd_results *cmd_env(int argc, char **argv) {
 		return error;
 	}
 
-	setenv(argv[0], argv[1], 1);
+	child_envp = g_environ_setenv(child_envp, argv[0], argv[1], 1);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
