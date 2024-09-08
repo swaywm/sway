@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
+#include <glib.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
@@ -13,6 +14,8 @@
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
+
+extern char** child_envp;
 
 struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -81,7 +84,7 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 			if (ctx && !no_startup_id) {
 				export_startup_id(ctx);
 			}
-			execlp("sh", "sh", "-c", cmd, (void *)NULL);
+			execle("/bin/sh", "sh", "-c", cmd, (void *)NULL, child_envp);
 			sway_log_errno(SWAY_ERROR, "execlp failed");
 			_exit(1);
 		}
