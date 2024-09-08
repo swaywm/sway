@@ -11,6 +11,8 @@ struct cmd_results *cmd_env(int argc, char **argv) {
 		return error;
 	}
 
+	// g_environ_setenv never returns NULL
+	// https://github.com/GNOME/glib/blob/8810cf7a/glib/genviron.c#L129
 	child_envp = g_environ_setenv(child_envp, argv[0], argv[1], 1);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
