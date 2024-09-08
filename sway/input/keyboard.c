@@ -1028,13 +1028,6 @@ static void sway_keyboard_set_layout(struct sway_keyboard *keyboard,
 		}
 	}
 
-	// If the seat has no active keyboard, set this one
-	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
-	struct wlr_keyboard *current_keyboard = seat->keyboard_state.keyboard;
-	if (current_keyboard == NULL) {
-		wlr_seat_set_keyboard(seat, keyboard->wlr);
-	}
-
 	if (keymap_changed) {
 		ipc_event_input("xkb_keymap",
 				  keyboard->seat_device->input_device);
@@ -1076,6 +1069,13 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 
 	if (!keyboard->seat_device->input_device->is_virtual) {
 		sway_keyboard_set_layout(keyboard, input_config);
+	}
+
+	// If the seat has no active keyboard, set this one
+	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
+	struct wlr_keyboard *current_keyboard = seat->keyboard_state.keyboard;
+	if (current_keyboard == NULL) {
+		wlr_seat_set_keyboard(seat, keyboard->wlr);
 	}
 
 	wl_list_remove(&keyboard->keyboard_key.link);
