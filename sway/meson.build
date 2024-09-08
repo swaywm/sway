@@ -221,6 +221,7 @@ sway_sources = files(
 sway_deps = [
 	cairo,
 	drm,
+	glib,
 	jsonc,
 	libevdev,
 	libinput,
