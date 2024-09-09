@@ -584,9 +584,11 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	return true;
 }
 
-// find_output_config returns a merged output_config containing all stored
-// configuration that applies to the specified output.
-struct output_config *find_output_config(struct sway_output *sway_output) {
+// find_output_config_from_list returns a merged output_config containing all
+// stored configuration that applies to the specified output.
+static struct output_config *find_output_config_from_list(
+		struct output_config **configs, size_t configs_len,
+		struct sway_output *sway_output) {
 	const char *name = sway_output->wlr_output->name;
 	struct output_config *result = new_output_config(name);
 	if (result == NULL) {
@@ -611,8 +613,8 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 	struct output_config *oc = NULL;
 	const char *names[] = {"*", name, id, NULL};
 	for (const char **name = &names[0]; *name; name++) {
-		for (int idx = 0; idx < config->output_configs->length; idx++) {
-			oc = config->output_configs->items[idx];
+		for (size_t idx = 0; idx < configs_len; idx++) {
+			oc = configs[idx];
 			if (strcmp(oc->name, *name) == 0) {
 				merge_output_config(result, oc);
 			}
@@ -620,6 +622,12 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 	}
 
 	return result;
+}
+
+struct output_config *find_output_config(struct sway_output *sway_output) {
+	return find_output_config_from_list(
+			(struct output_config **)config->output_configs->items,
+			config->output_configs->length, sway_output);
 }
 
 static bool config_has_manual_mode(struct output_config *oc) {
@@ -633,6 +641,14 @@ static bool config_has_manual_mode(struct output_config *oc) {
 	}
 	return false;
 }
+
+/**
+ * An output config pre-matched to an output
+ */
+struct matched_output_config {
+	struct sway_output *output;
+	struct output_config *config;
+};
 
 struct search_context {
 	struct wlr_output_swapchain_manager *swapchain_mgr;
@@ -852,12 +868,12 @@ static int compare_matched_output_config_priority(const void *a, const void *b) 
 	return 0;
 }
 
-void sort_output_configs_by_priority(struct matched_output_config *configs,
-		size_t configs_len) {
+static void sort_output_configs_by_priority(
+		struct matched_output_config *configs, size_t configs_len) {
 	qsort(configs, configs_len, sizeof(*configs), compare_matched_output_config_priority);
 }
 
-bool apply_output_configs(struct matched_output_config *configs,
+static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		size_t configs_len, bool test_only, bool degrade_to_off) {
 	struct wlr_backend_output_state *states = calloc(configs_len, sizeof(*states));
 	if (!states) {
@@ -965,11 +981,12 @@ out:
 	return ok;
 }
 
-void apply_all_output_configs(void) {
+bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
+		bool test_only, bool degrade_to_off) {
 	size_t configs_len = wl_list_length(&root->all_outputs);
 	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
 	if (!configs) {
-		return;
+		return false;
 	}
 
 	int config_idx = 0;
@@ -982,16 +999,22 @@ void apply_all_output_configs(void) {
 
 		struct matched_output_config *config = &configs[config_idx++];
 		config->output = sway_output;
-		config->config = find_output_config(sway_output);
+		config->config = find_output_config_from_list(ocs, ocs_len, sway_output);
 	}
 
 	sort_output_configs_by_priority(configs, configs_len);
-	apply_output_configs(configs, configs_len, false, true);
+	bool ok = apply_resolved_output_configs(configs, configs_len, test_only, degrade_to_off);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		free_output_config(cfg->config);
 	}
 	free(configs);
+	return ok;
+}
+
+void apply_all_output_configs(void) {
+	apply_output_configs((struct output_config **)config->output_configs->items,
+			config->output_configs->length, false, true);
 }
 
 void free_output_config(struct output_config *oc) {
