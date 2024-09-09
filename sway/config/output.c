@@ -1029,7 +1029,7 @@ bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
 	return ok;
 }
 
-void apply_all_output_configs(void) {
+void apply_stored_output_configs(void) {
 	apply_output_configs((struct output_config **)config->output_configs->items,
 			config->output_configs->length, false, true);
 }
