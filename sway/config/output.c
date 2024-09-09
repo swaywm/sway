@@ -593,34 +593,23 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	return true;
 }
 
-static void default_output_config(struct output_config *oc,
-		struct wlr_output *wlr_output) {
-	oc->enabled = 1;
-	oc->power = 1;
-	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-	if (mode != NULL) {
-		oc->width = mode->width;
-		oc->height = mode->height;
-		oc->refresh_rate = mode->refresh / 1000.f;
-	}
-	oc->x = oc->y = -1;
-	oc->scale = 0; // auto
-	oc->scale_filter = SCALE_FILTER_DEFAULT;
-	struct sway_output *output = wlr_output->data;
-	oc->subpixel = output->detected_subpixel;
-	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	oc->max_render_time = 0;
-	oc->allow_tearing = 0;
-}
-
 // find_output_config returns a merged output_config containing all stored
 // configuration that applies to the specified output.
 struct output_config *find_output_config(struct sway_output *sway_output) {
 	const char *name = sway_output->wlr_output->name;
 	struct output_config *result = new_output_config(name);
-	if (config->reloading) {
-		default_output_config(result, sway_output->wlr_output);
+	if (result == NULL) {
+		return NULL;
 	}
+
+	// Set output defaults for the "base" configuration
+	result->enabled = 1;
+	result->power = 1;
+	result->scale = 0; // auto
+	result->subpixel = sway_output->detected_subpixel;
+	result->transform = WL_OUTPUT_TRANSFORM_NORMAL;
+	result->max_render_time = 0;
+	result->allow_tearing = 0;
 
 	char id[128];
 	output_get_identifier(id, sizeof(id), sway_output);
@@ -637,14 +626,6 @@ struct output_config *find_output_config(struct sway_output *sway_output) {
 				merge_output_config(result, oc);
 			}
 		}
-	}
-
-	if (oc == NULL && !config->reloading) {
-		// No name, identifier, or wildcard config. Since we are not
-		// reloading with defaults, the output config will be empty, so
-		// just return NULL
-		free_output_config(result);
-		return NULL;
 	}
 
 	return result;
