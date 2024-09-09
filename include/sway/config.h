@@ -689,7 +689,7 @@ struct output_config *new_output_config(const char *name);
 bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
 		bool test_only, bool degrade_to_off);
 
-void apply_all_output_configs(void);
+void apply_stored_output_configs(void);
 
 /**
  * store_output_config stores a new output config. An output may be matched by
