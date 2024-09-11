@@ -1,6 +1,5 @@
 #include <getopt.h>
 #include <pango/pangocairo.h>
-#include <glib.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -25,6 +24,7 @@
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+#include "env.h"
 
 static bool terminate_request = false;
 static int exit_value = 0;
@@ -350,8 +350,8 @@ int main(int argc, char **argv) {
 	ipc_init(&server);
 
 	setenv("WAYLAND_DISPLAY", server.socket, true);
-	// g_get_environ creates a newly-allocated environment buffer
-	child_envp = g_get_environ();
+	// env_get_envp creates a newly-allocated environment buffer
+	child_envp = env_get_envp();
 	if (!load_main_config(config_path, false, false)) {
 		sway_terminate(EXIT_FAILURE);
 		goto shutdown;

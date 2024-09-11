@@ -4,7 +4,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
-#include <glib.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
