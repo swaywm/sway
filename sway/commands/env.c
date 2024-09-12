@@ -15,3 +15,14 @@ struct cmd_results *cmd_env(int argc, char **argv) {
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
+
+struct cmd_results *cmd_env_unset(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "env_unset", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	child_envp = env_unsetenv(child_envp, argv[0]);
+
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}

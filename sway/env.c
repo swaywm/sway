@@ -51,18 +51,25 @@ size_t env_len(char **envp) {
 	return i;
 }
 
-char **env_clone(char **envp, size_t reserve) {
-	char **new_envp = calloc(env_len(envp) + 1 + reserve, sizeof(char *));
+char **env_clone(char **envp, size_t reserve, env_info exclude) {
+	size_t elem_count = env_len(envp) + 1 + reserve - (exclude.ptr != NULL);
+	char **new_envp = calloc(elem_count, sizeof(char *));
 
 	char *strp;
 	size_t i = 0;
+	size_t new_i = 0;
 
 	while ((strp = envp[i]) != NULL) {
+		if (exclude.ptr == strp) {
+			i++;
+			continue;
+		}
 		size_t n = strlen(strp) + 1;
 		char *new_strp = malloc(n);
 		memcpy(new_strp, strp, n);
-		new_envp[i] = new_strp;
+		new_envp[new_i] = new_strp;
 		i++;
+		new_i++;
 	}
 
 	return new_envp;
@@ -81,7 +88,7 @@ void env_destroy(char **envp) {
 
 // copy the global environment array into a newly-allocated one
 // you are responsible for deallocating it after use
-char **env_create() { return env_clone(environ, 0); }
+char **env_create() { return env_clone(environ, 0, (env_info){NULL, 0}); }
 
 // use env_get_envp() to acquire an envp
 // might clone and deallocate the given envp
@@ -100,9 +107,19 @@ char **env_setenv(char **envp, char *name, char *value) {
 		envp[existing.idx] = newp;
 		return envp;
 	} else {
-		char **new_envp = env_clone(envp, 1);
+		char **new_envp = env_clone(envp, 1, (env_info){NULL, 0});
 		new_envp[env_len(envp)] = newp;
 		env_destroy(envp);
 		return new_envp;
 	}
+}
+
+char **env_unsetenv(char **envp, char *name) {
+	env_info existing = env_get(envp, name);
+	if (existing.ptr == NULL) // dont do anything if
+		return envp;          // the variable is not set
+
+	char **new_envp = env_clone(envp, 0, existing);
+	env_destroy(envp);
+	return new_envp;
 }

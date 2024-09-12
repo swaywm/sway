@@ -19,4 +19,10 @@ char **env_create();
  */
 char **env_setenv(char **envp, char *name, char *value);
 
+/**
+ * Unsets an environment variable in the given environment.
+ * If successful, this will reallocate the entire array.
+ */
+char **env_unsetenv(char **envp, char *name);
+
 #endif
