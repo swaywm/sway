@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+	char *ptr;
+	size_t idx;
+} env_info;
+
 extern char **environ;
 
-int _env_var_name_eq(char *env_name, char *cmp) {
+int env_name_eq(char *env_name, char *cmp) {
 	size_t i = 0;
 	int reached_eq;
 	while (1) {
@@ -24,23 +29,18 @@ int _env_var_name_eq(char *env_name, char *cmp) {
 	}
 }
 
-typedef struct {
-	char *ptr;
-	size_t idx;
-} _env_info;
-
-_env_info _env_get(char **envp, char *name) {
+env_info env_get(char **envp, char *name) {
 	char *strp;
 	size_t i = 0;
 	while ((strp = envp[i]) != NULL) {
-		if (_env_var_name_eq(strp, name)) return (_env_info){strp, i};
+		if (env_name_eq(strp, name)) return (env_info){strp, i};
 		i++;
 	}
 
-	return (_env_info){NULL, 0};
+	return (env_info){NULL, 0};
 }
 
-size_t _env_len(char **envp) {
+size_t env_len(char **envp) {
 	char *strp;
 	size_t i = 0;
 
@@ -51,8 +51,8 @@ size_t _env_len(char **envp) {
 	return i;
 }
 
-char **_env_clone(char **envp, size_t reserve) {
-	char **new_envp = calloc(_env_len(envp) + 1 + reserve, sizeof(char *));
+char **env_clone(char **envp, size_t reserve) {
+	char **new_envp = calloc(env_len(envp) + 1 + reserve, sizeof(char *));
 
 	char *strp;
 	size_t i = 0;
@@ -68,7 +68,7 @@ char **_env_clone(char **envp, size_t reserve) {
 	return new_envp;
 }
 
-void env_free(char **envp) {
+void env_destroy(char **envp) {
 	char *strp;
 	size_t i = 0;
 	while ((strp = envp[i]) != NULL) {
@@ -81,7 +81,7 @@ void env_free(char **envp) {
 
 // copy the global environment array into a newly-allocated one
 // you are responsible for deallocating it after use
-char **env_get_envp() { return _env_clone(environ, 0); }
+char **env_create() { return env_clone(environ, 0); }
 
 // use env_get_envp() to acquire an envp
 // might clone and deallocate the given envp
@@ -94,15 +94,15 @@ char **env_setenv(char **envp, char *name, char *value) {
 	newp[name_len] = '=';
 	newp[name_len + value_len + 1] = '\0';
 
-	_env_info existing = _env_get(envp, name);
+	env_info existing = env_get(envp, name);
 	if (existing.ptr != NULL) {
 		free(existing.ptr);
 		envp[existing.idx] = newp;
 		return envp;
 	} else {
-		char **new_envp = _env_clone(envp, 1);
-		new_envp[_env_len(envp)] = newp;
-		env_free(envp);
+		char **new_envp = env_clone(envp, 1);
+		new_envp[env_len(envp)] = newp;
+		env_destroy(envp);
 		return new_envp;
 	}
 }

@@ -351,7 +351,7 @@ int main(int argc, char **argv) {
 
 	setenv("WAYLAND_DISPLAY", server.socket, true);
 	// env_get_envp creates a newly-allocated environment buffer
-	child_envp = env_get_envp();
+	child_envp = env_create();
 	if (!load_main_config(config_path, false, false)) {
 		sway_terminate(EXIT_FAILURE);
 		goto shutdown;
