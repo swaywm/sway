@@ -796,6 +796,7 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 		DRM_FORMAT_XRGB2101010,
 		DRM_FORMAT_XBGR2101010,
 		DRM_FORMAT_XRGB8888,
+		DRM_FORMAT_ARGB8888,
 		DRM_FORMAT_INVALID,
 	};
 	if (render_format_is_bgr(wlr_output->render_format)) {
