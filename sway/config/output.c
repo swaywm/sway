@@ -410,10 +410,6 @@ static enum render_bit_depth bit_depth_from_format(uint32_t render_format) {
 	return RENDER_BIT_DEPTH_DEFAULT;
 }
 
-static bool render_format_is_bgr(uint32_t fmt) {
-	return fmt == DRM_FORMAT_XBGR2101010 || fmt == DRM_FORMAT_XBGR8888;
-}
-
 static bool output_config_is_disabling(struct output_config *oc) {
 	return oc && (!oc->enabled || oc->power == 0);
 }
@@ -785,25 +781,45 @@ static bool search_mode(struct search_context *ctx, size_t output_idx) {
 	return false;
 }
 
+struct fmtmap_entry {
+	enum render_bit_depth bit_depth;
+	const uint32_t *fmts;
+};
+
+static const struct fmtmap_entry map[] = {
+	{RENDER_BIT_DEPTH_10, (uint32_t[]){
+		DRM_FORMAT_XRGB2101010,
+		DRM_FORMAT_XBGR2101010,
+		DRM_FORMAT_RGBX1010102,
+		DRM_FORMAT_BGRX1010102,
+		DRM_FORMAT_ARGB2101010,
+		DRM_FORMAT_ABGR2101010,
+		DRM_FORMAT_RGBA1010102,
+		DRM_FORMAT_BGRA1010102,
+		DRM_FORMAT_INVALID,
+	}},
+	{RENDER_BIT_DEPTH_8, (uint32_t[]){
+		DRM_FORMAT_XRGB8888,
+		DRM_FORMAT_XBGR8888,
+		DRM_FORMAT_RGBX8888,
+		DRM_FORMAT_BGRX8888,
+		DRM_FORMAT_ARGB8888,
+		DRM_FORMAT_ABGR8888,
+		DRM_FORMAT_RGBA8888,
+		DRM_FORMAT_BGRA8888,
+		DRM_FORMAT_INVALID,
+	}},
+	{RENDER_BIT_DEPTH_6, (uint32_t[]){
+		DRM_FORMAT_RGB565,
+		DRM_FORMAT_INVALID,
+	}},
+};
+
 static bool search_render_format(struct search_context *ctx, size_t output_idx) {
 	struct matched_output_config *cfg = &ctx->configs[output_idx];
 	struct wlr_backend_output_state *backend_state = &ctx->states[output_idx];
 	struct wlr_output_state *state = &backend_state->base;
 	struct wlr_output *wlr_output = backend_state->output;
-
-	uint32_t fmts[] = {
-		DRM_FORMAT_XRGB2101010,
-		DRM_FORMAT_XBGR2101010,
-		DRM_FORMAT_XRGB8888,
-		DRM_FORMAT_ARGB8888,
-		DRM_FORMAT_RGB565,
-		DRM_FORMAT_INVALID,
-	};
-	if (render_format_is_bgr(wlr_output->render_format)) {
-		// Start with BGR in the unlikely event that we previously required it.
-		fmts[0] = DRM_FORMAT_XBGR2101010;
-		fmts[1] = DRM_FORMAT_XRGB2101010;
-	}
 
 	const struct wlr_drm_format_set *primary_formats =
 		wlr_output_get_primary_formats(wlr_output, WLR_BUFFER_CAP_DMABUF);
@@ -811,18 +827,22 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 	if (cfg->config && cfg->config->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		needed_bits = cfg->config->render_bit_depth;
 	}
-	for (size_t idx = 0; fmts[idx] != DRM_FORMAT_INVALID; idx++) {
-		enum render_bit_depth format_bits = bit_depth_from_format(fmts[idx]);
-		if (needed_bits < format_bits) {
+
+	// Try one supported format from each category
+	for (size_t mapidx = 0; mapidx < sizeof(map); mapidx++) {
+		const struct fmtmap_entry *entry = &map[mapidx];
+		if (needed_bits < entry->bit_depth) {
+			// This format category has too many bits
 			continue;
 		}
-		if (!wlr_drm_format_set_get(primary_formats, fmts[idx])) {
-			// This is not a supported format for this output
-			continue;
-		}
-		wlr_output_state_set_render_format(state, fmts[idx]);
-		if (search_mode(ctx, output_idx)) {
-			return true;
+		for (size_t idx = 0; entry->fmts[idx] != DRM_FORMAT_INVALID; idx++) {
+			if (wlr_drm_format_set_get(primary_formats, entry->fmts[idx])) {
+				wlr_output_state_set_render_format(state, entry->fmts[idx]);
+				if (search_mode(ctx, output_idx)) {
+					return true;
+				}
+				break;
+			}
 		}
 	}
 	return false;
