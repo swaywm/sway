@@ -675,7 +675,7 @@ static void add_matching_keycodes(struct xkb_keymap *keymap,
 	}
 }
 
-void cartesian_product_helper(list_t** sets, int n, xkb_keycode_t** current_result, int* curr_size, xkb_keycode_t* current_product, int depth) {
+void cartesian_product_helper(list_t **sets, int n, xkb_keycode_t** current_result, int* curr_size, xkb_keycode_t* current_product, int depth) {
 	// Conquer
 	if (depth == n) {
 		current_result[*curr_size] = malloc(n * sizeof(xkb_keycode_t));
@@ -696,7 +696,7 @@ void cartesian_product_helper(list_t** sets, int n, xkb_keycode_t** current_resu
 /**
  * Compute the calculate the Cartesian product of `n` sets
  */
-xkb_keycode_t** cartesian_product(list_t** sets, int n) {
+xkb_keycode_t **cartesian_product(list_t **sets, int n) {
 	int total_combinations = 1;
 	for (int i = 0; i < n; ++i) {
 		total_combinations *= sets[i]->length;
@@ -704,8 +704,8 @@ xkb_keycode_t** cartesian_product(list_t** sets, int n) {
 		
 	// Allocate memory for the current_result
 	int result_size = 0;
-	xkb_keycode_t** result = malloc(total_combinations * sizeof(xkb_keycode_t*));
-	xkb_keycode_t* current_product = malloc(n * sizeof(xkb_keycode_t));
+	xkb_keycode_t **result = malloc(total_combinations * sizeof(xkb_keycode_t*));
+	xkb_keycode_t *current_product = malloc(n * sizeof(xkb_keycode_t));
 	cartesian_product_helper(sets, n, result, &result_size, current_product, 0);
 	free(current_product);
 
@@ -725,7 +725,7 @@ bool translate_binding(struct sway_binding *binding) {
 	}
 
 	int num_syms = binding->keys->length;
-	list_t ** sym2code = malloc(num_syms * sizeof(list_t*)); 
+	list_t **sym2code = malloc(num_syms * sizeof(list_t*)); 
 	// Collect all keycodes for all keysyms
 	for (int i = 0; i < num_syms; i++) {
 		struct keycode_matches matches = {
@@ -753,9 +753,9 @@ bool translate_binding(struct sway_binding *binding) {
 	}
 
 	// If any keycode maps to more than one keysym, use all combinations.
-	xkb_keycode_t** combos = cartesian_product(sym2code, num_syms);
+	xkb_keycode_t **combos = cartesian_product(sym2code, num_syms);
 
-	for (int i = 0; i< num_syms; i++) {
+	for (int i = 0; i < num_syms; i++) {
 		struct sway_binding * copy_binding = malloc(sizeof(struct sway_binding));
 		binding->type = BINDING_KEYCODE;
 		*copy_binding = *binding;
@@ -770,6 +770,9 @@ bool translate_binding(struct sway_binding *binding) {
 		copy_binding->keys = keys;
 		list_qsort(copy_binding->keys, key_qsort_cmp);
 		binding_add_translated(copy_binding, config->current_mode->keycode_bindings);
+	}
+	for (int i = 0; i < num_syms; i++) {
+		list_free_items_and_destroy(sym2code[i]);
 	}
 	return true;
 
