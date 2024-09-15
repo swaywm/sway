@@ -972,28 +972,6 @@ void config_update_font_height(void) {
 	}
 }
 
-static void translate_binding_list(list_t *bindings, list_t *bindsyms,
-		list_t *bindcodes) {
-	for (int i = 0; i < bindings->length; ++i) {
-		struct sway_binding *binding = bindings->items[i];
-		translate_binding(binding);
-
-		switch (binding->type) {
-		case BINDING_KEYSYM:
-			binding_add_translated(binding, bindsyms);
-			break;
-		case BINDING_KEYCODE:
-			binding_add_translated(binding, bindcodes);
-			break;
-		default:
-			sway_assert(false, "unexpected translated binding type: %d",
-					binding->type);
-			break;
-		}
-
-	}
-}
-
 void translate_keysyms(struct input_config *input_config) {
 	keysym_translation_state_destroy(config->keysym_translation_state);
 
@@ -1008,18 +986,16 @@ void translate_keysyms(struct input_config *input_config) {
 
 	for (int i = 0; i < config->modes->length; ++i) {
 		struct sway_mode *mode = config->modes->items[i];
-
-		list_t *bindsyms = create_list();
-		list_t *bindcodes = create_list();
-
-		translate_binding_list(mode->keysym_bindings, bindsyms, bindcodes);
-		translate_binding_list(mode->keycode_bindings, bindsyms, bindcodes);
-
-		list_free(mode->keysym_bindings);
-		list_free(mode->keycode_bindings);
-
-		mode->keysym_bindings = bindsyms;
-		mode->keycode_bindings = bindcodes;
+		for (int j = 0; j < mode->keysym_bindings->length; j++){
+			struct sway_binding* binding = mode->keysym_bindings->items[j];
+			if(translate_binding(binding)) {
+				return;
+			}
+			list_t *mode_bindings = binding->type == BINDING_KEYCODE
+				? config->current_mode->keycode_bindings
+				: config->current_mode->keysym_bindings;
+			binding_add_translated(binding, mode_bindings);
+		}
 	}
 
 	sway_log(SWAY_DEBUG, "Translated keysyms using config for device '%s'",

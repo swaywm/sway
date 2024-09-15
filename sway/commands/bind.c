@@ -22,9 +22,7 @@ void free_sway_binding(struct sway_binding *binding) {
 	if (!binding) {
 		return;
 	}
-
 	list_free_items_and_destroy(binding->keys);
-	list_free_items_and_destroy(binding->syms);
 	free(binding->input);
 	free(binding->command);
 	free(binding);
@@ -282,6 +280,7 @@ static struct cmd_results *binding_add(struct sway_binding *binding,
 		const char *keycombo, bool warn) {
 	struct sway_binding *config_binding = binding_upsert(binding, mode_bindings);
 
+	binding->order = binding_order++;
 	if (config_binding) {
 		sway_log(SWAY_INFO, "Overwriting binding '%s' for device '%s' "
 				"to `%s` from `%s`", keycombo, binding->input,
@@ -467,10 +466,11 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	// sort ascending
 	list_qsort(binding->keys, key_qsort_cmp);
 
+	binding->command = join_args(argv + 1, argc - 1);
+
 	// translate keysyms into keycodes
 	if (!translate_binding(binding)) {
-		sway_log(SWAY_INFO,
-				"Unable to translate bindsym into bindcode: %s", argv[0]);
+		sway_log(SWAY_INFO,"Unable to translate bindsym into bindcode: %s", argv[0]);
 	}
 
 	list_t *mode_bindings;
@@ -481,13 +481,10 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	} else {
 		mode_bindings = config->current_mode->mouse_bindings;
 	}
-
 	if (unbind) {
 		return binding_remove(binding, mode_bindings, bindtype, argv[0]);
 	}
 
-	binding->command = join_args(argv + 1, argc - 1);
-	binding->order = binding_order++;
 	return binding_add(binding, mode_bindings, bindtype, argv[0], warn);
 }
 
@@ -649,101 +646,141 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 }
 
 /**
- * The last found keycode associated with the keysym
- * and the total count of matches.
+ * All of the matching keycodes for the given keysym
  */
 struct keycode_matches {
-	xkb_keysym_t keysym;
-	xkb_keycode_t keycode;
-	int count;
+	xkb_keysym_t *keysym;
+	list_t *keycodes;
+	bool error;
 };
 
 /**
- * Iterate through keycodes in the keymap to find ones matching
- * the specified keysym.
+ * Iterate through keycodes in the keymap and add the matching
+ * the specified keysym's list of matched keycodes.
  */
-static void find_keycode(struct xkb_keymap *keymap,
+static void add_matching_keycodes(struct xkb_keymap *keymap,
 		xkb_keycode_t keycode, void *data) {
 	xkb_keysym_t keysym = xkb_state_key_get_one_sym(
 			config->keysym_translation_state, keycode);
 
-	if (keysym == XKB_KEY_NoSymbol) {
+	struct keycode_matches *matches = data;
+	if (*matches->keysym == keysym) {
+		xkb_keycode_t *new_keycode = malloc(sizeof(xkb_keycode_t));
+		if (!new_keycode) {
+			matches->error = true;
+			return;
+		}
+		*new_keycode = keycode;
+		list_add(matches->keycodes, new_keycode);
+	}
+}
+
+void cartesian_product_helper(list_t** sets, int n, xkb_keycode_t** current_result, int* curr_size, xkb_keycode_t* current_product, int depth) {
+	// Conquer
+	if (depth == n) {
+		current_result[*curr_size] = malloc(n * sizeof(xkb_keycode_t));
+		for (int i = 0; i < n; ++i) {
+		current_result[*curr_size][i] = current_product[i];
+		}
+		(*curr_size)++;
 		return;
 	}
 
-	struct keycode_matches *matches = data;
-	if (matches->keysym == keysym) {
-		matches->keycode = keycode;
-		matches->count++;
+	// Divide
+	for (int i = 0; i < sets[depth]->length; ++i) {
+		current_product[depth] = *(xkb_keycode_t*)sets[depth]->items[i];
+		cartesian_product_helper(sets, n, current_result, curr_size, current_product, depth + 1);
 	}
 }
 
 /**
- * Return the keycode for the specified keysym.
+ * Compute the calculate the Cartesian product of `n` sets
  */
-static struct keycode_matches get_keycode_for_keysym(xkb_keysym_t keysym) {
-	struct keycode_matches matches = {
-		.keysym = keysym,
-		.keycode = XKB_KEYCODE_INVALID,
-		.count = 0,
-	};
+xkb_keycode_t** cartesian_product(list_t** sets, int n) {
+	int total_combinations = 1;
+	for (int i = 0; i < n; ++i) {
+		total_combinations *= sets[i]->length;
+	}
+		
+	// Allocate memory for the current_result
+	int result_size = 0;
+	xkb_keycode_t** result = malloc(total_combinations * sizeof(xkb_keycode_t*));
+	xkb_keycode_t* current_product = malloc(n * sizeof(xkb_keycode_t));
+	cartesian_product_helper(sets, n, result, &result_size, current_product, 0);
+	free(current_product);
 
-	xkb_keymap_key_for_each(
-			xkb_state_get_keymap(config->keysym_translation_state),
-			find_keycode, &matches);
-	return matches;
+	return result;
 }
 
+/*
+ * Convert keysyms to keycodes for --to-code. If any keysym does not have at
+ * least 1 keycode: halt conversion and unset BINDING_CODE. Assumes
+ * identify_key() read in binding->keys in keysym format vs keycode format
+ */
 bool translate_binding(struct sway_binding *binding) {
-	if ((binding->flags & BINDING_CODE) == 0) {
+
+	if (binding->type != BINDING_KEYSYM ||
+		(binding->flags & BINDING_CODE) == 0) {
 		return true;
 	}
 
-	switch (binding->type) {
-	// a bindsym to translate
-	case BINDING_KEYSYM:
-		binding->syms = binding->keys;
-		binding->keys = create_list();
-		break;
-	// a bindsym to re-translate
-	case BINDING_KEYCODE:
-		list_free_items_and_destroy(binding->keys);
-		binding->keys = create_list();
-		break;
-	default:
-		return true;
-	}
+	int num_syms = binding->keys->length;
+	list_t ** sym2code = malloc(num_syms * sizeof(list_t*)); 
+	// Collect all keycodes for all keysyms
+	for (int i = 0; i < num_syms; i++) {
+		struct keycode_matches matches = {
+			.keysym = (xkb_keysym_t*)binding->keys->items[i],
+			.keycodes = create_list(),
+			.error = false
+		};
 
-	for (int i = 0; i < binding->syms->length; ++i) {
-		xkb_keysym_t *keysym = binding->syms->items[i];
-		struct keycode_matches matches = get_keycode_for_keysym(*keysym);
+		xkb_keymap_key_for_each(
+				xkb_state_get_keymap(config->keysym_translation_state),
+				add_matching_keycodes, &matches);
 
-		if (matches.count != 1) {
-			sway_log(SWAY_INFO, "Unable to convert keysym %" PRIu32 " into"
-					" a single keycode (found %d matches)",
-					*keysym, matches.count);
+		if (matches.error) {
+			sway_log(SWAY_ERROR, "Failed to allocate memory for keycodes while iterating for keysym %" PRIu32, *matches.keysym);
 			goto error;
 		}
 
-		xkb_keycode_t *keycode = malloc(sizeof(xkb_keycode_t));
-		if (!keycode) {
-			sway_log(SWAY_ERROR, "Unable to allocate memory for a keycode");
-			goto error;
+		if (matches.keycodes->length == 0) {
+		   sway_log(SWAY_INFO, "Unable to convert keysym %" PRIu32 " into"
+					  "any keycodes", *matches.keysym);
+		   goto error;
 		}
 
-		*keycode = matches.keycode;
-		list_add(binding->keys, keycode);
+		sym2code[i] = matches.keycodes;
 	}
 
-	list_qsort(binding->keys, key_qsort_cmp);
-	binding->type = BINDING_KEYCODE;
+	// If any keycode maps to more than one keysym, use all combinations.
+	xkb_keycode_t** combos = cartesian_product(sym2code, num_syms);
+
+	for (int i = 0; i< num_syms; i++) {
+		struct sway_binding * copy_binding = malloc(sizeof(struct sway_binding));
+		binding->type = BINDING_KEYCODE;
+		*copy_binding = *binding;
+		list_t *keys = create_list();
+
+		// copy the keys over
+		for (int j = 0; j < num_syms; j++) {
+			xkb_keycode_t * key = malloc(sizeof(xkb_keycode_t));
+			*key = combos[i][j];
+			list_add(keys, key);
+		}
+		copy_binding->keys = keys;
+		list_qsort(copy_binding->keys, key_qsort_cmp);
+		binding_add_translated(copy_binding, config->current_mode->keycode_bindings);
+	}
 	return true;
 
+// if any key cannot be translated, the binding revert to keysym binding
 error:
 	list_free_items_and_destroy(binding->keys);
+	for (int i = 0; i < binding->keys->length; i++) {
+		list_free_items_and_destroy(sym2code[i]);
+	}
+	free(sym2code);
 	binding->type = BINDING_KEYSYM;
-	binding->keys = binding->syms;
-	binding->syms = NULL;
 	return false;
 }
 
@@ -752,6 +789,7 @@ void binding_add_translated(struct sway_binding *binding,
 	struct sway_binding *config_binding =
 		binding_upsert(binding, mode_bindings);
 
+	binding->order = binding_order++;
 	if (config_binding) {
 		sway_log(SWAY_INFO, "Overwriting binding for device '%s' "
 				"to `%s` from `%s`", binding->input,
