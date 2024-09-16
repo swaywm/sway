@@ -470,7 +470,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 
 	// translate keysyms into keycodes
 	if (!translate_binding(binding)) {
-		sway_log(SWAY_INFO,"Unable to translate bindsym into bindcode: %s", argv[0]);
+		sway_log(SWAY_INFO,
+				"Unable to translate bindsym into bindcode: %s", argv[0]);
 	}
 
 	list_t *mode_bindings;
@@ -726,6 +727,10 @@ bool translate_binding(struct sway_binding *binding) {
 
 	int num_syms = binding->keys->length;
 	list_t **sym2code = malloc(num_syms * sizeof(list_t*)); 
+	if (!sym2code) {
+          sway_log(SWAY_ERROR,
+                   "Unable to allocate memory for symbol:keycode map");
+	}
 	// Collect all keycodes for all keysyms
 	for (int i = 0; i < num_syms; i++) {
 		struct keycode_matches matches = {
@@ -739,14 +744,19 @@ bool translate_binding(struct sway_binding *binding) {
 				add_matching_keycodes, &matches);
 
 		if (matches.error) {
-			sway_log(SWAY_ERROR, "Failed to allocate memory for keycodes while iterating for keysym %" PRIu32, *matches.keysym);
-			goto error;
+                  sway_log(SWAY_ERROR,
+                           "Failed to allocate memory for keycodes while "
+                           "iterating for keysym %" PRIu32,
+                           *matches.keysym);
+                  goto error;
 		}
 
 		if (matches.keycodes->length == 0) {
-		   sway_log(SWAY_INFO, "Unable to convert keysym %" PRIu32 " into"
-					  "any keycodes", *matches.keysym);
-		   goto error;
+                  sway_log(SWAY_INFO,
+                           "Unable to convert keysym %" PRIu32 " into"
+                           "any keycodes",
+                           *matches.keysym);
+                  goto error;
 		}
 
 		sym2code[i] = matches.keycodes;
@@ -756,14 +766,18 @@ bool translate_binding(struct sway_binding *binding) {
 	xkb_keycode_t **combos = cartesian_product(sym2code, num_syms);
 
 	for (int i = 0; i < num_syms; i++) {
-		struct sway_binding * copy_binding = malloc(sizeof(struct sway_binding));
+		struct sway_binding *copy_binding = malloc(sizeof(*copy_binding));
 		binding->type = BINDING_KEYCODE;
 		*copy_binding = *binding;
 		list_t *keys = create_list();
 
 		// copy the keys over
 		for (int j = 0; j < num_syms; j++) {
-			xkb_keycode_t * key = malloc(sizeof(xkb_keycode_t));
+			xkb_keycode_t *key = malloc(sizeof(*key));
+			if (!key) {
+				sway_log(SWAY_ERROR,
+						"Unable to allocate memory for key when translating");
+			}
 			*key = combos[i][j];
 			list_add(keys, key);
 		}
