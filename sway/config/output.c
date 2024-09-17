@@ -14,6 +14,7 @@
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/layers.h"
+#include "sway/lock.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
@@ -955,6 +956,7 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 	}
 
 	arrange_root();
+	arrange_locks();
 	update_output_manager_config(&server);
 	transaction_commit_dirty();
 
