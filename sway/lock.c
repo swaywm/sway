@@ -8,6 +8,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/lock.h"
 
 struct sway_session_lock_output {
 	struct wlr_scene_tree *tree;
@@ -19,7 +20,6 @@ struct sway_session_lock_output {
 	struct wl_list link; // sway_session_lock::outputs
 
 	struct wl_listener destroy;
-	struct wl_listener commit;
 
 	struct wlr_session_lock_surface_v1 *surface;
 
@@ -89,6 +89,17 @@ static void lock_output_reconfigure(struct sway_session_lock_output *output) {
 	}
 }
 
+void arrange_locks(void) {
+	if (server.session_lock.lock == NULL) {
+		return;
+	}
+
+	struct sway_session_lock_output *lock_output;
+	wl_list_for_each(lock_output, &server.session_lock.lock->outputs, link) {
+		lock_output_reconfigure(lock_output);
+	}
+}
+
 static void handle_new_surface(struct wl_listener *listener, void *data) {
 	struct sway_session_lock *lock = wl_container_of(listener, lock, new_surface);
 	struct wlr_session_lock_surface_v1 *lock_surface = data;
@@ -125,7 +136,6 @@ static void sway_session_lock_output_destroy(struct sway_session_lock_output *ou
 		wl_list_remove(&output->surface_map.link);
 	}
 
-	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->destroy.link);
 	wl_list_remove(&output->link);
 
@@ -136,18 +146,6 @@ static void lock_node_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_output *output =
 		wl_container_of(listener, output, destroy);
 	sway_session_lock_output_destroy(output);
-}
-
-static void lock_output_handle_commit(struct wl_listener *listener, void *data) {
-	struct wlr_output_event_commit *event = data;
-	struct sway_session_lock_output *output =
-		wl_container_of(listener, output, commit);
-	if (event->state->committed & (
-			WLR_OUTPUT_STATE_MODE |
-			WLR_OUTPUT_STATE_SCALE |
-			WLR_OUTPUT_STATE_TRANSFORM)) {
-		lock_output_reconfigure(output);
-	}
 }
 
 static struct sway_session_lock_output *session_lock_output_create(
@@ -185,9 +183,6 @@ static struct sway_session_lock_output *session_lock_output_create(
 
 	lock_output->destroy.notify = lock_node_handle_destroy;
 	wl_signal_add(&tree->node.events.destroy, &lock_output->destroy);
-
-	lock_output->commit.notify = lock_output_handle_commit;
-	wl_signal_add(&output->wlr_output->events.commit, &lock_output->commit);
 
 	lock_output_reconfigure(lock_output);
 
