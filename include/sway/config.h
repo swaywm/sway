@@ -704,6 +704,8 @@ struct output_config *find_output_config(struct sway_output *output);
 
 void free_output_config(struct output_config *oc);
 
+void request_modeset(void);
+
 bool spawn_swaybg(void);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
