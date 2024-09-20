@@ -607,6 +607,10 @@ static void output_manager_apply(struct sway_server *server,
 done:
 	if (ok) {
 		wlr_output_configuration_v1_send_succeeded(cfg);
+		if (server->delayed_modeset != NULL) {
+			wl_event_source_remove(server->delayed_modeset);
+			server->delayed_modeset = NULL;
+		}
 	} else {
 		wlr_output_configuration_v1_send_failed(cfg);
 	}
