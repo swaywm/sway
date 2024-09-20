@@ -215,15 +215,13 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		return error;
 	}
 
-	bool config_loading = !config->active || config->reloading;
-
 	if (argc == 2) {
 		return gaps_set_defaults(argc, argv);
 	}
-	if (argc == 4 && !config_loading) {
+	if (argc == 4 && !config->reading) {
 		return gaps_set_runtime(argc, argv);
 	}
-	if (config_loading) {
+	if (config->reading) {
 		return cmd_results_new(CMD_INVALID, "Expected %s", expected_defaults);
 	}
 	return cmd_results_new(CMD_INVALID, "Expected %s or %s",
