@@ -94,7 +94,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			return res;
 		}
 
-		if (!config->reloading) {
+		if (!config->reading) {
 			input_manager_apply_input_config(ic);
 		}
 	} else {
