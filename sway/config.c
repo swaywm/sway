@@ -516,7 +516,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	// Only really necessary if not explicitly `font` is set in the config.
 	config_update_font_height();
 
-	if (is_active && !validating) {
+	if (!validating) {
 		input_manager_verify_fallback_seat();
 
 		for (int i = 0; i < config->input_configs->length; i++) {
@@ -533,12 +533,14 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		}
 		sway_switch_retrigger_bindings_for_all();
 
-		apply_stored_output_configs();
 		spawn_swaybg();
 
 		config->reloading = false;
-		if (config->swaynag_config_errors.client != NULL) {
-			swaynag_show(&config->swaynag_config_errors);
+		if (is_active) {
+			request_modeset();
+			if (config->swaynag_config_errors.client != NULL) {
+				swaynag_show(&config->swaynag_config_errors);
+			}
 		}
 	}
 
