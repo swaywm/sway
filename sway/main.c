@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <wlr/util/log.h>
 #include <wlr/version.h>
-#include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
@@ -23,7 +22,6 @@
 #include "ipc-client.h"
 #include "log.h"
 #include "stringop.h"
-#include "util.h"
 
 static bool terminate_request = false;
 static int exit_value = 0;
@@ -296,7 +294,6 @@ int main(int argc, char **argv) {
 	sway_log(SWAY_INFO, "wlroots version " WLR_VERSION_STR);
 	log_kernel();
 	log_distro();
-	log_env();
 
 	if (optind < argc) { // Behave as IPC client
 		if (optind != 1) {
@@ -346,6 +343,7 @@ int main(int argc, char **argv) {
 	}
 
 	ipc_init(&server);
+	log_env();
 
 	setenv("WAYLAND_DISPLAY", server.socket, true);
 	if (!load_main_config(config_path, false, false)) {
