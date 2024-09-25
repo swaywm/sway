@@ -518,8 +518,7 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 #if HAVE_TRAY
 	if (oldcfg->tray_hidden && !newcfg->tray_hidden) {
 		bar->tray = create_tray(bar);
-		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in,
-				bar->tray->bus);
+		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in, bar);
 	} else if (bar->tray && newcfg->tray_hidden) {
 		loop_remove_fd(bar->eventloop, bar->tray->fd);
 		destroy_tray(bar->tray);
