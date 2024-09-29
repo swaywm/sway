@@ -28,4 +28,5 @@ archive=$prefix.tar.gz
 git archive --prefix="$prefix/" -o "$archive" "$next"
 gpg --output "$archive".sig --detach-sig "$archive"
 
+git push --follow-tags
 gh release create "sway $next" -t "$next" -n "" -d "$archive" "$archive.sig"
