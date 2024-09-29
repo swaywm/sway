@@ -9,7 +9,6 @@
 #include <wlr/config.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
@@ -327,7 +326,6 @@ bool server_init(struct sway_server *server) {
 		&server->pointer_constraint);
 
 	wlr_presentation_create(server->wl_display, server->backend);
-	wlr_alpha_modifier_v1_create(server->wl_display);
 
 	server->output_manager_v1 =
 		wlr_output_manager_v1_create(server->wl_display);
