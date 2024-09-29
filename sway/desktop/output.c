@@ -8,6 +8,7 @@
 #include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -216,6 +217,15 @@ static void output_configure_scene(struct sway_output *output,
 
 	if (node->type == WLR_SCENE_NODE_BUFFER) {
 		struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
+		struct wlr_scene_surface *surface = wlr_scene_surface_try_from_buffer(buffer);
+
+		if (surface) {
+			const struct wlr_alpha_modifier_surface_v1_state *alpha_modifier_state =
+				wlr_alpha_modifier_v1_get_surface_state(surface->surface);
+			if (alpha_modifier_state != NULL) {
+				opacity *= (float)alpha_modifier_state->multiplier;
+			}
+		}
 
 		// hack: don't call the scene setter because that will damage all outputs
 		// We don't want to damage outputs that aren't our current output that
