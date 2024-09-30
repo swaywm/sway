@@ -764,10 +764,11 @@ The default colors are:
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps ...).
 
-*hide_edge_borders* [--i3] none|vertical|horizontal|both|smart|smart_no_gaps
+*hide_edge_borders* [--i3 | --smart-titles] none|vertical|horizontal|both|smart|smart_no_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_. The
 	_--i3_ option enables i3-compatible behavior to hide the title bar on
-	tabbed and stacked containers with one child. The _smart_|_smart_no_gaps_
+	tabbed and stacked containers with one child. The --smart-titles option
+	hide the title bar on workspaces with only one child. The _smart_|_smart_no_gaps_
 	options are equivalent to setting _smart_borders_ smart|no_gaps and
 	_hide_edge_borders_ none.
 
