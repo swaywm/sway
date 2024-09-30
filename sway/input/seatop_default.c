@@ -247,8 +247,12 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		bool is_floating_or_child = container_is_floating_or_child(cont);
 		bool is_fullscreen_or_child = container_is_fullscreen_or_child(cont);
 		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+		struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+			keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
+		bool shortcuts_inhibited = sway_inhibitor && sway_inhibitor->inhibitor->active;
 		bool mod_pressed = keyboard &&
-			(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
+			(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod)
+			&& (!shortcuts_inhibited || config->floating_mod_inhibited);
 
 		// Handle beginning floating move
 		if (is_floating_or_child && !is_fullscreen_or_child && mod_pressed) {
@@ -403,7 +407,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle tiling resize via mod
-	bool mod_pressed = modifiers & config->floating_mod;
+	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
+	bool shortcuts_inhibited = sway_inhibitor && sway_inhibitor->inhibitor->active;
+	bool mod_pressed = modifiers & config->floating_mod && (!shortcuts_inhibited
+		|| config->floating_mod_inhibited);
+
 	if (cont && !is_floating_or_child && mod_pressed &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?
