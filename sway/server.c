@@ -205,8 +205,8 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 
 	wlr_compositor_set_renderer(server->compositor, renderer);
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
 		wlr_output_init_render(output->wlr_output,
 			server->allocator, server->renderer);
 	}
