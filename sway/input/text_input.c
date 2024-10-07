@@ -454,6 +454,7 @@ static void handle_im_popup_surface_unmap(struct wl_listener *listener, void *da
 	struct sway_input_popup *popup =
 		wl_container_of(listener, popup, popup_surface_unmap);
 
+	scene_descriptor_destroy(&popup->scene_tree->node, SWAY_SCENE_DESC_POPUP);
 	// relative should already be freed as it should be a child of the just unmapped scene
 	popup->desc.relative = NULL;
 
