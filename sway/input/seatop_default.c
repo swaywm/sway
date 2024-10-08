@@ -491,7 +491,9 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	// Handle moving a tiling container
 	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating_or_child &&
-			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
+			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE &&
+			button == (config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT)) {
+
 		// If moving a container by its title bar, use a threshold for the drag
 		if (!mod_pressed && config->tiling_drag_threshold > 0) {
 			seatop_begin_move_tiling_threshold(seat, cont);
