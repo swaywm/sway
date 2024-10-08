@@ -479,6 +479,11 @@ enum xwayland_mode {
 	XWAYLAND_MODE_IMMEDIATE,
 };
 
+struct sway_config_file {
+	const char *data;
+	const char *path;
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -548,10 +553,9 @@ struct sway_config {
 	int gaps_inner;
 	struct side_gaps gaps_outer;
 
-	list_t *config_chain;
+	list_t *config_chain;  /* list of struct sway_config_file* */
 	bool user_config_path;
-	const char *current_config_path;
-	const char *current_config;
+	struct sway_config_file *current_config;
 	int current_config_line_number;
 	char *current_config_line;
 
