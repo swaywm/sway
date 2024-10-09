@@ -621,7 +621,7 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 			|| binding->type == BINDING_MOUSECODE) {
 		struct wlr_surface *surface = NULL;
 		double sx, sy;
-		struct sway_node *node = node_at_coords(seat,
+		struct sway_node *node = node_at_coords(
 				seat->cursor->cursor->x, seat->cursor->cursor->y,
 				&surface, &sx, &sy);
 		if (node && node->type == N_CONTAINER) {

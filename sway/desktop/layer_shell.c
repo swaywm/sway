@@ -20,39 +20,6 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/workspace.h"
 
-struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
-		struct wlr_surface *surface) {
-	struct wlr_layer_surface_v1 *layer;
-	do {
-		if (!surface) {
-			return NULL;
-		}
-		// Topmost layer surface
-		if ((layer = wlr_layer_surface_v1_try_from_wlr_surface(surface))) {
-			return layer;
-		}
-		// Layer subsurface
-		if (wlr_subsurface_try_from_wlr_surface(surface)) {
-			surface = wlr_surface_get_root_surface(surface);
-			continue;
-		}
-
-		// Layer surface popup
-		struct wlr_xdg_surface *xdg_surface = NULL;
-		if ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(surface)) &&
-				xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP && xdg_surface->popup != NULL) {
-			if (!xdg_surface->popup->parent) {
-				return NULL;
-			}
-			surface = wlr_surface_get_root_surface(xdg_surface->popup->parent);
-			continue;
-		}
-
-		// Return early if the surface is not a layer/xdg_popup/sub surface
-		return NULL;
-	} while (true);
-}
-
 static void arrange_surface(struct sway_output *output, const struct wlr_box *full_area,
 		struct wlr_box *usable_area, struct wlr_scene_tree *tree) {
 	struct wlr_scene_node *node;
