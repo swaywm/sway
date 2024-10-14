@@ -54,7 +54,7 @@ struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 }
 
 static void arrange_surface(struct sway_output *output, const struct wlr_box *full_area,
-		struct wlr_box *usable_area, struct wlr_scene_tree *tree) {
+		struct wlr_box *usable_area, struct wlr_scene_tree *tree, bool exclusive) {
 	struct wlr_scene_node *node;
 	wl_list_for_each(node, &tree->children, link) {
 		struct sway_layer_surface *surface = scene_descriptor_try_get(node,
@@ -68,6 +68,10 @@ static void arrange_surface(struct sway_output *output, const struct wlr_box *fu
 			continue;
 		}
 
+		if ((surface->scene->layer_surface->current.exclusive_zone > 0) != exclusive) {
+			continue;
+		}
+
 		wlr_scene_layer_surface_v1_configure(surface->scene, full_area, usable_area);
 	}
 }
@@ -78,10 +82,14 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area.width, &usable_area.height);
 	const struct wlr_box full_area = usable_area;
 
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, false);
 
 	if (!wlr_box_equal(&usable_area, &output->usable_area)) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
