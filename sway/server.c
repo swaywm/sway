@@ -70,6 +70,7 @@
 #define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
+#define SWAY_PRESENTATION_VERSION 2
 
 bool allow_unsupported_gpu = false;
 
@@ -327,7 +328,7 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->pointer_constraints->events.new_constraint,
 		&server->pointer_constraint);
 
-	wlr_presentation_create(server->wl_display, server->backend);
+	wlr_presentation_create(server->wl_display, server->backend, SWAY_PRESENTATION_VERSION);
 	wlr_alpha_modifier_v1_create(server->wl_display);
 
 	server->output_manager_v1 =
