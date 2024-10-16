@@ -1094,6 +1094,7 @@ static void seat_send_unfocus(struct sway_node *node, struct sway_seat *seat) {
 static int handle_urgent_timeout(void *data) {
 	struct sway_view *view = data;
 	view_set_urgent(view, false);
+	container_update_itself_and_parents(view->container);
 	return 0;
 }
 
