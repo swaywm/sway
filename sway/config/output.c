@@ -285,7 +285,6 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	mhz = mhz <= 0 ? INT_MAX : mhz;
 
 	if (wl_list_empty(&output->modes) || custom) {
-		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
 		wlr_output_state_set_custom_mode(pending, width, height,
 			refresh_rate > 0 ? mhz : 0);
 		return;
@@ -305,10 +304,7 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 			}
 		}
 	}
-	if (best) {
-		sway_log(SWAY_INFO, "Assigning configured mode (%dx%d@%.3fHz) to %s",
-			best->width, best->height, best->refresh / 1000.f, output->name);
-	} else {
+	if (!best) {
 		best = wlr_output_preferred_mode(output);
 		sway_log(SWAY_INFO, "Configured mode (%dx%d@%.3fHz) not available, "
 			"applying preferred mode (%dx%d@%.3fHz)",
@@ -325,7 +321,6 @@ static void set_modeline(struct wlr_output *output,
 		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 		return;
 	}
-	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
 	if (mode) {
 		wlr_output_state_set_mode(pending, mode);
@@ -391,7 +386,6 @@ static int compute_default_scale(struct wlr_output *output,
 
 	double dpi_x = (double) width / (output->phys_width / MM_PER_INCH);
 	double dpi_y = (double) height / (output->phys_height / MM_PER_INCH);
-	sway_log(SWAY_DEBUG, "Output DPI: %fx%f", dpi_x, dpi_y);
 	if (dpi_x <= HIDPI_DPI_LIMIT || dpi_y <= HIDPI_DPI_LIMIT) {
 		return 1;
 	}
@@ -427,25 +421,17 @@ static void queue_output_config(struct output_config *oc,
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	if (output_config_is_disabling(oc)) {
-		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
 		wlr_output_state_set_enabled(pending, false);
 		return;
 	}
-
-	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 	wlr_output_state_set_enabled(pending, true);
 
 	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
-		sway_log(SWAY_DEBUG, "Set %s modeline",
-			wlr_output->name);
 		set_modeline(wlr_output, pending, &oc->drm_mode);
 	} else if (oc && oc->width > 0 && oc->height > 0) {
-		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
-			wlr_output->name, oc->width, oc->height, oc->refresh_rate);
 		set_mode(wlr_output, pending, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		sway_log(SWAY_DEBUG, "Set preferred mode");
 		struct wlr_output_mode *preferred_mode =
 			wlr_output_preferred_mode(wlr_output);
 		wlr_output_state_set_mode(pending, preferred_mode);
