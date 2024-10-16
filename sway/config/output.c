@@ -587,15 +587,6 @@ static struct output_config *find_output_config_from_list(
 		return NULL;
 	}
 
-	// Set output defaults for the "base" configuration
-	result->enabled = 1;
-	result->power = 1;
-	result->scale = 0; // auto
-	result->subpixel = sway_output->detected_subpixel;
-	result->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	result->max_render_time = 0;
-	result->allow_tearing = 0;
-
 	char id[128];
 	output_get_identifier(id, sizeof(id), sway_output);
 
