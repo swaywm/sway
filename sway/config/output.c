@@ -520,24 +520,23 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		return true;
 	}
 
-	if (oc) {
-		enum scale_filter_mode scale_filter_old = output->scale_filter;
-		switch (oc->scale_filter) {
-			case SCALE_FILTER_DEFAULT:
-			case SCALE_FILTER_SMART:
-				output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
-					SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
-				break;
-			case SCALE_FILTER_LINEAR:
-			case SCALE_FILTER_NEAREST:
-				output->scale_filter = oc->scale_filter;
-				break;
-		}
-		if (scale_filter_old != output->scale_filter) {
-			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
-				sway_output_scale_filter_to_string(output->scale_filter));
-			wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
-		}
+	enum scale_filter_mode scale_filter_old = output->scale_filter;
+	enum scale_filter_mode scale_filter_new = oc ? oc->scale_filter : SCALE_FILTER_DEFAULT;
+	switch (scale_filter_new) {
+		case SCALE_FILTER_DEFAULT:
+		case SCALE_FILTER_SMART:
+			output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
+				SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
+			break;
+		case SCALE_FILTER_LINEAR:
+		case SCALE_FILTER_NEAREST:
+			output->scale_filter = scale_filter_new;
+			break;
+	}
+	if (scale_filter_old != output->scale_filter) {
+		sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
+			sway_output_scale_filter_to_string(output->scale_filter));
+		wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
 	}
 
 	// Find position for it
@@ -560,25 +559,19 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		output_enable(output);
 	}
 
-	if (oc && oc->max_render_time >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
-			oc->name, oc->max_render_time);
-		output->max_render_time = oc->max_render_time;
-	}
-
 	if (oc && oc->set_color_transform) {
 		if (oc->color_transform) {
 			wlr_color_transform_ref(oc->color_transform);
 		}
 		wlr_color_transform_unref(output->color_transform);
 		output->color_transform = oc->color_transform;
+	} else {
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = NULL;
 	}
 
-	if (oc && oc->allow_tearing >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d",
-			oc->name, oc->allow_tearing);
-		output->allow_tearing = oc->allow_tearing;
-	}
+	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
+	output->allow_tearing = oc && oc->allow_tearing > 0;
 
 	return true;
 }
