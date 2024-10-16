@@ -692,6 +692,13 @@ static void dump_output_state(struct wlr_output *wlr_output, struct wlr_output_s
 		sway_log(SWAY_DEBUG, "    adaptive_sync: %s",
 			state->adaptive_sync_enabled ? "enabled": "disabled");
 	}
+	if (state->committed & WLR_OUTPUT_STATE_SCALE) {
+		sway_log(SWAY_DEBUG, "    scale:         %f", state->scale);
+	}
+	if (state->committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+		sway_log(SWAY_DEBUG, "    subpixel:      %s",
+			sway_wl_output_subpixel_to_string(state->subpixel));
+	}
 }
 
 static bool search_valid_config(struct search_context *ctx, size_t output_idx);
@@ -906,9 +913,8 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		backend_state->output = cfg->output->wlr_output;
 		wlr_output_state_init(&backend_state->base);
 
-		sway_log(SWAY_DEBUG, "Preparing config for %s",
-			cfg->output->wlr_output->name);
 		queue_output_config(cfg->config, cfg->output, &backend_state->base);
+		dump_output_state(cfg->output->wlr_output, &backend_state->base);
 	}
 
 	struct wlr_output_swapchain_manager swapchain_mgr;
