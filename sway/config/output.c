@@ -451,54 +451,41 @@ static void queue_output_config(struct output_config *oc,
 		wlr_output_state_set_mode(pending, preferred_mode);
 	}
 
-	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
-		sway_log(SWAY_DEBUG, "Set %s subpixel to %s", oc->name,
-			sway_wl_output_subpixel_to_string(oc->subpixel));
+	if (oc && oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
 		wlr_output_state_set_subpixel(pending, oc->subpixel);
+	} else {
+		wlr_output_state_set_subpixel(pending, output->detected_subpixel);
 	}
 
-	enum wl_output_transform tr = WL_OUTPUT_TRANSFORM_NORMAL;
 	if (oc && oc->transform >= 0) {
-		tr = oc->transform;
+		wlr_output_state_set_transform(pending, oc->transform);
 #if WLR_HAS_DRM_BACKEND
 	} else if (wlr_output_is_drm(wlr_output)) {
-		tr = wlr_drm_connector_get_panel_orientation(wlr_output);
-		sway_log(SWAY_DEBUG, "Auto-detected output transform: %d", tr);
+		wlr_output_state_set_transform(pending,
+			wlr_drm_connector_get_panel_orientation(wlr_output));
 #endif
-	}
-	if (wlr_output->transform != tr) {
-		sway_log(SWAY_DEBUG, "Set %s transform to %d", wlr_output->name, tr);
-		wlr_output_state_set_transform(pending, tr);
+	} else {
+		wlr_output_state_set_transform(pending, WL_OUTPUT_TRANSFORM_NORMAL);
 	}
 
-	// Apply the scale last before the commit, because the scale auto-detection
-	// reads the pending output size
-	float scale;
+	// Apply the scale after sorting out the mode, because the scale
+	// auto-detection reads the pending output size
 	if (oc && oc->scale > 0) {
-		scale = oc->scale;
-
 		// The factional-scale-v1 protocol uses increments of 120ths to send
 		// the scale factor to the client. Adjust the scale so that we use the
 		// same value as the clients'.
-		float adjusted_scale = round(scale * 120) / 120;
-		if (scale != adjusted_scale) {
-			sway_log(SWAY_INFO, "Adjusting output scale from %f to %f",
-				scale, adjusted_scale);
-			scale = adjusted_scale;
-		}
+		wlr_output_state_set_scale(pending, round(oc->scale * 120) / 120);
 	} else {
-		scale = compute_default_scale(wlr_output, pending);
-		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
-	}
-	if (scale != wlr_output->scale) {
-		sway_log(SWAY_DEBUG, "Set %s scale to %f", wlr_output->name, scale);
-		wlr_output_state_set_scale(pending, scale);
+		wlr_output_state_set_scale(pending,
+			compute_default_scale(wlr_output, pending));
 	}
 
-	if (oc && oc->adaptive_sync != -1 && wlr_output->adaptive_sync_supported) {
-		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
-			oc->adaptive_sync);
-		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
+	if (wlr_output->adaptive_sync_supported) {
+		if (oc && oc->adaptive_sync != -1) {
+			wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
+		} else {
+			wlr_output_state_set_adaptive_sync_enabled(pending, false);
+		}
 	}
 
 	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
@@ -513,6 +500,8 @@ static void queue_output_config(struct output_config *oc,
 		} else {
 			wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 		}
+	} else {
+		wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 	}
 }
 
