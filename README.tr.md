@@ -1,24 +1,22 @@
 # sway
 
 
-Sway, [i3]-uyumlu bir [Wayland] dizgicisidir. [SSS][FAQ]'yi okuyun. 
-[IRC kanalı][IRC channel]na katılın \(irc.libera.chat'te #sway (İngilizce)).
+Sway, [i3] uyumlu bir [Wayland] dizgicisidir. [SSS][FAQ]'yi okuyun. 
+[IRC kanalına][IRC channel] katılın \(irc.libera.chat'te #sway (İngilizce)).
 
 ## Sürüm imzaları
 
-Sürümler [E88F5E48] ile imzalandı ve [GitHub][GitHub releases]'da yayınlandı.
+Sürümler [E88F5E48] ile imzalanır ve [GitHub][GitHub releases]'da yayınlanır.
 
 ## Kurulum
 
 ### Paketler ile
 
-Sway birçok dağıtımda mevcuttur. Sizinki için "sway" paketini yüklemeyi deneyin.
-
-Dağıtımınız için sway'i paketlemekle ilgileniyorsanız, IRC kanalına uğrayın veya tavsiye için sir@cmpwn.com adresine bir e-posta gönderin.
+Sway birçok dağıtımda bulunmaktadır. Sizinki için “sway” paketini yüklemeyi deneyin.
 
 ### Kaynak koddan derleme
 
-Test veya geliştirme için sway ve wlroots'un HEAD'ini oluşturmak istiyorsanız [bu wiki sayfası][Development setup]na göz atın.
+Denemek ya da geliştirmek için sway ve wlroots'un HEAD'ini derlemek istiyorsanız [bu wiki sayfasına][Development setup] göz atın.
 
 Aşağıdaki bağımlılıkları yükleyin:
 
@@ -30,26 +28,27 @@ Aşağıdaki bağımlılıkları yükleyin:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (isteğe bağlı: system tray)
-* [scdoc] (isteğe bağlı: man pages) \*
-* git (isteğe bağlı: version info) \*
+* gdk-pixbuf2 (isteğe bağlı: sistem tepsisi için ek görüntü biçimleri)
+* [swaybg] (isteğe bağlı: Duvar kağıdı)
+* [scdoc] (isteğe bağlı: man kullanma kılavuzu) \*
+* git (isteğe bağlı: sürüm bilgisi) \*
 
-_\*Derleme-anı bağımlılıkları_
+_\*Derleme aşaması bağımlılıkları_
 
 Şu komutları çalıştırın:
 
-    meson build
-    ninja -C build
-    sudo ninja -C build install
+    meson build/
+    ninja -C build/
+    sudo ninja -C build/ install
 
 ## Yapılandırma
 
-Zaten i3 kullanıyorsanız, i3 yapılandırmanızı `~/.config/sway/config` konumuna kopyalayın ve kutudan çıktığı gibi çalışacaktır. Aksi takdirde, örnek yapılandırma dosyasını `~/.config/sway/config` konumuna kopyalayın. Genellikle `/etc/sway/config` konumunda bulunur.
+Hâlihazırda i3 kullanıyorsanız, i3 yapılandırmanızı `~/.config/sway/config` konumuna kopyalayınca olduğu gibi çalışacaktır. Yoksa, örnek yapılandırma dosyasını yine `~/.config/sway/config` konumuna kopyalayın. Genellikle `/etc/sway/config` konumunda bulunur.
 Yapılandırma hakkında bilgi almak için `man 5 sway` komutunu çalıştırın.
 
 ## Çalıştırma
 
-TTY'den `sway` çalıştırın. Bazı  görüntü yöneticileriyle(display manager) çalışabilir ama Sway tarafından desteklenmez. (gdm'nin oldukça iyi çalıştığı bilinmektedir.)
+TTY'den `sway` komutunu çalıştırın. Bazı görüntü yöneticileriyle çalışabilir ama sway tarafından desteklenmez. (gdm'nin oldukça iyi çalıştığı bilinmektedir.)
 
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
@@ -59,4 +58,5 @@ TTY'den `sway` çalıştırın. Bazı  görüntü yöneticileriyle(display manag
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
 [wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[swaybg]: https://github.com/swaywm/swaybg/
 [scdoc]: https://git.sr.ht/~sircmpwn/scdoc
