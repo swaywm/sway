@@ -36,6 +36,31 @@ void *scene_descriptor_try_get(struct wlr_scene_node *node,
 	return desc->data;
 }
 
+void *scene_descriptor_find(struct wlr_scene_node *node,
+		enum sway_scene_descriptor_type type) {
+	while (node) {
+		struct scene_descriptor *desc = scene_node_get_descriptor(node, type);
+		if (desc) {
+			return desc->data;
+		}
+
+		struct sway_popup_desc *popup =
+			scene_descriptor_try_get(node, SWAY_SCENE_DESC_POPUP);
+		if (popup) {
+			node = popup->relative;
+			continue;
+		}
+
+		if (!node->parent) {
+			break;
+		}
+
+		node = &node->parent->node;
+	}
+
+	return NULL;
+}
+
 void scene_descriptor_destroy(struct wlr_scene_node *node,
 		enum sway_scene_descriptor_type type) {
 	struct scene_descriptor *desc = scene_node_get_descriptor(node, type);
@@ -66,4 +91,15 @@ bool scene_descriptor_assign(struct wlr_scene_node *node,
 	wlr_addon_init(&desc->addon, &node->addons, (void *)type, &addon_interface);
 	desc->data = data;
 	return true;
+}
+
+bool scene_descriptor_reassign(struct wlr_scene_node *node,
+		enum sway_scene_descriptor_type type, void *data) {
+	struct scene_descriptor *desc = scene_node_get_descriptor(node, type);
+	if (desc) {
+		desc->data = data;
+		return true;
+	}
+
+	return scene_descriptor_assign(node, type, data);
 }
