@@ -234,6 +234,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		arrange_layers(output);
 	}
+	cursor_rebase_all();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
