@@ -355,8 +355,14 @@ void view_autoconfigure(struct sway_view *view) {
 			height = con->pending.height - y_offset
 				- con->pending.border_thickness * con->pending.border_bottom;
 		} else {
-			y = con->pending.y + container_titlebar_height();
-			height = con->pending.height - container_titlebar_height()
+			int titlebar_height;
+			if (config->hide_lone_title && view_is_only_visible(view)) {
+				titlebar_height = con->pending.border_thickness * con->pending.border_top + y_offset;
+			} else {
+				titlebar_height = container_titlebar_height();
+			}
+			y = con->pending.y + titlebar_height;
+			height = con->pending.height - titlebar_height
 				- con->pending.border_thickness * con->pending.border_bottom;
 		}
 		break;
