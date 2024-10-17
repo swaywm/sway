@@ -82,14 +82,15 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area.width, &usable_area.height);
 	const struct wlr_box full_area = usable_area;
 
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, false);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, true);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false);
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true);
+
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, false);
 
 	if (!wlr_box_equal(&usable_area, &output->usable_area)) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
