@@ -285,7 +285,6 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 	mhz = mhz <= 0 ? INT_MAX : mhz;
 
 	if (wl_list_empty(&output->modes) || custom) {
-		sway_log(SWAY_DEBUG, "Assigning custom mode to %s", output->name);
 		wlr_output_state_set_custom_mode(pending, width, height,
 			refresh_rate > 0 ? mhz : 0);
 		return;
@@ -305,10 +304,7 @@ static void set_mode(struct wlr_output *output, struct wlr_output_state *pending
 			}
 		}
 	}
-	if (best) {
-		sway_log(SWAY_INFO, "Assigning configured mode (%dx%d@%.3fHz) to %s",
-			best->width, best->height, best->refresh / 1000.f, output->name);
-	} else {
+	if (!best) {
 		best = wlr_output_preferred_mode(output);
 		sway_log(SWAY_INFO, "Configured mode (%dx%d@%.3fHz) not available, "
 			"applying preferred mode (%dx%d@%.3fHz)",
@@ -325,7 +321,6 @@ static void set_modeline(struct wlr_output *output,
 		sway_log(SWAY_ERROR, "Modeline can only be set to DRM output");
 		return;
 	}
-	sway_log(SWAY_DEBUG, "Assigning custom modeline to %s", output->name);
 	struct wlr_output_mode *mode = wlr_drm_connector_add_mode(output, drm_mode);
 	if (mode) {
 		wlr_output_state_set_mode(pending, mode);
@@ -391,7 +386,6 @@ static int compute_default_scale(struct wlr_output *output,
 
 	double dpi_x = (double) width / (output->phys_width / MM_PER_INCH);
 	double dpi_y = (double) height / (output->phys_height / MM_PER_INCH);
-	sway_log(SWAY_DEBUG, "Output DPI: %fx%f", dpi_x, dpi_y);
 	if (dpi_x <= HIDPI_DPI_LIMIT || dpi_y <= HIDPI_DPI_LIMIT) {
 		return 1;
 	}
@@ -427,52 +421,41 @@ static void queue_output_config(struct output_config *oc,
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	if (output_config_is_disabling(oc)) {
-		sway_log(SWAY_DEBUG, "Turning off output %s", wlr_output->name);
 		wlr_output_state_set_enabled(pending, false);
 		return;
 	}
-
-	sway_log(SWAY_DEBUG, "Turning on output %s", wlr_output->name);
 	wlr_output_state_set_enabled(pending, true);
 
 	if (oc && oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t) -1) {
-		sway_log(SWAY_DEBUG, "Set %s modeline",
-			wlr_output->name);
 		set_modeline(wlr_output, pending, &oc->drm_mode);
 	} else if (oc && oc->width > 0 && oc->height > 0) {
-		sway_log(SWAY_DEBUG, "Set %s mode to %dx%d (%f Hz)",
-			wlr_output->name, oc->width, oc->height, oc->refresh_rate);
 		set_mode(wlr_output, pending, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
 	} else if (!wl_list_empty(&wlr_output->modes)) {
-		sway_log(SWAY_DEBUG, "Set preferred mode");
 		struct wlr_output_mode *preferred_mode =
 			wlr_output_preferred_mode(wlr_output);
 		wlr_output_state_set_mode(pending, preferred_mode);
 	}
 
-	if (oc && (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN || config->reloading)) {
-		sway_log(SWAY_DEBUG, "Set %s subpixel to %s", oc->name,
-			sway_wl_output_subpixel_to_string(oc->subpixel));
+	if (oc && oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN) {
 		wlr_output_state_set_subpixel(pending, oc->subpixel);
+	} else {
+		wlr_output_state_set_subpixel(pending, output->detected_subpixel);
 	}
 
-	enum wl_output_transform tr = WL_OUTPUT_TRANSFORM_NORMAL;
 	if (oc && oc->transform >= 0) {
-		tr = oc->transform;
+		wlr_output_state_set_transform(pending, oc->transform);
 #if WLR_HAS_DRM_BACKEND
 	} else if (wlr_output_is_drm(wlr_output)) {
-		tr = wlr_drm_connector_get_panel_orientation(wlr_output);
-		sway_log(SWAY_DEBUG, "Auto-detected output transform: %d", tr);
+		wlr_output_state_set_transform(pending,
+			wlr_drm_connector_get_panel_orientation(wlr_output));
 #endif
-	}
-	if (wlr_output->transform != tr) {
-		sway_log(SWAY_DEBUG, "Set %s transform to %d", wlr_output->name, tr);
-		wlr_output_state_set_transform(pending, tr);
+	} else {
+		wlr_output_state_set_transform(pending, WL_OUTPUT_TRANSFORM_NORMAL);
 	}
 
-	// Apply the scale last before the commit, because the scale auto-detection
-	// reads the pending output size
+	// Apply the scale after sorting out the mode, because the scale
+	// auto-detection reads the pending output size
 	float scale;
 	if (oc && oc->scale > 0) {
 		scale = oc->scale;
@@ -482,23 +465,20 @@ static void queue_output_config(struct output_config *oc,
 		// same value as the clients'.
 		float adjusted_scale = round(scale * 120) / 120;
 		if (scale != adjusted_scale) {
-			sway_log(SWAY_INFO, "Adjusting output scale from %f to %f",
-				scale, adjusted_scale);
 			scale = adjusted_scale;
 		}
+		wlr_output_state_set_scale(pending, scale);
 	} else {
 		scale = compute_default_scale(wlr_output, pending);
-		sway_log(SWAY_DEBUG, "Auto-detected output scale: %f", scale);
-	}
-	if (scale != wlr_output->scale) {
-		sway_log(SWAY_DEBUG, "Set %s scale to %f", wlr_output->name, scale);
 		wlr_output_state_set_scale(pending, scale);
 	}
 
-	if (oc && oc->adaptive_sync != -1 && wlr_output->adaptive_sync_supported) {
-		sway_log(SWAY_DEBUG, "Set %s adaptive sync to %d", wlr_output->name,
-			oc->adaptive_sync);
-		wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
+	if (wlr_output->adaptive_sync_supported) {
+		if (oc && oc->adaptive_sync != -1) {
+			wlr_output_state_set_adaptive_sync_enabled(pending, oc->adaptive_sync == 1);
+		} else {
+			wlr_output_state_set_adaptive_sync_enabled(pending, false);
+		}
 	}
 
 	if (oc && oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
@@ -513,6 +493,8 @@ static void queue_output_config(struct output_config *oc,
 		} else {
 			wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 		}
+	} else {
+		wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 	}
 }
 
@@ -531,24 +513,23 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		return true;
 	}
 
-	if (oc) {
-		enum scale_filter_mode scale_filter_old = output->scale_filter;
-		switch (oc->scale_filter) {
-			case SCALE_FILTER_DEFAULT:
-			case SCALE_FILTER_SMART:
-				output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
-					SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
-				break;
-			case SCALE_FILTER_LINEAR:
-			case SCALE_FILTER_NEAREST:
-				output->scale_filter = oc->scale_filter;
-				break;
-		}
-		if (scale_filter_old != output->scale_filter) {
-			sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
-				sway_output_scale_filter_to_string(output->scale_filter));
-			wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
-		}
+	enum scale_filter_mode scale_filter_old = output->scale_filter;
+	enum scale_filter_mode scale_filter_new = oc ? oc->scale_filter : SCALE_FILTER_DEFAULT;
+	switch (scale_filter_new) {
+		case SCALE_FILTER_DEFAULT:
+		case SCALE_FILTER_SMART:
+			output->scale_filter = ceilf(wlr_output->scale) == wlr_output->scale ?
+				SCALE_FILTER_NEAREST : SCALE_FILTER_LINEAR;
+			break;
+		case SCALE_FILTER_LINEAR:
+		case SCALE_FILTER_NEAREST:
+			output->scale_filter = scale_filter_new;
+			break;
+	}
+	if (scale_filter_old != output->scale_filter) {
+		sway_log(SWAY_DEBUG, "Set %s scale_filter to %s", oc->name,
+			sway_output_scale_filter_to_string(output->scale_filter));
+		wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
 	}
 
 	// Find position for it
@@ -571,25 +552,19 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		output_enable(output);
 	}
 
-	if (oc && oc->max_render_time >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s max render time to %d",
-			oc->name, oc->max_render_time);
-		output->max_render_time = oc->max_render_time;
-	}
-
 	if (oc && oc->set_color_transform) {
 		if (oc->color_transform) {
 			wlr_color_transform_ref(oc->color_transform);
 		}
 		wlr_color_transform_unref(output->color_transform);
 		output->color_transform = oc->color_transform;
+	} else {
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = NULL;
 	}
 
-	if (oc && oc->allow_tearing >= 0) {
-		sway_log(SWAY_DEBUG, "Set %s allow tearing to %d",
-			oc->name, oc->allow_tearing);
-		output->allow_tearing = oc->allow_tearing;
-	}
+	output->max_render_time = oc ? oc->max_render_time : 0;
+	output->allow_tearing = oc && oc->allow_tearing > 0;
 
 	return true;
 }
@@ -604,15 +579,6 @@ static struct output_config *find_output_config_from_list(
 	if (result == NULL) {
 		return NULL;
 	}
-
-	// Set output defaults for the "base" configuration
-	result->enabled = 1;
-	result->power = 1;
-	result->scale = 0; // auto
-	result->subpixel = sway_output->detected_subpixel;
-	result->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	result->max_render_time = 0;
-	result->allow_tearing = 0;
 
 	char id[128];
 	output_get_identifier(id, sizeof(id), sway_output);
@@ -691,6 +657,13 @@ static void dump_output_state(struct wlr_output *wlr_output, struct wlr_output_s
 	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
 		sway_log(SWAY_DEBUG, "    adaptive_sync: %s",
 			state->adaptive_sync_enabled ? "enabled": "disabled");
+	}
+	if (state->committed & WLR_OUTPUT_STATE_SCALE) {
+		sway_log(SWAY_DEBUG, "    scale:         %f", state->scale);
+	}
+	if (state->committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+		sway_log(SWAY_DEBUG, "    subpixel:      %s",
+			sway_wl_output_subpixel_to_string(state->subpixel));
 	}
 }
 
@@ -906,9 +879,8 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		backend_state->output = cfg->output->wlr_output;
 		wlr_output_state_init(&backend_state->base);
 
-		sway_log(SWAY_DEBUG, "Preparing config for %s",
-			cfg->output->wlr_output->name);
 		queue_output_config(cfg->config, cfg->output, &backend_state->base);
+		dump_output_state(cfg->output->wlr_output, &backend_state->base);
 	}
 
 	struct wlr_output_swapchain_manager swapchain_mgr;
