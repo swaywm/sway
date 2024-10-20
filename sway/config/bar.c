@@ -67,6 +67,9 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->colors.urgent_workspace_border);
 	free(bar->colors.urgent_workspace_bg);
 	free(bar->colors.urgent_workspace_text);
+	free(bar->colors.empty_workspace_border);
+	free(bar->colors.empty_workspace_bg);
+	free(bar->colors.empty_workspace_text);
 	free(bar->colors.binding_mode_border);
 	free(bar->colors.binding_mode_bg);
 	free(bar->colors.binding_mode_text);
@@ -159,6 +162,15 @@ struct bar_config *default_bar_config(void) {
 		goto cleanup;
 	}
 	if (!(bar->colors.urgent_workspace_text = strndup("#ffffffff", 9))) {
+		goto cleanup;
+	}
+	if (!(bar->colors.empty_workspace_border = strndup("#000000ff", 9))) {
+		goto cleanup;
+	}
+	if (!(bar->colors.empty_workspace_bg = strndup("#000000ff", 9))) {
+		goto cleanup;
+	}
+	if (!(bar->colors.empty_workspace_text = strndup("#666666FF", 9))) {
 		goto cleanup;
 	}
 	// if the following colors stay undefined, they fall back to background,
