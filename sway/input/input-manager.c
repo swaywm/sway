@@ -174,7 +174,15 @@ static struct sway_input_device *input_sway_device_from_wlr(
 static bool input_has_seat_fallback_configuration(void) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		struct seat_config *seat_config = seat_get_config(seat);
+		struct seat_config *seat_config = NULL;
+		struct seat_config *sc = NULL;
+		for (int i = 0; i < config->seat_configs->length; ++i ) {
+			sc = config->seat_configs->items[i];
+			if (strcmp(seat->wlr_seat->name, sc->name) == 0) {
+				seat_config = sc;
+				break;
+			}
+		}
 		if (seat_config && strcmp(seat_config->name, "*") != 0
 				&& seat_config->fallback != -1) {
 			return true;
@@ -256,10 +264,9 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	bool added = false;
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
-		struct seat_config *seat_config = seat_get_config(seat);
-		bool has_attachment = seat_config &&
-			(seat_config_get_attachment(seat_config, input_device->identifier) ||
-			 seat_config_get_attachment(seat_config, "*"));
+		bool has_attachment = seat->config &&
+			(seat_config_get_attachment(seat->config, input_device->identifier) ||
+			 seat_config_get_attachment(seat->config, "*"));
 
 		if (has_attachment) {
 			seat_add_device(seat, input_device);
@@ -269,8 +276,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	if (!added) {
 		wl_list_for_each(seat, &input->seats, link) {
-			struct seat_config *seat_config = seat_get_config(seat);
-			if (seat_config && seat_config->fallback == 1) {
+			if (seat->config && seat->config->fallback == 1) {
 				seat_add_device(seat, input_device);
 				added = true;
 			}
@@ -335,13 +341,8 @@ static void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 	}
 
 	if (inhibit == SHORTCUTS_INHIBIT_DEFAULT) {
-		struct seat_config *config = seat_get_config(seat);
-		if (!config) {
-			config = seat_get_config_by_name("*");
-		}
-
-		if (config) {
-			inhibit = config->shortcuts_inhibit;
+		if (seat->config) {
+			inhibit = seat->config->shortcuts_inhibit;
 		}
 	}
 
@@ -632,7 +633,7 @@ void input_manager_apply_seat_config(struct seat_config *seat_config) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			// Only apply the wildcard config directly if there is no seat
 			// specific config
-			struct seat_config *sc = seat_get_config(seat);
+			struct seat_config *sc = seat->config;
 			if (!sc) {
 				sc = seat_config;
 			}
@@ -654,7 +655,7 @@ void input_manager_apply_seat_config(struct seat_config *seat_config) {
 		list_t *seat_list = create_list();
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &server.input->seats, link) {
-			struct seat_config *seat_config = seat_get_config(seat);
+			struct seat_config *seat_config = seat->config;
 			if (!seat_config) {
 				continue;
 			}
@@ -682,8 +683,7 @@ void input_manager_apply_seat_config(struct seat_config *seat_config) {
 			}
 		} else {
 			wl_list_for_each(seat, &server.input->seats, link) {
-				struct seat_config *seat_config = seat_get_config(seat);
-				if (seat_config && seat_config->fallback == 1) {
+				if (seat->config && seat->config->fallback == 1) {
 					seat_add_device(seat, input_device);
 				} else {
 					seat_remove_device(seat, input_device);
