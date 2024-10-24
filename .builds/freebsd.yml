@@ -31,7 +31,7 @@ packages:
 - misc/hwdata
 sources:
 - https://github.com/swaywm/sway
-- https://gitlab.freedesktop.org/wlroots/wlroots.git#0.17
+- https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
 - setup: |
     cd sway
