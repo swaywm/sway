@@ -335,8 +335,8 @@ static bool is_in_hotspot(struct swaybar_dbusmenu_hotspot *hotspot, int x, int y
 		return false;
 	}
 
-	if (hotspot->x <= x && x < hotspot->x + hotspot->width && hotspot->y <= y &&
-			y < hotspot->y + hotspot->height) {
+	if (hotspot->x <= x && x - hotspot->x < hotspot->width && hotspot->y <= y &&
+			y - hotspot->y < hotspot->height) {
 		return true;
 	}
 
