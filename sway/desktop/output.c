@@ -188,8 +188,8 @@ static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output,
 		struct wlr_scene_buffer *buffer) {
 	// if we are scaling down, we should always choose linear
 	if (buffer->dst_width > 0 && buffer->dst_height > 0 && (
-			buffer->dst_width < buffer->buffer_width ||
-			buffer->dst_height < buffer->buffer_height)) {
+			buffer->dst_width < buffer->WLR_PRIVATE.buffer_width ||
+			buffer->dst_height < buffer->WLR_PRIVATE.buffer_height)) {
 		return WLR_SCALE_FILTER_BILINEAR;
 	}
 
