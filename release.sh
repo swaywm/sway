@@ -1,7 +1,7 @@
 #!/bin/sh -eu
 
 prev=$(git describe --tags --abbrev=0)
-next=$(meson rewrite kwargs info project / 2>&1 >/dev/null | jq -r '.kwargs["project#/"].version')
+next=$(meson rewrite kwargs info project / | jq -r '.kwargs["project#/"].version')
 
 case "$next" in
 *-dev)
