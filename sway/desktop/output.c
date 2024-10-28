@@ -457,19 +457,47 @@ static void handle_request_state(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, request_state);
 	const struct wlr_output_event_request_state *event = data;
+	const struct wlr_output_state *state = event->state;
 
-	uint32_t committed = event->state->committed;
-	wlr_output_commit_state(output->wlr_output, event->state);
+	// Store the requested changes so that the active configuration is
+	// consistent with the current state, and to avoid duplicate logic to apply
+	// the changes.
+	struct output_config *oc = new_output_config(output->wlr_output->name);
+	if (!oc) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		return;
+	}
 
-	if (committed & (
-			WLR_OUTPUT_STATE_MODE |
-			WLR_OUTPUT_STATE_TRANSFORM |
-			WLR_OUTPUT_STATE_SCALE)) {
-		arrange_layers(output);
-		arrange_output(output);
-		transaction_commit_dirty();
+	int committed = state->committed;
+	if (committed & WLR_OUTPUT_STATE_MODE) {
+		if (state->mode != NULL) {
+			oc->width = state->mode->width;
+			oc->height = state->mode->height;
+			oc->refresh_rate = state->mode->refresh / 1000.f;
+		} else {
+			oc->width = state->custom_mode.width;
+			oc->height = state->custom_mode.height;
+			oc->refresh_rate = state->custom_mode.refresh / 1000.f;
+		}
+		committed &= ~WLR_OUTPUT_STATE_MODE;
+	}
+	if (committed & WLR_OUTPUT_STATE_SCALE) {
+		oc->scale = state->scale;
+		committed &= ~WLR_OUTPUT_STATE_SCALE;
+	}
+	if (committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		oc->transform = state->transform;
+		committed &= ~WLR_OUTPUT_STATE_TRANSFORM;
+	}
 
-		update_output_manager_config(output->server);
+	// We do not expect or support any other changes here
+	assert(committed == 0);
+	store_output_config(oc);
+	apply_stored_output_configs();
+
+	if (server.delayed_modeset != NULL) {
+		wl_event_source_remove(server.delayed_modeset);
+		server.delayed_modeset = NULL;
 	}
 }
 
