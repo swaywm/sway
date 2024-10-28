@@ -46,6 +46,7 @@ struct sway_server {
 
 	struct wl_listener new_output;
 	struct wl_listener renderer_lost;
+	struct wl_listener session_active;
 
 	struct wlr_idle_notifier_v1 *idle_notifier_v1;
 	struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;
@@ -162,6 +163,7 @@ void server_run(struct sway_server *server);
 
 void restore_nofile_limit(void);
 
+void handle_session_active(struct wl_listener *listener, void *data);
 void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);

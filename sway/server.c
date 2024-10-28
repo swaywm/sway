@@ -6,6 +6,7 @@
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
+#include <wlr/backend/session.h>
 #include <wlr/config.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
@@ -277,6 +278,9 @@ bool server_init(struct sway_server *server) {
 		wlr_gamma_control_manager_v1_create(server->wl_display);
 	wlr_scene_set_gamma_control_manager_v1(root->root_scene,
 		server->gamma_control_manager_v1);
+
+	server->session_active.notify = handle_session_active;
+	wl_signal_add(&server->session->events.active, &server->session_active);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);

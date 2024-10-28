@@ -473,6 +473,16 @@ static void handle_request_state(struct wl_listener *listener, void *data) {
 	}
 }
 
+void handle_session_active(struct wl_listener *listener, void *data) {
+	if (server.session->active) {
+		apply_stored_output_configs();
+		if (server.delayed_modeset != NULL) {
+			wl_event_source_remove(server.delayed_modeset);
+			server.delayed_modeset = NULL;
+		}
+	}
+}
+
 static unsigned int last_headless_num = 0;
 
 void handle_new_output(struct wl_listener *listener, void *data) {
