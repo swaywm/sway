@@ -582,6 +582,10 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 static struct output_config *output_config_for_config_head(
 		struct wlr_output_configuration_head_v1 *config_head) {
 	struct output_config *oc = new_output_config(config_head->state.output->name);
+	if (!oc) {
+		return NULL;
+	}
+
 	oc->enabled = config_head->state.enabled;
 	if (!oc->enabled) {
 		return oc;
@@ -612,7 +616,8 @@ static void output_manager_apply(struct sway_server *server,
 	size_t configs_len = config->output_configs->length + wl_list_length(&cfg->heads);
 	struct output_config **configs = calloc(configs_len, sizeof(*configs));
 	if (!configs) {
-		goto done;
+		sway_log(SWAY_ERROR, "Allocation failed");
+		goto error;
 	}
 	size_t start_new_configs = config->output_configs->length;
 	for (size_t idx = 0; idx < start_new_configs; idx++) {
@@ -625,6 +630,10 @@ static void output_manager_apply(struct sway_server *server,
 		// Generate the configuration and store it as a temporary
 		// config. We keep a record of it so we can remove it later.
 		struct output_config *oc = output_config_for_config_head(config_head);
+		if (!oc) {
+			sway_log(SWAY_ERROR, "Allocation failed");
+			goto error_config;
+		}
 		configs[config_idx++] = oc;
 	}
 
@@ -632,6 +641,8 @@ static void output_manager_apply(struct sway_server *server,
 	// if any output configured for enablement fails to be enabled, even if it
 	// was not part of the config heads we were asked to configure.
 	ok = apply_output_configs(configs, configs_len, test_only, false);
+
+error_config:
 	for (size_t idx = start_new_configs; idx < configs_len; idx++) {
 		struct output_config *cfg = configs[idx];
 		if (!test_only && ok) {
@@ -642,7 +653,7 @@ static void output_manager_apply(struct sway_server *server,
 	}
 	free(configs);
 
-done:
+error:
 	if (ok) {
 		wlr_output_configuration_v1_send_succeeded(cfg);
 		if (server->delayed_modeset != NULL) {
@@ -677,6 +688,11 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 	struct sway_output *output = event->output->data;
 
 	struct output_config *oc = new_output_config(output->wlr_output->name);
+	if (!oc) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		return;
+	}
+
 	switch (event->mode) {
 	case ZWLR_OUTPUT_POWER_V1_MODE_OFF:
 		oc->power = 0;
