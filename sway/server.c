@@ -57,6 +57,7 @@
 #include "sway/server.h"
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
+#include "sway/lockscreen-overlay.h"
 
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
@@ -352,6 +353,8 @@ bool server_init(struct sway_server *server) {
 		wlr_ext_foreign_toplevel_list_v1_create(server->wl_display, SWAY_FOREIGN_TOPLEVEL_LIST_VERSION);
 	server->foreign_toplevel_manager =
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
+	server->lockscreen_overlay =
+		sway_lockscreen_overlay_create(server->wl_display);
 
 	sway_session_lock_init();
 
