@@ -349,7 +349,7 @@ void container_arrange_title_bar(struct sway_container *con) {
 			h_padding = width - config->titlebar_h_padding - marks_buffer_width;
 		}
 
-		h_padding = MAX(h_padding, 0);
+		h_padding = MAX(h_padding, config->titlebar_h_padding);
 
 		int alloc_width = MIN((int)node->width,
 			width - h_padding - config->titlebar_h_padding);
@@ -375,7 +375,7 @@ void container_arrange_title_bar(struct sway_container *con) {
 			h_padding = config->titlebar_h_padding;
 		}
 
-		h_padding = MAX(h_padding, 0);
+		h_padding = MAX(h_padding, config->titlebar_h_padding);
 
 		int alloc_width = MIN((int) node->width,
 			width - h_padding - config->titlebar_h_padding);
