@@ -6,7 +6,7 @@ struct sway_text_node {
 	int width;
 	int max_width;
 	int height;
-	int baseline;
+	float baseline;
 	bool pango_markup;
 	float color[4];
 	float background[4];
