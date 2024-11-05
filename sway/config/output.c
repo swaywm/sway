@@ -533,14 +533,6 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		wlr_output_layout_add_auto(root->output_layout, wlr_output);
 	}
 
-	// Update output->{lx, ly, width, height}
-	struct wlr_box output_box;
-	wlr_output_layout_get_box(root->output_layout, wlr_output, &output_box);
-	output->lx = output_box.x;
-	output->ly = output_box.y;
-	output->width = output_box.width;
-	output->height = output_box.height;
-
 	if (!output->enabled) {
 		output_enable(output);
 	}
@@ -560,6 +552,15 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	output->allow_tearing = oc && oc->allow_tearing > 0;
 
 	return true;
+}
+
+static void output_update_position(struct sway_output *output) {
+	struct wlr_box output_box;
+	wlr_output_layout_get_box(root->output_layout, output->wlr_output, &output_box);
+	output->lx = output_box.x;
+	output->ly = output_box.y;
+	output->width = output_box.width;
+	output->height = output_box.height;
 }
 
 // find_output_config_from_list returns a merged output_config containing all
@@ -933,6 +934,13 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		sway_log(SWAY_DEBUG, "Finalizing config for %s",
 			cfg->output->wlr_output->name);
 		finalize_output_config(cfg->config, cfg->output);
+	}
+
+	// Output layout being applied in finalize_output_config can shift outputs
+	// around, so we do a second pass to update positions and arrange.
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		output_update_position(cfg->output);
 		arrange_layers(cfg->output);
 	}
 
