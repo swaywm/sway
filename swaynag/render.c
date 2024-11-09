@@ -235,12 +235,10 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaynag *swaynag) {
 	}
 
 	int border = swaynag->type->bar_border_thickness;
-	if (max_height > swaynag->height) {
-		max_height += border;
-	}
+	max_height += border;
 	cairo_set_source_u32(cairo, swaynag->type->border_bottom);
 	cairo_rectangle(cairo, 0,
-			swaynag->height - border,
+			max_height - border,
 			swaynag->width,
 			border);
 	cairo_fill(cairo);
