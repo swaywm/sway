@@ -324,7 +324,9 @@ static void output_scale(void *data, struct wl_output *output,
 	swaynag_output->scale = factor;
 	if (swaynag_output->swaynag->output == swaynag_output) {
 		swaynag_output->swaynag->scale = swaynag_output->scale;
-		update_all_cursors(swaynag_output->swaynag);
+		if (!swaynag_output->swaynag->cursor_shape_manager) {
+			update_all_cursors(swaynag_output->swaynag);
+		}
 		render_frame(swaynag_output->swaynag);
 	}
 }
