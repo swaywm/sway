@@ -260,38 +260,43 @@ void render_frame(struct swaynag *swaynag) {
 	cairo_paint(cairo);
 	cairo_restore(cairo);
 	uint32_t height = render_to_cairo(cairo, swaynag);
+	if (swaynag->height == 0) {
+		// for first commit, set required size but do not attach a buffer
+		zwlr_layer_surface_v1_set_size(swaynag->layer_surface, 0, height);
+		zwlr_layer_surface_v1_set_exclusive_zone(swaynag->layer_surface,
+			height);
+		wl_surface_commit(swaynag->surface);
+		goto cleanup;
+	}
 	if (height != swaynag->height) {
 		zwlr_layer_surface_v1_set_size(swaynag->layer_surface, 0, height);
 		zwlr_layer_surface_v1_set_exclusive_zone(swaynag->layer_surface,
-				height);
-		wl_surface_commit(swaynag->surface);
-		wl_display_roundtrip(swaynag->display);
-	} else {
-		swaynag->current_buffer = get_next_buffer(swaynag->shm,
-				swaynag->buffers,
-				swaynag->width * swaynag->scale,
-				swaynag->height * swaynag->scale);
-		if (!swaynag->current_buffer) {
-			sway_log(SWAY_DEBUG, "Failed to get buffer. Skipping frame.");
-			goto cleanup;
-		}
-
-		cairo_t *shm = swaynag->current_buffer->cairo;
-		cairo_save(shm);
-		cairo_set_operator(shm, CAIRO_OPERATOR_CLEAR);
-		cairo_paint(shm);
-		cairo_restore(shm);
-		cairo_set_source_surface(shm, recorder, 0.0, 0.0);
-		cairo_paint(shm);
-
-		wl_surface_set_buffer_scale(swaynag->surface, swaynag->scale);
-		wl_surface_attach(swaynag->surface,
-				swaynag->current_buffer->buffer, 0, 0);
-		wl_surface_damage(swaynag->surface, 0, 0,
-				swaynag->width, swaynag->height);
-		wl_surface_commit(swaynag->surface);
-		wl_display_roundtrip(swaynag->display);
+			height);
 	}
+
+	swaynag->current_buffer = get_next_buffer(swaynag->shm,
+		swaynag->buffers,
+		swaynag->width * swaynag->scale,
+		height * swaynag->scale);
+	if (!swaynag->current_buffer) {
+		sway_log(SWAY_DEBUG, "Failed to get buffer. Skipping frame.");
+		goto cleanup;
+	}
+
+	cairo_t *shm = swaynag->current_buffer->cairo;
+	cairo_save(shm);
+	cairo_set_operator(shm, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(shm);
+	cairo_restore(shm);
+	cairo_set_source_surface(shm, recorder, 0.0, 0.0);
+	cairo_paint(shm);
+
+	wl_surface_set_buffer_scale(swaynag->surface, swaynag->scale);
+	wl_surface_attach(swaynag->surface,
+		swaynag->current_buffer->buffer, 0, 0);
+	wl_surface_damage(swaynag->surface, 0, 0,
+		swaynag->width, swaynag->height);
+	wl_surface_commit(swaynag->surface);
 
 cleanup:
 	cairo_surface_destroy(recorder);
