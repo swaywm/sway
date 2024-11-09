@@ -250,6 +250,7 @@ void render_frame(struct swaynag *swaynag) {
 	if (!swaynag->run_display) {
 		return;
 	}
+	swaynag->needs_redraw = false;
 
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
