@@ -38,6 +38,8 @@ static int handle_lost_service(sd_bus_message *msg,
 				list_del(watcher->items, idx--);
 				sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
 						"StatusNotifierItemUnregistered", "s", id);
+				sd_bus_emit_properties_changed(watcher->bus, obj_path, watcher->interface,
+						"RegisteredStatusNotifierItems", NULL);
 				free(id);
 				if (using_standard_protocol(watcher)) {
 					break;
@@ -50,6 +52,10 @@ static int handle_lost_service(sd_bus_message *msg,
 			sway_log(SWAY_DEBUG, "Unregistering Status Notifier Host '%s'", service);
 			free(watcher->hosts->items[idx]);
 			list_del(watcher->hosts, idx);
+			if (watcher->hosts->length == 0) {
+				sd_bus_emit_properties_changed(watcher->bus, obj_path, watcher->interface,
+						"IsStatusNotifierHostRegistered", NULL);
+			}
 		}
 	}
 
@@ -82,6 +88,8 @@ static int register_sni(sd_bus_message *msg, void *data, sd_bus_error *error) {
 	if (list_seq_find(watcher->items, cmp_id, id) == -1) {
 		sway_log(SWAY_DEBUG, "Registering Status Notifier Item '%s'", id);
 		list_add(watcher->items, id);
+		sd_bus_emit_properties_changed(watcher->bus, obj_path, watcher->interface,
+				"RegisteredStatusNotifierItems", NULL);
 		sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
 				"StatusNotifierItemRegistered", "s", id);
 	} else {
@@ -104,6 +112,10 @@ static int register_host(sd_bus_message *msg, void *data, sd_bus_error *error) {
 	if (list_seq_find(watcher->hosts, cmp_id, service) == -1) {
 		sway_log(SWAY_DEBUG, "Registering Status Notifier Host '%s'", service);
 		list_add(watcher->hosts, strdup(service));
+		if (watcher->hosts->length == 1) {
+			sd_bus_emit_properties_changed(watcher->bus, obj_path, watcher->interface,
+					"IsStatusNotifierHostRegistered", NULL);
+		}
 		sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
 				"StatusNotifierHostRegistered", "");
 	} else {
