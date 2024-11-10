@@ -552,8 +552,22 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	return success;
 }
 
+static char *extract_filename(const char *path) {
+  char *filename = strrchr(path, '/');
+  if (filename == NULL) {
+    return NULL;
+  }
+  return filename;
+}
+
+static bool same_file(const char *path1, const char *path2) {
+  const char *file1 = extract_filename(path1);
+  const char *file2 = extract_filename(path2);
+  return (strcmp(file1, file2) == 0);
+}
+
 static bool load_include_config(const char *path, const char *parent_dir,
-		struct sway_config *config, struct swaynag_instance *swaynag) {
+		struct sway_config *config, struct swaynag_instance *swaynag, bool flag) {
 	// save parent config
 	const char *parent_config = config->current_config_path;
 
@@ -591,6 +605,14 @@ static bool load_include_config(const char *path, const char *parent_dir,
 			free(real_path);
 			return false;
 		}
+		    // check if function is called from include_one
+		if (flag == true && same_file(real_path, old_path) == true) {
+			sway_log(SWAY_DEBUG,
+				"%s already included once, won't be included again.",
+				real_path);
+			free(real_path);
+			return false;
+		}
 	}
 
 	config->current_config_path = real_path;
@@ -610,7 +632,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 }
 
 void load_include_configs(const char *path, struct sway_config *config,
-		struct swaynag_instance *swaynag) {
+		struct swaynag_instance *swaynag, bool flag) {
 	char *wd = getcwd(NULL, 0);
 	char *parent_path = strdup(config->current_config_path);
 	const char *parent_dir = dirname(parent_path);
@@ -625,7 +647,7 @@ void load_include_configs(const char *path, struct sway_config *config,
 		char **w = p.we_wordv;
 		size_t i;
 		for (i = 0; i < p.we_wordc; ++i) {
-			load_include_config(w[i], parent_dir, config, swaynag);
+			load_include_config(w[i], parent_dir, config, swaynag, flag);
 		}
 		wordfree(&p);
 	}
@@ -637,6 +659,21 @@ void load_include_configs(const char *path, struct sway_config *config,
 cleanup:
 	free(parent_path);
 	free(wd);
+}
+
+
+void load_include_one_config(const char *paths, struct sway_config *config,
+                             struct swaynag_instance *swaynag) {
+  char *p = strdup(paths);
+  char *path = strtok(p, " ");
+  while (path != NULL) {
+    load_include_configs(path, config, swaynag, true);
+    path = strtok(NULL, " ");
+  }
+  goto cleanup;
+
+cleanup:
+  free(p);
 }
 
 void run_deferred_commands(void) {
