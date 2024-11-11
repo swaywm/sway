@@ -408,6 +408,14 @@ void request_modeset(void) {
 	}
 }
 
+void force_modeset(void) {
+	if (server.delayed_modeset != NULL) {
+		wl_event_source_remove(server.delayed_modeset);
+		server.delayed_modeset = NULL;
+	}
+	apply_stored_output_configs();
+}
+
 static void begin_destroy(struct sway_output *output) {
 	if (output->enabled) {
 		output_disable(output);
@@ -493,12 +501,8 @@ static void handle_request_state(struct wl_listener *listener, void *data) {
 	// We do not expect or support any other changes here
 	assert(committed == 0);
 	store_output_config(oc);
-	apply_stored_output_configs();
 
-	if (server.delayed_modeset != NULL) {
-		wl_event_source_remove(server.delayed_modeset);
-		server.delayed_modeset = NULL;
-	}
+	force_modeset();
 }
 
 static unsigned int last_headless_num = 0;
