@@ -705,6 +705,7 @@ struct output_config *find_output_config(struct sway_output *output);
 void free_output_config(struct output_config *oc);
 
 void request_modeset(void);
+void force_modeset(void);
 
 bool spawn_swaybg(void);
 
