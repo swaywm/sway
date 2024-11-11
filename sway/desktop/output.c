@@ -262,11 +262,10 @@ static bool output_can_tear(struct sway_output *output) {
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
+	output->wlr_output->frame_pending = false;
 	if (!output->enabled) {
 		return 0;
 	}
-
-	output->wlr_output->frame_pending = false;
 
 	output_configure_scene(output, &root->root_scene->tree.node, 1.0f);
 
