@@ -361,6 +361,7 @@ int main(int argc, char **argv) {
 	}
 
 	config->active = true;
+	force_modeset();
 	load_swaybars();
 	run_deferred_commands();
 	run_deferred_bindings();
