@@ -66,8 +66,8 @@ The following commands may only be used in the configuration file.
 *default_orientation* horizontal|vertical|auto
 	Sets the default container layout for tiled containers.
 
-*include* <path>
-	Includes another file from _path_. _path_ can be either a full path or a
+*include* <paths...>
+	Include files from _paths_. _paths_ can include either a full path or a
 	path relative to the parent config, and expands shell syntax (see
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
