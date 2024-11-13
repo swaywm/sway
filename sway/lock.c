@@ -59,12 +59,17 @@ static void refocus_output(struct sway_session_lock_output *output) {
 	}
 }
 
-static void handle_surface_map(struct wl_listener *listener, void *data) {
+static void update_focus(void *data) {
+	struct wl_listener *listener = data;
 	struct sway_session_lock_output *surf = wl_container_of(listener, surf, surface_map);
 	if (surf->lock->focused == NULL) {
 		focus_surface(surf->lock, surf->surface->surface);
 	}
 	cursor_rebase_all();
+}
+
+static void handle_surface_map(struct wl_listener *listener, void *data) {
+	wl_event_loop_add_idle(server.wl_event_loop, update_focus, listener);
 }
 
 static void handle_surface_destroy(struct wl_listener *listener, void *data) {
@@ -234,6 +239,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		arrange_layers(output);
 	}
+	cursor_rebase_all();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
