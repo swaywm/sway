@@ -332,11 +332,31 @@ void sway_session_lock_add_output(struct sway_session_lock *lock,
 	}
 }
 
+struct is_lock_surface_data {
+	struct wlr_surface *surface;
+	bool is_lock_surface;
+};
+
+static void is_lock_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
+	struct is_lock_surface_data *is_lock_surface_data = data;
+	if (is_lock_surface_data->surface == surface) {
+		is_lock_surface_data->is_lock_surface = true;
+	}
+}
+
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 		struct wlr_surface *surface) {
 	struct sway_session_lock_output *lock_output;
 	wl_list_for_each(lock_output, &lock->outputs, link) {
-		if (lock_output->surface && lock_output->surface->surface == surface) {
+		if (!lock_output->surface) {
+			continue;
+		}
+		struct is_lock_surface_data data = {
+			.surface = surface,
+			.is_lock_surface = false,
+		};
+		wlr_surface_for_each_surface(lock_output->surface->surface, is_lock_surface, &data);
+		if (data.is_lock_surface) {
 			return true;
 		}
 	}
