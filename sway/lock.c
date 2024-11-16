@@ -335,8 +335,9 @@ void sway_session_lock_add_output(struct sway_session_lock *lock,
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 		struct wlr_surface *surface) {
 	struct sway_session_lock_output *lock_output;
+	struct wlr_surface *root_surface = wlr_surface_get_root_surface(surface);
 	wl_list_for_each(lock_output, &lock->outputs, link) {
-		if (lock_output->surface && lock_output->surface->surface == surface) {
+		if (lock_output->surface && lock_output->surface->surface == root_surface) {
 			return true;
 		}
 	}
