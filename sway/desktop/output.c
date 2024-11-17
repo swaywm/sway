@@ -408,6 +408,10 @@ void request_modeset(void) {
 	}
 }
 
+bool modeset_is_pending(void) {
+	return server.delayed_modeset != NULL;
+}
+
 void force_modeset(void) {
 	if (server.delayed_modeset != NULL) {
 		wl_event_source_remove(server.delayed_modeset);
