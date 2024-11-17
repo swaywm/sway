@@ -706,6 +706,7 @@ void free_output_config(struct output_config *oc);
 
 void request_modeset(void);
 void force_modeset(void);
+bool modeset_is_pending(void);
 
 bool spawn_swaybg(void);
 
