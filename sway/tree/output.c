@@ -273,7 +273,6 @@ void output_destroy(struct sway_output *output) {
 	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
-	wl_event_source_remove(output->repaint_timer);
 	wlr_color_transform_unref(output->color_transform);
 	free(output);
 }

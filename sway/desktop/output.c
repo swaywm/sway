@@ -440,6 +440,9 @@ static void begin_destroy(struct sway_output *output) {
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
 
+	wl_event_source_remove(output->repaint_timer);
+	output->repaint_timer = NULL;
+
 	request_modeset();
 }
 
