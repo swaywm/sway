@@ -785,10 +785,11 @@ The default colors are:
 	Kills (closes) the currently focused container and all of its children.
 
 *smart_borders* on|no_gaps|off
-	If smart_borders are _on_, borders will only be enabled if the workspace
-	has more than one visible child. If smart_borders is set to _no_gaps_,
-	borders will only be enabled if the workspace has more than one visible
-	child and gaps equal to zero.
+	If smart_borders are _on_, borders will only be enabled if the workspace has
+	more than one visible child. If smart_borders is set to _no_gaps_, borders
+	will only be enabled if the workspace has more than one visible child or the
+	workspace does not fill the output. The workspace does not fill the output
+	when the sum of inner and outer gaps is positive for any of its sides.
 
 *smart_gaps* on|off|toggle|inverse_outer
 	If smart_gaps are _on_ gaps will only be enabled if a workspace has more
