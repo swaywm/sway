@@ -508,6 +508,8 @@ void container_destroy(struct sway_container *con) {
 
 	if (con->view && con->view->container == con) {
 		con->view->container = NULL;
+		wl_list_remove(&con->output_enter.link);
+		wl_list_remove(&con->output_leave.link);
 		wlr_scene_node_destroy(&con->output_handler->node);
 		if (con->view->destroying) {
 			view_destroy(con->view);
