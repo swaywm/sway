@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <getopt.h>
 #include <pango/pangocairo.h>
 #include <signal.h>
@@ -196,6 +197,8 @@ static const struct option long_options[] = {
 	{"verbose", no_argument, NULL, 'V'},
 	{"get-socketpath", no_argument, NULL, 'p'},
 	{"unsupported-gpu", no_argument, NULL, 'u'},
+	{"socket", required_argument, NULL, 's'},
+	{"wayland-fd", required_argument, NULL, 'S'},
 	{0, 0, 0, 0}
 };
 
@@ -209,12 +212,16 @@ static const char usage[] =
 	"  -v, --version          Show the version number and quit.\n"
 	"  -V, --verbose          Enables more verbose logging.\n"
 	"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
+	"      --socket <name>    Sets the Wayland socket name (for Wayland socket handover)\n"
+	"      --wayland-fd <fd>  Sets the Wayland socket fd (for Wayland socket handover)\n"
 	"\n";
 
 int main(int argc, char **argv) {
 	static bool verbose = false, debug = false, validate = false;
 
 	char *config_path = NULL;
+	char *socket_name = NULL;
+	int socket_fd = -1;
 
 	int c;
 	while (1) {
@@ -260,6 +267,13 @@ int main(int argc, char **argv) {
 				exit(EXIT_FAILURE);
 			}
 			break;
+		case 's': // --socket
+			free(socket_name);
+			socket_name = strdup(optarg);
+			break;
+		case 'S': // --wayland-fd
+			socket_fd = atoi(optarg);
+			break;
 		default:
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
@@ -276,6 +290,14 @@ int main(int argc, char **argv) {
 	if (!getenv("XDG_RUNTIME_DIR") && optind == argc) {
 		fprintf(stderr,
 				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Fail if only one of --socket and --wayland-fd are given.
+	if ((socket_name == NULL) ^ (socket_fd == -1)) {
+		fprintf(stderr,
+				"Both --socket and --wayland-fd are required for Wayland "
+				"socket handover, but only one was provided. Aborting.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -331,7 +353,7 @@ int main(int argc, char **argv) {
 
 	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
-	if (!server_init(&server)) {
+	if (!server_init(&server, socket_name, socket_fd)) {
 		return 1;
 	}
 
