@@ -13,7 +13,13 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 	}
 
 	bool hide_lone_tab = false;
-	if (strcmp(*argv, "--i3") == 0) {
+	bool hide_lone_title = false;
+	if (strcmp(*argv, "--smart-titles") == 0) {
+		hide_lone_tab = true;
+		hide_lone_title = true;
+		++argv;
+		--argc;
+	} else if (strcmp(*argv, "--i3") == 0) {
 		hide_lone_tab = true;
 		++argv;
 		--argc;
@@ -41,6 +47,7 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
 	config->hide_lone_tab = hide_lone_tab;
+	config->hide_lone_title = hide_lone_title;
 
 	arrange_root();
 
