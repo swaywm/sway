@@ -7,6 +7,7 @@ struct sway_container;
 struct sway_node;
 
 void arrange_container(struct sway_container *container);
+void next_sibling_container_geometry(struct sway_container *child, struct sway_container *sibling, bool fullscreen);
 
 void arrange_workspace(struct sway_workspace *workspace);
 
