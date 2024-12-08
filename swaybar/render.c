@@ -29,6 +29,7 @@ struct render_context {
 	cairo_font_options_t *textaa_sharp;
 	cairo_font_options_t *textaa_safe;
 	uint32_t background_color;
+	bool has_transparency;
 };
 
 static void choose_text_aa_mode(struct render_context *ctx, uint32_t fontcolor) {
@@ -265,6 +266,7 @@ static uint32_t render_status_block(struct render_context *ctx,
 
 	uint32_t bg_color = block->urgent
 		? config->colors.urgent_workspace.background : block->background;
+	ctx->has_transparency |= (bg_color & 0xFF) != 0xFF;
 	if (bg_color) {
 		render_sharp_rectangle(cairo, bg_color, x_pos, y_pos,
 				block_width, render_height);
@@ -574,6 +576,7 @@ static uint32_t render_binding_mode_indicator(struct render_context *ctx,
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_u32(cairo, config->colors.binding_mode.background);
 	ctx->background_color = config->colors.binding_mode.background;
+	ctx->has_transparency |= (config->colors.binding_mode.background & 0xFF) != 0xFF;
 	cairo_rectangle(cairo, x, 0, width, height);
 	cairo_fill(cairo);
 
@@ -653,6 +656,7 @@ static uint32_t render_workspace_button(struct render_context *ctx,
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_u32(cairo, box_colors.background);
 	ctx->background_color = box_colors.background;
+	ctx->has_transparency |= (box_colors.background & 0xFF) != 0xFF;
 	cairo_rectangle(cairo, *x, 0, width, height);
 	cairo_fill(cairo);
 
@@ -760,10 +764,12 @@ void render_frame(struct swaybar_output *output) {
 		background_color = output->bar->config->colors.background;
 	}
 
-	struct render_context ctx = { 0 };
-	ctx.output = output;
-	// initial background color used for deciding the best way to antialias text
-	ctx.background_color = background_color;
+	struct render_context ctx = {
+		.output = output,
+		// initial background color used for deciding the best way to antialias text
+		.background_color = background_color,
+		.has_transparency = (background_color & 0xFF) != 0xFF,
+	};
 
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
@@ -834,8 +840,7 @@ void render_frame(struct swaybar_output *output) {
 		wl_surface_damage(output->surface, 0, 0,
 				output->width, output->height);
 
-		uint32_t bg_alpha = background_color & 0xFF;
-		if (bg_alpha == 0xFF) {
+		if (!ctx.has_transparency) {
 			struct wl_region *region =
 				wl_compositor_create_region(output->bar->compositor);
 			wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
