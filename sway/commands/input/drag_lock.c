@@ -16,7 +16,7 @@ struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
 	}
 
 #if HAVE_LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY
-	if (strcmp(argv[0], "enabled_sticky")) {
+	if (strcmp(argv[0], "enabled_sticky") == 0) {
 		ic->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY;
 	} else
 #endif
