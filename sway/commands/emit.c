@@ -5,6 +5,7 @@
 #include "sway/input/seat.h"
 #include "sway/tree/container.h"
 #include "stringop.h"
+#include "util.h"
 
 
 struct keycode_matches {
