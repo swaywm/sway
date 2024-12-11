@@ -138,7 +138,7 @@ struct sway_node *node_at_coords(
 }
 
 void cursor_rebase(struct sway_cursor *cursor) {
-	uint32_t time_msec = get_current_time_msec();
+	uint32_t time_msec = sway_get_current_time_msec();
 	seatop_rebase(cursor->seat, time_msec);
 }
 
@@ -353,7 +353,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
 		enum wl_pointer_button_state state) {
 	if (time_msec == 0) {
-		time_msec = get_current_time_msec();
+		time_msec = sway_get_current_time_msec();
 	}
 
 	seatop_button(cursor->seat, time_msec, device, button, state);

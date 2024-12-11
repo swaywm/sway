@@ -144,14 +144,14 @@ struct cmd_results *cmd_emit(int argc, char **argv) {
   // send key presses
   if(action & EMIT_ACTION_PRESS) {
     for(int i = 0; i < keycodes->length; i++) {
-      wlr_seat_keyboard_notify_key(seat->wlr_seat, get_current_time_msec(), *((uint32_t*) keycodes->items[i])-8, 1);
+      wlr_seat_keyboard_notify_key(seat->wlr_seat, sway_get_current_time_msec(), *((uint32_t*) keycodes->items[i])-8, 1);
     }
   }
 
   // send key releases
   if(action & EMIT_ACTION_RELEASE) {
     for(int i = 0; i < keycodes->length; i++) {
-      wlr_seat_keyboard_notify_key(seat->wlr_seat, get_current_time_msec(), *((uint32_t*) keycodes->items[i])-8, 0);
+      wlr_seat_keyboard_notify_key(seat->wlr_seat, sway_get_current_time_msec(), *((uint32_t*) keycodes->items[i])-8, 0);
     }
   }
 
