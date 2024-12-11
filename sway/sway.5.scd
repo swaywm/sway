@@ -559,6 +559,18 @@ runtime.
 		bindgesture swipe:right workspace prev
 		bindgesture swipe:left workspace next
 
+		# Allow switching between workspaces with left and right three four swipes swipes
+
+		bindgesture swipe:4:right workspace prev
+		bindgesture swipe:4:left workspace next
+		
+		# Allow switching focus with three finger swipes
+		
+		bindgesture swipe:3:right focus right
+		bindgesture swipe:3:left focus left
+		bindgesture swipe:3:up focus up 
+		bindgesture swipe:3:down focus down
+
 		# Allow container movements by pinching them
 		bindgesture pinch:inward+up move up
 		bindgesture pinch:inward+down move down
