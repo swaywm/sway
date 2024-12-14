@@ -625,6 +625,8 @@ static uint32_t render_workspace_button(struct render_context *ctx,
 		box_colors = config->colors.focused_workspace;
 	} else if (ws->visible) {
 		box_colors = config->colors.active_workspace;
+	} else if (ws->empty) {
+		box_colors = config->colors.empty_workspace;
 	} else {
 		box_colors = config->colors.inactive_workspace;
 	}
