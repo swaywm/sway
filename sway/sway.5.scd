@@ -246,8 +246,9 @@ set|plus|minus|toggle <amount>
 	Moves the focused container to be centered on the workspace. If _absolute_
 	is used, it is moved to the center of all outputs.
 
-*move* position cursor|mouse|pointer
-	Moves the focused container to be centered on the cursor.
+*move* position [next] cursor|mouse|pointer
+	Moves the focused container to be centered on the cursor. If _next_ is
+        used, it moves the left upper corner to the cursor's position.
 
 *move* [container|window] [to] mark <mark>
 	Moves the focused container to the specified mark.
