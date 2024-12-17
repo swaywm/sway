@@ -106,9 +106,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* none|normal|csd|pixel [<n>]
 	Set border style for focused window. _normal_ includes a border of
 	thickness _n_ and a title bar. _pixel_ is a border without title bar _n_
-	pixels thick. Default is _normal_ with border thickness 2. _csd_ is short
-	for client-side-decorations, which allows the client to draw its own
-	decorations.
+	pixels thick. The title bar always shows in stacking or tabbed layouts.
+	_csd_ is short for client-side-decorations, which allows the client to draw
+	its own decorations. Default is _normal_ with border thickness 2.
 
 *border* toggle
 	Cycles through the available border styles.
