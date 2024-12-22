@@ -10,6 +10,10 @@
 #include "swaybar/input.h"
 #include "swaybar/ipc.h"
 
+#if HAVE_TRAY
+#include "swaybar/tray/dbusmenu.h"
+#endif
+
 void free_hotspots(struct wl_list *list) {
 	struct swaybar_hotspot *hotspot, *tmp;
 	wl_list_for_each_safe(hotspot, tmp, list, link) {
@@ -131,11 +135,27 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		pointer->serial = serial;
 		update_cursor(seat);
 	}
+
+#if HAVE_TRAY
+	struct swaybar_config *config = seat->bar->config;
+	if (!config->tray_hidden && dbusmenu_pointer_enter(data, wl_pointer, serial,
+		surface, surface_x, surface_y)) {
+		return;
+	}
+#endif
 }
 
 static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface) {
+#if HAVE_TRAY
 	struct swaybar_seat *seat = data;
+	struct swaybar_config *config = seat->bar->config;
+	if (!config->tray_hidden && dbusmenu_pointer_leave(data, wl_pointer, serial,
+		surface)) {
+		return;
+	}
+#endif
+
 	seat->pointer.current = NULL;
 }
 
@@ -144,6 +164,13 @@ static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 	struct swaybar_seat *seat = data;
 	seat->pointer.x = wl_fixed_to_double(surface_x);
 	seat->pointer.y = wl_fixed_to_double(surface_y);
+#if HAVE_TRAY
+	struct swaybar_config *config = seat->bar->config;
+	if (!config->tray_hidden && dbusmenu_pointer_motion(data, wl_pointer, time,
+		surface_x, surface_y)) {
+		return;
+	}
+#endif
 }
 
 static bool check_bindings(struct swaybar *bar, uint32_t button,
@@ -160,6 +187,7 @@ static bool check_bindings(struct swaybar *bar, uint32_t button,
 }
 
 static bool process_hotspots(struct swaybar_output *output,
+		struct swaybar_seat *seat, uint32_t serial,
 		double x, double y, uint32_t button, uint32_t state) {
 	bool released = state == WL_POINTER_BUTTON_STATE_RELEASED;
 	struct swaybar_hotspot *hotspot;
@@ -167,7 +195,7 @@ static bool process_hotspots(struct swaybar_output *output,
 		if (x >= hotspot->x && y >= hotspot->y
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
-			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot, x, y,
+			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot, seat, serial, x, y,
 					button, released, hotspot->data)) {
 				return true;
 			}
@@ -180,13 +208,20 @@ static bool process_hotspots(struct swaybar_output *output,
 static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
 	struct swaybar_seat *seat = data;
+#if HAVE_TRAY
+	struct swaybar_config *config = seat->bar->config;
+	if (!config->tray_hidden && dbusmenu_pointer_button(seat, wl_pointer, serial,
+		time, button, state)) {
+		return;
+	}
+#endif
 	struct swaybar_pointer *pointer = &seat->pointer;
 	struct swaybar_output *output = pointer->current;
 	if (!sway_assert(output, "button with no active output")) {
 		return;
 	}
 
-	if (process_hotspots(output, pointer->x, pointer->y, button, state)) {
+	if (process_hotspots(output, seat, serial, pointer->x, pointer->y, button, state)) {
 		return;
 	}
 
@@ -240,7 +275,7 @@ static void process_discrete_scroll(struct swaybar_seat *seat,
 		struct swaybar_output *output, struct swaybar_pointer *pointer,
 		uint32_t axis, wl_fixed_t value) {
 	uint32_t button = wl_axis_to_button(axis, value);
-	if (process_hotspots(output, pointer->x, pointer->y, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
+	if (process_hotspots(output, seat, 0, pointer->x, pointer->y, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
 		// (Currently hotspots don't do anything on release events, so no need to emit one)
 		return;
 	}
@@ -297,6 +332,13 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
+#if HAVE_TRAY
+	struct swaybar_config *config = seat->bar->config;
+	if (!config->tray_hidden && dbusmenu_pointer_axis(data, wl_pointer)) {
+		return;
+	}
+#endif
+
 	// If there's a while since the last scroll event,
 	// set 'value' to zero as if to reset the "virtual scroll wheel"
 	if (seat->axis[axis].discrete_steps == 0 &&
@@ -312,6 +354,13 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
 	struct swaybar_seat *seat = data;
 	struct swaybar_pointer *pointer = &seat->pointer;
 	struct swaybar_output *output = pointer->current;
+
+#if HAVE_TRAY
+	struct swaybar_config *config = seat->bar->config;
+	if (!config->tray_hidden && dbusmenu_pointer_frame(data, wl_pointer)) {
+		return;
+	}
+#endif
 
 	if (output == NULL) {
 		return;
@@ -420,7 +469,7 @@ static void wl_touch_up(void *data, struct wl_touch *wl_touch,
 	}
 	if (time - slot->time < 500) {
 		// Tap, treat it like a pointer click
-		process_hotspots(slot->output, slot->x, slot->y, BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
+		process_hotspots(slot->output, seat, serial, slot->x, slot->y, BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
 		// (Currently hotspots don't do anything on release events, so no need to emit one)
 	}
 	slot->output = NULL;
