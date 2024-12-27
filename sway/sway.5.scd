@@ -372,12 +372,29 @@ set|plus|minus|toggle <amount>
 *title_format* <format>
 	Sets the format of window titles. The following placeholders may be used:
 
-		%title - The title supplied by the window ++
-		%app_id - The wayland app ID (applicable to wayland windows only) ++
-		%class - The X11 classname (applicable to xwayland windows only) ++
-		%instance - The X11 instance (applicable to xwayland windows only) ++
-		%shell - The protocol the window is using (typically xwayland or
-			xdg_shell)
+	*%title*
+		The title supplied by the window
+
+	*%app_id*
+		The wayland app ID (applicable to wayland windows only)
+
+	*%class*
+		The X11 classname (applicable to xwayland windows only)
+
+	*%instance*
+		The X11 instance (applicable to xwayland windows only)
+
+	*%shell*
+		The protocol the window is using (typically xwayland or xdg_shell)
+
+	*%sandbox_engine*
+		The associated sandbox engine
+
+	*%sandbox_app_id*
+		The app ID provided by the associated sandbox engine
+
+	*%sandbox_instance_id*
+		The instance ID provided by the associated sandbox engine
 
 	This command is typically used with *for_window* criteria. For example:
 

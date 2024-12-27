@@ -716,6 +716,15 @@ size_t parse_title_format(struct sway_container *container, char *buffer) {
 			} else if (has_prefix(next, "%shell")) {
 				len += append_prop(buffer, view_get_shell(container->view));
 				format += strlen("%shell");
+			} else if (has_prefix(next, "%sandbox_engine")) {
+				len += append_prop(buffer, view_get_sandbox_engine(container->view));
+				format += strlen("%sandbox_engine");
+			} else if (has_prefix(next, "%sandbox_app_id")) {
+				len += append_prop(buffer, view_get_sandbox_app_id(container->view));
+				format += strlen("%sandbox_app_id");
+			} else if (has_prefix(next, "%sandbox_instance_id")) {
+				len += append_prop(buffer, view_get_sandbox_instance_id(container->view));
+				format += strlen("%sandbox_instance_id");
 			} else {
 				lenient_strcat(buffer, "%");
 				++format;
