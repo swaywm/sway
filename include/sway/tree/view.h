@@ -221,6 +221,12 @@ const char *view_get_window_role(struct sway_view *view);
 
 uint32_t view_get_window_type(struct sway_view *view);
 
+const char *view_get_sandbox_engine(struct sway_view *view);
+
+const char *view_get_sandbox_app_id(struct sway_view *view);
+
+const char *view_get_sandbox_instance_id(struct sway_view *view);
+
 const char *view_get_shell(struct sway_view *view);
 
 void view_get_constraints(struct sway_view *view, double *min_width,
