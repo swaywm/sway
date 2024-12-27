@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_security_context_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
@@ -152,6 +153,34 @@ uint32_t view_get_window_type(struct sway_view *view) {
 		return view->impl->get_int_prop(view, VIEW_PROP_WINDOW_TYPE);
 	}
 	return 0;
+}
+
+static const struct wlr_security_context_v1_state *security_context_from_view(
+		struct sway_view *view) {
+	const struct wl_client *client =
+		wl_resource_get_client(view->surface->resource);
+	const struct wlr_security_context_v1_state *security_context =
+		wlr_security_context_manager_v1_lookup_client(
+				server.security_context_manager_v1, client);
+	return security_context;
+}
+
+const char *view_get_sandbox_engine(struct sway_view *view) {
+	const struct wlr_security_context_v1_state *security_context =
+		security_context_from_view(view);
+	return security_context ? security_context->sandbox_engine : NULL;
+}
+
+const char *view_get_sandbox_app_id(struct sway_view *view) {
+	const struct wlr_security_context_v1_state *security_context =
+		security_context_from_view(view);
+	return security_context ? security_context->app_id : NULL;
+}
+
+const char *view_get_sandbox_instance_id(struct sway_view *view) {
+	const struct wlr_security_context_v1_state *security_context =
+		security_context_from_view(view);
+	return security_context ? security_context->instance_id : NULL;
 }
 
 const char *view_get_shell(struct sway_view *view) {
