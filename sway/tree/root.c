@@ -199,6 +199,8 @@ void root_scratchpad_show(struct sway_container *con) {
 	if (old_ws) {
 		workspace_consider_destroy(old_ws);
 	}
+
+	container_raise_floating(con);
 }
 
 static void disable_fullscreen(struct sway_container *con, void *data) {
