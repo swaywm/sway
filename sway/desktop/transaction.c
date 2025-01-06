@@ -424,13 +424,14 @@ static void arrange_container(struct sway_container *con,
 		int border_bottom = con->current.border_bottom ? border_width : 0;
 		int border_left = con->current.border_left ? border_width : 0;
 		int border_right = con->current.border_right ? border_width : 0;
+		int vert_border_height = MAX(0, height - border_top - border_bottom);
 
 		wlr_scene_rect_set_size(con->border.top, width, border_top);
 		wlr_scene_rect_set_size(con->border.bottom, width, border_bottom);
 		wlr_scene_rect_set_size(con->border.left,
-			border_left, height - border_top - border_bottom);
+			border_left, vert_border_height);
 		wlr_scene_rect_set_size(con->border.right,
-			border_right, height - border_top - border_bottom);
+			border_right, vert_border_height);
 
 		wlr_scene_node_set_position(&con->border.top->node, 0, 0);
 		wlr_scene_node_set_position(&con->border.bottom->node,
@@ -559,7 +560,7 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 	for (int i = 0; i < output->current.workspaces->length; i++) {
 		struct sway_workspace *child = output->current.workspaces->items[i];
 
-		bool activated = output->current.active_workspace == child;
+		bool activated = output->current.active_workspace == child && output->wlr_output->enabled;
 
 		wlr_scene_node_reparent(&child->layers.tiling->node, output->layers.tiling);
 		wlr_scene_node_reparent(&child->layers.fullscreen->node, output->layers.fullscreen);
@@ -612,9 +613,11 @@ void arrange_popups(struct wlr_scene_tree *popups) {
 		struct sway_popup_desc *popup = scene_descriptor_try_get(node,
 			SWAY_SCENE_DESC_POPUP);
 
-		int lx, ly;
-		wlr_scene_node_coords(popup->relative, &lx, &ly);
-		wlr_scene_node_set_position(node, lx, ly);
+		if (popup) {
+			int lx, ly;
+			wlr_scene_node_coords(popup->relative, &lx, &ly);
+			wlr_scene_node_set_position(node, lx, ly);
+		}
 	}
 }
 

@@ -4,7 +4,6 @@
 #include <math.h>
 #include <assert.h>
 #include <wlr/config.h>
-#include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>

@@ -355,6 +355,13 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
 
+	bool mod_pressed = modifiers & config->floating_mod;
+	uint32_t mod_move_btn = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
+	uint32_t mod_resize_btn = config->floating_mod_inverse ? BTN_LEFT : BTN_RIGHT;
+	bool mod_move_btn_pressed = mod_pressed && button == mod_move_btn;
+	bool mod_resize_btn_pressed = mod_pressed && button == mod_resize_btn;
+	bool titlebar_left_btn_pressed = on_titlebar && button == BTN_LEFT;
+
 	// Handle mouse bindings
 	if (trigger_pointer_button_binding(seat, device, button, state, modifiers,
 			on_titlebar, on_border, on_contents, on_workspace)) {
@@ -403,33 +410,28 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle tiling resize via mod
-	bool mod_pressed = modifiers & config->floating_mod;
-	if (cont && !is_floating_or_child && mod_pressed &&
+	if (cont && !is_floating_or_child && mod_pressed && mod_resize_btn_pressed &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED) {
-		uint32_t btn_resize = config->floating_mod_inverse ?
-			BTN_LEFT : BTN_RIGHT;
-		if (button == btn_resize) {
-			edge = 0;
-			edge |= cursor->cursor->x > cont->pending.x + cont->pending.width / 2 ?
-				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
-			edge |= cursor->cursor->y > cont->pending.y + cont->pending.height / 2 ?
-				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+		edge = 0;
+		edge |= cursor->cursor->x > cont->pending.x + cont->pending.width / 2 ?
+			WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
+		edge |= cursor->cursor->y > cont->pending.y + cont->pending.height / 2 ?
+			WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
 
-			const char *image = NULL;
-			if (edge == (WLR_EDGE_LEFT | WLR_EDGE_TOP)) {
-				image = "nw-resize";
-			} else if (edge == (WLR_EDGE_TOP | WLR_EDGE_RIGHT)) {
-				image = "ne-resize";
-			} else if (edge == (WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM)) {
-				image = "se-resize";
-			} else if (edge == (WLR_EDGE_BOTTOM | WLR_EDGE_LEFT)) {
-				image = "sw-resize";
-			}
-			cursor_set_image(seat->cursor, image, NULL);
-			seat_set_focus_container(seat, cont);
-			seatop_begin_resize_tiling(seat, cont, edge);
-			return;
+		const char *image = NULL;
+		if (edge == (WLR_EDGE_LEFT | WLR_EDGE_TOP)) {
+			image = "nw-resize";
+		} else if (edge == (WLR_EDGE_TOP | WLR_EDGE_RIGHT)) {
+			image = "ne-resize";
+		} else if (edge == (WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM)) {
+			image = "se-resize";
+		} else if (edge == (WLR_EDGE_BOTTOM | WLR_EDGE_LEFT)) {
+			image = "sw-resize";
 		}
+		cursor_set_image(seat->cursor, image, NULL);
+		seat_set_focus_container(seat, cont);
+		seatop_begin_resize_tiling(seat, cont, edge);
+		return;
 	}
 
 	// Handle changing focus when clicking on a container
@@ -454,12 +456,10 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 
 	// Handle beginning floating move
 	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
-			state == WL_POINTER_BUTTON_STATE_PRESSED) {
-		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
-		if (button == btn_move && (mod_pressed || on_titlebar)) {
-			seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
-			return;
-		}
+			state == WL_POINTER_BUTTON_STATE_PRESSED &&
+			(mod_move_btn_pressed || titlebar_left_btn_pressed)) {
+		seatop_begin_move_floating(seat, container_toplevel_ancestor(cont));
+		return;
 	}
 
 	// Handle beginning floating resize
@@ -473,9 +473,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		}
 
 		// Via mod+click
-		uint32_t btn_resize = config->floating_mod_inverse ?
-			BTN_LEFT : BTN_RIGHT;
-		if (mod_pressed && button == btn_resize) {
+		if (mod_resize_btn_pressed) {
 			struct sway_container *floater = container_toplevel_ancestor(cont);
 			edge = 0;
 			edge |= cursor->cursor->x > floater->pending.x + floater->pending.width / 2 ?
@@ -489,7 +487,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle moving a tiling container
-	if (config->tiling_drag && (mod_pressed || on_titlebar) &&
+	if (config->tiling_drag && (mod_move_btn_pressed || titlebar_left_btn_pressed) &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating_or_child &&
 			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
 		// If moving a container by its title bar, use a threshold for the drag
@@ -498,7 +496,6 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		} else {
 			seatop_begin_move_tiling(seat, cont);
 		}
-
 		return;
 	}
 

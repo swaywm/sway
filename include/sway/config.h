@@ -262,6 +262,7 @@ enum scale_filter_mode {
 
 enum render_bit_depth {
 	RENDER_BIT_DEPTH_DEFAULT, // the default is currently 8
+	RENDER_BIT_DEPTH_6,
 	RENDER_BIT_DEPTH_8,
 	RENDER_BIT_DEPTH_10,
 };
@@ -294,14 +295,6 @@ struct output_config {
 	char *background;
 	char *background_option;
 	char *background_fallback;
-};
-
-/**
- * An output config pre-matched to an output
- */
-struct matched_output_config {
-	struct sway_output *output;
-	struct output_config *config;
 };
 
 /**
@@ -693,13 +686,10 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 
 struct output_config *new_output_config(const char *name);
 
-bool apply_output_configs(struct matched_output_config *configs,
-		size_t configs_len, bool test_only, bool degrade_to_off);
+bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
+		bool test_only, bool degrade_to_off);
 
-void apply_all_output_configs(void);
-
-void sort_output_configs_by_priority(struct matched_output_config *configs,
-		size_t configs_len);
+void apply_stored_output_configs(void);
 
 /**
  * store_output_config stores a new output config. An output may be matched by
@@ -713,6 +703,10 @@ void store_output_config(struct output_config *oc);
 struct output_config *find_output_config(struct sway_output *output);
 
 void free_output_config(struct output_config *oc);
+
+void request_modeset(void);
+void force_modeset(void);
+bool modeset_is_pending(void);
 
 bool spawn_swaybg(void);
 

@@ -648,6 +648,12 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		}
 
 		list_t *res_list = execute_command(buf, NULL, NULL);
+		if (modeset_is_pending()) {
+			// IPC expects commands to have taken immediate effect, so we need
+			// to force a modeset after output commands. We do a single modeset
+			// here to avoid modesetting for every output command in sequence.
+			force_modeset();
+		}
 		transaction_commit_dirty();
 		char *json = cmd_results_to_json(res_list);
 		int length = strlen(json);

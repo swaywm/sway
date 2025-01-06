@@ -349,7 +349,7 @@ void container_arrange_title_bar(struct sway_container *con) {
 			h_padding = width - config->titlebar_h_padding - marks_buffer_width;
 		}
 
-		h_padding = MAX(h_padding, 0);
+		h_padding = MAX(h_padding, config->titlebar_h_padding);
 
 		int alloc_width = MIN((int)node->width,
 			width - h_padding - config->titlebar_h_padding);
@@ -375,7 +375,7 @@ void container_arrange_title_bar(struct sway_container *con) {
 			h_padding = config->titlebar_h_padding;
 		}
 
-		h_padding = MAX(h_padding, 0);
+		h_padding = MAX(h_padding, config->titlebar_h_padding);
 
 		int alloc_width = MIN((int) node->width,
 			width - h_padding - config->titlebar_h_padding);
@@ -508,6 +508,8 @@ void container_destroy(struct sway_container *con) {
 
 	if (con->view && con->view->container == con) {
 		con->view->container = NULL;
+		wl_list_remove(&con->output_enter.link);
+		wl_list_remove(&con->output_leave.link);
 		wlr_scene_node_destroy(&con->output_handler->node);
 		if (con->view->destroying) {
 			view_destroy(con->view);
@@ -714,6 +716,10 @@ size_t parse_title_format(struct sway_container *container, char *buffer) {
 			} else if (strncmp(next, "%shell", 6) == 0) {
 				len += append_prop(buffer, view_get_shell(container->view));
 				format += 6;
+			} else {
+				lenient_strcat(buffer, "%");
+				++format;
+				++len;
 			}
 		} else {
 			lenient_strcat(buffer, "%");

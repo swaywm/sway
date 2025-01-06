@@ -66,8 +66,8 @@ The following commands may only be used in the configuration file.
 *default_orientation* horizontal|vertical|auto
 	Sets the default container layout for tiled containers.
 
-*include* <path>
-	Includes another file from _path_. _path_ can be either a full path or a
+*include* <paths...>
+	Include files from _paths_. _paths_ can include either a full path or a
 	path relative to the parent config, and expands shell syntax (see
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
@@ -106,9 +106,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* none|normal|csd|pixel [<n>]
 	Set border style for focused window. _normal_ includes a border of
 	thickness _n_ and a title bar. _pixel_ is a border without title bar _n_
-	pixels thick. Default is _normal_ with border thickness 2. _csd_ is short
-	for client-side-decorations, which allows the client to draw its own
-	decorations.
+	pixels thick. The title bar always shows in stacking or tabbed layouts.
+	_csd_ is short for client-side-decorations, which allows the client to draw
+	its own decorations. Default is _normal_ with border thickness 2.
 
 *border* toggle
 	Cycles through the available border styles.

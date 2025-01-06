@@ -107,17 +107,16 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	store_output_config(output);
 
-	// If reloading, the output configs will be applied after reading the
-	// entire config and before the deferred commands so that an auto generated
-	// workspace name is not given to re-enabled outputs.
-	if (!config->reloading && !config->validating) {
-		apply_all_output_configs();
-		if (background) {
-			if (!spawn_swaybg()) {
-				return cmd_results_new(CMD_FAILURE,
-					"Failed to apply background configuration");
-			}
-		}
+	if (config->reading) {
+		// When reading the config file, we wait till the end to do a single
+		// modeset and swaybg spawn.
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+	request_modeset();
+
+	if (background && !spawn_swaybg()) {
+		return cmd_results_new(CMD_FAILURE,
+			"Failed to apply background configuration");
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
