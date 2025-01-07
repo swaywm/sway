@@ -159,8 +159,8 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_wait = true;
 	} else if (strcmp(flag, "txn-timings") == 0) {
 		debug.txn_timings = true;
-	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
-		server.txn_timeout_ms = atoi(&flag[12]);
+	} else if (has_prefix(flag, "txn-timeout=")) {
+		server.txn_timeout_ms = atoi(&flag[strlen("txn-timeout=")]);
 	} else if (strcmp(flag, "legacy-wl-drm") == 0) {
 		debug.legacy_wl_drm = true;
 	} else {

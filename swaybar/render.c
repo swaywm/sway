@@ -293,11 +293,11 @@ static uint32_t render_status_block(struct render_context *ctx,
 	}
 
 	double offset = 0;
-	if (strncmp(block->align, "left", 4) == 0) {
+	if (has_prefix(block->align, "left")) {
 		offset = x_pos;
-	} else if (strncmp(block->align, "right", 5) == 0) {
+	} else if (has_prefix(block->align, "right")) {
 		offset = x_pos + width - text_width;
-	} else if (strncmp(block->align, "center", 6) == 0) {
+	} else if (has_prefix(block->align, "center")) {
 		offset = x_pos + (width - text_width) / 2;
 	}
 	double text_y = height / 2.0 - text_height / 2.0;

@@ -300,7 +300,7 @@ struct input_config *store_input_config(struct input_config *ic,
 		return NULL;
 	}
 
-	bool type = strncmp(ic->identifier, "type:", strlen("type:")) == 0;
+	bool type = has_prefix(ic->identifier, "type:");
 	if (type && error && !validate_type_on_existing(ic, error)) {
 		return NULL;
 	}

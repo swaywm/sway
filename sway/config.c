@@ -925,8 +925,8 @@ char *do_var_replacement(char *str) {
 		// Find matching variable
 		for (i = 0; i < config->symbols->length; ++i) {
 			struct sway_variable *var = config->symbols->items[i];
-			int vnlen = strlen(var->name);
-			if (strncmp(find, var->name, vnlen) == 0) {
+			if (has_prefix(find, var->name)) {
+				int vnlen = strlen(var->name);
 				int vvlen = strlen(var->value);
 				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
 				if (!newstr) {

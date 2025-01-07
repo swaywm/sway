@@ -31,9 +31,9 @@ static int handle_lost_service(sd_bus_message *msg,
 		struct swaybar_watcher *watcher = data;
 		for (int idx = 0; idx < watcher->items->length; ++idx) {
 			char *id = watcher->items->items[idx];
-			int cmp_res = using_standard_protocol(watcher) ?
-				cmp_id(id, service) : strncmp(id, service, strlen(service));
-			if (cmp_res == 0) {
+			bool cmp_res = using_standard_protocol(watcher) ?
+				cmp_id(id, service) == 0 : has_prefix(id, service);
+			if (cmp_res) {
 				sway_log(SWAY_DEBUG, "Unregistering Status Notifier Item '%s'", id);
 				list_del(watcher->items, idx--);
 				sd_bus_emit_signal(watcher->bus, obj_path, watcher->interface,
