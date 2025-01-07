@@ -398,7 +398,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
 		// Check for group
-		if (has_prefix(split->items[i], "Group") == 0) {
+		if (has_prefix(split->items[i], "Group")) {
 			if (binding->group != XKB_LAYOUT_INVALID) {
 				free_sway_binding(binding);
 				list_free_items_and_destroy(split);
