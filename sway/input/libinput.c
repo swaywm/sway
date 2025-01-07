@@ -417,13 +417,9 @@ bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
 		return false;
 	}
 
-	const char prefix_platform[] = "platform-";
-	if (strncmp(id_path, prefix_platform, strlen(prefix_platform)) == 0) {
+	if (has_prefix(id_path, "platform-")) {
 		return true;
 	}
 
-	const char prefix_pci[] = "pci-";
-	const char infix_platform[] = "-platform-";
-	return (strncmp(id_path, prefix_pci, strlen(prefix_pci)) == 0) &&
-		strstr(id_path, infix_platform);
+	return has_prefix(id_path, "pci-") && strstr(id_path, "-platform-");
 }

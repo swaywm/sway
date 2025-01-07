@@ -367,8 +367,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			}
 		} else if (strcmp("--exclude-titlebar", argv[0]) == 0) {
 			exclude_titlebar = true;
-		} else if (strncmp("--input-device=", argv[0],
-					strlen("--input-device=")) == 0) {
+		} else if (has_prefix("--input-device=", argv[0])) {
 			free(binding->input);
 			binding->input = strdup(argv[0] + strlen("--input-device="));
 			strip_quotes(binding->input);
@@ -399,7 +398,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
 		// Check for group
-		if (strncmp(split->items[i], "Group", strlen("Group")) == 0) {
+		if (has_prefix(split->items[i], "Group") == 0) {
 			if (binding->group != XKB_LAYOUT_INVALID) {
 				free_sway_binding(binding);
 				list_free_items_and_destroy(split);

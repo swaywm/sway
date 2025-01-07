@@ -1212,7 +1212,7 @@ uint32_t get_mouse_bindsym(const char *name, char **error) {
 			SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
 			SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
 		return buttons[number - 1];
-	} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
+	} else if (has_prefix(name, "BTN_")) {
 		// Get event code from name
 		int code = libevdev_event_code_from_name(EV_KEY, name);
 		if (code == -1) {
@@ -1237,7 +1237,7 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 		return 0;
 	}
 	const char *event = libevdev_event_code_get_name(EV_KEY, code);
-	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
+	if (!event || !has_prefix(event, "BTN_")) {
 		*error = format_str("Event code %d (%s) is not a button",
 			code, event ? event : "(null)");
 		return 0;

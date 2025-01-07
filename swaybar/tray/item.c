@@ -15,6 +15,7 @@
 #include "cairo_util.h"
 #include "list.h"
 #include "log.h"
+#include "stringop.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 // TODO menu
@@ -161,7 +162,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 	}
 
 	if (strcmp(prop, "Status") == 0 || (sni->status && (sni->status[0] == 'N' ?
-				prop[0] == 'A' : strncmp(prop, "Icon", 4) == 0))) {
+				prop[0] == 'A' : has_prefix(prop, "Icon")))) {
 		set_sni_dirty(sni);
 	}
 cleanup:
@@ -364,7 +365,7 @@ static void handle_click(struct swaybar_sni *sni, int x, int y,
 		method = "ContextMenu";
 	}
 
-	if (strncmp(method, "Scroll", strlen("Scroll")) == 0) {
+	if (has_prefix(method, "Scroll")) {
 		char dir = method[strlen("Scroll")];
 		char *orientation = (dir == 'U' || dir == 'D') ? "vertical" : "horizontal";
 		int sign = (dir == 'U' || dir == 'L') ? -1 : 1;

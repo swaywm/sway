@@ -696,26 +696,26 @@ size_t parse_title_format(struct sway_container *container, char *buffer) {
 		len += next - format;
 		format = next;
 
-		if (strncmp(next, "%title", 6) == 0) {
+		if (has_prefix(next, "%title")) {
 			if (container->view) {
 				len += append_prop(buffer, view_get_title(container->view));
 			} else {
 				len += container_build_representation(container->pending.layout, container->pending.children, buffer);
 			}
-			format += 6;
+			format += strlen("%title");
 		} else if (container->view) {
-			if (strncmp(next, "%app_id", 7) == 0) {
+			if (has_prefix(next, "%app_id")) {
 				len += append_prop(buffer, view_get_app_id(container->view));
-				format += 7;
-			} else if (strncmp(next, "%class", 6) == 0) {
+				format += strlen("%app_id");
+			} else if (has_prefix(next, "%class")) {
 				len += append_prop(buffer, view_get_class(container->view));
-				format += 6;
-			} else if (strncmp(next, "%instance", 9) == 0) {
+				format += strlen("%class");
+			} else if (has_prefix(next, "%instance")) {
 				len += append_prop(buffer, view_get_instance(container->view));
-				format += 9;
-			} else if (strncmp(next, "%shell", 6) == 0) {
+				format += strlen("%instance");
+			} else if (has_prefix(next, "%shell")) {
 				len += append_prop(buffer, view_get_shell(container->view));
-				format += 6;
+				format += strlen("%shell");
 			} else {
 				lenient_strcat(buffer, "%");
 				++format;
@@ -778,7 +778,7 @@ size_t container_build_representation(enum sway_container_layout layout,
 			len += strlen(identifier);
 			lenient_strcat(buffer, identifier);
 		} else {
-			len += 6;
+			len += strlen("(null)");
 			lenient_strcat(buffer, "(null)");
 		}
 	}
