@@ -40,4 +40,6 @@ bool expand_path(char **path);
 char *vformat_str(const char *fmt, va_list args) _SWAY_ATTRIB_PRINTF(1, 0);
 char *format_str(const char *fmt, ...) _SWAY_ATTRIB_PRINTF(1, 2);
 
+bool has_prefix(const char *str, const char *prefix);
+
 #endif
