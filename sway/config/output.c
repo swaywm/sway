@@ -783,7 +783,8 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 		if (needed_bits < format_bits) {
 			continue;
 		}
-		if (!wlr_drm_format_set_get(primary_formats, fmts[idx])) {
+		// If primary_formats is NULL, all formats are supported
+		if (primary_formats && !wlr_drm_format_set_get(primary_formats, fmts[idx])) {
 			// This is not a supported format for this output
 			continue;
 		}
