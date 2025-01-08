@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <wlr/config.h>
+#include <wlr/render/allocator.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -773,7 +774,7 @@ static bool search_render_format(struct search_context *ctx, size_t output_idx) 
 	}
 
 	const struct wlr_drm_format_set *primary_formats =
-		wlr_output_get_primary_formats(wlr_output, WLR_BUFFER_CAP_DMABUF);
+		wlr_output_get_primary_formats(wlr_output, server.allocator->buffer_caps);
 	enum render_bit_depth needed_bits = RENDER_BIT_DEPTH_8;
 	if (cfg->config && cfg->config->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		needed_bits = cfg->config->render_bit_depth;
