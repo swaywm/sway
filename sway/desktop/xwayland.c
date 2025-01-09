@@ -71,7 +71,7 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 		surface->set_geometry.notify = unmanaged_handle_set_geometry;
 	}
 
-	if (wlr_xwayland_or_surface_wants_focus(xsurface)) {
+	if (wlr_xwayland_surface_override_redirect_wants_focus(xsurface)) {
 		struct sway_seat *seat = input_manager_current_seat();
 		struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
@@ -96,7 +96,7 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 		// This simply returns focus to the parent surface if there's one available.
 		// This seems to handle JetBrains issues.
 		if (xsurface->parent && xsurface->parent->surface
-				&& wlr_xwayland_or_surface_wants_focus(xsurface->parent)) {
+				&& wlr_xwayland_surface_override_redirect_wants_focus(xsurface->parent)) {
 			seat_set_focus_surface(seat, xsurface->parent->surface, false);
 			return;
 		}
@@ -289,7 +289,6 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 
 	wlr_xwayland_surface_activate(surface, activated);
-	wlr_xwayland_surface_restack(surface, NULL, XCB_STACK_MODE_ABOVE);
 }
 
 static void set_tiled(struct sway_view *view, bool tiled) {
@@ -297,7 +296,7 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 		return;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
-	wlr_xwayland_surface_set_maximized(surface, tiled);
+	wlr_xwayland_surface_set_maximized(surface, tiled, tiled);
 }
 
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {

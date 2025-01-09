@@ -57,6 +57,7 @@ which you may only select one. *[...]* is used for optional arguments, and
 This section only lists general commands. For input and output commands, refer
 to *sway-input*(5) and *sway-output*(5).
 
+## Config only commands
 The following commands may only be used in the configuration file.
 
 *bar* [<bar-id>] <bar-subcommands...>
@@ -65,8 +66,8 @@ The following commands may only be used in the configuration file.
 *default_orientation* horizontal|vertical|auto
 	Sets the default container layout for tiled containers.
 
-*include* <path>
-	Includes another file from _path_. _path_ can be either a full path or a
+*include* <paths...>
+	Include files from _paths_. _paths_ can include either a full path or a
 	path relative to the parent config, and expands shell syntax (see
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
@@ -98,15 +99,16 @@ The following commands may only be used in the configuration file.
 	machines, it may be desirable to have Xwayland started immediately by
 	using _force_ instead of _enable_.
 
+## Runtime only commands
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 
 *border* none|normal|csd|pixel [<n>]
 	Set border style for focused window. _normal_ includes a border of
 	thickness _n_ and a title bar. _pixel_ is a border without title bar _n_
-	pixels thick. Default is _normal_ with border thickness 2. _csd_ is short
-	for client-side-decorations, which allows the client to draw its own
-	decorations.
+	pixels thick. The title bar always shows in stacking or tabbed layouts.
+	_csd_ is short for client-side-decorations, which allows the client to draw
+	its own decorations. Default is _normal_ with border thickness 2.
 
 *border* toggle
 	Cycles through the available border styles.
@@ -214,6 +216,20 @@ set|plus|minus|toggle <amount>
 	This setting only has an effect if a per-output *max_render_time* is in
 	effect on the output the window is currently on. See *sway-output*(5) for
 	further details.
+
+*allow_tearing* yes|no
+	Allows or disallows screen tearing as a result of immediate page flips
+	for a fullscreen application.
+
+	When this option is not set, the tearing hints provided by the application
+	determine whether tearing is allowed. When _yes_ is specified,
+	the application allows tearing regardless of the tearing hints.
+	When _no_ is specified, tearing will never be allowed on the application,
+	regardless of the tearing hints.
+
+	This setting only has an effect if tearing is allowed on the output through
+	the per-output *allow_tearing* setting. See *sway-output*(5) 
+	for further details.
 
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. The optional _px_
@@ -371,6 +387,7 @@ set|plus|minus|toggle <amount>
 
 	The default format is "%title".
 
+## Config or runtime commands
 The following commands may be used either in the configuration file or at
 runtime.
 

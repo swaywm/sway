@@ -424,13 +424,14 @@ static void arrange_container(struct sway_container *con,
 		int border_bottom = con->current.border_bottom ? border_width : 0;
 		int border_left = con->current.border_left ? border_width : 0;
 		int border_right = con->current.border_right ? border_width : 0;
+		int vert_border_height = MAX(0, height - border_top - border_bottom);
 
 		wlr_scene_rect_set_size(con->border.top, width, border_top);
 		wlr_scene_rect_set_size(con->border.bottom, width, border_bottom);
 		wlr_scene_rect_set_size(con->border.left,
-			border_left, height - border_top - border_bottom);
+			border_left, vert_border_height);
 		wlr_scene_rect_set_size(con->border.right,
-			border_right, height - border_top - border_bottom);
+			border_right, vert_border_height);
 
 		wlr_scene_node_set_position(&con->border.top->node, 0, 0);
 		wlr_scene_node_set_position(&con->border.bottom->node,
@@ -559,7 +560,7 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 	for (int i = 0; i < output->current.workspaces->length; i++) {
 		struct sway_workspace *child = output->current.workspaces->items[i];
 
-		bool activated = output->current.active_workspace == child;
+		bool activated = output->current.active_workspace == child && output->wlr_output->enabled;
 
 		wlr_scene_node_reparent(&child->layers.tiling->node, output->layers.tiling);
 		wlr_scene_node_reparent(&child->layers.fullscreen->node, output->layers.fullscreen);
@@ -612,9 +613,11 @@ void arrange_popups(struct wlr_scene_tree *popups) {
 		struct sway_popup_desc *popup = scene_descriptor_try_get(node,
 			SWAY_SCENE_DESC_POPUP);
 
-		int lx, ly;
-		wlr_scene_node_coords(popup->relative, &lx, &ly);
-		wlr_scene_node_set_position(node, lx, ly);
+		if (popup) {
+			int lx, ly;
+			wlr_scene_node_coords(popup->relative, &lx, &ly);
+			wlr_scene_node_set_position(node, lx, ly);
+		}
 	}
 }
 
@@ -631,6 +634,15 @@ static void arrange_root(struct sway_root *root) {
 	// hide all contents in the scratchpad
 	for (int i = 0; i < root->scratchpad->length; i++) {
 		struct sway_container *con = root->scratchpad->items[i];
+
+		// When a container is moved to a scratchpad, it's possible that it
+		// was moved into a floating container as part of the same transaction.
+		// In this case, we need to make sure we reparent all the container's
+		// children so that disabling the container will disable all descendants.
+		if (!con->view) for (int ii = 0; ii < con->current.children->length; ii++) {
+			struct sway_container *child = con->current.children->items[ii];
+			wlr_scene_node_reparent(&child->scene_tree->node, con->content_tree);
+		}
 
 		wlr_scene_node_set_enabled(&con->scene_tree->node, false);
 	}

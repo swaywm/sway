@@ -3,7 +3,7 @@ project(
 	'c',
 	version: '1.10-dev',
 	license: 'MIT',
-	meson_version: '>=0.60.0',
+	meson_version: '>=1.3',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -109,11 +109,9 @@ conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
-conf_data.set10('HAVE_LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', cc.has_header_symbol(
-	'libinput.h',
-	'LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM',
-	dependencies: libinput,
-))
+foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY']
+	conf_data.set10('HAVE_' + sym, cc.has_header_symbol('libinput.h', sym, dependencies: libinput))
+endforeach
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
@@ -160,8 +158,8 @@ add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir
 version = '"@0@"'.format(meson.project_version())
 git = find_program('git', native: true, required: false)
 if git.found()
-	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'], check: false)
-	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'], check: false)
+	git_commit = run_command([git, '--git-dir=.git', 'rev-parse', '--short', 'HEAD'], check: false)
+	git_branch = run_command([git, '--git-dir=.git', 'rev-parse', '--abbrev-ref', 'HEAD'], check: false)
 	if git_commit.returncode() == 0 and git_branch.returncode() == 0
 		version = '"@0@-@1@ (" __DATE__ ", branch \'@2@\')"'.format(
 			meson.project_version(),
@@ -172,31 +170,10 @@ if git.found()
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
-# Compute the relative path used by compiler invocations.
-source_root = meson.current_source_dir().split('/')
-build_root = meson.global_build_root().split('/')
-relative_dir_parts = []
-i = 0
-in_prefix = true
-foreach p : build_root
-	if i >= source_root.length() or not in_prefix or p != source_root[i]
-		in_prefix = false
-		relative_dir_parts += '..'
-	endif
-	i += 1
-endforeach
-i = 0
-in_prefix = true
-foreach p : source_root
-	if i >= build_root.length() or not in_prefix or build_root[i] != p
-		in_prefix = false
-		relative_dir_parts += p
-	endif
-	i += 1
-endforeach
-relative_dir = join_paths(relative_dir_parts) + '/'
+fs = import('fs')
 
 # Strip relative path prefixes from the code if possible, otherwise hide them.
+relative_dir = fs.relative_to(meson.current_source_dir(), meson.global_build_root()) + '/'
 if cc.has_argument('-fmacro-prefix-map=/prefix/to/hide=')
 	add_project_arguments(
 		'-fmacro-prefix-map=@0@='.format(relative_dir),

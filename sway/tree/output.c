@@ -180,12 +180,7 @@ void output_enable(struct sway_output *output) {
 		ws->layout = output_get_default_layout(output);
 	}
 
-	input_manager_configure_xcursor();
-
 	wl_signal_emit_mutable(&root->events.new_node, &output->node);
-
-	arrange_layers(output);
-	arrange_root();
 }
 
 static void evacuate_sticky(struct sway_workspace *old_ws,
@@ -278,7 +273,6 @@ void output_destroy(struct sway_output *output) {
 	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
-	wl_event_source_remove(output->repaint_timer);
 	wlr_color_transform_unref(output->color_transform);
 	free(output);
 }
@@ -300,13 +294,6 @@ void output_disable(struct sway_output *output) {
 	list_del(root->outputs, index);
 
 	output->enabled = false;
-
-	arrange_root();
-
-	// Reconfigure all devices, since devices with map_to_output directives for
-	// an output that goes offline should stop sending events as long as the
-	// output remains offline.
-	input_manager_configure_all_input_mappings();
 }
 
 void output_begin_destroy(struct sway_output *output) {

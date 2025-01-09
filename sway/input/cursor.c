@@ -560,7 +560,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	//   tablet events until the drag is released, even if we are now over a
 	//   non-tablet surface.
 	if (!cursor->simulating_pointer_from_tool_tip &&
-			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
+			((surface && wlr_surface_accepts_tablet_v2(surface, tablet->tablet_v2)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
 		seatop_tablet_tool_motion(seat, tool, time_msec);
 	} else {
@@ -646,7 +646,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		dispatch_cursor_button(cursor, &event->tablet->base, event->time_msec,
 			BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-	} else if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+	} else if (!surface || !wlr_surface_accepts_tablet_v2(surface, tablet_v2)) {
 		// If we started holding the tool tip down on a surface that accepts
 		// tablet v2, we should notify that surface if it gets released over a
 		// surface that doesn't support v2.
@@ -731,7 +731,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	bool mod_pressed = modifiers & config->floating_mod;
 
 	bool surface_supports_tablet_events =
-		surface && wlr_surface_accepts_tablet_v2(tablet_v2, surface);
+		surface && wlr_surface_accepts_tablet_v2(surface, tablet_v2);
 
 	// Simulate pointer when:
 	// 1. The modifier key is pressed, OR
@@ -1194,7 +1194,7 @@ uint32_t get_mouse_bindsym(const char *name, char **error) {
 			SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
 			SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
 		return buttons[number - 1];
-	} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
+	} else if (has_prefix(name, "BTN_")) {
 		// Get event code from name
 		int code = libevdev_event_code_from_name(EV_KEY, name);
 		if (code == -1) {
@@ -1219,7 +1219,7 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 		return 0;
 	}
 	const char *event = libevdev_event_code_get_name(EV_KEY, code);
-	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
+	if (!event || !has_prefix(event, "BTN_")) {
 		*error = format_str("Event code %d (%s) is not a button",
 			code, event ? event : "(null)");
 		return 0;

@@ -647,10 +647,6 @@ static void seat_reset_input_config(struct sway_seat *seat,
 		sway_device->input_device->wlr_device, NULL);
 }
 
-static bool has_prefix(const char *str, const char *prefix) {
-	return strncmp(str, prefix, strlen(prefix)) == 0;
-}
-
 /**
  * Get the name of the built-in output, if any. Returns NULL if there isn't
  * exactly one built-in output.
@@ -1090,6 +1086,7 @@ static void seat_send_unfocus(struct sway_node *node, struct sway_seat *seat) {
 static int handle_urgent_timeout(void *data) {
 	struct sway_view *view = data;
 	view_set_urgent(view, false);
+	container_update_itself_and_parents(view->container);
 	return 0;
 }
 

@@ -1174,7 +1174,8 @@ following properties will be included for devices that support them:
 :  Whether tap-and-drag is enabled. It can be _enabled_ or _disabled_
 |- tap_drag_lock
 :  string
-:  Whether drag-lock is enabled. It can be _enabled_ or _disabled_
+:  Whether drag-lock is enabled. It can be _enabled_, _disabled_ or
+   _enabled_sticky_
 |- accel_speed
 :  double
 :  The pointer-acceleration in use

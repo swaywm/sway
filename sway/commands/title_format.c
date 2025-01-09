@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -11,16 +12,19 @@ struct cmd_results *cmd_title_format(int argc, char **argv) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;
-	if (!container || !container->view) {
+	if (!container) {
 		return cmd_results_new(CMD_INVALID,
-				"Only views can have a title_format");
+						 "Only valid containers can have a title_format");
 	}
-	struct sway_view *view = container->view;
 	char *format = join_args(argv, argc);
-	if (view->title_format) {
-		free(view->title_format);
+	if (container->title_format) {
+		free(container->title_format);
 	}
-	view->title_format = format;
-	view_update_title(view, true);
+	container->title_format = format;
+	if (container->view) {
+		view_update_title(container->view, true);
+	} else {
+		container_update_representation(container);
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

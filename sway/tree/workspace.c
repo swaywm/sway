@@ -246,7 +246,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 		}
 
 		// If the command is workspace number <name>, isolate the name
-		if (strncmp(_target, "number ", strlen("number ")) == 0) {
+		if (has_prefix(_target, "number ")) {
 			size_t length = strlen(_target) - strlen("number ") + 1;
 			char *temp = malloc(length);
 			strncpy(temp, _target + strlen("number "), length - 1);

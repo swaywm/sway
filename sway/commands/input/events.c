@@ -86,7 +86,7 @@ static void toggle_select_send_events_for_device(struct input_config *ic,
 static void toggle_send_events(int argc, char **argv) {
 	struct input_config *ic = config->handler_context.input_config;
 	bool wildcard = strcmp(ic->identifier, "*") == 0;
-	const char *type = strncmp(ic->identifier, "type:", strlen("type:")) == 0
+	const char *type = has_prefix(ic->identifier, "type:")
 		? ic->identifier + strlen("type:") : NULL;
 	struct sway_input_device *device = NULL;
 	wl_list_for_each(device, &server.input->devices, link) {
@@ -146,8 +146,7 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 
 		toggle_send_events(argc - 1, argv + 1);
 
-		if (strcmp(ic->identifier, "*") == 0 ||
-				strncmp(ic->identifier, "type:", strlen("type:")) == 0) {
+		if (strcmp(ic->identifier, "*") == 0 || has_prefix(ic->identifier, "type:")) {
 			// Update the device input configs and then reset the type/wildcard
 			// config send events mode so that is does not override the device
 			// ones. The device ones will be applied when attempting to apply
