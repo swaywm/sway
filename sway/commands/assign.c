@@ -23,7 +23,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 
 	--argc; ++argv;
 
-	if (strncmp(*argv, "→", strlen("→")) == 0) {
+	if (has_prefix(*argv, "→")) {
 		if (argc < 2) {
 			free(criteria);
 			return cmd_results_new(CMD_INVALID, "Missing workspace");

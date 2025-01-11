@@ -9,6 +9,7 @@
 #include <wlr/config.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
@@ -69,6 +70,7 @@
 #define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
+#define SWAY_PRESENTATION_VERSION 2
 
 bool allow_unsupported_gpu = false;
 
@@ -204,8 +206,8 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 
 	wlr_compositor_set_renderer(server->compositor, renderer);
 
-	for (int i = 0; i < root->outputs->length; ++i) {
-		struct sway_output *output = root->outputs->items[i];
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
 		wlr_output_init_render(output->wlr_output,
 			server->allocator, server->renderer);
 	}
@@ -250,7 +252,8 @@ bool server_init(struct sway_server *server) {
 		}
 	}
 	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
-			server->renderer->features.timeline) {
+			server->renderer->features.timeline &&
+			server->backend->features.timeline) {
 		wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
 			wlr_renderer_get_drm_fd(server->renderer));
 	}
@@ -272,15 +275,11 @@ bool server_init(struct sway_server *server) {
 
 	server->gamma_control_manager_v1 =
 		wlr_gamma_control_manager_v1_create(server->wl_display);
-	server->gamma_control_set_gamma.notify = handle_gamma_control_set_gamma;
-	wl_signal_add(&server->gamma_control_manager_v1->events.set_gamma,
-		&server->gamma_control_set_gamma);
+	wlr_scene_set_gamma_control_manager_v1(root->root_scene,
+		server->gamma_control_manager_v1);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
-	server->output_layout_change.notify = handle_output_layout_change;
-	wl_signal_add(&root->output_layout->events.change,
-		&server->output_layout_change);
 
 	server->xdg_output_manager_v1 =
 		wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
@@ -329,7 +328,8 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->pointer_constraints->events.new_constraint,
 		&server->pointer_constraint);
 
-	wlr_presentation_create(server->wl_display, server->backend);
+	wlr_presentation_create(server->wl_display, server->backend, SWAY_PRESENTATION_VERSION);
+	wlr_alpha_modifier_v1_create(server->wl_display);
 
 	server->output_manager_v1 =
 		wlr_output_manager_v1_create(server->wl_display);

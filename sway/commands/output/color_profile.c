@@ -5,6 +5,7 @@
 #include <wlr/render/color.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "stringop.h"
 
 static bool read_file_into_buf(const char *path, void **buf, size_t *size) {
 	/* Why not use fopen/fread directly? glibc will succesfully open directories,
@@ -70,12 +71,23 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID,
 				"Invalid color profile specification: icc type requires a file");
 		}
+
+		char *icc_path = strdup(argv[1]);
+		if (!expand_path(&icc_path)) {
+			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID,
+				"Invalid color profile specification: invalid file path");
+			free(icc_path);
+			return cmd_res;
+		}
+
 		void *data = NULL;
 		size_t size = 0;
-		if (!read_file_into_buf(argv[1], &data, &size)) {
+		if (!read_file_into_buf(icc_path, &data, &size)) {
+			free(icc_path);
 			return cmd_results_new(CMD_FAILURE,
 				"Failed to load color profile: could not read ICC file");
 		}
+		free(icc_path);
 
 		struct wlr_color_transform *tmp =
 			wlr_color_transform_init_linear_to_icc(data, size);

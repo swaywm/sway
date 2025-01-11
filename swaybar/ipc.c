@@ -15,6 +15,7 @@
 #include "list.h"
 #include "log.h"
 #include "loop.h"
+#include "stringop.h"
 #include "util.h"
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
@@ -45,8 +46,8 @@ void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 
 char *parse_font(const char *font) {
 	char *new_font = NULL;
-	if (strncmp("pango:", font, 6) == 0) {
-		font += 6;
+	if (has_prefix("pango:", font)) {
+		font += strlen("pango:");
 	}
 	new_font = strdup(font);
 	return new_font;
@@ -518,8 +519,7 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 #if HAVE_TRAY
 	if (oldcfg->tray_hidden && !newcfg->tray_hidden) {
 		bar->tray = create_tray(bar);
-		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in,
-				bar->tray->bus);
+		loop_add_fd(bar->eventloop, bar->tray->fd, POLLIN, tray_in, bar);
 	} else if (bar->tray && newcfg->tray_hidden) {
 		loop_remove_fd(bar->eventloop, bar->tray->fd);
 		destroy_tray(bar->tray);

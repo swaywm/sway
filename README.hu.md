@@ -1,10 +1,10 @@
 # sway
 
-A Sway egy [i3]-kompatibilis [Wayland] kompozitor. Olvasd el a [Gyarkan Ismételt Kérdéseket][FAQ]. Csatlakozz az [IRC csatornához][IRC channel] \(`#sway` az `irc.libera.chat`-en).
+A Sway egy [i3]-kompatibilis [Wayland]-kompozitor. Olvasd el a [Gyarkan Ismételt Kérdéseket][FAQ]. Csatlakozz az [IRC-csatornához][IRC channel] \(`#sway` az `irc.libera.chat`-en).
 
-## Csomag aláírások
+## Csomagaláírások
 
-A kiadott csomagok az [E88F5E48] kulccsal vannak aláírva és [GitHub-on][GitHub releases] publikálva.
+A kiadott csomagok az [E88F5E48] kulccsal vannak aláírva, és [GitHubon][GitHub releases] publikálva.
 
 ## Telepítés
 
@@ -13,12 +13,12 @@ A kiadott csomagok az [E88F5E48] kulccsal vannak aláírva és [GitHub-on][GitHu
 A Sway sok disztribúció csomagkezelőjéből elérhető, próbáld meg a "sway"
 csomagot telepíteni az általad használt eszközzel.
 
-Ha szeretnél csomagot készíteni a saját disztribúciódhoz, ugorj be az IRC
+Ha szeretnél csomagot készíteni a saját disztribúciódhoz, ugorj be az IRC-
 csatornára, vagy küldj levelet a sir@cmpwn.com címre tanácsokért.
 
 ### Fordítás forráskódból
 
-Olvasd el [ezt a wiki oldalt][Development setup], ha szeretnéd tesztelési vagy
+Olvasd el [ezt a wikioldalt][Development setup], ha szeretnéd tesztelési vagy
 fejlesztési célokból lefordítani az aktuális (HEAD) állapotát a `sway`-nek és a
 `wlroots`-nak.
 
@@ -46,7 +46,7 @@ Futtasd ezeket a parancsokat:
 
 ## Konfiguráció
 
-Ha előzőleg i3-mat használtál, akkor átmásolhatod az i3 beállításaidat a
+Ha előzőleg i3-at használtál, akkor átmásolhatod az i3-beállításaidat a
 `~/.config/sway/config` file-ba és ugyanúgy működni fognak. Egyéb esetben másold
 le kiindulási alapnak a mintát, ami általában az `etc/sway/config` elérési
 útvonalon található.
@@ -55,7 +55,7 @@ kapcsolatban.
 
 ## Futtatás
 
-Futtasd a `sway` parancsot egy TTY felületről. Néhány bejelentkezéskezelő
+Futtasd a `sway` parancsot egy TTY-felületről. Néhány bejelentkezéskezelő
 (display manager) működhet, de alapvetően nem támogatottak a sway által. (A
 gdm-ről ismeretes, hogy egész jól működik.)
 

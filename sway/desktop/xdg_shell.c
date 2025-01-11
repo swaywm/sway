@@ -299,18 +299,17 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct wlr_box new_geo;
-	wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
-	bool new_size = new_geo.width != view->geometry.width ||
-			new_geo.height != view->geometry.height ||
-			new_geo.x != view->geometry.x ||
-			new_geo.y != view->geometry.y;
+	struct wlr_box *new_geo = &xdg_surface->geometry;
+	bool new_size = new_geo->width != view->geometry.width ||
+			new_geo->height != view->geometry.height ||
+			new_geo->x != view->geometry.x ||
+			new_geo->y != view->geometry.y;
 
 	if (new_size) {
 		// The client changed its surface size in this commit. For floating
 		// containers, we resize the container to match. For tiling containers,
 		// we only recenter the surface.
-		memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		memcpy(&view->geometry, new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
 			view_update_size(view);
 			// Only set the toplevel size the current container actually has a size.
@@ -463,12 +462,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_toplevel;
 
-	view->natural_width = toplevel->base->current.geometry.width;
-	view->natural_height = toplevel->base->current.geometry.height;
-	if (!view->natural_width && !view->natural_height) {
-		view->natural_width = toplevel->base->surface->current.width;
-		view->natural_height = toplevel->base->surface->current.height;
-	}
+	view->natural_width = toplevel->base->geometry.width;
+	view->natural_height = toplevel->base->geometry.height;
 
 	bool csd = false;
 
