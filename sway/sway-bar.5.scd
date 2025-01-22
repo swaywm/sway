@@ -222,6 +222,10 @@ must be defined in hex: _#RRGGBB_ or _#RRGGBBAA_.
 	Border, background and text color for a workspace button when the workspace
 	contains a window with the urgency hint set.
 
+*empty_workspace* <border> <background> <text>
+	Border, background and text color for a workspace button when the workspace
+	contains no windows and is not active.
+
 *binding_mode* <border> <background> <text>
 	Border, background and text color for the binding mode indicator. If not used,
 	the colors will be taken from _urgent_workspace_.

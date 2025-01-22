@@ -89,6 +89,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	ws->floating = create_list();
 	ws->tiling = create_list();
 	ws->output_priority = create_list();
+	ws->persistent = false;
 
 	ws->gaps_outer = config->gaps_outer;
 	ws->gaps_inner = config->gaps_inner;
@@ -185,6 +186,11 @@ void workspace_consider_destroy(struct sway_workspace *ws) {
 		if (node == &ws->node) {
 			return;
 		}
+	}
+
+	if (ws->persistent) {
+		ipc_event_workspace(NULL, ws, "empty");
+		return;
 	}
 
 	workspace_begin_destroy(ws);
