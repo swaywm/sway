@@ -521,6 +521,21 @@ void ipc_event_output(void) {
 	json_object_put(json);
 }
 
+void ipc_event_cursor_movement(double x, double y) {
+    if (!ipc_has_event_listeners(IPC_EVENT_CURSOR_MOVEMENT)) {
+        return;
+    }
+    sway_log(SWAY_DEBUG, "Sending cursor_movement event: x=%f, y=%f", x, y);
+
+    json_object *obj = json_object_new_object();
+    json_object_object_add(obj, "x", json_object_new_double(x));
+    json_object_object_add(obj, "y", json_object_new_double(y));
+
+    const char *json_string = json_object_to_json_string(obj);
+    ipc_send_event(json_string, IPC_EVENT_CURSOR_MOVEMENT);
+    json_object_put(obj);
+}
+
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
@@ -761,6 +776,8 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 			} else if (strcmp(event_type, "tick") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_TICK);
 				is_tick = true;
+			} else if (strcmp(event_type, "cursor_movement") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_CURSOR_MOVEMENT);
 			} else if (strcmp(event_type, "input") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_INPUT);
 			} else {
