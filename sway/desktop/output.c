@@ -10,7 +10,6 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
-#include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
