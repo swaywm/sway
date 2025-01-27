@@ -604,6 +604,25 @@ struct sway_container *container_find_child(struct sway_container *container,
 	return NULL;
 }
 
+struct sway_container *container_get_first_view(struct sway_container *container) {
+	if (container->view) {
+	    return container;
+	}
+
+	if (container->pending.children)  {
+		for (int i = 0; i < container->pending.children->length; ++i) {
+			struct sway_container *child = container->pending.children->items[i];
+			struct sway_container *view = container_get_first_view(child);
+
+			if (view) {
+			    return view;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
