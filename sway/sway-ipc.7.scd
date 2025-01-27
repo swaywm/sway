@@ -244,6 +244,9 @@ following properties:
 |- rect
 :  object
 :  The bounds for the output consisting of _x_, _y_, _width_, and _height_
+|- hdr
+:  boolean
+:  Whether HDR is enabled
 
 
 *Example Reply:*
