@@ -210,6 +210,17 @@ must be separated by one space. For example:
 
 	This setting only has effect when a window is fullscreen on the output.
 
+*output* <name> hdr on|off|toggle
+	Enables or disables HDR (High Dynamic Range). HDR enables a larger color
+	gamut and brightness range. HDR uses the BT2020 primaries and the PQ
+	transfer function.
+
+	When HDR is enabled, _render_bit_depth_ is implicitly set to 10 unless
+	explicitly configured. Using a lower render bit depth may result in color
+	banding artifacts.
+
+	HDR needs to be supported by the output and renderer to be enabled.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)
