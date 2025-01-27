@@ -47,7 +47,7 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 		swaynag->run_display = false;
 	} else if (button->type == SWAYNAG_ACTION_EXPAND) {
 		swaynag->details.visible = !swaynag->details.visible;
-		render_frame(swaynag);
+		swaynag->needs_redraw = true;
 	} else {
 		pid_t pid = fork();
 		if (pid < 0) {
@@ -98,7 +98,7 @@ static void layer_surface_configure(void *data,
 	swaynag->width = width;
 	swaynag->height = height;
 	zwlr_layer_surface_v1_ack_configure(surface, serial);
-	render_frame(swaynag);
+	swaynag->needs_redraw = true;
 }
 
 static void layer_surface_closed(void *data,
@@ -122,7 +122,7 @@ static void surface_enter(void *data, struct wl_surface *surface,
 					swaynag_output->name);
 			swaynag->output = swaynag_output;
 			swaynag->scale = swaynag->output->scale;
-			render_frame(swaynag);
+			swaynag->needs_redraw = true;
 			break;
 		}
 	};
@@ -244,7 +244,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 				&& y < button_up.y + button_up.height
 				&& swaynag->details.offset > 0) {
 			swaynag->details.offset--;
-			render_frame(swaynag);
+			swaynag->needs_redraw = true;
 			return;
 		}
 
@@ -257,7 +257,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 				&& y < button_down.y + button_down.height
 				&& swaynag->details.offset < bot) {
 			swaynag->details.offset++;
-			render_frame(swaynag);
+			swaynag->needs_redraw = true;
 			return;
 		}
 	}
@@ -284,7 +284,7 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		swaynag->details.offset++;
 	}
 
-	render_frame(swaynag);
+	swaynag->needs_redraw = true;
 }
 
 static const struct wl_pointer_listener pointer_listener = {
@@ -327,7 +327,7 @@ static void output_scale(void *data, struct wl_output *output,
 		if (!swaynag_output->swaynag->cursor_shape_manager) {
 			update_all_cursors(swaynag_output->swaynag);
 		}
-		render_frame(swaynag_output->swaynag);
+		swaynag_output->swaynag->needs_redraw = true;
 	}
 }
 
@@ -503,9 +503,11 @@ void swaynag_setup(struct swaynag *swaynag) {
 void swaynag_run(struct swaynag *swaynag) {
 	swaynag->run_display = true;
 	render_frame(swaynag);
-	while (swaynag->run_display
-			&& wl_display_dispatch(swaynag->display) != -1) {
-		// This is intentionally left blank
+	while (wl_display_dispatch(swaynag->display) != -1
+			&& swaynag->run_display) {
+		if (swaynag->needs_redraw) {
+			render_frame(swaynag);
+		}
 	}
 }
 
