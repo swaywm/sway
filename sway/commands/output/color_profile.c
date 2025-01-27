@@ -90,7 +90,7 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 		free(icc_path);
 
 		struct wlr_color_transform *tmp =
-			wlr_color_transform_init_linear_to_icc(data, size);
+			wlr_color_transform_init_linear_to_icc(WLR_COLOR_NAMED_PRIMARIES_SRGB, data, size);
 		if (!tmp) {
 			free(data);
 			return cmd_results_new(CMD_FAILURE,
