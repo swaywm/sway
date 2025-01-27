@@ -15,6 +15,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
+#include "sway/lock.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
@@ -54,7 +55,7 @@ struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 }
 
 static void arrange_surface(struct sway_output *output, const struct wlr_box *full_area,
-		struct wlr_box *usable_area, struct wlr_scene_tree *tree, bool exclusive) {
+		struct wlr_box *usable_area, struct wlr_scene_tree *tree, bool exclusive, bool locked) {
 	struct wlr_scene_node *node;
 	wl_list_for_each(node, &tree->children, link) {
 		struct sway_layer_surface *surface = scene_descriptor_try_get(node,
@@ -62,6 +63,17 @@ static void arrange_surface(struct sway_output *output, const struct wlr_box *fu
 		// surface could be null during destruction
 		if (!surface) {
 			continue;
+		}
+
+		if (!surface->show_over_lockscreen) {
+			wlr_scene_node_set_enabled(node, !locked);
+			/* wlr_scene_node_set_enabled(node, true); */
+			if (locked) {
+				continue;
+			}
+		} else {
+			// TODO: not sure why this is required 
+			wlr_scene_node_set_enabled(node, true);
 		}
 
 		if (!surface->scene->layer_surface->initialized) {
@@ -82,19 +94,26 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area.width, &usable_area.height);
 	const struct wlr_box full_area = usable_area;
 
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, true);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, true);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true);
+	bool locked = server.session_lock.lock;
 
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, false);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, false);
+	if (locked) {
+		sway_log(SWAY_INFO, "arranging locked layout");
+	}
+
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, true, locked);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, true, locked);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true, locked);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true, locked);
+
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, false, locked);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false, locked);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false, locked);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, false, locked);
 
 	if (!wlr_box_equal(&usable_area, &output->usable_area)) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
 		output->usable_area = usable_area;
+		arrange_locks();
 		arrange_output(output);
 	} else {
 		arrange_popups(root->layers.popup);
