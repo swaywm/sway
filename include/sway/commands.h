@@ -290,6 +290,7 @@ sway_cmd output_cmd_color_profile;
 sway_cmd output_cmd_disable;
 sway_cmd output_cmd_dpms;
 sway_cmd output_cmd_enable;
+sway_cmd output_cmd_hdr;
 sway_cmd output_cmd_max_render_time;
 sway_cmd output_cmd_mode;
 sway_cmd output_cmd_modeline;
