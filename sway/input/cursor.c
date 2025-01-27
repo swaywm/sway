@@ -1047,6 +1047,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->touch_frame.link);
 	wl_list_remove(&cursor->tool_axis.link);
 	wl_list_remove(&cursor->tool_tip.link);
+	wl_list_remove(&cursor->tool_proximity.link);
 	wl_list_remove(&cursor->tool_button.link);
 	wl_list_remove(&cursor->request_set_cursor.link);
 
