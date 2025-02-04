@@ -22,7 +22,7 @@ static void do_reload(void *data) {
 
 	const char *path = NULL;
 	if (config->user_config_path) {
-		path = config->current_config_path;
+		path = config->current_config->path;
 	}
 
 	if (!load_main_config(path, true, false)) {
@@ -59,7 +59,7 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 
 	const char *path = NULL;
 	if (config->user_config_path) {
-		path = config->current_config_path;
+		path = config->current_config->path;
 	}
 
 	if (!load_main_config(path, true, true)) {

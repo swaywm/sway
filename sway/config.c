@@ -100,6 +100,15 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode);
 }
 
+static void free_config_file(struct sway_config_file *config_file) {
+	if (!config_file) {
+		return;
+	}
+	free((char *)config_file->data);
+	free((char *)config_file->path);
+	free(config_file);
+}
+
 void free_config(struct sway_config *config) {
 	if (!config) {
 		return;
@@ -166,9 +175,14 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->criteria);
 	}
+	if (config->config_chain) {
+		for (int i = 0; i < config->config_chain->length; ++i) {
+			free_config_file(config->config_chain->items[i]);
+		}
+		list_free(config->config_chain);
+	}
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
-	list_free_items_and_destroy(config->config_chain);
 	free(config->floating_scroll_up_cmd);
 	free(config->floating_scroll_down_cmd);
 	free(config->floating_scroll_left_cmd);
@@ -176,8 +190,6 @@ void free_config(struct sway_config *config) {
 	free(config->font);
 	free(config->swaybg_command);
 	free(config->swaynag_command);
-	free((char *)config->current_config_path);
-	free((char *)config->current_config);
 	keysym_translation_state_destroy(config->keysym_translation_state);
 	free(config);
 }
@@ -296,7 +308,6 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->swaybg_command = strdup("swaybg"))) goto cleanup;
 
 	if (!(config->config_chain = create_list())) goto cleanup;
-	config->current_config_path = NULL;
 	config->current_config = NULL;
 
 	// borders
@@ -412,24 +423,24 @@ static char *get_config_path(void) {
 	return path;
 }
 
-static bool load_config(const char *path, struct sway_config *config,
-		struct swaynag_instance *swaynag) {
-	if (path == NULL) {
+static bool load_config(struct sway_config_file *cf,
+		struct sway_config *config, struct swaynag_instance *swaynag) {
+	if (cf->path == NULL) {
 		sway_log(SWAY_ERROR, "Unable to find a config file!");
 		return false;
 	}
 
-	sway_log(SWAY_INFO, "Loading config from %s", path);
+	sway_log(SWAY_INFO, "Loading config from %s", cf->path);
 
 	struct stat sb;
-	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-		sway_log(SWAY_ERROR, "%s is a directory not a config file", path);
+	if (stat(cf->path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+		sway_log(SWAY_ERROR, "%s is a directory not a config file", cf->path);
 		return false;
 	}
 
-	FILE *f = fopen(path, "r");
+	FILE *f = fopen(cf->path, "r");
 	if (!f) {
-		sway_log(SWAY_ERROR, "Unable to open %s for reading", path);
+		sway_log(SWAY_ERROR, "Unable to open %s for reading", cf->path);
 		return false;
 	}
 
@@ -499,13 +510,15 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		}
 	}
 
+	config->current_config = malloc(sizeof(struct sway_config_file));
+	config->current_config->path = real_path;
 	config->user_config_path = file ? true : false;
-	config->current_config_path = path;
-	list_add(config->config_chain, real_path);
+	list_add(config->config_chain, config->current_config);
 
 	config->reading = true;
 
-	bool success = load_config(path, config, &config->swaynag_config_errors);
+	bool success = load_config(config->current_config, config,
+		&config->swaynag_config_errors);
 
 	if (validating) {
 		free_config(config);
@@ -555,7 +568,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 static bool load_include_config(const char *path, const char *parent_dir,
 		struct sway_config *config, struct swaynag_instance *swaynag) {
 	// save parent config
-	const char *parent_config = config->current_config_path;
+	struct sway_config_file *parent_config = config->current_config;
 
 	char *full_path;
 	int len = strlen(path);
@@ -583,8 +596,8 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	// check if config has already been included
 	int j;
 	for (j = 0; j < config->config_chain->length; ++j) {
-		char *old_path = config->config_chain->items[j];
-		if (strcmp(real_path, old_path) == 0) {
+		struct sway_config_file *old = config->config_chain->items[j];
+		if (strcmp(real_path, old->path) == 0) {
 			sway_log(SWAY_DEBUG,
 				"%s already included once, won't be included again.",
 				real_path);
@@ -593,26 +606,27 @@ static bool load_include_config(const char *path, const char *parent_dir,
 		}
 	}
 
-	config->current_config_path = real_path;
-	list_add(config->config_chain, real_path);
+	config->current_config = calloc(1, sizeof(struct sway_config_file));
+	config->current_config->path = real_path;
+	list_add(config->config_chain, config->current_config);
 	int index = config->config_chain->length - 1;
 
-	if (!load_config(real_path, config, swaynag)) {
-		free(real_path);
-		config->current_config_path = parent_config;
+	if (!load_config(config->current_config, config, swaynag)) {
+		free_config_file(config->current_config);
+		config->current_config = parent_config;
 		list_del(config->config_chain, index);
 		return false;
 	}
 
-	// restore current_config_path
-	config->current_config_path = parent_config;
+	// restore current_config
+	config->current_config = parent_config;
 	return true;
 }
 
 void load_include_configs(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag) {
 	char *wd = getcwd(NULL, 0);
-	char *parent_path = strdup(config->current_config_path);
+	char *parent_path = strdup(config->current_config->path);
 	const char *parent_dir = dirname(parent_path);
 
 	if (chdir(parent_dir) < 0) {
@@ -747,27 +761,24 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 
 bool read_config(FILE *file, struct sway_config *config,
 		struct swaynag_instance *swaynag) {
-	bool reading_main_config = false;
 	char *this_config = NULL;
-	size_t config_size = 0;
-	if (config->current_config == NULL) {
-		reading_main_config = true;
+	int fd = fileno(file);
+	struct stat sb;
 
-		int ret_seek = fseek(file, 0, SEEK_END);
-		long ret_tell = ftell(file);
-		if (ret_seek == -1 || ret_tell == -1) {
-			sway_log(SWAY_ERROR, "Unable to get size of config file");
-			return false;
-		}
-		config_size = ret_tell;
-		rewind(file);
-
-		config->current_config = this_config = calloc(1, config_size + 1);
-		if (this_config == NULL) {
-			sway_log(SWAY_ERROR, "Unable to allocate buffer for config contents");
-			return false;
-		}
+	if (fd == -1 || fstat(fd, &sb) == -1) {
+		sway_log(SWAY_ERROR, "Unable to get size of config file");
+		return false;
 	}
+	config->current_config->data = this_config = calloc(1, sb.st_size + 1);
+	if (this_config == NULL) {
+		sway_log(SWAY_ERROR, "Unable to allocate buffer for config contents");
+		return false;
+	}
+	if (fread(this_config, 1, sb.st_size, file) != (size_t)sb.st_size) {
+		sway_log(SWAY_ERROR, "Config file read error");
+		return false;
+	}
+	rewind(file);
 
 	bool success = true;
 	int line_number = 0;
@@ -775,20 +786,8 @@ bool read_config(FILE *file, struct sway_config *config,
 	size_t line_size = 0;
 	ssize_t nread;
 	list_t *stack = create_list();
-	size_t read = 0;
 	int nlines = 0;
 	while ((nread = getline_with_cont(&line, &line_size, file, &nlines)) != -1) {
-		if (reading_main_config) {
-			if (read + nread > config_size) {
-				sway_log(SWAY_ERROR, "Config file changed during reading");
-				success = false;
-				break;
-			}
-
-			strcpy(&this_config[read], line);
-			read += nread;
-		}
-
 		if (line[nread - 1] == '\n') {
 			line[nread - 1] = '\0';
 		}
@@ -828,11 +827,11 @@ bool read_config(FILE *file, struct sway_config *config,
 		case CMD_FAILURE:
 		case CMD_INVALID:
 			sway_log(SWAY_ERROR, "Error on line %i '%s': %s (%s)", line_number,
-				line, res->error, config->current_config_path);
+				line, res->error, config->current_config->path);
 			if (!config->validating) {
 				swaynag_log(config->swaynag_command, swaynag,
 					"Error on line %i (%s) '%s': %s", line_number,
-					config->current_config_path, line, res->error);
+					config->current_config->path, line, res->error);
 			}
 			success = false;
 			break;
@@ -896,7 +895,7 @@ void config_add_swaynag_warning(char *fmt, ...) {
 
 		swaynag_log(config->swaynag_command, &config->swaynag_config_errors,
 			"Warning on line %i (%s) '%s': %s",
-			config->current_config_line_number, config->current_config_path,
+			config->current_config_line_number, config->current_config->path,
 			config->current_config_line, str);
 
 		free(str);

@@ -907,7 +907,20 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 	case IPC_GET_CONFIG:
 	{
 		json_object *json = json_object_new_object();
-		json_object_object_add(json, "config", json_object_new_string(config->current_config));
+		json_object_object_add(json, "config",
+			json_object_new_string(config->current_config->data));
+		json_object *includes =
+			json_object_new_array_ext(config->config_chain->length);
+		for (int i = 0; i < config->config_chain->length; ++i) {
+			struct sway_config_file *cf = config->config_chain->items[i];
+			json_object *include = json_object_new_object();
+			json_object_object_add(include, "path",
+				json_object_new_string(cf->path));
+			json_object_object_add(include, "raw_contents",
+				json_object_new_string(cf->data));
+			json_object_array_add(includes, include);
+		}
+		json_object_object_add(json, "included_configs", includes);
 		const char *json_string = json_object_to_json_string(json);
 		ipc_send_reply(client, payload_type, json_string,
 			(uint32_t)strlen(json_string));
