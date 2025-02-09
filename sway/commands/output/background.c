@@ -8,12 +8,14 @@
 #include "log.h"
 #include "stringop.h"
 
-static const char *bg_options[] = {
-	"stretch",
-	"center",
-	"fill",
-	"fit",
-	"tile",
+const char *const background_mode_names[] = {
+	[BACKGROUND_MODE_UNSET] = "unset",
+	[BACKGROUND_MODE_SOLID_COLOR] = "solid_color",
+	[BACKGROUND_MODE_STRETCH] = "stretch",
+	[BACKGROUND_MODE_CENTER] = "center",
+	[BACKGROUND_MODE_FILL] = "fill",
+	[BACKGROUND_MODE_FIT] = "fit",
+	[BACKGROUND_MODE_TILE] = "tile",
 };
 
 static bool validate_color(const char *color) {
@@ -47,27 +49,25 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 					"Colors should be of the form #RRGGBB");
 		}
 		if (!(output->background = strdup(argv[0]))) goto cleanup;
-		if (!(output->background_option = strdup("solid_color"))) goto cleanup;
+		output->background_option = BACKGROUND_MODE_SOLID_COLOR;
 		output->background_fallback = NULL;
 		argc -= 2; argv += 2;
 	} else {
-		bool valid = false;
-		char *mode;
+		enum background_mode mode = BACKGROUND_MODE_UNSET;
 		size_t j;
 		for (j = 0; j < (size_t)argc; ++j) {
-			mode = argv[j];
-			size_t n = sizeof(bg_options) / sizeof(char *);
+			size_t n = sizeof(background_mode_names) / sizeof(char *);
 			for (size_t k = 0; k < n; ++k) {
-				if (strcasecmp(mode, bg_options[k]) == 0) {
-					valid = true;
+				if (strcasecmp(argv[j], background_mode_names[k]) == 0) {
+					mode = k;
 					break;
 				}
 			}
-			if (valid) {
+			if (mode != BACKGROUND_MODE_UNSET) {
 				break;
 			}
 		}
-		if (!valid) {
+		if (mode == BACKGROUND_MODE_UNSET) {
 			return cmd_results_new(CMD_INVALID,
 				"Missing background scaling mode.");
 		}
@@ -104,10 +104,9 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 		bool can_access = access(src, F_OK) != -1;
 		argc -= j + 1; argv += j + 1;
-		free(output->background_option);
 		free(output->background_fallback);
 		free(output->background);
-		output->background = output->background_option = output->background_fallback = NULL;
+		output->background = output->background_fallback = NULL;
 		char *fallback = NULL;
 
 		if (argc && *argv[0] == '#') {
@@ -132,11 +131,11 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			}
 			sway_log(SWAY_DEBUG, "Cannot access file '%s', using fallback '%s'", src, fallback);
 			output->background = fallback;
-			if (!(output->background_option = strdup("solid_color"))) goto cleanup;
+			output->background_option = BACKGROUND_MODE_SOLID_COLOR;
 			output->background_fallback = NULL;
 		} else {
 			output->background = src;
-			if (!(output->background_option = strdup(mode))) goto cleanup;
+			output->background_option = mode;
 		}
 	}
 	config->handler_context.leftovers.argc = argc;
