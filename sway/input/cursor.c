@@ -31,6 +31,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "sway/ipc-server.h"
 
 static uint32_t get_current_time_msec(void) {
 	struct timespec now;
@@ -335,6 +336,7 @@ static void handle_pointer_motion_relative(
 
 	pointer_motion(cursor, e->time_msec, &e->pointer->base, e->delta_x,
 		e->delta_y, e->unaccel_dx, e->unaccel_dy);
+	ipc_event_cursor_movement(cursor->cursor->x, cursor->cursor->y);
 }
 
 static void handle_pointer_motion_absolute(
