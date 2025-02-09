@@ -141,9 +141,8 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 		free(dst->background);
 		dst->background = NULL;
 	}
-	if (src->background_option) {
-		free(dst->background_option);
-		dst->background_option = NULL;
+	if (src->background_option != BACKGROUND_MODE_UNSET) {
+		dst->background_option = BACKGROUND_MODE_UNSET;
 	}
 	if (src->background_fallback) {
 		free(dst->background_fallback);
@@ -219,9 +218,8 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 		free(dst->background);
 		dst->background = strdup(src->background);
 	}
-	if (src->background_option) {
-		free(dst->background_option);
-		dst->background_option = strdup(src->background_option);
+	if (src->background_option != BACKGROUND_MODE_UNSET) {
+		dst->background_option = src->background_option;
 	}
 	if (src->background_fallback) {
 		free(dst->background_fallback);
@@ -281,8 +279,8 @@ void store_output_config(struct output_config *oc) {
 		"(max render time: %d) (allow tearing: %d) (hdr: %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
-		oc->transform, oc->background, oc->background_option, oc->power,
-		oc->max_render_time, oc->allow_tearing, oc->hdr);
+		oc->transform, oc->background, background_mode_names[oc->background_option],
+		oc->power, oc->max_render_time, oc->allow_tearing, oc->hdr);
 
 	// If the configuration was not merged into an existing configuration, add
 	// it to the list. Otherwise we're done with it and can free it.
@@ -1087,7 +1085,6 @@ void free_output_config(struct output_config *oc) {
 	}
 	free(oc->name);
 	free(oc->background);
-	free(oc->background_option);
 	free(oc->background_fallback);
 	wlr_color_transform_unref(oc->color_transform);
 	free(oc);
@@ -1102,7 +1099,7 @@ static void handle_swaybg_client_destroy(struct wl_listener *listener,
 	sway_config->swaybg_client = NULL;
 }
 
-static bool _spawn_swaybg(char **command) {
+static bool _spawn_swaybg(const char **command) {
 	if (config->swaybg_client != NULL) {
 		wl_client_destroy(config->swaybg_client);
 	}
@@ -1139,7 +1136,7 @@ static bool _spawn_swaybg(char **command) {
 			"%d", sockets[1]);
 		setenv("WAYLAND_SOCKET", wayland_socket_str, true);
 
-		execvp(command[0], command);
+		execvp(command[0], (char *const *)command);
 		sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
 			"(background configuration probably not applied)",
 			command[0]);
@@ -1164,7 +1161,7 @@ bool spawn_swaybg(void) {
 		if (!oc->background) {
 			continue;
 		}
-		if (strcmp(oc->background_option, "solid_color") == 0) {
+		if (oc->background_option == BACKGROUND_MODE_SOLID_COLOR) {
 			length += 4;
 		} else if (oc->background_fallback) {
 			length += 8;
@@ -1173,7 +1170,7 @@ bool spawn_swaybg(void) {
 		}
 	}
 
-	char **cmd = calloc(length, sizeof(char *));
+	const char **cmd = calloc(length, sizeof(const char *));
 	if (!cmd) {
 		sway_log(SWAY_ERROR, "Failed to allocate spawn_swaybg command");
 		return false;
@@ -1186,7 +1183,7 @@ bool spawn_swaybg(void) {
 		if (!oc->background) {
 			continue;
 		}
-		if (strcmp(oc->background_option, "solid_color") == 0) {
+		if (oc->background_option == BACKGROUND_MODE_SOLID_COLOR) {
 			cmd[i++] = "-o";
 			cmd[i++] = oc->name;
 			cmd[i++] = "-c";
@@ -1197,7 +1194,7 @@ bool spawn_swaybg(void) {
 			cmd[i++] = "-i";
 			cmd[i++] = oc->background;
 			cmd[i++] = "-m";
-			cmd[i++] = oc->background_option;
+			cmd[i++] = background_mode_names[oc->background_option];
 			if (oc->background_fallback) {
 				cmd[i++] = "-c";
 				cmd[i++] = oc->background_fallback;
