@@ -88,6 +88,7 @@ struct swaybar_workspace {
 	bool focused;
 	bool visible;
 	bool urgent;
+	bool empty;
 };
 
 bool bar_setup(struct swaybar *bar, const char *socket_path);

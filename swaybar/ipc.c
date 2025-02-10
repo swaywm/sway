@@ -77,6 +77,9 @@ static void ipc_parse_colors(
 		{ "urgent_workspace_border", &config->colors.urgent_workspace.border },
 		{ "urgent_workspace_bg", &config->colors.urgent_workspace.background },
 		{ "urgent_workspace_text", &config->colors.urgent_workspace.text },
+		{ "empty_workspace_border", &config->colors.empty_workspace.border },
+		{ "empty_workspace_bg", &config->colors.empty_workspace.background },
+		{ "empty_workspace_text", &config->colors.empty_workspace.text },
 		{ "binding_mode_border", &config->colors.binding_mode.border },
 		{ "binding_mode_bg", &config->colors.binding_mode.background },
 		{ "binding_mode_text", &config->colors.binding_mode.text },
@@ -355,7 +358,7 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 	bar->visible_by_urgency = false;
 	size_t length = json_object_array_length(results);
 	json_object *ws_json;
-	json_object *num, *name, *visible, *focused, *out, *urgent;
+	json_object *num, *name, *visible, *focused, *out, *urgent, *empty;
 	for (size_t i = 0; i < length; ++i) {
 		ws_json = json_object_array_get_idx(results, i);
 
@@ -365,6 +368,7 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 		json_object_object_get_ex(ws_json, "focused", &focused);
 		json_object_object_get_ex(ws_json, "output", &out);
 		json_object_object_get_ex(ws_json, "urgent", &urgent);
+		json_object_object_get_ex(ws_json, "empty", &empty);
 
 		wl_list_for_each(output, &bar->outputs, link) {
 			const char *ws_output = json_object_get_string(out);
@@ -399,6 +403,7 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 				if (ws->urgent) {
 					bar->visible_by_urgency = true;
 				}
+				ws->empty = json_object_get_boolean(empty);
 				wl_list_insert(output->workspaces.prev, &ws->link);
 			}
 		}

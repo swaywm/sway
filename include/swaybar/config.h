@@ -65,6 +65,7 @@ struct swaybar_config {
 		struct box_colors active_workspace;
 		struct box_colors inactive_workspace;
 		struct box_colors urgent_workspace;
+		struct box_colors empty_workspace;
 		struct box_colors binding_mode;
 	} colors;
 

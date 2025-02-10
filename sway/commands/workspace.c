@@ -9,6 +9,7 @@
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "util.h"
 
 static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
 	struct workspace_config *wsc = workspace_find_config(ws_name);
@@ -129,6 +130,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 
 	int output_location = -1;
 	int gaps_location = -1;
+	int persistent_location = -1;
 
 	for (int i = 0; i < argc; ++i) {
 		if (strcasecmp(argv[i], "output") == 0) {
@@ -142,6 +144,13 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			break;
 		}
 	}
+	for (int i = 0; i < argc; ++i) {
+		if (strcasecmp(argv[i], "persistent") == 0) {
+			persistent_location = i;
+			break;
+		}
+	}
+
 	if (output_location == 0) {
 		return cmd_results_new(CMD_INVALID,
 			"Expected 'workspace <name> output <output>'");
@@ -164,6 +173,24 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		if ((error = cmd_workspace_gaps(argc, argv, gaps_location))) {
 			return error;
 		}
+	} else if (persistent_location == 0) {
+		return cmd_results_new(CMD_INVALID,
+			"Expected 'workspace <name> persistent yes|no'");
+	} else if (persistent_location > 0) {
+		if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST,
+						persistent_location + 2))) {
+			return error;
+		}
+
+		struct sway_workspace *ws = NULL;
+
+		char *ws_name = join_args(argv, persistent_location);
+		if (!(ws = workspace_by_name(ws_name))) {
+			ws = workspace_create(NULL, ws_name);
+		}
+		free(ws_name);
+		ws->persistent = parse_boolean(argv[persistent_location + 1], ws->persistent);
+		workspace_consider_destroy(ws);
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, NULL);
