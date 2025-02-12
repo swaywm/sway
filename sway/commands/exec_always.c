@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -81,7 +82,23 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 			if (ctx && !no_startup_id) {
 				export_startup_id(ctx);
 			}
+			int errfd = -1;
+			if (config->exec_out >= 0) {
+				errfd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC); // save for logging
+				if (dup2(config->exec_out, STDOUT_FILENO) < 0) {
+					sway_log_errno(SWAY_ERROR, "dup2(exec_out, stdout) failed");
+					close(STDOUT_FILENO);
+				}
+				if (dup2(config->exec_out, STDERR_FILENO) < 0) {
+					sway_log_errno(SWAY_ERROR, "dup2(exec_out, stderr) failed");
+					close(STDERR_FILENO);
+				}
+				close(config->exec_out);
+			}
 			execlp("sh", "sh", "-c", cmd, (void *)NULL);
+			if (errfd >= 0) {
+				dup2(errfd, STDERR_FILENO);
+			}
 			sway_log_errno(SWAY_ERROR, "execlp failed");
 			_exit(1);
 		}
