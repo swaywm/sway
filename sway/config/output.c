@@ -1061,41 +1061,27 @@ static bool _spawn_swaybg(char **command) {
 		return false;
 	} else if (pid == 0) {
 		restore_nofile_limit();
-
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!sway_set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-				"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			execvp(command[0], command);
-			sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
-				"(background configuration probably not applied)",
-				command[0]);
+		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
-		_exit(EXIT_SUCCESS);
+
+		char wayland_socket_str[16];
+		snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+			"%d", sockets[1]);
+		setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+		execvp(command[0], command);
+		sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
+			"(background configuration probably not applied)",
+			command[0]);
+		_exit(EXIT_FAILURE);
 	}
 
 	if (close(sockets[1]) != 0) {
 		sway_log_errno(SWAY_ERROR, "close failed");
 		return false;
 	}
-	int fork_status = 0;
-	if (waitpid(pid, &fork_status, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
-		return false;
-	}
-
-	return WIFEXITED(fork_status) && WEXITSTATUS(fork_status) == EXIT_SUCCESS;
+	return true;
 }
 
 bool spawn_swaybg(void) {
