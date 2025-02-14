@@ -163,6 +163,8 @@ void container_begin_destroy(struct sway_container *con);
 struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
+struct sway_container *container_get_first_view(struct sway_container *container);
+
 void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
