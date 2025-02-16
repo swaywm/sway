@@ -48,6 +48,13 @@ void sig_handler(int signal) {
 	sway_terminate(EXIT_SUCCESS);
 }
 
+void sigchld_handler(int signal) {
+	pid_t pid;
+	do {
+		pid = waitpid(-1, NULL, WNOHANG);
+	} while (pid > 0);
+}
+
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -325,6 +332,7 @@ int main(int argc, char **argv) {
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
 	signal(SIGINT, sig_handler);
+	signal(SIGCHLD, sigchld_handler);
 
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
