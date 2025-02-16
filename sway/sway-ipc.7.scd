@@ -389,6 +389,9 @@ node and will have the following properties:
 |- pid
 :  integer
 :  (Only views) The PID of the application that owns the view
+|- foreign_toplevel_identifier
+:  string
+:  (Only views) The ext-foreign-toplevel-list-v1 toplevel identifier of this node.
 |- visible
 :  boolean
 :  (Only views) Whether the node is visible

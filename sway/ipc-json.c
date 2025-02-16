@@ -6,6 +6,7 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <xkbcommon/xkbcommon.h>
 #include "config.h"
 #include "log.h"
@@ -576,6 +577,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	const char *app_id = view_get_app_id(c->view);
 	json_object_object_add(object, "app_id",
 			app_id ? json_object_new_string(app_id) : NULL);
+
+	json_object_object_add(object, "foreign_toplevel_identifier",
+		c->view->ext_foreign_toplevel ?
+			json_object_new_string(c->view->ext_foreign_toplevel->identifier) : NULL);
 
 	bool visible = view_is_visible(c->view);
 	json_object_object_add(object, "visible", json_object_new_boolean(visible));
