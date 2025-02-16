@@ -117,7 +117,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	Exit sway and end your Wayland session.
 
 *floating* enable|disable|toggle
-	Make focused view floating, non-floating, or the opposite of what it is now.
+	Make focused window floating, non-floating, or the opposite of what it is now.
 
 <criteria> *focus*
 	Moves focus to the container that matches the specified criteria.
@@ -152,9 +152,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	Moves focus between the floating and tiled layers.
 
 *fullscreen* [enable|disable|toggle] [global]
-	Makes focused view fullscreen, non-fullscreen, or the opposite of what it
+	Makes focused window fullscreen, non-fullscreen, or the opposite of what it
 	is now. If no argument is given, it does the same as _toggle_. If _global_
-	is specified, the view will be fullscreen across all outputs.
+	is specified, the window will be fullscreen across all outputs.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
 set|plus|minus|toggle <amount>
@@ -164,16 +164,16 @@ set|plus|minus|toggle <amount>
 	_vertical_.
 
 *inhibit_idle* focus|fullscreen|open|none|visible
-	Set/unset an idle inhibitor for the view. _focus_ will inhibit idle when
-	the view is focused by any seat. _fullscreen_ will inhibit idle when the
+	Set/unset an idle inhibitor for the window. _focus_ will inhibit idle when
+	the window is focused by any seat. _fullscreen_ will inhibit idle when the
 	view is fullscreen (or a descendant of a fullscreen container) and is
-	visible. _open_ will inhibit idle until the view is closed (or the
-	inhibitor is unset/changed). _visible_ will inhibit idle when the view is
+	visible. _open_ will inhibit idle until the window is closed (or the
+	inhibitor is unset/changed). _visible_ will inhibit idle when the window is
 	visible on any output. _none_ will remove any existing idle inhibitor for
-	the view.
+	the window.
 
 	This can also be used with criteria to set an idle inhibitor for any
-	existing view or with _for_window_ to set idle inhibitors for future views.
+	existing window or with _for_window_ to set idle inhibitors for future windows.
 
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
@@ -331,12 +331,12 @@ set|plus|minus|toggle <amount>
 
 *shortcuts_inhibitor* enable|disable
 	Enables or disables the ability of clients to inhibit keyboard
-	shortcuts for a view. This is primarily useful for virtualization and
-	remote desktop software. It affects either the currently focused view
-	or a set of views selected by criteria. Subcommand _disable_
-	additionally deactivates any active inhibitors for the given view(s).
+	shortcuts for a window. This is primarily useful for virtualization and
+	remote desktop software. It affects either the currently focused window
+	or a set of windows selected by criteria. Subcommand _disable_
+	additionally deactivates any active inhibitors for the given window(s).
 	Criteria are particularly useful with the *for_window* command to
-	configure a class of views differently from the per-seat defaults
+	configure a class of windows differently from the per-seat defaults
 	established by the *seat* subcommand of the same name. See
 	*sway-input*(5) for more ways to affect inhibitors.
 
@@ -364,7 +364,7 @@ set|plus|minus|toggle <amount>
 	Swaps the position, geometry, and fullscreen status of two containers. The
 	first container can be selected either by criteria or focus. The second
 	container can be selected by _id_, _con_id_, or _mark_. _id_ can only be
-	used with xwayland views. If the first container has focus, it will retain
+	used with xwayland windows. If the first container has focus, it will retain
 	focus unless it is moved to a different workspace or the second container
 	becomes fullscreen on the same workspace as the first container. In either
 	of those cases, the second container will gain focus.
@@ -409,14 +409,14 @@ The following commands may be used either in the configuration file or at
 runtime.
 
 *assign* <criteria> [→] [workspace] [number] <workspace>
-	Assigns views matching _criteria_ (see *CRITERIA* for details) to
+	Assigns windows matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
 		for_window <criteria> move container to workspace <workspace>
 
 *assign* <criteria> [→] output left|right|up|down|<name>
-	Assigns views matching _criteria_ (see *CRITERIA* for details) to the
+	Assigns windows matching _criteria_ (see *CRITERIA* for details) to the
 	specified output. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
@@ -599,10 +599,10 @@ runtime.
 		The window that has focus.
 
 	*client.focused_inactive*
-		The most recently focused view within a container which is not focused.
+		The most recently focused window within a container which is not focused.
 
 	*client.focused_tab_title*
-		A view that has focused descendant container.
+		A window that has focused descendant container.
 		Tab or stack container title that is the parent of the focused container
 		but is not directly focused. Defaults to focused_inactive if not
 		specified and does not use the indicator and child_border colors.
@@ -611,10 +611,10 @@ runtime.
 		Ignored (present for i3 compatibility).
 
 	*client.unfocused*
-		A view that does not have focus.
+		A window that does not have focus.
 
 	*client.urgent*
-		A view with an urgency hint. *Note*: Native Wayland windows do not
+		A window with an urgency hint. *Note*: Native Wayland windows do not
 		support urgency. Urgency only works for Xwayland windows.
 
 	The meaning of each color is:
@@ -629,12 +629,12 @@ runtime.
 		The text color of the title bar.
 
 	_indicator_
-		The color used to indicate where a new view will open. In a tiled
-		container, this would paint the right border of the current view if a
-		new view would be opened to the right.
+		The color used to indicate where a new window will open. In a tiled
+		container, this would paint the right border of the current window if a
+		new window would be opened to the right.
 
 	_child_border_
-		The border around the view itself.
+		The border around the window itself.
 
 The default colors are:
 
@@ -772,7 +772,7 @@ The default colors are:
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
-	affects spacing around each view and outer affects the spacing around each
+	affects spacing around each window and outer affects the spacing around each
 	workspace. Outer gaps are in addition to inner gaps. To reduce or remove
 	outer gaps, outer gaps can be set to a negative value. _outer_ gaps can
 	also be specified per side with _top_, _right_, _bottom_, and _left_ or
@@ -844,9 +844,9 @@ The default colors are:
 	A list of output names may be obtained via *swaymsg -t get_outputs*.
 
 *popup_during_fullscreen* smart|ignore|leave_fullscreen
-	Determines what to do when a fullscreen view opens a dialog.
+	Determines what to do when a fullscreen window opens a dialog.
 	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
-	dialog will not be rendered. If _leave_fullscreen_, the view will exit
+	dialog will not be rendered. If _leave_fullscreen_, the window will exit
 	fullscreen mode and the dialog will be rendered.
 
 *primary_selection* enabled|disabled
@@ -976,14 +976,14 @@ A criteria is a string in the form of, for example:
 ```
 
 The string contains one or more (space separated) attribute/value pairs. They
-are used by some commands to choose which views to execute actions on. All
+are used by some commands to choose which windows to execute actions on. All
 attributes must match for the criteria to match. Criteria is retained across
 commands separated by a *,*, but will be reset (and allow for new criteria, if
 desired) for commands separated by a *;*.
 
 Criteria may be used with either the *for_window* or *assign* commands to
-specify operations to perform on new views. A criteria may also be used to
-perform specific commands (ones that normally act upon one window) on all views
+specify operations to perform on new windows. A criteria may also be used to
+perform specific commands (ones that normally act upon one window) on all windows
 that match that criteria. For example:
 
 Focus on a window with the mark "IRC":
@@ -1071,8 +1071,8 @@ The following attributes may be matched with:
 	applications and requires XWayland.
 
 *workspace*
-	Compare against the workspace name for this view. Can be a regular
-	expression. If the value is \_\_focused\_\_, then all the views on the
+	Compare against the workspace name for this window. Can be a regular
+	expression. If the value is \_\_focused\_\_, then all the windows on the
 	currently focused workspace matches.
 
 *sandbox_engine*
