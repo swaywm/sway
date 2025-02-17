@@ -972,7 +972,7 @@ The default colors are:
 A criteria is a string in the form of, for example:
 
 ```
-[class="[Rr]egex.*" title="some title"]
+[app_id="some-application" title="[Rr]egex.*"]
 ```
 
 The string contains one or more (space separated) attribute/value pairs. They
@@ -992,10 +992,19 @@ Focus on a window with the mark "IRC":
 [con_mark="IRC"] focus
 ```
 
-Kill all windows with the title "Emacs":
+Kill all windows where the title contains "Emacs":
 
 ```
-[class="Emacs"] kill
+[title="Emacs"] kill
+```
+
+Several attributes allow regular expressions. These use Perl-compatible regular
+expressions (PCRE2), which are documented in *pcre2pattern*(3) and summarized in
+*pcre2syntax*(3). For example, this moves all windows with titles ending in
+"sway" or "Sway" to workspace 1:
+
+```
+[title="[Ss]way$"] move workspace 1
 ```
 
 You may like to use swaymsg -t get_tree for finding the values of these
@@ -1094,3 +1103,4 @@ The following attributes may be matched with:
 # SEE ALSO
 
 *sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)
+*pcre2pattern*(3) *pcre2syntax*(3)
