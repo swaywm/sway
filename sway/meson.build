@@ -6,6 +6,7 @@ sway_sources = files(
 	'ipc-json.c',
 	'ipc-server.c',
 	'lock.c',
+	'lockscreen-overlay.c',
 	'main.c',
 	'realtime.c',
 	'scene_descriptor.c',
