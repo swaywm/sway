@@ -478,6 +478,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->xwayland_surface.link);
 	wl_list_remove(&server->xwayland_ready.link);
 #endif
+	input_manager_finish(server);
 
 	// TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
