@@ -478,6 +478,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
 	wl_list_remove(&server->xdg_activation_v1_new_token.link);
 	wl_list_remove(&server->request_set_cursor_shape.link);
+	input_manager_finish(server->input);
 
 	// TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
