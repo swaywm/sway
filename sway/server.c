@@ -460,8 +460,29 @@ bool server_init(struct sway_server *server) {
 }
 
 void server_fini(struct sway_server *server) {
+	// remove listeners
+	wl_list_remove(&server->renderer_lost.link);
+	wl_list_remove(&server->new_output.link);
+	wl_list_remove(&server->layer_shell_surface.link);
+	wl_list_remove(&server->xdg_shell_toplevel.link);
+	wl_list_remove(&server->server_decoration.link);
+	wl_list_remove(&server->xdg_decoration.link);
+	wl_list_remove(&server->pointer_constraint.link);
+	wl_list_remove(&server->output_manager_apply.link);
+	wl_list_remove(&server->output_manager_test.link);
+	wl_list_remove(&server->output_power_manager_set_mode.link);
+#if WLR_HAS_DRM_BACKEND
+	wl_list_remove(&server->drm_lease_request.link);
+#endif
+	wl_list_remove(&server->tearing_control_new_object.link);
+	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
+	wl_list_remove(&server->xdg_activation_v1_new_token.link);
+	wl_list_remove(&server->request_set_cursor_shape.link);
+
 	// TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
+	wl_list_remove(&server->xwayland_surface.link);
+	wl_list_remove(&server->xwayland_ready.link);
 	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 #endif
 	wl_display_destroy_clients(server->wl_display);
