@@ -229,7 +229,9 @@ void output_configure_scene(struct sway_output *output,
 		// hack: don't call the scene setter because that will damage all outputs
 		// We don't want to damage outputs that aren't our current output that
 		// we're configuring
-		buffer->filter_mode = get_scale_filter(output, buffer);
+		if (output) {
+			buffer->filter_mode = get_scale_filter(output, buffer);
+		}
 
 		wlr_scene_buffer_set_opacity(buffer, opacity);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
