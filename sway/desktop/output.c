@@ -202,7 +202,7 @@ static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output,
 	}
 }
 
-static void output_configure_scene(struct sway_output *output,
+void output_configure_scene(struct sway_output *output,
 		struct wlr_scene_node *node, float opacity) {
 	if (!node->enabled) {
 		return;
