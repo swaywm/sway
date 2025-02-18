@@ -202,7 +202,7 @@ static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output,
 	}
 }
 
-static void output_configure_scene(struct sway_output *output,
+void output_configure_scene(struct sway_output *output,
 		struct wlr_scene_node *node, float opacity) {
 	if (!node->enabled) {
 		return;
@@ -229,7 +229,9 @@ static void output_configure_scene(struct sway_output *output,
 		// hack: don't call the scene setter because that will damage all outputs
 		// We don't want to damage outputs that aren't our current output that
 		// we're configuring
-		buffer->filter_mode = get_scale_filter(output, buffer);
+		if (output) {
+			buffer->filter_mode = get_scale_filter(output, buffer);
+		}
 
 		wlr_scene_buffer_set_opacity(buffer, opacity);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {

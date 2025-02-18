@@ -91,6 +91,9 @@ struct sway_output *output_from_wlr_output(struct wlr_output *output);
 struct sway_output *output_get_in_direction(struct sway_output *reference,
 		enum wlr_direction direction);
 
+void output_configure_scene(struct sway_output *output,
+	struct wlr_scene_node *node, float opacity);
+
 void output_add_workspace(struct sway_output *output,
 		struct sway_workspace *workspace);
 

@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <strings.h>
 #include "sway/commands.h"
-#include "sway/tree/view.h"
+#include "sway/tree/container.h"
+#include "sway/output.h"
 #include "log.h"
 
 struct cmd_results *cmd_opacity(int argc, char **argv) {
@@ -37,6 +38,7 @@ struct cmd_results *cmd_opacity(int argc, char **argv) {
 	}
 
 	con->alpha = val;
+	output_configure_scene(NULL, &con->scene_tree->node, 1);
 	container_update(con);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
