@@ -39,6 +39,8 @@ struct sway_input_manager {
 
 struct sway_input_manager *input_manager_create(struct sway_server *server);
 
+void input_manager_finish(struct sway_input_manager *input);
+
 bool input_manager_has_focus(struct sway_node *node);
 
 void input_manager_set_focus(struct sway_node *node);
