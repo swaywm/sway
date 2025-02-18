@@ -597,6 +597,34 @@ static void relay_handle_input_method(struct wl_listener *listener,
 	}
 }
 
+static void sway_input_method_relay_finish_text_input(struct sway_input_method_relay *relay) {
+	wl_list_remove(&relay->text_input_new.link);
+	wl_list_remove(&relay->text_input_manager_destroy.link);
+	wl_list_init(&relay->text_input_new.link);
+	wl_list_init(&relay->text_input_manager_destroy.link);
+}
+
+static void relay_handle_text_input_manager_destroy(struct wl_listener *listener, void *data) {
+	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
+		text_input_manager_destroy);
+
+	sway_input_method_relay_finish_text_input(relay);
+}
+
+static void sway_input_method_relay_finish_input_method(struct sway_input_method_relay *relay) {
+	wl_list_remove(&relay->input_method_new.link);
+	wl_list_remove(&relay->input_method_manager_destroy.link);
+	wl_list_init(&relay->input_method_new.link);
+	wl_list_init(&relay->input_method_manager_destroy.link);
+}
+
+static void relay_handle_input_method_manager_destroy(struct wl_listener *listener, void *data) {
+	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
+		input_method_manager_destroy);
+
+	sway_input_method_relay_finish_input_method(relay);
+}
+
 void sway_input_method_relay_init(struct sway_seat *seat,
 		struct sway_input_method_relay *relay) {
 	relay->seat = seat;
@@ -606,16 +634,22 @@ void sway_input_method_relay_init(struct sway_seat *seat,
 	relay->text_input_new.notify = relay_handle_text_input;
 	wl_signal_add(&server.text_input->events.text_input,
 		&relay->text_input_new);
+	relay->text_input_manager_destroy.notify = relay_handle_text_input_manager_destroy;
+	wl_signal_add(&server.text_input->events.destroy,
+		&relay->text_input_manager_destroy);
 
 	relay->input_method_new.notify = relay_handle_input_method;
 	wl_signal_add(
 		&server.input_method->events.input_method,
 		&relay->input_method_new);
+	relay->input_method_manager_destroy.notify = relay_handle_input_method_manager_destroy;
+	wl_signal_add(&server.input_method->events.destroy,
+		&relay->input_method_manager_destroy);
 }
 
 void sway_input_method_relay_finish(struct sway_input_method_relay *relay) {
-	wl_list_remove(&relay->input_method_new.link);
-	wl_list_remove(&relay->text_input_new.link);
+	sway_input_method_relay_finish_text_input(relay);
+	sway_input_method_relay_finish_input_method(relay);
 }
 
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
