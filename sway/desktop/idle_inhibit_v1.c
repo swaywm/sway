@@ -45,6 +45,14 @@ void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data) {
 	sway_idle_inhibit_v1_check_active();
 }
 
+void handle_manager_destroy(struct wl_listener *listener, void *data) {
+	struct sway_idle_inhibit_manager_v1 *manager =
+		wl_container_of(listener, manager, manager_destroy);
+
+	wl_list_remove(&manager->manager_destroy.link);
+	wl_list_remove(&manager->new_idle_inhibitor_v1.link);
+}
+
 void sway_idle_inhibit_v1_user_inhibitor_register(struct sway_view *view,
 		enum sway_idle_inhibit_mode mode) {
 	struct sway_idle_inhibit_manager_v1 *manager = &server.idle_inhibit_manager_v1;
@@ -177,6 +185,9 @@ bool sway_idle_inhibit_manager_v1_init(void) {
 	wl_signal_add(&manager->wlr_manager->events.new_inhibitor,
 		&manager->new_idle_inhibitor_v1);
 	manager->new_idle_inhibitor_v1.notify = handle_idle_inhibitor_v1;
+	wl_signal_add(&manager->wlr_manager->events.destroy,
+		&manager->manager_destroy);
+	manager->manager_destroy.notify = handle_manager_destroy;
 	wl_list_init(&manager->inhibitors);
 
 	return true;
