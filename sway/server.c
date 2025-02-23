@@ -421,6 +421,7 @@ bool server_init(struct sway_server *server) {
 	const enum wp_color_manager_v1_transfer_function transfer_functions[] = {
 		WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
 		WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
+		WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
 	};
 	const enum wp_color_manager_v1_primaries primaries[] = {
 		WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
