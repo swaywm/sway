@@ -74,6 +74,7 @@ gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 libevdev = dependency('libevdev')
 libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.26.0') : null_dep
+libselinux = dependency('libselinux', required: get_option('selinux'))
 xcb = wlroots_features['xwayland'] ? dependency('xcb') : null_dep
 drm = dependency('libdrm')
 libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_dep
@@ -110,6 +111,7 @@ conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
+conf_data.set10('HAVE_SELINUX', libselinux.found())
 foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY']
 	conf_data.set10('HAVE_' + sym, cc.has_header_symbol('libinput.h', sym, dependencies: libinput))
 endforeach
