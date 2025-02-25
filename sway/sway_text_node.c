@@ -87,7 +87,7 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	}
 
 	float scale = buffer->scale;
-	int width = ceil(buffer->props.width * scale);
+	int width = ceil(get_text_width(&buffer->props) * scale);
 	int height = ceil(buffer->props.height * scale);
 	float *color = (float *)&buffer->props.color;
 	float *background = (float *)&buffer->props.background;
@@ -153,7 +153,7 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	pixman_region32_init(&opaque);
 	if (background[3] == 1) {
 		pixman_region32_union_rect(&opaque, &opaque, 0, 0,
-			buffer->props.width, buffer->props.height);
+			get_text_width(&buffer->props), buffer->props.height);
 	}
 	wlr_scene_buffer_set_opaque_region(buffer->buffer_node, &opaque);
 	pixman_region32_fini(&opaque);
