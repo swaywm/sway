@@ -13,6 +13,7 @@ struct sway_layer_surface {
 	struct wl_listener node_destroy;
 	struct wl_listener new_popup;
 
+	bool show_over_lockscreen;
 	bool mapped;
 
 	struct wlr_scene_tree *popups;
