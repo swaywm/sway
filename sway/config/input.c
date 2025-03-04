@@ -170,6 +170,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		memcpy(dst->calibration_matrix.matrix, src->calibration_matrix.matrix,
 			sizeof(src->calibration_matrix.matrix));
 	}
+	if (src->pointer_accel_custom.npoints) {
+		memcpy(&dst->pointer_accel_custom, &src->pointer_accel_custom, sizeof(src->pointer_accel_custom));
+	}
 	for (int i = 0; i < src->tools->length; i++) {
 		struct input_config_tool *src_tool = src->tools->items[i];
 		for (int j = 0; j < dst->tools->length; j++) {
