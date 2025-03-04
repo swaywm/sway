@@ -64,6 +64,17 @@ float parse_float(const char *value) {
 	return flt;
 }
 
+double parse_double(const char *value) {
+	errno = 0;
+	char *end;
+	double dbl = strtod(value, &end);
+	if (*end || errno) {
+		sway_log(SWAY_DEBUG, "Invalid double value '%s', defaulting to NAN", value);
+		return nan("");
+	}
+	return dbl;
+}
+
 enum movement_unit parse_movement_unit(const char *unit) {
 	if (strcasecmp(unit, "px") == 0) {
 		return MOVEMENT_UNIT_PX;
