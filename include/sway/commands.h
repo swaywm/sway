@@ -156,6 +156,7 @@ sway_cmd cmd_mark;
 sway_cmd cmd_max_render_time;
 sway_cmd cmd_mode;
 sway_cmd cmd_mouse_warping;
+sway_cmd cmd_mouse_warping_position;
 sway_cmd cmd_move;
 sway_cmd cmd_new_float;
 sway_cmd cmd_new_window;
