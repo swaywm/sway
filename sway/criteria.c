@@ -630,8 +630,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		if (strcmp(value, "__focused__") == 0) {
 			struct sway_seat *seat = input_manager_current_seat();
 			struct sway_container *focus = seat_get_focused_container(seat);
-			struct sway_view *view = focus ? focus->view : NULL;
-			criteria->con_id = view ? view->container->node.id : 0;
+			criteria->con_id = focus ? focus->node.id : 0;
 		} else {
 			criteria->con_id = strtoul(value, &endptr, 10);
 			if (*endptr != 0) {
