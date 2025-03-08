@@ -159,6 +159,26 @@ void restore_nofile_limit(void) {
 	}
 }
 
+static void setup_signals(void) {
+	// handle SIGTERM signals by exiting
+	struct sigaction term_sig = {
+		.sa_handler = sig_handler,
+		.sa_flags = SA_RESETHAND,
+	};
+	sigaction(SIGTERM, &term_sig, NULL);
+	sigaction(SIGINT, &term_sig, NULL);
+
+	// handle SIGCHLD by reaping children; don't reset it after running it once
+	struct sigaction chld_sig = {
+		.sa_handler = sigchld_handler,
+		.sa_flags = SA_RESTART,
+	};
+	sigaction(SIGCHLD, &chld_sig, NULL);
+
+	// prevent ipc from crashing sway
+	signal(SIGPIPE, SIG_IGN);
+}
+
 void enable_debug_flag(const char *flag) {
 	if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
@@ -328,14 +348,7 @@ int main(int argc, char **argv) {
 	}
 
 	increase_nofile_limit();
-
-	// handle SIGTERM signals
-	signal(SIGTERM, sig_handler);
-	signal(SIGINT, sig_handler);
-	signal(SIGCHLD, sigchld_handler);
-
-	// prevent ipc from crashing sway
-	signal(SIGPIPE, SIG_IGN);
+	setup_signals();
 
 	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
