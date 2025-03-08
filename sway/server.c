@@ -14,6 +14,7 @@
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_data_control_v1.h>
+#include <wlr/types/wlr_ext_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
@@ -108,7 +109,8 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input_method->global ||
 		global == server.foreign_toplevel_list->global ||
 		global == server.foreign_toplevel_manager->global ||
-		global == server.data_control_manager_v1->global ||
+		global == server.wlr_data_control_manager_v1->global ||
+		global == server.ext_data_control_manager_v1->global ||
 		global == server.screencopy_manager_v1->global ||
 		global == server.ext_image_copy_capture_manager_v1->global ||
 		global == server.export_dmabuf_manager_v1->global ||
@@ -376,7 +378,8 @@ bool server_init(struct sway_server *server) {
 	server->screencopy_manager_v1 = wlr_screencopy_manager_v1_create(server->wl_display);
 	server->ext_image_copy_capture_manager_v1 = wlr_ext_image_copy_capture_manager_v1_create(server->wl_display, 1);
 	wlr_ext_output_image_capture_source_manager_v1_create(server->wl_display, 1);
-	server->data_control_manager_v1 = wlr_data_control_manager_v1_create(server->wl_display);
+	server->wlr_data_control_manager_v1 = wlr_data_control_manager_v1_create(server->wl_display);
+	server->ext_data_control_manager_v1 = wlr_ext_data_control_manager_v1_create(server->wl_display, 1);
 	server->security_context_manager_v1 = wlr_security_context_manager_v1_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
 	wlr_single_pixel_buffer_manager_v1_create(server->wl_display);
