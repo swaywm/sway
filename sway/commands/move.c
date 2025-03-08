@@ -22,7 +22,7 @@
 #include "util.h"
 
 static const char expected_syntax[] =
-	"Expected 'move <left|right|up|down> <[px] px>' or "
+	"Expected 'move <left|right|up|down> [<amount> [px|ppt]]' or "
 	"'move [--no-auto-back-and-forth] <container|window> [to] workspace <name>' or "
 	"'move <container|window|workspace> [to] output <name|direction>' or "
 	"'move <container|window> [to] mark <mark>'";
@@ -703,12 +703,20 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 
 static struct cmd_results *cmd_move_in_direction(
 		enum wlr_direction direction, int argc, char **argv) {
+	//DEBUG
+	for (int i = 0; i < argc; i++) {
+		printf("argv[%d]: %s\n", i, argv[i]);
+	}
 	int move_amt = 10;
+	bool is_ppt = false;
 	if (argc) {
 		char *inv;
 		move_amt = (int)strtol(argv[0], &inv, 10);
-		if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
+		if (*inv != '\0') {
 			return cmd_results_new(CMD_FAILURE, "Invalid distance specified");
+		}
+		if (argc > 1 && strcasecmp(argv[1], "ppt") == 0) {
+			is_ppt = true;
 		}
 	}
 
@@ -726,16 +734,16 @@ static struct cmd_results *cmd_move_in_direction(
 		double ly = container->pending.y;
 		switch (direction) {
 		case WLR_DIRECTION_LEFT:
-			lx -= move_amt;
+			lx -= is_ppt ? container->pending.width * ((double)move_amt / 100.0) : move_amt;
 			break;
 		case WLR_DIRECTION_RIGHT:
-			lx += move_amt;
+			lx += is_ppt ? container->pending.width * ((double)move_amt / 100.0) : move_amt;
 			break;
 		case WLR_DIRECTION_UP:
-			ly -= move_amt;
+			ly -= is_ppt ? container->pending.height * ((double)move_amt / 100.0) : move_amt;
 			break;
 		case WLR_DIRECTION_DOWN:
-			ly += move_amt;
+			ly += is_ppt ? container->pending.height * ((double)move_amt / 100.0) : move_amt;
 			break;
 		}
 		container_floating_move_to(container, lx, ly);
@@ -981,7 +989,7 @@ static struct cmd_results *cmd_move_to_scratchpad(void) {
 }
 
 static const char expected_full_syntax[] = "Expected "
-	"'move left|right|up|down [<amount> [px]]'"
+	"'move left|right|up|down [<amount> [px|ppt]]'"
 	" or 'move [--no-auto-back-and-forth] [window|container] [to] workspace"
 	"  <name>|next|prev|next_on_output|prev_on_output|current|(number <num>)'"
 	" or 'move [window|container] [to] output <name/id>|left|right|up|down'"
