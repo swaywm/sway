@@ -104,7 +104,8 @@ struct sway_server {
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_content_type_manager_v1 *content_type_manager_v1;
-	struct wlr_data_control_manager_v1 *data_control_manager_v1;
+	struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1;
+	struct wlr_ext_data_control_manager_v1 *ext_data_control_manager_v1;
 	struct wlr_screencopy_manager_v1 *screencopy_manager_v1;
 	struct wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager_v1;
 	struct wlr_export_dmabuf_manager_v1 *export_dmabuf_manager_v1;
