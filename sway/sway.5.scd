@@ -302,28 +302,34 @@ set|plus|minus|toggle <amount>
 *rename* workspace [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
 
-*resize* shrink|grow width|height [<amount> [px|ppt]]
+*resize* shrink|grow up|right|down|left|width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are resized
 	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
+	For tiling containers, space is taken/given from the container in the
+	specified direction. If _width_ or _height_ is specified, space will be
+	taken/given from all other containers.
 
 *resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _height_ is 0, the container
-	will not be resized.
+	will not be resized. For tiling containers, space is taken/given from all
+	other containers.
 
 *resize* set [width] <width> [px|ppt]
 	Sets the width of the container to _width_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _width_ is 0, the container
-	will not be resized.
+	will not be resized. For tiling containers, space is taken/given from all
+	other containers.
 
 *resize* set [width] <width> [px|ppt] [height] <height> [px|ppt]
 	Sets the width and height of the container to _width_ and _height_,
 	specified in pixels or percentage points. If the units are omitted,
 	floating containers are resized in px and tiled containers by ppt. If
 	_width_ or _height_ is 0, the container will not be resized on that axis.
+	For tiling containers, space is taken/given from all other containers.
 
 *scratchpad* show
 	Shows a window from the scratchpad. Repeatedly using this command will
