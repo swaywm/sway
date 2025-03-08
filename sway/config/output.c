@@ -563,6 +563,7 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	if (output->color_transform == NULL && oc && oc->render_bit_depth == RENDER_BIT_DEPTH_10 &&
 			(wlr_output->supported_primaries & WLR_COLOR_NAMED_PRIMARIES_BT2020) &&
 			server.renderer->features.output_color_transform) {
+		sway_log(SWAY_INFO, "ENABLING HDR ON %s", wlr_output->name);
 		output->color_transform = wlr_color_transform_init_srgb(WLR_COLOR_NAMED_PRIMARIES_BT2020);
 	}
 
