@@ -52,11 +52,8 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	pid_t child = fork();
 	if (child == 0) {
 		restore_nofile_limit();
+		restore_signals();
 		setsid();
-		sigset_t set;
-		sigemptyset(&set);
-		sigprocmask(SIG_SETMASK, &set, NULL);
-		signal(SIGPIPE, SIG_DFL);
 
 		if (ctx) {
 			const char *token = launcher_ctx_get_token_name(ctx);
