@@ -157,7 +157,7 @@ extern struct sway_debug debug;
 
 extern bool allow_unsupported_gpu;
 
-bool server_init(struct sway_server *server);
+bool server_init(struct sway_server *server, const char * socket_name, int socket_fd);
 void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
