@@ -48,13 +48,6 @@ void sig_handler(int signal) {
 	sway_terminate(EXIT_SUCCESS);
 }
 
-void sigchld_handler(int signal) {
-	pid_t pid;
-	do {
-		pid = waitpid(-1, NULL, WNOHANG);
-	} while (pid > 0);
-}
-
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -157,6 +150,14 @@ void restore_nofile_limit(void) {
 		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
 			"setrlimit(NOFILE) failed");
 	}
+}
+
+void restore_signals(void) {
+	sigset_t set;
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, NULL);
+	signal(SIGCHLD, SIG_DFL);
+	signal(SIGPIPE, SIG_DFL);
 }
 
 void enable_debug_flag(const char *flag) {
@@ -332,7 +333,9 @@ int main(int argc, char **argv) {
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
 	signal(SIGINT, sig_handler);
-	signal(SIGCHLD, sigchld_handler);
+
+	// avoid need to reap children
+	signal(SIGCHLD, SIG_IGN);
 
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
