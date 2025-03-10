@@ -8,9 +8,6 @@
 #include "sway/config.h"
 #include "sway/server.h"
 #include "sway/desktop/launcher.h"
-#include "sway/tree/container.h"
-#include "sway/tree/root.h"
-#include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
 

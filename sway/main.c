@@ -330,9 +330,14 @@ int main(int argc, char **argv) {
 	increase_nofile_limit();
 
 	// handle SIGTERM signals
-	signal(SIGTERM, sig_handler);
-	signal(SIGINT, sig_handler);
-	signal(SIGCHLD, sigchld_handler);
+	struct sigaction sa;
+	sa.sa_handler = sigchld_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+	sigaction(SIGCHLD, &sa, NULL);
+	sa.sa_handler = sig_handler;
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
 
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
