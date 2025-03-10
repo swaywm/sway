@@ -44,10 +44,6 @@ void sway_terminate(int exit_code) {
 	}
 }
 
-void sig_handler(int signal) {
-	sway_terminate(EXIT_SUCCESS);
-}
-
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -329,10 +325,6 @@ int main(int argc, char **argv) {
 	}
 
 	increase_nofile_limit();
-
-	// handle SIGTERM signals
-	signal(SIGTERM, sig_handler);
-	signal(SIGINT, sig_handler);
 
 	// avoid need to reap children
 	signal(SIGCHLD, SIG_IGN);
