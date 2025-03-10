@@ -213,13 +213,8 @@ static void invoke_swaybar(struct bar_config *bar) {
 		sway_log(SWAY_ERROR, "Failed to create fork for swaybar");
 		return;
 	} else if (pid == 0) {
-		// Remove the SIGUSR1 handler that wlroots adds for xwayland
-		sigset_t set;
-		sigemptyset(&set);
-		sigprocmask(SIG_SETMASK, &set, NULL);
-		signal(SIGPIPE, SIG_DFL);
-
 		restore_nofile_limit();
+		restore_signals();
 		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
