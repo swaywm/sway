@@ -163,6 +163,7 @@ bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
 
 void restore_nofile_limit(void);
+void restore_signals(void);
 
 void handle_new_output(struct wl_listener *listener, void *data);
 

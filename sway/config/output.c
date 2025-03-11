@@ -1061,6 +1061,7 @@ static bool _spawn_swaybg(char **command) {
 		return false;
 	} else if (pid == 0) {
 		restore_nofile_limit();
+		restore_signals();
 		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
