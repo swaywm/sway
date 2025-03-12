@@ -29,7 +29,7 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		}
 	}
 
-	// Calculate each height fraction
+	// Calculate each width fraction
 	double total_width_fraction = 0;
 	for (int i = 0; i < children->length; ++i) {
 		struct sway_container *child = children->items[i];
@@ -82,12 +82,18 @@ static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
 		child->pending.y = parent->y;
 		child->pending.width = round(child->width_fraction * child_total_width);
 		child->pending.height = parent->height;
-		child_x += child->pending.width + inner_gap;
 
 		// Make last child use remaining width of parent
 		if (i == children->length - 1) {
 			child->pending.width = parent->x + parent->width - child->pending.x;
 		}
+
+		// Arbitrary lower bound for window size
+		if (child->pending.width < 10 || child->pending.height < 10) {
+			child->pending.width = 0;
+			child->pending.height = 0;
+		}
+		child_x += child->pending.width + inner_gap;
 	}
 }
 
@@ -161,12 +167,18 @@ static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
 		child->pending.y = child_y;
 		child->pending.width = parent->width;
 		child->pending.height = round(child->height_fraction * child_total_height);
-		child_y += child->pending.height + inner_gap;
 
 		// Make last child use remaining height of parent
 		if (i == children->length - 1) {
 			child->pending.height = parent->y + parent->height - child->pending.y;
 		}
+
+		// Arbitrary lower bound for window size
+		if (child->pending.width < 10 || child->pending.height < 10) {
+			child->pending.width = 0;
+			child->pending.height = 0;
+		}
+		child_y += child->pending.height + inner_gap;
 	}
 }
 
