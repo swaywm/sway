@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -146,6 +147,11 @@ static bool filter_global(const struct wl_client *client,
 	return true;
 }
 
+static int term_signal(int signal, void *data) {
+	sway_terminate(EXIT_SUCCESS);
+	return 0;
+}
+
 static void detect_proprietary(struct wlr_backend *backend, void *data) {
 	int drm_fd = wlr_backend_get_drm_fd(backend);
 	if (drm_fd < 0) {
@@ -225,6 +231,9 @@ bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
+
+	wl_event_loop_add_signal(server->wl_event_loop, SIGTERM, term_signal, NULL);
+	wl_event_loop_add_signal(server->wl_event_loop, SIGINT, term_signal, NULL);
 
 	wl_display_set_global_filter(server->wl_display, filter_global, NULL);
 	wl_display_set_default_max_buffer_size(server->wl_display, 1024 * 1024);
