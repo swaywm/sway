@@ -652,6 +652,8 @@ static void arrange_root(struct sway_root *root) {
 			struct sway_output *output = root->outputs->items[i];
 			struct sway_workspace *ws = output->current.active_workspace;
 
+			wlr_scene_output_set_position(output->scene_output, output->lx, output->ly);
+
 			if (ws) {
 				arrange_workspace_floating(ws);
 			}
