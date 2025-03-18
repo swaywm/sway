@@ -264,7 +264,7 @@ static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
 	output->wlr_output->frame_pending = false;
-	if (!output->enabled) {
+	if (!output->wlr_output->enabled) {
 		return 0;
 	}
 
