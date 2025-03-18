@@ -129,6 +129,8 @@ sway_cmd cmd_exec;
 sway_cmd cmd_exec_always;
 sway_cmd cmd_exit;
 sway_cmd cmd_floating;
+sway_cmd cmd_floating_default_height;
+sway_cmd cmd_floating_default_width;
 sway_cmd cmd_floating_maximum_size;
 sway_cmd cmd_floating_minimum_size;
 sway_cmd cmd_floating_modifier;

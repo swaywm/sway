@@ -711,6 +711,14 @@ The default colors are:
 *floating_minimum_size* <width> x <height>
 	Specifies the minimum size of floating windows. The default is 75 x 50.
 
+*floating_default_height* <height>
+	Specifies the default size of floating windows as fraction of maximal
+	available height
+
+*floating_default_width* <width>
+	Specifies the default size of floating windows as fraction of maximal
+	available width
+
 *floating_modifier* <modifier> [normal|inverse]
 	When the _modifier_ key is held down, you may hold left click to move
 	windows, and right click to resize them. Setting _modifier_ to _none_

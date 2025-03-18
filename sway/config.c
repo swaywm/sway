@@ -268,6 +268,9 @@ static void config_defaults(struct sway_config *config) {
 	config->floating_minimum_width = 75;
 	config->floating_minimum_height = 50;
 
+	config->floating_default_height = 0.75;
+	config->floating_default_width = 0.5;
+
 	// Flags
 	config->focus_follows_mouse = FOLLOWS_YES;
 	config->mouse_warping = WARP_OUTPUT;

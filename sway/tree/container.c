@@ -953,8 +953,8 @@ void container_floating_set_default_size(struct sway_container *con) {
 	struct wlr_box box;
 	workspace_get_box(con->pending.workspace, &box);
 
-	double width = fmax(min_width, fmin(box.width * 0.5, max_width));
-	double height = fmax(min_height, fmin(box.height * 0.75, max_height));
+	double width = fmax(min_width, fmin(box.width * config->floating_default_width, max_width));
+	double height = fmax(min_height, fmin(box.height * config->floating_default_height, max_height));
 	if (!con->view) {
 		con->pending.width = width;
 		con->pending.height = height;

@@ -59,6 +59,8 @@ static const struct cmd_handler handlers[] = {
 	{ "default_floating_border", cmd_default_floating_border },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
+	{ "floating_default_height", cmd_floating_default_height },
+	{ "floating_default_width", cmd_floating_default_width },
 	{ "floating_maximum_size", cmd_floating_maximum_size },
 	{ "floating_minimum_size", cmd_floating_minimum_size },
 	{ "floating_modifier", cmd_floating_modifier },

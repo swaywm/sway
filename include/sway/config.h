@@ -582,6 +582,9 @@ struct sway_config {
 	int32_t floating_minimum_width;
 	int32_t floating_minimum_height;
 
+	float floating_default_height;
+	float floating_default_width;
+
 	// The keysym to keycode translation
 	struct xkb_state *keysym_translation_state;
 
