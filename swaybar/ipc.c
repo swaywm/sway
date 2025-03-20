@@ -46,7 +46,7 @@ void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 
 char *parse_font(const char *font) {
 	char *new_font = NULL;
-	if (has_prefix("pango:", font)) {
+	if (has_prefix(font, "pango:")) {
 		font += strlen("pango:");
 	}
 	new_font = strdup(font);
