@@ -12,6 +12,7 @@
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#include <wlr/types/wlr_session_lock_v1.h>
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
@@ -1008,6 +1009,9 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return view_from_wlr_surface(subsurface->parent);
 	}
 	if (wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
+		return NULL;
+	}
+	if (wlr_session_lock_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
 		return NULL;
 	}
 
