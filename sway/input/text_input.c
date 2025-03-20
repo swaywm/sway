@@ -10,6 +10,7 @@
 #include "sway/input/text_input_popup.h"
 #include "sway/layers.h"
 #include "sway/server.h"
+#include <wlr/types/wlr_session_lock_v1.h>
 
 static struct sway_text_input *relay_get_focusable_text_input(
 		struct sway_input_method_relay *relay) {
@@ -385,6 +386,8 @@ static void input_popup_set_focus(struct sway_input_popup *popup,
 
 	struct wlr_layer_surface_v1 *layer_surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(surface);
+	struct wlr_session_lock_surface_v1 *lock_surface =
+		wlr_session_lock_surface_v1_try_from_wlr_surface(surface);
 
 	struct wlr_scene_tree *relative_parent;
 	if (layer_surface) {
@@ -404,8 +407,30 @@ static void input_popup_set_focus(struct sway_input_popup *popup,
 		// surface. Layer surfaces get destroyed as part of the output being
 		// destroyed, thus also trickling down to popups.
 		popup->fixed_output = layer->layer_surface->output;
+	} else if (lock_surface) {
+		wl_signal_add(&lock_surface->surface->events.unmap,
+			&popup->focused_surface_unmap);
+
+		struct sway_layer_surface *lock = lock_surface->data;
+		if (lock == NULL) {
+			return;
+		}
+
+		relative_parent = lock->scene->tree;
+		popup->desc.view = NULL;
+
+		// we don't need to add an event here to NULL out this field because
+		// this field will only be initialized if the popup is part of a layer
+		// surface. Layer surfaces get destroyed as part of the output being
+		// destroyed, thus also trickling down to popups.
+		popup->fixed_output = lock->layer_surface->output;
 	} else {
 		struct sway_view *view = view_from_wlr_surface(surface);
+		// In the future there may be other shells been added, so we also need to check here.
+		if (view == NULL) {
+			sway_log(SWAY_DEBUG, "Unsupported IME focus surface");
+			return;
+		}
 		wl_signal_add(&view->events.unmap, &popup->focused_surface_unmap);
 		relative_parent = view->scene_tree;
 		popup->desc.view = view;
