@@ -299,6 +299,11 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			title_bar_height = 0;
 		}
 
+		if (active && active->current.tabbed_titlebar_follows_border &&
+				active->current.border != B_NORMAL) {
+			title_bar_height = 0;
+		}
+
 		double w = (double) width / children->length;
 		int title_offset = 0;
 		for (int i = 0; i < children->length; i++) {
@@ -326,6 +331,11 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			((struct sway_container *)children->items[0]) : NULL;
 		if (config->hide_lone_tab && first && first->view &&
 				first->current.border != B_NORMAL) {
+			title_bar_height = 0;
+		}
+
+		if (active && active->current.stacking_titlebar_follows_border &&
+				active->current.border != B_NORMAL) {
 			title_bar_height = 0;
 		}
 
