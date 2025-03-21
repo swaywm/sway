@@ -46,6 +46,7 @@ struct sway_server {
 
 	struct wl_listener new_output;
 	struct wl_listener renderer_lost;
+	struct wl_event_source *recreating_renderer;
 
 	struct wlr_idle_notifier_v1 *idle_notifier_v1;
 	struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;

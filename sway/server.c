@@ -182,11 +182,11 @@ static void detect_proprietary(struct wlr_backend *backend, void *data) {
 	drmFreeVersion(version);
 }
 
-static void handle_renderer_lost(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+static void do_renderer_recreate(void *data) {
+	struct sway_server *server = data;
+	server->recreating_renderer = NULL;
 
 	sway_log(SWAY_INFO, "Re-creating renderer after GPU reset");
-
 	struct wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
 	if (renderer == NULL) {
 		sway_log(SWAY_ERROR, "Unable to create renderer");
@@ -219,6 +219,18 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 
 	wlr_allocator_destroy(old_allocator);
 	wlr_renderer_destroy(old_renderer);
+}
+
+static void handle_renderer_lost(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+
+	if (server->recreating_renderer != NULL) {
+		sway_log(SWAY_DEBUG, "Re-creation of renderer already scheduled");
+		return;
+	}
+
+	sway_log(SWAY_INFO, "Scheduling re-creation of renderer after GPU reset");
+	server->recreating_renderer = wl_event_loop_add_idle(server->wl_event_loop, do_renderer_recreate, server);
 }
 
 bool server_init(struct sway_server *server) {
