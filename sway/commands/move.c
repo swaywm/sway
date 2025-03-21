@@ -770,6 +770,10 @@ static struct cmd_results *cmd_move_in_direction(
 		ipc_event_window(container, "move");
 	}
 
+	// Re-focus re-parented container.
+	seat_set_raw_focus(config->handler_context.seat, &new_ws->node);
+	seat_set_focus_container(config->handler_context.seat, container);
+
 	container_end_mouse_operation(container);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
