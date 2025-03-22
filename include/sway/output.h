@@ -71,7 +71,9 @@ struct sway_output {
 	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
 	struct wl_event_source *repaint_timer;
+
 	bool allow_tearing;
+	bool hdr;
 };
 
 struct sway_output_non_desktop {
