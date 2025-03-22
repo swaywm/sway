@@ -1,12 +1,16 @@
+#define _XOPEN_SOURCE 700 // for putenv
 #include <assert.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdnoreturn.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
 #include <wlr/config.h>
+#include <wlr/util/log.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
@@ -53,6 +57,7 @@
 #include "config.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 #include "sway/config.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
@@ -124,6 +129,56 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input->transient_seat_manager->global ||
 		global == server.xdg_output_manager_v1->global;
 }
+
+#if WLR_HAS_XWAYLAND
+noreturn bool _xwayland_spawn_func(char *program, char *args[], char *envp[], int nocloexec[]) {
+	restore_nofile_limit();
+	restore_signals();
+	setsid();
+
+	for (int idx = 0; nocloexec[idx] != -1; idx++) {
+		if (!sway_set_cloexec(nocloexec[idx], false)) {
+			sway_log(SWAY_ERROR, "Unable to clear CLOEXEC");
+			_exit(EXIT_FAILURE);
+		}
+	}
+
+	for (int idx = 0; envp[idx] != NULL; idx++) {
+		if (putenv(envp[idx]) != 0) {
+			sway_log_errno(SWAY_ERROR, "Unable to putenv: %s", envp[idx]);
+			_exit(EXIT_FAILURE);
+		}
+	}
+
+	enum wlr_log_importance verbosity = wlr_log_get_verbosity();
+	int devnull = open("/dev/null", O_WRONLY | O_CREAT | O_CLOEXEC, 0666);
+	if (devnull < 0) {
+		sway_log_errno(SWAY_ERROR, "xwayland: failed to open /dev/null");
+		_exit(EXIT_FAILURE);
+	}
+	if (verbosity < WLR_INFO) {
+		dup2(devnull, STDOUT_FILENO);
+	}
+	if (verbosity < WLR_INFO) {
+		dup2(devnull, STDERR_FILENO);
+	}
+
+	execv(program, args);
+	sway_log_errno(SWAY_ERROR, "execve failed");
+	_exit(EXIT_SUCCESS); // Close child process
+}
+
+bool xwayland_spawn_func(char *program, char *args[], char *envp[], int nocloexec[]) {
+	// Fork process
+	pid_t child = fork();
+	if (child < 0) {
+		return false;
+	} else if (child > 0) {
+		return true;
+	}
+	_xwayland_spawn_func(program, args, envp, nocloexec);
+}
+#endif
 
 static bool filter_global(const struct wl_client *client,
 		const struct wl_global *global, void *data) {
@@ -477,7 +532,7 @@ bool server_start(struct sway_server *server) {
 				config->xwayland == XWAYLAND_MODE_LAZY);
 		server->xwayland.wlr_xwayland =
 			wlr_xwayland_create(server->wl_display, server->compositor,
-					config->xwayland == XWAYLAND_MODE_LAZY);
+					config->xwayland == XWAYLAND_MODE_LAZY, xwayland_spawn_func);
 		if (!server->xwayland.wlr_xwayland) {
 			sway_log(SWAY_ERROR, "Failed to start Xwayland");
 			unsetenv("DISPLAY");
