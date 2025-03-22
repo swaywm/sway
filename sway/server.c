@@ -182,11 +182,11 @@ static void detect_proprietary(struct wlr_backend *backend, void *data) {
 	drmFreeVersion(version);
 }
 
-static void handle_renderer_lost(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+static void do_renderer_recreate(void *data) {
+	struct sway_server *server = (struct sway_server *)data;
+	server->recreating_renderer = NULL;
 
 	sway_log(SWAY_INFO, "Re-creating renderer after GPU reset");
-
 	struct wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
 	if (renderer == NULL) {
 		sway_log(SWAY_ERROR, "Unable to create renderer");
@@ -219,6 +219,18 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 
 	wlr_allocator_destroy(old_allocator);
 	wlr_renderer_destroy(old_renderer);
+}
+
+static void handle_renderer_lost(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+
+	if (server->recreating_renderer != NULL) {
+		sway_log(SWAY_DEBUG, "Re-creation of renderer already scheduled");
+		return;
+	}
+
+	sway_log(SWAY_INFO, "Scheduling re-creation of renderer after GPU reset");
+	server->recreating_renderer = wl_event_loop_add_idle(server->wl_event_loop, do_renderer_recreate, server);
 }
 
 bool server_init(struct sway_server *server) {
@@ -460,8 +472,30 @@ bool server_init(struct sway_server *server) {
 }
 
 void server_fini(struct sway_server *server) {
+	// remove listeners
+	wl_list_remove(&server->renderer_lost.link);
+	wl_list_remove(&server->new_output.link);
+	wl_list_remove(&server->layer_shell_surface.link);
+	wl_list_remove(&server->xdg_shell_toplevel.link);
+	wl_list_remove(&server->server_decoration.link);
+	wl_list_remove(&server->xdg_decoration.link);
+	wl_list_remove(&server->pointer_constraint.link);
+	wl_list_remove(&server->output_manager_apply.link);
+	wl_list_remove(&server->output_manager_test.link);
+	wl_list_remove(&server->output_power_manager_set_mode.link);
+#if WLR_HAS_DRM_BACKEND
+	wl_list_remove(&server->drm_lease_request.link);
+#endif
+	wl_list_remove(&server->tearing_control_new_object.link);
+	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
+	wl_list_remove(&server->xdg_activation_v1_new_token.link);
+	wl_list_remove(&server->request_set_cursor_shape.link);
+	input_manager_finish(server);
+
 	// TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
+	wl_list_remove(&server->xwayland_surface.link);
+	wl_list_remove(&server->xwayland_ready.link);
 	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 #endif
 	wl_display_destroy_clients(server->wl_display);
