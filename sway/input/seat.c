@@ -1064,7 +1064,20 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 bool seat_is_input_allowed(struct sway_seat *seat,
 		struct wlr_surface *surface) {
 	if (server.session_lock.lock) {
-		return sway_session_lock_has_surface(server.session_lock.lock, surface);
+		if (sway_session_lock_has_surface(server.session_lock.lock, surface)) {
+			return true;
+		}
+
+		struct wlr_layer_surface_v1 *layer_surface =
+			wlr_layer_surface_v1_try_from_wlr_surface(surface);
+		struct sway_layer_surface *layer =
+			layer_surface ? layer_surface->data : NULL;
+
+		if (layer && layer->show_over_lockscreen) {
+			return true;
+		}
+
+		return false;
 	}
 	return true;
 }
