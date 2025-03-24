@@ -218,6 +218,10 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 }
 
 bool view_inhibit_idle(struct sway_view *view) {
+	if (server.session_lock.lock) {
+		return false;
+	}
+
 	struct sway_idle_inhibitor_v1 *user_inhibitor =
 		sway_idle_inhibit_v1_user_inhibitor_for_view(view);
 
