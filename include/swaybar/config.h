@@ -14,6 +14,11 @@ struct box_colors {
 	uint32_t text;
 };
 
+struct box_size {
+	uint32_t width;
+	uint32_t height;
+};
+
 struct config_output {
 	struct wl_list link; // swaybar_config::outputs
 	char *name;
