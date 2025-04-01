@@ -632,13 +632,22 @@ void arrange_popups(struct wlr_scene_tree *popups) {
 
 static void arrange_root(struct sway_root *root) {
 	struct sway_container *fs = root->fullscreen_global;
+	bool locked = server.session_lock.lock;
 
 	wlr_scene_node_set_enabled(&root->layers.shell_background->node, !fs);
 	wlr_scene_node_set_enabled(&root->layers.shell_bottom->node, !fs);
-	wlr_scene_node_set_enabled(&root->layers.tiling->node, !fs);
-	wlr_scene_node_set_enabled(&root->layers.floating->node, !fs);
+	wlr_scene_node_set_enabled(&root->layers.tiling->node, !fs && !locked);
+	wlr_scene_node_set_enabled(&root->layers.floating->node, !fs && !locked);
 	wlr_scene_node_set_enabled(&root->layers.shell_top->node, !fs);
-	wlr_scene_node_set_enabled(&root->layers.fullscreen->node, !fs);
+	wlr_scene_node_set_enabled(&root->layers.fullscreen->node, !fs && !locked);
+	wlr_scene_node_set_enabled(&root->layers.fullscreen_global->node, !locked);
+#if WLR_HAS_XWAYLAND
+	wlr_scene_node_set_enabled(&root->layers.unmanaged->node, !locked);
+#endif
+
+	if (server.session_lock.lock) {
+		sway_log(SWAY_INFO, "arranging locked layout");
+	}
 
 	// hide all contents in the scratchpad
 	for (int i = 0; i < root->scratchpad->length; i++) {
