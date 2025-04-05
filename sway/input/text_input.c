@@ -136,7 +136,10 @@ static void constrain_popup(struct sway_input_popup *popup) {
 	}
 
 	struct wlr_box parent = {0};
-	wlr_scene_node_coords(&popup->desc.relative->parent->node, &parent.x, &parent.y);
+	double lx, ly;
+	wlr_scene_node_coords(&popup->desc.relative->parent->node, &lx, &ly);
+	parent.x = lx;
+	parent.y = ly;
 
 	struct wlr_box geo = {0};
 	struct wlr_output *output;
