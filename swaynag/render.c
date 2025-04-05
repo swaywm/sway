@@ -264,8 +264,10 @@ void render_frame(struct swaynag *swaynag) {
 	uint32_t height = render_to_cairo(cairo, swaynag);
 	if (height != swaynag->height) {
 		zwlr_layer_surface_v1_set_size(swaynag->layer_surface, 0, height);
-		zwlr_layer_surface_v1_set_exclusive_zone(swaynag->layer_surface,
-				height);
+		if (!swaynag->no_dock) {
+			zwlr_layer_surface_v1_set_exclusive_zone(swaynag->layer_surface,
+					height);
+		}
 		wl_surface_commit(swaynag->surface);
 		wl_display_roundtrip(swaynag->display);
 	} else {
