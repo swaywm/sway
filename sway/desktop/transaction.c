@@ -627,7 +627,7 @@ void arrange_popups(struct wlr_scene_tree *popups) {
 			SWAY_SCENE_DESC_POPUP);
 
 		if (popup) {
-			int lx, ly;
+			double lx, ly;
 			wlr_scene_node_coords(popup->relative, &lx, &ly);
 			wlr_scene_node_set_position(node, lx, ly);
 		}
