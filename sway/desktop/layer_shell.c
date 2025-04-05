@@ -334,7 +334,7 @@ static void popup_unconstrain(struct sway_layer_popup *popup) {
 		return;
 	}
 
-	int lx, ly;
+	double lx, ly;
 	wlr_scene_node_coords(&popup->toplevel->scene->tree->node, &lx, &ly);
 
 	// the output box expressed in the coordinate system of the toplevel parent
