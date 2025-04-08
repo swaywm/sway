@@ -99,7 +99,7 @@ static const char *pretty_type_name(const char *name) {
 		const char *b;
 	} type_names[] = {
 		{ "keyboard", "Keyboard" },
-		{ "pointer", "Mouse" },
+		{ "pointer", "Pointer" },
 		{ "touchpad", "Touchpad" },
 		{ "tablet_pad", "Tablet pad" },
 		{ "tablet_tool", "Tablet tool" },
