@@ -44,10 +44,6 @@ void sway_terminate(int exit_code) {
 	}
 }
 
-void sig_handler(int signal) {
-	sway_terminate(EXIT_SUCCESS);
-}
-
 void run_as_ipc_client(char *command, char *socket_path) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
@@ -150,6 +146,22 @@ void restore_nofile_limit(void) {
 		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
 			"setrlimit(NOFILE) failed");
 	}
+}
+
+static int term_signal(int signal, void *data) {
+	sway_terminate(EXIT_SUCCESS);
+	return 0;
+}
+
+static void init_signals(void) {
+	wl_event_loop_add_signal(server.wl_event_loop, SIGTERM, term_signal, NULL);
+	wl_event_loop_add_signal(server.wl_event_loop, SIGINT, term_signal, NULL);
+
+	// avoid need to reap children
+	signal(SIGCHLD, SIG_IGN);
+
+	// prevent ipc write errors from crashing sway
+	signal(SIGPIPE, SIG_IGN);
 }
 
 void restore_signals(void) {
@@ -330,21 +342,13 @@ int main(int argc, char **argv) {
 
 	increase_nofile_limit();
 
-	// handle SIGTERM signals
-	signal(SIGTERM, sig_handler);
-	signal(SIGINT, sig_handler);
-
-	// avoid need to reap children
-	signal(SIGCHLD, SIG_IGN);
-
-	// prevent ipc from crashing sway
-	signal(SIGPIPE, SIG_IGN);
-
 	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
 	if (!server_init(&server)) {
 		return 1;
 	}
+
+	init_signals();
 
 	if (server.linux_dmabuf_v1) {
 		wlr_scene_set_linux_dmabuf_v1(root->root_scene, server.linux_dmabuf_v1);
