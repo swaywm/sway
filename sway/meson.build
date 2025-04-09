@@ -169,7 +169,7 @@ sway_sources = files(
 	'commands/input/middle_emulation.c',
 	'commands/input/natural_scroll.c',
 	'commands/input/pointer_accel.c',
-        'commands/input/rotation_angle.c',
+	'commands/input/rotation_angle.c',
 	'commands/input/repeat_delay.c',
 	'commands/input/repeat_rate.c',
 	'commands/input/scroll_button.c',
@@ -252,3 +252,20 @@ executable(
 	link_with: [lib_sway_common],
 	install: true
 )
+test_config = executable('sway_test_config',
+               [
+				'config.c',
+				'test/test_config.c',
+				'test/log_stub.c',
+				'../common/stringop.c',
+				'../common/util.c',
+				'../common/list.c'] + wl_protos_src,
+			   include_directories: [sway_inc, include_directories('test')],
+			   dependencies: sway_deps)
+
+
+empty_config = meson.current_source_dir() + '/test/empty_config.txt'
+test('sway_test_empty_config', test_config, args: ['-c', empty_config])
+test('sway_test_empty_config_validate', test_config, args: ['-c', empty_config, '-C'])
+test('sway_test_empty_config_validate_activate', test_config, args: ['-c', empty_config, '-C', '-A'])
+test('sway_test_reference_config_validate_activate', test_config, args: ['-c', reference_config_file, '-C', '-A'])

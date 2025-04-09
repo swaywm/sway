@@ -40,6 +40,10 @@ struct sway_config *config = NULL;
 static struct xkb_state *keysym_translation_state_create(
 		struct xkb_rule_names rules, uint32_t context_flags) {
 	struct xkb_context *context = xkb_context_new(context_flags | XKB_CONTEXT_NO_SECURE_GETENV);
+	if (!context) {
+		sway_log(SWAY_ERROR, "Failed to create XKB context");
+		return NULL;
+	}
 	struct xkb_keymap *xkb_keymap = xkb_keymap_new_from_names(
 		context,
 		&rules,
@@ -477,22 +481,24 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		config->active = true;
 
 		// xwayland can only be enabled/disabled at launch
-		sway_log(SWAY_DEBUG, "xwayland will remain %s",
+		if(old_config != NULL) {
+			sway_log(SWAY_DEBUG, "xwayland will remain %s",
 				old_config->xwayland ? "enabled" : "disabled");
-		config->xwayland = old_config->xwayland;
+		    config->xwayland = old_config->xwayland;
 
-		// primary_selection can only be enabled/disabled at launch
-		sway_log(SWAY_DEBUG, "primary_selection will remain %s",
+		    // primary_selection can only be enabled/disabled at launch
+		    sway_log(SWAY_DEBUG, "primary_selection will remain %s",
 				old_config->primary_selection ? "enabled" : "disabled");
-		config->primary_selection = old_config->primary_selection;
+		    config->primary_selection = old_config->primary_selection;
 
-		if (!config->validating) {
-			if (old_config->swaybg_client != NULL) {
+		    if (!config->validating) {
+			   if (old_config->swaybg_client != NULL) {
 				wl_client_destroy(old_config->swaybg_client);
-			}
+			    }
 
-			if (old_config->swaynag_config_errors.client != NULL) {
-				wl_client_destroy(old_config->swaynag_config_errors.client);
+			    if (old_config->swaynag_config_errors.client != NULL) {
+				    wl_client_destroy(old_config->swaynag_config_errors.client);
+			    }
 			}
 
 			input_manager_reset_all_inputs();
