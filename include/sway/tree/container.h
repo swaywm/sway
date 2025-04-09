@@ -95,6 +95,7 @@ struct sway_container {
 
 	struct wl_listener output_enter;
 	struct wl_listener output_leave;
+	struct wl_listener output_handler_destroy;
 
 	struct sway_container_state current;
 	struct sway_container_state pending;
