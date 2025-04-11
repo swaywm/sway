@@ -879,6 +879,10 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	argc -= num_consumed_args;
 	argv += num_consumed_args;
 
+	if (argc > 0) {
+		return cmd_results_new(CMD_INVALID, "%s", expected_position_syntax);
+	}
+
 	struct sway_workspace *ws = container->pending.workspace;
 	if (!ws) {
 		struct sway_seat *seat = config->handler_context.seat;
