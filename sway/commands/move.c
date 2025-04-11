@@ -808,7 +808,7 @@ static struct cmd_results *cmd_move_to_position_pointer(
 }
 
 static const char expected_position_syntax[] =
-	"Expected 'move [absolute] position <x> [px] <y> [px]' or "
+	"Expected 'move [absolute] position <x> [px|ppt] <y> [px|ppt]' or "
 	"'move [absolute] position center' or "
 	"'move position cursor|mouse|pointer'";
 
@@ -872,24 +872,15 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	int num_consumed_args = parse_movement_amount(argc, argv, &lx);
 	argc -= num_consumed_args;
 	argv += num_consumed_args;
-	if (lx.unit == MOVEMENT_UNIT_INVALID) {
-		return cmd_results_new(CMD_INVALID, "Invalid x position specified");
-	}
-
-	if (argc < 1) {
-		return cmd_results_new(CMD_FAILURE, "%s", expected_position_syntax);
-	}
 
 	struct movement_amount ly = { .amount = 0, .unit = MOVEMENT_UNIT_INVALID };
 	// Y direction
 	num_consumed_args = parse_movement_amount(argc, argv, &ly);
 	argc -= num_consumed_args;
 	argv += num_consumed_args;
+
 	if (argc > 0) {
 		return cmd_results_new(CMD_INVALID, "%s", expected_position_syntax);
-	}
-	if (ly.unit == MOVEMENT_UNIT_INVALID) {
-		return cmd_results_new(CMD_INVALID, "Invalid y position specified");
 	}
 
 	struct sway_workspace *ws = container->pending.workspace;
@@ -916,8 +907,7 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	case MOVEMENT_UNIT_DEFAULT:
 		break;
 	case MOVEMENT_UNIT_INVALID:
-		sway_assert(false, "invalid x unit");
-		break;
+		return cmd_results_new(CMD_INVALID, "Invalid x unit: %s", expected_position_syntax);
 	}
 
 	switch (ly.unit) {
@@ -938,8 +928,7 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	case MOVEMENT_UNIT_DEFAULT:
 		break;
 	case MOVEMENT_UNIT_INVALID:
-		sway_assert(false, "invalid y unit");
-		break;
+		return cmd_results_new(CMD_INVALID, "Invalid y unit: %s", expected_position_syntax);
 	}
 	if (!absolute) {
 		lx.amount += ws->x;

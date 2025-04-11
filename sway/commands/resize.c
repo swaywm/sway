@@ -378,8 +378,8 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 			con->pending.width = width->amount;
 			break;
 		case MOVEMENT_UNIT_INVALID:
-			sway_assert(false, "invalid width unit");
-			break;
+			return cmd_results_new(CMD_INVALID,
+						  "Invalid width unit, check man 5 sway for correct usage");
 		}
 	}
 
@@ -402,8 +402,8 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 			con->pending.height = height->amount;
 			break;
 		case MOVEMENT_UNIT_INVALID:
-			sway_assert(false, "invalid height unit");
-			break;
+			return cmd_results_new(CMD_INVALID,
+						  "Invalid height unit, check man 5 sway for correct usage");
 		}
 	}
 
@@ -457,7 +457,7 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 		if (argc > num_consumed_args) {
 			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
-		if (width.unit == MOVEMENT_UNIT_INVALID) {
+		if (height.unit == MOVEMENT_UNIT_INVALID) {
 			return cmd_results_new(CMD_INVALID, "%s", usage);
 		}
 	}
@@ -582,17 +582,13 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "set") == 0) {
-		return cmd_resize_set(argc - 1, &argv[1]);
+		error = cmd_resize_set(argc - 1, &argv[1]);
 	}
-	if (strcasecmp(argv[0], "grow") == 0) {
-		return cmd_resize_adjust(argc - 1, &argv[1], 1);
+	else if (strcasecmp(argv[0], "grow") == 0) {
+		error = cmd_resize_adjust(argc - 1, &argv[1], 1);
 	}
-	if (strcasecmp(argv[0], "shrink") == 0) {
-		return cmd_resize_adjust(argc - 1, &argv[1], -1);
+	else if (strcasecmp(argv[0], "shrink") == 0) {
+		error = cmd_resize_adjust(argc - 1, &argv[1], -1);
 	}
-
-	const char usage[] = "Expected 'resize <shrink|grow> "
-		"<width|height|up|down|left|right> [<amount>] [px|ppt]'";
-
-	return cmd_results_new(CMD_INVALID, "%s", usage);
+	return error;
 }

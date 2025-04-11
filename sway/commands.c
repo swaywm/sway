@@ -295,6 +295,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			struct cmd_results *res = handler->handle(argc-1, argv+1);
 			list_add(res_list, res);
 			if (res->status == CMD_INVALID) {
+				sway_log(SWAY_ERROR, "%s", res->error);
 				free_argv(argc, argv);
 				goto cleanup;
 			}
