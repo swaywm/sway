@@ -99,7 +99,6 @@ int parse_movement_amount(int argc, char **argv,
 	// Try the second argument
 	amount->unit = parse_movement_unit(argv[1]);
 	if (amount->unit == MOVEMENT_UNIT_INVALID) {
-		amount->unit = MOVEMENT_UNIT_DEFAULT;
 		return 1;
 	}
 	return 2;
