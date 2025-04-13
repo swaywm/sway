@@ -4,10 +4,12 @@
 #include "log.h"
 #include "sway/input/cursor.h"
 #include "sway/input/keyboard.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/lock.h"
 
 struct sway_session_lock_output {
@@ -79,13 +81,13 @@ static void handle_surface_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void lock_output_reconfigure(struct sway_session_lock_output *output) {
-	int width = output->output->width;
-	int height = output->output->height;
+	struct wlr_box usable_area = output->output->usable_area;
 
-	wlr_scene_rect_set_size(output->background, width, height);
+	wlr_scene_node_set_position(&output->tree->node, usable_area.x, usable_area.y);
+	wlr_scene_rect_set_size(output->background, usable_area.width, usable_area.height);
 
 	if (output->surface) {
-		wlr_session_lock_surface_v1_configure(output->surface, width, height);
+		wlr_session_lock_surface_v1_configure(output->surface, usable_area.width, usable_area.height);
 	}
 }
 
@@ -234,6 +236,9 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		arrange_layers(output);
 	}
+
+	arrange_root();
+	transaction_commit_dirty();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
@@ -295,8 +300,17 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 	sway_lock->destroy.notify = handle_abandon;
 	wl_signal_add(&lock->events.destroy, &sway_lock->destroy);
 
-	wlr_session_lock_v1_send_locked(lock);
 	server.session_lock.lock = sway_lock;
+
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		arrange_layers(output);
+	}
+
+	arrange_root();
+	transaction_commit_dirty();
+
+	wlr_session_lock_v1_send_locked(lock);
 }
 
 static void handle_session_lock_destroy(struct wl_listener *listener, void *data) {
