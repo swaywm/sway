@@ -484,7 +484,9 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->output_manager_test.link);
 	wl_list_remove(&server->output_power_manager_set_mode.link);
 #if WLR_HAS_DRM_BACKEND
-	wl_list_remove(&server->drm_lease_request.link);
+	if (server->drm_lease_manager) {
+		wl_list_remove(&server->drm_lease_request.link);
+	}
 #endif
 	wl_list_remove(&server->tearing_control_new_object.link);
 	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
