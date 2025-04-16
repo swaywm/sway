@@ -70,7 +70,13 @@
 #endif
 
 #if HAVE_LIBSFDO
+<<<<<<< HEAD
 #include "sfdo.h"
+=======
+#include <sfdo-basedir.h>
+#include <sfdo-desktop.h>
+#include <sfdo-icon.h>
+>>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
 #endif
 
 #define SWAY_XDG_SHELL_VERSION 5
@@ -526,19 +532,25 @@ void server_fini(struct sway_server *server) {
     wl_list_remove(&server->drm_lease_request.link);
   }
 #endif
+<<<<<<< HEAD
   <<<<<<< HEAD wl_list_remove(&server->tearing_control_new_object.link);
   wl_list_remove(&server->xdg_activation_v1_request_activate.link);
   wl_list_remove(&server->xdg_activation_v1_new_token.link);
   wl_list_remove(&server->request_set_cursor_shape.link);
   input_manager_finish(server->input);
 =======
+=======
+>>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
   wl_list_remove(&server->tearing_control_new_object.link);
   wl_list_remove(&server->xdg_activation_v1_request_activate.link);
   wl_list_remove(&server->xdg_activation_v1_new_token.link);
   wl_list_remove(&server->request_set_cursor_shape.link);
   wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
   input_manager_finish(server->input);
+<<<<<<< HEAD
 >>>>>>> 170c9c95 (Add support for toplevel capture)
+=======
+>>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
 
   // TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
@@ -547,6 +559,7 @@ void server_fini(struct sway_server *server) {
     wl_list_remove(&server->xwayland_ready.link);
     wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
   }
+<<<<<<< HEAD
 #endif
   wl_display_destroy_clients(server->wl_display);
   wlr_backend_destroy(server->backend);
@@ -556,6 +569,18 @@ void server_fini(struct sway_server *server) {
   sfdo_destroy(server->sfdo);
 #endif
   free(server->socket);
+=======
+#endif
+  wl_display_destroy_clients(server->wl_display);
+  wlr_backend_destroy(server->backend);
+  wl_display_destroy(server->wl_display);
+  list_free(server->dirty_nodes);
+  free(server->socket);
+
+#if HAVE_LIBSFDO
+  sfdo_destroy(server->sfdo);
+#endif
+>>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
 }
 
 bool server_start(struct sway_server *server) {
@@ -610,3 +635,73 @@ void server_run(struct sway_server *server) {
            server->socket);
   wl_display_run(server->wl_display);
 }
+
+#if HAVE_LIBSFDO
+struct sfdo *sfdo_create(char *theme) {
+  struct sfdo *sfdo = calloc(1, sizeof(struct sfdo));
+  if (!sfdo) {
+    goto error_calloc;
+  }
+
+  struct sfdo_basedir_ctx *basedir_ctx = sfdo_basedir_ctx_create();
+  if (!basedir_ctx) {
+    goto error_basedir_ctx;
+  }
+
+  sfdo->desktop_ctx = sfdo_desktop_ctx_create(basedir_ctx);
+  if (!sfdo->desktop_ctx) {
+    goto error_desktop_ctx;
+  }
+
+  sfdo->icon_ctx = sfdo_icon_ctx_create(basedir_ctx);
+  if (!sfdo->icon_ctx) {
+    goto error_icon_ctx;
+  }
+
+  sfdo->desktop_db = sfdo_desktop_db_load(sfdo->desktop_ctx, NULL);
+  if (!sfdo->desktop_db) {
+    goto error_desktop_db;
+  }
+
+  int load_options = SFDO_ICON_THEME_LOAD_OPTIONS_DEFAULT |
+                     SFDO_ICON_THEME_LOAD_OPTION_ALLOW_MISSING |
+                     SFDO_ICON_THEME_LOAD_OPTION_RELAXED;
+
+  sfdo->icon_theme = sfdo_icon_theme_load(sfdo->icon_ctx, theme, load_options);
+  if (!sfdo->icon_theme) {
+    goto error_icon_theme;
+  }
+
+  sfdo_basedir_ctx_destroy(basedir_ctx);
+
+  sway_log(SWAY_DEBUG, "Successfully setup sfdo");
+  return sfdo;
+
+error_icon_theme:
+  sfdo_desktop_db_destroy(sfdo->desktop_db);
+error_desktop_db:
+  sfdo_icon_ctx_destroy(sfdo->icon_ctx);
+error_icon_ctx:
+  sfdo_desktop_ctx_destroy(sfdo->desktop_ctx);
+error_desktop_ctx:
+  sfdo_basedir_ctx_destroy(basedir_ctx);
+error_basedir_ctx:
+  free(sfdo);
+error_calloc:
+  sway_log(SWAY_ERROR, "Failed to setup sfdo");
+  return NULL;
+}
+
+void sfdo_destroy(struct sfdo *sfdo) {
+  if (!sfdo) {
+    sway_log(SWAY_DEBUG, "Null sfdo passed in");
+    return;
+  }
+
+  sfdo_icon_theme_destroy(sfdo->icon_theme);
+  sfdo_desktop_db_destroy(sfdo->desktop_db);
+  sfdo_icon_ctx_destroy(sfdo->icon_ctx);
+  sfdo_desktop_ctx_destroy(sfdo->desktop_ctx);
+  sway_log(SWAY_DEBUG, "Successfully destroyed sfdo");
+}
+#endif

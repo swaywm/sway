@@ -1,10 +1,10 @@
 #ifndef _SWAY_SERVER_H
 #define _SWAY_SERVER_H
-#include <stdbool.h>
-#include <wayland-server-core.h>
 #include "config.h"
 #include "list.h"
 #include "sway/desktop/idle_inhibit_v1.h"
+#include <stdbool.h>
+#include <wayland-server-core.h>
 #if WLR_HAS_XWAYLAND
 #include "sway/xwayland.h"
 #endif
@@ -16,153 +16,163 @@
 struct sway_transaction;
 
 struct sway_session_lock {
-	struct wlr_session_lock_v1 *lock;
-	struct wlr_surface *focused;
-	bool abandoned;
+  struct wlr_session_lock_v1 *lock;
+  struct wlr_surface *focused;
+  bool abandoned;
 
-	struct wl_list outputs; // struct sway_session_lock_output
+  struct wl_list outputs; // struct sway_session_lock_output
 
-	// invalid if the session is abandoned
-	struct wl_listener new_surface;
-	struct wl_listener unlock;
-	struct wl_listener destroy;
+  // invalid if the session is abandoned
+  struct wl_listener new_surface;
+  struct wl_listener unlock;
+  struct wl_listener destroy;
 };
 
+#if HAVE_LIBSFDO
+struct sfdo {
+  struct sfdo_desktop_ctx *desktop_ctx;
+  struct sfdo_icon_ctx *icon_ctx;
+  struct sfdo_desktop_db *desktop_db;
+  struct sfdo_icon_theme *icon_theme;
+};
+#endif
+
 struct sway_server {
-	struct wl_display *wl_display;
-	struct wl_event_loop *wl_event_loop;
-	char *socket;
+  struct wl_display *wl_display;
+  struct wl_event_loop *wl_event_loop;
+  char *socket;
 
-	struct wlr_backend *backend;
-	struct wlr_session *session;
-	// secondary headless backend used for creating virtual outputs on-the-fly
-	struct wlr_backend *headless_backend;
-	struct wlr_renderer *renderer;
-	struct wlr_allocator *allocator;
+  struct wlr_backend *backend;
+  struct wlr_session *session;
+  // secondary headless backend used for creating virtual outputs on-the-fly
+  struct wlr_backend *headless_backend;
+  struct wlr_renderer *renderer;
+  struct wlr_allocator *allocator;
 
-	struct wlr_compositor *compositor;
+  struct wlr_compositor *compositor;
 
-	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
+  struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
-	struct wlr_data_device_manager *data_device_manager;
+  struct wlr_data_device_manager *data_device_manager;
 
-	struct sway_input_manager *input;
+  struct sway_input_manager *input;
 
-	struct wl_listener new_output;
-	struct wl_listener renderer_lost;
-	struct wl_event_source *recreating_renderer;
+  struct wl_listener new_output;
+  struct wl_listener renderer_lost;
+  struct wl_event_source *recreating_renderer;
 
-	struct wlr_idle_notifier_v1 *idle_notifier_v1;
-	struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;
+  struct wlr_idle_notifier_v1 *idle_notifier_v1;
+  struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;
 
-	struct wlr_layer_shell_v1 *layer_shell;
-	struct wl_listener layer_shell_surface;
+  struct wlr_layer_shell_v1 *layer_shell;
+  struct wl_listener layer_shell_surface;
 
-	struct wlr_xdg_shell *xdg_shell;
-	struct wl_listener xdg_shell_toplevel;
+  struct wlr_xdg_shell *xdg_shell;
+  struct wl_listener xdg_shell_toplevel;
 
-	struct wlr_tablet_manager_v2 *tablet_v2;
+  struct wlr_tablet_manager_v2 *tablet_v2;
 
 #if WLR_HAS_XWAYLAND
-	struct sway_xwayland xwayland;
-	struct wl_listener xwayland_surface;
-	struct wl_listener xwayland_ready;
+  struct sway_xwayland xwayland;
+  struct wl_listener xwayland_surface;
+  struct wl_listener xwayland_ready;
 #endif
 
-	struct wlr_relative_pointer_manager_v1 *relative_pointer_manager;
+  struct wlr_relative_pointer_manager_v1 *relative_pointer_manager;
 
-	struct wlr_server_decoration_manager *server_decoration_manager;
-	struct wl_listener server_decoration;
-	struct wl_list decorations; // sway_server_decoration::link
+  struct wlr_server_decoration_manager *server_decoration_manager;
+  struct wl_listener server_decoration;
+  struct wl_list decorations; // sway_server_decoration::link
 
-	struct wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
-	struct wl_listener xdg_decoration;
-	struct wl_list xdg_decorations; // sway_xdg_decoration::link
+  struct wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
+  struct wl_listener xdg_decoration;
+  struct wl_list xdg_decorations; // sway_xdg_decoration::link
 
-	struct wlr_drm_lease_v1_manager *drm_lease_manager;
-	struct wl_listener drm_lease_request;
+  struct wlr_drm_lease_v1_manager *drm_lease_manager;
+  struct wl_listener drm_lease_request;
 
-	struct wlr_pointer_constraints_v1 *pointer_constraints;
-	struct wl_listener pointer_constraint;
+  struct wlr_pointer_constraints_v1 *pointer_constraints;
+  struct wl_listener pointer_constraint;
 
-	struct wlr_xdg_output_manager_v1 *xdg_output_manager_v1;
+  struct wlr_xdg_output_manager_v1 *xdg_output_manager_v1;
 
-	struct wlr_output_manager_v1 *output_manager_v1;
-	struct wl_listener output_manager_apply;
-	struct wl_listener output_manager_test;
+  struct wlr_output_manager_v1 *output_manager_v1;
+  struct wl_listener output_manager_apply;
+  struct wl_listener output_manager_test;
 
-	struct wlr_gamma_control_manager_v1 *gamma_control_manager_v1;
-	struct wl_listener gamma_control_set_gamma;
+  struct wlr_gamma_control_manager_v1 *gamma_control_manager_v1;
+  struct wl_listener gamma_control_set_gamma;
 
-	struct {
-		struct sway_session_lock *lock;
-		struct wlr_session_lock_manager_v1 *manager;
+  struct {
+    struct sway_session_lock *lock;
+    struct wlr_session_lock_manager_v1 *manager;
 
-		struct wl_listener new_lock;
-		struct wl_listener manager_destroy;
-	} session_lock;
+    struct wl_listener new_lock;
+    struct wl_listener manager_destroy;
+  } session_lock;
 
-	struct wlr_output_power_manager_v1 *output_power_manager_v1;
-	struct wl_listener output_power_manager_set_mode;
-	struct wlr_input_method_manager_v2 *input_method;
-	struct wlr_text_input_manager_v3 *text_input;
-	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
-	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
-	struct wlr_content_type_manager_v1 *content_type_manager_v1;
-	struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1;
-	struct wlr_ext_data_control_manager_v1 *ext_data_control_manager_v1;
-	struct wlr_screencopy_manager_v1 *screencopy_manager_v1;
-	struct wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager_v1;
-	struct wlr_export_dmabuf_manager_v1 *export_dmabuf_manager_v1;
-	struct wlr_security_context_manager_v1 *security_context_manager_v1;
+  struct wlr_output_power_manager_v1 *output_power_manager_v1;
+  struct wl_listener output_power_manager_set_mode;
+  struct wlr_input_method_manager_v2 *input_method;
+  struct wlr_text_input_manager_v3 *text_input;
+  struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
+  struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
+  struct wlr_content_type_manager_v1 *content_type_manager_v1;
+  struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1;
+  struct wlr_ext_data_control_manager_v1 *ext_data_control_manager_v1;
+  struct wlr_screencopy_manager_v1 *screencopy_manager_v1;
+  struct wlr_ext_image_copy_capture_manager_v1
+      *ext_image_copy_capture_manager_v1;
+  struct wlr_export_dmabuf_manager_v1 *export_dmabuf_manager_v1;
+  struct wlr_security_context_manager_v1 *security_context_manager_v1;
 
-	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1 *ext_foreign_toplevel_image_capture_source_manager_v1;
-	struct wl_listener new_foreign_toplevel_capture_request;
+  struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1
+      *ext_foreign_toplevel_image_capture_source_manager_v1;
+  struct wl_listener new_foreign_toplevel_capture_request;
 
-	struct wlr_xdg_activation_v1 *xdg_activation_v1;
-	struct wl_listener xdg_activation_v1_request_activate;
-	struct wl_listener xdg_activation_v1_new_token;
+  struct wlr_xdg_activation_v1 *xdg_activation_v1;
+  struct wl_listener xdg_activation_v1_request_activate;
+  struct wl_listener xdg_activation_v1_new_token;
 
-	struct wl_listener request_set_cursor_shape;
+  struct wl_listener request_set_cursor_shape;
 
-	struct wlr_tearing_control_manager_v1 *tearing_control_v1;
-	struct wl_listener tearing_control_new_object;
-	struct wl_list tearing_controllers; // sway_tearing_controller::link
+  struct wlr_tearing_control_manager_v1 *tearing_control_v1;
+  struct wl_listener tearing_control_new_object;
+  struct wl_list tearing_controllers; // sway_tearing_controller::link
 
-	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
+  struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
-	// The timeout for transactions, after which a transaction is applied
-	// regardless of readiness.
-	size_t txn_timeout_ms;
+  // The timeout for transactions, after which a transaction is applied
+  // regardless of readiness.
+  size_t txn_timeout_ms;
 
-	// Stores a transaction after it has been committed, but is waiting for
-	// views to ack the new dimensions before being applied. A queued
-	// transaction is frozen and must not have new instructions added to it.
-	struct sway_transaction *queued_transaction;
+  // Stores a transaction after it has been committed, but is waiting for
+  // views to ack the new dimensions before being applied. A queued
+  // transaction is frozen and must not have new instructions added to it.
+  struct sway_transaction *queued_transaction;
 
-	// Stores a pending transaction that will be committed once the existing
-	// queued transaction is applied and freed. The pending transaction can be
-	// updated with new instructions as needed.
-	struct sway_transaction *pending_transaction;
+  // Stores a pending transaction that will be committed once the existing
+  // queued transaction is applied and freed. The pending transaction can be
+  // updated with new instructions as needed.
+  struct sway_transaction *pending_transaction;
 
-	// Stores the nodes that have been marked as "dirty" and will be put into
-	// the pending transaction.
-	list_t *dirty_nodes;
+  // Stores the nodes that have been marked as "dirty" and will be put into
+  // the pending transaction.
+  list_t *dirty_nodes;
 
-	struct wl_event_source *delayed_modeset;
+  struct wl_event_source *delayed_modeset;
 
 #if HAVE_LIBSFDO
-	struct sfdo *sfdo;
+  struct sfdo *sfdo;
 #endif
-
 };
 
 extern struct sway_server server;
 
 struct sway_debug {
-	bool noatomic;         // Ignore atomic layout updates
-	bool txn_timings;      // Log verbose messages about transactions
-	bool txn_wait;         // Always wait for the timeout before applying
+  bool noatomic;    // Ignore atomic layout updates
+  bool txn_timings; // Log verbose messages about transactions
+  bool txn_wait;    // Always wait for the timeout before applying
 };
 
 extern struct sway_debug debug;
@@ -182,9 +192,9 @@ void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void sway_session_lock_init(void);
 void sway_session_lock_add_output(struct sway_session_lock *lock,
-	struct sway_output *output);
+                                  struct sway_output *output);
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
-	struct wlr_surface *surface);
+                                   struct wlr_surface *surface);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if WLR_HAS_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
@@ -193,12 +203,17 @@ void handle_server_decoration(struct wl_listener *listener, void *data);
 void handle_xdg_decoration(struct wl_listener *listener, void *data);
 void handle_pointer_constraint(struct wl_listener *listener, void *data);
 void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
-	void *data);
+                                               void *data);
 void xdg_activation_v1_handle_new_token(struct wl_listener *listener,
-	void *data);
+                                        void *data);
 
 void set_rr_scheduling(void);
 
 void handle_new_tearing_hint(struct wl_listener *listener, void *data);
+
+#if HAVE_LIBSFDO
+struct sfdo *sfdo_create(char *theme);
+void sfdo_destroy(struct sfdo *sfdo);
+#endif
 
 #endif
