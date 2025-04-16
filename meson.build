@@ -37,34 +37,6 @@ if is_freebsd
 	add_project_arguments('-D_C11_SOURCE', language: 'c')
 endif
 
-# Check for (currrently) optional libsfdo
-sfdo_basedir = dependency(
-  'libsfdo-basedir',
-  default_options: ['default_library=static', 'examples=false', 'tests=false'],
-  version: '>=0.1.3',
-  required: get_option('sfdo'),
-)
-sfdo_desktop = dependency(
-  'libsfdo-desktop',
-  default_options: ['default_library=static', 'examples=false', 'tests=false'],
-  version: '>=0.1.3',
-  required: get_option('sfdo'),
-)
-sfdo_desktop_file = dependency(
-  'libsfdo-desktop-file',
-  default_options: ['default_library=static', 'examples=false', 'tests=false'],
-  version: '>=0.1.3',
-  required: get_option('sfdo'),
-)
-sfdo_icon = dependency(
-  'libsfdo-icon',
-  default_options: ['default_library=static', 'examples=false', 'tests=false'],
-  version: '>=0.1.3',
-  required: get_option('sfdo'),
-)
-have_libsfdo = sfdo_basedir.found() and sfdo_desktop.found() and sfdo_desktop_file.found() and sfdo_icon.found()
-
-
 # Execute the wlroots subproject, if any
 wlroots_version = ['>=0.19.0', '<0.20.0']
 subproject(
@@ -86,6 +58,34 @@ foreach name, _ : wlroots_features
 endforeach
 
 null_dep = dependency('', required: false)
+
+# Check for (currrently) optional libsfdo
+sfdo_basedir = dependency(
+	'libsfdo-basedir',
+	version: '>=0.1.3',
+	required: get_option('sfdo')
+)
+sfdo_desktop = dependency(
+	'libsfdo-desktop',
+	version: '>=0.1.3',
+	required: get_option('sfdo')
+)
+sfdo_desktop_file = dependency(
+	'libsfdo-desktop-file',
+	version: '>=0.1.3',
+	required: get_option('sfdo')
+)
+sfdo_icon = dependency(
+	'libsfdo-icon',
+	version: '>=0.1.3',
+	required: get_option('sfdo')
+)
+have_libsfdo = (
+	sfdo_basedir.found() and
+	sfdo_desktop.found() and
+	sfdo_desktop_file.found() and
+	sfdo_icon.found()
+)
 
 jsonc = dependency('json-c', version: '>=0.13')
 pcre2 = dependency('libpcre2-8')
