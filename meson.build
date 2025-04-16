@@ -38,6 +38,34 @@ if is_freebsd
 	add_project_arguments('-D_C11_SOURCE', language: 'c')
 endif
 
+# Check for (currrently) optional libsfdo
+sfdo_basedir = dependency(
+  'libsfdo-basedir',
+  default_options: ['default_library=static', 'examples=false', 'tests=false'],
+  version: '>=0.1.3',
+  required: get_option('sfdo'),
+)
+sfdo_desktop = dependency(
+  'libsfdo-desktop',
+  default_options: ['default_library=static', 'examples=false', 'tests=false'],
+  version: '>=0.1.3',
+  required: get_option('sfdo'),
+)
+sfdo_desktop_file = dependency(
+  'libsfdo-desktop-file',
+  default_options: ['default_library=static', 'examples=false', 'tests=false'],
+  version: '>=0.1.3',
+  required: get_option('sfdo'),
+)
+sfdo_icon = dependency(
+  'libsfdo-icon',
+  default_options: ['default_library=static', 'examples=false', 'tests=false'],
+  version: '>=0.1.3',
+  required: get_option('sfdo'),
+)
+have_libsfdo = sfdo_basedir.found() and sfdo_desktop.found() and sfdo_desktop_file.found() and sfdo_icon.found()
+
+
 # Execute the wlroots subproject, if any
 wlroots_version = ['>=0.20.0', '<0.21.0']
 subproject(
@@ -108,6 +136,7 @@ conf_data = configuration_data()
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd')
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
+conf_data.set10('HAVE_LIBSFDO', have_libsfdo)
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
 foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY']
@@ -244,5 +273,6 @@ subdir('completions')
 summary({
 	'gdk-pixbuf': gdk_pixbuf.found(),
 	'tray': have_tray,
+	'libsfdo': have_libsfdo,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
