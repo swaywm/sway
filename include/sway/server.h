@@ -8,7 +8,11 @@
 #if WLR_HAS_XWAYLAND
 #include "sway/xwayland.h"
 #endif
-
+#if HAVE_LIBSFDO
+#include <sfdo-desktop.h>
+#include <sfdo-icon.h>
+#include <sfdo-basedir.h>
+#endif
 struct sway_transaction;
 
 struct sway_session_lock {
@@ -23,6 +27,15 @@ struct sway_session_lock {
 	struct wl_listener unlock;
 	struct wl_listener destroy;
 };
+
+#if HAVE_LIBSFDO
+struct sfdo {
+	struct sfdo_desktop_ctx *desktop_ctx;
+	struct sfdo_icon_ctx *icon_ctx;
+	struct sfdo_desktop_db *desktop_db;
+	struct sfdo_icon_theme *icon_theme;
+};
+#endif
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -146,6 +159,11 @@ struct sway_server {
 	list_t *dirty_nodes;
 
 	struct wl_event_source *delayed_modeset;
+
+#if HAVE_LIBSFDO
+	struct sfdo *sfdo;
+#endif
+
 };
 
 extern struct sway_server server;
@@ -191,5 +209,10 @@ void xdg_activation_v1_handle_new_token(struct wl_listener *listener,
 void set_rr_scheduling(void);
 
 void handle_new_tearing_hint(struct wl_listener *listener, void *data);
+
+#if HAVE_LIBSFDO
+struct sfdo *sfdo_create(char *theme);
+void sfdo_destroy(struct sfdo *sfdo);
+#endif
 
 #endif
