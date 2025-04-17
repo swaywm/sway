@@ -16,10 +16,6 @@
 #include "ipc-client.h"
 #include "log.h"
 
-void sway_terminate(int exit_code) {
-	exit(exit_code);
-}
-
 static bool success_object(json_object *result) {
 	json_object *success;
 
