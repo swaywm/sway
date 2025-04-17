@@ -181,8 +181,6 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_timings = true;
 	} else if (has_prefix(flag, "txn-timeout=")) {
 		server.txn_timeout_ms = atoi(&flag[strlen("txn-timeout=")]);
-	} else if (strcmp(flag, "legacy-wl-drm") == 0) {
-		debug.legacy_wl_drm = true;
 	} else {
 		sway_log(SWAY_ERROR, "Unknown debug flag: %s", flag);
 	}
