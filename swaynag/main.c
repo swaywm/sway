@@ -13,11 +13,6 @@ void sig_handler(int signal) {
 	exit(EXIT_FAILURE);
 }
 
-void sway_terminate(int code) {
-	swaynag_destroy(&swaynag);
-	exit(code);
-}
-
 int main(int argc, char **argv) {
 	int status = EXIT_SUCCESS;
 
