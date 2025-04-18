@@ -698,7 +698,9 @@ The default colors are:
 	afterwards.
 
 *exec* <shell command>
-	Executes _shell command_ with sh.
+	Executes _shell command_ with sh. If following a criteria match, the matched
+	node's id is made available in env variable SWAY_EXEC_CON_ID, otherwise
+	the focused node.
 
 *exec_always* <shell command>
 	Like *exec*, but the shell command will be executed _again_ after *reload*.
