@@ -115,6 +115,7 @@ static const struct cmd_handler command_handlers[] = {
 	{ "allow_tearing", cmd_allow_tearing },
 	{ "border", cmd_border },
 	{ "create_output", cmd_create_output },
+	{ "dump_scene", cmd_dump_scene },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
 	{ "fullscreen", cmd_fullscreen },
