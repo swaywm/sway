@@ -228,8 +228,6 @@ static void invoke_swaybar(struct bar_config *bar) {
 		sway_log(SWAY_ERROR, "Failed to create fork for swaybar");
 		return;
 	} else if (pid == 0) {
-		restore_nofile_limit();
-		restore_signals();
 		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}

@@ -173,9 +173,6 @@ void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
 
-void restore_nofile_limit(void);
-void restore_signals(void);
-
 void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);

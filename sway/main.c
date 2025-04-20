@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <pango/pangocairo.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -121,6 +122,16 @@ static bool detect_suid(void) {
 	return true;
 }
 
+static void restore_nofile_limit(void) {
+	if (original_nofile_rlimit.rlim_cur == 0) {
+		return;
+	}
+	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
+			"setrlimit(NOFILE) failed");
+	}
+}
+
 static void increase_nofile_limit(void) {
 	if (getrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
 		sway_log_errno(SWAY_ERROR, "Failed to bump max open files limit: "
@@ -135,22 +146,23 @@ static void increase_nofile_limit(void) {
 			"setrlimit(NOFILE) failed");
 		sway_log(SWAY_INFO, "Running with %d max open files",
 			(int)original_nofile_rlimit.rlim_cur);
-	}
-}
-
-void restore_nofile_limit(void) {
-	if (original_nofile_rlimit.rlim_cur == 0) {
 		return;
 	}
-	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
-		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
-			"setrlimit(NOFILE) failed");
-	}
+
+	pthread_atfork(NULL, NULL, restore_nofile_limit);
 }
 
 static int term_signal(int signal, void *data) {
 	sway_terminate(EXIT_SUCCESS);
 	return 0;
+}
+
+static void restore_signals(void) {
+	sigset_t set;
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, NULL);
+	signal(SIGCHLD, SIG_DFL);
+	signal(SIGPIPE, SIG_DFL);
 }
 
 static void init_signals(void) {
@@ -162,14 +174,8 @@ static void init_signals(void) {
 
 	// prevent ipc write errors from crashing sway
 	signal(SIGPIPE, SIG_IGN);
-}
 
-void restore_signals(void) {
-	sigset_t set;
-	sigemptyset(&set);
-	sigprocmask(SIG_SETMASK, &set, NULL);
-	signal(SIGCHLD, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
+	pthread_atfork(NULL, NULL, restore_signals);
 }
 
 void enable_debug_flag(const char *flag) {
