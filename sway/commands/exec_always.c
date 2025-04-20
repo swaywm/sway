@@ -51,8 +51,6 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	// Fork process
 	pid_t child = fork();
 	if (child == 0) {
-		restore_nofile_limit();
-		restore_signals();
 		setsid();
 
 		if (ctx) {

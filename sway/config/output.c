@@ -1060,8 +1060,6 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "fork failed");
 		return false;
 	} else if (pid == 0) {
-		restore_nofile_limit();
-		restore_signals();
 		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
