@@ -702,6 +702,35 @@ static uint32_t wl_axis_to_button(struct wlr_pointer_axis_event *event) {
 	}
 }
 
+static int calc_scroll_steps(struct sway_seat *seat,
+		struct wlr_pointer_axis_event *event, float scroll_factor) {
+	if (event->delta_discrete) {
+		return roundf(scroll_factor * event->delta_discrete /
+			WLR_POINTER_AXIS_DISCRETE_STEP);
+	}
+	if (!sway_assert(event->orientation < 2, "axis out of range")) {
+		return 0;
+	}
+
+	struct sway_scroll_axis *axis = &seat->axis[event->orientation];
+	if (event->time_msec - axis->time_msec > SWAY_CONTINUOUS_SCROLL_TIMEOUT) {
+		axis->value = 0;
+	}
+
+	axis->value += scroll_factor * event->delta;
+	axis->time_msec = event->time_msec;
+	if (axis->value > WLR_POINTER_AXIS_DISCRETE_STEP) {
+		axis->value -= WLR_POINTER_AXIS_DISCRETE_STEP;
+		return 1;
+	}
+	if (axis->value < -WLR_POINTER_AXIS_DISCRETE_STEP) {
+		axis->value += WLR_POINTER_AXIS_DISCRETE_STEP;
+		return -1;
+	}
+
+	return 0;
+}
+
 static void handle_pointer_axis(struct sway_seat *seat,
 		struct wlr_pointer_axis_event *event) {
 	struct sway_input_device *input_device =
@@ -758,8 +787,9 @@ static void handle_pointer_axis(struct sway_seat *seat,
 			struct sway_node *active =
 				seat_get_active_tiling_child(seat, tabcontainer);
 			list_t *siblings = container_get_siblings(cont);
+
 			int desired = list_find(siblings, active->sway_container) +
-				roundf(scroll_factor * event->delta_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+				calc_scroll_steps(seat, event, scroll_factor);
 			if (desired < 0) {
 				desired = 0;
 			} else if (desired >= siblings->length) {
