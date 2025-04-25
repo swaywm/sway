@@ -100,6 +100,7 @@ static void handle_touch_down(struct sway_seat *seat,
 
 	if (focused_node) {
 	    seat_set_focus(seat, focused_node);
+		transaction_commit_dirty();
 	}
 }
 
