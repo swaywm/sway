@@ -102,7 +102,8 @@ int main(int argc, char **argv) {
 		sway_log(SWAY_DEBUG, "\t[%s] `%s`", button->text, button->action);
 	}
 
-	signal(SIGTERM, sig_handler);
+	struct sigaction sa = { .sa_handler = sig_handler };
+	sigaction(SIGTERM, &sa, NULL);
 
 	swaynag_setup(&swaynag);
 	swaynag_run(&swaynag);
