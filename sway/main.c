@@ -161,19 +161,21 @@ static void restore_signals(void) {
 	sigset_t set;
 	sigemptyset(&set);
 	sigprocmask(SIG_SETMASK, &set, NULL);
-	signal(SIGCHLD, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
+
+	struct sigaction sa_dfl = { .sa_handler = SIG_DFL };
+	sigaction(SIGCHLD, &sa_dfl, NULL);
+	sigaction(SIGPIPE, &sa_dfl, NULL);
 }
 
 static void init_signals(void) {
 	wl_event_loop_add_signal(server.wl_event_loop, SIGTERM, term_signal, NULL);
 	wl_event_loop_add_signal(server.wl_event_loop, SIGINT, term_signal, NULL);
 
+	struct sigaction sa_ign = { .sa_handler = SIG_IGN };
 	// avoid need to reap children
-	signal(SIGCHLD, SIG_IGN);
-
+	sigaction(SIGCHLD, &sa_ign, NULL);
 	// prevent ipc write errors from crashing sway
-	signal(SIGPIPE, SIG_IGN);
+	sigaction(SIGPIPE, &sa_ign, NULL);
 
 	pthread_atfork(NULL, NULL, restore_signals);
 }
