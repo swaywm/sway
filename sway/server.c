@@ -71,12 +71,16 @@
 
 #if HAVE_LIBSFDO
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "sfdo.h"
-=======
+    =======
 #include <sfdo-basedir.h>
 #include <sfdo-desktop.h>
 #include <sfdo-icon.h>
->>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
+    >>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
+=======
+#include "sfdo.h"
+    >>>>>>> 92e27bd9 (Finds paths to icon files using libsfdo. Libsfdo is currently an)
 #endif
 
 #define SWAY_XDG_SHELL_VERSION 5
@@ -84,7 +88,7 @@
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 #define SWAY_PRESENTATION_VERSION 2
 
-bool allow_unsupported_gpu = false;
+    bool allow_unsupported_gpu = false;
 
 #if WLR_HAS_DRM_BACKEND
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
@@ -532,25 +536,13 @@ void server_fini(struct sway_server *server) {
     wl_list_remove(&server->drm_lease_request.link);
   }
 #endif
-<<<<<<< HEAD
-  <<<<<<< HEAD wl_list_remove(&server->tearing_control_new_object.link);
-  wl_list_remove(&server->xdg_activation_v1_request_activate.link);
-  wl_list_remove(&server->xdg_activation_v1_new_token.link);
-  wl_list_remove(&server->request_set_cursor_shape.link);
-  input_manager_finish(server->input);
-=======
-=======
->>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
+
   wl_list_remove(&server->tearing_control_new_object.link);
   wl_list_remove(&server->xdg_activation_v1_request_activate.link);
   wl_list_remove(&server->xdg_activation_v1_new_token.link);
   wl_list_remove(&server->request_set_cursor_shape.link);
   wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
   input_manager_finish(server->input);
-<<<<<<< HEAD
->>>>>>> 170c9c95 (Add support for toplevel capture)
-=======
->>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
 
   // TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
@@ -580,7 +572,7 @@ void server_fini(struct sway_server *server) {
 #if HAVE_LIBSFDO
   sfdo_destroy(server->sfdo);
 #endif
->>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
+  >>>>>>> 8b3ea59a (Clean up build scaffolding for libsfdo and add the creation and)
 }
 
 bool server_start(struct sway_server *server) {

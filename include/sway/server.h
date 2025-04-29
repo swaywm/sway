@@ -211,9 +211,4 @@ void set_rr_scheduling(void);
 
 void handle_new_tearing_hint(struct wl_listener *listener, void *data);
 
-#if HAVE_LIBSFDO
-struct sfdo *sfdo_create(char *theme);
-void sfdo_destroy(struct sfdo *sfdo);
-#endif
-
 #endif
