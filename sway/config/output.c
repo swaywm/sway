@@ -129,6 +129,13 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
 	}
+	if (src->set_color_transform) {
+		if (dst->color_transform) {
+			wlr_color_transform_unref(dst->color_transform);
+			dst->color_transform = NULL;
+		}
+		dst->set_color_transform = false;
+	}
 	if (src->background) {
 		free(dst->background);
 		dst->background = NULL;
@@ -143,6 +150,9 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	}
 	if (src->power != -1) {
 		dst->power = -1;
+	}
+	if (src->allow_tearing != -1) {
+		dst->allow_tearing = -1;
 	}
 }
 
