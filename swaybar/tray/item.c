@@ -1,6 +1,8 @@
 #include <arpa/inet.h>
 #include <cairo.h>
 #include <limits.h>
+#include <sfdo-common.h>
+#include <sfdo-icon.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,10 @@
 #include "log.h"
 #include "stringop.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+#if HAVE_LIBSFDO
+#include "sfdo.h"
+#endif
 
 // TODO menu
 
@@ -420,15 +426,36 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 	char *icon_name = sni->status[0] == 'N' ?
 		sni->attention_icon_name : sni->icon_name;
 	if (icon_name) {
+		char *icon_path = NULL;
+#if !HAVE_LIBSFDO
 		list_t *icon_search_paths = create_list();
 		list_cat(icon_search_paths, sni->tray->basedirs);
 		if (sni->icon_theme_path) {
 			list_add(icon_search_paths, sni->icon_theme_path);
 		}
-		char *icon_path = find_icon(sni->tray->themes, icon_search_paths,
+		icon_path = find_icon(sni->tray->themes, icon_search_paths,
 				icon_name, target_size, icon_theme,
 				&sni->min_size, &sni->max_size);
+#else
+		struct sfdo *sfdo = sni->tray->bar->config->sfdo;
+		if (sfdo) {
+			int lookup_options = SFDO_ICON_THEME_LOOKUP_OPTIONS_DEFAULT;
+			int scale = 1;
+			struct sfdo_icon_file *icon_file = \
+				sfdo_icon_theme_lookup(sfdo->icon_theme, icon_name, SFDO_NT, \
+					target_size, scale, lookup_options);
+			if (!icon_file || icon_file == SFDO_ICON_FILE_INVALID) {
+				sway_log(SWAY_ERROR, "sfdo: icon %s invalid or not found in theme %s at size %d", \
+					icon_name, icon_theme, target_size);
+			} else {
+				icon_path = strdup(sfdo_icon_file_get_path(icon_file, NULL));
+			}
+			sfdo_icon_file_destroy(icon_file);
+		}
+#endif
+#if !HAVE_LIBSFDO
 		list_free(icon_search_paths);
+#endif
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
 			sni->icon = load_image(icon_path);

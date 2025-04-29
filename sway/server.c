@@ -70,9 +70,7 @@
 #endif
 
 #if HAVE_LIBSFDO
-#include <sfdo-basedir.h>
-#include <sfdo-desktop.h>
-#include <sfdo-icon.h>
+#include "sfdo.h"
 #endif
 
 #define SWAY_XDG_SHELL_VERSION 5
