@@ -360,6 +360,8 @@ bool container_is_sticky_or_child(struct sway_container *con);
  */
 int container_squash(struct sway_container *con);
 
+float container_scale_factor(struct sway_container *con);
+
 void container_arrange_title_bar(struct sway_container *con);
 
 void container_update(struct sway_container *con);
