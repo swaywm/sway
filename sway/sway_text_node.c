@@ -136,14 +136,14 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	wlr_scene_buffer_set_buffer(buffer->buffer_node, &cairo_buffer->base);
 	wlr_buffer_drop(&cairo_buffer->base);
 
-	pixman_region32_t opaque;
-	pixman_region32_init(&opaque);
+	pixman_region64f_t opaque;
+	pixman_region64f_init(&opaque);
 	if (background[3] == 1) {
-		pixman_region32_union_rect(&opaque, &opaque, 0, 0,
+		pixman_region64f_union_rect(&opaque, &opaque, 0, 0,
 			get_text_width(&buffer->props), buffer->props.height);
 	}
 	wlr_scene_buffer_set_opaque_region(buffer->buffer_node, &opaque);
-	pixman_region32_fini(&opaque);
+	pixman_region64f_fini(&opaque);
 
 err:
 	if (pango) g_object_unref(pango);
