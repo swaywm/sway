@@ -421,8 +421,7 @@ static enum hotspot_event_handling icon_hotspot_callback(
 	return HOTSPOT_PROCESS;
 }
 
-static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
-		int target_size) {
+static void reload_sni(struct swaybar_sni *sni, char *icon_theme, int target_size) {
 	char *icon_name = sni->status[0] == 'N' ?
 		sni->attention_icon_name : sni->icon_name;
 	if (icon_name) {
@@ -437,20 +436,15 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 				icon_name, target_size, icon_theme,
 				&sni->min_size, &sni->max_size);
 #else
+		// TODO: at some point we will need to make this scaling-aware
+		int scale = 1;
 		struct sfdo *sfdo = sni->tray->bar->config->sfdo;
 		if (sfdo) {
-			int lookup_options = SFDO_ICON_THEME_LOOKUP_OPTIONS_DEFAULT;
-			int scale = 1;
-			struct sfdo_icon_file *icon_file = \
-				sfdo_icon_theme_lookup(sfdo->icon_theme, icon_name, SFDO_NT, \
-					target_size, scale, lookup_options);
-			if (!icon_file || icon_file == SFDO_ICON_FILE_INVALID) {
-				sway_log(SWAY_ERROR, "sfdo: icon %s invalid or not found in theme %s at size %d", \
+			icon_path = sfdo_icon_lookup_extended(sfdo, icon_name, target_size, scale);
+			if (!icon_path) {
+				sway_log(SWAY_DEBUG, "sfdo: icon %s invalid or not found in theme %s at size %d", \
 					icon_name, icon_theme, target_size);
-			} else {
-				icon_path = strdup(sfdo_icon_file_get_path(icon_file, NULL));
 			}
-			sfdo_icon_file_destroy(icon_file);
 		}
 #endif
 #if !HAVE_LIBSFDO
@@ -458,9 +452,17 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 #endif
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
-			sni->icon = load_image(icon_path);
+			sni->icon = load_image(icon_path, target_size, scale);
 			free(icon_path);
 			return;
+		} else {
+			// the :( icon won't be drawn for a missing icon and whichever old icon was
+			// loaded will persist if this is not done. one might not have noticed this
+			// for tray items that have only one icon loaded only once, successfully or
+			// unsuccessfully. items with multiple icons, such as fcitx5 or other input
+			// method frameworks make the problem apparent
+			free(sni->icon);
+			sni->icon = NULL;
 		}
 	}
 
