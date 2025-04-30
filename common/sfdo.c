@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <sfdo-basedir.h>
 #include <sfdo-desktop.h>
@@ -6,16 +7,24 @@
 #include "log.h"
 #include "sfdo.h"
 
+// this extends libsfdo's behavior to also handle icons specified as absolute paths
 char *sfdo_icon_lookup_extended(struct sfdo *sfdo, char *icon_name, int target_size, int scale) {
-	int lookup_options = SFDO_ICON_THEME_LOOKUP_OPTIONS_DEFAULT;
-	struct sfdo_icon_file *icon_file = \
-		sfdo_icon_theme_lookup(sfdo->icon_theme, icon_name, SFDO_NT, \
-			target_size, scale, lookup_options);
 	char *icon_path = NULL;
-	if (icon_file && icon_file != SFDO_ICON_FILE_INVALID) {
-		icon_path = strdup(sfdo_icon_file_get_path(icon_file, NULL));
+	if (icon_name[0] == '/') {
+		struct stat sb;
+		if (!stat(icon_name, &sb)) {
+			icon_path = strdup(icon_name);
+		}
+	} else {
+		int lookup_options = SFDO_ICON_THEME_LOOKUP_OPTIONS_DEFAULT;
+		struct sfdo_icon_file *icon_file = \
+			sfdo_icon_theme_lookup(sfdo->icon_theme, icon_name, SFDO_NT, \
+				target_size, scale, lookup_options);
+		if (icon_file && icon_file != SFDO_ICON_FILE_INVALID) {
+			icon_path = strdup(sfdo_icon_file_get_path(icon_file, NULL));
+		}
+		sfdo_icon_file_destroy(icon_file);
 	}
-	sfdo_icon_file_destroy(icon_file);
 	return icon_path;
 }
 

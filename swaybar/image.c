@@ -104,11 +104,27 @@ static cairo_surface_t* gdk_cairo_image_surface_create_from_pixbuf(
 }
 #endif // HAVE_GDK_PIXBUF
 
-cairo_surface_t *load_image(const char *path) {
+cairo_surface_t *load_image(const char *path, int target_size, int scale) {
 	cairo_surface_t *image;
 #if HAVE_GDK_PIXBUF
 	GError *err = NULL;
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(path, &err);
+	GdkPixbuf *pixbuf = NULL;
+	// svg images should be loaded at target size. the size read from an svg
+	// file is only nominal and can lead to an image too small for the avaialble
+	// space compared to bitmap icons selected at the nearest available size
+	int i = strlen(path) - 1;
+	// this is naive and assumes ascii, utf-8, or another encoding
+	// that encodes these letters as single bytes
+	if ((i > 2) &&
+		(path[i] == 'g' || path[i] == 'G') && \
+		(path[i - 1] == 'v' || path[i - 1] == 'V') && \
+		(path[i - 2] == 's' || path[i - 2] == 'S') && \
+		(path[i - 3] == '.' )) {
+		pixbuf = gdk_pixbuf_new_from_file_at_scale(path, -1, target_size, \
+							true, &err);
+	} else {
+		pixbuf = gdk_pixbuf_new_from_file(path, &err);
+	}
 	if (!pixbuf) {
 		sway_log(SWAY_ERROR, "Failed to load background image (%s).",
 				err->message);
