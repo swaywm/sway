@@ -118,7 +118,7 @@ static bool split_titlebar(struct sway_node *node, struct sway_container *avoid,
 		struct wlr_cursor *cursor, struct wlr_box *title_box, bool *after) {
 	struct sway_container *con = node->sway_container;
 	struct sway_node *parent = &con->pending.parent->node;
-	int title_height = container_titlebar_height();
+	int title_height = container_titlebar_height(con);
 	struct wlr_box box;
 	int n_children, avoid_index;
 	enum sway_container_layout layout =
