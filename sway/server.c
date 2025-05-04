@@ -14,11 +14,13 @@
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_data_control_v1.h>
+#include <wlr/types/wlr_ext_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_ext_image_capture_source_v1.h>
+#include <wlr/types/wlr_ext_image_copy_capture_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
@@ -106,8 +108,10 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input_method->global ||
 		global == server.foreign_toplevel_list->global ||
 		global == server.foreign_toplevel_manager->global ||
-		global == server.data_control_manager_v1->global ||
+		global == server.wlr_data_control_manager_v1->global ||
+		global == server.ext_data_control_manager_v1->global ||
 		global == server.screencopy_manager_v1->global ||
+		global == server.ext_image_copy_capture_manager_v1->global ||
 		global == server.export_dmabuf_manager_v1->global ||
 		global == server.security_context_manager_v1->global ||
 		global == server.gamma_control_manager_v1->global ||
@@ -177,11 +181,11 @@ static void detect_proprietary(struct wlr_backend *backend, void *data) {
 	drmFreeVersion(version);
 }
 
-static void handle_renderer_lost(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+static void do_renderer_recreate(void *data) {
+	struct sway_server *server = data;
+	server->recreating_renderer = NULL;
 
 	sway_log(SWAY_INFO, "Re-creating renderer after GPU reset");
-
 	struct wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
 	if (renderer == NULL) {
 		sway_log(SWAY_ERROR, "Unable to create renderer");
@@ -216,12 +220,25 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 	wlr_renderer_destroy(old_renderer);
 }
 
+static void handle_renderer_lost(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, renderer_lost);
+
+	if (server->recreating_renderer != NULL) {
+		sway_log(SWAY_DEBUG, "Re-creation of renderer already scheduled");
+		return;
+	}
+
+	sway_log(SWAY_INFO, "Scheduling re-creation of renderer after GPU reset");
+	server->recreating_renderer = wl_event_loop_add_idle(server->wl_event_loop, do_renderer_recreate, server);
+}
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 
 	wl_display_set_global_filter(server->wl_display, filter_global, NULL);
+	wl_display_set_default_max_buffer_size(server->wl_display, 1024 * 1024);
 
 	root = root_create(server->wl_display);
 
@@ -247,9 +264,6 @@ bool server_init(struct sway_server *server) {
 	if (wlr_renderer_get_texture_formats(server->renderer, WLR_BUFFER_CAP_DMABUF) != NULL) {
 		server->linux_dmabuf_v1 = wlr_linux_dmabuf_v1_create_with_renderer(
 			server->wl_display, 4, server->renderer);
-		if (debug.legacy_wl_drm) {
-			wlr_drm_create(server->wl_display, server->renderer);
-		}
 	}
 	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
 			server->renderer->features.timeline &&
@@ -370,7 +384,10 @@ bool server_init(struct sway_server *server) {
 
 	server->export_dmabuf_manager_v1 = wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	server->screencopy_manager_v1 = wlr_screencopy_manager_v1_create(server->wl_display);
-	server->data_control_manager_v1 = wlr_data_control_manager_v1_create(server->wl_display);
+	server->ext_image_copy_capture_manager_v1 = wlr_ext_image_copy_capture_manager_v1_create(server->wl_display, 1);
+	wlr_ext_output_image_capture_source_manager_v1_create(server->wl_display, 1);
+	server->wlr_data_control_manager_v1 = wlr_data_control_manager_v1_create(server->wl_display);
+	server->ext_data_control_manager_v1 = wlr_ext_data_control_manager_v1_create(server->wl_display, 1);
 	server->security_context_manager_v1 = wlr_security_context_manager_v1_create(server->wl_display);
 	wlr_viewporter_create(server->wl_display);
 	wlr_single_pixel_buffer_manager_v1_create(server->wl_display);
@@ -451,9 +468,35 @@ bool server_init(struct sway_server *server) {
 }
 
 void server_fini(struct sway_server *server) {
+	// remove listeners
+	wl_list_remove(&server->renderer_lost.link);
+	wl_list_remove(&server->new_output.link);
+	wl_list_remove(&server->layer_shell_surface.link);
+	wl_list_remove(&server->xdg_shell_toplevel.link);
+	wl_list_remove(&server->server_decoration.link);
+	wl_list_remove(&server->xdg_decoration.link);
+	wl_list_remove(&server->pointer_constraint.link);
+	wl_list_remove(&server->output_manager_apply.link);
+	wl_list_remove(&server->output_manager_test.link);
+	wl_list_remove(&server->output_power_manager_set_mode.link);
+#if WLR_HAS_DRM_BACKEND
+	if (server->drm_lease_manager) {
+		wl_list_remove(&server->drm_lease_request.link);
+	}
+#endif
+	wl_list_remove(&server->tearing_control_new_object.link);
+	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
+	wl_list_remove(&server->xdg_activation_v1_new_token.link);
+	wl_list_remove(&server->request_set_cursor_shape.link);
+	input_manager_finish(server->input);
+
 	// TODO: free sway-specific resources
 #if WLR_HAS_XWAYLAND
-	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
+	if (server->xwayland.wlr_xwayland != NULL) {
+		wl_list_remove(&server->xwayland_surface.link);
+		wl_list_remove(&server->xwayland_ready.link);
+		wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
+	}
 #endif
 	wl_display_destroy_clients(server->wl_display);
 	wlr_backend_destroy(server->backend);

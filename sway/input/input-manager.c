@@ -494,6 +494,14 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	return input;
 }
 
+void input_manager_finish(struct sway_input_manager *input) {
+	wl_list_remove(&input->new_input.link);
+	wl_list_remove(&input->virtual_keyboard_new.link);
+	wl_list_remove(&input->virtual_pointer_new.link);
+	wl_list_remove(&input->keyboard_shortcuts_inhibit_new_inhibitor.link);
+	wl_list_remove(&input->transient_seat_create.link);
+}
+
 bool input_manager_has_focus(struct sway_node *node) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {

@@ -64,18 +64,6 @@ static int get_text_width(struct sway_text_node *props) {
 	return MAX(width, 0);
 }
 
-static void update_source_box(struct text_buffer *buffer) {
-	struct sway_text_node *props = &buffer->props;
-	struct wlr_fbox source_box = {
-		.x = 0,
-		.y = 0,
-		.width = ceil(get_text_width(props) * buffer->scale),
-		.height = ceil(props->height * buffer->scale),
-	};
-
-	wlr_scene_buffer_set_source_box(buffer->buffer_node, &source_box);
-}
-
 static void render_backing_buffer(struct text_buffer *buffer) {
 	if (!buffer->visible) {
 		return;
@@ -87,7 +75,7 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	}
 
 	float scale = buffer->scale;
-	int width = ceil(buffer->props.width * scale);
+	int width = ceil(get_text_width(&buffer->props) * scale);
 	int height = ceil(buffer->props.height * scale);
 	float *color = (float *)&buffer->props.color;
 	float *background = (float *)&buffer->props.background;
@@ -147,13 +135,12 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 
 	wlr_scene_buffer_set_buffer(buffer->buffer_node, &cairo_buffer->base);
 	wlr_buffer_drop(&cairo_buffer->base);
-	update_source_box(buffer);
 
 	pixman_region32_t opaque;
 	pixman_region32_init(&opaque);
 	if (background[3] == 1) {
 		pixman_region32_union_rect(&opaque, &opaque, 0, 0,
-			buffer->props.width, buffer->props.height);
+			get_text_width(&buffer->props), buffer->props.height);
 	}
 	wlr_scene_buffer_set_opaque_region(buffer->buffer_node, &opaque);
 	pixman_region32_fini(&opaque);
@@ -300,7 +287,6 @@ void sway_text_node_set_max_width(struct sway_text_node *node, int max_width) {
 	buffer->props.max_width = max_width;
 	wlr_scene_buffer_set_dest_size(buffer->buffer_node,
 		get_text_width(&buffer->props), buffer->props.height);
-	update_source_box(buffer);
 	render_backing_buffer(buffer);
 }
 

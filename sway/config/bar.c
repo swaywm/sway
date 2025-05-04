@@ -213,45 +213,25 @@ static void invoke_swaybar(struct bar_config *bar) {
 		sway_log(SWAY_ERROR, "Failed to create fork for swaybar");
 		return;
 	} else if (pid == 0) {
-		// Remove the SIGUSR1 handler that wlroots adds for xwayland
-		sigset_t set;
-		sigemptyset(&set);
-		sigprocmask(SIG_SETMASK, &set, NULL);
-		signal(SIGPIPE, SIG_DFL);
-
-		restore_nofile_limit();
-
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!sway_set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-					"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			// run custom swaybar
-			char *const cmd[] = {
-					bar->swaybar_command ? bar->swaybar_command : "swaybar",
-					"-b", bar->id, NULL};
-			execvp(cmd[0], cmd);
+		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
-		_exit(EXIT_SUCCESS);
+
+		char wayland_socket_str[16];
+		snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+				"%d", sockets[1]);
+		setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+		// run custom swaybar
+		char *const cmd[] = {
+				bar->swaybar_command ? bar->swaybar_command : "swaybar",
+				"-b", bar->id, NULL};
+		execvp(cmd[0], cmd);
+		_exit(EXIT_FAILURE);
 	}
 
 	if (close(sockets[1]) != 0) {
 		sway_log_errno(SWAY_ERROR, "close failed");
-		return;
-	}
-
-	if (waitpid(pid, NULL, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
 		return;
 	}
 

@@ -46,6 +46,7 @@ struct sway_server {
 
 	struct wl_listener new_output;
 	struct wl_listener renderer_lost;
+	struct wl_event_source *recreating_renderer;
 
 	struct wlr_idle_notifier_v1 *idle_notifier_v1;
 	struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;
@@ -104,8 +105,10 @@ struct sway_server {
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_content_type_manager_v1 *content_type_manager_v1;
-	struct wlr_data_control_manager_v1 *data_control_manager_v1;
+	struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1;
+	struct wlr_ext_data_control_manager_v1 *ext_data_control_manager_v1;
 	struct wlr_screencopy_manager_v1 *screencopy_manager_v1;
+	struct wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager_v1;
 	struct wlr_export_dmabuf_manager_v1 *export_dmabuf_manager_v1;
 	struct wlr_security_context_manager_v1 *security_context_manager_v1;
 
@@ -148,19 +151,18 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
-	bool legacy_wl_drm;    // Enable the legacy wl_drm interface
 };
 
 extern struct sway_debug debug;
 
 extern bool allow_unsupported_gpu;
 
+void sway_terminate(int exit_code);
+
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
-
-void restore_nofile_limit(void);
 
 void handle_new_output(struct wl_listener *listener, void *data);
 

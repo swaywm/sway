@@ -16,10 +16,6 @@
 #include "ipc-client.h"
 #include "log.h"
 
-void sway_terminate(int exit_code) {
-	exit(exit_code);
-}
-
 static bool success_object(json_object *result) {
 	json_object *success;
 
@@ -99,7 +95,7 @@ static const char *pretty_type_name(const char *name) {
 		const char *b;
 	} type_names[] = {
 		{ "keyboard", "Keyboard" },
-		{ "pointer", "Mouse" },
+		{ "pointer", "Pointer" },
 		{ "touchpad", "Touchpad" },
 		{ "tablet_pad", "Tablet pad" },
 		{ "tablet_tool", "Tablet tool" },
@@ -330,6 +326,10 @@ static void pretty_print_tree(json_object *obj, int indent) {
 		const char *instance = json_object_get_string(json_object_object_get(window_props_obj, "instance"));
 		const char *class = json_object_get_string(json_object_object_get(window_props_obj, "class"));
 		int x11_id = json_object_get_int(json_object_object_get(obj, "window"));
+		const char *foreign_toplevel_id = json_object_get_string(json_object_object_get(obj, "foreign_toplevel_identifier"));
+		const char *sandbox_engine = json_object_get_string(json_object_object_get(obj, "sandbox_engine"));
+		const char *sandbox_app_id = json_object_get_string(json_object_object_get(obj, "sandbox_app_id"));
+		const char *sandbox_instance_id = json_object_get_string(json_object_object_get(obj, "sandbox_instance_id"));
 
 		printf(" (%s, pid: %d", shell, pid);
 		if (app_id != NULL) {
@@ -343,6 +343,18 @@ static void pretty_print_tree(json_object *obj, int indent) {
 		}
 		if (x11_id != 0) {
 			printf(", X11 window: 0x%X", x11_id);
+		}
+		if (foreign_toplevel_id != NULL) {
+			printf(", foreign_toplevel_id: \"%s\"", foreign_toplevel_id);
+		}
+		if (sandbox_engine != NULL) {
+			printf(", sandbox_engine: \"%s\"", sandbox_engine);
+		}
+		if (sandbox_app_id != NULL) {
+			printf(", sandbox_app_id: \"%s\"", sandbox_app_id);
+		}
+		if (sandbox_instance_id != NULL) {
+			printf(", sandbox_instance_id: \"%s\"", sandbox_instance_id);
 		}
 		printf(")");
 	}

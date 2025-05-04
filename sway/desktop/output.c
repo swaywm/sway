@@ -10,7 +10,6 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
-#include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
@@ -203,7 +202,7 @@ static enum wlr_scale_filter_mode get_scale_filter(struct sway_output *output,
 	}
 }
 
-static void output_configure_scene(struct sway_output *output,
+void output_configure_scene(struct sway_output *output,
 		struct wlr_scene_node *node, float opacity) {
 	if (!node->enabled) {
 		return;
@@ -230,7 +229,9 @@ static void output_configure_scene(struct sway_output *output,
 		// hack: don't call the scene setter because that will damage all outputs
 		// We don't want to damage outputs that aren't our current output that
 		// we're configuring
-		buffer->filter_mode = get_scale_filter(output, buffer);
+		if (output) {
+			buffer->filter_mode = get_scale_filter(output, buffer);
+		}
 
 		wlr_scene_buffer_set_opacity(buffer, opacity);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
@@ -263,7 +264,7 @@ static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
 	output->wlr_output->frame_pending = false;
-	if (!output->enabled) {
+	if (!output->wlr_output->enabled) {
 		return 0;
 	}
 

@@ -34,7 +34,10 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->tiling
 		&& !criteria->urgent
 		&& !criteria->workspace
-		&& !criteria->pid;
+		&& !criteria->pid
+		&& !criteria->sandbox_engine
+		&& !criteria->sandbox_app_id
+		&& !criteria->sandbox_instance_id;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -98,6 +101,9 @@ void criteria_destroy(struct criteria *criteria) {
 #endif
 	pattern_destroy(criteria->con_mark);
 	pattern_destroy(criteria->workspace);
+	pattern_destroy(criteria->sandbox_engine);
+	pattern_destroy(criteria->sandbox_app_id);
+	pattern_destroy(criteria->sandbox_instance_id);
 	free(criteria->target);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -242,6 +248,66 @@ static bool criteria_matches_view(struct criteria *criteria,
 			break;
 		case PATTERN_PCRE2:
 			if (regex_cmp(app_id, criteria->app_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_engine) {
+		const char *sandbox_engine = view_get_sandbox_engine(view);
+		if (!sandbox_engine) {
+			return false;
+		}
+
+		switch (criteria->sandbox_engine->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(sandbox_engine, view_get_sandbox_engine(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_engine, criteria->sandbox_engine->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_app_id) {
+		const char *sandbox_app_id = view_get_sandbox_app_id(view);
+		if (!sandbox_app_id) {
+			return false;
+		}
+
+		switch (criteria->sandbox_app_id->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(sandbox_app_id, view_get_sandbox_app_id(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_app_id, criteria->sandbox_app_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_instance_id) {
+		const char *sandbox_instance_id = view_get_sandbox_instance_id(view);
+		if (!sandbox_instance_id) {
+			return false;
+		}
+
+		switch (criteria->sandbox_instance_id->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(sandbox_instance_id, view_get_sandbox_instance_id(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_instance_id, criteria->sandbox_instance_id->regex) < 0) {
 				return false;
 			}
 			break;
@@ -475,6 +541,9 @@ enum criteria_token {
 	T_URGENT,
 	T_WORKSPACE,
 	T_PID,
+	T_SANDBOX_ENGINE,
+	T_SANDBOX_APP_ID,
+	T_SANDBOX_INSTANCE_ID,
 
 	T_INVALID,
 };
@@ -514,6 +583,12 @@ static enum criteria_token token_from_name(char *name) {
 		return T_FLOATING;
 	} else if (strcmp(name, "pid") == 0) {
 		return T_PID;
+	} else if (strcmp(name, "sandbox_engine") == 0) {
+		return T_SANDBOX_ENGINE;
+	} else if (strcmp(name, "sandbox_app_id") == 0) {
+		return T_SANDBOX_APP_ID;
+	} else if (strcmp(name, "sandbox_instance_id") == 0) {
+		return T_SANDBOX_INSTANCE_ID;
 	}
 	return T_INVALID;
 }
@@ -555,8 +630,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		if (strcmp(value, "__focused__") == 0) {
 			struct sway_seat *seat = input_manager_current_seat();
 			struct sway_container *focus = seat_get_focused_container(seat);
-			struct sway_view *view = focus ? focus->view : NULL;
-			criteria->con_id = view ? view->container->node.id : 0;
+			criteria->con_id = focus ? focus->node.id : 0;
 		} else {
 			criteria->con_id = strtoul(value, &endptr, 10);
 			if (*endptr != 0) {
@@ -616,6 +690,15 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		if (*endptr != 0) {
 			error = strdup("The value for 'pid' should be numeric");
 		}
+		break;
+	case T_SANDBOX_ENGINE:
+		pattern_create(&criteria->sandbox_engine, value);
+		break;
+	case T_SANDBOX_APP_ID:
+		pattern_create(&criteria->sandbox_app_id, value);
+		break;
+	case T_SANDBOX_INSTANCE_ID:
+		pattern_create(&criteria->sandbox_instance_id, value);
 		break;
 	case T_INVALID:
 		break;

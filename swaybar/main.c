@@ -93,8 +93,9 @@ int main(int argc, char **argv) {
 
 	free(socket_path);
 
-	signal(SIGINT, sig_handler);
-	signal(SIGTERM, sig_handler);
+	struct sigaction sa = { .sa_handler = sig_handler };
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
 
 	swaybar.running = true;
 	bar_run(&swaybar);

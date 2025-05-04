@@ -552,28 +552,12 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	return success;
 }
 
-static bool load_include_config(const char *path, const char *parent_dir,
-		struct sway_config *config, struct swaynag_instance *swaynag) {
+static bool load_include_config(const char *path, struct sway_config *config,
+		struct swaynag_instance *swaynag) {
 	// save parent config
 	const char *parent_config = config->current_config_path;
 
-	char *full_path;
-	int len = strlen(path);
-	if (len >= 1 && path[0] != '/') {
-		len = len + strlen(parent_dir) + 2;
-		full_path = malloc(len * sizeof(char));
-		if (!full_path) {
-			sway_log(SWAY_ERROR,
-				"Unable to allocate full path to included config");
-			return false;
-		}
-		snprintf(full_path, len, "%s/%s", parent_dir, path);
-	} else {
-		full_path = strdup(path);
-	}
-
-	char *real_path = realpath(full_path, NULL);
-	free(full_path);
+	char *real_path = realpath(path, NULL);
 
 	if (real_path == NULL) {
 		sway_log(SWAY_DEBUG, "%s not found.", path);
@@ -625,7 +609,7 @@ void load_include_configs(const char *path, struct sway_config *config,
 		char **w = p.we_wordv;
 		size_t i;
 		for (i = 0; i < p.we_wordc; ++i) {
-			load_include_config(w[i], parent_dir, config, swaynag);
+			load_include_config(w[i], config, swaynag);
 		}
 		wordfree(&p);
 	}

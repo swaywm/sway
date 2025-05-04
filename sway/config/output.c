@@ -67,7 +67,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->refresh_rate = -1;
 	oc->custom_mode = -1;
 	oc->drm_mode.type = -1;
-	oc->x = oc->y = -1;
+	oc->x = oc->y = INT_MAX;
 	oc->scale = -1;
 	oc->scale_filter = SCALE_FILTER_DEFAULT;
 	oc->transform = -1;
@@ -93,11 +93,11 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	if (src->height != -1) {
 		dst->height = -1;
 	}
-	if (src->x != -1) {
-		dst->x = -1;
+	if (src->x != INT_MAX) {
+		dst->x = INT_MAX;
 	}
-	if (src->y != -1) {
-		dst->y = -1;
+	if (src->y != INT_MAX) {
+		dst->y = INT_MAX;
 	}
 	if (src->scale != -1) {
 		dst->scale = -1;
@@ -129,6 +129,13 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
 	}
+	if (src->set_color_transform) {
+		if (dst->color_transform) {
+			wlr_color_transform_unref(dst->color_transform);
+			dst->color_transform = NULL;
+		}
+		dst->set_color_transform = false;
+	}
 	if (src->background) {
 		free(dst->background);
 		dst->background = NULL;
@@ -144,6 +151,9 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	if (src->power != -1) {
 		dst->power = -1;
 	}
+	if (src->allow_tearing != -1) {
+		dst->allow_tearing = -1;
+	}
 }
 
 // merge_output_config sets all fields in dst that were set in src
@@ -157,10 +167,10 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	if (src->height != -1) {
 		dst->height = src->height;
 	}
-	if (src->x != -1) {
+	if (src->x != INT_MAX) {
 		dst->x = src->x;
 	}
-	if (src->y != -1) {
+	if (src->y != INT_MAX) {
 		dst->y = src->y;
 	}
 	if (src->scale != -1) {
@@ -527,7 +537,7 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	}
 
 	// Find position for it
-	if (oc && (oc->x != -1 || oc->y != -1)) {
+	if (oc && oc->x != INT_MAX && oc->y != INT_MAX) {
 		sway_log(SWAY_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
 		wlr_output_layout_add(root->output_layout, wlr_output, oc->x, oc->y);
 	} else {
@@ -1018,6 +1028,7 @@ void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc->background);
 	free(oc->background_option);
+	free(oc->background_fallback);
 	wlr_color_transform_unref(oc->color_transform);
 	free(oc);
 }
@@ -1059,42 +1070,27 @@ static bool _spawn_swaybg(char **command) {
 		sway_log_errno(SWAY_ERROR, "fork failed");
 		return false;
 	} else if (pid == 0) {
-		restore_nofile_limit();
-
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!sway_set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-				"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			execvp(command[0], command);
-			sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
-				"(background configuration probably not applied)",
-				command[0]);
+		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
-		_exit(EXIT_SUCCESS);
+
+		char wayland_socket_str[16];
+		snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+			"%d", sockets[1]);
+		setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+		execvp(command[0], command);
+		sway_log_errno(SWAY_ERROR, "failed to execute '%s' "
+			"(background configuration probably not applied)",
+			command[0]);
+		_exit(EXIT_FAILURE);
 	}
 
 	if (close(sockets[1]) != 0) {
 		sway_log_errno(SWAY_ERROR, "close failed");
 		return false;
 	}
-	int fork_status = 0;
-	if (waitpid(pid, &fork_status, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
-		return false;
-	}
-
-	return WIFEXITED(fork_status) && WEXITSTATUS(fork_status) == EXIT_SUCCESS;
+	return true;
 }
 
 bool spawn_swaybg(void) {
