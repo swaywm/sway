@@ -422,13 +422,6 @@ void force_modeset(void) {
 }
 
 static void begin_destroy(struct sway_output *output) {
-	if (output->enabled) {
-		output_disable(output);
-	}
-
-	output_begin_destroy(output);
-
-	wl_list_remove(&output->link);
 
 	wl_list_remove(&output->layout_destroy.link);
 	wl_list_remove(&output->destroy.link);
@@ -436,8 +429,17 @@ static void begin_destroy(struct sway_output *output) {
 	wl_list_remove(&output->frame.link);
 	wl_list_remove(&output->request_state.link);
 
+	// Remove the scene_output first to ensure that the scene does not emit
+	// events for this output.
 	wlr_scene_output_destroy(output->scene_output);
 	output->scene_output = NULL;
+
+	if (output->enabled) {
+		output_disable(output);
+	}
+	output_begin_destroy(output);
+	wl_list_remove(&output->link);
+
 	output->wlr_output->data = NULL;
 	output->wlr_output = NULL;
 
