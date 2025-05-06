@@ -136,12 +136,11 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 	output->detected_subpixel = wlr_output->subpixel;
 	output->scale_filter = SCALE_FILTER_NEAREST;
 
-	wl_signal_init(&output->events.disable);
-
 	wl_list_insert(&root->all_outputs, &output->link);
 
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
+	wl_list_init(&output->layer_surfaces);
 
 	return output;
 }
@@ -284,7 +283,6 @@ void output_disable(struct sway_output *output) {
 	}
 
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
-	wl_signal_emit_mutable(&output->events.disable, output);
 
 	// Remove the output now to avoid interacting with it during e.g.,
 	// transactions, as the output might be physically removed with the scene
@@ -292,6 +290,7 @@ void output_disable(struct sway_output *output) {
 	list_del(root->outputs, index);
 	output->enabled = false;
 
+	destroy_layers(output);
 	output_evacuate(output);
 }
 
