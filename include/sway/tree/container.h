@@ -102,7 +102,7 @@ struct sway_container {
 
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
-	int title_width;
+	double title_width;
 
 	char *title_format;
 
