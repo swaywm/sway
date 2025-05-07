@@ -254,7 +254,7 @@ static void apply_container_state(struct sway_container *container,
 }
 
 static void arrange_title_bar(struct sway_container *con,
-		int x, int y, int width, int height) {
+		double x, double y, double width, double height) {
 	container_update(con);
 
 	bool has_title_bar = height > 0;
@@ -283,13 +283,17 @@ static void disable_container(struct sway_container *con) {
 	}
 }
 
+static double align_to_fractional(float scale, double value) {
+	return round(value * scale) / scale;
+}
+
 static void arrange_container(struct sway_container *con,
-		int width, int height, bool title_bar, int gaps);
+		double width, double height, bool title_bar, double gaps);
 
 static void arrange_children(enum sway_container_layout layout, list_t *children,
 		struct sway_container *active, struct wlr_scene_tree *content,
-		int width, int height, int gaps) {
-	int title_bar_height = container_titlebar_height();
+		double width, double height, double gaps, float scale) {
+	double title_bar_height = align_to_fractional(scale, container_titlebar_height());
 
 	if (layout == L_TABBED) {
 		struct sway_container *first = children->length == 1 ?
@@ -299,28 +303,27 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			title_bar_height = 0;
 		}
 
-		double w = (double) width / children->length;
-		int title_offset = 0;
+		double w = align_to_fractional(scale, width / children->length);
+		double title_offset = 0;
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
 			bool activated = child == active;
-			int next_title_offset = round(w * i + w);
 
 			arrange_title_bar(child, title_offset, -title_bar_height,
-				next_title_offset - title_offset, title_bar_height);
+				(i == children->length - 1) ? width - title_offset : w, title_bar_height);
 			wlr_scene_node_set_enabled(&child->border.tree->node, activated);
 			wlr_scene_node_set_enabled(&child->scene_tree->node, true);
 			wlr_scene_node_set_position(&child->scene_tree->node, 0, title_bar_height);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
 
-			int net_height = height - title_bar_height;
+			double net_height = height - title_bar_height;
 			if (activated && width > 0 && net_height > 0) {
 				arrange_container(child, width, net_height, title_bar_height == 0, 0);
 			} else {
 				disable_container(child);
 			}
 
-			title_offset = next_title_offset;
+			title_offset += w;
 		}
 	} else if (layout == L_STACKED) {
 		struct sway_container *first = children->length == 1 ?
@@ -330,9 +333,9 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			title_bar_height = 0;
 		}
 
-		int title_height = title_bar_height * children->length;
+		double title_height = title_bar_height * children->length;
 
-		int y = 0;
+		double y = 0;
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
 			bool activated = child == active;
@@ -343,7 +346,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			wlr_scene_node_set_position(&child->scene_tree->node, 0, title_height);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
 
-			int net_height = height - title_height;
+			double net_height = height - title_height;
 			if (activated && width > 0 && net_height > 0) {
 				arrange_container(child, width, net_height, title_bar_height == 0, 0);
 			} else {
@@ -353,10 +356,10 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			y += title_bar_height;
 		}
 	} else if (layout == L_VERT) {
-		int off = 0;
+		double off = 0;
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
-			int cheight = child->current.height;
+			double cheight = align_to_fractional(scale, child->current.height);
 
 			wlr_scene_node_set_enabled(&child->border.tree->node, true);
 			wlr_scene_node_set_position(&child->scene_tree->node, 0, off);
@@ -369,10 +372,10 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			}
 		}
 	} else if (layout == L_HORIZ) {
-		int off = 0;
+		double off = 0;
 		for (int i = 0; i < children->length; i++) {
 			struct sway_container *child = children->items[i];
-			int cwidth = child->current.width;
+			double cwidth = align_to_fractional(scale, child->current.width);
 
 			wlr_scene_node_set_enabled(&child->border.tree->node, true);
 			wlr_scene_node_set_position(&child->scene_tree->node, off, 0);
@@ -390,7 +393,9 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 }
 
 static void arrange_container(struct sway_container *con,
-		int width, int height, bool title_bar, int gaps) {
+		double width, double height, bool title_bar, double gaps) {
+	float scale = container_scale_factor(con);
+
 	// this container might have previously been in the scratchpad,
 	// make sure it's enabled for viewing
 	wlr_scene_node_set_enabled(&con->scene_tree->node, true);
@@ -400,8 +405,8 @@ static void arrange_container(struct sway_container *con,
 	}
 
 	if (con->view) {
-		int border_top = container_titlebar_height();
-		int border_width = con->current.border_thickness;
+		double border_top = container_titlebar_height();
+		double border_width = con->current.border_thickness;
 
 		if (title_bar && con->current.border != B_NORMAL) {
 			wlr_scene_node_set_enabled(&con->title_bar.tree->node, false);
@@ -431,10 +436,14 @@ static void arrange_container(struct sway_container *con,
 			sway_assert(false, "unreachable");
 		}
 
-		int border_bottom = con->current.border_bottom ? border_width : 0;
-		int border_left = con->current.border_left ? border_width : 0;
-		int border_right = con->current.border_right ? border_width : 0;
-		int vert_border_height = MAX(0, height - border_top - border_bottom);
+		border_top = align_to_fractional(scale, border_top);
+		border_width = align_to_fractional(scale, border_width);
+
+		double border_bottom = con->current.border_bottom ? border_width : 0;
+		double border_left = con->current.border_left ? border_width : 0;
+		double border_right = con->current.border_right ? border_width : 0;
+		double vert_border_height = MAX(0, height - border_top - border_bottom);
+		vert_border_height = align_to_fractional(scale, vert_border_height);
 
 		wlr_scene_rect_set_size(con->border.top, width, border_top);
 		wlr_scene_rect_set_size(con->border.bottom, width, border_bottom);
@@ -464,7 +473,7 @@ static void arrange_container(struct sway_container *con,
 
 		arrange_children(con->current.layout, con->current.children,
 			con->current.focused_inactive_child, con->content_tree,
-			width, height, gaps);
+			width, height, gaps, scale);
 	}
 }
 
@@ -488,7 +497,7 @@ static int container_get_gaps(struct sway_container *con) {
 
 static void arrange_fullscreen(struct wlr_scene_tree *tree,
 		struct sway_container *fs, struct sway_workspace *ws,
-		int width, int height) {
+		double width, double height) {
 	struct wlr_scene_node *fs_node;
 	if (fs->view) {
 		fs_node = &fs->view->scene_tree->node;
@@ -497,7 +506,9 @@ static void arrange_fullscreen(struct wlr_scene_tree *tree,
 		wlr_scene_node_set_enabled(&fs->scene_tree->node, false);
 	} else {
 		fs_node = &fs->scene_tree->node;
-		arrange_container(fs, width, height, true, container_get_gaps(fs));
+		float scale = container_scale_factor(fs);
+		double gaps = align_to_fractional(scale, container_get_gaps(fs));
+		arrange_container(fs, width, height, true, gaps);
 	}
 
 	wlr_scene_node_reparent(fs_node, tree);
@@ -506,6 +517,9 @@ static void arrange_fullscreen(struct wlr_scene_tree *tree,
 }
 
 static void arrange_workspace_floating(struct sway_workspace *ws) {
+	float scale = ws->output->wlr_output->scale;
+	double gaps = align_to_fractional(scale, ws->gaps_inner);
+
 	for (int i = 0; i < ws->current.floating->length; i++) {
 		struct sway_container *floater = ws->current.floating->items[i];
 		struct wlr_scene_tree *layer = root->layers.floating;
@@ -531,21 +545,27 @@ static void arrange_workspace_floating(struct sway_workspace *ws) {
 		}
 
 		wlr_scene_node_reparent(&floater->scene_tree->node, layer);
-		wlr_scene_node_set_position(&floater->scene_tree->node,
-			floater->current.x, floater->current.y);
+
+		double x = align_to_fractional(scale, floater->current.x);
+		double y = align_to_fractional(scale, floater->current.y);
+		wlr_scene_node_set_position(&floater->scene_tree->node, x, y);
 		wlr_scene_node_set_enabled(&floater->scene_tree->node, true);
 		wlr_scene_node_set_enabled(&floater->border.tree->node, true);
 
-		arrange_container(floater, floater->current.width, floater->current.height,
-			true, ws->gaps_inner);
+		double width = align_to_fractional(scale, floater->current.width);
+		double height = align_to_fractional(scale, floater->current.height);
+		arrange_container(floater, width, height, true, gaps);
 	}
 }
 
 static void arrange_workspace_tiling(struct sway_workspace *ws,
-		int width, int height) {
+		double width, double height) {
+	float scale = ws->output->wlr_output->scale;
+	double gaps = align_to_fractional(scale, ws->gaps_inner);
+
 	arrange_children(ws->current.layout, ws->current.tiling,
 		ws->current.focused_inactive_child, ws->layers.tiling,
-		width, height, ws->gaps_inner);
+		width, height, gaps, scale);
 }
 
 static void disable_workspace(struct sway_workspace *ws) {
@@ -584,6 +604,8 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 
 		if (activated) {
 			struct sway_container *fs = child->current.fullscreen;
+			double scale = output->wlr_output->scale;
+
 			wlr_scene_node_set_enabled(&child->layers.tiling->node, !fs);
 			wlr_scene_node_set_enabled(&child->layers.fullscreen->node, fs);
 
@@ -604,11 +626,12 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 				struct side_gaps *gaps = &child->current_gaps;
 
 				wlr_scene_node_set_position(&child->layers.tiling->node,
-					gaps->left + area->x, gaps->top + area->y);
+					align_to_fractional(scale, gaps->left + area->x),
+					align_to_fractional(scale, gaps->top + area->y));
 
 				arrange_workspace_tiling(child,
-					area->width - gaps->left - gaps->right,
-					area->height - gaps->top - gaps->bottom);
+					align_to_fractional(scale, area->width - gaps->left - gaps->right),
+					align_to_fractional(scale, area->height - gaps->top - gaps->bottom));
 				arrange_workspace_floating(child);
 			}
 		} else {
