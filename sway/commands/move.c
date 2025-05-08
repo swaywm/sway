@@ -222,6 +222,7 @@ static void container_move_to_workspace(struct sway_container *container,
 		container_detach(container);
 		if (workspace_is_empty(workspace) && container->pending.children) {
 			workspace_unwrap_children(workspace, container);
+			container_reap_empty(container);
 		} else {
 			container->pending.width = container->pending.height = 0;
 			container->width_fraction = container->height_fraction = 0;
