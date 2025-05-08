@@ -37,7 +37,7 @@ static void restore_workspaces(struct sway_output *output) {
 		for (int j = 0; j < other->workspaces->length; j++) {
 			struct sway_workspace *ws = other->workspaces->items[j];
 			struct sway_output *highest =
-				workspace_output_get_highest_available(ws, NULL);
+				workspace_output_get_highest_available(ws);
 			if (highest == output) {
 				workspace_detach(ws);
 				output_add_workspace(output, ws);
@@ -205,11 +205,8 @@ static void output_evacuate(struct sway_output *output) {
 		return;
 	}
 	struct sway_output *fallback_output = NULL;
-	if (root->outputs->length > 1) {
+	if (root->outputs->length > 0) {
 		fallback_output = root->outputs->items[0];
-		if (fallback_output == output) {
-			fallback_output = root->outputs->items[1];
-		}
 	}
 
 	while (output->workspaces->length) {
@@ -218,7 +215,7 @@ static void output_evacuate(struct sway_output *output) {
 		workspace_detach(workspace);
 
 		struct sway_output *new_output =
-			workspace_output_get_highest_available(workspace, output);
+			workspace_output_get_highest_available(workspace);
 		if (!new_output) {
 			new_output = fallback_output;
 		}
@@ -289,11 +286,13 @@ void output_disable(struct sway_output *output) {
 	sway_log(SWAY_DEBUG, "Disabling output '%s'", output->wlr_output->name);
 	wl_signal_emit_mutable(&output->events.disable, output);
 
-	output_evacuate(output);
-
+	// Remove the output now to avoid interacting with it during e.g.,
+	// transactions, as the output might be physically removed with the scene
+	// output destroyed.
 	list_del(root->outputs, index);
-
 	output->enabled = false;
+
+	output_evacuate(output);
 }
 
 void output_begin_destroy(struct sway_output *output) {
