@@ -8,6 +8,7 @@ lib_sway_common = static_library(
 		'loop.c',
 		'list.c',
 		'pango.c',
+		'sfdo.c',
 		'stringop.c',
 		'util.c'
 	),
