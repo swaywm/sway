@@ -517,10 +517,12 @@ void view_execute_criteria(struct sway_view *view) {
 		sway_log(SWAY_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
-		list_t *res_list = execute_command(
-				criteria->cmdlist, NULL, view->container);
+		list_t *res_list = execute_command(criteria->cmdlist, NULL, view->container);
 		while (res_list->length) {
 			struct cmd_results *res = res_list->items[0];
+			if (res->status != CMD_SUCCESS) {
+				sway_log(SWAY_ERROR, "for_window '%s' failed: %s", criteria->raw, res->error);
+			}
 			free_cmd_results(res);
 			list_del(res_list, 0);
 		}
