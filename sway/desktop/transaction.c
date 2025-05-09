@@ -587,13 +587,13 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 			wlr_scene_node_set_enabled(&child->layers.tiling->node, !fs);
 			wlr_scene_node_set_enabled(&child->layers.fullscreen->node, fs);
 
-			arrange_workspace_floating(child);
-
 			wlr_scene_node_set_enabled(&output->layers.shell_background->node, !fs);
 			wlr_scene_node_set_enabled(&output->layers.shell_bottom->node, !fs);
 			wlr_scene_node_set_enabled(&output->layers.fullscreen->node, fs);
 
 			if (fs) {
+				disable_workspace(child);
+
 				wlr_scene_rect_set_size(output->fullscreen_background, width, height);
 
 				arrange_fullscreen(child->layers.fullscreen, fs, child,
@@ -609,6 +609,8 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 					area->width - gaps->left - gaps->right,
 					area->height - gaps->top - gaps->bottom);
 			}
+
+			arrange_workspace_floating(child);
 		} else {
 			wlr_scene_node_set_enabled(&child->layers.tiling->node, false);
 			wlr_scene_node_set_enabled(&child->layers.fullscreen->node, false);
@@ -665,6 +667,13 @@ static void arrange_root(struct sway_root *root) {
 
 			wlr_scene_output_set_position(output->scene_output, output->lx, output->ly);
 
+			// disable all workspaces to get to a known state
+			for (int j = 0; j < output->current.workspaces->length; j++) {
+				struct sway_workspace *workspace = output->current.workspaces->items[j];
+				disable_workspace(workspace);
+			}
+
+			// arrange the active workspace
 			if (ws) {
 				arrange_workspace_floating(ws);
 			}
