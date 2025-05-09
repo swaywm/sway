@@ -586,13 +586,13 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 			wlr_scene_node_set_enabled(&child->layers.tiling->node, !fs);
 			wlr_scene_node_set_enabled(&child->layers.fullscreen->node, fs);
 
-			arrange_workspace_floating(child);
-
 			wlr_scene_node_set_enabled(&output->layers.shell_background->node, !fs);
 			wlr_scene_node_set_enabled(&output->layers.shell_bottom->node, !fs);
 			wlr_scene_node_set_enabled(&output->layers.fullscreen->node, fs);
 
 			if (fs) {
+				disable_workspace(child);
+
 				wlr_scene_rect_set_size(output->fullscreen_background, width, height);
 
 				arrange_fullscreen(child->layers.fullscreen, fs, child,
@@ -608,6 +608,8 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 					area->width - gaps->left - gaps->right,
 					area->height - gaps->top - gaps->bottom);
 			}
+
+			arrange_workspace_floating(child);
 		} else {
 			wlr_scene_node_set_enabled(&child->layers.tiling->node, false);
 			wlr_scene_node_set_enabled(&child->layers.fullscreen->node, false);
@@ -660,12 +662,22 @@ static void arrange_root(struct sway_root *root) {
 	if (fs) {
 		for (int i = 0; i < root->outputs->length; i++) {
 			struct sway_output *output = root->outputs->items[i];
-			struct sway_workspace *ws = output->current.active_workspace;
 
 			wlr_scene_output_set_position(output->scene_output, output->lx, output->ly);
 
-			if (ws) {
-				arrange_workspace_floating(ws);
+			// A container that was previously fullscreen global may still have
+			// its scene trees in the 'fullscreen_global' layer so we call
+			// 'disable_workspace' for every workspace to make sure the scene
+			// trees are reparented appropriately.
+			for (int j = 0; j < output->current.workspaces->length; j++) {
+				struct sway_workspace *workspace = output->current.workspaces->items[j];
+				bool activated = output->current.active_workspace == workspace;
+
+				disable_workspace(workspace);
+
+				if (activated) {
+					arrange_workspace_floating(workspace);
+				}
 			}
 		}
 
