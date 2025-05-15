@@ -53,6 +53,19 @@ static void unmanaged_handle_set_geometry(struct wl_listener *listener, void *da
 	wlr_scene_node_set_position(&surface->surface_scene->buffer->node, xsurface->x, xsurface->y);
 }
 
+static void try_focus_unmanaged_local(struct wlr_xwayland_surface *xsurface) {
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	enum wlr_xwayland_icccm_input_model input_model = wlr_xwayland_surface_icccm_input_model(xsurface);
+	bool non_local_focus = focus && focus->view && focus->view->pid != xsurface->pid;
+	if (input_model == WLR_ICCCM_INPUT_MODEL_NONE || non_local_focus) {
+		return;
+	}
+	struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
+	wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+	seat_set_focus_surface(seat, xsurface->surface, false);
+}
+
 static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, map);
@@ -72,10 +85,7 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	}
 
 	if (wlr_xwayland_surface_override_redirect_wants_focus(xsurface)) {
-		struct sway_seat *seat = input_manager_current_seat();
-		struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
-		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
-		seat_set_focus_surface(seat, xsurface->surface, false);
+		try_focus_unmanaged_local(xsurface);
 	}
 }
 
@@ -118,13 +128,7 @@ static void unmanaged_handle_request_activate(struct wl_listener *listener, void
 	if (xsurface->surface == NULL || !xsurface->surface->mapped) {
 		return;
 	}
-	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_container *focus = seat_get_focused_container(seat);
-	if (focus && focus->view && focus->view->pid != xsurface->pid) {
-		return;
-	}
-
-	seat_set_focus_surface(seat, xsurface->surface, false);
+	try_focus_unmanaged_local(xsurface);
 }
 
 static void unmanaged_handle_associate(struct wl_listener *listener, void *data) {
