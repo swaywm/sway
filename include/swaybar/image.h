@@ -2,6 +2,6 @@
 #define _SWAYBAR_IMAGE_H
 #include <cairo.h>
 
-cairo_surface_t *load_image(const char *path);
+cairo_surface_t *load_image(const char *path, int target_size, int scale);
 
 #endif

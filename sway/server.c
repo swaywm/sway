@@ -69,6 +69,10 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
+#if HAVE_LIBSFDO
+#include "sfdo.h"
+#endif
+
 #define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
@@ -502,6 +506,10 @@ void server_fini(struct sway_server *server) {
 	wlr_backend_destroy(server->backend);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
+
+#if HAVE_LIBSFDO
+	sfdo_destroy(server->sfdo);
+#endif
 }
 
 bool server_start(struct sway_server *server) {
@@ -541,6 +549,12 @@ bool server_start(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
+
+#if HAVE_LIBSFDO
+	// TODO: allow configurability of global sway icon theme if and when
+	// it is applicable (titlebar icons? ssd icons?)
+	server->sfdo = sfdo_create("Hicolor");
+#endif
 
 	return true;
 }

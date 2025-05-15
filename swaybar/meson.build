@@ -21,6 +21,15 @@ if have_tray
 	swaybar_deps += sdbus
 endif
 
+if have_libsfdo
+	swaybar_deps += [
+		sfdo_basedir,
+		sfdo_desktop,
+		sfdo_desktop_file,
+		sfdo_icon
+	]
+endif
+
 executable(
 	'swaybar', [
 		'bar.c',
