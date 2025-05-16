@@ -99,7 +99,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	//   - border
 	//     - border top/bottom/left/right
 	//     - content_tree (we put the content node here so when we disable the
-	//       border everything gets disabled. We only render the content iff there
+	//       border everything gets disabled. We only render the content if there
 	//       is a border as well)
 	//     - buffer used for output enter/leave events for foreign_toplevel
 	bool failed = false;
