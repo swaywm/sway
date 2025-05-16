@@ -96,7 +96,7 @@ void workspace_output_add_priority(struct sway_workspace *workspace,
 		struct sway_output *output);
 
 struct sway_output *workspace_output_get_highest_available(
-		struct sway_workspace *ws, struct sway_output *exclude);
+		struct sway_workspace *ws);
 
 void workspace_detect_urgent(struct sway_workspace *workspace);
 
