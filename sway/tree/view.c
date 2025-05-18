@@ -38,6 +38,8 @@
 #include "sway/xdg_decoration.h"
 #include "stringop.h"
 
+#define SWAY_FOREIGN_TOPLEVEL_HANDLE_VERSION 1
+
 bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	bool failed = false;
@@ -812,7 +814,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		.title = view_get_title(view),
 	};
 	view->ext_foreign_toplevel =
-		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list, &foreign_toplevel_state);
+		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list,
+		&foreign_toplevel_state, SWAY_FOREIGN_TOPLEVEL_HANDLE_VERSION);
 
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
