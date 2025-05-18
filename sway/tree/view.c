@@ -5,6 +5,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
+#include <wlr/types/wlr_ext_foreign_toplevel_request_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -667,6 +668,21 @@ static bool should_focus(struct sway_view *view) {
 	size_t len = criterias->length;
 	list_free(criterias);
 	return len == 0;
+}
+
+void handle_foreign_toplevel_response_toplevel(struct wl_listener *listener, void *data) {
+	struct wlr_ext_foreign_toplevel_request_pending_v1 *response = data;
+	wlr_ext_foreign_toplevel_request_v1_send_toplevel(response->request, response->handle);
+}
+
+void handle_foreign_toplevel_response_cancel(struct wl_listener *listener, void *data) {
+	struct wlr_ext_foreign_toplevel_request_pending_v1 *response = data;
+	wlr_ext_foreign_toplevel_request_v1_cancel(response->request);
+}
+
+void handle_foreign_toplevel_request(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, foreign_toplevel_request);
+	wlr_ext_foreign_toplevel_request_source_v1_request(server->foreign_toplevel_request_source, data);
 }
 
 static void handle_foreign_activate_request(

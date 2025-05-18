@@ -351,4 +351,10 @@ void view_send_frame_done(struct sway_view *view);
 
 bool view_can_tear(struct sway_view *view);
 
+void handle_foreign_toplevel_response_toplevel(struct wl_listener *listener, void *data);
+
+void handle_foreign_toplevel_response_cancel(struct wl_listener *listener, void *data);
+
+void handle_foreign_toplevel_request(struct wl_listener *listener, void *data);
+
 #endif

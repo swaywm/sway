@@ -103,6 +103,11 @@ struct sway_server {
 	struct wlr_input_method_manager_v2 *input_method;
 	struct wlr_text_input_manager_v3 *text_input;
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
+	struct wlr_ext_foreign_toplevel_request_manager_v1 *foreign_toplevel_request_manager;
+	struct wl_listener foreign_toplevel_request;
+	struct wlr_ext_foreign_toplevel_request_source_v1 *foreign_toplevel_request_source;
+	struct wl_listener foreign_toplevel_response_toplevel;
+	struct wl_listener foreign_toplevel_response_cancel;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_content_type_manager_v1 *content_type_manager_v1;
 	struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1;
