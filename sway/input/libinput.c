@@ -399,6 +399,19 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 	}
 }
 
+static bool sway_udev_device_is_builtin(struct udev_device *udev_device) {
+	const char *id_path = udev_device_get_property_value(udev_device, "ID_PATH");
+	if (!id_path) {
+		return false;
+	}
+
+	if (has_prefix(id_path, "platform-")) {
+		return true;
+	}
+
+	return has_prefix(id_path, "pci-") && strstr(id_path, "-platform-");
+}
+
 bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
 	if (!wlr_input_device_is_libinput(sway_device->wlr_device)) {
 		return false;
@@ -412,14 +425,7 @@ bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
 		return false;
 	}
 
-	const char *id_path = udev_device_get_property_value(udev_device, "ID_PATH");
-	if (!id_path) {
-		return false;
-	}
-
-	if (has_prefix(id_path, "platform-")) {
-		return true;
-	}
-
-	return has_prefix(id_path, "pci-") && strstr(id_path, "-platform-");
+	bool is_builtin = sway_udev_device_is_builtin(udev_device);
+	udev_device_unref(udev_device);
+	return is_builtin;
 }
