@@ -343,7 +343,7 @@ static void arrange_children(enum sway_container_layout layout, list_t *children
 			wlr_scene_node_set_position(&child->scene_tree->node, 0, title_height);
 			wlr_scene_node_reparent(&child->scene_tree->node, content);
 
-			int net_height = height - title_bar_height;
+			int net_height = height - title_height;
 			if (activated && width > 0 && net_height > 0) {
 				arrange_container(child, width, net_height, title_bar_height == 0, 0);
 			} else {
@@ -534,6 +534,7 @@ static void arrange_workspace_floating(struct sway_workspace *ws) {
 		wlr_scene_node_set_position(&floater->scene_tree->node,
 			floater->current.x, floater->current.y);
 		wlr_scene_node_set_enabled(&floater->scene_tree->node, true);
+		wlr_scene_node_set_enabled(&floater->border.tree->node, true);
 
 		arrange_container(floater, floater->current.width, floater->current.height,
 			true, ws->gaps_inner);
