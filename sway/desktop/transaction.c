@@ -289,7 +289,7 @@ static void arrange_container(struct sway_container *con,
 static void arrange_children(enum sway_container_layout layout, list_t *children,
 		struct sway_container *active, struct wlr_scene_tree *content,
 		int width, int height, int gaps) {
-	int title_bar_height = container_titlebar_height();
+	int title_bar_height = container_titlebar_height(active);
 
 	if (layout == L_TABBED) {
 		struct sway_container *first = children->length == 1 ?
@@ -400,7 +400,7 @@ static void arrange_container(struct sway_container *con,
 	}
 
 	if (con->view) {
-		int border_top = container_titlebar_height();
+		int border_top = container_titlebar_height(con);
 		int border_width = con->current.border_thickness;
 
 		if (title_bar && con->current.border != B_NORMAL) {
