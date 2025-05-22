@@ -8,3 +8,4 @@ option('tray', type: 'feature', value: 'auto', description: 'Enable support for 
 option('gdk-pixbuf', type: 'feature', value: 'auto', description: 'Enable support for more image formats in swaybar tray')
 option('man-pages', type: 'feature', value: 'auto', description: 'Generate and install man pages')
 option('sd-bus-provider', type: 'combo', choices: ['auto', 'libsystemd', 'libelogind', 'basu'], value: 'auto', description: 'Provider of the sd-bus library')
+option('sfdo', type: 'feature', value: 'auto', description: 'Enable libsfdo integration')

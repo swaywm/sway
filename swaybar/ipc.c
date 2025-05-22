@@ -18,6 +18,10 @@
 #include "stringop.h"
 #include "util.h"
 
+#if HAVE_LIBSFDO
+#include "sfdo.h"
+#endif
+
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	uint32_t size = strlen("workspace \"\"") + strlen(ws);
 	for (size_t i = 0; i < strlen(ws); ++i) {
@@ -330,6 +334,10 @@ static bool ipc_parse_config(
 
 	if ((json_object_object_get_ex(bar_config, "icon_theme", &icon_theme))) {
 		config->icon_theme = strdup(json_object_get_string(icon_theme));
+#if HAVE_LIBSFDO
+		sfdo_destroy(config->sfdo);
+		config->sfdo = sfdo_create(config->icon_theme);
+#endif
 	}
 #endif
 
