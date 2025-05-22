@@ -596,6 +596,7 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 
 				wlr_scene_rect_set_size(output->fullscreen_background, width, height);
 
+				arrange_workspace_floating(child);
 				arrange_fullscreen(child->layers.fullscreen, fs, child,
 					width, height);
 			} else {
@@ -608,9 +609,8 @@ static void arrange_output(struct sway_output *output, int width, int height) {
 				arrange_workspace_tiling(child,
 					area->width - gaps->left - gaps->right,
 					area->height - gaps->top - gaps->bottom);
+				arrange_workspace_floating(child);
 			}
-
-			arrange_workspace_floating(child);
 		} else {
 			wlr_scene_node_set_enabled(&child->layers.tiling->node, false);
 			wlr_scene_node_set_enabled(&child->layers.fullscreen->node, false);
