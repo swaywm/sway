@@ -46,14 +46,18 @@ output * bg @datadir@/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
 # Example configuration:
 #
-#   input "2:14:SynPS/2_Synaptics_TouchPad" {
+#   input type:touchpad {
 #       dwt enabled
 #       tap enabled
 #       natural_scroll enabled
 #       middle_emulation enabled
 #   }
 #
-# You can get the names of your inputs by running: swaymsg -t get_inputs
+#   input type:keyboard {
+#       xkb_layout "eu"
+#   }
+#
+# You can also configure each device individually.
 # Read `man 5 sway-input` for more information about this section.
 
 ### Key bindings
