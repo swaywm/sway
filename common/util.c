@@ -141,3 +141,9 @@ bool sway_set_cloexec(int fd, bool cloexec) {
 	}
 	return true;
 }
+
+uint32_t sway_get_current_time_msec(void) {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return now.tv_sec * 1000 + now.tv_nsec / 1000000;
+}
