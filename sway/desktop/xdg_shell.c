@@ -277,6 +277,20 @@ static const struct sway_view_impl view_impl = {
 	.destroy = destroy,
 };
 
+static bool view_wants_csd(struct sway_view *view) {
+	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_toplevel;
+	struct wlr_xdg_surface *xdg_surface = toplevel->base;
+	if (view->xdg_decoration) {
+		enum wlr_xdg_toplevel_decoration_v1_mode mode =
+			view->xdg_decoration->wlr_xdg_decoration->requested_mode;
+		return mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+	}
+	struct sway_server_decoration *deco =
+			decoration_from_surface(xdg_surface->surface);
+	return !deco || deco->wlr_server_decoration->mode ==
+		WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, commit);
@@ -287,10 +301,14 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		if (view->xdg_decoration != NULL) {
 			set_xdg_decoration_mode(view->xdg_decoration);
 		}
-		// XXX: https://github.com/swaywm/sway/issues/2176
+
 		wlr_xdg_surface_schedule_configure(xdg_surface);
 		wlr_xdg_toplevel_set_wm_capabilities(view->wlr_xdg_toplevel,
 			XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN);
+		view_setup(&xdg_shell_view->view, xdg_surface->surface, false, NULL,
+			view_wants_csd(&xdg_shell_view->view));
+		transaction_commit_dirty();
+
 		// TODO: wlr_xdg_toplevel_set_bounds()
 		return;
 	}
@@ -465,23 +483,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view->natural_width = toplevel->base->geometry.width;
 	view->natural_height = toplevel->base->geometry.height;
 
-	bool csd = false;
-
-	if (view->xdg_decoration) {
-		enum wlr_xdg_toplevel_decoration_v1_mode mode =
-			view->xdg_decoration->wlr_xdg_decoration->requested_mode;
-		csd = mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
-	} else {
-		struct sway_server_decoration *deco =
-				decoration_from_surface(toplevel->base->surface);
-		csd = !deco || deco->wlr_server_decoration->mode ==
-			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-	}
-
-	view_map(view, toplevel->base->surface,
-		toplevel->requested.fullscreen,
-		toplevel->requested.fullscreen_output,
-		csd);
+	view_setup(view, toplevel->base->surface, false, NULL, view_wants_csd(view));
+	view_map(view, toplevel->base->surface);
 
 	transaction_commit_dirty();
 
@@ -518,7 +521,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, destroy);
 	struct sway_view *view = &xdg_shell_view->view;
-	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+	if (!sway_assert(view->surface == NULL ||
+			!view->surface->mapped, "Tried to destroy a mapped view")) {
 		return;
 	}
 	wl_list_remove(&xdg_shell_view->destroy.link);
