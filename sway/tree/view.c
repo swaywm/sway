@@ -815,6 +815,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	};
 	view->ext_foreign_toplevel =
 		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list, &foreign_toplevel_state);
+	view->ext_foreign_toplevel->data = view;
 
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
