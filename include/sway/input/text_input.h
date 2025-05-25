@@ -51,9 +51,7 @@ struct sway_text_input {
 
 	struct wl_listener pending_focused_surface_destroy;
 
-	struct wl_listener text_input_enable;
 	struct wl_listener text_input_commit;
-	struct wl_listener text_input_disable;
 	struct wl_listener text_input_destroy;
 };
 
