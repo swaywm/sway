@@ -232,6 +232,21 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 	server->recreating_renderer = wl_event_loop_add_idle(server->wl_event_loop, do_renderer_recreate, server);
 }
 
+static void handle_new_foreign_toplevel_capture_request(struct wl_listener *listener, void *data) {
+	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request *request = data;
+	struct sway_view *view = request->toplevel_handle->data;
+
+	if (view->image_capture_source == NULL) {
+		view->image_capture_source = wlr_ext_image_capture_source_v1_create_with_scene_node(
+			&view->image_capture_scene->tree.node, server.wl_event_loop, server.allocator, server.renderer);
+		if (view->image_capture_source == NULL) {
+			return;
+		}
+	}
+
+	wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_accept(request, view->image_capture_source);
+}
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
@@ -395,6 +410,12 @@ bool server_init(struct sway_server *server) {
 		wlr_content_type_manager_v1_create(server->wl_display, 1);
 	wlr_fractional_scale_manager_v1_create(server->wl_display, 1);
 
+	server->ext_foreign_toplevel_image_capture_source_manager_v1 =
+		wlr_ext_foreign_toplevel_image_capture_source_manager_v1_create(server->wl_display, 1);
+	server->new_foreign_toplevel_capture_request.notify = handle_new_foreign_toplevel_capture_request;
+	wl_signal_add(&server->ext_foreign_toplevel_image_capture_source_manager_v1->events.new_request,
+		&server->new_foreign_toplevel_capture_request);
+
 	server->tearing_control_v1 =
 		wlr_tearing_control_manager_v1_create(server->wl_display, 1);
 	server->tearing_control_new_object.notify = handle_new_tearing_hint;
@@ -488,6 +509,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
 	wl_list_remove(&server->xdg_activation_v1_new_token.link);
 	wl_list_remove(&server->request_set_cursor_shape.link);
+	wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
 	input_manager_finish(server->input);
 
 	// TODO: free sway-specific resources
