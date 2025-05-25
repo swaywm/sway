@@ -20,13 +20,13 @@
 
 static struct sway_xdg_popup *popup_create(
 	struct wlr_xdg_popup *wlr_popup, struct sway_view *view,
-	struct wlr_scene_tree *parent);
+	struct wlr_scene_tree *parent, struct wlr_scene_tree *image_capture_parent);
 
 static void popup_handle_new_popup(struct wl_listener *listener, void *data) {
 	struct sway_xdg_popup *popup =
 		wl_container_of(listener, popup, new_popup);
 	struct wlr_xdg_popup *wlr_popup = data;
-	popup_create(wlr_popup, popup->view, popup->xdg_surface_tree);
+	popup_create(wlr_popup, popup->view, popup->xdg_surface_tree, popup->image_capture_tree);
 }
 
 static void popup_handle_destroy(struct wl_listener *listener, void *data) {
@@ -77,7 +77,8 @@ static void popup_handle_reposition(struct wl_listener *listener, void *data) {
 }
 
 static struct sway_xdg_popup *popup_create(struct wlr_xdg_popup *wlr_popup,
-		struct sway_view *view, struct wlr_scene_tree *parent) {
+		struct sway_view *view, struct wlr_scene_tree *parent,
+		struct wlr_scene_tree *image_capture_parent) {
 	struct wlr_xdg_surface *xdg_surface = wlr_popup->base;
 
 	struct sway_xdg_popup *popup = calloc(1, sizeof(struct sway_xdg_popup));
@@ -110,6 +111,11 @@ static struct sway_xdg_popup *popup_create(struct wlr_xdg_popup *wlr_popup,
 		sway_log(SWAY_ERROR, "Failed to allocate a popup scene descriptor");
 		wlr_scene_node_destroy(&popup->scene_tree->node);
 		free(popup);
+		return NULL;
+	}
+
+	popup->image_capture_tree = wlr_scene_xdg_surface_create(image_capture_parent, xdg_surface);
+	if (popup->image_capture_tree == NULL) {
 		return NULL;
 	}
 
@@ -359,7 +365,7 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_popup *wlr_popup = data;
 
 	struct sway_xdg_popup *popup = popup_create(wlr_popup,
-		&xdg_shell_view->view, root->layers.popup);
+		&xdg_shell_view->view, root->layers.popup, xdg_shell_view->image_capture_tree);
 	if (!popup) {
 		return;
 	}
@@ -570,6 +576,8 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xdg_toplevel->events.destroy, &xdg_shell_view->destroy);
 
 	wlr_scene_xdg_surface_create(xdg_shell_view->view.content_tree, xdg_toplevel->base);
+	xdg_shell_view->image_capture_tree =
+		wlr_scene_xdg_surface_create(&xdg_shell_view->view.image_capture_scene->tree, xdg_toplevel->base);
 
 	xdg_toplevel->base->data = xdg_shell_view;
 }
