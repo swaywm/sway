@@ -244,6 +244,15 @@ if wlroots_features['libinput_backend']
 	sway_sources += 'input/libinput.c'
 endif
 
+if have_libsfdo
+	sway_deps += [
+		sfdo_basedir,
+		sfdo_desktop,
+		sfdo_desktop_file,
+		sfdo_icon
+	]
+endif
+
 executable(
 	'sway',
 	sway_sources + wl_protos_src,

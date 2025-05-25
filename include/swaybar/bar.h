@@ -16,6 +16,10 @@ struct swaybar_tray;
 struct swaybar_workspace;
 struct loop;
 
+#if HAVE_LIBSFDO
+struct sfdo;
+#endif
+
 struct swaybar {
 	char *id;
 	char *mode;
@@ -48,6 +52,10 @@ struct swaybar {
 
 #if HAVE_TRAY
 	struct swaybar_tray *tray;
+#endif
+
+#if HAVE_LIBSFDO
+	struct sfdo *sfdo;
 #endif
 
 	bool running;

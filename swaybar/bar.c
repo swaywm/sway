@@ -538,6 +538,9 @@ void bar_teardown(struct swaybar *bar) {
 #if HAVE_TRAY
 	destroy_tray(bar->tray);
 #endif
+#if HAVE_LIBSFDO
+	sfdo_destroy(bar->config->sfdo);
+#endif
 	free_outputs(&bar->outputs);
 	free_outputs(&bar->unused_outputs);
 	free_seats(&bar->seats);
