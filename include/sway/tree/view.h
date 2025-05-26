@@ -101,8 +101,6 @@ struct sway_view {
 	struct wl_listener foreign_close_request;
 	struct wl_listener foreign_destroy;
 
-	bool destroying;
-
 	list_t *executed_criteria; // struct criteria *
 
 	union {
@@ -295,8 +293,6 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
 
 void view_destroy(struct sway_view *view);
-
-void view_begin_destroy(struct sway_view *view);
 
 /**
  * Map a view, ie. make it visible in the tree.
