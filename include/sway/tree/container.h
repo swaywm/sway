@@ -155,8 +155,6 @@ struct sway_container *container_create(struct sway_view *view);
 
 void container_destroy(struct sway_container *con);
 
-void container_begin_destroy(struct sway_container *con);
-
 /**
  * Search a container's descendants a container based on test criteria. Returns
  * the first container that passes the test.
