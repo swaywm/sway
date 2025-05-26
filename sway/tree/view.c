@@ -928,7 +928,7 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_container *parent = view->container->pending.parent;
 	struct sway_workspace *ws = view->container->pending.workspace;
-	container_begin_destroy(view->container);
+	container_destroy(view->container);
 	if (parent) {
 		container_reap_empty(parent);
 	} else if (ws) {
