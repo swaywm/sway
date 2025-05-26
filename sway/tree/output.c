@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include "sway/desktop/transaction.h"
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -235,7 +236,7 @@ static void output_evacuate(struct sway_output *output) {
 			}
 
 			if (workspace_num_sticky_containers(workspace) == 0) {
-				workspace_begin_destroy(workspace);
+				workspace_destroy(workspace);
 				continue;
 			}
 		}
@@ -251,27 +252,6 @@ static void output_evacuate(struct sway_output *output) {
 			workspace_consider_destroy(new_output_ws);
 		}
 	}
-}
-
-void output_destroy(struct sway_output *output) {
-	if (!sway_assert(output->node.destroying,
-				"Tried to free output which wasn't marked as destroying")) {
-		return;
-	}
-	if (!sway_assert(output->wlr_output == NULL,
-				"Tried to free output which still had a wlr_output")) {
-		return;
-	}
-	if (!sway_assert(output->node.ntxnrefs == 0, "Tried to free output "
-				"which is still referenced by transactions")) {
-		return;
-	}
-
-	destroy_scene_layers(output);
-	list_free(output->workspaces);
-	list_free(output->current.workspaces);
-	wlr_color_transform_unref(output->color_transform);
-	free(output);
 }
 
 void output_disable(struct sway_output *output) {
@@ -295,15 +275,24 @@ void output_disable(struct sway_output *output) {
 	output_evacuate(output);
 }
 
-void output_begin_destroy(struct sway_output *output) {
+void output_destroy(struct sway_output *output) {
 	if (!sway_assert(!output->enabled, "Expected a disabled output")) {
 		return;
 	}
-	sway_log(SWAY_DEBUG, "Destroying output '%s'", output->wlr_output->name);
 	wl_signal_emit_mutable(&output->node.events.destroy, &output->node);
 
-	output->node.destroying = true;
-	node_set_dirty(&output->node);
+	transaction_remove_node(&output->node);
+
+	if (!sway_assert(output->node.ntxnrefs == 0, "Tried to free output "
+				"which is still referenced by transactions")) {
+		return;
+	}
+
+	destroy_scene_layers(output);
+	list_free(output->workspaces);
+	list_free(output->current.workspaces);
+	wlr_color_transform_unref(output->color_transform);
+	free(output);
 }
 
 struct sway_output *output_from_wlr_output(struct wlr_output *output) {
