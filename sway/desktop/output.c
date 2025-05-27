@@ -437,7 +437,6 @@ static void begin_destroy(struct sway_output *output) {
 	if (output->enabled) {
 		output_disable(output);
 	}
-	output_begin_destroy(output);
 	wl_list_remove(&output->link);
 
 	output->wlr_output->data = NULL;
@@ -445,6 +444,8 @@ static void begin_destroy(struct sway_output *output) {
 
 	wl_event_source_remove(output->repaint_timer);
 	output->repaint_timer = NULL;
+
+	output_destroy(output);
 
 	request_modeset();
 }

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include "stringop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -134,10 +135,16 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 }
 
 void workspace_destroy(struct sway_workspace *workspace) {
-	if (!sway_assert(workspace->node.destroying,
-				"Tried to free workspace which wasn't marked as destroying")) {
-		return;
+	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
+	ipc_event_workspace(NULL, workspace, "empty"); // intentional
+	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
+
+	if (workspace->output) {
+		workspace_detach(workspace);
 	}
+	workspace->node.destroying = true;
+	transaction_remove_node(&workspace->node);
+
 	if (!sway_assert(workspace->node.ntxnrefs == 0, "Tried to free workspace "
 				"which is still referenced by transactions")) {
 		return;
@@ -158,18 +165,6 @@ void workspace_destroy(struct sway_workspace *workspace) {
 	free(workspace);
 }
 
-void workspace_begin_destroy(struct sway_workspace *workspace) {
-	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
-	ipc_event_workspace(NULL, workspace, "empty"); // intentional
-	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
-
-	if (workspace->output) {
-		workspace_detach(workspace);
-	}
-	workspace->node.destroying = true;
-	node_set_dirty(&workspace->node);
-}
-
 void workspace_consider_destroy(struct sway_workspace *ws) {
 	if (ws->tiling->length || ws->floating->length) {
 		return;
@@ -187,7 +182,7 @@ void workspace_consider_destroy(struct sway_workspace *ws) {
 		}
 	}
 
-	workspace_begin_destroy(ws);
+	workspace_destroy(ws);
 }
 
 static bool workspace_valid_on_output(const char *output_name,

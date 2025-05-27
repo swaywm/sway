@@ -55,7 +55,7 @@ static void handle_destroy(
 	struct sway_container *con = wl_container_of(
 			listener, con, output_handler_destroy);
 
-	container_begin_destroy(con);
+	container_destroy(con);
 }
 
 static bool handle_point_accepts_input(
@@ -501,10 +501,43 @@ void container_update_title_bar(struct sway_container *con) {
 }
 
 void container_destroy(struct sway_container *con) {
-	if (!sway_assert(con->node.destroying,
-				"Tried to free container which wasn't marked as destroying")) {
-		return;
+	if (con->view) {
+		ipc_event_window(con, "close");
 	}
+	// The workspace must have the fullscreen pointer cleared so that the
+	// seat code can find an appropriate new focus.
+	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE && con->pending.workspace) {
+		con->pending.workspace->fullscreen = NULL;
+	}
+	if (con->scratchpad && con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+		container_fullscreen_disable(con);
+	}
+
+	wl_signal_emit_mutable(&con->node.events.destroy, &con->node);
+
+	container_end_mouse_operation(con);
+
+	con->node.destroying = true;
+
+	if (con->scratchpad) {
+		root_scratchpad_remove_container(con);
+	}
+
+	if (con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+		container_fullscreen_disable(con);
+	}
+
+	if (con->pending.parent || con->pending.workspace) {
+		container_detach(con);
+	}
+
+	if (con->view && con->view->container == con) {
+		wl_list_remove(&con->output_enter.link);
+		wl_list_remove(&con->output_leave.link);
+		wl_list_remove(&con->output_handler_destroy.link);
+	}
+
+	transaction_remove_node(&con->node);
 	if (!sway_assert(con->node.ntxnrefs == 0, "Tried to free container "
 				"which is still referenced by transactions")) {
 		return;
@@ -530,45 +563,6 @@ void container_destroy(struct sway_container *con) {
 	free(con);
 }
 
-void container_begin_destroy(struct sway_container *con) {
-	if (con->view) {
-		ipc_event_window(con, "close");
-	}
-	// The workspace must have the fullscreen pointer cleared so that the
-	// seat code can find an appropriate new focus.
-	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE && con->pending.workspace) {
-		con->pending.workspace->fullscreen = NULL;
-	}
-	if (con->scratchpad && con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
-		container_fullscreen_disable(con);
-	}
-
-	wl_signal_emit_mutable(&con->node.events.destroy, &con->node);
-
-	container_end_mouse_operation(con);
-
-	con->node.destroying = true;
-	node_set_dirty(&con->node);
-
-	if (con->scratchpad) {
-		root_scratchpad_remove_container(con);
-	}
-
-	if (con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
-		container_fullscreen_disable(con);
-	}
-
-	if (con->pending.parent || con->pending.workspace) {
-		container_detach(con);
-	}
-
-	if (con->view && con->view->container == con) {
-		wl_list_remove(&con->output_enter.link);
-		wl_list_remove(&con->output_leave.link);
-		wl_list_remove(&con->output_handler_destroy.link);
-	}
-}
-
 void container_reap_empty(struct sway_container *con) {
 	if (con->view) {
 		return;
@@ -579,7 +573,7 @@ void container_reap_empty(struct sway_container *con) {
 			return;
 		}
 		struct sway_container *parent = con->pending.parent;
-		container_begin_destroy(con);
+		container_destroy(con);
 		con = parent;
 	}
 	if (ws) {
@@ -595,7 +589,7 @@ struct sway_container *container_flatten(struct sway_container *container) {
 		struct sway_container *child = container->pending.children->items[0];
 		struct sway_container *parent = container->pending.parent;
 		container_replace(container, child);
-		container_begin_destroy(container);
+		container_destroy(container);
 		container = parent;
 	}
 	return container;

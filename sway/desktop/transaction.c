@@ -59,22 +59,7 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 		if (node->instruction == instruction) {
 			node->instruction = NULL;
 		}
-		if (node->destroying && node->ntxnrefs == 0) {
-			switch (node->type) {
-			case N_ROOT:
-				sway_assert(false, "Never reached");
-				break;
-			case N_OUTPUT:
-				output_destroy(node->sway_output);
-				break;
-			case N_WORKSPACE:
-				workspace_destroy(node->sway_workspace);
-				break;
-			case N_CONTAINER:
-				container_destroy(node->sway_container);
-				break;
-			}
-		}
+		sway_assert(!node->destroying, "Node being destroyed was present in transaction");
 		free(instruction);
 	}
 	list_free(transaction->instructions);
@@ -168,6 +153,10 @@ static void copy_container_state(struct sway_container *container,
 static void transaction_add_node(struct sway_transaction *transaction,
 		struct sway_node *node, bool server_request) {
 	struct sway_transaction_instruction *instruction = NULL;
+
+	if (node->destroying) {
+		return;
+	}
 
 	// Check if we have an instruction for this node already, in which case we
 	// update that instead of creating a new one.
@@ -966,4 +955,40 @@ void transaction_commit_dirty(void) {
 
 void transaction_commit_dirty_client(void) {
 	_transaction_commit_dirty(false);
+}
+
+static void _transaction_remove_node(struct sway_transaction *transaction,
+		struct sway_node *node) {
+	if (!transaction || !node) {
+		return;
+	}
+	for (int idx = 0; idx < transaction->instructions->length; idx++) {
+		struct sway_transaction_instruction *instruction =
+			transaction->instructions->items[idx];
+		struct sway_node *n = instruction->node;
+		if (n != node) {
+			continue;
+		}
+
+		n->ntxnrefs--;
+		n->instruction = NULL;
+		free(instruction);
+		list_del(transaction->instructions, idx);
+		idx--;
+	}
+}
+
+void transaction_remove_node(struct sway_node *node) {
+	_transaction_remove_node(server.pending_transaction, node);
+	_transaction_remove_node(server.queued_transaction, node);
+
+	for (int idx = 0; idx < server.dirty_nodes->length; idx++) {
+		struct sway_node *n = server.dirty_nodes->items[idx];
+		if (n != node) {
+			continue;
+		}
+		n->dirty = false;
+		list_del(server.dirty_nodes, idx);
+		idx--;
+	}
 }
