@@ -1,7 +1,7 @@
 project(
 	'sway',
 	'c',
-	version: '1.10-dev',
+	version: '1.11-rc2',
 	license: 'MIT',
 	meson_version: '>=1.3',
 	default_options: [
@@ -38,14 +38,14 @@ if is_freebsd
 endif
 
 # Execute the wlroots subproject, if any
-wlroots_version = ['>=0.19.0', '<0.20.0']
+wlroots_version = ['>=0.20.0', '<0.21.0']
 subproject(
 	'wlroots',
 	default_options: ['examples=false'],
 	required: false,
 	version: wlroots_version,
 )
-wlroots = dependency('wlroots-0.19', version: wlroots_version, fallback: 'wlroots')
+wlroots = dependency('wlroots-0.20', version: wlroots_version, fallback: 'wlroots')
 wlroots_features = {
 	'xwayland': false,
 	'libinput_backend': false,
@@ -79,7 +79,7 @@ libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_de
 math = cc.find_library('m')
 rt = cc.find_library('rt')
 xcb_icccm = wlroots_features['xwayland'] ? dependency('xcb-icccm') : null_dep
-threads = dependency('threads') # for pthread_setschedparam
+threads = dependency('threads') # for pthread_setschedparam and pthread_atfork
 
 if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()

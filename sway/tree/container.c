@@ -50,6 +50,14 @@ static void handle_output_leave(
 	}
 }
 
+static void handle_destroy(
+		struct wl_listener *listener, void *data) {
+	struct sway_container *con = wl_container_of(
+			listener, con, output_handler_destroy);
+
+	container_begin_destroy(con);
+}
+
 static bool handle_point_accepts_input(
 		struct wlr_scene_buffer *buffer, double *x, double *y) {
 	return false;
@@ -135,6 +143,9 @@ struct sway_container *container_create(struct sway_view *view) {
 			c->output_leave.notify = handle_output_leave;
 			wl_signal_add(&c->output_handler->events.output_leave,
 					&c->output_leave);
+			c->output_handler_destroy.notify = handle_destroy;
+			wl_signal_add(&c->output_handler->node.events.destroy,
+					&c->output_handler_destroy);
 			c->output_handler->point_accepts_input = handle_point_accepts_input;
 		}
 	}
@@ -508,8 +519,6 @@ void container_destroy(struct sway_container *con) {
 
 	if (con->view && con->view->container == con) {
 		con->view->container = NULL;
-		wl_list_remove(&con->output_enter.link);
-		wl_list_remove(&con->output_leave.link);
 		wlr_scene_node_destroy(&con->output_handler->node);
 		if (con->view->destroying) {
 			view_destroy(con->view);
@@ -551,6 +560,12 @@ void container_begin_destroy(struct sway_container *con) {
 
 	if (con->pending.parent || con->pending.workspace) {
 		container_detach(con);
+	}
+
+	if (con->view && con->view->container == con) {
+		wl_list_remove(&con->output_enter.link);
+		wl_list_remove(&con->output_leave.link);
+		wl_list_remove(&con->output_handler_destroy.link);
 	}
 }
 

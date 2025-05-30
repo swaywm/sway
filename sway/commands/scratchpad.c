@@ -118,10 +118,10 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 
 		// If using criteria, this command is executed for every container which
 		// matches the criteria. If this container isn't in the scratchpad,
-		// we'll just silently return a success. The same is true if the
+		// we'll return an error. The same is true if the
 		// overridden node is not a container.
 		if (!con || !con->scratchpad) {
-			return cmd_results_new(CMD_SUCCESS, NULL);
+			return cmd_results_new(CMD_INVALID, "Container is not in scratchpad.");
 		}
 		scratchpad_toggle_container(con);
 	} else {

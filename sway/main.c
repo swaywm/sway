@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <pango/pangocairo.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,10 +43,6 @@ void sway_terminate(int exit_code) {
 		ipc_event_shutdown("exit");
 		wl_display_terminate(server.wl_display);
 	}
-}
-
-void sig_handler(int signal) {
-	sway_terminate(EXIT_SUCCESS);
 }
 
 void run_as_ipc_client(char *command, char *socket_path) {
@@ -125,6 +122,16 @@ static bool detect_suid(void) {
 	return true;
 }
 
+static void restore_nofile_limit(void) {
+	if (original_nofile_rlimit.rlim_cur == 0) {
+		return;
+	}
+	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
+			"setrlimit(NOFILE) failed");
+	}
+}
+
 static void increase_nofile_limit(void) {
 	if (getrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
 		sway_log_errno(SWAY_ERROR, "Failed to bump max open files limit: "
@@ -139,25 +146,38 @@ static void increase_nofile_limit(void) {
 			"setrlimit(NOFILE) failed");
 		sway_log(SWAY_INFO, "Running with %d max open files",
 			(int)original_nofile_rlimit.rlim_cur);
-	}
-}
-
-void restore_nofile_limit(void) {
-	if (original_nofile_rlimit.rlim_cur == 0) {
 		return;
 	}
-	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
-		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
-			"setrlimit(NOFILE) failed");
-	}
+
+	pthread_atfork(NULL, NULL, restore_nofile_limit);
 }
 
-void restore_signals(void) {
+static int term_signal(int signal, void *data) {
+	sway_terminate(EXIT_SUCCESS);
+	return 0;
+}
+
+static void restore_signals(void) {
 	sigset_t set;
 	sigemptyset(&set);
 	sigprocmask(SIG_SETMASK, &set, NULL);
-	signal(SIGCHLD, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
+
+	struct sigaction sa_dfl = { .sa_handler = SIG_DFL };
+	sigaction(SIGCHLD, &sa_dfl, NULL);
+	sigaction(SIGPIPE, &sa_dfl, NULL);
+}
+
+static void init_signals(void) {
+	wl_event_loop_add_signal(server.wl_event_loop, SIGTERM, term_signal, NULL);
+	wl_event_loop_add_signal(server.wl_event_loop, SIGINT, term_signal, NULL);
+
+	struct sigaction sa_ign = { .sa_handler = SIG_IGN };
+	// avoid need to reap children
+	sigaction(SIGCHLD, &sa_ign, NULL);
+	// prevent ipc write errors from crashing sway
+	sigaction(SIGPIPE, &sa_ign, NULL);
+
+	pthread_atfork(NULL, NULL, restore_signals);
 }
 
 void enable_debug_flag(const char *flag) {
@@ -169,8 +189,6 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_timings = true;
 	} else if (has_prefix(flag, "txn-timeout=")) {
 		server.txn_timeout_ms = atoi(&flag[strlen("txn-timeout=")]);
-	} else if (strcmp(flag, "legacy-wl-drm") == 0) {
-		debug.legacy_wl_drm = true;
 	} else {
 		sway_log(SWAY_ERROR, "Unknown debug flag: %s", flag);
 	}
@@ -330,21 +348,13 @@ int main(int argc, char **argv) {
 
 	increase_nofile_limit();
 
-	// handle SIGTERM signals
-	signal(SIGTERM, sig_handler);
-	signal(SIGINT, sig_handler);
-
-	// avoid need to reap children
-	signal(SIGCHLD, SIG_IGN);
-
-	// prevent ipc from crashing sway
-	signal(SIGPIPE, SIG_IGN);
-
 	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
 	if (!server_init(&server)) {
 		return 1;
 	}
+
+	init_signals();
 
 	if (server.linux_dmabuf_v1) {
 		wlr_scene_set_linux_dmabuf_v1(root->root_scene, server.linux_dmabuf_v1);

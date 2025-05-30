@@ -12,6 +12,7 @@
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#include <wlr/types/wlr_session_lock_v1.h>
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
@@ -217,6 +218,10 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 }
 
 bool view_inhibit_idle(struct sway_view *view) {
+	if (server.session_lock.lock) {
+		return false;
+	}
+
 	struct sway_idle_inhibitor_v1 *user_inhibitor =
 		sway_idle_inhibit_v1_user_inhibitor_for_view(view);
 
@@ -512,10 +517,12 @@ void view_execute_criteria(struct sway_view *view) {
 		sway_log(SWAY_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
-		list_t *res_list = execute_command(
-				criteria->cmdlist, NULL, view->container);
+		list_t *res_list = execute_command(criteria->cmdlist, NULL, view->container);
 		while (res_list->length) {
 			struct cmd_results *res = res_list->items[0];
+			if (res->status != CMD_SUCCESS) {
+				sway_log(SWAY_ERROR, "for_window '%s' failed: %s", criteria->raw, res->error);
+			}
 			free_cmd_results(res);
 			list_del(res_list, 0);
 		}
@@ -1008,6 +1015,9 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return view_from_wlr_surface(subsurface->parent);
 	}
 	if (wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
+		return NULL;
+	}
+	if (wlr_session_lock_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
 		return NULL;
 	}
 
