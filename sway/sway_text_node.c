@@ -56,8 +56,8 @@ struct text_buffer {
 	struct wl_listener destroy;
 };
 
-static int get_text_width(struct sway_text_node *props) {
-	int width = props->width;
+static double get_text_width(struct sway_text_node *props) {
+	double width = props->width;
 	if (props->max_width >= 0) {
 		width = MIN(width, props->max_width);
 	}
@@ -139,7 +139,7 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	pixman_region64f_t opaque;
 	pixman_region64f_init(&opaque);
 	if (background[3] == 1) {
-		pixman_region64f_union_rect(&opaque, &opaque, 0, 0,
+		pixman_region64f_union_rectf(&opaque, &opaque, 0, 0,
 			get_text_width(&buffer->props), buffer->props.height);
 	}
 	wlr_scene_buffer_set_opaque_region(buffer->buffer_node, &opaque);
@@ -279,7 +279,7 @@ void sway_text_node_set_text(struct sway_text_node *node, char *text) {
 	render_backing_buffer(buffer);
 }
 
-void sway_text_node_set_max_width(struct sway_text_node *node, int max_width) {
+void sway_text_node_set_max_width(struct sway_text_node *node, double max_width) {
 	struct text_buffer *buffer = wl_container_of(node, buffer, props);
 	if (max_width == buffer->props.max_width) {
 		return;
