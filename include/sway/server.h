@@ -27,7 +27,7 @@ struct sway_session_lock {
 struct sway_server {
 	struct wl_display *wl_display;
 	struct wl_event_loop *wl_event_loop;
-	const char *socket;
+	char *socket;
 
 	struct wlr_backend *backend;
 	struct wlr_session *session;

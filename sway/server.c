@@ -502,6 +502,7 @@ void server_fini(struct sway_server *server) {
 	wlr_backend_destroy(server->backend);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
+	free(server->socket);
 }
 
 bool server_start(struct sway_server *server) {
