@@ -18,6 +18,7 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
+#include <wlr/types/wlr_ext_foreign_toplevel_request_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_ext_image_capture_source_v1.h>
 #include <wlr/types/wlr_ext_image_copy_capture_v1.h>
@@ -72,6 +73,7 @@
 #define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
+#define SWAY_FOREIGN_TOPLEVEL_REQUEST_VERSION 1
 #define SWAY_PRESENTATION_VERSION 2
 
 bool allow_unsupported_gpu = false;
@@ -107,6 +109,7 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.output_power_manager_v1->global ||
 		global == server.input_method->global ||
 		global == server.foreign_toplevel_list->global ||
+		global == server.foreign_toplevel_request_source->global ||
 		global == server.foreign_toplevel_manager->global ||
 		global == server.wlr_data_control_manager_v1->global ||
 		global == server.ext_data_control_manager_v1->global ||
@@ -364,8 +367,17 @@ bool server_init(struct sway_server *server) {
 	server->text_input = wlr_text_input_manager_v3_create(server->wl_display);
 	server->foreign_toplevel_list =
 		wlr_ext_foreign_toplevel_list_v1_create(server->wl_display, SWAY_FOREIGN_TOPLEVEL_LIST_VERSION);
-	server->foreign_toplevel_manager =
-		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
+	server->foreign_toplevel_manager = wlr_foreign_toplevel_manager_v1_create(server->wl_display);
+	server->foreign_toplevel_request_manager =
+		wlr_ext_foreign_toplevel_request_manager_v1_create(server->wl_display, SWAY_FOREIGN_TOPLEVEL_REQUEST_VERSION);
+	server->foreign_toplevel_request.notify = handle_foreign_toplevel_request;
+	wl_signal_add(&server->foreign_toplevel_request_manager->events.request, &server->foreign_toplevel_request);
+	server->foreign_toplevel_request_source =
+		wlr_ext_foreign_toplevel_request_source_v1_create(server->wl_display, SWAY_FOREIGN_TOPLEVEL_REQUEST_VERSION);
+	server->foreign_toplevel_response_toplevel.notify = handle_foreign_toplevel_response_toplevel;
+	wl_signal_add(&server->foreign_toplevel_request_source->events.toplevel, &server->foreign_toplevel_response_toplevel);
+	server->foreign_toplevel_response_cancel.notify = handle_foreign_toplevel_response_cancel;
+	wl_signal_add(&server->foreign_toplevel_request_source->events.cancel, &server->foreign_toplevel_response_cancel);
 
 	sway_session_lock_init();
 
