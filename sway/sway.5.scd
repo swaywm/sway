@@ -228,8 +228,8 @@ set|plus|minus|toggle <amount>
 	regardless of the tearing hints.
 
 	This setting only has an effect if tearing is allowed on the output through
-	the per-output *allow_tearing* setting. See *sway-output*(5) 
-	for further details.
+	the per-output *allow_tearing* setting. See *sway-output*(5) for further
+	details.
 
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. The optional _px_
