@@ -245,33 +245,6 @@ static void relay_send_im_state(struct sway_input_method_relay *relay,
 	// TODO: pass intent, display popup size
 }
 
-static void handle_text_input_enable(struct wl_listener *listener, void *data) {
-	struct sway_text_input *text_input = wl_container_of(listener, text_input,
-		text_input_enable);
-	if (text_input->relay->input_method == NULL) {
-		sway_log(SWAY_INFO, "Enabling text input when input method is gone");
-		return;
-	}
-	wlr_input_method_v2_send_activate(text_input->relay->input_method);
-	relay_send_im_state(text_input->relay, text_input->input);
-}
-
-static void handle_text_input_commit(struct wl_listener *listener,
-		void *data) {
-	struct sway_text_input *text_input = wl_container_of(listener, text_input,
-		text_input_commit);
-	if (!text_input->input->current_enabled) {
-		sway_log(SWAY_INFO, "Inactive text input tried to commit an update");
-		return;
-	}
-	sway_log(SWAY_DEBUG, "Text input committed update");
-	if (text_input->relay->input_method == NULL) {
-		sway_log(SWAY_INFO, "Text input committed, but input method is gone");
-		return;
-	}
-	relay_send_im_state(text_input->relay, text_input->input);
-}
-
 static void relay_disable_text_input(struct sway_input_method_relay *relay,
 		struct sway_text_input *text_input) {
 	if (relay->input_method == NULL) {
@@ -282,15 +255,40 @@ static void relay_disable_text_input(struct sway_input_method_relay *relay,
 	relay_send_im_state(relay, text_input->input);
 }
 
-static void handle_text_input_disable(struct wl_listener *listener,
+static void handle_text_input_commit(struct wl_listener *listener,
 		void *data) {
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
-		text_input_disable);
-	if (text_input->input->focused_surface == NULL) {
-		sway_log(SWAY_DEBUG, "Disabling text input, but no longer focused");
+		text_input_commit);
+	struct wlr_text_input_v3_commit_event *event = data;
+
+	struct sway_input_method_relay *relay = text_input->relay;
+
+	if (relay->input_method == NULL) {
+		sway_log(SWAY_INFO, "Text input committed, but input method is gone");
 		return;
 	}
-	relay_disable_text_input(text_input->relay, text_input);
+
+	switch (event->type) {
+	case WLR_TEXT_INPUT_V3_COMMIT_TYPE_NONE:
+		if (!text_input->input->enabled) {
+			sway_log(SWAY_INFO, "Inactive text input tried to commit an update");
+			break;
+		}
+		relay_send_im_state(relay, text_input->input);
+		break;
+	case WLR_TEXT_INPUT_V3_COMMIT_TYPE_ENABLE:
+		wlr_input_method_v2_send_activate(relay->input_method);
+		relay_send_im_state(relay, text_input->input);
+		break;
+	case WLR_TEXT_INPUT_V3_COMMIT_TYPE_DISABLE:
+		if (text_input->input->focused_surface == NULL) {
+			sway_log(SWAY_DEBUG, "Disabling text input, but no longer focused");
+			break;
+		}
+		wlr_input_method_v2_send_deactivate(relay->input_method);
+		relay_disable_text_input(relay, text_input);
+		break;
+	}
 }
 
 static void handle_text_input_destroy(struct wl_listener *listener,
@@ -298,14 +296,12 @@ static void handle_text_input_destroy(struct wl_listener *listener,
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
 		text_input_destroy);
 
-	if (text_input->input->current_enabled) {
+	if (text_input->input->enabled) {
 		relay_disable_text_input(text_input->relay, text_input);
 	}
 	text_input_set_pending_focused_surface(text_input, NULL);
 	wl_list_remove(&text_input->text_input_commit.link);
 	wl_list_remove(&text_input->text_input_destroy.link);
-	wl_list_remove(&text_input->text_input_disable.link);
-	wl_list_remove(&text_input->text_input_enable.link);
 	wl_list_remove(&text_input->link);
 	free(text_input);
 }
@@ -333,14 +329,8 @@ struct sway_text_input *sway_text_input_create(
 
 	wl_list_insert(&relay->text_inputs, &input->link);
 
-	input->text_input_enable.notify = handle_text_input_enable;
-	wl_signal_add(&text_input->events.enable, &input->text_input_enable);
-
 	input->text_input_commit.notify = handle_text_input_commit;
 	wl_signal_add(&text_input->events.commit, &input->text_input_commit);
-
-	input->text_input_disable.notify = handle_text_input_disable;
-	wl_signal_add(&text_input->events.disable, &input->text_input_disable);
 
 	input->text_input_destroy.notify = handle_text_input_destroy;
 	wl_signal_add(&text_input->events.destroy, &input->text_input_destroy);
