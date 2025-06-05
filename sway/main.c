@@ -108,20 +108,6 @@ static void log_kernel(void) {
 	pclose(f);
 }
 
-static bool detect_suid(void) {
-	if (geteuid() != 0 && getegid() != 0) {
-		return false;
-	}
-
-	if (getuid() == geteuid() && getgid() == getegid()) {
-		return false;
-	}
-
-	sway_log(SWAY_ERROR, "SUID operation is no longer supported, refusing to start. "
-			"This check will be removed in a future release.");
-	return true;
-}
-
 static void restore_nofile_limit(void) {
 	if (original_nofile_rlimit.rlim_cur == 0) {
 		return;
@@ -290,11 +276,6 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
 		}
-	}
-
-	// SUID operation is deprecated, so block it for now.
-	if (detect_suid()) {
-		exit(EXIT_FAILURE);
 	}
 
 	// Since wayland requires XDG_RUNTIME_DIR to be set, abort with just the
