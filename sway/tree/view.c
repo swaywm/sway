@@ -1242,7 +1242,11 @@ bool view_can_tear(struct sway_view *view) {
 static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
 		int x, int y, void *data) {
 	struct timespec *when = data;
-	wl_signal_emit_mutable(&scene_buffer->events.frame_done, when);
+	struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+	if (scene_surface == NULL) {
+		return;
+	}
+	wlr_scene_surface_send_frame_done(scene_surface, when);
 }
 
 void view_send_frame_done(struct sway_view *view) {
