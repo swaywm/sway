@@ -529,7 +529,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	if (view->xdg_decoration) {
 		view->xdg_decoration->view = NULL;
 	}
-	view_begin_destroy(view);
+	view_destroy(view);
 }
 
 struct sway_view *view_from_wlr_xdg_surface(
