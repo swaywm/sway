@@ -980,10 +980,10 @@ static void sway_keyboard_group_add(struct sway_keyboard *keyboard) {
 	wl_signal_add(&sway_group->wlr_group->keyboard.events.modifiers,
 			&sway_group->keyboard_modifiers);
 	sway_group->keyboard_modifiers.notify = handle_keyboard_group_modifiers;
-	
+
 	wl_signal_add(&sway_group->wlr_group->events.enter, &sway_group->enter);
 	sway_group->enter.notify = handle_keyboard_group_enter;
-	
+
 	wl_signal_add(&sway_group->wlr_group->events.leave, &sway_group->leave);
 	sway_group->leave.notify = handle_keyboard_group_leave;
 	return;
