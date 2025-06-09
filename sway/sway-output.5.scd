@@ -196,9 +196,9 @@ must be separated by one space. For example:
 	screen tearing is allowed.
 
 	With immediate page flips, frames from the client are presented as soon
-	as possible instead of synchronizing with the monitor's vblank interval 
-	(VSync). 
-	
+	as possible instead of synchronizing with the monitor's vblank interval
+	(VSync).
+
 	It is recommended to set *max_render_time* to *off*. In that case a page flip
 	happens as soon as a client updates. Otherwise, tearing will only happen if
 	rendering takes longer than the configured milliseconds before the next
