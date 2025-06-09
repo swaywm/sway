@@ -186,6 +186,19 @@ else
 	)
 endif
 
+# subdir('sway') needs reference_config_file
+# as input for its tests
+config = configuration_data()
+config.set('datadir', join_paths(prefix, datadir))
+config.set('prefix', prefix)
+config.set('sysconfdir', join_paths(prefix, sysconfdir))
+
+reference_config_file = configure_file(
+	configuration: config,
+	input: 'config.in',
+	output: '@BASENAME@',
+	install_dir: join_paths(sysconfdir, 'sway')
+)
 
 sway_inc = include_directories('include')
 
@@ -204,18 +217,6 @@ endif
 if get_option('swaynag')
 	subdir('swaynag')
 endif
-
-config = configuration_data()
-config.set('datadir', join_paths(prefix, datadir))
-config.set('prefix', prefix)
-config.set('sysconfdir', join_paths(prefix, sysconfdir))
-
-configure_file(
-	configuration: config,
-	input: 'config.in',
-	output: '@BASENAME@',
-	install_dir: join_paths(sysconfdir, 'sway')
-)
 
 install_data(
 	'sway.desktop',
