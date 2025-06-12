@@ -259,7 +259,7 @@ correct seat.
 	Set this seat as the fallback seat. A fallback seat will attach any device
 	not explicitly attached to another seat (similar to a "default" seat).
 
-*seat* <name> hide_cursor <timeout>|when-typing [enable|disable]
+*seat* <name> hide_cursor <timeout>|when-typing|but-keep-active [enable|disable]
 	Hides the cursor image after the specified event occurred.
 
 	If _timeout_ is specified, then the cursor will be hidden after _timeout_
@@ -273,6 +273,9 @@ correct seat.
 	Be aware that this setting can interfere with input handling in games and
 	certain types of software (Gimp, Blender etc) that rely on simultaneous
 	input from mouse and keyboard.
+
+	If _but-keep-active_ is enabled, then the cursor will remain active when
+	hidden. This solves the issues with _when-typing_ as mentioned above.
 
 *seat* <name> idle_inhibit <sources...>
 	Sets the set of input event sources which can prevent the seat from
