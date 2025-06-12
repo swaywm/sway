@@ -78,6 +78,9 @@ uint32_t event_to_x11_button(uint32_t event);
 
 void free_hotspots(struct wl_list *list);
 
+bool handle_workspace_button(struct swaybar_output *output,
+	uint32_t button, bool released, const char *ws);
+
 void swaybar_seat_free(struct swaybar_seat *seat);
 
 #endif
