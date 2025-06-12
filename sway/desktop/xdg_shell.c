@@ -287,10 +287,23 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		if (view->xdg_decoration != NULL) {
 			set_xdg_decoration_mode(view->xdg_decoration);
 		}
-		// XXX: https://github.com/swaywm/sway/issues/2176
+
+		bool csd = false;
+		if (view->xdg_decoration) {
+			enum wlr_xdg_toplevel_decoration_v1_mode mode =
+				view->xdg_decoration->wlr_xdg_decoration->requested_mode;
+			csd = mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+		} else {
+			struct sway_server_decoration *deco =
+					decoration_from_surface(xdg_surface->surface);
+			csd = !deco || deco->wlr_server_decoration->mode ==
+				WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
+		}
+
 		wlr_xdg_surface_schedule_configure(xdg_surface);
 		wlr_xdg_toplevel_set_wm_capabilities(view->wlr_xdg_toplevel,
 			XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN);
+		view_premap(&xdg_shell_view->view, xdg_surface->surface, false, NULL, csd);
 		// TODO: wlr_xdg_toplevel_set_bounds()
 		return;
 	}
