@@ -264,6 +264,10 @@ static void handle_text_input_commit(struct wl_listener *listener,
 		void *data) {
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
 		text_input_commit);
+	if (text_input->input->focused_surface == NULL) {
+		sway_log(SWAY_DEBUG, "Unfocused text input tried to commit an update");
+		return;
+	}
 	if (!text_input->input->current_enabled) {
 		sway_log(SWAY_INFO, "Inactive text input tried to commit an update");
 		return;
