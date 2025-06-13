@@ -190,6 +190,7 @@ sway_sources = files(
 	'commands/input/xkb_variant.c',
 
 	'commands/output/adaptive_sync.c',
+	'commands/output/allow_drm_leasing.c',
 	'commands/output/allow_tearing.c',
 	'commands/output/background.c',
 	'commands/output/disable.c',
