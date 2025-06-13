@@ -117,10 +117,13 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		free(dst->xkb_file);
 		dst->xkb_file = src->xkb_file ? strdup(src->xkb_file) : NULL;
 		dst->xkb_file_is_set = dst->xkb_file != NULL;
+		dst->xkb_layout = NULL;
 	}
 	if (src->xkb_layout) {
 		free(dst->xkb_layout);
 		dst->xkb_layout = strdup(src->xkb_layout);
+		dst->xkb_file = NULL;
+		dst->xkb_file_is_set = false;
 	}
 	if (src->xkb_model) {
 		free(dst->xkb_model);
