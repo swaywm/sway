@@ -180,10 +180,31 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		if (state->npressed == (size_t)binding->keys->length) {
 			match = true;
 			for (size_t j = 0; j < state->npressed; j++) {
-				uint32_t key = *(uint32_t *)binding->keys->items[j];
-				if (key != state->pressed_keys[j]) {
-					match = false;
-					break;
+				uint32_t key;
+
+				// If translated bindsym, keys are syms not keycodes.
+				// keysym j mapped to keycodes translations[j]
+				if (binding->type & BINDING_CODE) {
+					bool dup_match = false;
+					list_t *duplicate_keys = binding->translations[j];
+					for (int k = 0; k < duplicate_keys->length; k++) {
+						key = *(uint32_t *)duplicate_keys->items[k];
+						if (key == state->pressed_keys[j]) {
+							dup_match = true;
+							break;
+						}
+					}
+					if (!dup_match) {
+						match = false;
+						break;
+					}
+				}
+				else {
+					key = *(uint32_t *)binding->keys->items[j];
+					if (key != state->pressed_keys[j]) {
+						match = false;
+						break;
+					}
 				}
 			}
 		} else if (binding->keys->length == 1) {
