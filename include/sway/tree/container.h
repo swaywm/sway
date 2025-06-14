@@ -60,6 +60,9 @@ struct sway_container_state {
 	bool border_left;
 	bool border_right;
 
+	bool stacking_titlebar_follows_border;
+	bool tabbed_titlebar_follows_border;
+
 	// These are in layout coordinates.
 	double content_x, content_y;
 	double content_width, content_height;
@@ -221,6 +224,13 @@ void container_set_geometry_from_content(struct sway_container *con);
  * Uses pending container state.
  */
 bool container_is_floating(struct sway_container *container);
+
+/**
+ * Determine if the given container should have a titlebar.
+ *
+ * Uses pending container state.
+ */
+bool container_has_titlebar(struct sway_container *container);
 
 /**
  * Get a container's box in layout coordinates.
