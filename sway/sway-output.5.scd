@@ -210,6 +210,11 @@ must be separated by one space. For example:
 
 	This setting only has effect when a window is fullscreen on the output.
 
+*output* <name> allow_drm_leasing yes|no
+	Allows or disallows leasing a DRM output. The DRM lease interface must be
+	active when calling this command. Outputs offered for leasing will be
+	disabled when leased by a client.
+
 # SEE ALSO
 
 *sway*(5) *sway-input*(5)
