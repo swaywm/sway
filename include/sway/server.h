@@ -112,6 +112,9 @@ struct sway_server {
 	struct wlr_export_dmabuf_manager_v1 *export_dmabuf_manager_v1;
 	struct wlr_security_context_manager_v1 *security_context_manager_v1;
 
+	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1 *ext_foreign_toplevel_image_capture_source_manager_v1;
+	struct wl_listener new_foreign_toplevel_capture_request;
+
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
 	struct wl_listener xdg_activation_v1_new_token;
