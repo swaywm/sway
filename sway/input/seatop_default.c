@@ -16,6 +16,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
+#include "util.h"
 #if WLR_HAS_XWAYLAND
 #include "sway/xwayland.h"
 #endif
@@ -1148,5 +1149,7 @@ void seatop_begin_default(struct sway_seat *seat) {
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;
-	seatop_rebase(seat, 0);
+
+	uint32_t time_msec = get_current_time_in_msec();
+	seatop_rebase(seat, time_msec);
 }
