@@ -61,4 +61,6 @@ const char *sway_wl_output_subpixel_to_string(enum wl_output_subpixel subpixel);
 
 bool sway_set_cloexec(int fd, bool cloexec);
 
+uint32_t get_current_time_in_msec(void);
+
 #endif
