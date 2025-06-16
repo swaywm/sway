@@ -82,6 +82,30 @@ struct output_config *new_output_config(const char *name) {
 	return oc;
 }
 
+static bool empty_output_config(struct output_config *oc) {
+	return oc->enabled == -1 &&
+		oc->width == -1 &&
+		oc->height == -1 &&
+		oc->x == INT_MAX &&
+		oc->y == INT_MAX &&
+		oc->scale == -1 &&
+		oc->scale_filter == SCALE_FILTER_DEFAULT &&
+		oc->subpixel == WL_OUTPUT_SUBPIXEL_UNKNOWN &&
+		oc->refresh_rate == -1 &&
+		oc->custom_mode == -1 &&
+		oc->drm_mode.type == (uint32_t)-1 &&
+		oc->transform == -1 &&
+		oc->max_render_time == -1 &&
+		oc->adaptive_sync == -1 &&
+		oc->render_bit_depth == RENDER_BIT_DEPTH_DEFAULT &&
+		oc->set_color_transform == false &&
+		oc->background == NULL &&
+		oc->background_option == NULL &&
+		oc->background_fallback == NULL &&
+		oc->power == -1 &&
+		oc->allow_tearing == -1;
+}
+
 // supersede_output_config clears all fields in dst that were set in src
 static void supersede_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->enabled != -1) {
@@ -232,57 +256,37 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 }
 
 void store_output_config(struct output_config *oc) {
-	bool merged = false;
 	bool wildcard = strcmp(oc->name, "*") == 0;
-	struct sway_output *output = wildcard ? NULL : all_output_by_name_or_id(oc->name);
 
-	char id[128];
-	if (output) {
-		output_get_identifier(id, sizeof(id), output);
-	}
-
-	for (int i = 0; i < config->output_configs->length; i++) {
-		struct output_config *old = config->output_configs->items[i];
-
-		// If the old config matches the new config's name, regardless of
-		// whether it was name or identifier, merge on top of the existing
-		// config. If the new config is a wildcard, this also merges on top of
-		// old wildcard configs.
-		if (strcmp(old->name, oc->name) == 0) {
-			merge_output_config(old, oc);
-			merged = true;
-			continue;
-		}
-
-		// If the new config is a wildcard config we supersede all non-wildcard
-		// configs. Old wildcard configs have already been handled above.
-		if (wildcard) {
-			supersede_output_config(old, oc);
-			continue;
-		}
-
-		// If the new config matches an output's name, and the old config
-		// matches on that output's identifier, supersede it.
-		if (output && strcmp(old->name, id) == 0 &&
-				strcmp(oc->name, output->wlr_output->name) == 0) {
+	// Supersede any existing configurations that match by clearing settings
+	// that can no longer be reached anyway, which allows us to later garbage
+	// collect configurations that no longer have any value
+	struct output_config *old = NULL;
+	for (int idx = 0; idx < config->output_configs->length; idx++) {
+		old = config->output_configs->items[idx];
+		if (wildcard || strcmp(old->name, oc->name) == 0) {
 			supersede_output_config(old, oc);
 		}
 	}
 
-	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
-		"(max render time: %d) (allow tearing: %d)",
-		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
-		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
-		oc->transform, oc->background, oc->background_option, oc->power,
-		oc->max_render_time, oc->allow_tearing);
-
-	// If the configuration was not merged into an existing configuration, add
-	// it to the list. Otherwise we're done with it and can free it.
-	if (!merged) {
-		list_add(config->output_configs, oc);
-	} else {
+	// As a very minor optimization, if the last config is for the same name,
+	// we can merge with that instead of adding a new config, reducing the
+	// number of configs when sequentially changing different settings
+	if (old != NULL && strcmp(old->name, oc->name) == 0) {
+		merge_output_config(old, oc);
 		free_output_config(oc);
+	} else {
+		list_add(config->output_configs, oc);
+	}
+
+	// Remove any configurations that have had all their settings removed
+	for (int idx = 0; idx < config->output_configs->length; idx++) {
+		old = config->output_configs->items[idx];
+		if (empty_output_config(old)) {
+			list_del(config->output_configs, idx);
+			free_output_config(old);
+			idx--;
+		}
 	}
 }
 
@@ -588,14 +592,13 @@ static struct output_config *find_output_config_from_list(
 	char id[128];
 	output_get_identifier(id, sizeof(id), sway_output);
 
-	// We take a new config and merge on top, in order, the wildcard config,
-	// output config by name, and output config by identifier to form the final
-	// config. If there are multiple matches, they are merged in order.
-	struct output_config *oc = NULL;
-	const char *names[] = {"*", name, id, NULL};
-	for (const char **name = &names[0]; *name; name++) {
-		for (size_t idx = 0; idx < configs_len; idx++) {
-			oc = configs[idx];
+	// To create the output config for this output, we merge all configurations
+	// that match the output in the order they were stored, such that later
+	// configurations override earlier ones
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct output_config *oc = configs[idx];
+		const char *names[] = {"*", name, id, NULL};
+		for (const char **name = &names[0]; *name; name++) {
 			if (strcmp(oc->name, *name) == 0) {
 				merge_output_config(result, oc);
 			}
