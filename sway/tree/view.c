@@ -5,6 +5,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
+#include <wlr/types/wlr_ext_foreign_toplevel_request_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -37,6 +38,8 @@
 #include "sway/config.h"
 #include "sway/xdg_decoration.h"
 #include "stringop.h"
+
+#define SWAY_FOREIGN_TOPLEVEL_HANDLE_VERSION 1
 
 bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
@@ -669,6 +672,21 @@ static bool should_focus(struct sway_view *view) {
 	return len == 0;
 }
 
+void handle_foreign_toplevel_response_toplevel(struct wl_listener *listener, void *data) {
+	struct wlr_ext_foreign_toplevel_request_pending_v1 *response = data;
+	wlr_ext_foreign_toplevel_request_v1_send_toplevel(response->request, response->handle);
+}
+
+void handle_foreign_toplevel_response_cancel(struct wl_listener *listener, void *data) {
+	struct wlr_ext_foreign_toplevel_request_pending_v1 *response = data;
+	wlr_ext_foreign_toplevel_request_v1_cancel(response->request);
+}
+
+void handle_foreign_toplevel_request(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, foreign_toplevel_request);
+	wlr_ext_foreign_toplevel_request_source_v1_request(server->foreign_toplevel_request_source, data);
+}
+
 static void handle_foreign_activate_request(
 		struct wl_listener *listener, void *data) {
 	struct sway_view *view = wl_container_of(
@@ -814,7 +832,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		.title = view_get_title(view),
 	};
 	view->ext_foreign_toplevel =
-		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list, &foreign_toplevel_state);
+		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list,
+		&foreign_toplevel_state, SWAY_FOREIGN_TOPLEVEL_HANDLE_VERSION);
 
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
