@@ -402,6 +402,8 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
 
 	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
+	json_object_object_add(object, "allow_drm_leasing",
+		json_object_new_boolean(output->allow_drm_leasing));
 }
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *output) {

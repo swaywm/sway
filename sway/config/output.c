@@ -79,6 +79,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->color_transform = NULL;
 	oc->power = -1;
 	oc->allow_tearing = -1;
+	oc->allow_drm_leasing = -1;
 	return oc;
 }
 
@@ -153,6 +154,9 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	}
 	if (src->allow_tearing != -1) {
 		dst->allow_tearing = -1;
+	}
+	if (src->allow_drm_leasing != -1) {
+		dst->allow_drm_leasing = -1;
 	}
 }
 
@@ -229,6 +233,9 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	if (src->allow_tearing != -1) {
 		dst->allow_tearing = src->allow_tearing;
 	}
+	if (src->allow_drm_leasing != -1) {
+		dst->allow_drm_leasing = src->allow_drm_leasing;
+	}
 }
 
 void store_output_config(struct output_config *oc) {
@@ -271,11 +278,11 @@ void store_output_config(struct output_config *oc) {
 
 	sway_log(SWAY_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f subpixel %s transform %d) (bg %s %s) (power %d) "
-		"(max render time: %d) (allow tearing: %d)",
+		"(max render time: %d) (allow tearing: %d) (allow drm leasing: %d)",
 		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
 		oc->x, oc->y, oc->scale, sway_wl_output_subpixel_to_string(oc->subpixel),
 		oc->transform, oc->background, oc->background_option, oc->power,
-		oc->max_render_time, oc->allow_tearing);
+		oc->max_render_time, oc->allow_tearing, oc->allow_drm_leasing);
 
 	// If the configuration was not merged into an existing configuration, add
 	// it to the list. Otherwise we're done with it and can free it.
@@ -561,6 +568,7 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 
 	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
 	output->allow_tearing = oc && oc->allow_tearing > 0;
+	output->allow_drm_leasing = oc && oc->allow_drm_leasing > 0;
 
 	return true;
 }
