@@ -9,6 +9,7 @@
 #include <wlr/util/edges.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
 #include "sway/input/text_input.h"
 
@@ -368,5 +369,8 @@ keyboard_shortcuts_inhibitor_get_for_surface(const struct sway_seat *seat,
  */
 struct sway_keyboard_shortcuts_inhibitor *
 keyboard_shortcuts_inhibitor_get_for_focused_surface(const struct sway_seat *seat);
+
+struct sway_keyboard *sway_keyboard_for_wlr_keyboard(struct sway_seat *seat,
+		struct wlr_keyboard *wlr_keyboard);
 
 #endif
