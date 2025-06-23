@@ -1253,7 +1253,7 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
 	if (scene_surface == NULL) {
 		return;
 	}
-	wlr_scene_surface_send_frame_done(scene_surface, when);
+	wlr_surface_send_frame_done(scene_surface->surface, when);
 }
 
 void view_send_frame_done(struct sway_view *view) {
