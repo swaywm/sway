@@ -104,6 +104,7 @@ struct sway_container *container_create(struct sway_view *view) {
 	//     - buffer used for output enter/leave events for foreign_toplevel
 	bool failed = false;
 	c->scene_tree = alloc_scene_tree(root->staging, &failed);
+	c->scene_tree->node.scaling_group = true;
 
 	c->title_bar.tree = alloc_scene_tree(c->scene_tree, &failed);
 	c->title_bar.border = alloc_scene_tree(c->title_bar.tree, &failed);
