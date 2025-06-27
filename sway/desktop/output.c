@@ -523,6 +523,39 @@ static void handle_request_state(struct wl_listener *listener, void *data) {
 	force_modeset();
 }
 
+static void dump_output(struct wlr_output *output) {
+	bool supports_bt2020 = output->supported_primaries &
+		WLR_COLOR_NAMED_PRIMARIES_BT2020;
+	bool supports_pq = output->supported_transfer_functions &
+		WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ;
+	bool supports_color_transform =
+		server.renderer->features.output_color_transform;
+
+	const char *hdr_support = "yes";
+	if (!supports_bt2020 && !supports_pq) {
+		hdr_support = "no";
+	} else if (supports_bt2020 && supports_pq && !supports_color_transform) {
+		hdr_support = "no (missing renderer color transform support)";
+	} else if (!supports_bt2020) {
+		hdr_support = "no (missing BT2020 primaries)";
+	} else if (!supports_pq) {
+		hdr_support = "no (missing PQ transfer function)";
+	}
+
+	char id[128];
+	output_get_identifier(id, sizeof(id), output);
+
+	sway_log(SWAY_INFO, "New output: %s", output->name);
+	sway_log(SWAY_INFO, "    Identifier:            %s", id);
+	sway_log(SWAY_INFO, "    Dimensions:            %dmm x %dmm",
+			output->phys_width, output->phys_height);
+	sway_log(SWAY_INFO, "    Non-desktop:           %s",
+			output->non_desktop ? "yes" : "no");
+	sway_log(SWAY_INFO, "    Adaptive sync support: %s",
+			output->adaptive_sync_supported ? "yes" : "no");
+	sway_log(SWAY_INFO, "    HDR support:           %s", hdr_support);
+}
+
 static unsigned int last_headless_num = 0;
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -539,8 +572,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wlr_output_set_name(wlr_output, name);
 	}
 
-	sway_log(SWAY_DEBUG, "New output %p: %s (non-desktop: %d)",
-			wlr_output, wlr_output->name, wlr_output->non_desktop);
+	dump_output(wlr_output);
 
 	if (wlr_output->non_desktop) {
 		sway_log(SWAY_DEBUG, "Not configuring non-desktop output");
