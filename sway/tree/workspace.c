@@ -615,7 +615,7 @@ static int find_output(const void *id1, const void *id2) {
 static int workspace_output_get_priority(struct sway_workspace *ws,
 		struct sway_output *output) {
 	char identifier[128];
-	output_get_identifier(identifier, sizeof(identifier), output);
+	output_get_identifier(identifier, sizeof(identifier), output->wlr_output);
 	int index_id = list_seq_find(ws->output_priority, find_output, identifier);
 	int index_name = list_seq_find(ws->output_priority, find_output,
 			output->wlr_output->name);
@@ -632,7 +632,7 @@ void workspace_output_raise_priority(struct sway_workspace *ws,
 	int new_index = workspace_output_get_priority(ws, output);
 	if (new_index < 0) {
 		char identifier[128];
-		output_get_identifier(identifier, sizeof(identifier), output);
+		output_get_identifier(identifier, sizeof(identifier), output->wlr_output);
 		list_insert(ws->output_priority, old_index, strdup(identifier));
 	} else if (new_index > old_index) {
 		char *name = ws->output_priority->items[new_index];
@@ -645,7 +645,7 @@ void workspace_output_add_priority(struct sway_workspace *workspace,
 		struct sway_output *output) {
 	if (workspace_output_get_priority(workspace, output) < 0) {
 		char identifier[128];
-		output_get_identifier(identifier, sizeof(identifier), output);
+		output_get_identifier(identifier, sizeof(identifier), output->wlr_output);
 		list_add(workspace->output_priority, strdup(identifier));
 	}
 }

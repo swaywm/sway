@@ -47,7 +47,7 @@ bool output_match_name_or_id(struct sway_output *output,
 	}
 
 	char identifier[128];
-	output_get_identifier(identifier, sizeof(identifier), output);
+	output_get_identifier(identifier, sizeof(identifier), output->wlr_output);
 	return strcasecmp(identifier, name_or_id) == 0
 		|| strcasecmp(output->wlr_output->name, name_or_id) == 0;
 }
