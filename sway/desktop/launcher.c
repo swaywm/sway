@@ -153,7 +153,7 @@ static void ctx_handle_node_destroy(struct wl_listener *listener, void *data) {
 		// same output
 		free(ctx->fallback_name);
 		ctx->fallback_name = strdup(ws->name);
-		if (!ws->output) {
+		if (!ws->output || ws->output->node.destroying) {
 			// If the output is being destroyed it would be pointless to track
 			// If the output is being disabled, we'll find out if it's still
 			// disabled when we try to match it.
