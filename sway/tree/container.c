@@ -55,7 +55,7 @@ static void handle_destroy(
 	struct sway_container *con = wl_container_of(
 			listener, con, output_handler_destroy);
 
-	container_destroy(con);
+	container_begin_destroy(con);
 }
 
 static bool handle_point_accepts_input(
@@ -501,6 +501,36 @@ void container_update_title_bar(struct sway_container *con) {
 }
 
 void container_destroy(struct sway_container *con) {
+	if (!sway_assert(con->node.destroying,
+				"Tried to free container which wasn't marked as destroying")) {
+		return;
+	}
+	if (!sway_assert(con->node.ntxnrefs == 0, "Tried to free container "
+				"which is still referenced by transactions")) {
+		return;
+	}
+	free(con->title);
+	free(con->formatted_title);
+	free(con->title_format);
+	list_free(con->pending.children);
+	list_free(con->current.children);
+
+	list_free_items_and_destroy(con->marks);
+
+	if (con->view && con->view->container == con) {
+		con->view->container = NULL;
+		wlr_scene_node_destroy(&con->output_handler->node);
+		if (con->view->destroying) {
+			view_destroy(con->view);
+		}
+	}
+
+	scene_node_disown_children(con->content_tree);
+	wlr_scene_node_destroy(&con->scene_tree->node);
+	free(con);
+}
+
+void container_begin_destroy(struct sway_container *con) {
 	if (con->view) {
 		ipc_event_window(con, "close");
 	}
@@ -516,6 +546,9 @@ void container_destroy(struct sway_container *con) {
 	wl_signal_emit_mutable(&con->node.events.destroy, &con->node);
 
 	container_end_mouse_operation(con);
+
+	con->node.destroying = true;
+	node_set_dirty(&con->node);
 
 	if (con->scratchpad) {
 		root_scratchpad_remove_container(con);
@@ -534,28 +567,6 @@ void container_destroy(struct sway_container *con) {
 		wl_list_remove(&con->output_leave.link);
 		wl_list_remove(&con->output_handler_destroy.link);
 	}
-
-	transaction_remove_node(&con->node);
-	if (!sway_assert(con->node.ntxnrefs == 0, "Tried to free container "
-				"which is still referenced by transactions")) {
-		return;
-	}
-	free(con->title);
-	free(con->formatted_title);
-	free(con->title_format);
-	list_free(con->pending.children);
-	list_free(con->current.children);
-
-	list_free_items_and_destroy(con->marks);
-
-	if (con->view && con->view->container == con) {
-		con->view->container = NULL;
-		wlr_scene_node_destroy(&con->output_handler->node);
-	}
-
-	scene_node_disown_children(con->content_tree);
-	wlr_scene_node_destroy(&con->scene_tree->node);
-	free(con);
 }
 
 void container_reap_empty(struct sway_container *con) {
@@ -568,7 +579,7 @@ void container_reap_empty(struct sway_container *con) {
 			return;
 		}
 		struct sway_container *parent = con->pending.parent;
-		container_destroy(con);
+		container_begin_destroy(con);
 		con = parent;
 	}
 	if (ws) {
@@ -584,7 +595,7 @@ struct sway_container *container_flatten(struct sway_container *container) {
 		struct sway_container *child = container->pending.children->items[0];
 		struct sway_container *parent = container->pending.parent;
 		container_replace(container, child);
-		container_destroy(container);
+		container_begin_destroy(container);
 		container = parent;
 	}
 	return container;

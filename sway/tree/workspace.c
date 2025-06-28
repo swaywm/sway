@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <strings.h>
 #include "stringop.h"
-#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -135,15 +134,10 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 }
 
 void workspace_destroy(struct sway_workspace *workspace) {
-	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
-	ipc_event_workspace(NULL, workspace, "empty"); // intentional
-	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
-
-	if (workspace->output) {
-		workspace_detach(workspace);
+	if (!sway_assert(workspace->node.destroying,
+				"Tried to free workspace which wasn't marked as destroying")) {
+		return;
 	}
-	transaction_remove_node(&workspace->node);
-
 	if (!sway_assert(workspace->node.ntxnrefs == 0, "Tried to free workspace "
 				"which is still referenced by transactions")) {
 		return;
@@ -164,25 +158,36 @@ void workspace_destroy(struct sway_workspace *workspace) {
 	free(workspace);
 }
 
-bool workspace_consider_destroy(struct sway_workspace *ws) {
+void workspace_begin_destroy(struct sway_workspace *workspace) {
+	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
+	ipc_event_workspace(NULL, workspace, "empty"); // intentional
+	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
+
+	if (workspace->output) {
+		workspace_detach(workspace);
+	}
+	workspace->node.destroying = true;
+	node_set_dirty(&workspace->node);
+}
+
+void workspace_consider_destroy(struct sway_workspace *ws) {
 	if (ws->tiling->length || ws->floating->length) {
-		return false;
+		return;
 	}
 
 	if (ws->output && output_get_active_workspace(ws->output) == ws) {
-		return false;
+		return;
 	}
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		struct sway_node *node = seat_get_focus_inactive(seat, &root->node);
 		if (node == &ws->node) {
-			return false;
+			return;
 		}
 	}
 
-	workspace_destroy(ws);
-	return true;
+	workspace_begin_destroy(ws);
 }
 
 static bool workspace_valid_on_output(const char *output_name,
@@ -591,6 +596,9 @@ bool workspace_switch(struct sway_workspace *workspace) {
 }
 
 bool workspace_is_visible(struct sway_workspace *ws) {
+	if (ws->node.destroying) {
+		return false;
+	}
 	return output_get_active_workspace(ws->output) == ws;
 }
 

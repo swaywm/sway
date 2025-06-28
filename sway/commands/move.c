@@ -611,16 +611,14 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	if (old_parent) {
 		container_reap_empty(old_parent);
 	} else if (old_ws) {
-		if (workspace_consider_destroy(old_ws)) {
-			old_ws = NULL;
-		}
+		workspace_consider_destroy(old_ws);
 	}
 
 	// arrange windows
 	if (root->fullscreen_global) {
 		arrange_root();
 	} else {
-		if (old_ws) {
+		if (old_ws && !old_ws->node.destroying) {
 			arrange_workspace(old_ws);
 		}
 		arrange_node(node_get_parent(destination));
@@ -755,9 +753,7 @@ static struct cmd_results *cmd_move_in_direction(
 	if (old_parent) {
 		container_reap_empty(old_parent);
 	} else if (old_ws) {
-		if (workspace_consider_destroy(old_ws)) {
-			old_ws = NULL;
-		}
+		workspace_consider_destroy(old_ws);
 	}
 
 	struct sway_workspace *new_ws = container->pending.workspace;
@@ -765,9 +761,7 @@ static struct cmd_results *cmd_move_in_direction(
 	if (root->fullscreen_global) {
 		arrange_root();
 	} else {
-		if (old_ws) {
-			arrange_workspace(old_ws);
-		}
+		arrange_workspace(old_ws);
 		if (new_ws != old_ws) {
 			arrange_workspace(new_ws);
 		}
