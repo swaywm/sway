@@ -482,7 +482,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->associate.link);
 	wl_list_remove(&xwayland_view->dissociate.link);
 	wl_list_remove(&xwayland_view->override_redirect.link);
-	view_destroy(&xwayland_view->view);
+	view_begin_destroy(&xwayland_view->view);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {

@@ -59,6 +59,22 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 		if (node->instruction == instruction) {
 			node->instruction = NULL;
 		}
+		if (node->destroying && node->ntxnrefs == 0) {
+			switch (node->type) {
+			case N_ROOT:
+				sway_assert(false, "Never reached");
+				break;
+			case N_OUTPUT:
+				output_destroy(node->sway_output);
+				break;
+			case N_WORKSPACE:
+				workspace_destroy(node->sway_workspace);
+				break;
+			case N_CONTAINER:
+				container_destroy(node->sway_container);
+				break;
+			}
+		}
 		free(instruction);
 	}
 	list_free(transaction->instructions);
@@ -223,7 +239,7 @@ static void apply_container_state(struct sway_container *container,
 
 	if (view) {
 		if (view->saved_surface_tree) {
-			if (container->node.ntxnrefs == 1) {
+			if (!container->node.destroying || container->node.ntxnrefs == 1) {
 				view_remove_saved_buffer(view);
 			}
 		}
@@ -772,6 +788,9 @@ static bool should_configure(struct sway_node *node,
 	if (!node_is_view(node)) {
 		return false;
 	}
+	if (node->destroying) {
+		return false;
+	}
 	if (!instruction->server_request) {
 		return false;
 	}
@@ -806,7 +825,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_node *node = instruction->node;
-		bool hidden = node_is_view(node) &&
+		bool hidden = node_is_view(node) && !node->destroying &&
 			!view_is_visible(node->sway_container->view);
 		if (should_configure(node, instruction)) {
 			instruction->serial = view_configure(node->sway_container->view,
@@ -947,40 +966,4 @@ void transaction_commit_dirty(void) {
 
 void transaction_commit_dirty_client(void) {
 	_transaction_commit_dirty(false);
-}
-
-static void _transaction_remove_node(struct sway_transaction *transaction,
-		struct sway_node *node) {
-	if (!transaction || !node) {
-		return;
-	}
-	for (int idx = 0; idx < transaction->instructions->length; idx++) {
-		struct sway_transaction_instruction *instruction =
-			transaction->instructions->items[idx];
-		struct sway_node *n = instruction->node;
-		if (n != node) {
-			continue;
-		}
-
-		n->ntxnrefs--;
-		n->instruction = NULL;
-		free(instruction);
-		list_del(transaction->instructions, idx);
-		idx--;
-	}
-}
-
-void transaction_remove_node(struct sway_node *node) {
-	_transaction_remove_node(server.pending_transaction, node);
-	_transaction_remove_node(server.queued_transaction, node);
-
-	for (int idx = 0; idx < server.dirty_nodes->length; idx++) {
-		struct sway_node *n = server.dirty_nodes->items[idx];
-		if (n != node) {
-			continue;
-		}
-		n->dirty = false;
-		list_del(server.dirty_nodes, idx);
-		idx--;
-	}
 }

@@ -23,18 +23,12 @@
 
 struct sway_transaction_instruction;
 struct sway_view;
-struct sway_node;
 
 /**
  * Find all dirty containers, create and commit a transaction containing them,
  * and unmark them as dirty.
  */
 void transaction_commit_dirty(void);
-
-/**
- * Remove a node that will be destroyed from transactions and dirty node lists.
- */
-void transaction_remove_node(struct sway_node *node);
 
 /*
  * Same as transaction_commit_dirty, but signalling that this is a
