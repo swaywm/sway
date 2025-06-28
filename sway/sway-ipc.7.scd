@@ -84,6 +84,9 @@ supported. *For all replies, any properties not listed are subject to removal.*
 |- 101
 :  GET_SEATS
 :  Get the list of seats
+|- 102
+:  GET_CURSOR
+:  Get the current cursor position and information about the element under it
 
 ## 0. RUN_COMMAND
 
@@ -1456,6 +1459,71 @@ one seat. Each object has the following properties:
 		]
 	}
 ]
+```
+
+## 102. GET_CURSOR
+
+*MESSAGE*++
+Retrieve the current cursor position and information about the element under it
+
+*REPLY*++
+An object containing the following properties:
+
+[- *PROPERTY*
+:- *DATA TYPE*
+:- *DESCRIPTION*
+|- x
+:  integer
+:[ The x coordinate of the cursor (absolute screen coordinates)
+|- y
+:  integer
+:  The y coordinate of the cursor (absolute screen coordinates)
+|- surface_x
+:  integer
+:  The x coordinate of the cursor relative to the surface under it (only available when over a container)
+|- surface_y
+:  integer
+:  The y coordinate of the cursor relative to the surface under it (only available when over a container)
+|- node_type
+:  string
+:  The type of the node under the cursor (e.g., "con", "workspace", "output")
+|- window_title
+:  string
+:  The title of the window under the cursor (if applicable)
+|- app_id
+:  string
+:  The application ID of the window under the cursor (if applicable)
+|- workspace_name
+:  string
+:  The name of the workspace under the cursor (if applicable)
+|- pid
+:  integer
+:  The process ID of the application under the cursor (if applicable)
+
+
+*Example Reply (cursor over container):*
+```
+{
+	"x": 1024,
+	"y": 768,
+	"surface_x": 24,
+	"surface_y": 48,
+	"node_type": "con",
+	"window_title": "Terminal",
+	"app_id": "termite",
+	"workspace_name": "1",
+	"pid": 25370
+}
+```
+
+*Example Reply (cursor over workspace):*
+```
+{
+	"x": 1024,
+	"y": 768,
+	"node_type": "workspace",
+	"workspace_name": "1"
+}
 ```
 
 # EVENTS
