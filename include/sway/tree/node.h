@@ -39,6 +39,7 @@ struct sway_node {
 
 	struct sway_transaction_instruction *instruction;
 	size_t ntxnrefs;
+	bool destroying;
 
 	// If true, indicates that the container has pending state that differs from
 	// the current.

@@ -428,7 +428,7 @@ void force_modeset(void) {
 	apply_stored_output_configs();
 }
 
-static void output_teardown(struct sway_output *output) {
+static void begin_destroy(struct sway_output *output) {
 
 	wl_list_remove(&output->layout_destroy.link);
 	wl_list_remove(&output->destroy.link);
@@ -444,6 +444,7 @@ static void output_teardown(struct sway_output *output) {
 	if (output->enabled) {
 		output_disable(output);
 	}
+	output_begin_destroy(output);
 	wl_list_remove(&output->link);
 
 	output->wlr_output->data = NULL;
@@ -452,19 +453,17 @@ static void output_teardown(struct sway_output *output) {
 	wl_event_source_remove(output->repaint_timer);
 	output->repaint_timer = NULL;
 
-	output_destroy(output);
-
 	request_modeset();
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
-	output_teardown(output);
+	begin_destroy(output);
 }
 
 static void handle_layout_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, layout_destroy);
-	output_teardown(output);
+	begin_destroy(output);
 }
 
 static void handle_present(struct wl_listener *listener, void *data) {

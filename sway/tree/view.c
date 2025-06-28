@@ -70,10 +70,11 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 }
 
 void view_destroy(struct sway_view *view) {
-	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+	if (!sway_assert(view->surface == NULL, "Tried to free mapped view")) {
 		return;
 	}
-	if (!sway_assert(view->surface == NULL, "Tried to free mapped view")) {
+	if (!sway_assert(view->destroying,
+				"Tried to free view which wasn't marked as destroying")) {
 		return;
 	}
 	if (!sway_assert(view->container == NULL,
@@ -91,6 +92,17 @@ void view_destroy(struct sway_view *view) {
 		view->impl->destroy(view);
 	} else {
 		free(view);
+	}
+}
+
+void view_begin_destroy(struct sway_view *view) {
+	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+		return;
+	}
+	view->destroying = true;
+
+	if (!view->container) {
+		view_destroy(view);
 	}
 }
 
@@ -923,19 +935,17 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_container *parent = view->container->pending.parent;
 	struct sway_workspace *ws = view->container->pending.workspace;
-	container_destroy(view->container);
+	container_begin_destroy(view->container);
 	if (parent) {
 		container_reap_empty(parent);
 	} else if (ws) {
-		if (workspace_consider_destroy(ws)) {
-			ws = NULL;
-		}
+		workspace_consider_destroy(ws);
 	}
 
 	if (root->fullscreen_global) {
 		// Container may have been a child of the root fullscreen container
 		arrange_root();
-	} else if (ws) {
+	} else if (ws && !ws->node.destroying) {
 		arrange_workspace(ws);
 		workspace_detect_urgent(ws);
 	}
@@ -1089,6 +1099,9 @@ void view_update_title(struct sway_view *view, bool force) {
 }
 
 bool view_is_visible(struct sway_view *view) {
+	if (view->container->node.destroying) {
+		return false;
+	}
 	struct sway_workspace *workspace = view->container->pending.workspace;
 	if (!workspace && view->container->pending.fullscreen_mode != FULLSCREEN_GLOBAL) {
 		bool fs_global_descendant = false;
