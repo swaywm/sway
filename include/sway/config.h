@@ -680,7 +680,7 @@ struct seat_config *store_seat_config(struct seat_config *seat);
 int output_name_cmp(const void *item, const void *data);
 
 void output_get_identifier(char *identifier, size_t len,
-	struct sway_output *output);
+	struct wlr_output *output);
 
 const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filter);
 
