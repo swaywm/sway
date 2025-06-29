@@ -216,14 +216,6 @@ static struct sway_layer_surface *find_mapped_layer_by_client(
 	return NULL;
 }
 
-static void handle_output_destroy(struct wl_listener *listener, void *data) {
-	struct sway_layer_surface *layer =
-		wl_container_of(listener, layer, output_destroy);
-
-	layer->output = NULL;
-	wlr_layer_surface_v1_destroy(layer->layer_surface);
-}
-
 static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *layer =
 		wl_container_of(listener, layer, node_destroy);
@@ -257,10 +249,10 @@ static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&layer->surface_commit.link);
 	wl_list_remove(&layer->node_destroy.link);
 	wl_list_remove(&layer->new_popup.link);
-	wl_list_remove(&layer->output_destroy.link);
 
 	layer->layer_surface->data = NULL;
 
+	wl_list_remove(&layer->link);
 	free(layer);
 }
 
@@ -475,6 +467,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	}
 
 	surface->output = output;
+	wl_list_insert(&output->layer_surfaces, &surface->link);
 
 	// now that the surface's output is known, we can advertise its scale
 	wlr_fractional_scale_v1_notify_scale(surface->layer_surface->surface,
@@ -492,9 +485,14 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	surface->new_popup.notify = handle_new_popup;
 	wl_signal_add(&layer_surface->events.new_popup, &surface->new_popup);
 
-	surface->output_destroy.notify = handle_output_destroy;
-	wl_signal_add(&output->events.disable, &surface->output_destroy);
-
 	surface->node_destroy.notify = handle_node_destroy;
 	wl_signal_add(&scene_surface->tree->node.events.destroy, &surface->node_destroy);
+}
+
+void destroy_layers(struct sway_output *output) {
+	struct sway_layer_surface *layer, *layer_tmp;
+	wl_list_for_each_safe(layer, layer_tmp, &output->layer_surfaces, link) {
+		layer->output = NULL;
+		wlr_layer_surface_v1_destroy(layer->layer_surface);
+	}
 }
