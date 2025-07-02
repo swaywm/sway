@@ -7,9 +7,7 @@
 #include "list.h"
 #include "log.h"
 
-#if HAVE_LIBSFDO
 #include "sfdo.h"
-#endif
 
 uint32_t parse_position(const char *position) {
 	uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
@@ -132,18 +130,11 @@ void free_config(struct swaybar_config *config) {
 		wl_list_remove(&tray_bind->link);
 		free_tray_binding(tray_bind);
 	}
-
-	free(config->icon_theme);
 #endif
 
-#if HAVE_LIBSFDO && !HAVE_TRAY
 	free(config->icon_theme);
-#endif
-
-#if HAVE_LIBSFDO
 	sfdo_destroy(config->sfdo);
 	sway_log(SWAY_DEBUG, "Destroyed swaybar sfdo");
-#endif
 
 	free(config);
 }

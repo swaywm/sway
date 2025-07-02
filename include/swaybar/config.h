@@ -8,9 +8,7 @@
 #include "util.h"
 #include <pango/pangocairo.h>
 
-#if HAVE_LIBSFDO
 #include "sfdo.h"
-#endif
 
 struct box_colors {
 	uint32_t border;
@@ -77,9 +75,7 @@ struct swaybar_config {
 		struct box_colors binding_mode;
 	} colors;
 
-#if HAVE_TRAY || HAVE_LIBSFDO
 	char *icon_theme;
-#endif
 
 #if HAVE_TRAY
 	struct wl_list tray_bindings; // struct tray_binding::link
@@ -88,9 +84,7 @@ struct swaybar_config {
 	int tray_padding;
 #endif
 
-#if HAVE_LIBSFDO
 	struct sfdo *sfdo;
-#endif
 };
 
 #if HAVE_TRAY

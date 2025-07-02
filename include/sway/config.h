@@ -399,9 +399,7 @@ struct bar_config {
 		char *binding_mode_text;
 	} colors;
 
-#if HAVE_TRAY || HAVE_LIBSFDO
 	char *icon_theme;
-#endif
 
 #if HAVE_TRAY
 	struct wl_list tray_bindings; // struct tray_binding::link

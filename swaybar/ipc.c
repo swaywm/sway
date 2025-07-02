@@ -18,9 +18,7 @@
 #include "stringop.h"
 #include "util.h"
 
-#if HAVE_LIBSFDO
 #include "sfdo.h"
-#endif
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	uint32_t size = strlen("workspace \"\"") + strlen(ws);
@@ -332,14 +330,14 @@ static bool ipc_parse_config(
 		}
 	}
 
+#endif
+
+	// whether or not there is a tray, we now always have an icon theme
 	if ((json_object_object_get_ex(bar_config, "icon_theme", &icon_theme))) {
 		config->icon_theme = strdup(json_object_get_string(icon_theme));
-#if HAVE_LIBSFDO
 		sfdo_destroy(config->sfdo);
 		config->sfdo = sfdo_create(config->icon_theme);
-#endif
 	}
-#endif
 
 	json_object_put(bar_config);
 	return true;

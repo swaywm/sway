@@ -69,9 +69,7 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
-#if HAVE_LIBSFDO
 #include "sfdo.h"
-#endif
 
 #define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
@@ -545,9 +543,7 @@ void server_fini(struct sway_server *server) {
   wlr_backend_destroy(server->backend);
   wl_display_destroy(server->wl_display);
   list_free(server->dirty_nodes);
-#if HAVE_LIBSFDO
   sfdo_destroy(server->sfdo);
-#endif
   free(server->socket);
 }
 
@@ -589,11 +585,9 @@ bool server_start(struct sway_server *server) {
     return false;
   }
 
-#if HAVE_LIBSFDO
   // TODO: allow configurability of global sway icon theme if and when
   // it is applicable (titlebar icons? ssd icons?)
   server->sfdo = sfdo_create("Hicolor");
-#endif
 
   return true;
 }
@@ -603,73 +597,3 @@ void server_run(struct sway_server *server) {
            server->socket);
   wl_display_run(server->wl_display);
 }
-
-#if HAVE_LIBSFDO
-struct sfdo *sfdo_create(char *theme) {
-  struct sfdo *sfdo = calloc(1, sizeof(struct sfdo));
-  if (!sfdo) {
-    goto error_calloc;
-  }
-
-  struct sfdo_basedir_ctx *basedir_ctx = sfdo_basedir_ctx_create();
-  if (!basedir_ctx) {
-    goto error_basedir_ctx;
-  }
-
-  sfdo->desktop_ctx = sfdo_desktop_ctx_create(basedir_ctx);
-  if (!sfdo->desktop_ctx) {
-    goto error_desktop_ctx;
-  }
-
-  sfdo->icon_ctx = sfdo_icon_ctx_create(basedir_ctx);
-  if (!sfdo->icon_ctx) {
-    goto error_icon_ctx;
-  }
-
-  sfdo->desktop_db = sfdo_desktop_db_load(sfdo->desktop_ctx, NULL);
-  if (!sfdo->desktop_db) {
-    goto error_desktop_db;
-  }
-
-  int load_options = SFDO_ICON_THEME_LOAD_OPTIONS_DEFAULT |
-                     SFDO_ICON_THEME_LOAD_OPTION_ALLOW_MISSING |
-                     SFDO_ICON_THEME_LOAD_OPTION_RELAXED;
-
-  sfdo->icon_theme = sfdo_icon_theme_load(sfdo->icon_ctx, theme, load_options);
-  if (!sfdo->icon_theme) {
-    goto error_icon_theme;
-  }
-
-  sfdo_basedir_ctx_destroy(basedir_ctx);
-
-  sway_log(SWAY_DEBUG, "Successfully setup sfdo");
-  return sfdo;
-
-error_icon_theme:
-  sfdo_desktop_db_destroy(sfdo->desktop_db);
-error_desktop_db:
-  sfdo_icon_ctx_destroy(sfdo->icon_ctx);
-error_icon_ctx:
-  sfdo_desktop_ctx_destroy(sfdo->desktop_ctx);
-error_desktop_ctx:
-  sfdo_basedir_ctx_destroy(basedir_ctx);
-error_basedir_ctx:
-  free(sfdo);
-error_calloc:
-  sway_log(SWAY_ERROR, "Failed to setup sfdo");
-  return NULL;
-}
-
-void sfdo_destroy(struct sfdo *sfdo) {
-  if (!sfdo) {
-    sway_log(SWAY_DEBUG, "Null sfdo passed in");
-    return;
-  }
-
-  sfdo_icon_theme_destroy(sfdo->icon_theme);
-  sfdo_desktop_db_destroy(sfdo->desktop_db);
-  sfdo_icon_ctx_destroy(sfdo->icon_ctx);
-  sfdo_desktop_ctx_destroy(sfdo->desktop_ctx);
-  sway_log(SWAY_DEBUG, "Successfully destroyed sfdo");
-}
-#endif
