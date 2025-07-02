@@ -218,6 +218,10 @@ sway_sources = files(
 )
 
 sway_deps = [
+	libsfdo_basedir,
+	libsfdo_desktop,
+	libsfdo_desktop_file,
+	libsfdo_icon,
 	cairo,
 	drm,
 	jsonc,

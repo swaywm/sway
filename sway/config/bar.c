@@ -70,9 +70,14 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->colors.binding_mode_border);
 	free(bar->colors.binding_mode_bg);
 	free(bar->colors.binding_mode_text);
+
+	// since libsfdo is a hard depedency now we always have at least
+	// a default icon theme and need to free the string that contains
+	// its name
+	free(bar->icon_theme);
+
 #if HAVE_TRAY
 	list_free_items_and_destroy(bar->tray_outputs);
-	free(bar->icon_theme);
 
 	struct tray_binding *tray_bind = NULL, *tmp_tray_bind = NULL;
 	wl_list_for_each_safe(tray_bind, tmp_tray_bind, &bar->tray_bindings, link) {
@@ -169,6 +174,11 @@ struct bar_config *default_bar_config(void) {
 	bar->colors.binding_mode_border = NULL;
 	bar->colors.binding_mode_bg = NULL;
 	bar->colors.binding_mode_text = NULL;
+
+	// we need some default when we initialize sfdo
+	if (!(bar->icon_theme = strdup("Hicolor"))) {
+		goto cleanup;
+	}
 
 #if HAVE_TRAY
 	bar->tray_padding = 2;

@@ -399,8 +399,9 @@ struct bar_config {
 		char *binding_mode_text;
 	} colors;
 
-#if HAVE_TRAY
 	char *icon_theme;
+
+#if HAVE_TRAY
 	struct wl_list tray_bindings; // struct tray_binding::link
 	list_t *tray_outputs; // char *
 	int tray_padding;
