@@ -7,6 +7,10 @@ tray_files = have_tray ? [
 ] : []
 
 swaybar_deps = [
+	libsfdo_basedir,
+	libsfdo_desktop,
+	libsfdo_desktop_file,
+	libsfdo_icon,
 	cairo,
 	gdk_pixbuf,
 	jsonc,
@@ -19,15 +23,6 @@ swaybar_deps = [
 ]
 if have_tray
 	swaybar_deps += sdbus
-endif
-
-if have_libsfdo
-	swaybar_deps += [
-		sfdo_basedir,
-		sfdo_desktop,
-		sfdo_desktop_file,
-		sfdo_icon
-	]
 endif
 
 executable(

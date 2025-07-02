@@ -218,6 +218,10 @@ sway_sources = files(
 )
 
 sway_deps = [
+	libsfdo_basedir,
+	libsfdo_desktop,
+	libsfdo_desktop_file,
+	libsfdo_icon,
 	cairo,
 	drm,
 	jsonc,
@@ -242,15 +246,6 @@ endif
 
 if wlroots_features['libinput_backend']
 	sway_sources += 'input/libinput.c'
-endif
-
-if have_libsfdo
-	sway_deps += [
-		sfdo_basedir,
-		sfdo_desktop,
-		sfdo_desktop_file,
-		sfdo_icon
-	]
 endif
 
 executable(

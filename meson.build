@@ -60,34 +60,10 @@ endforeach
 
 null_dep = dependency('', required: false)
 
-# Check for (currrently) optional libsfdo
-sfdo_basedir = dependency(
-	'libsfdo-basedir',
-	version: '>=0.1.3',
-	required: get_option('sfdo')
-)
-sfdo_desktop = dependency(
-	'libsfdo-desktop',
-	version: '>=0.1.3',
-	required: get_option('sfdo')
-)
-sfdo_desktop_file = dependency(
-	'libsfdo-desktop-file',
-	version: '>=0.1.3',
-	required: get_option('sfdo')
-)
-sfdo_icon = dependency(
-	'libsfdo-icon',
-	version: '>=0.1.3',
-	required: get_option('sfdo')
-)
-have_libsfdo = (
-	sfdo_basedir.found() and
-	sfdo_desktop.found() and
-	sfdo_desktop_file.found() and
-	sfdo_icon.found()
-)
-
+libsfdo_basedir = dependency('libsfdo-basedir', version: '>=0.1.3')
+libsfdo_desktop = dependency('libsfdo-desktop', version: '>=0.1.3')
+libsfdo_desktop_file = dependency('libsfdo-desktop-file', version: '>=0.1.3')
+libsfdo_icon = dependency('libsfdo-icon', version: '>=0.1.3')
 jsonc = dependency('json-c', version: '>=0.13')
 pcre2 = dependency('libpcre2-8')
 wayland_server = dependency('wayland-server', version: '>=1.21.0')
@@ -136,7 +112,6 @@ conf_data = configuration_data()
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd')
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
-conf_data.set10('HAVE_LIBSFDO', have_libsfdo)
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
 foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY']
@@ -273,6 +248,5 @@ subdir('completions')
 summary({
 	'gdk-pixbuf': gdk_pixbuf.found(),
 	'tray': have_tray,
-	'libsfdo': have_libsfdo,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
