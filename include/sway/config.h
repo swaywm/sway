@@ -521,6 +521,7 @@ struct sway_config {
 	enum sway_fowa focus_on_window_activation;
 	enum sway_popup_during_fullscreen popup_during_fullscreen;
 	enum xwayland_mode xwayland;
+	int exec_out;
 
 	// swaybg
 	char *swaybg_command;
