@@ -210,6 +210,9 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(current_mode, "width", &width);
 	json_object_object_get_ex(current_mode, "height", &height);
 	json_object_object_get_ex(current_mode, "refresh", &refresh);
+	json_object *features, *features_adaptive_sync;
+	json_object_object_get_ex(o, "features", &features);
+	json_object_object_get_ex(features, "adaptive_sync", &features_adaptive_sync);
 
 	if (json_object_get_boolean(non_desktop)) {
 		printf(
@@ -252,7 +255,9 @@ static void pretty_print_output(json_object *o) {
 		printf(max_render_time_int == 0 ? "off\n" : "%d ms\n", max_render_time_int);
 
 		printf("  Adaptive sync: %s\n",
-			json_object_get_string(adaptive_sync_status));
+			json_object_get_boolean(features_adaptive_sync) ?
+				json_object_get_string(adaptive_sync_status) :
+				"unsupported");
 
 		printf("  Allow tearing: %s\n",
 			json_object_get_boolean(allow_tearing) ? "yes" : "no");
