@@ -131,6 +131,8 @@ struct sway_container *output_find_container(struct sway_output *output,
 
 void output_get_box(struct sway_output *output, struct wlr_box *box);
 
+bool output_supports_hdr(struct wlr_output *output, const char **unsupported_reason_ptr);
+
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
 

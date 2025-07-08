@@ -212,9 +212,10 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(current_mode, "width", &width);
 	json_object_object_get_ex(current_mode, "height", &height);
 	json_object_object_get_ex(current_mode, "refresh", &refresh);
-	json_object *features, *features_adaptive_sync;
+	json_object *features, *features_adaptive_sync, *features_hdr;
 	json_object_object_get_ex(o, "features", &features);
 	json_object_object_get_ex(features, "adaptive_sync", &features_adaptive_sync);
+	json_object_object_get_ex(features, "hdr", &features_hdr);
 
 	if (json_object_get_boolean(non_desktop)) {
 		printf(
@@ -263,7 +264,12 @@ static void pretty_print_output(json_object *o) {
 
 		printf("  Allow tearing: %s\n",
 			json_object_get_boolean(allow_tearing) ? "yes" : "no");
-		printf("  HDR: %s\n", json_object_get_boolean(hdr) ? "on" : "off");
+
+		const char *hdr_str = "unsupported";
+		if (json_object_get_boolean(features_hdr)) {
+			hdr_str = json_object_get_boolean(hdr) ? "on" : "off";
+		}
+		printf("  HDR: %s\n", hdr_str);
 	} else {
 		printf(
 			"Output %s '%s %s %s' (disabled)\n",
