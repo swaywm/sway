@@ -323,6 +323,8 @@ static void ipc_json_describe_wlr_output(struct wlr_output *wlr_output, json_obj
 	json_object_object_add(features_object, "adaptive_sync",
 		json_object_new_boolean(wlr_output->adaptive_sync_supported ||
 			wlr_output->adaptive_sync_status ==  WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED));
+	json_object_object_add(features_object, "hdr",
+		json_object_new_boolean(output_supports_hdr(wlr_output, NULL)));
 	json_object_object_add(object, "features", features_object);
 }
 
