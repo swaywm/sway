@@ -348,22 +348,26 @@ static void set_modeline(struct wlr_output *output,
 #endif
 }
 
+bool output_supports_hdr(struct wlr_output *output, const char **unsupported_reason_ptr) {
+	const char *unsupported_reason = NULL;
+	if (!(output->supported_primaries & WLR_COLOR_NAMED_PRIMARIES_BT2020)) {
+		unsupported_reason = "BT2020 primaries not supported by output";
+	} else if (!(output->supported_transfer_functions & WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ)) {
+		unsupported_reason = "PQ transfer function not supported by output";
+	} else if (!server.renderer->features.output_color_transform) {
+		unsupported_reason = "renderer doesn't support output color transforms";
+	}
+	if (unsupported_reason_ptr != NULL) {
+		*unsupported_reason_ptr = unsupported_reason;
+	}
+	return unsupported_reason == NULL;
+}
+
 static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending, bool enabled) {
-	enum wlr_color_named_primaries primaries = WLR_COLOR_NAMED_PRIMARIES_BT2020;
-	enum wlr_color_transfer_function tf = WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ;
-	if (enabled && !(output->supported_primaries & primaries)) {
-		sway_log(SWAY_ERROR, "Cannot enable HDR on output %s: BT2020 primaries not supported by output",
-			output->name);
-		enabled = false;
-	}
-	if (enabled && !(output->supported_transfer_functions & WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ)) {
-		sway_log(SWAY_ERROR, "Cannot enable HDR on output %s: PQ transfer function not supported by output",
-			output->name);
-		enabled = false;
-	}
-	if (enabled && !server.renderer->features.output_color_transform) {
-		sway_log(SWAY_ERROR, "Cannot enable HDR on output %s: renderer doesn't support output color transforms",
-			output->name);
+	const char *unsupported_reason = NULL;
+	if (!output_supports_hdr(output, &unsupported_reason)) {
+		sway_log(SWAY_ERROR, "Cannot enable HDR on output %s: %s",
+			output->name, unsupported_reason);
 		enabled = false;
 	}
 
@@ -377,8 +381,8 @@ static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending,
 
 	sway_log(SWAY_DEBUG, "Enabling HDR on output %s", output->name);
 	const struct wlr_output_image_description image_desc = {
-		.primaries = primaries,
-		.transfer_function = tf,
+		.primaries = WLR_COLOR_NAMED_PRIMARIES_BT2020,
+		.transfer_function = WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ,
 	};
 	wlr_output_state_set_image_description(pending, &image_desc);
 }
