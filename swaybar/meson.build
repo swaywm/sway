@@ -7,6 +7,10 @@ tray_files = have_tray ? [
 ] : []
 
 swaybar_deps = [
+	libsfdo_basedir,
+	libsfdo_desktop,
+	libsfdo_desktop_file,
+	libsfdo_icon,
 	cairo,
 	gdk_pixbuf,
 	jsonc,

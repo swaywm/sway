@@ -9,6 +9,8 @@
 #include "sway/xwayland.h"
 #endif
 
+#include "sfdo.h"
+
 struct sway_transaction;
 
 struct sway_session_lock {
@@ -146,6 +148,8 @@ struct sway_server {
 	list_t *dirty_nodes;
 
 	struct wl_event_source *delayed_modeset;
+
+	struct sfdo *sfdo;
 };
 
 extern struct sway_server server;

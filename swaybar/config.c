@@ -7,6 +7,8 @@
 #include "list.h"
 #include "log.h"
 
+#include "sfdo.h"
+
 uint32_t parse_position(const char *position) {
 	uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
@@ -128,8 +130,11 @@ void free_config(struct swaybar_config *config) {
 		wl_list_remove(&tray_bind->link);
 		free_tray_binding(tray_bind);
 	}
+#endif
 
 	free(config->icon_theme);
-#endif
+	sfdo_destroy(config->sfdo);
+	sway_log(SWAY_DEBUG, "Destroyed swaybar sfdo");
+
 	free(config);
 }

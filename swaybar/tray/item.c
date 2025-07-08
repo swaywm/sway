@@ -1,6 +1,8 @@
 #include <arpa/inet.h>
 #include <cairo.h>
 #include <limits.h>
+#include <sfdo-common.h>
+#include <sfdo-icon.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,8 @@
 #include "log.h"
 #include "stringop.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+#include "sfdo.h"
 
 // TODO menu
 
@@ -415,25 +419,34 @@ static enum hotspot_event_handling icon_hotspot_callback(
 	return HOTSPOT_PROCESS;
 }
 
-static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
-		int target_size) {
+static void reload_sni(struct swaybar_sni *sni, char *icon_theme, int target_size) {
 	char *icon_name = sni->status[0] == 'N' ?
 		sni->attention_icon_name : sni->icon_name;
 	if (icon_name) {
-		list_t *icon_search_paths = create_list();
-		list_cat(icon_search_paths, sni->tray->basedirs);
-		if (sni->icon_theme_path) {
-			list_add(icon_search_paths, sni->icon_theme_path);
+		char *icon_path = NULL;
+		// TODO: at some point we will need to make this scaling-aware
+		int scale = 1;
+		struct sfdo *sfdo = sni->tray->bar->config->sfdo;
+		if (sfdo) {
+			icon_path = sfdo_icon_lookup_extended(sfdo, icon_name, target_size, scale);
+			if (!icon_path) {
+				sway_log(SWAY_DEBUG, "sfdo: icon %s invalid or not found in theme %s at size %d", \
+					icon_name, icon_theme, target_size);
+			}
 		}
-		char *icon_path = find_icon(sni->tray->themes, icon_search_paths,
-				icon_name, target_size, icon_theme,
-				&sni->min_size, &sni->max_size);
-		list_free(icon_search_paths);
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
-			sni->icon = load_image(icon_path);
+			sni->icon = load_image(icon_path, target_size, scale);
 			free(icon_path);
 			return;
+		} else {
+			// the :( icon won't be drawn for a missing icon and whichever old icon was
+			// loaded will persist if this is not done. one might not have noticed this
+			// for tray items that have only one icon loaded only once, successfully or
+			// unsuccessfully. items with multiple icons, such as fcitx5 or other input
+			// method frameworks make the problem apparent
+			free(sni->icon);
+			sni->icon = NULL;
 		}
 	}
 

@@ -60,6 +60,10 @@ endforeach
 
 null_dep = dependency('', required: false)
 
+libsfdo_basedir = dependency('libsfdo-basedir', version: '>=0.1.3')
+libsfdo_desktop = dependency('libsfdo-desktop', version: '>=0.1.3')
+libsfdo_desktop_file = dependency('libsfdo-desktop-file', version: '>=0.1.3')
+libsfdo_icon = dependency('libsfdo-icon', version: '>=0.1.3')
 jsonc = dependency('json-c', version: '>=0.13')
 pcre2 = dependency('libpcre2-8')
 wayland_server = dependency('wayland-server', version: '>=1.21.0')
