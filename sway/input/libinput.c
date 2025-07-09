@@ -272,10 +272,6 @@ bool sway_input_configure_libinput_device(struct sway_input_device *input_device
 	}
 	if (ic->drag_lock != INT_MIN) {
 		changed |= set_tap_drag_lock(device, ic->drag_lock);
-	} else {
-#if HAVE_LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY
-		changed |= set_tap_drag_lock(device, LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY);
-#endif
 	}
 	if (ic->pointer_accel != FLT_MIN) {
 		changed |= set_accel_speed(device, ic->pointer_accel);
@@ -358,12 +354,8 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 		libinput_device_config_tap_get_default_button_map(device));
 	changed |= set_tap_drag(device,
 		libinput_device_config_tap_get_default_drag_enabled(device));
-#if HAVE_LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY
-	changed |= set_tap_drag_lock(device, LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY);
-#else
 	changed |= set_tap_drag_lock(device,
 		libinput_device_config_tap_get_default_drag_lock_enabled(device));
-#endif
 	changed |= set_accel_speed(device,
 		libinput_device_config_accel_get_default_speed(device));
 	changed |= set_rotation_angle(device,
