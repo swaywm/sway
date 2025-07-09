@@ -134,7 +134,7 @@ The following commands may only be used in the configuration file.
 
 ## LIBINPUT CONFIGURATION
 
-*input* <identifier> accel_profile adaptive|flat
+*input* <identifier> accel_profile adaptive|flat|custom
 	Sets the pointer acceleration profile for the specified input device.
 
 *input* <identifier> calibration_matrix <6 space-separated floating point values>
@@ -186,6 +186,14 @@ The following commands may only be used in the configuration file.
 
 *input* <identifier> pointer_accel [<-1|1>]
 	Changes the pointer acceleration for the specified input device.
+
+*input* <identifier> pointer_accel_custom <step> <point0 point1 ... pointN>
+	Specifies custom mouse pointer acceleration curve that is used when
+	accel_profile is set to _custom_. Values are floating point numbers. The
+	behaviour of the custom acceleration profile is defined by libinput and
+	described in libinput *doc/user/pointer-acceleration.rst*. For example,
+	'pointer_accel_custom 1.0 0.0 1.0' means step=1.0 and points=[0.0 1.0], which
+	is equivalent to the 'flat' profile. Requires libinput >= 1.23.0.
 
 *input* <identifier> rotation_angle <angle>
 	Sets the rotation angle of the device to the given clockwise angle in
