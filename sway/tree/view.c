@@ -190,6 +190,13 @@ const char *view_get_sandbox_instance_id(struct sway_view *view) {
 	return security_context ? security_context->instance_id : NULL;
 }
 
+const char *view_get_tag(struct sway_view *view) {
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_TAG);
+	}
+	return NULL;
+}
+
 const char *view_get_shell(struct sway_view *view) {
 	switch(view->type) {
 	case SWAY_VIEW_XDG_SHELL:

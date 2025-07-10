@@ -627,6 +627,9 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "sandbox_instance_id",
 			sandbox_instance_id ? json_object_new_string(sandbox_instance_id) : NULL);
 
+	const char *tag = view_get_tag(c->view);
+	json_object_object_add(object, "tag", tag ? json_object_new_string(tag) : NULL);
+
 	json_object *idle_inhibitors = json_object_new_object();
 
 	struct sway_idle_inhibitor_v1 *user_inhibitor =

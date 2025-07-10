@@ -419,6 +419,10 @@ node and will have the following properties:
 :  string
 :  (Only windows) The instance ID provided by the associated sandbox engine (or
    _null_)
+|- tag
+:  string
+:  (Only windows) For an xdg-shell window, tag of the toplevel, if set.
+   Otherwise, _null_
 |- window
 :  integer
 :  (Only xwayland windows) The X11 window ID for the xwayland window

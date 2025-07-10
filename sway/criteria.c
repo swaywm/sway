@@ -37,7 +37,8 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->pid
 		&& !criteria->sandbox_engine
 		&& !criteria->sandbox_app_id
-		&& !criteria->sandbox_instance_id;
+		&& !criteria->sandbox_instance_id
+		&& !criteria->tag;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -104,6 +105,7 @@ void criteria_destroy(struct criteria *criteria) {
 	pattern_destroy(criteria->sandbox_engine);
 	pattern_destroy(criteria->sandbox_app_id);
 	pattern_destroy(criteria->sandbox_instance_id);
+	pattern_destroy(criteria->tag);
 	free(criteria->target);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -308,6 +310,26 @@ static bool criteria_matches_view(struct criteria *criteria,
 			break;
 		case PATTERN_PCRE2:
 			if (regex_cmp(sandbox_instance_id, criteria->sandbox_instance_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->tag) {
+		const char *tag = view_get_tag(view);
+		if (!tag) {
+			return false;
+		}
+
+		switch (criteria->tag->match_type) {
+		case PATTERN_FOCUSED:
+			if (focused && lenient_strcmp(tag, view_get_tag(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(tag, criteria->tag->regex) < 0) {
 				return false;
 			}
 			break;
@@ -544,6 +566,7 @@ enum criteria_token {
 	T_SANDBOX_ENGINE,
 	T_SANDBOX_APP_ID,
 	T_SANDBOX_INSTANCE_ID,
+	T_TAG,
 
 	T_INVALID,
 };
@@ -589,6 +612,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_SANDBOX_APP_ID;
 	} else if (strcmp(name, "sandbox_instance_id") == 0) {
 		return T_SANDBOX_INSTANCE_ID;
+	} else if (strcmp(name, "tag") == 0) {
+		return T_TAG;
 	}
 	return T_INVALID;
 }
@@ -699,6 +724,9 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		break;
 	case T_SANDBOX_INSTANCE_ID:
 		pattern_create(&criteria->sandbox_instance_id, value);
+		break;
+	case T_TAG:
+		pattern_create(&criteria->tag, value);
 		break;
 	case T_INVALID:
 		break;
