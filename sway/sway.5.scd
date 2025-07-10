@@ -1055,6 +1055,9 @@ The following attributes may be matched with:
 	Can be a regular expression. If value is \_\_focused\_\_, then the shell
 	must be the same as that of the currently focused window.
 
+*tag*
+	Compare value against the tag. _tag_ is specific to Wayland applications.
+
 *tiling*
 	Matches tiling windows.
 
