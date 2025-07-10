@@ -119,6 +119,8 @@ struct sway_server {
 	struct wl_listener xdg_activation_v1_request_activate;
 	struct wl_listener xdg_activation_v1_new_token;
 
+	struct wl_listener xdg_toplevel_tag_manager_v1_set_tag;
+
 	struct wl_listener request_set_cursor_shape;
 
 	struct wlr_tearing_control_manager_v1 *tearing_control_v1;
