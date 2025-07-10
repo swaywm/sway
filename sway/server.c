@@ -49,6 +49,7 @@
 #include <wlr/types/wlr_xdg_foreign_v1.h>
 #include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_xdg_toplevel_tag_v1.h>
 #include <xf86drm.h>
 #include "config.h"
 #include "list.h"
@@ -439,6 +440,13 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_activation_v1->events.new_token,
 		&server->xdg_activation_v1_new_token);
 
+	struct wlr_xdg_toplevel_tag_manager_v1 *xdg_toplevel_tag_manager_v1 =
+		wlr_xdg_toplevel_tag_manager_v1_create(server->wl_display, 1);
+	server->xdg_toplevel_tag_manager_v1_set_tag.notify =
+		xdg_toplevel_tag_manager_v1_handle_set_tag;
+	wl_signal_add(&xdg_toplevel_tag_manager_v1->events.set_tag,
+		&server->xdg_toplevel_tag_manager_v1_set_tag);
+
 	struct wlr_cursor_shape_manager_v1 *cursor_shape_manager =
 		wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
 	server->request_set_cursor_shape.notify = handle_request_set_cursor_shape;
@@ -536,6 +544,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->tearing_control_new_object.link);
 	wl_list_remove(&server->xdg_activation_v1_request_activate.link);
 	wl_list_remove(&server->xdg_activation_v1_new_token.link);
+	wl_list_remove(&server->xdg_toplevel_tag_manager_v1_set_tag.link);
 	wl_list_remove(&server->request_set_cursor_shape.link);
 	wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
 	input_manager_finish(server->input);

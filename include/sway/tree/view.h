@@ -25,6 +25,7 @@ enum sway_view_type {
 enum sway_view_prop {
 	VIEW_PROP_TITLE,
 	VIEW_PROP_APP_ID,
+	VIEW_PROP_TAG,
 	VIEW_PROP_CLASS,
 	VIEW_PROP_INSTANCE,
 	VIEW_PROP_WINDOW_TYPE,
@@ -128,6 +129,7 @@ struct sway_xdg_shell_view {
 	struct sway_view view;
 
 	struct wlr_scene_tree *image_capture_tree;
+	char *tag;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;
@@ -235,6 +237,8 @@ const char *view_get_sandbox_engine(struct sway_view *view);
 const char *view_get_sandbox_app_id(struct sway_view *view);
 
 const char *view_get_sandbox_instance_id(struct sway_view *view);
+
+const char *view_get_tag(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
 
@@ -359,5 +363,7 @@ void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx);
 void view_send_frame_done(struct sway_view *view);
 
 bool view_can_tear(struct sway_view *view);
+
+void xdg_toplevel_tag_manager_v1_handle_set_tag(struct wl_listener *listener, void *data);
 
 #endif

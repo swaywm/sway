@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_toplevel_tag_v1.h>
 #include <wlr/util/edges.h>
 #include "log.h"
 #include "sway/decoration.h"
@@ -157,7 +158,8 @@ static void get_constraints(struct sway_view *view, double *min_width,
 
 static const char *get_string_prop(struct sway_view *view,
 		enum sway_view_prop prop) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	struct sway_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	if (xdg_shell_view == NULL) {
 		return NULL;
 	}
 	switch (prop) {
@@ -165,6 +167,8 @@ static const char *get_string_prop(struct sway_view *view,
 		return view->wlr_xdg_toplevel->title;
 	case VIEW_PROP_APP_ID:
 		return view->wlr_xdg_toplevel->app_id;
+	case VIEW_PROP_TAG:
+		return xdg_shell_view->tag;
 	default:
 		return NULL;
 	}
@@ -265,6 +269,7 @@ static void destroy(struct sway_view *view) {
 	if (xdg_shell_view == NULL) {
 		return;
 	}
+	free(xdg_shell_view->tag);
 	free(xdg_shell_view);
 }
 
@@ -580,4 +585,13 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data) {
 		wlr_scene_xdg_surface_create(&xdg_shell_view->view.image_capture_scene->tree, xdg_toplevel->base);
 
 	xdg_toplevel->base->data = xdg_shell_view;
+}
+
+void xdg_toplevel_tag_manager_v1_handle_set_tag(struct wl_listener *listener, void *data) {
+	const struct wlr_xdg_toplevel_tag_manager_v1_set_tag_event *event = data;
+	struct sway_view *view = view_from_wlr_xdg_surface(event->toplevel->base);
+	struct sway_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	free(xdg_shell_view->tag);
+	xdg_shell_view->tag = strdup(event->tag);
+	view_execute_criteria(view);
 }
