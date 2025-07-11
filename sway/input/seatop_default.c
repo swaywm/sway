@@ -1111,7 +1111,7 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (surface) {
-		if (seat_is_input_allowed(seat, surface)) {
+		if (seat_is_input_allowed(seat, surface) && !cursor->hidden) {
 			wlr_seat_pointer_notify_enter(seat->wlr_seat, surface, sx, sy);
 			wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
 		}
