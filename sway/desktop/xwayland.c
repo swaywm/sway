@@ -55,10 +55,8 @@ static void unmanaged_handle_set_geometry(struct wl_listener *listener, void *da
 
 static void try_focus_unmanaged_local(struct wlr_xwayland_surface *xsurface) {
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_container *focus = seat_get_focused_container(seat);
 	enum wlr_xwayland_icccm_input_model input_model = wlr_xwayland_surface_icccm_input_model(xsurface);
-	bool non_local_focus = focus && focus->view && focus->view->pid != xsurface->pid;
-	if (input_model == WLR_ICCCM_INPUT_MODEL_NONE || non_local_focus) {
+	if (input_model == WLR_ICCCM_INPUT_MODEL_NONE) {
 		return;
 	}
 	struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
