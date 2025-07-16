@@ -14,6 +14,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_cursor.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/desktop/transaction.h"
@@ -24,9 +25,12 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
+#include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
+#include "sway/tree/container.h"
 #include "list.h"
 #include "log.h"
 #include "util.h"
@@ -809,6 +813,100 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 			(uint32_t)strlen(json_string));
 		json_object_put(seats); // free
 		goto exit_cleanup;
+	}
+
+	case IPC_GET_CURSOR:
+	{
+		json_object *cursor_info = json_object_new_object();
+		struct sway_seat *seat = input_manager_get_default_seat();
+		
+		if (seat && seat->cursor) {
+			json_object_object_add(cursor_info, "x",
+				json_object_new_int((int)seat->cursor->cursor->x));
+			json_object_object_add(cursor_info, "y",
+				json_object_new_int((int)seat->cursor->cursor->y));
+			
+			struct wlr_surface *surface = NULL;
+			double sx, sy;
+			struct sway_node *node = node_at_coords(seat,
+				seat->cursor->cursor->x, seat->cursor->cursor->y, &surface, &sx, &sy);
+
+			if (node) {
+				const char *node_type_str;
+				switch (node->type) {
+				case N_ROOT:
+					node_type_str = "root";
+					break;
+				case N_OUTPUT:
+					node_type_str = "output";
+					break;
+				case N_WORKSPACE:
+					node_type_str = "workspace";
+					break;
+				case N_CONTAINER:
+					node_type_str = "con";
+					break;
+				default:
+					node_type_str = "none";
+					break;
+				}
+				
+				json_object_object_add(cursor_info, "node_type",
+					json_object_new_string(node_type_str));
+				
+				// Node-specific information
+				if (node->type == N_CONTAINER) {
+					json_object_object_add(cursor_info, "surface_x",
+						json_object_new_int((int)sx));
+					json_object_object_add(cursor_info, "surface_y",
+						json_object_new_int((int)sy));
+
+					struct sway_container *container = node->sway_container;
+					if (container->title) {
+						json_object_object_add(cursor_info, "window_title",
+							json_object_new_string(container->title));
+					}
+					if (container->view) {
+						// Handle both XDG and XWayland views
+						const char *app_id = NULL;
+						if (container->view->type == SWAY_VIEW_XDG_SHELL) {
+							app_id = view_get_app_id(container->view);
+						}
+#if WLR_HAS_XWAYLAND
+						else if (container->view->type == SWAY_VIEW_XWAYLAND) {
+							app_id = view_get_class(container->view);
+						}
+#endif
+						
+						if (app_id) {
+							json_object_object_add(cursor_info, "app_id",
+								json_object_new_string(app_id));
+						}
+
+						if (container->view->pid > 0) {
+							json_object_object_add(cursor_info, "pid",
+								json_object_new_int(container->view->pid));
+						}
+					}
+					
+					if (container->pending.workspace && container->pending.workspace->name) {
+						json_object_object_add(cursor_info, "workspace_name",
+							json_object_new_string(container->pending.workspace->name));
+					}
+				} else if (node->type == N_WORKSPACE) {
+					struct sway_workspace *workspace = node->sway_workspace;
+					if (workspace->name) {
+						json_object_object_add(cursor_info, "workspace_name",
+							json_object_new_string(workspace->name));
+					}
+				}
+			}
+		}
+		
+		const char *json_string = json_object_to_json_string(cursor_info);
+		ipc_send_reply(client, payload_type, json_string, (uint32_t)strlen(json_string));
+		json_object_put(cursor_info);
+		break;
 	}
 
 	case IPC_GET_TREE:
