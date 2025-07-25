@@ -19,6 +19,7 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
+#include <wlr/types/wlr_fixes.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_ext_image_capture_source_v1.h>
 #include <wlr/types/wlr_ext_image_copy_capture_v1.h>
@@ -257,6 +258,7 @@ bool server_init(struct sway_server *server) {
 	wl_display_set_global_filter(server->wl_display, filter_global, NULL);
 	wl_display_set_default_max_buffer_size(server->wl_display, 1024 * 1024);
 
+	wlr_fixes_create(server->wl_display, 1);
 	root = root_create(server->wl_display);
 
 	server->backend = wlr_backend_autocreate(server->wl_event_loop, &server->session);
