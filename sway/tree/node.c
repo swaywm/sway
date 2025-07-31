@@ -29,7 +29,7 @@ const char *node_type_to_str(enum sway_node_type type) {
 }
 
 void node_set_dirty(struct sway_node *node) {
-	if (node->dirty) {
+	if (node->dirty || node->destroying) {
 		return;
 	}
 	node->dirty = true;
