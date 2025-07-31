@@ -547,8 +547,8 @@ void container_begin_destroy(struct sway_container *con) {
 
 	container_end_mouse_operation(con);
 
-	con->node.destroying = true;
 	node_set_dirty(&con->node);
+	con->node.destroying = true;
 
 	if (con->scratchpad) {
 		root_scratchpad_remove_container(con);

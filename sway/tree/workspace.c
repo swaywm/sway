@@ -166,8 +166,8 @@ void workspace_begin_destroy(struct sway_workspace *workspace) {
 	if (workspace->output) {
 		workspace_detach(workspace);
 	}
-	workspace->node.destroying = true;
 	node_set_dirty(&workspace->node);
+	workspace->node.destroying = true;
 }
 
 void workspace_consider_destroy(struct sway_workspace *ws) {
