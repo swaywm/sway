@@ -8,6 +8,7 @@
 #include "sway/input/seat.h"
 #include "config.h"
 
+#define SWAY_CONTINUOUS_SCROLL_TIMEOUT 1000
 #define SWAY_CURSOR_PRESSED_BUTTONS_CAP 32
 
 #define SWAY_SCROLL_UP KEY_MAX + 1
