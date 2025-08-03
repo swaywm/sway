@@ -134,6 +134,15 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	// Operate on parent container, like i3.
 	if (container) {
 		container = container->pending.parent;
+		// If parent has only a singe child operate on its parent and
+		// flatten once, like i3
+		if (container && container->pending.children->length == 1) {
+			struct sway_container *child = container->pending.children->items[0];
+			struct sway_container *parent = container->pending.parent;
+			container_replace(container, child);
+			container_begin_destroy(container);
+			container = parent;
+		}
 	}
 
 	// We could be working with a container OR a workspace. These are different
