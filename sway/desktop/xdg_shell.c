@@ -375,7 +375,7 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	int lx, ly;
+	double lx, ly;
 	wlr_scene_node_coords(&popup->view->content_tree->node, &lx, &ly);
 	wlr_scene_node_set_position(&popup->scene_tree->node, lx, ly);
 }
