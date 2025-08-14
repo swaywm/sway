@@ -229,6 +229,23 @@ static bool set_calibration_matrix(struct libinput_device *dev, float mat[6]) {
 	return changed;
 }
 
+#if HAVE_LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM
+static bool set_pointer_accel_custom(struct libinput_device *dev, struct accel_custom *custom) {
+		sway_log(SWAY_DEBUG, "pointer_accel_config(npoints %lu, step %f)", custom->npoints, custom->step);
+		if (custom->npoints == 0) {
+			return false;
+		}
+		struct libinput_config_accel *accel_config =
+			libinput_config_accel_create(LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM);
+		log_status(libinput_config_accel_set_points(accel_config, LIBINPUT_ACCEL_TYPE_MOTION,
+			custom->step, custom->npoints, custom->points));
+		log_status(libinput_device_config_accel_apply(dev, accel_config));
+		libinput_config_accel_destroy(accel_config);
+		/* there is no way to read back the custom points/step from libinput */
+		return false;
+}
+#endif
+
 static bool configure_send_events(struct libinput_device *device,
 		struct input_config *ic) {
 	if (ic->mapped_to_output &&
@@ -281,6 +298,11 @@ bool sway_input_configure_libinput_device(struct sway_input_device *input_device
 	}
 	if (ic->accel_profile != INT_MIN) {
 		changed |= set_accel_profile(device, ic->accel_profile);
+#if HAVE_LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM
+		if (ic->accel_profile == LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM) {
+			set_pointer_accel_custom(device, &ic->pointer_accel_custom);
+		}
+#endif
 	}
 	if (ic->natural_scroll != INT_MIN) {
 		changed |= set_natural_scroll(device, ic->natural_scroll);
