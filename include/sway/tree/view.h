@@ -314,6 +314,21 @@ void view_begin_destroy(struct sway_view *view);
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
 
+/**
+ * Prepare the view for its upcoming mapping, sending the intended dimensions
+ * so that the first frame has a chance of being correct. If CSD preferences or
+ * floating tendency changes, this may turn out to be inaccurate but no worse
+ * than skipping the step.
+ *
+ * `fullscreen` should be set to true (and optionally `fullscreen_output`
+ * should be populated) if the view should be made fullscreen immediately.
+ *
+ * `decoration` should be set to true if the client prefers CSD. The client's
+ * preference may be ignored.
+ */
+void view_premap(struct sway_view *view, struct wlr_surface *wlr_surface,
+	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
+
 void view_unmap(struct sway_view *view);
 
 void view_update_size(struct sway_view *view);

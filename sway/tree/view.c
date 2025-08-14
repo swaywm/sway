@@ -760,6 +760,100 @@ static void handle_foreign_destroy(
 	wl_list_remove(&view->foreign_destroy.link);
 }
 
+void view_premap(struct sway_view *view, struct wlr_surface *wlr_surface,
+			  bool fullscreen, struct wlr_output *fullscreen_output,
+			  bool decoration) {
+
+	// If there is a request to be opened fullscreen on a specific output, try
+	// to honor that request. Otherwise, fallback to assigns, pid mappings,
+	// focused workspace, etc
+	struct sway_workspace *ws = NULL;
+	if (fullscreen_output && fullscreen_output->data) {
+		struct sway_output *output = fullscreen_output->data;
+		ws = output_get_active_workspace(output);
+	}
+	if (!ws) {
+		ws = select_workspace(view);
+	}
+	if (!ws || !ws->output) {
+		// Nothing for us to do if we don't have a workspace on an output
+		return;
+	}
+
+	// Once the output is determined, we can notify the client early about
+	// scale to reduce startup jitter.
+	float scale = ws->output->wlr_output->scale;
+	wlr_fractional_scale_v1_notify_scale(wlr_surface, scale);
+	wlr_surface_set_preferred_buffer_scale(wlr_surface, ceil(scale));
+
+	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+		// Nothing more to do for floating, let it pick its own dimensions
+		return;
+	}
+
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_node *node = seat_get_focus_inactive(seat, &ws->node);
+	struct sway_container *target_sibling = NULL;
+	if (node && node->type == N_CONTAINER) {
+		if (container_is_floating(node->sway_container)) {
+			// If we're about to launch the view into the floating container, then
+			// launch it as a tiled view instead.
+			target_sibling = seat_get_focus_inactive_tiling(seat, ws);
+			if (target_sibling) {
+				struct sway_container *con =
+					seat_get_focus_inactive_view(seat, &target_sibling->node);
+				if (con)  {
+					target_sibling = con;
+				}
+			}
+		} else {
+			target_sibling = node->sway_container;
+		}
+	}
+
+	// Fill out enough of a dummy container to satisfy configuration
+	struct sway_container con = {
+		.view = view,
+		.pending = (struct sway_container_state) {
+			.workspace = ws,
+			.parent = target_sibling ? target_sibling->pending.parent : NULL,
+			.border = config->border,
+			.border_thickness = config->border_thickness,
+		}
+	};
+	view->container = &con;
+
+	// Insert the container into the appropriate children list so that smart
+	// gaps will work correctly
+	list_t *siblings;
+	int sibling_index;
+	if (target_sibling && target_sibling->pending.parent) {
+		struct sway_container *parent = target_sibling->pending.parent;
+		siblings = parent->pending.children;
+		sibling_index = list_find(siblings, target_sibling) + 1;
+	} else {
+		siblings = ws->tiling;
+		sibling_index = ws->tiling->length;
+	}
+	list_insert(siblings, sibling_index, &con);
+
+	view_set_tiled(view, true);
+	view_update_csd_from_client(view, decoration);
+	next_sibling_container_geometry(&con, target_sibling, fullscreen);
+
+	// Send the configure event for the calculated dimensions
+	view_configure(view,
+			con.pending.content_x,
+			con.pending.content_y,
+			con.pending.content_width,
+			con.pending.content_height);
+
+	sway_assert(siblings->items[sibling_index] == &con,
+			"container siblings mutated unexpectedly");
+	list_del(siblings, sibling_index);
+	view->container = NULL;
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			  bool fullscreen, struct wlr_output *fullscreen_output,
 			  bool decoration) {
