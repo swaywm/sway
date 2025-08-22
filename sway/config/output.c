@@ -365,7 +365,7 @@ bool output_supports_hdr(struct wlr_output *output, const char **unsupported_rea
 
 static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending, bool enabled) {
 	const char *unsupported_reason = NULL;
-	if (!output_supports_hdr(output, &unsupported_reason)) {
+	if (enabled && !output_supports_hdr(output, &unsupported_reason)) {
 		sway_log(SWAY_ERROR, "Cannot enable HDR on output %s: %s",
 			output->name, unsupported_reason);
 		enabled = false;
