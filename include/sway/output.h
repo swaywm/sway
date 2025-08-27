@@ -70,6 +70,7 @@ struct sway_output {
 	struct wl_event_source *repaint_timer;
 
 	bool allow_tearing;
+	bool allow_drm_leasing;
 	bool hdr;
 };
 
