@@ -475,8 +475,8 @@ static bool render_format_is_bgr(uint32_t fmt) {
 	return fmt == DRM_FORMAT_XBGR2101010 || fmt == DRM_FORMAT_XBGR8888;
 }
 
-static bool output_config_is_disabling(struct output_config *oc) {
-	return oc && (!oc->enabled || oc->power == 0);
+static bool output_config_is_disabling(struct output_config *oc, int was_enabled) {
+	return oc && (!oc->enabled || (oc->power == 0 && was_enabled));
 }
 
 static void queue_output_config(struct output_config *oc,
@@ -487,7 +487,7 @@ static void queue_output_config(struct output_config *oc,
 
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	if (output_config_is_disabling(oc)) {
+	if (output_config_is_disabling(oc, output->enabled)) {
 		wlr_output_state_set_enabled(pending, false);
 		return;
 	}
@@ -877,7 +877,7 @@ static bool search_valid_config(struct search_context *ctx, size_t output_idx) {
 	struct wlr_output_state *state = &backend_state->base;
 	struct wlr_output *wlr_output = backend_state->output;
 
-	if (!output_config_is_disabling(cfg->config)) {
+	if (!output_config_is_disabling(cfg->config, cfg->output->enabled)) {
 		// Search through our possible configurations, doing a depth-first
 		// through render_format, modes, adaptive_sync and the next output's
 		// config.
@@ -902,10 +902,10 @@ static int compare_matched_output_config_priority(const void *a, const void *b) 
 
 	const struct matched_output_config *amc = a;
 	const struct matched_output_config *bmc = b;
-	bool a_disabling = output_config_is_disabling(amc->config);
-	bool b_disabling = output_config_is_disabling(bmc->config);
 	bool a_enabled = amc->output->enabled;
 	bool b_enabled = bmc->output->enabled;
+	bool a_disabling = output_config_is_disabling(amc->config, a_enabled);
+	bool b_disabling = output_config_is_disabling(bmc->config, b_enabled);
 
 	// We want to give priority to existing enabled outputs. To do so, we want
 	// the configuration order to be:
