@@ -303,7 +303,21 @@ void view_destroy(struct sway_view *view);
 void view_begin_destroy(struct sway_view *view);
 
 /**
- * Map a view, ie. make it visible in the tree.
+ * Perform post-map setup like updating focus. view_setup must be called before
+ * calling view_map.
+ */
+void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
+
+/**
+ * Prepare the view for its upcoming mapping, sending the intended dimensions
+ * so that the first frame has a chance of being correct. If CSD preferences or
+ * floating tendency changes, this may turn out to be inaccurate but no worse
+ * than skipping the step.
+ *
+ * This may bail early for some views if the surface is not mapped, in which
+ * case it should be called again before view_map once the surface is mapped.
+ * It is safe to call view_setup adancegain even if the first call before
+ * surface map succeeded.
  *
  * `fullscreen` should be set to true (and optionally `fullscreen_output`
  * should be populated) if the view should be made fullscreen immediately.
@@ -311,7 +325,7 @@ void view_begin_destroy(struct sway_view *view);
  * `decoration` should be set to true if the client prefers CSD. The client's
  * preference may be ignored.
  */
-void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
+void view_setup(struct sway_view *view, struct wlr_surface *wlr_surface,
 	bool fullscreen, struct wlr_output *fullscreen_output, bool decoration);
 
 void view_unmap(struct sway_view *view);

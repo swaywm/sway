@@ -760,12 +760,23 @@ static void handle_foreign_destroy(
 	wl_list_remove(&view->foreign_destroy.link);
 }
 
-void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
+void view_setup(struct sway_view *view, struct wlr_surface *wlr_surface,
 			  bool fullscreen, struct wlr_output *fullscreen_output,
 			  bool decoration) {
-	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
+	if (view->surface) {
+		// Setup has already already completed
 		return;
 	}
+	if (!wlr_surface->mapped && view->impl->wants_floating &&
+			view->impl->wants_floating(view)) {
+		// Configuring floating containers before the surface is mapped lead to
+		// us accidentally sending the configured minimum dimensions, which we
+		// only want to send if the client comes up with unreasonably small
+		// dimensions. As a hack, just skip this scenario for now and have the
+		// caller call view_setup again after the surface has been mapped.
+		return;
+	}
+
 	view->surface = wlr_surface;
 	view_populate_pid(view);
 	view->container = container_create(view);
@@ -893,6 +904,24 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	view_execute_criteria(view);
 
+	const char *app_id;
+	const char *class;
+	if ((app_id = view_get_app_id(view)) != NULL) {
+		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, app_id);
+	} else if ((class = view_get_class(view)) != NULL) {
+		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, class);
+	}
+
+	if (view->ext_foreign_toplevel) {
+		update_ext_foreign_toplevel(view);
+	}
+}
+
+void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
+	if (!sway_assert(view->surface != NULL, "cannot map view that has not been setup")) {
+		return;
+	}
+
 	bool set_focus = should_focus(view);
 
 #if WLR_HAS_XWAYLAND
@@ -905,18 +934,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	if (set_focus) {
 		input_manager_set_focus(&view->container->node);
-	}
-
-	if (view->ext_foreign_toplevel) {
-		update_ext_foreign_toplevel(view);
-	}
-
-	const char *app_id;
-	const char *class;
-	if ((app_id = view_get_app_id(view)) != NULL) {
-		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, app_id);
-	} else if ((class = view_get_class(view)) != NULL) {
-		wlr_foreign_toplevel_handle_v1_set_app_id(view->foreign_toplevel, class);
 	}
 }
 
