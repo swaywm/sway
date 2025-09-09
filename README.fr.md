@@ -61,9 +61,7 @@ documentation pour la configuration de sway.
 
 ## Exécution
 
-Exécutez `sway` à partir d'un TTY. Certains gestionnaires d'affichage peuvent
-fonctionner, mais ne sont pas supportés par Sway (gdm est réputé pour assez
-bien fonctionner).
+Exécutez `sway` à partir d'un TTY ou d'un gestionnaires d'affichage.
 
 [Wayland]: http://wayland.freedesktop.org/
 [i3]: https://i3wm.org/

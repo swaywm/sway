@@ -52,4 +52,4 @@ i3를 이미 사용 중이라면, i3 config을 `~/.config/sway/config`로 복사
 
 ## 실행
 
-TTY에서 `sway`를 실행하세요. 일부 display manager는 작동하지만, sway로 부터 지원되지 않습니다(gdm은 상당히 잘 작동한다고 알려져 있습니다).
+TTY나 display manager에서 `sway`를 실행하세요.

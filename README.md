@@ -53,8 +53,7 @@ Run `man 5 sway` for information on the configuration.
 
 ## Running
 
-Run `sway` from a TTY. Some display managers may work but are not supported by
-sway (gdm is known to work fairly well).
+Run `sway` from a TTY or from a display manager.
 
 [en]: https://github.com/swaywm/sway#readme
 [ar]: README.ar.md
