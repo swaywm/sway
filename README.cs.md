@@ -1,23 +1,24 @@
 # sway
 
-sway je s [i3] kompatibilní [Wayland] kompozitor. Přečtěte si [FAQ]. Připojte se na
-[IRC kanál][IRC channel] \(#sway na irc.libera.chat).
+sway je [waylandový][Wayland] kompozitor kompatibilní s [i3]. Přečtěte si
+[FAQ (anglicky)][FAQ]. Připojte se na [IRC kanál (anglicky)][IRC channel]
+\(#sway na irc.libera.chat).
 
 ## Podpisy vydání
 
-Vydání jsou podepsána [E88F5E48] a publikována [na GitHubu][GitHub releases].
+Vydané verze jsou podepsány klíčem [E88F5E48] a publikovány
+[na GitHubu][GitHub releases].
 
 ## Instalace
 
-### Z balíčků
+### Z balíků
 
-Sway je dostupný ve spoustě distribucí. Zkuste nainstalovat balíček "sway" ve vaší
-distribuci.
+Sway je dostupný v mnoha distribucích. Zkuste v té vaší nainstalovat balík "sway".
 
 ### Kompilace ze zdrojových kódů
 
-Podívejte se na [tuto stránku wiki][Development setup], pokud chcete sestavit HEAD
-sway a wlroots pro testování nebo vývoj.
+Pokud chcete sestavit HEAD repozitáře sway a wlroots pro testování nebo vývoj,
+použijte návod na [této stránce na wiki (anglicky)][Development setup].
 
 Nainstalujte závislosti:
 
@@ -29,9 +30,9 @@ Nainstalujte závislosti:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (volitelné: oznamovací oblast)
-* [swaybg] (volitelné: tapeta)
-* [scdoc] (volitelné: manuálové stránky) \*
+* gdk-pixbuf2 (volitelné: dodatečné formáty ikon pro oznamovací oblast)
+* [swaybg] (volitelné: tapeta plochy)
+* [scdoc] (volitelné: man stránky) \*
 * git (volitelné: informace o verzi) \*
 
 _\* Závislost pouze pro kompilaci_
@@ -51,8 +52,7 @@ Pro více informací o konfiguraci spusťte `man 5 sway`.
 
 ## Spuštění
 
-Spusťte `sway` z TTY. Některé správce zobrazení mohou fungovat, ale nejsou
-podporovány sway (je známo, že gdm funguje docela dobře).
+Spusťte `sway` z TTY nebo ze správce displeje.
 
 [en]: https://github.com/swaywm/sway#readme
 [ar]: README.ar.md
