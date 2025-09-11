@@ -54,8 +54,7 @@ Hvis du allerede bruker i3 kan du bare kopiere din i3 konfigurasjon til
 
 ## Utførelse
 
-Kjør `sway` fra en TTY. Noen display managers kan fungere, men Sway har ikke
-støtte for dem (gdm er kjent for å fungere ganske bra).
+Kjør `sway` fra en TTY eller fra en display manager.
 
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
