@@ -1,25 +1,25 @@
 # Sway
 
-Sway er en [i3]-kompatibel [Wayland] compositor. Les [Ofte stilte spørsmål].
-Delta på [IRC kanalen][IRC kanal] \(#sway på irc.libera.chat).
+Sway er en [i3]-kompatibel [Wayland]-compositor. Les [Ofte stilte spørsmål].
+Delta på [IRC-kanalen][IRC-kanal] \(#sway på irc.libera.chat).
 
-## Utgivelses Signaturer
+## Signaturer
 
 Utgivelser er signert med [E88F5E48] og publisert [på GitHub][GitHub releases].
 
 ## Installasjon
 
-### Fra system pakker
+### Fra systempakker
 
-Sway er tilgjengelig i mange distribusjoner. Prøv å installere "sway" pakken
+Sway er tilgjengelig i mange distribusjoner. Prøv å installere pakken "sway"
 fra din distro sine repoer.
 
 ### Kompilering fra kildekode
 
-Se [denne wiki-siden][Oppsetting for utvikling] hvis du vil bygge fra HEAD grenen av
+Se [denne wiki-siden][Oppsetting for utvikling] hvis du vil bygge fra HEAD-grenen av
 sway og wlroots for testing eller utvikling.
 
-Installasjonsavhengigheter:
+Installer avhengigheter:
 
 * meson \*
 * [wlroots]
@@ -44,19 +44,19 @@ Kjør følgende kommandoer:
 
 ## Konfigurasjon
 
-Hvis du allerede bruker i3 kan du bare kopiere din i3 konfigurasjon til
-`~/.config/sway/config`. Ellers skal du kopiere eksempel konfigurasjonsfilen til
-`~/.config/sway/config`. Eksempel filen er normalt plasert i `/etc/sway/config`.
+Hvis du allerede bruker i3 kan du bare kopiere din i3-konfigurasjon til
+`~/.config/sway/config`. Ellers skal du kopiere eksempel-konfigurasjonsfilen til
+`~/.config/sway/config`. Eksempelfilen er normalt plasert i `/etc/sway/config`.
 Kjør `man 5 sway` for å få oplysninger om konfigurasjonen.
 
-## Utførelse
+## Kjøring
 
 Kjør `sway` fra en TTY eller fra en display manager.
 
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [Ofte stilte spørsmål]: https://github.com/swaywm/sway/wiki
-[IRC kanal]: https://web.libera.chat/gamja/?channels=#sway
+[IRC-kanal]: https://web.libera.chat/gamja/?channels=#sway
 [E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Oppsetting for utvikling]: https://github.com/swaywm/sway/wiki/Development-Setup
