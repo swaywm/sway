@@ -32,7 +32,7 @@ Installer avhengigheter:
 * gdk-pixbuf2 (valgfritt: ekstra bildeformater for system tray)
 * [swaybg] (valgfritt: bakgrunnsbilde)
 * [scdoc] (valgfritt: man pages) \*
-* git (valgri: versjonsinformasjon) \*
+* git (valgfritt: versjonsinformasjon) \*
 
 _\* Kompileringsavhengigheter_
 
