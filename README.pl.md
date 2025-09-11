@@ -53,5 +53,4 @@ Wykonaj polecenie `man 5 sway` aby uzyskać informacje dotyczące konfiguracji.
 
 ## Uruchamianie
 
-Wykonaj polecenie `sway` z poziomu TTY. Niektóre menedżery wyświetlania mogą umożliwiać rozruch z ich
-poziomu, ale nie jest to wspierane przez sway (w gdm podobno działa to całkiem nieźle).
+Wykonaj polecenie `sway` z poziomu TTY lub menedżera wyświetlania.
