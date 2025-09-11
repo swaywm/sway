@@ -29,7 +29,7 @@ Installer avhengigheter:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (valgfritt: ekstra bildeformater for system tray)
+* gdk-pixbuf2 (valgfritt: støtte for ekstra bildeformater i system tray)
 * [swaybg] (valgfritt: bakgrunnsbilde)
 * [scdoc] (valgfritt: man pages) \*
 * git (valgfritt: versjonsinformasjon) \*
