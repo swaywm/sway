@@ -30,7 +30,7 @@ Installer avhengigheter:
 * pango
 * cairo
 * gdk-pixbuf2 (valgfritt: ekstra bildeformater for system tray)
-* [swaybg] (valgritt: bakgrunnsbilde)
+* [swaybg] (valgfritt: bakgrunnsbilde)
 * [scdoc] (valgfritt: man pages) \*
 * git (valgri: versjonsinformasjon) \*
 
