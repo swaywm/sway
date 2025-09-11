@@ -45,7 +45,7 @@ Kjør følgende kommandoer:
 ## Konfigurasjon
 
 Hvis du allerede bruker i3 kan du bare kopiere din i3-konfigurasjon til
-`~/.config/sway/config`. Ellers skal du kopiere eksempel-konfigurasjonsfilen til
+`~/.config/sway/config`. Ellers skal du kopiere eksempelkonfigurasjonsfilen til
 `~/.config/sway/config`. Eksempelfilen er normalt plasert i `/etc/sway/config`.
 Kjør `man 5 sway` for å få oplysninger om konfigurasjonen.
 
