@@ -42,8 +42,7 @@ static void handle_im_commit(struct wl_listener *listener, void *data) {
 	if (!text_input) {
 		return;
 	}
-	struct wlr_input_method_v2 *context = data;
-	assert(context == relay->input_method);
+	struct wlr_input_method_v2 *context = relay->input_method;
 	if (context->current.preedit.text) {
 		wlr_text_input_v3_send_preedit_string(text_input->input,
 			context->current.preedit.text,
@@ -110,8 +109,6 @@ static void text_input_set_pending_focused_surface(
 static void handle_im_destroy(struct wl_listener *listener, void *data) {
 	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
 		input_method_destroy);
-	struct wlr_input_method_v2 *context = data;
-	assert(context == relay->input_method);
 	wl_list_remove(&relay->input_method_commit.link);
 	wl_list_remove(&relay->input_method_grab_keyboard.link);
 	wl_list_remove(&relay->input_method_destroy.link);
