@@ -59,6 +59,23 @@ static void refocus_output(struct sway_session_lock_output *output) {
 	}
 }
 
+void sway_session_lock_focus_output(struct sway_session_lock *lock,
+	struct sway_output *output) {
+	// Try focusing the lock surface on the provided output
+	struct sway_session_lock_output *candidate;
+	wl_list_for_each(candidate, &lock->outputs, link) {
+		if (candidate->output != output || !candidate->surface) {
+			continue;
+		}
+
+		if (candidate->surface->surface->mapped) {
+			// Set the focus for all seats
+			focus_surface(lock, candidate->surface->surface);
+			break;
+		}
+	}
+}
+
 static void handle_surface_map(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_output *surf = wl_container_of(listener, surf, surface_map);
 	if (surf->lock->focused == NULL) {
