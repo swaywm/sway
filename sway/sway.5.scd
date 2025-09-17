@@ -837,7 +837,12 @@ The default colors are:
 *mouse_warping* output|container|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
 	move focus between them. If _container_ is specified, the mouse will be
-	moved to the middle of the container on switch. Default is _output_.
+	moved into the container on switch. The mouse warp position can be adjusted
+	with *mouse_warping_position*. Default is _output_.
+
+*mouse_warping_position* center|topleft|topright|bottomleft|bottomright
+	Which corner of the container to move the mouse to when mouse warping occurs.
+	Default is _center_.
 
 *no_focus* <criteria>
 	Prevents windows matching <criteria> from being focused automatically when
