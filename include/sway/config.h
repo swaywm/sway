@@ -139,6 +139,12 @@ struct input_config_tool {
 	enum sway_tablet_tool_mode mode;
 };
 
+struct accel_custom {
+	double step;
+	size_t npoints;
+	double points[64]; /* LIBINPUT_ACCEL_NPOINTS_MAX */
+};
+
 /**
  * options for input devices
  */
@@ -158,6 +164,7 @@ struct input_config {
 	int middle_emulation;
 	int natural_scroll;
 	float pointer_accel;
+	struct accel_custom pointer_accel_custom;
 	float rotation_angle;
 	float scroll_factor;
 	int repeat_delay;
