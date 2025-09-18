@@ -102,6 +102,10 @@ struct sway_node *node_at_coords(
 				return NULL;
 			}
 
+			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP)) {
+				return NULL;
+			}
+
 #if WLR_HAS_XWAYLAND
 			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
 				return NULL;
@@ -131,6 +135,10 @@ struct sway_node *node_at_coords(
 
 	struct sway_workspace *ws = output_get_active_workspace(output);
 	if (!ws) {
+		return NULL;
+	}
+
+	if (server.session_lock.lock) {
 		return NULL;
 	}
 
