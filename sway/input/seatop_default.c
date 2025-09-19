@@ -224,7 +224,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 	struct sway_cursor *cursor = seat->cursor;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
+	struct sway_node *node = node_at_coords(
 		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (!sway_assert(surface,
@@ -335,10 +335,12 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	struct sway_cursor *cursor = seat->cursor;
 
 	// Determine what's under the cursor
-	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct wlr_scene_node *scene_node =
+		scene_node_at_coords(cursor->cursor->x, cursor->cursor->y, &sx, &sy);
+	struct wlr_surface *surface = scene_node ? surface_try_from_scene_node(scene_node) : NULL;
+	struct sway_node *node = sway_node_try_from_scene_node(scene_node,
+		cursor->cursor->x, cursor->cursor->y);
 
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
@@ -380,10 +382,10 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle clicking a layer surface and its popups/subsurfaces
-	struct wlr_layer_surface_v1 *layer = NULL;
-	if ((layer = toplevel_layer_surface_from_surface(surface))) {
-		if (layer->current.keyboard_interactive) {
-			seat_set_focus_layer(seat, layer);
+	struct sway_layer_surface *layer = NULL;
+	if ((layer = scene_descriptor_find(scene_node, SWAY_SCENE_DESC_LAYER_SHELL))) {
+		if (layer->layer_surface->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, layer->layer_surface);
 			transaction_commit_dirty();
 		}
 		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
@@ -548,16 +550,14 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 			return;
 		}
 
-		struct wlr_surface *surface = NULL;
-		double sx, sy;
-		node_at_coords(seat, seat->cursor->cursor->x, seat->cursor->cursor->y,
-				&surface, &sx, &sy);
+		struct wlr_scene_node *node = scene_node_at_coords(
+			seat->cursor->cursor->x, seat->cursor->cursor->y, NULL, NULL);
 
 		// Focus topmost layer surface
-		struct wlr_layer_surface_v1 *layer = NULL;
-		if ((layer = toplevel_layer_surface_from_surface(surface)) &&
-				layer->current.keyboard_interactive) {
-			seat_set_focus_layer(seat, layer);
+		struct sway_layer_surface *layer = NULL;
+		if ((layer = scene_descriptor_find(node, SWAY_SCENE_DESC_LAYER_SHELL)) &&
+				layer->layer_surface->current.keyboard_interactive) {
+			seat_set_focus_layer(seat, layer->layer_surface);
 			transaction_commit_dirty();
 			return;
 		}
@@ -605,8 +605,8 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_node *node = node_at_coords(
+		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
@@ -634,8 +634,8 @@ static void handle_tablet_tool_motion(struct sway_seat *seat,
 
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_node *node = node_at_coords(
+		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (config->focus_follows_mouse != FOLLOWS_NO) {
 		check_focus_follows_mouse(seat, e, node);
@@ -663,7 +663,7 @@ static void handle_touch_down(struct sway_seat *seat,
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct sway_cursor *cursor = seat->cursor;
 	double sx, sy;
-	node_at_coords(seat, seat->touch_x, seat->touch_y, &surface, &sx, &sy);
+	node_at_coords(seat->touch_x, seat->touch_y, &surface, &sx, &sy);
 
 	if (surface && wlr_surface_accepts_touch(surface, wlr_seat)) {
 		if (seat_is_input_allowed(seat, surface)) {
@@ -715,7 +715,7 @@ static void handle_pointer_axis(struct sway_seat *seat,
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_node *node = node_at_coords(seat,
+	struct sway_node *node = node_at_coords(
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	struct sway_container *cont = node && node->type == N_CONTAINER ?
 		node->sway_container : NULL;
@@ -1107,8 +1107,8 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 	struct sway_cursor *cursor = seat->cursor;
 	struct wlr_surface *surface = NULL;
 	double sx = 0.0, sy = 0.0;
-	e->previous_node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	e->previous_node = node_at_coords(
+		cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (surface) {
 		if (seat_is_input_allowed(seat, surface) && !cursor->hidden) {
