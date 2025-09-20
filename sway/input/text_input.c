@@ -64,9 +64,13 @@ static void handle_im_commit(struct wl_listener *listener, void *data) {
 static void handle_im_keyboard_grab_destroy(struct wl_listener *listener, void *data) {
 	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
 		input_method_keyboard_grab_destroy);
-	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = relay->input_method->keyboard_grab;
-	struct wlr_seat *wlr_seat = keyboard_grab->input_method->seat;
 	wl_list_remove(&relay->input_method_keyboard_grab_destroy.link);
+	// input_method may already be torn down; seat is compositor-owned
+	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab =
+		relay->input_method ? relay->input_method->keyboard_grab : NULL;
+	struct wlr_seat *wlr_seat = relay->seat ? relay->seat->wlr_seat : NULL;
+	if (!keyboard_grab || !wlr_seat)
+		return;
 
 	if (keyboard_grab->keyboard) {
 		// send modifier state to original client
