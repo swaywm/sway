@@ -258,6 +258,7 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 	}
 	wlr_input_method_v2_send_activate(text_input->relay->input_method);
 	relay_send_im_state(text_input->relay, text_input->input);
+	wlr_text_input_v3_send_done(text_input->input);
 }
 
 static void handle_text_input_commit(struct wl_listener *listener,
