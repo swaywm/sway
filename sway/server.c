@@ -467,7 +467,8 @@ bool server_init(struct sway_server *server) {
 			WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 			WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
 		};
-		wlr_color_manager_v1_create(server->wl_display, 1, &(struct wlr_color_manager_v1_options){
+		struct wlr_color_manager_v1 *cm = wlr_color_manager_v1_create(
+				server->wl_display, 1, &(struct wlr_color_manager_v1_options){
 			.features = {
 				.parametric = true,
 				.set_mastering_display_primaries = true,
@@ -479,6 +480,7 @@ bool server_init(struct sway_server *server) {
 			.primaries = primaries,
 			.primaries_len = sizeof(primaries) / sizeof(primaries[0]),
 		});
+		wlr_scene_set_color_manager_v1(root->root_scene, cm);
 	}
 
 	wl_list_init(&server->pending_launcher_ctxs);
