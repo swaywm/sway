@@ -578,6 +578,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	}
 }
 
