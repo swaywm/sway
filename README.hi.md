@@ -44,7 +44,7 @@ _\* Compilation के समय आवश्यक_
 
 ये commands चलाएं:
 
-	meson build/
+	meson setup build/
 	ninja -C build/
 	sudo ninja -C build/ install
 

@@ -39,7 +39,7 @@ _\* Závislost pouze pro kompilaci_
 
 Spusťte tyto příkazy:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

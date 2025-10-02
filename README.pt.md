@@ -42,7 +42,7 @@ _\*Dependência de tempo de compilação_
 
 Execute esses comandos:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

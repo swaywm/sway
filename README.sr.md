@@ -38,7 +38,7 @@ _\* Потребно само за компајлирање_
 
 Покрените следеће команде:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

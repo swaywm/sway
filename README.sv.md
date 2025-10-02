@@ -35,7 +35,7 @@ _\* Krav för kompilering_
 
 Kör dessa kommandon:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

@@ -39,7 +39,7 @@ _\*컴파일 떄 필요_
 
 다음 명령을 실행하세요:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

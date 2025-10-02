@@ -41,7 +41,7 @@ _\*Kompileringsafhængighed_
 
 Kør følgende kommandoer:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

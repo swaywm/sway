@@ -35,7 +35,7 @@ _\*编译时依赖_
 
 运行如下命令:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

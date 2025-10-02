@@ -31,7 +31,7 @@ _\*Werden nur für das Kompilieren benötigt_
 
 Führe die folgenden Befehle aus:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 
