@@ -41,7 +41,7 @@ _\*Зависимости для сборки_
 
 Выполните эти команды:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

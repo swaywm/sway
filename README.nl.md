@@ -40,7 +40,7 @@ _\* Compileerafhankelijkheden_
 
 Voer deze opdrachten uit:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

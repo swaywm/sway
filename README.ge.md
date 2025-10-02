@@ -35,7 +35,7 @@ _\* Compile-time dep_
 
 გაუშვით ეს ბრძანებები:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

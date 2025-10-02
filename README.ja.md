@@ -42,7 +42,7 @@ _\*コンパイル時の依存_
 
 次のコマンドを実行してください:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

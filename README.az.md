@@ -38,7 +38,7 @@ _\* Kompilyasiya asılılıqları_
 
 Bu əmrləri icra edin:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

@@ -38,7 +38,7 @@ _\* Dipendenza necessaria per la compilazione_
 
 Esegui questi comandi:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 
