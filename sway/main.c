@@ -26,6 +26,10 @@
 #include "stringop.h"
 #include "util.h"
 
+#if HAVE_SELINUX
+#include <selinux/selinux.h>
+#endif
+
 static bool terminate_request = false;
 static int exit_value = 0;
 static struct rlimit original_nofile_rlimit = {0};
@@ -199,6 +203,44 @@ static void handle_wlr_log(enum wlr_log_importance importance,
 	_sway_vlog(convert_wlr_log_importance(importance), sway_fmt, args);
 }
 
+#if HAVE_SELINUX
+static sway_log_importance_t convert_selinux_log_importance(int type) {
+	switch (type) {
+	case SELINUX_ERROR:
+		return SWAY_ERROR;
+	case SELINUX_WARNING:
+		__attribute__ ((fallthrough));
+	case SELINUX_AVC:
+		__attribute__ ((fallthrough));
+	case SELINUX_INFO:
+		return SWAY_INFO;
+	default:
+		return SWAY_DEBUG;
+	}
+}
+
+static int log_callback_selinux(int type, const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	const int space_needed = snprintf(NULL, 0, "[selinux] %s", fmt);
+	if (space_needed < 0) {
+		return -1;
+	}
+	char *buffer = calloc(space_needed + 1, sizeof(*buffer));
+	if (buffer == NULL) {
+		return -1;
+	}
+	sprintf(buffer, "[selinux] %s", fmt);
+
+	_sway_vlog(convert_selinux_log_importance(type), buffer, args);
+
+	free(buffer);
+	va_end(args);
+	return 0;
+}
+#endif
+
 static const struct option long_options[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"config", required_argument, NULL, 'c'},
@@ -298,6 +340,11 @@ int main(int argc, char **argv) {
 		sway_log_init(SWAY_ERROR, sway_terminate);
 		wlr_log_init(WLR_ERROR, handle_wlr_log);
 	}
+
+#if HAVE_SELINUX
+	// Initalize libselinux logging.
+	selinux_set_callback(SELINUX_CB_LOG, (union selinux_callback) { .func_log = log_callback_selinux });
+#endif
 
 	sway_log(SWAY_INFO, "Sway version " SWAY_VERSION);
 	sway_log(SWAY_INFO, "wlroots version " WLR_VERSION_STR);
