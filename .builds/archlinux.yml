@@ -26,12 +26,12 @@ sources:
 tasks:
   - wlroots: |
       cd wlroots
-      meson --prefix=/usr build -Dexamples=false
+      meson setup --prefix=/usr build -Dexamples=false
       ninja -C build
       sudo ninja -C build install
   - setup: |
       cd sway
-      meson build --fatal-meson-warnings -Dauto_features=enabled -Dsd-bus-provider=libsystemd
+      meson setup build --fatal-meson-warnings -Dauto_features=enabled -Dsd-bus-provider=libsystemd
   - build: |
       cd sway
       ninja -C build

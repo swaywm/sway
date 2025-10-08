@@ -40,7 +40,7 @@ _\*Fordításidejű függőség_
 
 Futtasd ezeket a parancsokat:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

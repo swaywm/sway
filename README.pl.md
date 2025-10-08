@@ -40,7 +40,7 @@ _\*zależności kompilacji_
 
 Wykonaj następujące polecenia:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 
