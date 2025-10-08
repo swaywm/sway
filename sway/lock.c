@@ -8,6 +8,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/workspace.h"
 #include "sway/lock.h"
 
 struct sway_session_lock_output {
@@ -59,9 +60,34 @@ static void refocus_output(struct sway_session_lock_output *output) {
 	}
 }
 
+void sway_session_lock_focus_output(struct sway_session_lock *lock,
+	struct sway_output *output) {
+	// Try focusing the lock surface on the provided output
+	struct sway_session_lock_output *candidate;
+	wl_list_for_each(candidate, &lock->outputs, link) {
+		if (candidate->output != output || !candidate->surface) {
+			continue;
+		}
+
+		if (candidate->surface->surface->mapped) {
+			// Set the focus for all seats
+			focus_surface(lock, candidate->surface->surface);
+			break;
+		}
+	}
+}
+
 static void handle_surface_map(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_output *surf = wl_container_of(listener, surf, surface_map);
-	if (surf->lock->focused == NULL) {
+
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
+	struct sway_output *focused_output = NULL;
+	if (focused_ws != NULL) {
+		focused_output = focused_ws->output;
+	}
+
+	if (surf->lock->focused == NULL || focused_output == surf->output) {
 		focus_surface(surf->lock, surf->surface->surface);
 	}
 	cursor_rebase_all();
