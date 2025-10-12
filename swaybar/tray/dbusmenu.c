@@ -9,7 +9,6 @@
 #include <xdg-shell-client-protocol.h>
 #include <xdg-shell-protocol.h>
 
-#include "background-image.h"
 #include "cairo.h"
 #include "cairo_util.h"
 #include "list.h"
@@ -17,6 +16,7 @@
 #include "pango.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/image.h"
 #include "swaybar/input.h"
 #include "swaybar/tray/icon.h"
 #include "swaybar/tray/item.h"
@@ -416,7 +416,7 @@ static void draw_menu_items(cairo_t *cairo, struct swaybar_dbusmenu_menu *menu,
 				list_free(icon_search_paths);
 
 				if (icon_path) {
-					cairo_surface_t *icon = load_background_image(icon_path);
+					cairo_surface_t *icon = load_image(icon_path);
 					free(icon_path);
 					cairo_surface_t *icon_scaled =
 					cairo_image_surface_scale(icon, size, size);
