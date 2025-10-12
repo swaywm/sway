@@ -147,8 +147,8 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 
 static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface) {
-#if HAVE_TRAY
 	struct swaybar_seat *seat = data;
+#if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
 	if (!config->tray_hidden && dbusmenu_pointer_leave(data, wl_pointer, serial,
 		surface)) {
