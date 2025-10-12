@@ -140,7 +140,7 @@ static int handle_item_activation_requested(sd_bus_message *msg, void *data,
 }
 
 static struct swaybar_dbusmenu_surface *swaybar_dbusmenu_surface_create() {
-	struct swaybar_dbusmenu_surface *dbusmenu = calloc(1, 
+	struct swaybar_dbusmenu_surface *dbusmenu = calloc(1,
 			sizeof(struct swaybar_dbusmenu_surface));
 	if (!dbusmenu) {
 		sway_log(SWAY_DEBUG, "Could not allocate dbusmenu");
@@ -277,7 +277,7 @@ find_item_under_menu(struct swaybar_dbusmenu_menu *menu, int item_id) {
 			return item;
 		}
 		if (item->submenu && item->submenu->item_id != 0) {
-			struct swaybar_dbusmenu_menu_item *found_item = 
+			struct swaybar_dbusmenu_menu_item *found_item =
 				find_item_under_menu(item->submenu, item_id);
 			if (found_item) {
 				return found_item;
@@ -298,7 +298,7 @@ find_item(struct swaybar_dbusmenu *dbusmenu, int item_id) {
 }
 
 static struct swaybar_dbusmenu_menu *
-find_parent_menu_under_menu(struct swaybar_dbusmenu_menu *menu, 
+find_parent_menu_under_menu(struct swaybar_dbusmenu_menu *menu,
 		struct swaybar_dbusmenu_menu *child_menu) {
 	if (!menu->items) {
 		return NULL;
@@ -582,7 +582,7 @@ static void swaybar_dbusmenu_draw_menu(struct swaybar_dbusmenu_menu *menu,
 		}
 	}
 
-	cairo_surface_t *recorder = 
+	cairo_surface_t *recorder =
 		cairo_recording_surface_create(CAIRO_CONTENT_COLOR_ALPHA, NULL);
 	if (!recorder) {
 		return;
@@ -748,7 +748,7 @@ static int about_to_show_callback(sd_bus_message *msg, void *data,
 	swaybar_dbusmenu_draw(sni->tray->menu, menu_id);
 
 	sd_bus_call_method_async(sni->tray->bus, NULL, sni->service, sni->menu,
-		menu_interface, "Event", NULL, NULL, "isvu", menu_id, "opened", "y", 0, 
+		menu_interface, "Event", NULL, NULL, "isvu", menu_id, "opened", "y", 0,
 		time(NULL));
 
 	sway_log(SWAY_DEBUG, "%s%s opened id %d", sni->service, sni->menu, menu_id);
@@ -769,7 +769,7 @@ static void open_menu_id(struct swaybar_dbusmenu *dbusmenu, int menu_id) {
 	slot->menu_id = menu_id;
 
 	int ret = sd_bus_call_method_async(sni->tray->bus, &slot->slot, sni->service,
-		sni->menu, menu_interface, "AboutToShow", about_to_show_callback, slot, "i", 
+		sni->menu, menu_interface, "AboutToShow", about_to_show_callback, slot, "i",
 		menu_id);
 
 	if (ret >= 0) {
@@ -842,7 +842,7 @@ static int update_item_properties(struct swaybar_dbusmenu_menu_item *item,
 			log_value = toggle_type;
 		} else if (strcmp(key, "toggle-state") == 0) {
 			sd_bus_message_read(msg, "v", "i", &item->toggle_state);
-			log_value = item->toggle_state == 0 ? 
+			log_value = item->toggle_state == 0 ?
 				"off" : item->toggle_state == 1 ? "on" : "indeterminate";
 		} else if (strcmp(key, "children-display") == 0) {
 			char *children_display;
@@ -875,7 +875,7 @@ static int update_item_properties(struct swaybar_dbusmenu_menu_item *item,
 	return sd_bus_message_exit_container(msg);
 }
 
-static int get_layout_callback(sd_bus_message *msg, void *data, 
+static int get_layout_callback(sd_bus_message *msg, void *data,
 		sd_bus_error *error) {
 	struct swaybar_sni_slot *slot = data;
 	struct swaybar_sni *sni = slot->sni;
@@ -929,7 +929,7 @@ static int get_layout_callback(sd_bus_message *msg, void *data,
 	while (!sd_bus_message_at_end(msg, 1)) {
 		sd_bus_message_enter_container(msg, 'r', "ia{sv}av");
 
-		struct swaybar_dbusmenu_menu_item *item 
+		struct swaybar_dbusmenu_menu_item *item
 			= calloc(1, sizeof(struct swaybar_dbusmenu_menu_item));
 		if (!item) {
 			ret = -ENOMEM;
@@ -989,7 +989,7 @@ static int get_layout_callback(sd_bus_message *msg, void *data,
 
 static void swaybar_dbusmenu_subscribe_signal(struct swaybar_dbusmenu *menu,
 		const char *signal_name, sd_bus_message_handler_t callback) {
-	int ret = sd_bus_match_signal_async( menu->sni->tray->bus, NULL, 
+	int ret = sd_bus_match_signal_async( menu->sni->tray->bus, NULL,
 			menu->sni->service, menu->sni->menu, menu_interface, signal_name, callback,
 			NULL, menu->sni);
 
@@ -1066,7 +1066,7 @@ static int get_icon_theme_path_callback(sd_bus_message *msg, void *data,
 static void swaybar_dbusmenu_setup(struct swaybar_dbusmenu *menu) {
 		struct swaybar_sni_slot *slot = calloc(1, sizeof(struct swaybar_sni_slot));
 	slot->sni = menu->sni;
-	int ret = sd_bus_call_method_async( menu->sni->tray->bus, &slot->slot, 
+	int ret = sd_bus_call_method_async( menu->sni->tray->bus, &slot->slot,
 			menu->sni->service, menu->sni->path, "org.freedesktop.DBus.Properties",
 			"Get", get_icon_theme_path_callback, slot, "ss", menu->sni->interface,
 			"IconThemePath");
@@ -1083,7 +1083,7 @@ static void swaybar_dbusmenu_setup(struct swaybar_dbusmenu *menu) {
 }
 
 void swaybar_dbusmenu_open(struct swaybar_sni *sni,
-		struct swaybar_output *output, struct swaybar_seat *seat, uint32_t serial, 
+		struct swaybar_output *output, struct swaybar_seat *seat, uint32_t serial,
 		int x, int y) {
 	struct swaybar_dbusmenu *dbusmenu = sni->tray->menu;
 	if (!dbusmenu) {
@@ -1135,14 +1135,14 @@ pointer_motion_process_item(struct swaybar_dbusmenu_menu *focused_menu,
 		struct swaybar_tray *tray = focused_menu->dbusmenu->sni->tray;
 		struct swaybar_sni *sni = tray->menu->sni;
 		if (focused_menu->last_hovered_item != item) {
-			sd_bus_call_method_async(tray->bus, NULL, sni->service, sni->menu, 
+			sd_bus_call_method_async(tray->bus, NULL, sni->service, sni->menu,
 				menu_interface, "Event", NULL, NULL, "isvu", item->id, "hovered",
 				"y", 0, time(NULL));
 
 			sway_log(SWAY_DEBUG, "%s%s hovered id %d", sni->service, sni->menu,
 				item->id);
 
-			// open child menu if current item has a child menu and close other 
+			// open child menu if current item has a child menu and close other
 			// potential open child menus. Only one child menu can be open at a time
 			close_child_menus_except(focused_menu, item->id);
 			open_menu_id(focused_menu->dbusmenu, item->id);
@@ -1155,7 +1155,7 @@ pointer_motion_process_item(struct swaybar_dbusmenu_menu *focused_menu,
 	}
 }
 
-bool dbusmenu_pointer_motion(struct swaybar_seat *seat, 
+bool dbusmenu_pointer_motion(struct swaybar_seat *seat,
 		struct wl_pointer *wl_pointer, uint32_t time_, wl_fixed_t surface_x,
 		wl_fixed_t surface_y) {
 	struct swaybar_tray *tray = seat->bar->tray;
@@ -1184,7 +1184,7 @@ dbusmenu_menu_find_menu_surface(struct swaybar_dbusmenu_menu *menu,
 	for (int i = 0; i < menu->items->length; ++i) {
 		struct swaybar_dbusmenu_menu_item *item = menu->items->items[i];
 		struct swaybar_dbusmenu_menu *child_menu = item->submenu;
-		if (child_menu && child_menu->surface 
+		if (child_menu && child_menu->surface
 				&& child_menu->surface->surface == surface) {
 			return child_menu;
 		}
@@ -1224,14 +1224,14 @@ static void close_unfocused_child_menus(struct swaybar_dbusmenu_menu *menu,
 		int scale = menu->dbusmenu->output->scale;
 		int x = seat->pointer.x * scale;
 		int y = seat->pointer.y * scale;
-		if (item->submenu && item->submenu->item_id != 0 
+		if (item->submenu && item->submenu->item_id != 0
 				&& !is_in_hotspot(&item->hotspot, x, y)) {
 			close_menus_by_id(menu, item->id);
 		}
 	}
 }
 
-bool dbusmenu_pointer_frame(struct swaybar_seat *data, 
+bool dbusmenu_pointer_frame(struct swaybar_seat *data,
 		struct wl_pointer *wl_pointer) {
 	struct swaybar_tray *tray = data->bar->tray;
 	if (!(tray && tray->menu && tray->menu_pointer_focus)) {
@@ -1310,13 +1310,13 @@ static bool dbusmenu_pointer_button_left_process_item(struct swaybar_dbusmenu *d
 				item->id);
 
 		sd_bus_call_method_async(tray->bus, NULL, sni->service, sni->menu,
-				menu_interface, "Event", NULL, NULL, "isvu", item->id, "clicked", "y", 0, 
+				menu_interface, "Event", NULL, NULL, "isvu", item->id, "clicked", "y", 0,
 				time(NULL));
 
 		if (item->submenu) {
 			open_menu_id(dbusmenu, item->id);
 		} else {
-			// The user clicked an menu item other than a submenu. That means 
+			// The user clicked an menu item other than a submenu. That means
 			// the user made it's choise. Close the tray menu.
 			swaybar_dbusmenu_destroy(tray->menu);
 		}
@@ -1328,7 +1328,7 @@ static bool dbusmenu_pointer_button_left_process_item(struct swaybar_dbusmenu *d
 
 static bool dbusmenu_pointer_button_left(struct swaybar_dbusmenu *dbusmenu,
 		struct swaybar_seat *seat) {
-	struct swaybar_dbusmenu_menu *focused_menu 
+	struct swaybar_dbusmenu_menu *focused_menu
 		= dbusmenu->sni->tray->menu_pointer_focus;
 
 	if (!focused_menu) {
