@@ -19,8 +19,6 @@
 #include "stringop.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-// TODO menu
-
 static bool sni_ready(struct swaybar_sni *sni) {
 	return sni->status && (sni->status[0] == 'N' ? // NeedsAttention
 			sni->attention_icon_name || sni->attention_icon_pixmap :
