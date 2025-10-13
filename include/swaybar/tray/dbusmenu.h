@@ -8,6 +8,8 @@ void swaybar_dbusmenu_open(struct swaybar_sni *sni,
 		struct swaybar_output *output, struct swaybar_seat *seat, uint32_t serial,
 		int x, int y);
 
+void swaybar_dbusmenu_destroy(struct swaybar_dbusmenu *menu);
+
 bool dbusmenu_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time_, uint32_t button, uint32_t state);
 

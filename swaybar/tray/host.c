@@ -7,6 +7,7 @@
 #include "swaybar/tray/host.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
+#include "swaybar/tray/dbusmenu.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
@@ -55,7 +56,9 @@ static int handle_sni_unregistered(sd_bus_message *msg, void *data,
 	int idx = list_seq_find(tray->items, cmp_sni_id, id);
 	if (idx != -1) {
 		sway_log(SWAY_INFO, "Unregistering Status Notifier Item '%s'", id);
-		destroy_sni(tray->items->items[idx]);
+		struct swaybar_sni *sni = tray->items->items[idx];
+		swaybar_dbusmenu_destroy(sni->tray->menu);
+		destroy_sni(sni);
 		list_del(tray->items, idx);
 		set_bar_dirty(tray->bar);
 	}
