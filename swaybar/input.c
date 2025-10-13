@@ -138,7 +138,7 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 
 #if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
-	if (!config->tray_hidden && dbusmenu_pointer_enter(data, wl_pointer, serial,
+	if (!config->tray_hidden && sway_dbusmenu_pointer_enter(data, wl_pointer, serial,
 		surface, surface_x, surface_y)) {
 		return;
 	}
@@ -150,7 +150,7 @@ static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 	struct swaybar_seat *seat = data;
 #if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
-	if (!config->tray_hidden && dbusmenu_pointer_leave(data, wl_pointer, serial,
+	if (!config->tray_hidden && sway_dbusmenu_pointer_leave(data, wl_pointer, serial,
 		surface)) {
 		return;
 	}
@@ -166,7 +166,7 @@ static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 	seat->pointer.y = wl_fixed_to_double(surface_y);
 #if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
-	if (!config->tray_hidden && dbusmenu_pointer_motion(data, wl_pointer, time,
+	if (!config->tray_hidden && sway_dbusmenu_pointer_motion(data, wl_pointer, time,
 		surface_x, surface_y)) {
 		return;
 	}
@@ -210,7 +210,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 	struct swaybar_seat *seat = data;
 #if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
-	if (!config->tray_hidden && dbusmenu_pointer_button(seat, wl_pointer, serial,
+	if (!config->tray_hidden && sway_dbusmenu_pointer_button(seat, wl_pointer, serial,
 		time, button, state)) {
 		return;
 	}
@@ -334,7 +334,7 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 
 #if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
-	if (!config->tray_hidden && dbusmenu_pointer_axis(data, wl_pointer)) {
+	if (!config->tray_hidden && sway_dbusmenu_pointer_axis(data, wl_pointer)) {
 		return;
 	}
 #endif
@@ -357,7 +357,7 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
 
 #if HAVE_TRAY
 	struct swaybar_config *config = seat->bar->config;
-	if (!config->tray_hidden && dbusmenu_pointer_frame(data, wl_pointer)) {
+	if (!config->tray_hidden && sway_dbusmenu_pointer_frame(data, wl_pointer)) {
 		return;
 	}
 #endif
