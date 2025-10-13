@@ -267,7 +267,8 @@ static const struct xdg_popup_listener xdg_popup_listener = {
 
 static struct swaybar_dbusmenu_menu_item *
 find_item_under_menu(struct swaybar_dbusmenu_menu *menu, int item_id) {
-	if (!menu->items) {
+	static int recursion_depth = 0;
+	if (!menu->items || recursion_depth > 10) {
 		return NULL;
 	}
 
@@ -277,6 +278,7 @@ find_item_under_menu(struct swaybar_dbusmenu_menu *menu, int item_id) {
 			return item;
 		}
 		if (item->submenu && item->submenu->item_id != 0) {
+			recursion_depth++;
 			struct swaybar_dbusmenu_menu_item *found_item =
 				find_item_under_menu(item->submenu, item_id);
 			if (found_item) {
