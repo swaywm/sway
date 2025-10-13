@@ -13,7 +13,6 @@
 #include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
-#include "swaybar/i3bar.h"
 #include "swaybar/input.h"
 #include "swaybar/ipc.h"
 #include "swaybar/status_line.h"
@@ -22,7 +21,6 @@
 #include "swaybar/tray/tray.h"
 #endif
 #include "ipc-client.h"
-#include "list.h"
 #include "log.h"
 #include "loop.h"
 #include "pool-buffer.h"
