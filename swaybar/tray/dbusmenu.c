@@ -359,6 +359,7 @@ static void draw_menu_items(cairo_t *cairo, struct swaybar_dbusmenu_menu *menu,
 	*surface_y = 0;
 	*surface_x = 0;
 	*surface_width = 0;
+	*surface_height = 0;
 	bool is_icon_drawn = false;
 	int icon_size = 0;
 
