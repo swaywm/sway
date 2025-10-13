@@ -1158,7 +1158,7 @@ pointer_motion_process_item(struct swaybar_dbusmenu_menu *focused_menu,
 	}
 }
 
-bool dbusmenu_pointer_motion(struct swaybar_seat *seat,
+bool sway_dbusmenu_pointer_motion(struct swaybar_seat *seat,
 		struct wl_pointer *wl_pointer, uint32_t time_, wl_fixed_t surface_x,
 		wl_fixed_t surface_y) {
 	struct swaybar_tray *tray = seat->bar->tray;
@@ -1234,7 +1234,7 @@ static void close_unfocused_child_menus(struct swaybar_dbusmenu_menu *menu,
 	}
 }
 
-bool dbusmenu_pointer_frame(struct swaybar_seat *data,
+bool sway_dbusmenu_pointer_frame(struct swaybar_seat *data,
 		struct wl_pointer *wl_pointer) {
 	struct swaybar_tray *tray = data->bar->tray;
 	if (!(tray && tray->menu && tray->menu_pointer_focus)) {
@@ -1243,7 +1243,7 @@ bool dbusmenu_pointer_frame(struct swaybar_seat *data,
 	return true;
 }
 
-bool dbusmenu_pointer_axis(struct swaybar_seat *data,
+bool sway_dbusmenu_pointer_axis(struct swaybar_seat *data,
 		struct wl_pointer *wl_pointer) {
 	struct swaybar_tray *tray = data->bar->tray;
 	if (!(tray && tray->menu && tray->menu_pointer_focus)) {
@@ -1252,7 +1252,7 @@ bool dbusmenu_pointer_axis(struct swaybar_seat *data,
 	return true;
 }
 
-bool dbusmenu_pointer_enter(void *data, struct wl_pointer *wl_pointer,
+bool sway_dbusmenu_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface, wl_fixed_t surface_x,
 		wl_fixed_t surface_y) {
 	struct swaybar_seat *seat = data;
@@ -1284,7 +1284,7 @@ bool dbusmenu_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 	return true;
 }
 
-bool dbusmenu_pointer_leave(void *data, struct wl_pointer *wl_pointer,
+bool sway_dbusmenu_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface) {
 	struct swaybar_seat *seat = data;
 	struct swaybar_tray *tray = seat->bar->tray;
@@ -1348,7 +1348,7 @@ static bool dbusmenu_pointer_button_left(struct swaybar_dbusmenu *dbusmenu,
 	return true;
 }
 
-bool dbusmenu_pointer_button(void *data, struct wl_pointer *wl_pointer,
+bool sway_dbusmenu_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time_, uint32_t button, uint32_t state) {
 	struct swaybar_seat *seat = data;
 	struct swaybar_tray *tray = seat->bar->tray;
