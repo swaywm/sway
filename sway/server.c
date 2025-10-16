@@ -459,7 +459,7 @@ bool server_init(struct sway_server *server) {
 			WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
 		};
 		const enum wp_color_manager_v1_transfer_function transfer_functions[] = {
-			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
+			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
 			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
 			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
 		};
