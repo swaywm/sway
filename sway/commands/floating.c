@@ -1,6 +1,7 @@
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
@@ -53,6 +54,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	// Floating containers in the scratchpad should be ignored
 	if (container->pending.workspace) {
 		arrange_workspace(container->pending.workspace);
+		transaction_commit_dirty();
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
