@@ -387,6 +387,19 @@ static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending,
 	wlr_output_state_set_image_description(pending, &image_desc);
 }
 
+static void set_color_profile(struct sway_output *output, struct output_config *oc) {
+	if (oc && oc->set_color_transform) {
+		if (oc->color_transform) {
+			wlr_color_transform_ref(oc->color_transform);
+		}
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = oc->color_transform;
+	} else {
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = NULL;
+	}
+}
+
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
  * size field. */
 static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
@@ -560,6 +573,8 @@ static void queue_output_config(struct output_config *oc,
 		hdr = false;
 	}
 	set_hdr(wlr_output, pending, hdr);
+
+	set_color_profile(output, oc);
 }
 
 static bool finalize_output_config(struct output_config *oc, struct sway_output *output,
@@ -607,17 +622,6 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 
 	if (!output->enabled) {
 		output_enable(output);
-	}
-
-	if (oc && oc->set_color_transform) {
-		if (oc->color_transform) {
-			wlr_color_transform_ref(oc->color_transform);
-		}
-		wlr_color_transform_unref(output->color_transform);
-		output->color_transform = oc->color_transform;
-	} else {
-		wlr_color_transform_unref(output->color_transform);
-		output->color_transform = NULL;
 	}
 
 	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
