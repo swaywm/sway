@@ -562,8 +562,28 @@ static void queue_output_config(struct output_config *oc,
 	set_hdr(wlr_output, pending, hdr);
 }
 
+struct config_output_state {
+	struct wlr_color_transform *color_transform;
+};
+
+static void config_output_state_finish(struct config_output_state *state) {
+	wlr_color_transform_unref(state->color_transform);
+}
+
+static struct wlr_color_transform *get_color_profile(struct wlr_output *output,
+		struct output_config *oc) {
+	if (oc && oc->set_color_transform) {
+		if (oc->color_transform) {
+			wlr_color_transform_ref(oc->color_transform);
+		}
+		return oc->color_transform;
+	} else {
+		return NULL;
+	}
+}
+
 static bool finalize_output_config(struct output_config *oc, struct sway_output *output,
-		const struct wlr_output_state *applied) {
+		const struct wlr_output_state *applied, const struct config_output_state *config_applied) {
 	if (output == root->fallback_output) {
 		return false;
 	}
@@ -609,16 +629,11 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 		output_enable(output);
 	}
 
-	if (oc && oc->set_color_transform) {
-		if (oc->color_transform) {
-			wlr_color_transform_ref(oc->color_transform);
-		}
-		wlr_color_transform_unref(output->color_transform);
-		output->color_transform = oc->color_transform;
-	} else {
-		wlr_color_transform_unref(output->color_transform);
-		output->color_transform = NULL;
+	wlr_color_transform_unref(output->color_transform);
+	if (config_applied->color_transform != NULL) {
+		wlr_color_transform_ref(config_applied->color_transform);
 	}
+	output->color_transform = config_applied->color_transform;
 
 	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
 	output->allow_tearing = oc && oc->allow_tearing > 0;
@@ -935,17 +950,25 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 	if (!states) {
 		return false;
 	}
+	struct config_output_state *config_states = calloc(configs_len, sizeof(*config_states));
+	if (!config_states) {
+		free(states);
+		return false;
+	}
 
 	sway_log(SWAY_DEBUG, "Committing %zd outputs", configs_len);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		struct wlr_backend_output_state *backend_state = &states[idx];
+		struct config_output_state *config_state = &config_states[idx];
 
 		backend_state->output = cfg->output->wlr_output;
 		wlr_output_state_init(&backend_state->base);
 
 		queue_output_config(cfg->config, cfg->output, &backend_state->base);
 		dump_output_state(cfg->output->wlr_output, &backend_state->base);
+
+		config_state->color_transform = get_color_profile(cfg->output->wlr_output, cfg->config);
 	}
 
 	struct wlr_output_swapchain_manager swapchain_mgr;
@@ -975,11 +998,12 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		struct wlr_backend_output_state *backend_state = &states[idx];
+		struct config_output_state *config_state = &config_states[idx];
 
 		struct wlr_scene_output_state_options opts = {
 			.swapchain = wlr_output_swapchain_manager_get_swapchain(
 				&swapchain_mgr, backend_state->output),
-			.color_transform = cfg->output->color_transform,
+			.color_transform = config_state->color_transform,
 		};
 		struct wlr_scene_output *scene_output = cfg->output->scene_output;
 		struct wlr_output_state *state = &backend_state->base;
@@ -1003,9 +1027,10 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		struct wlr_backend_output_state *backend_state = &states[idx];
+		struct config_output_state *config_state = &config_states[idx];
 		sway_log(SWAY_DEBUG, "Finalizing config for %s",
 			cfg->output->wlr_output->name);
-		finalize_output_config(cfg->config, cfg->output, &backend_state->base);
+		finalize_output_config(cfg->config, cfg->output, &backend_state->base, config_state);
 	}
 
 	// Output layout being applied in finalize_output_config can shift outputs
@@ -1026,8 +1051,10 @@ out:
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct wlr_backend_output_state *backend_state = &states[idx];
 		wlr_output_state_finish(&backend_state->base);
+		config_output_state_finish(&config_states[idx]);
 	}
 	free(states);
+	free(config_states);
 
 	// Reconfigure all devices, since input config may have been applied before
 	// this output came online, and some config items (like map_to_output) are
