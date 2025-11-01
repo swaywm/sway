@@ -178,8 +178,8 @@ must be separated by one space. For example:
 	updated to work with different bit depths. This command is experimental,
 	and may be removed or changed in the future.
 
-*output* <name> color_profile srgb|[icc <file>]
-	Sets the color profile for an output. The default is _srgb_. <file> should be a
+*output* <name> color_profile gamma22|srgb|[icc <file>]
+	Sets the color profile for an output. The default is _gamma22_. <file> should be a
 	path to a display ICC profile.
 
 	Not all renderers support this feature; currently it only works with the
