@@ -619,15 +619,9 @@ static struct sway_workspace *get_parent_workspace(struct sway_view *view) {
 static struct sway_workspace *select_workspace(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 
-	// Check if the view has a parent window, and if so, use its workspace
-	struct sway_workspace *parent_ws = get_parent_workspace(view);
-	if (parent_ws) {
-		return parent_ws;
-	}
-
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
-			CT_ASSIGN_WORKSPACE | CT_ASSIGN_WORKSPACE_NUMBER | CT_ASSIGN_OUTPUT);
+			CT_ASSIGN_WORKSPACE | CT_ASSIGN_WORKSPACE_NUMBER | CT_ASSIGN_OUTPUT | CT_ASSIGN_PARENT_WORKSPACE);
 	struct sway_workspace *ws = NULL;
 	for (int i = 0; i < criterias->length; ++i) {
 		struct criteria *criteria = criterias->items[i];
@@ -635,6 +629,12 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 			struct sway_output *output = output_by_name_or_id(criteria->target);
 			if (output) {
 				ws = output_get_active_workspace(output);
+				break;
+			}
+		} else if (criteria->type == CT_ASSIGN_PARENT_WORKSPACE) {
+			// Assign to parent's workspace if parent exists
+			ws = get_parent_workspace(view);
+			if (ws) {
 				break;
 			}
 		} else {

@@ -44,6 +44,7 @@ sway_sources = files(
 
 	'commands/allow_tearing.c',
 	'commands/assign.c',
+	'commands/assign_parent_workspace.c',
 	'commands/bar.c',
 	'commands/bind.c',
 	'commands/border.c',
