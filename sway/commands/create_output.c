@@ -1,3 +1,4 @@
+#include <strings.h>
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
@@ -48,6 +49,18 @@ struct cmd_results *cmd_create_output(int argc, char **argv) {
 	if (!result.done) {
 		return cmd_results_new(CMD_INVALID,
 			"Can only create outputs for Wayland, X11 or headless backends");
+	}
+
+	bool should_set_name = argc >= 2 && strcasecmp(argv[0], "name") == 0;
+
+	if (should_set_name) {
+		if (NULL == result.new_output) {
+			return cmd_results_new(CMD_FAILURE,
+				"Cannot assign name to new output");
+		}
+
+		sway_log(SWAY_DEBUG, "Set new output name to %s", argv[1]);
+		wlr_output_set_name(result.new_output, argv[1]);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
