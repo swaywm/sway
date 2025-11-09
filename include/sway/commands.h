@@ -168,6 +168,7 @@ sway_cmd cmd_popup_during_fullscreen;
 sway_cmd cmd_primary_selection;
 sway_cmd cmd_reject;
 sway_cmd cmd_reload;
+sway_cmd cmd_remap;
 sway_cmd cmd_rename;
 sway_cmd cmd_resize;
 sway_cmd cmd_scratchpad;

@@ -9,12 +9,15 @@
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include "sway/commands.h"
+#include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/server.h"
+#include "sway/tree/container.h"
+#include "sway/tree/view.h"
 #include "log.h"
 
 #if WLR_HAS_SESSION
@@ -408,6 +411,63 @@ static void update_keyboard_state(struct sway_keyboard *keyboard,
 	}
 }
 
+static void send_key_with_remap_check(struct sway_keyboard *keyboard, struct sway_seat *seat,
+		struct wlr_seat *wlr_seat, uint32_t time_msec, uint32_t keycode, uint32_t state,
+		const xkb_keysym_t *keysyms, size_t keysyms_len, uint32_t modifiers) {
+	
+	// Check for remap on key press
+	if (state == WL_KEYBOARD_KEY_STATE_PRESSED && config->key_remaps && keysyms_len > 0) {
+		
+		// Get focused app for app-specific remaps
+		struct sway_container *focused = seat_get_focused_container(seat);
+		const char *focused_app_id = NULL;
+		if (focused && focused->view) {
+			focused_app_id = view_get_app_id(focused->view);
+			if (!focused_app_id) {
+				focused_app_id = view_get_class(focused->view);
+			}
+		}
+
+		// Check each remap rule (app-specific are at front, so checked first)
+		for (int i = 0; i < config->key_remaps->length; i++) {
+			struct sway_key_remap *remap = config->key_remaps->items[i];
+
+			// Skip if app-specific and doesn't match focused app
+			if (remap->app_id && (!focused_app_id || !strstr(focused_app_id, remap->app_id))) {
+				continue;
+			}
+
+			// Check if keysym and modifiers match
+			for (size_t j = 0; j < keysyms_len; j++) {
+				if (keysyms[j] == remap->from_keysym && modifiers == remap->from_modifiers) {
+					sway_log(SWAY_DEBUG, "Remap: 0x%x+0x%x -> 0x%x+0x%x%s%s",
+						remap->from_modifiers, remap->from_keysym,
+						remap->to_modifiers, remap->to_keysym,
+						remap->app_id ? " (app:" : "", remap->app_id ? remap->app_id : "");
+					
+					struct wlr_keyboard_modifiers new_mods = keyboard->wlr->modifiers;
+					
+					// Remove "from" modifiers and add "to" modifiers
+					uint32_t new_mod_mask = modifiers;
+					new_mod_mask &= ~remap->from_modifiers; // Remove source mods
+					new_mod_mask |= remap->to_modifiers;     // Add target mods
+					new_mods.depressed = new_mod_mask;
+					
+					// Send with remapped modifiers
+					wlr_seat_set_keyboard(wlr_seat, keyboard->wlr);
+					wlr_seat_keyboard_notify_modifiers(wlr_seat, &new_mods);
+					wlr_seat_keyboard_notify_key(wlr_seat, time_msec, keycode, state);
+					return;
+				}
+			}
+		}
+	}
+	
+	// No remap - send normally
+	wlr_seat_set_keyboard(wlr_seat, keyboard->wlr);
+	wlr_seat_keyboard_notify_key(wlr_seat, time_msec, keycode, state);
+}
+
 /**
  * Get keyboard grab of the seat from sway_keyboard if we should forward events
  * to it.
@@ -545,17 +605,14 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 			event->state);
 	}
 
-	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-		// If the pressed event was sent to a client and we have a focused
-		// surface immediately before this event, also send the released
-		// event. In particular, don't send the released event to the IM grab.
+	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED && !handled) {
 		bool pressed_sent = update_shortcut_state(
 			&keyboard->state_pressed_sent, event->keycode,
 			event->state, keyinfo.keycode, 0);
 		if (pressed_sent && seat->wlr_seat->keyboard_state.focused_surface) {
-			wlr_seat_set_keyboard(wlr_seat, keyboard->wlr);
-			wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-				event->keycode, event->state);
+			send_key_with_remap_check(keyboard, seat, wlr_seat, event->time_msec,
+				event->keycode, event->state, keyinfo.translated_keysyms,
+				keyinfo.translated_keysyms_len, keyinfo.translated_modifiers);
 			handled = true;
 		}
 	}
@@ -577,9 +634,10 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		update_shortcut_state(
 			&keyboard->state_pressed_sent, event->keycode, event->state,
 			keyinfo.keycode, 0);
-		wlr_seat_set_keyboard(wlr_seat, keyboard->wlr);
-		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-				event->keycode, event->state);
+
+		send_key_with_remap_check(keyboard, seat, wlr_seat, event->time_msec,
+			event->keycode, event->state, keyinfo.translated_keysyms,
+			keyinfo.translated_keysyms_len, keyinfo.translated_modifiers);
 	}
 
 	free(device_identifier);
