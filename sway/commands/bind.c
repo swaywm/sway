@@ -648,20 +648,10 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 }
 
 /**
- * The last found keycode associated with the keysym
- * and the total count of matches.
- */
-struct keycode_matches {
-	xkb_keysym_t keysym;
-	xkb_keycode_t keycode;
-	int count;
-};
-
-/**
  * Iterate through keycodes in the keymap to find ones matching
  * the specified keysym.
  */
-static void find_keycode(struct xkb_keymap *keymap,
+void find_keycode(struct xkb_keymap *keymap,
 		xkb_keycode_t keycode, void *data) {
 	xkb_keysym_t keysym = xkb_state_key_get_one_sym(
 			config->keysym_translation_state, keycode);
@@ -680,7 +670,7 @@ static void find_keycode(struct xkb_keymap *keymap,
 /**
  * Return the keycode for the specified keysym.
  */
-static struct keycode_matches get_keycode_for_keysym(xkb_keysym_t keysym) {
+struct keycode_matches get_keycode_for_keysym(xkb_keysym_t keysym) {
 	struct keycode_matches matches = {
 		.keysym = keysym,
 		.keycode = XKB_KEYCODE_INVALID,

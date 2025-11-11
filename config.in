@@ -253,7 +253,7 @@ remap Super-q C-q          # Quit
 
 # Tab navigation
 remap Super-Shift-bracketleft C-Page_Up
-remap Super-Shift-bracketleft C-Page_Down
+remap Super-Shift-bracketright C-Page_Down
 
 
 # Terminal-specific 

@@ -411,6 +411,7 @@ static void update_keyboard_state(struct sway_keyboard *keyboard,
 	}
 }
 
+
 static void send_key_with_remap_check(struct sway_keyboard *keyboard, struct sway_seat *seat,
 		struct wlr_seat *wlr_seat, uint32_t time_msec, uint32_t keycode, uint32_t state,
 		const xkb_keysym_t *keysyms, size_t keysyms_len, uint32_t modifiers) {
@@ -445,18 +446,29 @@ static void send_key_with_remap_check(struct sway_keyboard *keyboard, struct swa
 						remap->to_modifiers, remap->to_keysym,
 						remap->app_id ? " (app:" : "", remap->app_id ? remap->app_id : "");
 					
+					// Build remapped modifiers
 					struct wlr_keyboard_modifiers new_mods = keyboard->wlr->modifiers;
-					
-					// Remove "from" modifiers and add "to" modifiers
 					uint32_t new_mod_mask = modifiers;
 					new_mod_mask &= ~remap->from_modifiers; // Remove source mods
 					new_mod_mask |= remap->to_modifiers;     // Add target mods
 					new_mods.depressed = new_mod_mask;
 					
-					// Send with remapped modifiers
+					// Find the keycode for the target keysym using existing bind.c logic
+					struct keycode_matches matches = get_keycode_for_keysym(remap->to_keysym);
+					
+					if (matches.count != 1) {
+						sway_log(SWAY_ERROR, "Failed to find unique keycode for remapped keysym 0x%x (found %d matches)", 
+							remap->to_keysym, matches.count);
+						return;
+					}
+					
+					// XKB keycodes are offset by 8 from evdev keycodes
+					uint32_t target_keycode = matches.keycode - 8;
+					
+					// Send with remapped modifiers AND keycode
 					wlr_seat_set_keyboard(wlr_seat, keyboard->wlr);
 					wlr_seat_keyboard_notify_modifiers(wlr_seat, &new_mods);
-					wlr_seat_keyboard_notify_key(wlr_seat, time_msec, keycode, state);
+					wlr_seat_keyboard_notify_key(wlr_seat, time_msec, target_keycode, state);
 					return;
 				}
 			}
@@ -611,8 +623,8 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 			event->state, keyinfo.keycode, 0);
 		if (pressed_sent && seat->wlr_seat->keyboard_state.focused_surface) {
 			send_key_with_remap_check(keyboard, seat, wlr_seat, event->time_msec,
-				event->keycode, event->state, keyinfo.translated_keysyms,
-				keyinfo.translated_keysyms_len, keyinfo.translated_modifiers);
+				event->keycode, event->state, keyinfo.raw_keysyms,
+				keyinfo.raw_keysyms_len, keyinfo.raw_modifiers);
 			handled = true;
 		}
 	}
@@ -636,8 +648,8 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 			keyinfo.keycode, 0);
 
 		send_key_with_remap_check(keyboard, seat, wlr_seat, event->time_msec,
-			event->keycode, event->state, keyinfo.translated_keysyms,
-			keyinfo.translated_keysyms_len, keyinfo.translated_modifiers);
+			event->keycode, event->state, keyinfo.raw_keysyms,
+			keyinfo.raw_keysyms_len, keyinfo.raw_modifiers);
 	}
 
 	free(device_identifier);
