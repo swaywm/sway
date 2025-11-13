@@ -95,6 +95,17 @@ struct sway_gesture_binding {
 };
 
 /**
+ * A key remap rule for transforming key combinations
+ */
+struct sway_key_remap {
+	uint32_t from_modifiers;
+	xkb_keysym_t from_keysym;
+	uint32_t to_modifiers;
+	xkb_keysym_t to_keysym;
+	char *app_id;
+};
+
+/**
  * Focus on window activation.
  */
 enum sway_fowa {
@@ -498,6 +509,7 @@ struct sway_config {
 	list_t *criteria;
 	list_t *no_focus;
 	list_t *active_bar_modifiers;
+	list_t *key_remaps; 
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;
 	uint32_t floating_mod;
