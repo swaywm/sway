@@ -11,6 +11,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_color_management_v1.h>
+#include <wlr/types/wlr_color_representation_v1.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
@@ -484,6 +485,9 @@ bool server_init(struct sway_server *server) {
 		});
 		wlr_scene_set_color_manager_v1(root->root_scene, cm);
 	}
+
+	wlr_color_representation_manager_v1_create_with_renderer(
+		server->wl_display, 1, server->renderer);
 
 	wl_list_init(&server->pending_launcher_ctxs);
 
