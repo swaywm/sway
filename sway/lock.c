@@ -26,6 +26,7 @@ struct sway_session_lock_output {
 	// invalid if surface is NULL
 	struct wl_listener surface_destroy;
 	struct wl_listener surface_map;
+	struct wl_listener surface_commit;
 };
 
 static void focus_surface(struct sway_session_lock *lock,
@@ -64,7 +65,16 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 	if (surf->lock->focused == NULL) {
 		focus_surface(surf->lock, surf->surface->surface);
 	}
+}
+
+static void handle_surface_commit(struct wl_listener *listener, void *data) {
+	// We have to rebase cursor after the surface is commited.
+	// If we rebase cursor earlier(e.g. after the surface is mapped),
+	// the lock surface is still 0x0 in size.
 	cursor_rebase_all();
+	struct sway_session_lock_output *surf = wl_container_of(listener, surf, surface_commit);
+	wl_list_remove(&surf->surface_commit.link);
+	wl_list_init(&surf->surface_commit.link);
 }
 
 static void handle_surface_destroy(struct wl_listener *listener, void *data) {
@@ -76,6 +86,7 @@ static void handle_surface_destroy(struct wl_listener *listener, void *data) {
 	output->surface = NULL;
 	wl_list_remove(&output->surface_destroy.link);
 	wl_list_remove(&output->surface_map.link);
+	wl_list_remove(&output->surface_commit.link);
 }
 
 static void lock_output_reconfigure(struct sway_session_lock_output *output) {
@@ -125,6 +136,8 @@ static void handle_new_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&lock_surface->events.destroy, &lock_output->surface_destroy);
 	lock_output->surface_map.notify = handle_surface_map;
 	wl_signal_add(&lock_surface->surface->events.map, &lock_output->surface_map);
+	lock_output->surface_commit.notify = handle_surface_commit;
+	wl_signal_add(&lock_surface->surface->events.commit, &lock_output->surface_commit);
 
 	lock_output_reconfigure(lock_output);
 }
@@ -134,6 +147,7 @@ static void sway_session_lock_output_destroy(struct sway_session_lock_output *ou
 		refocus_output(output);
 		wl_list_remove(&output->surface_destroy.link);
 		wl_list_remove(&output->surface_map.link);
+		wl_list_remove(&output->surface_commit.link);
 	}
 
 	wl_list_remove(&output->destroy.link);
@@ -237,6 +251,8 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 
 	// Views are now visible, so check if we need to activate inhibition again.
 	sway_idle_inhibit_v1_check_active();
+
+	cursor_rebase_all();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
