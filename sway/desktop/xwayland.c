@@ -689,6 +689,7 @@ static void handle_set_title(struct wl_listener *listener, void *data) {
 	}
 	view_update_title(view, false);
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }
 
 static void handle_set_class(struct wl_listener *listener, void *data) {
@@ -700,6 +701,7 @@ static void handle_set_class(struct wl_listener *listener, void *data) {
 		return;
 	}
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }
 
 static void handle_set_role(struct wl_listener *listener, void *data) {
@@ -711,6 +713,7 @@ static void handle_set_role(struct wl_listener *listener, void *data) {
 		return;
 	}
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }
 
 static void handle_set_startup_id(struct wl_listener *listener, void *data) {
@@ -747,6 +750,7 @@ static void handle_set_window_type(struct wl_listener *listener, void *data) {
 		return;
 	}
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }
 
 static void handle_set_hints(struct wl_listener *listener, void *data) {
