@@ -75,7 +75,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
-	oc->set_color_transform = false;
+	oc->color_profile = COLOR_PROFILE_DEFAULT;
 	oc->color_transform = NULL;
 	oc->power = -1;
 	oc->allow_tearing = -1;
@@ -130,12 +130,12 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
 	}
-	if (src->set_color_transform) {
+	if (src->color_profile != COLOR_PROFILE_DEFAULT) {
 		if (dst->color_transform) {
 			wlr_color_transform_unref(dst->color_transform);
 			dst->color_transform = NULL;
 		}
-		dst->set_color_transform = false;
+		dst->color_profile = COLOR_PROFILE_DEFAULT;
 	}
 	if (src->background) {
 		free(dst->background);
@@ -207,12 +207,12 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = src->render_bit_depth;
 	}
-	if (src->set_color_transform) {
+	if (src->color_profile != COLOR_PROFILE_DEFAULT) {
 		if (src->color_transform) {
 			wlr_color_transform_ref(src->color_transform);
 		}
 		wlr_color_transform_unref(dst->color_transform);
-		dst->set_color_transform = true;
+		dst->color_profile = src->color_profile;
 		dst->color_transform = src->color_transform;
 	}
 	if (src->background) {
@@ -385,6 +385,67 @@ static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending,
 		.transfer_function = WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ,
 	};
 	wlr_output_state_set_image_description(pending, &image_desc);
+}
+
+static const struct wlr_color_primaries COLOR_PRIMARIES_SRGB = {
+	.red = { 0.640, 0.330 },
+	.green = { 0.300, 0.600 },
+	.blue = { 0.150, 0.060 },
+	.white = { 0.3127, 0.3290 },
+};
+
+static struct wlr_color_transform *color_profile_from_edid(struct wlr_output *wlr_output,
+	struct wlr_color_transform *transfer_function)
+{
+	const struct wlr_color_primaries *colors = wlr_output->default_primaries;
+	if (colors == NULL) {
+		sway_log(SWAY_INFO, "output has no EDID color information");
+		if (transfer_function) {
+			wlr_color_transform_ref(transfer_function);
+		}
+		return transfer_function;
+	}
+	else if (memcmp(colors, &COLOR_PRIMARIES_SRGB, sizeof(*colors)) == 0) {
+		sway_log(SWAY_INFO, "output EDID reports sRGB colors, no correction needed");
+		if (transfer_function) {
+			wlr_color_transform_ref(transfer_function);
+		}
+		return transfer_function;
+	} else {
+		sway_log(SWAY_INFO, "Creating color profile from EDID color primaries: "
+				"R(%f, %f) G(%f, %f) B(%f, %f) W(%f, %f)",
+			colors->red.x, colors->red.y, colors->green.x, colors->green.y,
+			colors->blue.x, colors->blue.y, colors->white.x, colors->white.y);
+		float matrix[9];
+		wlr_color_primaries_transform_absolute_colorimetric(&COLOR_PRIMARIES_SRGB, colors, matrix);
+		struct wlr_color_transform *transforms[2] = {
+			wlr_color_transform_init_matrix(matrix),
+			transfer_function ? wlr_color_transform_ref(transfer_function) :
+				wlr_color_transform_init_linear_to_inverse_eotf(WLR_COLOR_TRANSFER_FUNCTION_GAMMA22),
+		};
+		struct wlr_color_transform *result = wlr_color_transform_init_pipeline(transforms, 2);
+		wlr_color_transform_unref(transforms[0]);
+		wlr_color_transform_unref(transforms[1]);
+		return result;
+	}
+}
+
+static void set_color_profile(struct sway_output *output, struct output_config *oc) {
+	if (oc && oc->color_profile == COLOR_PROFILE_TRANSFORM) {
+		if (oc->color_transform) {
+			wlr_color_transform_ref(oc->color_transform);
+		}
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = oc->color_transform;
+	} else if (oc && oc->color_profile == COLOR_PROFILE_EDID) {
+		struct wlr_color_transform *pipeline = color_profile_from_edid(output->wlr_output,
+			oc->color_transform);
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = pipeline;
+	} else {
+		wlr_color_transform_unref(output->color_transform);
+		output->color_transform = NULL;
+	}
 }
 
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
@@ -560,6 +621,8 @@ static void queue_output_config(struct output_config *oc,
 		hdr = false;
 	}
 	set_hdr(wlr_output, pending, hdr);
+
+	set_color_profile(output, oc);
 }
 
 static bool finalize_output_config(struct output_config *oc, struct sway_output *output,
@@ -607,17 +670,6 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 
 	if (!output->enabled) {
 		output_enable(output);
-	}
-
-	if (oc && oc->set_color_transform) {
-		if (oc->color_transform) {
-			wlr_color_transform_ref(oc->color_transform);
-		}
-		wlr_color_transform_unref(output->color_transform);
-		output->color_transform = oc->color_transform;
-	} else {
-		wlr_color_transform_unref(output->color_transform);
-		output->color_transform = NULL;
 	}
 
 	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;

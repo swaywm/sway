@@ -59,13 +59,24 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "Missing color_profile first argument.");
 	}
 
-	if (strcmp(*argv, "srgb") == 0) {
+	bool accept_edid;
+	if (strcmp(*argv, "gamma22") == 0) {
 		wlr_color_transform_unref(config->handler_context.output_config->color_transform);
 		config->handler_context.output_config->color_transform = NULL;
-		config->handler_context.output_config->set_color_transform = true;
+		config->handler_context.output_config->color_profile = COLOR_PROFILE_TRANSFORM;
 
 		config->handler_context.leftovers.argc = argc - 1;
 		config->handler_context.leftovers.argv = argv + 1;
+		accept_edid = true;
+	} else if (strcmp(*argv, "srgb") == 0) {
+		wlr_color_transform_unref(config->handler_context.output_config->color_transform);
+		config->handler_context.output_config->color_transform =
+			wlr_color_transform_init_linear_to_inverse_eotf(WLR_COLOR_TRANSFER_FUNCTION_SRGB);
+		config->handler_context.output_config->color_profile = COLOR_PROFILE_TRANSFORM;
+
+		config->handler_context.leftovers.argc = argc - 1;
+		config->handler_context.leftovers.argv = argv + 1;
+		accept_edid = true;
 	} else if (strcmp(*argv, "icc") == 0) {
 		if (argc < 2) {
 			return cmd_results_new(CMD_INVALID,
@@ -100,13 +111,21 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 
 		wlr_color_transform_unref(config->handler_context.output_config->color_transform);
 		config->handler_context.output_config->color_transform = tmp;
-		config->handler_context.output_config->set_color_transform = true;
+		config->handler_context.output_config->color_profile = COLOR_PROFILE_TRANSFORM;
 
 		config->handler_context.leftovers.argc = argc - 2;
 		config->handler_context.leftovers.argv = argv + 2;
+		accept_edid = false;
 	} else {
 		return cmd_results_new(CMD_INVALID,
-			"Invalid color profile specification: first argument should be icc|srgb");
+			"Invalid color profile specification: "
+			"first argument should be gamma22|icc|srgb");
+	}
+
+	if (accept_edid && argc >= 2 && strcmp(argv[1], "edid") == 0) {
+		config->handler_context.output_config->color_profile = COLOR_PROFILE_EDID;
+		config->handler_context.leftovers.argc = argc - 2;
+		config->handler_context.leftovers.argv = argv + 2;
 	}
 
 	return NULL;
