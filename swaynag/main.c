@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		sway_log(SWAY_DEBUG, "Loading config file: %s", config_path);
 		status = swaynag_load_config(config_path, &swaynag, types);
+		free(config_path);
 		if (status != 0) {
 			goto cleanup;
 		}
