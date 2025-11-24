@@ -12,6 +12,7 @@ enum gaps_op {
 	GAPS_OP_SET,
 	GAPS_OP_ADD,
 	GAPS_OP_SUBTRACT,
+	GAPS_OP_BOUNDED_SUBTRACT,
 	GAPS_OP_TOGGLE
 };
 
@@ -103,6 +104,13 @@ static void apply_gaps_op(int *prop, enum gaps_op op, int amount) {
 	case GAPS_OP_SUBTRACT:
 		*prop -= amount;
 		break;
+	case GAPS_OP_BOUNDED_SUBTRACT:
+		if (amount <= *prop) {
+			*prop -= amount;
+		} else {
+			*prop = 0;
+		}
+		break;
 	case GAPS_OP_TOGGLE:
 		*prop = *prop ? 0 : amount;
 		break;
@@ -137,9 +145,9 @@ static void configure_gaps(struct sway_workspace *ws, void *_data) {
 }
 
 // gaps inner|outer|horizontal|vertical|top|right|bottom|left current|all
-// set|plus|minus|toggle <px>
+// set|plus|minus|bounded_minus|toggle <px>
 static const char expected_runtime[] = "'gaps inner|outer|horizontal|vertical|"
-	"top|right|bottom|left current|all set|plus|minus|toggle <px>'";
+	"top|right|bottom|left current|all set|plus|minus|bounded_minus|toggle <px>'";
 static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 4);
 	if (error) {
@@ -184,6 +192,8 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 		data.operation = GAPS_OP_ADD;
 	} else if (strcasecmp(argv[2], "minus") == 0) {
 		data.operation = GAPS_OP_SUBTRACT;
+	} else if (strcasecmp(argv[2], "bounded_minus") == 0) {
+		data.operation = GAPS_OP_BOUNDED_SUBTRACT;
 	} else if (strcasecmp(argv[2], "toggle") == 0) {
 		data.operation = GAPS_OP_TOGGLE;
 	} else {
@@ -206,7 +216,7 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 }
 
 // gaps inner|outer|<dir>|<side> <px> - sets defaults for workspaces
-// gaps inner|outer|<dir>|<side> current|all set|plus|minus|toggle <px> - runtime only
+// gaps inner|outer|<dir>|<side> current|all set|plus|minus|bounded_minus|toggle <px> - runtime only
 // <dir> = horizontal|vertical
 // <side> = top|right|bottom|left
 struct cmd_results *cmd_gaps(int argc, char **argv) {
