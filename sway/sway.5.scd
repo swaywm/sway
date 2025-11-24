@@ -774,7 +774,8 @@ The default colors are:
 
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
-	See *CRITERIA* for more details.
+	See *CRITERIA* for more details. Please note this configuration is not
+	reloaded on _reload_ action.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
@@ -985,7 +986,8 @@ The string contains one or more (space separated) attribute/value pairs. They
 are used by some commands to choose which windows to execute actions on. All
 attributes must match for the criteria to match. Criteria is retained across
 commands separated by a *,*, but will be reset (and allow for new criteria, if
-desired) for commands separated by a *;*.
+desired) for commands separated by a *;*. The strings has to be quoted by *"*
+the simple quotes *'* are not supported.
 
 Criteria may be used with either the *for_window* or *assign* commands to
 specify operations to perform on new windows. A criteria may also be used to
