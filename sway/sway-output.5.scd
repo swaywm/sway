@@ -178,9 +178,19 @@ must be separated by one space. For example:
 	updated to work with different bit depths. This command is experimental,
 	and may be removed or changed in the future.
 
-*output* <name> color_profile gamma22|srgb|[icc <file>]
-	Sets the color profile for an output. The default is _gamma22_. <file> should be a
-	path to a display ICC profile.
+*output* <name> color_profile [--device-primaries] gamma22|srgb
+	Sets the color profile for an output. The default is _gamma22_.
+
+	_--device-primaries_ will use the output's self-reported color primaries
+	when available (e.g. from display EDID).
+
+	Not all renderers support this feature; currently it only works with the
+	the Vulkan renderer. It is not compatible with HDR support features.
+
+*output* <name> color_profile icc <file>
+	Sets the color profile for an output.
+
+	<file> should be a path to a display ICC profile.
 
 	Not all renderers support this feature; currently it only works with the
 	the Vulkan renderer. Even where supported, the application of the color
