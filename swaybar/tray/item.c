@@ -515,7 +515,15 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 
 	cairo_matrix_t scale_matrix;
 	cairo_pattern_t *icon_pattern = cairo_pattern_create_for_surface(icon);
-	// TODO: check cairo_pattern_status for "ENOMEM"
+	cairo_status_t pattern_status = cairo_pattern_status(icon_pattern);
+	if (pattern_status != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "Failed to create icon pattern: %s",
+				cairo_status_to_string(pattern_status));
+		cairo_set_operator(cairo, op);
+		cairo_pattern_destroy(icon_pattern);
+		cairo_surface_destroy(icon);
+		return output->height;
+	}
 	cairo_matrix_init_scale(&scale_matrix, output->scale, output->scale);
 	cairo_matrix_translate(&scale_matrix, -(*x + descaled_padding), -(icon_y + descaled_padding));
 	cairo_pattern_set_matrix(icon_pattern, &scale_matrix);
@@ -529,6 +537,10 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	cairo_surface_destroy(icon);
 
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
+	if (!hotspot) {
+		sway_log(SWAY_ERROR, "Failed to allocate SNI hotspot");
+		return output->height;
+	}
 	hotspot->x = *x;
 	hotspot->y = 0;
 	hotspot->width = size;
@@ -536,6 +548,11 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	hotspot->callback = icon_hotspot_callback;
 	hotspot->destroy = free;
 	hotspot->data = strdup(sni->watcher_id);
+	if (!hotspot->data) {
+		sway_log(SWAY_ERROR, "Failed to copy SNI id for hotspot");
+		free(hotspot);
+		return output->height;
+	}
 	wl_list_insert(&output->hotspots, &hotspot->link);
 
 	return output->height;
