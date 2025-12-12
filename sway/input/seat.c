@@ -522,6 +522,8 @@ static void drag_handle_destroy(struct wl_listener *listener, void *data) {
 	drag->wlr_drag->data = NULL;
 	wl_list_remove(&drag->destroy.link);
 	if (drag->toplevel_drag != NULL) {
+		// Mark drag as ended so client can safely destroy xdg_toplevel_drag
+		wlr_xdg_toplevel_drag_v1_finish(drag->toplevel_drag);
 		wl_list_remove(&drag->motion.link);
 		// Clean up our surface tracking listener if active
 		if (drag->toplevel_surface != NULL) {
@@ -582,6 +584,7 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 		drag->toplevel_drag = wlr_xdg_toplevel_drag_v1_from_wlr_data_source(
 			server.xdg_toplevel_drag_manager, wlr_drag->source);
 		if (drag->toplevel_drag != NULL) {
+			wlr_xdg_toplevel_drag_v1_start(drag->toplevel_drag);
 			drag->motion.notify = toplevel_drag_handle_motion;
 			wl_signal_add(&wlr_drag->events.motion, &drag->motion);
 			// Initialize surface tracking (will be set on first identification)
