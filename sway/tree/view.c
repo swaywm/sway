@@ -871,8 +871,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 				wlr_xdg_toplevel_drag_v1_from_wlr_xdg_toplevel(
 					server.xdg_toplevel_drag_manager, view->wlr_xdg_toplevel);
 			if (toplevel_drag != NULL) {
-				double x = seat->cursor->cursor->x - toplevel_drag->x_offset;
-				double y = seat->cursor->cursor->y - toplevel_drag->y_offset;
+				struct wlr_box *geo = &view->geometry;
+				double x = seat->cursor->cursor->x - toplevel_drag->x_offset - geo->x;
+				double y = seat->cursor->cursor->y - toplevel_drag->y_offset - geo->y;
 				container_floating_move_to(view->container, x, y);
 			}
 		}
