@@ -123,6 +123,8 @@ struct sway_server {
 
 	struct wl_listener request_set_cursor_shape;
 
+	struct wlr_xdg_toplevel_drag_manager_v1 *xdg_toplevel_drag_manager;
+
 	struct wlr_tearing_control_manager_v1 *tearing_control_v1;
 	struct wl_listener tearing_control_new_object;
 	struct wl_list tearing_controllers; // sway_tearing_controller::link
