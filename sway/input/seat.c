@@ -467,8 +467,8 @@ static void toplevel_drag_handle_motion(struct wl_listener *listener, void *data
 	}
 
 	if (!container_is_floating(view->container)) {
-		// During tearout phase (not yet floating), don't skip hit-testing.
-		return;
+		// Tiled container being torn out - float it at cursor position
+		container_set_floating(view->container, true);
 	}
 
 	struct wlr_surface *surface = view->surface;
