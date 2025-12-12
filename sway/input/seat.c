@@ -437,11 +437,6 @@ static void toplevel_drag_handle_motion(struct wl_listener *listener, void *data
 	struct wlr_xdg_toplevel_drag_v1 *toplevel_drag = drag->toplevel_drag;
 	struct sway_seat *seat = drag->seat;
 
-	if (toplevel_drag == NULL) {
-		seat->toplevel_drag_container = NULL;
-		return;
-	}
-
 	// If we have a tracked surface being dragged, move its container.
 	// We track the surface ourselves rather than trusting wlroots' toplevel
 	// pointer, which may not be NULLed promptly during destruction.
