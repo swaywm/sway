@@ -74,10 +74,22 @@ struct sway_seat_node {
 	struct wl_listener destroy;
 };
 
+struct wlr_xdg_toplevel_drag_v1;
+
 struct sway_drag {
 	struct sway_seat *seat;
 	struct wlr_drag *wlr_drag;
+	struct wlr_xdg_toplevel_drag_v1 *toplevel_drag; // may be NULL
+	struct wlr_surface *origin; // surface where drag started
+
+	// For xdg-toplevel-drag: track the dragged surface ourselves rather than
+	// trusting wlroots' toplevel pointer, which may not be NULLed promptly
+	// during destruction sequences. This mirrors Mutter's approach.
+	struct wlr_surface *toplevel_surface; // the attached toplevel's surface
+	struct wl_listener toplevel_surface_destroy;
+
 	struct wl_listener destroy;
+	struct wl_listener motion;
 };
 
 struct sway_seat {
@@ -92,6 +104,14 @@ struct sway_seat {
 	//   - seatop specific stuff
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *drag_icons;
+
+	// Container being dragged via xdg-toplevel-drag protocol.
+	// This container is skipped during hit testing so that
+	// drop targets underneath can receive pointer focus.
+	struct sway_container *toplevel_drag_container;
+
+	// Origin surface of pending drag (set in request_start_drag, used in start_drag)
+	struct wlr_surface *pending_drag_origin;
 
 	bool has_focus;
 	struct wl_list focus_stack; // list of containers in focus order

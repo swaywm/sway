@@ -234,6 +234,12 @@ void container_floating_translate(struct sway_container *con,
 		double x_amount, double y_amount);
 
 /**
+ * Update scene graph position immediately for a floating container.
+ * Used during drag operations for smoother visual feedback.
+ */
+void container_floating_update_scene_position(struct sway_container *con);
+
+/**
  * Choose an output for the floating container's new position.
  */
 struct sway_output *container_floating_find_output(struct sway_container *con);

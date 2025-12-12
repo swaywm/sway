@@ -13,6 +13,8 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_toplevel_drag_v1.h>
 #include "config.h"
 #include "list.h"
 #include "log.h"
@@ -386,12 +388,123 @@ void drag_icons_update_position(struct sway_seat *seat) {
 	}
 }
 
+static void toplevel_drag_surface_handle_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_drag *drag = wl_container_of(listener, drag, toplevel_surface_destroy);
+	// Surface is being destroyed - clear our tracking. This is analogous to
+	// Mutter's on_dragged_window_unmanaging callback.
+	wl_list_remove(&drag->toplevel_surface_destroy.link);
+	wl_list_init(&drag->toplevel_surface_destroy.link);
+	drag->toplevel_surface = NULL;
+	drag->seat->toplevel_drag_container = NULL;
+}
+
+// Find a floating XDG view that has a toplevel drag attached to it.
+// This is safer than accessing toplevel_drag->toplevel which may be stale.
+static struct sway_view *find_xdg_view_with_toplevel_drag(
+		struct wlr_xdg_toplevel_drag_v1 *toplevel_drag) {
+	// Search all workspaces for floating containers
+	for (int i = 0; i < root->outputs->length; i++) {
+		struct sway_output *output = root->outputs->items[i];
+		for (int j = 0; j < output->workspaces->length; j++) {
+			struct sway_workspace *ws = output->workspaces->items[j];
+			for (int k = 0; k < ws->floating->length; k++) {
+				struct sway_container *con = ws->floating->items[k];
+				if (con->view == NULL || con->view->type != SWAY_VIEW_XDG_SHELL) {
+					continue;
+				}
+				struct wlr_xdg_toplevel *wlr_toplevel = con->view->wlr_xdg_toplevel;
+				if (wlr_toplevel == NULL) {
+					continue;
+				}
+				// Use wlroots' safe lookup function to check if this toplevel
+				// has the drag attached
+				struct wlr_xdg_toplevel_drag_v1 *found =
+					wlr_xdg_toplevel_drag_v1_from_wlr_xdg_toplevel(
+						server.xdg_toplevel_drag_manager,
+						wlr_toplevel);
+				if (found == toplevel_drag) {
+					return con->view;
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
+static void toplevel_drag_handle_motion(struct wl_listener *listener, void *data) {
+	struct sway_drag *drag = wl_container_of(listener, drag, motion);
+	struct wlr_xdg_toplevel_drag_v1 *toplevel_drag = drag->toplevel_drag;
+	struct sway_seat *seat = drag->seat;
+
+	if (toplevel_drag == NULL) {
+		seat->toplevel_drag_container = NULL;
+		return;
+	}
+
+	// If we have a tracked surface being dragged, move its container.
+	// We track the surface ourselves rather than trusting wlroots' toplevel
+	// pointer, which may not be NULLed promptly during destruction.
+	if (drag->toplevel_surface != NULL) {
+		struct sway_container *con = seat->toplevel_drag_container;
+		// Verify container is still valid and floating
+		if (con != NULL && con->view != NULL && con->view->surface != NULL &&
+				container_is_floating(con)) {
+			// Account for XDG surface geometry offset. The protocol's
+			// x_offset/y_offset are in surface coordinates, but container
+			// position is relative to window content.
+			struct wlr_box *geo = &con->view->geometry;
+			double x = seat->cursor->cursor->x - toplevel_drag->x_offset - geo->x;
+			double y = seat->cursor->cursor->y - toplevel_drag->y_offset - geo->y;
+			container_floating_move_to(con, x, y);
+			// Update scene position immediately for smooth visual feedback.
+			container_floating_update_scene_position(con);
+		}
+		return;
+	}
+
+	// No surface tracked yet - search for a floating XDG view that has this
+	// toplevel drag attached. This avoids accessing toplevel_drag->toplevel
+	// which may point to freed memory.
+	struct sway_view *view = find_xdg_view_with_toplevel_drag(toplevel_drag);
+	if (view == NULL || view->container == NULL) {
+		return;
+	}
+
+	if (!container_is_floating(view->container)) {
+		// During tearout phase (not yet floating), don't skip hit-testing.
+		return;
+	}
+
+	struct wlr_surface *surface = view->surface;
+	if (surface == NULL || !surface->mapped) {
+		return;
+	}
+
+	// Start tracking this surface and container for movement.
+	// Listen for surface destruction so we can clear our pointer.
+	drag->toplevel_surface = surface;
+	drag->toplevel_surface_destroy.notify = toplevel_drag_surface_handle_destroy;
+	wl_signal_add(&surface->events.destroy, &drag->toplevel_surface_destroy);
+	seat->toplevel_drag_container = view->container;
+
+	// Account for XDG surface geometry offset
+	struct wlr_box *geo = &view->geometry;
+	double x = seat->cursor->cursor->x - toplevel_drag->x_offset - geo->x;
+	double y = seat->cursor->cursor->y - toplevel_drag->y_offset - geo->y;
+	container_floating_move_to(view->container, x, y);
+	container_floating_update_scene_position(view->container);
+}
+
 static void drag_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_drag *drag = wl_container_of(listener, drag, destroy);
 
 	// Focus enter isn't sent during drag, so refocus the focused node, layer
 	// surface or unmanaged surface.
 	struct sway_seat *seat = drag->seat;
+
+	// Clear toplevel drag container tracking
+	seat->toplevel_drag_container = NULL;
 	struct sway_node *focus = seat_get_focus(seat);
 	if (focus) {
 		seat_set_focus(seat, NULL);
@@ -408,6 +521,13 @@ static void drag_handle_destroy(struct wl_listener *listener, void *data) {
 
 	drag->wlr_drag->data = NULL;
 	wl_list_remove(&drag->destroy.link);
+	if (drag->toplevel_drag != NULL) {
+		wl_list_remove(&drag->motion.link);
+		// Clean up our surface tracking listener if active
+		if (drag->toplevel_surface != NULL) {
+			wl_list_remove(&drag->toplevel_surface_destroy.link);
+		}
+	}
 	free(drag);
 }
 
@@ -418,6 +538,7 @@ static void handle_request_start_drag(struct wl_listener *listener,
 
 	if (wlr_seat_validate_pointer_grab_serial(seat->wlr_seat,
 			event->origin, event->serial)) {
+		seat->pending_drag_origin = event->origin;
 		wlr_seat_start_pointer_drag(seat->wlr_seat, event->drag, event->serial);
 		return;
 	}
@@ -425,6 +546,7 @@ static void handle_request_start_drag(struct wl_listener *listener,
 	struct wlr_touch_point *point;
 	if (wlr_seat_validate_touch_grab_serial(seat->wlr_seat,
 			event->origin, event->serial, &point)) {
+		seat->pending_drag_origin = event->origin;
 		wlr_seat_start_touch_drag(seat->wlr_seat,
 			event->drag, event->serial, point);
 		return;
@@ -448,10 +570,25 @@ static void handle_start_drag(struct wl_listener *listener, void *data) {
 	}
 	drag->seat = seat;
 	drag->wlr_drag = wlr_drag;
+	drag->origin = seat->pending_drag_origin;
+	seat->pending_drag_origin = NULL;
 	wlr_drag->data = drag;
 
 	drag->destroy.notify = drag_handle_destroy;
 	wl_signal_add(&wlr_drag->events.destroy, &drag->destroy);
+
+	// Check if this drag has a toplevel_drag associated with it
+	if (wlr_drag->source != NULL) {
+		drag->toplevel_drag = wlr_xdg_toplevel_drag_v1_from_wlr_data_source(
+			server.xdg_toplevel_drag_manager, wlr_drag->source);
+		if (drag->toplevel_drag != NULL) {
+			drag->motion.notify = toplevel_drag_handle_motion;
+			wl_signal_add(&wlr_drag->events.motion, &drag->motion);
+			// Initialize surface tracking (will be set on first identification)
+			drag->toplevel_surface = NULL;
+			wl_list_init(&drag->toplevel_surface_destroy.link);
+		}
+	}
 
 	struct wlr_drag_icon *wlr_drag_icon = wlr_drag->icon;
 	if (wlr_drag_icon != NULL) {
@@ -1555,6 +1692,10 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 }
 
 void seatop_unref(struct sway_seat *seat, struct sway_container *con) {
+	// Clear toplevel drag tracking if this container is being destroyed
+	if (seat->toplevel_drag_container == con) {
+		seat->toplevel_drag_container = NULL;
+	}
 	if (seat->seatop_impl->unref) {
 		seat->seatop_impl->unref(seat, con);
 	}
