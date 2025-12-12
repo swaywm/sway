@@ -8,10 +8,13 @@
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_security_context_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_toplevel_drag_v1.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
@@ -861,6 +864,18 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view->container->pending.border = config->floating_border;
 		view->container->pending.border_thickness = config->floating_border_thickness;
 		container_set_floating(view->container, true);
+
+		// If this is a toplevel attached to a drag, position it at the cursor
+		if (view->wlr_xdg_toplevel != NULL) {
+			struct wlr_xdg_toplevel_drag_v1 *toplevel_drag =
+				wlr_xdg_toplevel_drag_v1_from_wlr_xdg_toplevel(
+					server.xdg_toplevel_drag_manager, view->wlr_xdg_toplevel);
+			if (toplevel_drag != NULL) {
+				double x = seat->cursor->cursor->x - toplevel_drag->x_offset;
+				double y = seat->cursor->cursor->y - toplevel_drag->y_offset;
+				container_floating_move_to(view->container, x, y);
+			}
+		}
 	} else {
 		view->container->pending.border = config->border;
 		view->container->pending.border_thickness = config->border_thickness;
