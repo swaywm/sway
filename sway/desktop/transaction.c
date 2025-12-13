@@ -171,7 +171,7 @@ static void transaction_add_node(struct sway_transaction *transaction,
 
 	// Check if we have an instruction for this node already, in which case we
 	// update that instead of creating a new one.
-	if (node->ntxnrefs > 0) {
+	if (node && node->ntxnrefs > 0) {
 		for (int idx = 0; idx < transaction->instructions->length; idx++) {
 			struct sway_transaction_instruction *other =
 				transaction->instructions->items[idx];
