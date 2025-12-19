@@ -501,7 +501,7 @@ runtime.
 		# Execute firefox when alt, shift, and f are pressed together
 		bindsym Mod1+Shift+f exec firefox
 
-		# Enable output eDP-1 if disabled
+		# Enable output eDP-1 if disabled and vice versa
 		bindsym --no-repeat Mod1+Shift+t output eDP-1 toggle
 ```
 
