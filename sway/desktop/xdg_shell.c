@@ -386,6 +386,9 @@ static void handle_request_maximize(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_maximize);
 	struct wlr_xdg_toplevel *toplevel = xdg_shell_view->view.wlr_xdg_toplevel;
+	if (!toplevel->base->surface->mapped) {
+		return;
+	}
 	wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
