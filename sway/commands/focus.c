@@ -279,7 +279,7 @@ static struct cmd_results *focus_mode(struct sway_workspace *ws,
 		// `seat_consider_warp_to_focus` would decide not to warp, but we need
 		// to anyway.
 		if (config->mouse_warping == WARP_CONTAINER) {
-			cursor_warp_to_container(seat->cursor, new_focus, true);
+                    cursor_warp_to_container(seat->cursor, new_focus, config->mouse_warping_position, true);
 		} else {
 			seat_consider_warp_to_focus(seat);
 		}

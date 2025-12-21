@@ -1159,7 +1159,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
  * false. If container is NULL, returns without doing anything.
  */
 void cursor_warp_to_container(struct sway_cursor *cursor,
-		struct sway_container *container, bool force) {
+                              struct sway_container *container,
+                              enum mouse_warping_position pos,
+                              bool force) {
 	if (!container) {
 		return;
 	}
@@ -1171,9 +1173,31 @@ void cursor_warp_to_container(struct sway_cursor *cursor,
 		return;
 	}
 
+        // Initialize to center
 	double x = container->pending.x + container->pending.width / 2.0;
 	double y = container->pending.y + container->pending.height / 2.0;
 
+        switch (pos) {
+        case WARP_POS_CENTER:
+            // Already initialized above
+            break;
+        case WARP_POS_TOPLEFT:
+            x = container->pending.x;
+            y = container->pending.y;
+            break;
+        case WARP_POS_TOPRIGHT:
+            x = container->pending.x + container->pending.width;
+            y = container->pending.y;
+            break;
+        case WARP_POS_BOTLEFT:
+            x = container->pending.x;
+            y = container->pending.y + container->pending.height;
+            break;
+        case WARP_POS_BOTRIGHT:
+            x = container->pending.x + container->pending.width;
+            y = container->pending.y + container->pending.height;
+            break;
+        }
 	wlr_cursor_warp(cursor->cursor, NULL, x, y);
 	cursor_unhide(cursor);
 }
