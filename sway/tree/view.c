@@ -1194,7 +1194,7 @@ void view_remove_saved_buffer(struct sway_view *view) {
 }
 
 static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
-		int sx, int sy, void *data) {
+		double sx, double sy, void *data) {
 	struct wlr_scene_tree *tree = data;
 
 	struct wlr_scene_buffer *sbuf = wlr_scene_buffer_create(tree, NULL);
@@ -1258,7 +1258,7 @@ bool view_can_tear(struct sway_view *view) {
 }
 
 static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
-		int x, int y, void *data) {
+		double x, double y, void *data) {
 	struct timespec *when = data;
 	struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
 	if (scene_surface == NULL) {
