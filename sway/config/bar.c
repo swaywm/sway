@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <spawn.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,8 @@
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+
+extern char **environ;
 
 void free_bar_binding(struct bar_binding *binding) {
 	if (!binding) {
@@ -208,26 +211,47 @@ static void invoke_swaybar(struct bar_config *bar) {
 	bar->client_destroy.notify = handle_swaybar_client_destroy;
 	wl_client_add_destroy_listener(bar->client, &bar->client_destroy);
 
-	pid_t pid = fork();
-	if (pid < 0) {
-		sway_log(SWAY_ERROR, "Failed to create fork for swaybar");
+	size_t env_count = 0;
+	while (environ[env_count]) {
+		env_count++;
+	}
+	// + 2 for WAYLAND_SOCKET and terminating NULL
+	char **child_env = calloc(env_count + 2, sizeof(char *));
+	if (!child_env) {
+		sway_log_errno(SWAY_ERROR, "calloc failed");
+		close(sockets[0]);
+		close(sockets[1]);
 		return;
-	} else if (pid == 0) {
-		if (!sway_set_cloexec(sockets[1], false)) {
-			_exit(EXIT_FAILURE);
-		}
+	}
 
-		char wayland_socket_str[16];
-		snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-				"%d", sockets[1]);
-		setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+	for (size_t i = 0; i < env_count; i++) {
+		child_env[i] = environ[i];
+	}
 
-		// run custom swaybar
-		char *const cmd[] = {
-				bar->swaybar_command ? bar->swaybar_command : "swaybar",
-				"-b", bar->id, NULL};
-		execvp(cmd[0], cmd);
-		_exit(EXIT_FAILURE);
+	char wayland_socket_str[64];
+	snprintf(wayland_socket_str, sizeof(wayland_socket_str), "WAYLAND_SOCKET=%d", sockets[1]);
+	child_env[env_count] = wayland_socket_str;
+	child_env[env_count + 1] = NULL;
+
+	// run custom swaybar
+	char *const cmd[] = {
+			bar->swaybar_command ? bar->swaybar_command : "swaybar",
+			"-b", bar->id, NULL};
+
+	posix_spawn_file_actions_t actions;
+	posix_spawn_file_actions_init(&actions);
+	posix_spawn_file_actions_adddup2(&actions, sockets[1], sockets[1]);
+	posix_spawn_file_actions_addclose(&actions, sockets[0]);
+
+	pid_t pid;
+	const int status = posix_spawnp(&pid, cmd[0], &actions, NULL, cmd, child_env);
+	posix_spawn_file_actions_destroy(&actions);
+	free(child_env);
+
+	if (status != 0) {
+		sway_log_errno(SWAY_ERROR, "posix_spawnp failed");
+		close(sockets[1]);
+		return;
 	}
 
 	if (close(sockets[1]) != 0) {
@@ -235,7 +259,7 @@ static void invoke_swaybar(struct bar_config *bar) {
 		return;
 	}
 
-	sway_log(SWAY_DEBUG, "Spawned swaybar %s", bar->id);
+	sway_log(SWAY_DEBUG, "Spawned swaybar %s with pid %d", bar->id, pid);
 }
 
 void load_swaybar(struct bar_config *bar) {
