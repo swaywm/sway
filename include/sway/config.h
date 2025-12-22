@@ -267,6 +267,17 @@ enum render_bit_depth {
 	RENDER_BIT_DEPTH_10,
 };
 
+enum background_mode {
+	BACKGROUND_MODE_UNSET, // there is no default
+	BACKGROUND_MODE_SOLID_COLOR,
+	BACKGROUND_MODE_STRETCH,
+	BACKGROUND_MODE_CENTER,
+	BACKGROUND_MODE_FILL,
+	BACKGROUND_MODE_FIT,
+	BACKGROUND_MODE_TILE,
+};
+extern const char *const background_mode_names[];
+
 /**
  * Size and position configuration for a particular output.
  *
@@ -294,7 +305,7 @@ struct output_config {
 	int hdr;
 
 	char *background;
-	char *background_option;
+	enum background_mode background_option;
 	char *background_fallback;
 };
 
