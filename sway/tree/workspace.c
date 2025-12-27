@@ -89,6 +89,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	ws->floating = create_list();
 	ws->tiling = create_list();
 	ws->output_priority = create_list();
+	ws->marks = create_list();
 
 	ws->gaps_outer = config->gaps_outer;
 	ws->gaps_inner = config->gaps_inner;
@@ -151,6 +152,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 	free(workspace->name);
 	free(workspace->representation);
 	list_free_items_and_destroy(workspace->output_priority);
+	list_free_items_and_destroy(workspace->marks);
 	list_free(workspace->floating);
 	list_free(workspace->tiling);
 	list_free(workspace->current.floating);
@@ -978,4 +980,55 @@ void workspace_squash(struct sway_workspace *workspace) {
 		struct sway_container *child = workspace->tiling->items[i];
 		i += container_squash(child);
 	}
+}
+
+bool workspace_has_mark(struct sway_workspace *ws, char *mark) {
+	for (int i = 0; i < ws->marks->length; ++i) {
+		char *item = ws->marks->items[i];
+		if (strcmp(item, mark) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void workspace_add_mark(struct sway_workspace *ws, char *mark) {
+	list_add(ws->marks, strdup(mark));
+	ipc_event_workspace(NULL, ws, "mark");
+}
+
+void workspace_clear_marks(struct sway_workspace *ws) {
+	for (int i = 0; i < ws->marks->length; ++i) {
+		free(ws->marks->items[i]);
+	}
+	ws->marks->length = 0;
+	ipc_event_workspace(NULL, ws, "mark");
+}
+
+static bool find_by_mark_iterator_ws(struct sway_workspace *ws, void *data) {
+	char *mark = data;
+	return workspace_has_mark(ws, mark);
+}
+
+struct sway_workspace *workspace_find_mark(char *mark) {
+	return root_find_workspace(find_by_mark_iterator_ws, mark);
+}
+
+bool workspace_find_and_unmark(char *mark) {
+	struct sway_workspace *ws = root_find_workspace(
+		find_by_mark_iterator_ws, mark);
+	if (!ws) {
+		return false;
+	}
+
+	for (int i = 0; i < ws->marks->length; ++i) {
+		char *ws_mark = ws->marks->items[i];
+		if (strcmp(ws_mark, mark) == 0) {
+			free(ws_mark);
+			list_del(ws->marks, i);
+			ipc_event_workspace(NULL, ws, "mark");
+			return true;
+		}
+	}
+	return false;
 }
