@@ -525,11 +525,17 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		destination = seat_get_focus_inactive(seat, &new_output->node);
 	} else if (strcasecmp(argv[0], "mark") == 0) {
 		struct sway_container *dest_con = container_find_mark(argv[1]);
-		if (dest_con == NULL) {
-			return cmd_results_new(CMD_FAILURE,
-					"Mark '%s' not found", argv[1]);
+		if (dest_con) {
+			destination = &dest_con->node;
+		} else {
+			struct sway_workspace *dest_ws = workspace_find_mark(argv[1]);
+			if (dest_ws) {
+				destination = &dest_ws->node;
+			} else {
+				return cmd_results_new(CMD_FAILURE,
+						"Mark '%s' not found", argv[1]);
+			}
 		}
-		destination = &dest_con->node;
 	} else {
 		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}

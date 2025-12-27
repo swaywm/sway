@@ -48,6 +48,7 @@ struct sway_workspace {
 	list_t *floating;           // struct sway_container
 	list_t *tiling;             // struct sway_container
 	list_t *output_priority;
+	list_t *marks;              // char *
 	bool urgent;
 
 	struct sway_workspace_state current;
@@ -156,5 +157,15 @@ size_t workspace_num_sticky_containers(struct sway_workspace *ws);
  * redundant H/V splits that are children of the workspace.
  */
 void workspace_squash(struct sway_workspace *workspace);
+
+bool workspace_has_mark(struct sway_workspace *ws, char *mark);
+
+void workspace_add_mark(struct sway_workspace *ws, char *mark);
+
+void workspace_clear_marks(struct sway_workspace *ws);
+
+bool workspace_find_and_unmark(char *mark);
+
+struct sway_workspace *workspace_find_mark(char *mark);
 
 #endif
