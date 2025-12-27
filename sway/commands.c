@@ -206,7 +206,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		struct sway_container *con) {
 	char *cmd;
 	char matched_delim = ';';
-	list_t *containers = NULL;
+	list_t *nodes = NULL;
 	bool using_criteria = false;
 
 	if (seat == NULL) {
@@ -241,8 +241,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 					free(error);
 					goto cleanup;
 				}
-				list_free(containers);
-				containers = criteria_get_containers(criteria);
+				list_free(nodes);
+				nodes = criteria_get_nodes(criteria);
 				head += strlen(criteria->raw);
 				criteria_destroy(criteria);
 				using_criteria = true;
@@ -298,14 +298,14 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-		} else if (containers->length == 0) {
+		} else if (nodes->length == 0) {
 			list_add(res_list,
 					cmd_results_new(CMD_FAILURE, "No matching node."));
 		} else {
 			struct cmd_results *fail_res = NULL;
-			for (int i = 0; i < containers->length; ++i) {
-				struct sway_container *container = containers->items[i];
-				set_config_node(&container->node, true);
+			for (int i = 0; i < nodes->length; ++i) {
+				struct sway_node *node = nodes->items[i];
+				set_config_node(node, true);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status == CMD_SUCCESS) {
 					free_cmd_results(res);
@@ -329,7 +329,7 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 	} while(head);
 cleanup:
 	free(exec);
-	list_free(containers);
+	list_free(nodes);
 	return res_list;
 }
 

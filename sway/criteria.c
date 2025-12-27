@@ -493,27 +493,41 @@ struct match_data {
 	list_t *matches;
 };
 
-static void criteria_get_containers_iterator(struct sway_container *container,
+static void criteria_get_nodes_container_iterator(struct sway_container *container,
 		void *data) {
 	struct match_data *match_data = data;
 	if (container->view) {
 		if (criteria_matches_view(match_data->criteria, container->view)) {
-			list_add(match_data->matches, container);
+			list_add(match_data->matches, &container->node);
 		}
 	} else if (has_container_criteria(match_data->criteria)) {
 		if (criteria_matches_container(match_data->criteria, container)) {
-			list_add(match_data->matches, container);
+			list_add(match_data->matches, &container->node);
 		}
 	}
 }
 
-list_t *criteria_get_containers(struct criteria *criteria) {
+static void criteria_get_nodes_workspace_iterator(struct sway_workspace *workspace,
+		void *data) {
+	struct match_data *match_data = data;
+	// Workspaces only support con_id matching (not con_mark, since they don't have marks)
+	if (match_data->criteria->con_id &&
+			workspace->node.id == match_data->criteria->con_id) {
+		list_add(match_data->matches, &workspace->node);
+	}
+}
+
+list_t *criteria_get_nodes(struct criteria *criteria) {
 	list_t *matches = create_list();
 	struct match_data data = {
 		.criteria = criteria,
 		.matches = matches,
 	};
-	root_for_each_container(criteria_get_containers_iterator, &data);
+	root_for_each_container(criteria_get_nodes_container_iterator, &data);
+	// Also check workspaces for con_id matching
+	if (criteria->con_id && !criteria->con_mark) {
+		root_for_each_workspace(criteria_get_nodes_workspace_iterator, &data);
+	}
 	return matches;
 }
 
