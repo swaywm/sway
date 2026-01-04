@@ -55,6 +55,7 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 	if (view->image_capture_scene == NULL) {
 		goto err;
 	}
+	view->image_capture_scene->restack_xwayland_surfaces = false;
 
 	view->type = type;
 	view->impl = impl;
