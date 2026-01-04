@@ -1,7 +1,5 @@
 # sway
 
-[English][en] - [عربي][ar] - [Azərbaycanca][az] - [Česky][cs] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [ქართული][ge] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Norsk][no] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Српски][sr] - [Svenska][sv] - **ไทย** - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
-
 sway คือ compositor สำหรับ [Wayland] ที่เข้ากันได้กับ [i3] อ่าน [FAQ] ได้ที่นี่
 เข้าร่วม[ช่อง IRC] \(#sway on irc.libera.chat)
 
@@ -55,34 +53,6 @@ _\* Compile-time dep_
 
 รัน `sway` จาก TTY หรือจาก display manager
 
-[en]: https://github.com/swaywm/sway#readme
-[ar]: README.ar.md
-[az]: README.az.md
-[cs]: README.cs.md
-[de]: README.de.md
-[dk]: README.dk.md
-[es]: README.es.md
-[fr]: README.fr.md
-[ge]: README.ge.md
-[gr]: README.gr.md
-[hi]: README.hi.md
-[hu]: README.hu.md
-[ir]: README.ir.md
-[it]: README.it.md
-[ja]: README.ja.md
-[ko]: README.ko.md
-[nl]: README.nl.md
-[no]: README.no.md
-[pl]: README.pl.md
-[pt]: README.pt.md
-[ro]: README.ro.md
-[ru]: README.ru.md
-[sr]: README.sr.md
-[sv]: README.sv.md
-[tr]: README.tr.md
-[uk]: README.uk.md
-[zh-CN]: README.zh-CN.md
-[zh-TW]: README.zh-TW.md
 [i3]: https://i3wm.org/
 [Wayland]: http://wayland.freedesktop.org/
 [FAQ]: https://github.com/swaywm/sway/wiki
