@@ -1015,9 +1015,9 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 				server.xwayland.xcursor_manager, "default", 1);
 			if (xcursor != NULL) {
 				struct wlr_xcursor_image *image = xcursor->images[0];
+				struct wlr_buffer *buffer = wlr_xcursor_image_get_buffer(image);
 				wlr_xwayland_set_cursor(
-					server.xwayland.wlr_xwayland, image->buffer,
-					image->width * 4, image->width, image->height,
+					server.xwayland.wlr_xwayland, buffer,
 					image->hotspot_x, image->hotspot_y);
 			}
 		}
