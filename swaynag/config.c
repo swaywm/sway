@@ -80,6 +80,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		{"detailed-message", no_argument, NULL, 'l'},
 		{"detailed-button", required_argument, NULL, 'L'},
 		{"message", required_argument, NULL, 'm'},
+		{"no-dock", no_argument, NULL, 'n'},
 		{"output", required_argument, NULL, 'o'},
 		{"dismiss-button", required_argument, NULL, 's'},
 		{"type", required_argument, NULL, 't'},
@@ -127,6 +128,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		"  -l, --detailed-message          Read a detailed message from stdin.\n"
 		"  -L, --detailed-button <text>    Set the text of the detail button.\n"
 		"  -m, --message <msg>             Set the message text.\n"
+		"  -n, --no-dock                   Do not set the exclusive zone.\n"
 		"  -o, --output <output>           Set the output to use.\n"
 		"  -s, --dismiss-button <text>     Set the dismiss button text.\n"
 		"  -t, --type <type>               Set the message type.\n"
@@ -151,7 +153,7 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 
 	optind = 1;
 	while (1) {
-		int c = getopt_long(argc, argv, "b:B:z:Z:c:de:y:f:hlL:m:o:s:t:v", opts, NULL);
+		int c = getopt_long(argc, argv, "b:B:z:Z:c:de:y:f:hlL:m:o:s:t:nv", opts, NULL);
 		if (c == -1) {
 			break;
 		}
@@ -250,6 +252,11 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			if (swaynag) {
 				free(swaynag->message);
 				swaynag->message = strdup(optarg);
+			}
+			break;
+		case 'n':
+			if (swaynag) {
+				swaynag->no_dock = true;
 			}
 			break;
 		case 'o': // Output
