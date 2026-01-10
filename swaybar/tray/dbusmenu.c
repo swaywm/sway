@@ -236,7 +236,9 @@ static void swaybar_dbusmenu_menu_destroy(struct swaybar_dbusmenu_menu *menu) {
 			}
 			free(item->label);
 			free(item->icon_name);
-			free(item->icon_data);
+			if (item->icon_data) {
+				cairo_surface_destroy(item->icon_data);
+			}
 			free(item);
 		}
 	}
