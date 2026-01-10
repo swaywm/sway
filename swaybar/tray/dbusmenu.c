@@ -60,6 +60,8 @@ struct swaybar_dbusmenu_menu_item {
 	char *label;
 	char *icon_name;
 	cairo_surface_t *icon_data;
+	cairo_surface_t *icon_surface; // cached icon loaded from icon_name
+	bool icon_lookup_done; // true if we've already tried to look up icon_name
 	enum menu_toggle_type toggle_type;
 	bool enabled;
 	bool visible;
@@ -239,6 +241,9 @@ static void swaybar_dbusmenu_menu_destroy(struct swaybar_dbusmenu_menu *menu) {
 			if (item->icon_data) {
 				cairo_surface_destroy(item->icon_data);
 			}
+			if (item->icon_surface) {
+				cairo_surface_destroy(item->icon_surface);
+			}
 			free(item);
 		}
 	}
@@ -404,36 +409,40 @@ static void draw_menu_items(cairo_t *cairo, struct swaybar_dbusmenu_menu *menu,
 			icon_size = 2 * padding + size;
 			cairo_set_source_u32(cairo, config->colors.focused_statusline);
 			if (item->icon_name) {
-				list_t *icon_search_paths = create_list();
-				list_cat(icon_search_paths, tray->basedirs);
-				if (sni->menu_icon_theme_paths) {
-					for (char **path = sni->menu_icon_theme_paths; *path; ++path) {
-						list_add(icon_search_paths, *path);
+				// Cache icon lookup to avoid repeated filesystem access
+				if (!item->icon_lookup_done) {
+					item->icon_lookup_done = true;
+					list_t *icon_search_paths = create_list();
+					list_cat(icon_search_paths, tray->basedirs);
+					if (sni->menu_icon_theme_paths) {
+						for (char **path = sni->menu_icon_theme_paths; *path; ++path) {
+							list_add(icon_search_paths, *path);
+						}
+					}
+					if (sni->icon_theme_path) {
+						list_add(icon_search_paths, sni->icon_theme_path);
+					}
+					int min_size, max_size;
+					char *icon_path =
+					find_icon(tray->themes, icon_search_paths, item->icon_name, size,
+							config->icon_theme, &min_size, &max_size);
+					list_free(icon_search_paths);
+
+					if (icon_path) {
+						item->icon_surface = load_image(icon_path);
+						free(icon_path);
 					}
 				}
-				if (sni->icon_theme_path) {
-					list_add(icon_search_paths, sni->icon_theme_path);
-				}
-				int min_size, max_size;
-				char *icon_path =
-				find_icon(tray->themes, icon_search_paths, item->icon_name, size,
-						config->icon_theme, &min_size, &max_size);
-				list_free(icon_search_paths);
 
-				if (icon_path) {
-					cairo_surface_t *icon = load_image(icon_path);
-					free(icon_path);
-					if (icon) {
-						cairo_surface_t *icon_scaled =
-						cairo_image_surface_scale(icon, size, size);
-						cairo_surface_destroy(icon);
+				if (item->icon_surface) {
+					cairo_surface_t *icon_scaled =
+					cairo_image_surface_scale(item->icon_surface, size, size);
 
-						cairo_set_source_surface(cairo, icon_scaled, x, y);
-						cairo_rectangle(cairo, x, y, size, size);
-						cairo_fill(cairo);
-						cairo_surface_destroy(icon_scaled);
-						is_icon_drawn = true;
-					}
+					cairo_set_source_surface(cairo, icon_scaled, x, y);
+					cairo_rectangle(cairo, x, y, size, size);
+					cairo_fill(cairo);
+					cairo_surface_destroy(icon_scaled);
+					is_icon_drawn = true;
 				}
 			} else if (item->icon_data) {
 				cairo_surface_t *icon = cairo_image_surface_scale(item->icon_data, size, size);
