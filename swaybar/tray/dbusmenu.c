@@ -421,15 +421,17 @@ static void draw_menu_items(cairo_t *cairo, struct swaybar_dbusmenu_menu *menu,
 				if (icon_path) {
 					cairo_surface_t *icon = load_image(icon_path);
 					free(icon_path);
-					cairo_surface_t *icon_scaled =
-					cairo_image_surface_scale(icon, size, size);
-					cairo_surface_destroy(icon);
+					if (icon) {
+						cairo_surface_t *icon_scaled =
+						cairo_image_surface_scale(icon, size, size);
+						cairo_surface_destroy(icon);
 
-					cairo_set_source_surface(cairo, icon_scaled, x, y);
-					cairo_rectangle(cairo, x, y, size, size);
-					cairo_fill(cairo);
-					cairo_surface_destroy(icon_scaled);
-					is_icon_drawn = true;
+						cairo_set_source_surface(cairo, icon_scaled, x, y);
+						cairo_rectangle(cairo, x, y, size, size);
+						cairo_fill(cairo);
+						cairo_surface_destroy(icon_scaled);
+						is_icon_drawn = true;
+					}
 				}
 			} else if (item->icon_data) {
 				cairo_surface_t *icon = cairo_image_surface_scale(item->icon_data, size, size);
