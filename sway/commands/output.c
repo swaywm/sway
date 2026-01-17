@@ -66,7 +66,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			output = new_output_config(sway_output->wlr_output->name);
 		} else {
 			char identifier[128];
-			output_get_identifier(identifier, 128, sway_output);
+			output_get_identifier(identifier, 128, sway_output->wlr_output);
 			output = new_output_config(identifier);
 		}
 	} else {

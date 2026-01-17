@@ -29,8 +29,7 @@
 #endif
 
 void output_get_identifier(char *identifier, size_t len,
-		struct sway_output *output) {
-	struct wlr_output *wlr_output = output->wlr_output;
+		struct wlr_output *wlr_output) {
 	snprintf(identifier, len, "%s %s %s",
 		wlr_output->make ? wlr_output->make : "Unknown",
 		wlr_output->model ? wlr_output->model : "Unknown",
@@ -245,7 +244,7 @@ void store_output_config(struct output_config *oc) {
 
 	char id[128];
 	if (output) {
-		output_get_identifier(id, sizeof(id), output);
+		output_get_identifier(id, sizeof(id), output->wlr_output);
 	}
 
 	for (int i = 0; i < config->output_configs->length; i++) {
@@ -710,7 +709,7 @@ static struct output_config *find_output_config_from_list(
 	}
 
 	char id[128];
-	output_get_identifier(id, sizeof(id), sway_output);
+	output_get_identifier(id, sizeof(id), sway_output->wlr_output);
 
 	// We take a new config and merge on top, in order, the wildcard config,
 	// output config by name, and output config by identifier to form the final
