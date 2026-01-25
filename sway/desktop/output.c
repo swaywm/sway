@@ -399,12 +399,69 @@ void update_output_manager_config(struct sway_server *server) {
 	ipc_event_output();
 }
 
+// Placeholder while all render tasks clear up
+static void handle_frame_nop(struct wl_listener *listener, void *user_data) {}
+
+static void handle_frame_clear(struct wl_listener *listener, void *user_data) {
+	struct sway_output *output = wl_container_of(listener, output, frame);
+	output->frame.notify = handle_frame_nop;
+
+	sway_log(SWAY_DEBUG, "Render task for %s cleared", output->wlr_output->name);
+
+	wl_list_for_each(output, &root->all_outputs, link) {
+		if (output == root->fallback_output) {
+			continue;
+		}
+		if (output->frame.notify != handle_frame_nop) {
+			return;
+		}
+	}
+
+	// All done!
+	sway_log(SWAY_DEBUG, "All render tasks cleared, modesetting");
+	wl_list_for_each(output, &root->all_outputs, link) {
+		if (output == root->fallback_output) {
+			continue;
+		}
+		output->frame.notify = handle_frame;
+	}
+	apply_stored_output_configs();
+}
+
 static int timer_modeset_handle(void *data) {
 	struct sway_server *server = data;
 	wl_event_source_remove(server->delayed_modeset);
 	server->delayed_modeset = NULL;
 
-	apply_stored_output_configs();
+	bool wait = false;
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
+		if (output == root->fallback_output) {
+			continue;
+		}
+		if (output->wlr_output->frame_pending) {
+			output->frame.notify = handle_frame_clear;
+			wait = true;
+			sway_log(SWAY_DEBUG, "Awaiting render task on %s", output->wlr_output->name);
+		} else {
+			output->frame.notify = handle_frame_nop;
+		}
+	}
+
+	if (!wait) {
+		// Nothing to wait for, go ahead
+		sway_log(SWAY_DEBUG, "No render tasks to wait for, modesetting");
+		wl_list_for_each(output, &root->all_outputs, link) {
+			if (output == root->fallback_output) {
+				continue;
+			}
+			output->frame.notify = handle_frame;
+		}
+		apply_stored_output_configs();
+		return 0;
+	}
+
+
 	return 0;
 }
 
