@@ -466,7 +466,7 @@ bool server_init(struct sway_server *server) {
 		enum wp_color_manager_v1_primaries *primaries =
 			wlr_color_manager_v1_primaries_list_from_renderer(server->renderer, &primaries_len);
 		struct wlr_color_manager_v1 *cm = wlr_color_manager_v1_create(
-				server->wl_display, 1, &(struct wlr_color_manager_v1_options){
+				server->wl_display, 2, &(struct wlr_color_manager_v1_options){
 			.features = {
 				.parametric = true,
 				.set_mastering_display_primaries = true,
