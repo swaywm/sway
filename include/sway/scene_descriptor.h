@@ -10,6 +10,14 @@
 #define _SWAY_SCENE_DESCRIPTOR_H
 #include <wlr/types/wlr_scene.h>
 
+struct sway_view;
+
+// used for SWAY_SCENE_DESC_POPUP
+struct sway_popup_desc {
+	struct wlr_scene_node *relative;
+	struct sway_view *view;
+};
+
 enum sway_scene_descriptor_type {
 	SWAY_SCENE_DESC_BUFFER_TIMER,
 	SWAY_SCENE_DESC_NON_INTERACTIVE,
@@ -24,10 +32,23 @@ enum sway_scene_descriptor_type {
 bool scene_descriptor_assign(struct wlr_scene_node *node,
 	enum sway_scene_descriptor_type type, void *data);
 
+bool scene_descriptor_reassign(struct wlr_scene_node *node,
+	enum sway_scene_descriptor_type type, void *data);
+
 void *scene_descriptor_try_get(struct wlr_scene_node *node,
 	enum sway_scene_descriptor_type type);
 
 void scene_descriptor_destroy(struct wlr_scene_node *node,
+	enum sway_scene_descriptor_type type);
+
+/*
+ * Searches the scene node and all its parents for this scene descriptor.
+ *
+ * Note that while searching, SWAY_SCENE_DESC_POPUP types will start tracking
+ * its relative node. With popups, they are part of a seperate layer in the scene
+ * graph, but that's irrelavent to users of this function.
+ */
+void *scene_descriptor_find(struct wlr_scene_node *node,
 	enum sway_scene_descriptor_type type);
 
 #endif

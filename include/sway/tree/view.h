@@ -11,6 +11,7 @@
 #endif
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/scene_descriptor.h"
 
 struct sway_container;
 struct sway_xdg_decoration;
@@ -193,11 +194,6 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener override_redirect;
 };
 #endif
-
-struct sway_popup_desc {
-	struct wlr_scene_node *relative;
-	struct sway_view *view;
-};
 
 struct sway_xdg_popup {
 	struct sway_view *view;

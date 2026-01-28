@@ -771,6 +771,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	view->surface = wlr_surface;
 	view_populate_pid(view);
 	view->container = container_create(view);
+	scene_descriptor_assign(&view->scene_tree->node,
+			SWAY_SCENE_DESC_CONTAINER, view->container);
 
 	if (view->ctx == NULL) {
 		struct launcher_ctx *ctx = launcher_ctx_find_pid(view->pid);
