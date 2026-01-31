@@ -232,6 +232,9 @@ must be defined in hex: _#RRGGBB_ or _#RRGGBBAA_.
 	Border, background and text color for the binding mode indicator. If not used,
 	the colors will be taken from _urgent_workspace_.
 
+*tray_background* <color>
+	Background color of the system tray.
+
 # SEE ALSO
 
 *sway*(5) *swaybar-protocol*(7)

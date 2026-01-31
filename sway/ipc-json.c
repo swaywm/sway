@@ -1404,6 +1404,16 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 				json_object_new_string(bar->colors.urgent_workspace_text));
 	}
 
+#if HAVE_TRAY
+	if (bar->colors.tray_background) {
+		json_object_object_add(colors, "tray_background",
+				json_object_new_string(bar->colors.tray_background));
+	} else {
+		json_object_object_add(colors, "tray_background",
+				json_object_new_string(bar->colors.background));
+	}
+#endif
+
 	json_object_object_add(json, "colors", colors);
 
 	if (bar->bindings->length > 0) {

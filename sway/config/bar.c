@@ -171,6 +171,7 @@ struct bar_config *default_bar_config(void) {
 	bar->colors.binding_mode_text = NULL;
 
 #if HAVE_TRAY
+	bar->colors.tray_background = NULL;
 	bar->tray_padding = 2;
 	wl_list_init(&bar->tray_bindings);
 #endif
