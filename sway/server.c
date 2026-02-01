@@ -1,7 +1,12 @@
+#ifdef __linux__
+#define _DEFAULT_SOURCE
+#endif
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
@@ -73,6 +78,10 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
+#if HAVE_SELINUX
+#include <selinux/selinux.h>
+#endif
+
 #define SWAY_XDG_SHELL_VERSION 5
 #define SWAY_LAYER_SHELL_VERSION 4
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
@@ -93,6 +102,163 @@ static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
 	}
 }
 #endif
+
+#if HAVE_SELINUX
+static const char *get_selinux_protocol(const struct wl_global *global) {
+#if WLR_HAS_DRM_BACKEND
+	if (server.drm_lease_manager != NULL) {
+		struct wlr_drm_lease_device_v1 *drm_lease_dev;
+		wl_list_for_each(drm_lease_dev, &server.drm_lease_manager->devices, link) {
+			if (drm_lease_dev->global == global) {
+				return "drm_lease";
+			}
+		}
+	}
+#endif
+
+	if (global == server.output_manager_v1->global) {
+		return "output_manager";
+	}
+	if (global == server.output_power_manager_v1->global) {
+		return "output_power_manager";
+	}
+	if (global == server.input_method->global) {
+		return "input_method";
+	}
+	if (global == server.foreign_toplevel_list->global) {
+		return "foreign_toplevel_list";
+	}
+	if (global == server.foreign_toplevel_manager->global) {
+		return "foreign_toplevel_manager";
+	}
+	if (global == server.wlr_data_control_manager_v1->global) {
+		return "data_control_manager";
+	}
+	if (global == server.ext_data_control_manager_v1->global) {
+		return "data_control_manager";
+	}
+	if (global == server.screencopy_manager_v1->global) {
+		return "screencopy_manager";
+	}
+	if (global == server.ext_image_copy_capture_manager_v1->global) {
+		return "image_copy_capture_manager";
+	}
+	if (global == server.export_dmabuf_manager_v1->global) {
+		return "export_dmabuf_manager";
+	}
+	if (global == server.security_context_manager_v1->global) {
+		return "security_context_manager";
+	}
+	if (global == server.gamma_control_manager_v1->global) {
+		return "gamma_control_manager";
+	}
+	if (global == server.layer_shell->global) {
+		return "layer_shell";
+	}
+	if (global == server.session_lock.manager->global) {
+		return "session_lock_manager";
+	}
+	if (global == server.input->keyboard_shortcuts_inhibit->global) {
+		return "keyboard_shortcuts_inhibit";
+	}
+	if (global == server.input->virtual_keyboard->global) {
+		return "virtual_keyboard";
+	}
+	if (global == server.input->virtual_pointer->global) {
+		return "virtual_pointer";
+	}
+	if (global == server.input->transient_seat_manager->global) {
+		return "transient_seat_manager";
+	}
+	if (global == server.xdg_output_manager_v1->global) {
+		return "xdg_output_manager";
+	}
+
+	return NULL;
+}
+#endif
+
+static bool check_access_selinux(const struct wl_global *global,
+			const struct wl_client *client) {
+#if HAVE_SELINUX
+	if (is_selinux_enabled() == 0) {
+		// SELinux not running
+		return true;
+	}
+
+	const char *protocol = get_selinux_protocol(global);
+	if (protocol == NULL) {
+		return true; // Not a privileged protocol, access granted
+	}
+
+	char *client_context = NULL;
+	socklen_t len = NAME_MAX;
+	int r;
+
+	const int sockfd = wl_client_get_fd((struct wl_client *)client);
+
+	do {
+		char *new_context = realloc(client_context, len);
+		if (new_context == NULL) {
+			free(client_context);
+			return false;
+		}
+		client_context = new_context;
+
+		r = getsockopt(sockfd, SOL_SOCKET, SO_PEERSEC, client_context, &len);
+		if (r < 0 && errno != ERANGE) {
+			free(client_context);
+			return false;
+		}
+	} while (r < 0 && errno == ERANGE);
+
+	if (client_context == NULL) {
+		return true; // Getting NULL back for SO_PEERSEC means that an LSM
+		             // that provides security contexts is not running.
+	}
+
+	r = security_getenforce();
+	// If we can't determine if SELinux is enforcing or not, proceed as if enforcing.
+	const bool enforcing = !r;
+
+	char *compositor_context = NULL;
+	if (getcon_raw(&compositor_context) < 0) {
+		_sway_log(SWAY_ERROR, "[selinux] getcon_raw() failed: %s", strerror(errno));
+		free(client_context);
+		// We can't get our own context. Only allow the access if not in enforcing mode.
+		return !enforcing;
+	}
+	if (compositor_context == NULL) {
+		_sway_log(SWAY_ERROR, "[selinux] getcon_raw() returned NULL");
+		free(client_context);
+		// We can't get our own context. Only allow the access if not in enforcing mode.
+		return !enforcing;
+	}
+
+	static const char *const tclass = "wayland";
+	errno = 0;
+	r = selinux_check_access(client_context, compositor_context, tclass, protocol, NULL);
+	_sway_log(SWAY_DEBUG, "[selinux] access check scon=%s tcon=%s tclass=%s perm=%s",
+	         client_context, compositor_context, tclass, protocol);
+	if (r < 0) {
+		// EINVAL for contexts unknown to policy.
+		if (errno != EACCES || errno != EINVAL) {
+			_sway_log(SWAY_INFO, "[selinux] access check failed: %s", strerror(errno));
+			free(client_context);
+			free(compositor_context);
+			// selinux_check_access failed. Only allow the access if not in enforcing mode.
+			return !enforcing;
+		}
+		_sway_log(SWAY_INFO, "[selinux] access check denied: %s", strerror(errno));
+	}
+	free(client_context);
+	free(compositor_context);
+
+	return enforcing ? (r == 0) : true;
+#else
+	return true;
+#endif
+}
 
 static bool is_privileged(const struct wl_global *global) {
 #if WLR_HAS_DRM_BACKEND
@@ -136,6 +302,10 @@ static bool filter_global(const struct wl_client *client,
 		return xwayland->server != NULL && client == xwayland->server->client;
 	}
 #endif
+
+	if (!check_access_selinux(global, client)) {
+		return false;
+	}
 
 	// Restrict usage of privileged protocols to unsandboxed clients
 	// TODO: add a way for users to configure an allow-list
