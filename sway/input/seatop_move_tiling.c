@@ -373,7 +373,7 @@ static void finalize_move(struct sway_seat *seat) {
 		enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
 			edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
 		workspace_split(new_ws, new_layout);
-		workspace_insert_tiling(new_ws, con, after);
+		workspace_insert_tiling(new_ws, con, after ? new_ws->tiling->length : 0);
 	}
 
 	if (old_parent) {
