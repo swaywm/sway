@@ -160,7 +160,7 @@ struct sway_debug {
 
 extern struct sway_debug debug;
 
-extern bool allow_unsupported_gpu;
+extern bool unsupported_gpu_detected;
 
 void sway_terminate(int exit_code);
 
