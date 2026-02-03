@@ -472,6 +472,7 @@ enum mouse_warping_mode {
 	WARP_NO,
 	WARP_OUTPUT,
 	WARP_CONTAINER,
+	WARP_MARK,
 };
 
 enum alignment {
@@ -537,6 +538,7 @@ struct sway_config {
 	// Flags
 	enum focus_follows_mouse_mode focus_follows_mouse;
 	enum mouse_warping_mode mouse_warping;
+	char *mouse_warping_mark_name;
 	enum focus_wrapping_mode focus_wrapping;
 	bool active;
 	bool failed;
