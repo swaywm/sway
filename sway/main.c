@@ -224,7 +224,7 @@ static const char usage[] =
 	"\n";
 
 int main(int argc, char **argv) {
-	static bool verbose = false, debug = false, validate = false;
+	bool verbose = false, debug = false, validate = false, allow_unsupported_gpu = false;
 
 	char *config_path = NULL;
 
@@ -284,6 +284,12 @@ int main(int argc, char **argv) {
 		fprintf(stderr,
 				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
 		exit(EXIT_FAILURE);
+	}
+
+	char *unsupported_gpu_env = getenv("SWAY_UNSUPPORTED_GPU");
+	// we let the flag override the environment variable
+	if (!allow_unsupported_gpu && unsupported_gpu_env) {
+		allow_unsupported_gpu = parse_boolean(unsupported_gpu_env, false);
 	}
 
 	// As the 'callback' function for wlr_log is equivalent to that for
@@ -373,6 +379,18 @@ int main(int argc, char **argv) {
 		swaynag_show(&config->swaynag_config_errors);
 	}
 
+	struct swaynag_instance nag_gpu = (struct swaynag_instance){
+		.args = "--type error "
+		"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' ",
+		.detailed = false,
+	};
+
+	if (unsupported_gpu_detected && !allow_unsupported_gpu) {
+		if (!swaynag_spawn(config->swaynag_command, &nag_gpu)) {
+			sway_log(SWAY_ERROR, "Unable to start swaynag");
+		}
+	}
+
 	server_run(&server);
 
 shutdown:
@@ -384,6 +402,10 @@ shutdown:
 
 	free(config_path);
 	free_config(config);
+
+	if (nag_gpu.client != NULL) {
+		wl_client_destroy(nag_gpu.client);
+	}
 
 	pango_cairo_font_map_set_default(NULL);
 
