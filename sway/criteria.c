@@ -493,27 +493,63 @@ struct match_data {
 	list_t *matches;
 };
 
-static void criteria_get_containers_iterator(struct sway_container *container,
+static void criteria_get_nodes_container_iterator(struct sway_container *container,
 		void *data) {
 	struct match_data *match_data = data;
 	if (container->view) {
 		if (criteria_matches_view(match_data->criteria, container->view)) {
-			list_add(match_data->matches, container);
+			list_add(match_data->matches, &container->node);
 		}
 	} else if (has_container_criteria(match_data->criteria)) {
 		if (criteria_matches_container(match_data->criteria, container)) {
-			list_add(match_data->matches, container);
+			list_add(match_data->matches, &container->node);
 		}
 	}
 }
 
-list_t *criteria_get_containers(struct criteria *criteria) {
+static bool criteria_matches_workspace(struct criteria *criteria,
+		struct sway_workspace *workspace) {
+	if (criteria->con_mark) {
+		bool exists = false;
+		for (int i = 0; i < workspace->marks->length; ++i) {
+			if (regex_cmp(workspace->marks->items[i], criteria->con_mark->regex) >= 0) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) {
+			return false;
+		}
+	}
+
+	if (criteria->con_id) {
+		if (workspace->node.id != criteria->con_id) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static void criteria_get_nodes_workspace_iterator(struct sway_workspace *workspace,
+		void *data) {
+	struct match_data *match_data = data;
+	if (criteria_matches_workspace(match_data->criteria, workspace)) {
+		list_add(match_data->matches, &workspace->node);
+	}
+}
+
+list_t *criteria_get_nodes(struct criteria *criteria) {
 	list_t *matches = create_list();
 	struct match_data data = {
 		.criteria = criteria,
 		.matches = matches,
 	};
-	root_for_each_container(criteria_get_containers_iterator, &data);
+	root_for_each_container(criteria_get_nodes_container_iterator, &data);
+	// Also check workspaces for con_id and con_mark matching
+	if (criteria->con_id || criteria->con_mark) {
+		root_for_each_workspace(criteria_get_nodes_workspace_iterator, &data);
+	}
 	return matches;
 }
 
