@@ -21,6 +21,7 @@
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_fixes.h>
+#include <wlr/types/wlr_fifo_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_ext_image_capture_source_v1.h>
 #include <wlr/types/wlr_ext_image_copy_capture_v1.h>
@@ -476,6 +477,9 @@ bool server_init(struct sway_server *server) {
 		server->wl_display, 1, server->renderer);
 
 	wl_list_init(&server->pending_launcher_ctxs);
+
+	server->fifo_manager_v1 = wlr_fifo_manager_v1_create(server->wl_display, 1);
+	wlr_scene_set_fifo_manager_v1(root->root_scene, server->fifo_manager_v1);
 
 	// Avoid using "wayland-0" as display socket
 	char name_candidate[16];
