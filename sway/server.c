@@ -51,6 +51,7 @@
 #include <wlr/types/wlr_xdg_foreign_v1.h>
 #include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_xdg_toplevel_drag_v1.h>
 #include <wlr/types/wlr_xdg_toplevel_tag_v1.h>
 #include <xf86drm.h>
 #include "config.h"
@@ -438,6 +439,9 @@ bool server_init(struct sway_server *server) {
 		xdg_toplevel_tag_manager_v1_handle_set_tag;
 	wl_signal_add(&xdg_toplevel_tag_manager_v1->events.set_tag,
 		&server->xdg_toplevel_tag_manager_v1_set_tag);
+
+	server->xdg_toplevel_drag_manager =
+		wlr_xdg_toplevel_drag_manager_v1_create(server->wl_display, 1);
 
 	struct wlr_cursor_shape_manager_v1 *cursor_shape_manager =
 		wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
