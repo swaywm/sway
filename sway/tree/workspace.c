@@ -201,9 +201,14 @@ static bool workspace_valid_on_output(const char *output_name,
 		return true;
 	}
 
+	// Match i3's behavior: a workspace is only valid on an output if that
+	// output is the first available choice in the workspace's output list.
 	for (int i = 0; i < wsc->outputs->length; i++) {
-		if (output_match_name_or_id(output, wsc->outputs->items[i])) {
-			return true;
+		struct sway_output *first_available =
+			output_by_name_or_id(wsc->outputs->items[i]);
+		if (first_available) {
+			// Found the first available output - valid only if it matches
+			return first_available == output;
 		}
 	}
 
@@ -319,11 +324,21 @@ char *workspace_next_name(const char *output_name) {
 			continue;
 		}
 		bool found = false;
+		// Find the first available output for this workspace, matching i3's
+		// depth-first behavior: only select this workspace if the current
+		// output is the first available choice in its output list.
 		for (int j = 0; j < wsc->outputs->length; ++j) {
-			if (output_match_name_or_id(output, wsc->outputs->items[j])) {
-				found = true;
-				free(target);
-				target = strdup(wsc->workspace);
+			struct sway_output *first_available =
+				output_by_name_or_id(wsc->outputs->items[j]);
+			if (first_available) {
+				// Found the first available output for this workspace
+				if (first_available == output) {
+					// Current output is the first choice - select this workspace
+					found = true;
+					free(target);
+					target = strdup(wsc->workspace);
+				}
+				// Always break: we only care about the first available output
 				break;
 			}
 		}
