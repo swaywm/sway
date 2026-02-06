@@ -43,21 +43,19 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 	bool failed = false;
 	view->scene_tree = alloc_scene_tree(root->staging, &failed);
 	view->content_tree = alloc_scene_tree(view->scene_tree, &failed);
+	if (failed) {
+		goto err;
+	}
 
-	if (!failed && !scene_descriptor_assign(&view->scene_tree->node,
-			SWAY_SCENE_DESC_VIEW, view)) {
-		failed = true;
+	if (!scene_descriptor_assign(&view->scene_tree->node, SWAY_SCENE_DESC_VIEW, view)) {
+		goto err;
 	}
 
 	view->image_capture_scene = wlr_scene_create();
 	if (view->image_capture_scene == NULL) {
-		failed = true;
+		goto err;
 	}
-
-	if (failed) {
-		wlr_scene_node_destroy(&view->scene_tree->node);
-		return false;
-	}
+	view->image_capture_scene->restack_xwayland_surfaces = false;
 
 	view->type = type;
 	view->impl = impl;
@@ -67,6 +65,10 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 	view->tearing_mode = TEARING_WINDOW_HINT;
 	wl_signal_init(&view->events.unmap);
 	return true;
+
+err:
+	wlr_scene_node_destroy(&view->scene_tree->node);
+	return false;
 }
 
 void view_destroy(struct sway_view *view) {
@@ -307,7 +309,7 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 	struct sway_output *output = ws ? ws->output : NULL;
 
-	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
+	if (output && con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		con->pending.content_x = output->lx;
 		con->pending.content_y = output->ly;
 		con->pending.content_width = output->width;

@@ -354,6 +354,7 @@ static void handle_set_title(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	view_update_title(view, false);
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }
 
 static void handle_set_app_id(struct wl_listener *listener, void *data) {
@@ -362,6 +363,7 @@ static void handle_set_app_id(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	view_update_app_id(view);
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }
 
 static void handle_new_popup(struct wl_listener *listener, void *data) {
@@ -384,6 +386,9 @@ static void handle_request_maximize(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_maximize);
 	struct wlr_xdg_toplevel *toplevel = xdg_shell_view->view.wlr_xdg_toplevel;
+	if (!toplevel->base->surface->mapped) {
+		return;
+	}
 	wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
@@ -594,4 +599,5 @@ void xdg_toplevel_tag_manager_v1_handle_set_tag(struct wl_listener *listener, vo
 	free(xdg_shell_view->tag);
 	xdg_shell_view->tag = strdup(event->tag);
 	view_execute_criteria(view);
+	transaction_commit_dirty();
 }

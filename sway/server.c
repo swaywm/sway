@@ -11,6 +11,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_color_management_v1.h>
+#include <wlr/types/wlr_color_representation_v1.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
@@ -77,7 +78,7 @@
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 #define SWAY_PRESENTATION_VERSION 2
 
-bool allow_unsupported_gpu = false;
+bool unsupported_gpu_detected = false;
 
 #if WLR_HAS_DRM_BACKEND
 static void handle_drm_lease_request(struct wl_listener *listener, void *data) {
@@ -160,25 +161,14 @@ static void detect_proprietary(struct wlr_backend *backend, void *data) {
 		return;
 	}
 
-	bool is_unsupported = false;
 	if (strcmp(version->name, "nvidia-drm") == 0) {
-		is_unsupported = true;
+		unsupported_gpu_detected = true;
 		sway_log(SWAY_ERROR, "!!! Proprietary Nvidia drivers are in use !!!");
-		if (!allow_unsupported_gpu) {
-			sway_log(SWAY_ERROR, "Use Nouveau instead");
-		}
 	}
 
 	if (strcmp(version->name, "evdi") == 0) {
-		is_unsupported = true;
+		unsupported_gpu_detected = true;
 		sway_log(SWAY_ERROR, "!!! Proprietary DisplayLink drivers are in use !!!");
-	}
-
-	if (!allow_unsupported_gpu && is_unsupported) {
-		sway_log(SWAY_ERROR,
-			"Proprietary drivers are NOT supported. To launch sway anyway, "
-			"launch with --unsupported-gpu and DO NOT report issues.");
-		exit(EXIT_FAILURE);
 	}
 
 	drmFreeVersion(version);
@@ -458,17 +448,14 @@ bool server_init(struct sway_server *server) {
 		const enum wp_color_manager_v1_render_intent render_intents[] = {
 			WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
 		};
-		const enum wp_color_manager_v1_transfer_function transfer_functions[] = {
-			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
-			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
-			WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
-		};
-		const enum wp_color_manager_v1_primaries primaries[] = {
-			WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
-			WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
-		};
+		size_t transfer_functions_len = 0;
+		enum wp_color_manager_v1_transfer_function *transfer_functions =
+			wlr_color_manager_v1_transfer_function_list_from_renderer(server->renderer, &transfer_functions_len);
+		size_t primaries_len = 0;
+		enum wp_color_manager_v1_primaries *primaries =
+			wlr_color_manager_v1_primaries_list_from_renderer(server->renderer, &primaries_len);
 		struct wlr_color_manager_v1 *cm = wlr_color_manager_v1_create(
-				server->wl_display, 1, &(struct wlr_color_manager_v1_options){
+				server->wl_display, 2, &(struct wlr_color_manager_v1_options){
 			.features = {
 				.parametric = true,
 				.set_mastering_display_primaries = true,
@@ -476,12 +463,17 @@ bool server_init(struct sway_server *server) {
 			.render_intents = render_intents,
 			.render_intents_len = sizeof(render_intents) / sizeof(render_intents[0]),
 			.transfer_functions = transfer_functions,
-			.transfer_functions_len = sizeof(transfer_functions) / sizeof(transfer_functions[0]),
+			.transfer_functions_len = transfer_functions_len,
 			.primaries = primaries,
-			.primaries_len = sizeof(primaries) / sizeof(primaries[0]),
+			.primaries_len = primaries_len,
 		});
+		free(transfer_functions);
+		free(primaries);
 		wlr_scene_set_color_manager_v1(root->root_scene, cm);
 	}
+
+	wlr_color_representation_manager_v1_create_with_renderer(
+		server->wl_display, 1, server->renderer);
 
 	wl_list_init(&server->pending_launcher_ctxs);
 

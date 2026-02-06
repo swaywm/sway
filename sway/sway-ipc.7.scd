@@ -1116,7 +1116,7 @@ Returns the currently active binding mode.
 A single object that contains the property _name_, which is set to the
 currently active binding mode as a string.
 
-*Exact Reply:*
+*Example Reply:*
 ```
 {
 	"name": "default"
