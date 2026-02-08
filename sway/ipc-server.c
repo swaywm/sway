@@ -680,20 +680,20 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		json_object *outputs = json_object_new_array();
 		for (int i = 0; i < root->outputs->length; ++i) {
 			struct sway_output *output = root->outputs->items[i];
-			json_object *output_json = ipc_json_describe_node(&output->node);
+			json_object *output_json =
+				ipc_json_describe_enabled_output_ipc(output);
 
-			// override the default focused indicator because it's set
-			// differently for the get_outputs reply
 			struct sway_seat *seat = input_manager_get_default_seat();
 			struct sway_workspace *focused_ws =
 				seat_get_focused_workspace(seat);
 			bool focused = focused_ws && output == focused_ws->output;
-			json_object_object_del(output_json, "focused");
 			json_object_object_add(output_json, "focused",
 				json_object_new_boolean(focused));
 
-			const char *subpixel = sway_wl_output_subpixel_to_string(output->wlr_output->subpixel);
-			json_object_object_add(output_json, "subpixel_hinting", json_object_new_string(subpixel));
+			const char *subpixel =
+				sway_wl_output_subpixel_to_string(output->wlr_output->subpixel);
+			json_object_object_add(output_json, "subpixel_hinting",
+				json_object_new_string(subpixel));
 			json_object_array_add(outputs, output_json);
 		}
 		struct sway_output *output;

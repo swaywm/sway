@@ -11,6 +11,7 @@ json_object *ipc_json_get_binding_mode(void);
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *o);
 json_object *ipc_json_describe_non_desktop_output(struct sway_output_non_desktop *o);
+json_object *ipc_json_describe_enabled_output_ipc(struct sway_output *output);
 json_object *ipc_json_describe_node(struct sway_node *node);
 json_object *ipc_json_describe_node_recursive(struct sway_node *node);
 json_object *ipc_json_describe_input(struct sway_input_device *device);
