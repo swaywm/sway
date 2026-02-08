@@ -113,6 +113,16 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *border* toggle
 	Cycles through the available border styles.
 
+*stacking_titlebar* always_visible|follows_border
+	Set whether the titlebar for contains with stacking layouts should always
+	be visible (the default) or if it should respect the border setting like
+	other layouts.
+
+*tabbed_titlebar* always_visible|follows_border
+	Set whether the titlebar for contains with tabbed layouts should always
+	be visible (the default) or if it should respect the border setting like
+	other layouts.
+
 *exit*
 	Exit sway and end your Wayland session.
 
@@ -702,6 +712,14 @@ The default colors are:
 	Set default border style for new floating windows. This only applies to
 	windows that are spawned in floating mode, not windows that become floating
 	afterwards.
+
+*default_stacking_titlebar* always_visible|follows_border
+	Set the default stacking titlebar setting for new windows. Config reload
+	won't affect existing windows, only newly created ones after the reload.
+
+*default_tabbed_titlebar* always_visible|follows_border
+	Set the default tabbed titlebar setting for new windows. Config reload
+	won't affect existing windows, only newly created ones after the reload.
 
 *exec* <shell command>
 	Executes _shell command_ with sh.
