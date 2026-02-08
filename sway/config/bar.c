@@ -71,6 +71,7 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->colors.binding_mode_bg);
 	free(bar->colors.binding_mode_text);
 #if HAVE_TRAY
+	free(bar->colors.tray_background);
 	list_free_items_and_destroy(bar->tray_outputs);
 	free(bar->icon_theme);
 
