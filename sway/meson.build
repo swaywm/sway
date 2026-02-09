@@ -224,6 +224,7 @@ sway_deps = [
 	jsonc,
 	libevdev,
 	libinput,
+	libselinux,
 	libudev,
 	math,
 	pango,
