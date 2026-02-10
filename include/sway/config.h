@@ -207,6 +207,12 @@ enum seat_config_hide_cursor_when_typing {
 	HIDE_WHEN_TYPING_DISABLE,
 };
 
+enum seat_config_hide_cursor_but_keep_active {
+	HIDE_CURSOR_BUT_KEEP_ACTIVE_DEFAULT, // the default is currently disabled
+	HIDE_CURSOR_BUT_KEEP_ACTIVE_ENABLE,
+	HIDE_CURSOR_BUT_KEEP_ACTIVE_DISABLE,
+};
+
 enum seat_config_allow_constrain {
 	CONSTRAIN_DEFAULT, // the default is currently enabled
 	CONSTRAIN_ENABLE,
@@ -243,6 +249,7 @@ struct seat_config {
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
 	enum seat_config_hide_cursor_when_typing hide_cursor_when_typing;
+	enum seat_config_hide_cursor_but_keep_active hide_cursor_but_keep_active;
 	enum seat_config_allow_constrain allow_constrain;
 	enum seat_config_shortcuts_inhibit shortcuts_inhibit;
 	enum seat_keyboard_grouping keyboard_grouping;

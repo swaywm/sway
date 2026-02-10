@@ -31,17 +31,15 @@ struct cmd_results *seat_cmd_hide_cursor(int argc, char **argv) {
 		}
 		seat_config->hide_cursor_timeout = timeout;
 	} else {
-		if (strcmp(argv[0], "when-typing") != 0) {
+		if (strcmp(argv[0], "when-typing") == 0) {
+    		seat_config->hide_cursor_when_typing = parse_boolean(argv[1], true) ?
+    		    HIDE_WHEN_TYPING_ENABLE : HIDE_WHEN_TYPING_DISABLE;
+    	} else if (strcmp(argv[0], "but-keep-active") == 0) {
+    		seat_config->hide_cursor_but_keep_active = parse_boolean(argv[1], true) ?
+    			HIDE_CURSOR_BUT_KEEP_ACTIVE_ENABLE : HIDE_CURSOR_BUT_KEEP_ACTIVE_DISABLE;
+		} else {
 			return cmd_results_new(CMD_INVALID,
-				"Expected 'hide_cursor <timeout>|when-typing [enable|disable]'");
-		}
-		seat_config->hide_cursor_when_typing = parse_boolean(argv[1], true) ?
-			HIDE_WHEN_TYPING_ENABLE : HIDE_WHEN_TYPING_DISABLE;
-
-		// Invalidate all the caches for this config
-		struct sway_seat *seat = NULL;
-		wl_list_for_each(seat, &server.input->seats, link) {
-			seat->cursor->hide_when_typing = HIDE_WHEN_TYPING_DEFAULT;
+				"Expected 'hide_cursor <timeout>|when-typing|but-keep-active [enable|disable]'");
 		}
 	}
 
