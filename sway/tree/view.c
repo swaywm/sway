@@ -375,7 +375,7 @@ void view_autoconfigure(struct sway_view *view) {
 		x = con->pending.x;
 		y = con->pending.y;
 		width = con->pending.width;
-		height = con->pending.height - y_offset;
+		height = con->pending.height;
 		break;
 	case B_PIXEL:
 		x = con->pending.x + con->pending.border_thickness * con->pending.border_left;
