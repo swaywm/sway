@@ -579,12 +579,51 @@ void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx) {
 	view->ctx = ctx;
 }
 
+static struct sway_workspace *get_parent_workspace(struct sway_view *view) {
+	// Try to get the parent view's workspace for both XDG and XWayland windows
+	struct sway_view *parent_view = NULL;
+
+	// Check for XDG Shell parent
+	if (view->wlr_xdg_toplevel && view->wlr_xdg_toplevel->parent) {
+		struct wlr_xdg_surface *parent_surface = view->wlr_xdg_toplevel->parent->base;
+		if (parent_surface) {
+			struct sway_view *xdg_parent_view = view_from_wlr_xdg_surface(parent_surface);
+			if (xdg_parent_view && xdg_parent_view->container) {
+				parent_view = xdg_parent_view;
+			}
+		}
+	}
+
+#if WLR_HAS_XWAYLAND
+	// Check for XWayland parent (only for XWayland views!)
+	if (!parent_view && view->type == SWAY_VIEW_XWAYLAND &&
+			view->wlr_xwayland_surface && view->wlr_xwayland_surface->parent) {
+		struct wlr_xwayland_surface *parent_xsurface = view->wlr_xwayland_surface->parent;
+
+		// Check if parent surface is mapped and has valid data
+		if (parent_xsurface->surface && parent_xsurface->surface->mapped && parent_xsurface->data) {
+			struct sway_view *xw_parent_view = view_from_wlr_xwayland_surface(parent_xsurface);
+			if (xw_parent_view && xw_parent_view->container) {
+				parent_view = xw_parent_view;
+			}
+		}
+	}
+#endif
+
+	// If we found a parent view with a container, return its workspace
+	if (parent_view && parent_view->container) {
+		return parent_view->container->pending.workspace;
+	}
+
+	return NULL;
+}
+
 static struct sway_workspace *select_workspace(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
-			CT_ASSIGN_WORKSPACE | CT_ASSIGN_WORKSPACE_NUMBER | CT_ASSIGN_OUTPUT);
+			CT_ASSIGN_WORKSPACE | CT_ASSIGN_WORKSPACE_NUMBER | CT_ASSIGN_OUTPUT | CT_ASSIGN_PARENT_WORKSPACE);
 	struct sway_workspace *ws = NULL;
 	for (int i = 0; i < criterias->length; ++i) {
 		struct criteria *criteria = criterias->items[i];
@@ -592,6 +631,12 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 			struct sway_output *output = output_by_name_or_id(criteria->target);
 			if (output) {
 				ws = output_get_active_workspace(output);
+				break;
+			}
+		} else if (criteria->type == CT_ASSIGN_PARENT_WORKSPACE) {
+			// Assign to parent's workspace if parent exists
+			ws = get_parent_workspace(view);
+			if (ws) {
 				break;
 			}
 		} else {
