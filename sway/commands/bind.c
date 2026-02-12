@@ -543,6 +543,10 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		binding->type = WLR_SWITCH_TYPE_TABLET_MODE;
 	} else if (strcmp(split->items[0], "lid") == 0) {
 		binding->type = WLR_SWITCH_TYPE_LID;
+#if HAVE_LIBINPUT_SWITCH_KEYPAD_SLIDE
+	} else if (strcmp(split->items[0], "keypad_slide") == 0) {
+		binding->type = WLR_SWITCH_TYPE_KEYPAD_SLIDE;
+#endif
 	} else {
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,
