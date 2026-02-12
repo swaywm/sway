@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <getopt.h>
 #include <pango/pangocairo.h>
 #include <pthread.h>
@@ -303,6 +304,14 @@ int main(int argc, char **argv) {
 	// we let the flag override the environment variable
 	if (!allow_unsupported_gpu && unsupported_gpu_env) {
 		allow_unsupported_gpu = parse_boolean(unsupported_gpu_env, false);
+	}
+
+	// Fail if only one of --socket and --wayland-fd are given.
+	if ((socket_name == NULL) ^ (socket_fd == -1)) {
+		fprintf(stderr,
+				"Both --socket and --wayland-fd are required for Wayland "
+				"socket handover, but only one was provided. Aborting.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	// As the 'callback' function for wlr_log is equivalent to that for
