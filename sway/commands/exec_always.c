@@ -10,9 +10,28 @@
 #include "sway/desktop/launcher.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
+#include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
+
+static void export_id(const char *env_var_name, size_t id) {
+	int id_len = snprintf(NULL, 0, "%zu", id);
+	if (id_len < 0) {
+		sway_log(SWAY_ERROR, "Unable to determine buffer length for %s", env_var_name);
+		return;
+	}
+	// accommodate \0
+	id_len++;
+	char* id_str = malloc(id_len);
+	if (!id_str) {
+		sway_log(SWAY_ERROR, "Unable to allocate buffer for %s", env_var_name);
+		return;
+	}
+	snprintf(id_str, id_len, "%zu", id);
+	setenv(env_var_name, id_str, 1);
+	free(id_str);
+}
 
 struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -28,12 +47,12 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	char *cmd = NULL;
-	bool no_matched_container_id = false;
+	bool matched_ids = false;
 	bool no_startup_id = false;
 	int argv_counter = -1;
 	while (argc > 0 && has_prefix(*argv, "--")) {
-		if (strcmp(argv[0], "--no-matched-container-id") == 0) {
-			no_matched_container_id = true;
+		if (strcmp(argv[0], "--matched-ids") == 0) {
+			matched_ids = true;
 		} else if (strcmp(argv[0], "--no-startup-id") == 0) {
 			no_startup_id = true;
 		} else {
@@ -70,26 +89,20 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 			}
 		}
 
-		if (no_matched_container_id || config->handler_context.node == NULL) {
+		if (!matched_ids || config->handler_context.node == NULL) {
 			goto no_con_id_export;
 		}
-		size_t con_id = config->handler_context.node->id;
-		int con_id_len = snprintf(NULL, 0, "%zu", con_id);
-		if (con_id_len < 0) {
-			sway_log(SWAY_ERROR, "Unable to determine buffer length for SWAY_EXEC_CON_ID");
-			goto no_con_id_export;
+
+		struct sway_node *node = config->handler_context.node;
+		export_id("SWAY_EXEC_CON_ID", node->id);
+#if WLR_HAS_XWAYLAND
+		if (node->type == N_CONTAINER &&
+				node->sway_container->view != NULL &&
+				node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {
+			export_id("I3_WINDOW_ID", view_get_x11_window_id(node->sway_container->view));
 		}
-		// accommodate \0
-		con_id_len++;
-		char* con_id_str = malloc(con_id_len);
-		if (!con_id_str) {
-			sway_log(SWAY_ERROR, "Unable to allocate buffer for SWAY_EXEC_CON_ID");
-			goto no_con_id_export;
-		}
-		snprintf(con_id_str, con_id_len, "%zu", con_id);
-		setenv("SWAY_EXEC_CON_ID", con_id_str, 1);
-		setenv("I3_WINDOW_ID", con_id_str, 1);
-		free(con_id_str);
+#endif
+
 no_con_id_export:
 
 		execlp("sh", "sh", "-c", cmd, (void*)NULL);
@@ -118,3 +131,4 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	}
 	return cmd_exec_process(argc, argv);
 }
+
