@@ -53,6 +53,6 @@ struct swaybar_sni {
 struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray);
 void destroy_sni(struct swaybar_sni *sni);
 uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
-		struct swaybar_sni *sni);
+		uint32_t height, struct swaybar_sni *sni);
 
 #endif
