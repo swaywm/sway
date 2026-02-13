@@ -842,6 +842,11 @@ struct sway_container *workspace_insert_tiling(struct sway_workspace *workspace,
 	if (config->default_layout != L_NONE) {
 		con = container_split(con, config->default_layout);
 	}
+	if (index < 0) {
+		index = 0;
+	} else if (index > workspace->tiling->length) {
+		index = workspace->tiling->length;
+	}
 	workspace_insert_tiling_direct(workspace, con, index);
 	return con;
 }
