@@ -11,7 +11,6 @@
 #include "log.h"
 #include "loop.h"
 #include "swaybar/bar.h"
-#include "swaybar/config.h"
 #include "swaybar/i3bar.h"
 #include "swaybar/status_line.h"
 

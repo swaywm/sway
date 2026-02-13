@@ -13,7 +13,6 @@
 #include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
-#include "swaybar/i3bar.h"
 #include "swaybar/input.h"
 #include "swaybar/ipc.h"
 #include "swaybar/status_line.h"
@@ -22,12 +21,12 @@
 #include "swaybar/tray/tray.h"
 #endif
 #include "ipc-client.h"
-#include "list.h"
 #include "log.h"
 #include "loop.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
+#include "xdg-shell-client-protocol.h"
 
 void free_workspaces(struct wl_list *list) {
 	struct swaybar_workspace *ws, *tmp;
@@ -364,6 +363,8 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
 		bar->cursor_shape_manager = wl_registry_bind(registry, name,
 			&wp_cursor_shape_manager_v1_interface, 1);
+	} else if (strcmp(interface, xdg_wm_base_interface.name) == 0) {
+		bar->wm_base = wl_registry_bind(registry, name, &xdg_wm_base_interface, 1);
 	}
 }
 
@@ -538,6 +539,7 @@ void bar_teardown(struct swaybar *bar) {
 #if HAVE_TRAY
 	destroy_tray(bar->tray);
 #endif
+	xdg_wm_base_destroy(bar->wm_base);
 	free_outputs(&bar->outputs);
 	free_outputs(&bar->unused_outputs);
 	free_seats(&bar->seats);

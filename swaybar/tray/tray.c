@@ -118,7 +118,7 @@ static int cmp_output(const void *item, const void *cmp_to) {
 
 uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output, double *x) {
 	struct swaybar_config *config = output->bar->config;
-	if (config->tray_outputs) {
+	if (config->tray_outputs && !config->tray_hidden) {
 		if (list_seq_find(config->tray_outputs, cmp_output, output) == -1) {
 			return 0;
 		}
