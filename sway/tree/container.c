@@ -1139,6 +1139,17 @@ void container_floating_translate(struct sway_container *con,
 	node_set_dirty(&con->node);
 }
 
+void container_floating_update_scene_position(struct sway_container *con) {
+	if (!container_is_floating(con) || con->scene_tree == NULL) {
+		return;
+	}
+	// Update scene position immediately using pending coordinates.
+	// This provides smoother visual feedback during drag operations
+	// by bypassing the transaction system's batching delay.
+	wlr_scene_node_set_position(&con->scene_tree->node,
+		con->pending.x, con->pending.y);
+}
+
 /**
  * Choose an output for the floating container's new position.
  *

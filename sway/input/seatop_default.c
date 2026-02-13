@@ -1,9 +1,13 @@
 #include <float.h>
 #include <libevdev/libevdev.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_toplevel_drag_v1.h>
 #include "gesture.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
@@ -612,11 +616,44 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 		check_focus_follows_mouse(seat, e, node);
 	}
 
+	// Check for active xdg-toplevel-drag
+	struct wlr_drag *wlr_drag = seat->wlr_seat->drag;
+	struct sway_drag *drag = wlr_drag ? wlr_drag->data : NULL;
+	bool toplevel_drag_active = drag && drag->toplevel_drag && drag->origin;
+
+	// Per xdg-toplevel-drag protocol: "The attached window does not participate
+	// in the selection of the drag target." If cursor is over the dragged
+	// toplevel, do a second hit test with it disabled to find what's underneath.
+	// Use seat->toplevel_drag_container which is safely managed by the motion handler.
+	struct wlr_scene_tree *disabled_tree = NULL;
+	struct sway_container *dragged_con = seat->toplevel_drag_container;
+	if (toplevel_drag_active && surface != NULL && dragged_con != NULL &&
+			dragged_con->view != NULL && dragged_con->view->surface != NULL) {
+		// Check if cursor is over the dragged container's surface
+		if (dragged_con->view->surface == wlr_surface_get_root_surface(surface)) {
+			// Cursor is over the dragged toplevel - find what's underneath
+			if (dragged_con->scene_tree != NULL) {
+				disabled_tree = dragged_con->scene_tree;
+				wlr_scene_node_set_enabled(&disabled_tree->node, false);
+				node = node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
+					&surface, &sx, &sy);
+			}
+		}
+	}
+	// Re-enable after all processing that might destroy the container
+	if (disabled_tree != NULL) {
+		wlr_scene_node_set_enabled(&disabled_tree->node, true);
+	}
+
 	if (surface) {
 		if (seat_is_input_allowed(seat, surface)) {
 			wlr_seat_pointer_notify_enter(seat->wlr_seat, surface, sx, sy);
 			wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
 		}
+	} else if (toplevel_drag_active) {
+		// Cursor is outside any window - keep focus on origin surface
+		wlr_seat_pointer_notify_enter(seat->wlr_seat, drag->origin, 0, 0);
+		wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, 0, 0);
 	} else {
 		cursor_update_image(cursor, node);
 		wlr_seat_pointer_notify_clear_focus(seat->wlr_seat);
