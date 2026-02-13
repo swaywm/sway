@@ -704,10 +704,14 @@ The default colors are:
 	windows that are spawned in floating mode, not windows that become floating
 	afterwards.
 
-*exec* <shell command>
-	Executes _shell command_ with sh.
+*exec* [--matched-ids] [--no-startup-id] <shell command>
+	Executes _shell command_ with sh. With _--matched-ids_, It exports the
+	matched container id to env variable SWAY_EXEC_CON_ID and, if available,
+	X11 window id to env variable I3_WINDOW_ID in case of a criteria match or
+	the focused node otherwise. The _--no_startup_id_ option prevents exporting
+	of DESKTOP_STARTUP_ID.
 
-*exec_always* <shell command>
+*exec_always* [--matched-container-id] [--no-startup-id] <shell command>
 	Like *exec*, but the shell command will be executed _again_ after *reload*.
 
 *floating_maximum_size* <width> x <height>
