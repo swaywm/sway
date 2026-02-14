@@ -613,16 +613,8 @@ static uint32_t render_binding_mode_indicator(struct render_context *ctx,
 static enum hotspot_event_handling workspace_hotspot_callback(
 		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
 		double x, double y, uint32_t button, bool released, void *data) {
-	if (button != BTN_LEFT) {
-		return HOTSPOT_PROCESS;
-	}
-	if (released) {
-		// Since we handle the pressed event, also handle the released event
-		// to block it from falling through to a binding in the bar
-		return HOTSPOT_IGNORE;
-	}
-	ipc_send_workspace_command(output->bar, (const char *)data);
-	return HOTSPOT_IGNORE;
+	return handle_workspace_button(output, button, released, (const char *)data)
+		? HOTSPOT_IGNORE : HOTSPOT_PROCESS;
 }
 
 static uint32_t render_workspace_button(struct render_context *ctx,
