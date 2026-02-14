@@ -71,6 +71,7 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->colors.binding_mode_bg);
 	free(bar->colors.binding_mode_text);
 #if HAVE_TRAY
+	free(bar->colors.tray_background);
 	list_free_items_and_destroy(bar->tray_outputs);
 	free(bar->icon_theme);
 
@@ -171,6 +172,9 @@ struct bar_config *default_bar_config(void) {
 	bar->colors.binding_mode_text = NULL;
 
 #if HAVE_TRAY
+	if (!(bar->colors.tray_background = strndup("#00000000", 9))) {
+		goto cleanup;
+	}
 	bar->tray_padding = 2;
 	wl_list_init(&bar->tray_bindings);
 #endif
