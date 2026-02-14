@@ -100,6 +100,14 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode);
 }
 
+static void free_key_remap(struct sway_key_remap *remap) {
+	if (!remap) {
+		return;
+	}
+	free(remap->app_id);
+	free(remap);
+}
+
 void free_config(struct sway_config *config) {
 	if (!config) {
 		return;
@@ -166,6 +174,12 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->criteria);
 	}
+	if (config->key_remaps) {
+		for (int i = 0; i < config->key_remaps->length; i++) {
+			free_key_remap(config->key_remaps->items[i]);
+		}
+		list_free(config->key_remaps);
+	}
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
 	list_free_items_and_destroy(config->config_chain);
@@ -228,6 +242,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->input_configs = create_list())) goto cleanup;
 
 	if (!(config->cmd_queue = create_list())) goto cleanup;
+	if (!(config->key_remaps = create_list())) goto cleanup;
 
 	if (!(config->current_mode = malloc(sizeof(struct sway_mode))))
 		goto cleanup;
