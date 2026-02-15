@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <float.h>
 #include <libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
 #include <errno.h>
@@ -20,6 +21,7 @@
 #include "util.h"
 #include "sway/commands.h"
 #include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/tablet.h"
 #include "sway/layers.h"
@@ -30,7 +32,8 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 /**
  * Returns the node at the cursor's position. If there is a surface at that
@@ -325,10 +328,15 @@ static void handle_pointer_motion_relative(
 		struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
 	struct wlr_pointer_motion_event *e = data;
+	
+	struct sway_input_device *sid = input_sway_device_from_wlr(&e->pointer->base);
+	struct input_config *ic = sid ? input_device_get_config(sid) : NULL;
+	float sensitivity = (ic && ic->sensitivity != FLT_MIN) ? ic->sensitivity : 1.0f;
+
 	cursor_handle_activity_from_device(cursor, &e->pointer->base);
 
-	pointer_motion(cursor, e->time_msec, &e->pointer->base, e->delta_x,
-		e->delta_y, e->unaccel_dx, e->unaccel_dy);
+	pointer_motion(cursor, e->time_msec, &e->pointer->base, e->delta_x * sensitivity,
+		e->delta_y * sensitivity, e->unaccel_dx, e->unaccel_dy);
 }
 
 static void handle_pointer_motion_absolute(
