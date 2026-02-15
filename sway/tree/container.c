@@ -538,6 +538,12 @@ void container_begin_destroy(struct sway_container *con) {
 	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE && con->pending.workspace) {
 		con->pending.workspace->fullscreen = NULL;
 	}
+
+	// If the container was the one stored in the overview's fullscreen memory, clear it.
+	if (con->pending.workspace && con->pending.workspace->layout.fullscreen == con) {
+		con->pending.workspace->layout.fullscreen = NULL;
+	}
+
 	if (con->scratchpad && con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
 		container_fullscreen_disable(con);
 	}
