@@ -38,7 +38,6 @@
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_security_context_v1.h>
-#include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_single_pixel_buffer_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
@@ -324,16 +323,6 @@ bool server_init(struct sway_server *server) {
 
 	server->tablet_v2 = wlr_tablet_v2_create(server->wl_display);
 
-	server->server_decoration_manager =
-		wlr_server_decoration_manager_create(server->wl_display);
-	wlr_server_decoration_manager_set_default_mode(
-		server->server_decoration_manager,
-		WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
-	wl_signal_add(&server->server_decoration_manager->events.new_decoration,
-		&server->server_decoration);
-	server->server_decoration.notify = handle_server_decoration;
-	wl_list_init(&server->decorations);
-
 	server->xdg_decoration_manager =
 		wlr_xdg_decoration_manager_v1_create(server->wl_display);
 	wl_signal_add(
@@ -526,7 +515,6 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->new_output.link);
 	wl_list_remove(&server->layer_shell_surface.link);
 	wl_list_remove(&server->xdg_shell_toplevel.link);
-	wl_list_remove(&server->server_decoration.link);
 	wl_list_remove(&server->xdg_decoration.link);
 	wl_list_remove(&server->pointer_constraint.link);
 	wl_list_remove(&server->output_manager_apply.link);
