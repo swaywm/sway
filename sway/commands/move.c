@@ -525,11 +525,17 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		destination = seat_get_focus_inactive(seat, &new_output->node);
 	} else if (strcasecmp(argv[0], "mark") == 0) {
 		struct sway_container *dest_con = container_find_mark(argv[1]);
-		if (dest_con == NULL) {
-			return cmd_results_new(CMD_FAILURE,
-					"Mark '%s' not found", argv[1]);
+		if (dest_con) {
+			destination = &dest_con->node;
+		} else {
+			struct sway_workspace *dest_ws = workspace_find_mark(argv[1]);
+			if (dest_ws) {
+				destination = &dest_ws->node;
+			} else {
+				return cmd_results_new(CMD_FAILURE,
+						"Mark '%s' not found", argv[1]);
+			}
 		}
-		destination = &dest_con->node;
 	} else {
 		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
@@ -560,8 +566,33 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		root_scratchpad_show(container);
 	}
 	switch (destination->type) {
-	case N_WORKSPACE:
-		container_move_to_workspace(container, destination->sway_workspace);
+	case N_WORKSPACE: {
+			struct sway_workspace *dest_ws = destination->sway_workspace;
+			// Match i3's con_move_to_target behavior:
+			// - Empty workspace: move directly to workspace
+			// - Non-empty workspace: descend to focused child, add as sibling
+			//   (i3's _con_move_to_con goes up to parent, making con a sibling)
+			if (workspace_is_empty(dest_ws)) {
+				container_move_to_workspace(container, dest_ws);
+			} else {
+				struct sway_node *focus =
+					seat_get_focus_inactive(seat, destination);
+				if (focus && focus->type == N_CONTAINER) {
+					struct sway_container *focus_con = focus->sway_container;
+					// Match i3: add as sibling of focused child, not as child of it
+					if (container != focus_con &&
+							!container_has_ancestor(focus_con, container)) {
+						container_detach(container);
+						container->pending.width = container->pending.height = 0;
+						container->width_fraction = container->height_fraction = 0;
+						container_add_sibling(focus_con, container, 1);
+						if (container->view) {
+							ipc_event_window(container, "move");
+						}
+					}
+				}
+			}
+		}
 		break;
 	case N_OUTPUT: {
 			struct sway_output *output = destination->sway_output;
@@ -573,8 +604,32 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 			container_move_to_workspace(container, ws);
 		}
 		break;
-	case N_CONTAINER:
-		container_move_to_container(container, destination->sway_container);
+	case N_CONTAINER: {
+			struct sway_container *dest_con = destination->sway_container;
+			// Match i3's con_move_to_target behavior:
+			// If destination is a split (not a leaf), descend to focused child
+			// and add as sibling of that child
+			if (!dest_con->view) {
+				struct sway_node *focus =
+					seat_get_focus_inactive(seat, destination);
+				if (focus && focus->type == N_CONTAINER) {
+					struct sway_container *focus_con = focus->sway_container;
+					// Add as sibling of focused child
+					if (container != focus_con &&
+							!container_has_ancestor(focus_con, container)) {
+						container_detach(container);
+						container->pending.width = container->pending.height = 0;
+						container->width_fraction = container->height_fraction = 0;
+						container_add_sibling(focus_con, container, 1);
+						if (container->view) {
+							ipc_event_window(container, "move");
+						}
+					}
+				}
+			} else {
+				container_move_to_container(container, dest_con);
+			}
+		}
 		break;
 	case N_ROOT:
 		break;

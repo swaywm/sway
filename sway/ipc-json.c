@@ -530,6 +530,14 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 			json_object_new_string(
 				ipc_json_orientation_description(workspace->layout)));
 
+	// Marks
+	json_object *marks = json_object_new_array();
+	for (int i = 0; i < workspace->marks->length; ++i) {
+		json_object_array_add(marks,
+				json_object_new_string(workspace->marks->items[i]));
+	}
+	json_object_object_add(object, "marks", marks);
+
 	// Floating
 	json_object *floating_array = json_object_new_array();
 	for (int i = 0; i < workspace->floating->length; ++i) {
