@@ -415,12 +415,6 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 #endif
 
-	if (criteria->floating) {
-		if (!container_is_floating(view->container)) {
-			return false;
-		}
-	}
-
 	if (criteria->tiling) {
 		if (container_is_floating(view->container)) {
 			return false;
