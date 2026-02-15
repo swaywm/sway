@@ -257,7 +257,26 @@ static void container_move_to_container(struct sway_container *container,
 	if (destination->view) {
 		container_add_sibling(destination, container, 1);
 	} else {
-		container_add_child(destination, container);
+		/* For split containers, we use the currently focused container within it.
+		* This allows setting marks on, e.g., tabbed containers which will move
+		* con to a new tab behind the focused tab. */
+		sway_log(SWAY_DEBUG, "target is a split container, descending to the currently focused child.");
+		struct sway_node *focused = seat_get_active_tiling_child(
+				config->handler_context.seat, &destination->node);
+		if (!focused || focused == &destination->node) {
+			// The container has no children
+			container_add_child(destination, container);
+			return;
+		}
+		struct sway_container *target = focused->sway_container;
+		int index = container_sibling_index(target) + 1;
+		if (target->pending.parent) {
+			container_insert_child(target->pending.parent, container, index);
+		} else {
+			// TODO: This branch is unreachable until workspaces can be marked.
+			// Issue url: https://github.com/swaywm/sway/issues/8474
+			workspace_insert_tiling(target->pending.workspace, container, index);
+		}
 	}
 
 	if (container->view) {
