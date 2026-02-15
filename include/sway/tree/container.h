@@ -102,7 +102,7 @@ struct sway_container {
 
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
-	int title_width;
+	double title_width;
 
 	char *title_format;
 
@@ -359,6 +359,8 @@ bool container_is_sticky_or_child(struct sway_container *con);
  * Returns the number of new containers added to the parent
  */
 int container_squash(struct sway_container *con);
+
+float container_scale_factor(struct sway_container *con);
 
 void container_arrange_title_bar(struct sway_container *con);
 
