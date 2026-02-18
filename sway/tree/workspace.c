@@ -205,6 +205,9 @@ static bool workspace_valid_on_output(const char *output_name,
 		if (output_match_name_or_id(output, wsc->outputs->items[i])) {
 			return true;
 		}
+		if (output_by_name_or_id(wsc->outputs->items[i])) {
+			return false; // a higher-priority output is available
+		}
 	}
 
 	return false;
@@ -325,6 +328,9 @@ char *workspace_next_name(const char *output_name) {
 				free(target);
 				target = strdup(wsc->workspace);
 				break;
+			}
+			if (output_by_name_or_id(wsc->outputs->items[j])) {
+				break; // a higher-priority output is available
 			}
 		}
 		if (found) {
