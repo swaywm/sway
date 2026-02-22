@@ -41,6 +41,7 @@ static void restore_workspaces(struct sway_output *output) {
 			if (highest == output) {
 				workspace_detach(ws);
 				output_add_workspace(output, ws);
+				workspace_reorient_auto(ws);
 				ipc_event_workspace(NULL, ws, "move");
 				j--;
 			}
@@ -59,6 +60,7 @@ static void restore_workspaces(struct sway_output *output) {
 		struct sway_workspace *ws = root->fallback_output->workspaces->items[0];
 		workspace_detach(ws);
 		output_add_workspace(output, ws);
+		workspace_reorient_auto(ws);
 
 		// If the floater was made floating while on the NOOP output, its width
 		// and height will be zero and it should be reinitialized as a floating
@@ -172,11 +174,8 @@ void output_enable(struct sway_output *output) {
 		ipc_event_workspace(NULL, ws, "init");
 	}
 
-	if (ws && config->default_orientation == L_NONE) {
-		// Since the output transformation and resolution could have changed
-		// due to applying the output config, the previously set layout for the
-		// created workspace may not be correct for `default_orientation auto`
-		ws->layout = output_get_default_layout(output);
+	if (ws) {
+		workspace_reorient_auto(ws);
 	}
 
 	wl_signal_emit_mutable(&root->events.new_node, &output->node);
@@ -241,6 +240,7 @@ static void output_evacuate(struct sway_output *output) {
 
 		workspace_output_add_priority(workspace, new_output);
 		output_add_workspace(new_output, workspace);
+		workspace_reorient_auto(workspace);
 		output_sort_workspaces(new_output);
 		ipc_event_workspace(NULL, workspace, "move");
 
