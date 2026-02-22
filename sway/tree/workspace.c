@@ -1142,6 +1142,7 @@ void workspace_move_to_output(struct sway_workspace *workspace,
 	}
 
 	output_add_workspace(output, workspace);
+	workspace_reorient_auto(workspace);
 
 	// If moving the last workspace from the old output, create a new workspace
 	// on the old output
@@ -1158,4 +1159,35 @@ void workspace_move_to_output(struct sway_workspace *workspace,
 	output_sort_workspaces(output);
 	workspace_output_raise_priority(workspace, old_output, output);
 	ipc_event_workspace(NULL, workspace, "move");
+}
+
+void workspace_reorient_auto(struct sway_workspace *ws) {
+	if (config->default_orientation != L_NONE) {
+		return;
+	}
+	if (!ws->output) {
+		return;
+	}
+	if (ws->tiling->length > 1) {
+		return;
+	}
+	if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
+		return;
+	}
+
+	enum sway_container_layout new_layout = output_get_default_layout(ws->output);
+	if (ws->layout == new_layout) {
+		return;
+	}
+	ws->layout = new_layout;
+	workspace_update_representation(ws);
+
+	if (ws->tiling->length == 1) {
+		struct sway_container *child = ws->tiling->items[0];
+		if (!child->view &&
+				(child->pending.layout == L_HORIZ || child->pending.layout == L_VERT)) {
+			child->pending.layout = new_layout;
+			container_update_representation(child);
+		}
+	}
 }
