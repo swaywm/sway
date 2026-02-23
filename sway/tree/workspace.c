@@ -202,8 +202,10 @@ static bool workspace_valid_on_output(const char *output_name,
 	}
 
 	for (int i = 0; i < wsc->outputs->length; i++) {
-		if (output_match_name_or_id(output, wsc->outputs->items[i])) {
-			return true;
+		struct sway_output *ws_output =
+			output_by_name_or_id(wsc->outputs->items[i]);
+		if (ws_output) {
+			return ws_output == output;
 		}
 	}
 
@@ -320,10 +322,14 @@ char *workspace_next_name(const char *output_name) {
 		}
 		bool found = false;
 		for (int j = 0; j < wsc->outputs->length; ++j) {
-			if (output_match_name_or_id(output, wsc->outputs->items[j])) {
-				found = true;
-				free(target);
-				target = strdup(wsc->workspace);
+			struct sway_output *ws_output =
+				output_by_name_or_id(wsc->outputs->items[j]);
+			if (ws_output) {
+				if (ws_output == output) {
+					found = true;
+					free(target);
+					target = strdup(wsc->workspace);
+				}
 				break;
 			}
 		}
