@@ -440,7 +440,7 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_toplevel_tag_manager_v1_set_tag);
 
 	struct wlr_cursor_shape_manager_v1 *cursor_shape_manager =
-		wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
+		wlr_cursor_shape_manager_v1_create(server->wl_display, 2);
 	server->request_set_cursor_shape.notify = handle_request_set_cursor_shape;
 	wl_signal_add(&cursor_shape_manager->events.request_set_shape, &server->request_set_cursor_shape);
 
