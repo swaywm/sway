@@ -272,7 +272,7 @@ bool server_init(struct sway_server *server) {
 
 	if (wlr_renderer_get_texture_formats(server->renderer, WLR_BUFFER_CAP_DMABUF) != NULL) {
 		server->linux_dmabuf_v1 = wlr_linux_dmabuf_v1_create_with_renderer(
-			server->wl_display, 4, server->renderer);
+			server->wl_display, 5, server->renderer);
 	}
 	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
 			server->renderer->features.timeline &&
