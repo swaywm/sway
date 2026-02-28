@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include "log.h"
 #include "swaybar/bar.h"
-#include "swaybar/config.h"
 #include "swaybar/i3bar.h"
 #include "swaybar/input.h"
 #include "swaybar/status_line.h"
