@@ -71,6 +71,8 @@ struct swaybar_config {
 		struct box_colors inactive_workspace;
 		struct box_colors urgent_workspace;
 		struct box_colors binding_mode;
+
+		uint32_t tray_background;
 	} colors;
 
 #if HAVE_TRAY
