@@ -283,7 +283,7 @@ static bool ipc_parse_config(
 		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
 	}
 #if HAVE_TRAY
-	json_object *tray_outputs, *tray_padding, *tray_bindings, *icon_theme;
+	json_object *tray_outputs, *tray_padding, *tray_last, *tray_bindings, *icon_theme;
 
 	if (config->tray_outputs && config->tray_outputs->length) {
 		list_free_items_and_destroy(config->tray_outputs);
@@ -307,6 +307,10 @@ static bool ipc_parse_config(
 	if ((json_object_object_get_ex(bar_config, "tray_padding", &tray_padding))) {
 		config->tray_padding = json_object_get_int(tray_padding);
 	}
+
+        if ((json_object_object_get_ex(bar_config, "tray_last", &tray_last))) {
+          config->tray_last = json_object_get_boolean(tray_last);       
+        }
 
 	struct tray_binding *tray_bind = NULL, *tmp_tray_bind = NULL;
 	wl_list_for_each_safe(tray_bind, tmp_tray_bind, &config->tray_bindings,
