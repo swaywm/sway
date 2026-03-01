@@ -367,36 +367,26 @@ void view_autoconfigure(struct sway_view *view) {
 		}
 	}
 
-	double x, y, width, height;
-	switch (con->pending.border) {
-	default:
-	case B_CSD:
-	case B_NONE:
-		x = con->pending.x;
-		y = con->pending.y;
-		width = con->pending.width;
-		height = con->pending.height;
-		break;
-	case B_PIXEL:
-		x = con->pending.x + con->pending.border_thickness * con->pending.border_left;
-		y = con->pending.y + con->pending.border_thickness * con->pending.border_top;
-		width = con->pending.width
-			- con->pending.border_thickness * con->pending.border_left
-			- con->pending.border_thickness * con->pending.border_right;
-		height = con->pending.height
-			- con->pending.border_thickness * con->pending.border_top
+	double x = con->pending.x;
+	double y = con->pending.y;
+	double width = con->pending.width;
+	double height = con->pending.height;
+
+	if (con->pending.border == B_PIXEL) {
+		x += con->pending.border_thickness * con->pending.border_left;
+		y += con->pending.border_thickness * con->pending.border_top;
+		width -= con->pending.border_thickness * con->pending.border_left
+            + con->pending.border_thickness * con->pending.border_right;
+		height -= con->pending.border_thickness * con->pending.border_top
 			- con->pending.border_thickness * con->pending.border_bottom;
-		break;
-	case B_NORMAL:
+	} else if (con->pending.border == B_NORMAL) {
 		// Height is: 1px border + 3px pad + title height + 3px pad + 1px border
-		x = con->pending.x + con->pending.border_thickness * con->pending.border_left;
-		y = con->pending.y + container_titlebar_height();
-		width = con->pending.width
-			- con->pending.border_thickness * con->pending.border_left
-			- con->pending.border_thickness * con->pending.border_right;
-		height = con->pending.height - container_titlebar_height()
-			- con->pending.border_thickness * con->pending.border_bottom;
-		break;
+		x += con->pending.border_thickness * con->pending.border_left;
+		y += container_titlebar_height();
+		width -= con->pending.border_thickness * con->pending.border_left
+			+ con->pending.border_thickness * con->pending.border_right;
+		height -= container_titlebar_height()
+			+ con->pending.border_thickness * con->pending.border_bottom;
 	}
 
 	con->pending.content_x = x;
