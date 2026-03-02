@@ -641,6 +641,7 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 	}
 
 	output_add_workspace(output, workspace);
+	workspace_reorient_auto(workspace);
 
 	// If moving the last workspace from the old output, create a new workspace
 	// on the old output
