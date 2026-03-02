@@ -33,6 +33,7 @@ struct sway_layer_popup {
 	struct wl_listener destroy;
 	struct wl_listener new_popup;
 	struct wl_listener commit;
+	struct wl_listener reposition;
 };
 
 struct sway_output;

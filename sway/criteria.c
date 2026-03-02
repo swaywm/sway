@@ -196,6 +196,10 @@ static bool criteria_matches_view(struct criteria *criteria,
 	struct sway_container *focus = seat_get_focused_container(seat);
 	struct sway_view *focused = focus ? focus->view : NULL;
 
+	if (!view->container) {
+		return false;
+	}
+
 	if (criteria->title) {
 		const char *title = view_get_title(view);
 		if (!title) {
