@@ -454,6 +454,9 @@ static void arrange_container(struct sway_container *con,
 		// make sure to reparent, it's possible that the client just came out of
 		// fullscreen mode where the parent of the surface is not the container
 		wlr_scene_node_reparent(&con->view->scene_tree->node, con->content_tree);
+		if (con->output_handler) {
+			wlr_scene_node_reparent(&con->output_handler->node, con->border.tree);
+		}
 		wlr_scene_node_set_position(&con->view->scene_tree->node,
 			border_left, border_top);
 	} else {
@@ -495,6 +498,11 @@ static void arrange_fullscreen(struct wlr_scene_tree *tree,
 
 		// if we only care about the view, disable any decorations
 		wlr_scene_node_set_enabled(&fs->scene_tree->node, false);
+		// but keep output_handler for foreign toplevel enter/leave events
+		if (fs->output_handler) {
+			wlr_scene_node_reparent(&fs->output_handler->node, fs->view->scene_tree);
+			wlr_scene_buffer_set_dest_size(fs->output_handler, width, height);
+		}
 	} else {
 		fs_node = &fs->scene_tree->node;
 		arrange_container(fs, width, height, true, container_get_gaps(fs));
