@@ -67,10 +67,6 @@ struct sway_server {
 
 	struct wlr_relative_pointer_manager_v1 *relative_pointer_manager;
 
-	struct wlr_server_decoration_manager *server_decoration_manager;
-	struct wl_listener server_decoration;
-	struct wl_list decorations; // sway_server_decoration::link
-
 	struct wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
 	struct wl_listener xdg_decoration;
 	struct wl_list xdg_decorations; // sway_xdg_decoration::link
@@ -182,7 +178,6 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if WLR_HAS_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif
-void handle_server_decoration(struct wl_listener *listener, void *data);
 void handle_xdg_decoration(struct wl_listener *listener, void *data);
 void handle_pointer_constraint(struct wl_listener *listener, void *data);
 void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
