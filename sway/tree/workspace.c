@@ -84,6 +84,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	}
 
 	ws->name = strdup(name);
+	ws->previous_output_name = NULL;
 	ws->prev_split_layout = L_NONE;
 	ws->layout = output_get_default_layout(output);
 	ws->floating = create_list();
@@ -149,6 +150,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 	wlr_scene_node_destroy(&workspace->layers.fullscreen->node);
 
 	free(workspace->name);
+	free(workspace->previous_output_name);
 	free(workspace->representation);
 	list_free_items_and_destroy(workspace->output_priority);
 	list_free(workspace->floating);
@@ -291,8 +293,6 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 }
 
 char *workspace_next_name(const char *output_name) {
-	sway_log(SWAY_DEBUG, "Workspace: Generating new workspace name for output %s",
-			output_name);
 	// Scan for available workspace names by looking through output-workspace
 	// assignments primarily, falling back to bindings and numbers.
 	struct sway_mode *mode = config->current_mode;
@@ -782,6 +782,12 @@ void workspace_detach(struct sway_workspace *workspace) {
 	if (index != -1) {
 		list_del(output->workspaces, index);
 	}
+	if (workspace->previous_output_name) {
+		free(workspace->previous_output_name);
+		workspace->previous_output_name = NULL;
+	}
+
+	workspace->previous_output_name = strdup(output->wlr_output->name);
 	workspace->output = NULL;
 
 	node_set_dirty(&workspace->node);

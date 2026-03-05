@@ -27,6 +27,7 @@ enum wlr_direction opposite_direction(enum wlr_direction d) {
 }
 
 static void restore_workspaces(struct sway_output *output) {
+	sway_log(SWAY_DEBUG, "Restore Workspaces: restoring workspaces for output %s", output->wlr_output->name);
 	// Workspace output priority
 	for (int i = 0; i < root->outputs->length; i++) {
 		struct sway_output *other = root->outputs->items[i];
@@ -36,9 +37,13 @@ static void restore_workspaces(struct sway_output *output) {
 
 		for (int j = 0; j < other->workspaces->length; j++) {
 			struct sway_workspace *ws = other->workspaces->items[j];
+
 			struct sway_output *highest =
 				workspace_output_get_highest_available(ws);
-			if (highest == output) {
+			if (highest == output || 
+				(ws->previous_output_name != NULL &&
+				!strcmp(ws->previous_output_name, output->wlr_output->name)))
+			{
 				workspace_detach(ws);
 				output_add_workspace(output, ws);
 				ipc_event_workspace(NULL, ws, "move");
