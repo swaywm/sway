@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
@@ -240,7 +241,7 @@ static void handle_new_foreign_toplevel_capture_request(struct wl_listener *list
 	wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_accept(request, view->image_capture_source);
 }
 
-bool server_init(struct sway_server *server) {
+bool server_init(struct sway_server *server, const char * socket_name, int socket_fd) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
@@ -477,13 +478,21 @@ bool server_init(struct sway_server *server) {
 
 	wl_list_init(&server->pending_launcher_ctxs);
 
-	// Avoid using "wayland-0" as display socket
-	char name_candidate[16];
-	for (unsigned int i = 1; i <= 32; ++i) {
-		snprintf(name_candidate, sizeof(name_candidate), "wayland-%u", i);
-		if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
-			server->socket = strdup(name_candidate);
-			break;
+	if (socket_name != NULL && socket_fd != -1) {
+		// Add the passed socket
+		fcntl(socket_fd, F_SETFD, FD_CLOEXEC);
+		if (wl_display_add_socket_fd(server->wl_display, socket_fd) >= 0) {
+			server->socket = strdup(socket_name);
+		}
+	} else {
+		// Avoid using "wayland-0" as display socket
+		char name_candidate[16];
+		for (unsigned int i = 1; i <= 32; ++i) {
+			snprintf(name_candidate, sizeof(name_candidate), "wayland-%u", i);
+			if (wl_display_add_socket(server->wl_display, name_candidate) >= 0) {
+				server->socket = strdup(name_candidate);
+				break;
+			}
 		}
 	}
 
