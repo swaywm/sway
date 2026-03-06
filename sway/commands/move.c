@@ -809,9 +809,10 @@ static struct cmd_results *cmd_move_to_position_pointer(
 }
 
 static const char expected_position_syntax[] =
-	"Expected 'move [absolute] position <x> [px] <y> [px]' or "
+	"Expected 'move [absolute] position <x> [px|ppt] <y> [px|ppt]' or "
 	"'move [absolute] position center' or "
-	"'move position cursor|mouse|pointer'";
+	"'move position cursor|mouse|pointer' "
+	"(negative coordinates are relative to the workspace/screen bottom-right corner)";
 
 static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	struct sway_container *container = config->handler_context.container;
@@ -941,6 +942,26 @@ static struct cmd_results *cmd_move_to_position(int argc, char **argv) {
 	case MOVEMENT_UNIT_INVALID:
 		sway_assert(false, "invalid y unit");
 		break;
+	}
+	// Negative coordinates are measured from the bottom-right corner of the
+	// screen/workspace rather than the top-left corner, so that e.g.
+	// "move position -10px -10px" places the window's bottom-right corner
+	// 10px from the screen/workspace bottom-right corner.
+	if (lx.amount < 0) {
+		if (absolute) {
+			lx.amount = root->x + root->width + lx.amount
+				- container->pending.width;
+		} else {
+			lx.amount = ws->width + lx.amount - container->pending.width;
+		}
+	}
+	if (ly.amount < 0) {
+		if (absolute) {
+			ly.amount = root->y + root->height + ly.amount
+				- container->pending.height;
+		} else {
+			ly.amount = ws->height + ly.amount - container->pending.height;
+		}
 	}
 	if (!absolute) {
 		lx.amount += ws->x;
