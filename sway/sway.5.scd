@@ -241,6 +241,11 @@ set|plus|minus|toggle <amount>
 	The position can be specified in pixels or percentage points, omitting
 	the unit defaults to pixels. If _absolute_ is used, the position is
 	relative to all outputs. _absolute_ can not be used with percentage points.
+	Negative coordinates are measured from the bottom-right corner of the
+	workspace (or all outputs when _absolute_ is used): a negative value places
+	the container so that its bottom-right corner is that many pixels (or
+	percentage points of the workspace dimension) from the workspace bottom-right
+	corner.
 
 *move* [absolute] position center
 	Moves the focused container to be centered on the workspace. If _absolute_
