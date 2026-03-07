@@ -5,6 +5,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/render/drm_syncobj.h>
 #include <wlr/types/wlr_scene.h>
 #include "config.h"
 #include "sway/tree/node.h"
@@ -66,8 +67,14 @@ struct sway_output {
 
 	struct timespec last_presentation;
 	uint32_t refresh_nsec;
-	int max_render_time; // In milliseconds
+	int64_t max_render_time_ns;
 	struct wl_event_source *repaint_timer;
+
+	bool adaptive_render_time;
+	struct timespec render_start;
+	struct wlr_drm_syncobj_timeline_waiter render_waiter;
+	bool render_waiter_active;
+	int64_t render_ema_ns;
 
 	bool allow_tearing;
 	bool hdr;
