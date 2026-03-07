@@ -407,7 +407,14 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 
-	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
+	json_object_object_add(object, "max_render_time",
+		json_object_new_int((int)((output->max_render_time_ns + 999999) / 1000000)));
+	json_object_object_add(object, "max_render_time_ns",
+		json_object_new_int64(output->max_render_time_ns));
+	json_object_object_add(object, "adaptive_render_time", json_object_new_boolean(output->adaptive_render_time));
+	if (output->adaptive_render_time) {
+		json_object_object_add(object, "render_ema_ns", json_object_new_int64(output->render_ema_ns));
+	}
 	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
 	json_object_object_add(object, "hdr", json_object_new_boolean(output->hdr));
 }
