@@ -60,6 +60,12 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 			node->instruction = NULL;
 		}
 		if (node->destroying && node->ntxnrefs == 0) {
+			// Remove from dirty_nodes before freeing to prevent a later
+			// _transaction_commit_dirty call reading freed memory
+			int dirty_idx = list_find(server.dirty_nodes, node);
+			if (dirty_idx >= 0) {
+				list_del(server.dirty_nodes, dirty_idx);
+			}
 			switch (node->type) {
 			case N_ROOT:
 				sway_assert(false, "Never reached");
