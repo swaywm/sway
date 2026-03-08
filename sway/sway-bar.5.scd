@@ -169,7 +169,8 @@ ContextMenu|Activate|SecondaryActivate|ScrollDown|ScrollLeft|ScrollRight|ScrollU
 	for button3).
 
 *tray_last* yes|no
-            Sets the tray icons to appear as the last element in the bar. If _no_, the tray will appear to the left of the status command. Default is _yes_.
+	Sets the tray icons to appear as the last element in the bar. If _no_, the
+	tray will appear to the left of the status command. Default is _yes_.
 
 *tray_padding* <px> [px]
 	Sets the pixel padding of the system tray. This padding will surround the

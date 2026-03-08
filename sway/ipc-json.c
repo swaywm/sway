@@ -1469,7 +1469,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 
 	json_object_object_add(json, "tray_padding",
 			json_object_new_int(bar->tray_padding));
-        json_object_object_add(json, "tray_last", json_object_new_boolean(bar->tray_last));
+	json_object_object_add(json, "tray_last", json_object_new_boolean(bar->tray_last));
 #endif
 	return json;
 }
