@@ -308,9 +308,9 @@ static bool ipc_parse_config(
 		config->tray_padding = json_object_get_int(tray_padding);
 	}
 
-        if ((json_object_object_get_ex(bar_config, "tray_last", &tray_last))) {
-          config->tray_last = json_object_get_boolean(tray_last);       
-        }
+	if ((json_object_object_get_ex(bar_config, "tray_last", &tray_last))) {
+		config->tray_last = json_object_get_boolean(tray_last);
+	}
 
 	struct tray_binding *tray_bind = NULL, *tmp_tray_bind = NULL;
 	wl_list_for_each_safe(tray_bind, tmp_tray_bind, &config->tray_bindings,

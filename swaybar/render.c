@@ -675,14 +675,14 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 	 * utilize the available space.
 	 */
 	double x = output->width;
-        /* config->tray_last = false; */
+
 #if HAVE_TRAY
 	if (bar->tray && config->tray_last) {
 		uint32_t h = render_tray(cairo, output, &x);
 		max_height = h > max_height ? h : max_height;
 	}
 #endif
-       	if (bar->status) {
+	if (bar->status) {
 		uint32_t h = render_status_line(ctx, &x);
 		max_height = h > max_height ? h : max_height;
 	}
@@ -692,6 +692,7 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 		max_height = h > max_height ? h : max_height;
 	}
 #endif
+
 	x = 0;
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;

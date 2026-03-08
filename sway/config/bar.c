@@ -172,7 +172,7 @@ struct bar_config *default_bar_config(void) {
 
 #if HAVE_TRAY
 	bar->tray_padding = 2;
-        bar->tray_last = true;
+	bar->tray_last = true;
 	wl_list_init(&bar->tray_bindings);
 #endif
 
