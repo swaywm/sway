@@ -5,6 +5,7 @@
 #include "util.h"
 
 struct cmd_results *bar_cmd_tray_last(int argc, char **argv) {
+#if HAVE_TRAY
 	struct cmd_results *error = NULL;
         sway_log(SWAY_DEBUG, "Checking tray_last command");
 	if ((error = checkarg(argc,
@@ -26,4 +27,8 @@ struct cmd_results *bar_cmd_tray_last(int argc, char **argv) {
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
+#else
+	return cmd_results_new(CMD_INVALID,
+			"Sway has been compiled without tray support");
+#endif
 }
