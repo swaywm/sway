@@ -1344,7 +1344,9 @@ void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client
 	}
 	if (seat->has_focus) {
 		struct sway_node *focus = seat_get_focus(seat);
-		if (focus && node_is_view(focus) && wl_resource_get_client(
+		if (!focus) {
+			seat->has_focus = false;
+		} else if (node_is_view(focus) && wl_resource_get_client(
 					focus->sway_container->view->surface->resource) != client) {
 			seat_set_focus(seat, NULL);
 		}
