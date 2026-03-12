@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
 #include "sway/config.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
@@ -51,6 +52,7 @@ struct sway_workspace {
 	bool urgent;
 
 	struct sway_workspace_state current;
+	struct wlr_ext_workspace_handle_v1 *ext_workspace; // Always set.
 };
 
 struct workspace_config *workspace_find_config(const char *ws_name);
@@ -159,5 +161,9 @@ void workspace_squash(struct sway_workspace *workspace);
 
 void workspace_move_to_output(struct sway_workspace *workspace,
 		struct sway_output *output);
+
+void sway_ext_workspace_init(void);
+void sway_ext_workspace_output_enable(struct sway_output *output);
+void sway_ext_workspace_output_disable(struct sway_output *output);
 
 #endif

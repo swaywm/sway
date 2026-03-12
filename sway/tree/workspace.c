@@ -3,8 +3,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <strings.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
+#include "log.h"
 #include "stringop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
@@ -17,8 +21,123 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
-#include "log.h"
 #include "util.h"
+
+static const uint32_t WORKSPACE_CAPABILITIES =
+	EXT_WORKSPACE_HANDLE_V1_WORKSPACE_CAPABILITIES_ACTIVATE |
+	EXT_WORKSPACE_HANDLE_V1_WORKSPACE_CAPABILITIES_ASSIGN;
+
+static const uint32_t GROUP_CAPABILITIES =
+	EXT_WORKSPACE_GROUP_HANDLE_V1_GROUP_CAPABILITIES_CREATE_WORKSPACE;
+
+// Helper to find the output associated with a workspace group.
+static struct sway_output *group_to_output(
+		struct wlr_ext_workspace_group_handle_v1 *group) {
+	for (int i = 0; i < root->outputs->length; i++) {
+		struct sway_output *output = root->outputs->items[i];
+		if (output->ext_workspace_group == group) {
+			return output;
+		}
+	}
+	abort(); // unreachable
+}
+
+// Callback for ext-workspace-v1 commit events.
+static void handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, workspace_manager_v1_commit);
+	struct wlr_ext_workspace_v1_commit_event *event = data;
+
+	struct wlr_ext_workspace_v1_request *req, *tmp;
+	wl_list_for_each_safe(req, tmp, event->requests, link) {
+		switch (req->type) {
+		case WLR_EXT_WORKSPACE_V1_REQUEST_ACTIVATE:
+			if (req->activate.workspace) {
+				workspace_switch(req->activate.workspace->data);
+			}
+			break;
+		case WLR_EXT_WORKSPACE_V1_REQUEST_CREATE_WORKSPACE:;
+			struct sway_output *output = group_to_output(req->create_workspace.group);
+			sway_assert(output, "NULL output given to create_workspace");
+
+			char *name;
+			if (req->create_workspace.name) {
+				if (workspace_by_name(req->create_workspace.name)) {
+					sway_log(SWAY_ERROR, "Refusing to create workspace with duplicate name.");
+					break; // Already exists.
+				}
+				name = strdup(req->create_workspace.name);
+			} else {
+				name = workspace_next_name(output->wlr_output->name);
+			}
+
+			struct sway_workspace *new_ws = workspace_create(output, name);
+			if (new_ws) {
+				workspace_switch(new_ws);
+			}
+			free(name);
+			break;
+		case WLR_EXT_WORKSPACE_V1_REQUEST_ASSIGN:;
+			if (!req->assign.workspace || !req->assign.group) break;
+
+			struct sway_workspace *ws = req->assign.workspace->data;
+			struct sway_output *new_output = group_to_output(req->assign.group);
+			struct sway_output *old_output = ws->output;
+			workspace_move_to_output(ws, new_output);
+			arrange_output(old_output);
+			arrange_output(new_output);
+			break;
+		case WLR_EXT_WORKSPACE_V1_REQUEST_DEACTIVATE:
+		case WLR_EXT_WORKSPACE_V1_REQUEST_REMOVE:
+			break; // No-op.
+		}
+	}
+
+	transaction_commit_dirty();
+}
+
+// Initialize ext-workspace. Must be called once at startup.
+void sway_ext_workspace_init(void) {
+	server.workspace_manager_v1 =
+		wlr_ext_workspace_manager_v1_create(server.wl_display, 1);
+	if (!server.workspace_manager_v1) {
+		sway_log(SWAY_ERROR, "Failed to create ext_workspace_manager_v1");
+		return;
+	}
+
+	server.workspace_manager_v1_commit.notify = handle_commit;
+	wl_signal_add(&server.workspace_manager_v1->events.commit,
+		&server.workspace_manager_v1_commit);
+}
+
+// Must be called whenever an output is enabled.
+void sway_ext_workspace_output_enable(struct sway_output *output) {
+	if (!server.workspace_manager_v1 || !output->wlr_output) {
+		return;
+	}
+
+	output->ext_workspace_group =
+		wlr_ext_workspace_group_handle_v1_create(
+			server.workspace_manager_v1, GROUP_CAPABILITIES);
+	if (!output->ext_workspace_group) {
+		sway_log(SWAY_ERROR, "Failed to create workspace group for output '%s'",
+			output->wlr_output->name);
+		return;
+	}
+
+	wlr_ext_workspace_group_handle_v1_output_enter(
+		output->ext_workspace_group, output->wlr_output);
+}
+
+// Must be called whenever an output is disabled.
+void sway_ext_workspace_output_disable(struct sway_output *output) {
+	if (!output->ext_workspace_group) {
+		return;
+	}
+
+	wlr_ext_workspace_group_handle_v1_destroy(output->ext_workspace_group);
+	output->ext_workspace_group = NULL;
+}
 
 struct workspace_config *workspace_find_config(const char *ws_name) {
 	for (int i = 0; i < config->workspace_configs->length; ++i) {
@@ -70,6 +189,16 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 		sway_log(SWAY_ERROR, "Unable to allocate sway_workspace");
 		return NULL;
 	}
+
+	ws->ext_workspace = wlr_ext_workspace_handle_v1_create(
+		server.workspace_manager_v1, NULL, WORKSPACE_CAPABILITIES);
+	if (!ws->ext_workspace) {
+		sway_log(SWAY_ERROR, "Failed to create ext_workspace for '%s'", name);
+		free(ws);
+		return NULL;
+	}
+	ws->ext_workspace->data = ws;
+
 	node_init(&ws->node, N_WORKSPACE, ws);
 
 	bool failed = false;
@@ -79,6 +208,7 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	if (failed) {
 		wlr_scene_node_destroy(&ws->layers.tiling->node);
 		wlr_scene_node_destroy(&ws->layers.fullscreen->node);
+		wlr_ext_workspace_handle_v1_destroy(ws->ext_workspace);
 		free(ws);
 		return NULL;
 	}
@@ -127,6 +257,13 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	output_add_workspace(output, ws);
 	output_sort_workspaces(output);
 
+	wlr_ext_workspace_handle_v1_set_name(ws->ext_workspace, ws->name);
+	if (ws->output && ws->output->ext_workspace_group) {
+		wlr_ext_workspace_handle_v1_set_group(ws->ext_workspace,
+			ws->output->ext_workspace_group);
+	}
+	wlr_ext_workspace_handle_v1_set_active(ws->ext_workspace,
+		workspace_is_visible(ws));
 	ipc_event_workspace(NULL, ws, "init");
 	wl_signal_emit_mutable(&root->events.new_node, &ws->node);
 
@@ -162,6 +299,9 @@ void workspace_begin_destroy(struct sway_workspace *workspace) {
 	sway_log(SWAY_DEBUG, "Destroying workspace '%s'", workspace->name);
 	ipc_event_workspace(NULL, workspace, "empty"); // intentional
 	wl_signal_emit_mutable(&workspace->node.events.destroy, &workspace->node);
+
+	wlr_ext_workspace_handle_v1_destroy(workspace->ext_workspace);
+	workspace->ext_workspace = NULL;
 
 	if (workspace->output) {
 		workspace_detach(workspace);
@@ -687,6 +827,7 @@ void workspace_detect_urgent(struct sway_workspace *workspace) {
 
 	if (workspace->urgent != new_urgent) {
 		workspace->urgent = new_urgent;
+		wlr_ext_workspace_handle_v1_set_urgent(workspace->ext_workspace, workspace->urgent);
 		ipc_event_workspace(NULL, workspace, "urgent");
 	}
 }
