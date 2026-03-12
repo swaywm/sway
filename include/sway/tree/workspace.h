@@ -157,4 +157,7 @@ size_t workspace_num_sticky_containers(struct sway_workspace *ws);
  */
 void workspace_squash(struct sway_workspace *workspace);
 
+void workspace_move_to_output(struct sway_workspace *workspace,
+		struct sway_output *output);
+
 #endif
