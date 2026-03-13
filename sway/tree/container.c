@@ -137,10 +137,10 @@ struct sway_container *container_create(struct sway_view *view) {
 
 		if (!failed) {
 			c->output_enter.notify = handle_output_enter;
-			wl_signal_add(&c->output_handler->events.output_enter,
+			wl_signal_add(&c->output_handler->events.outputs_update,
 					&c->output_enter);
 			c->output_leave.notify = handle_output_leave;
-			wl_signal_add(&c->output_handler->events.output_leave,
+			wl_signal_add(&c->output_handler->events.outputs_update,
 					&c->output_leave);
 			c->output_handler_destroy.notify = handle_destroy;
 			wl_signal_add(&c->output_handler->node.events.destroy,
