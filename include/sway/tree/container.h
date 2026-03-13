@@ -93,8 +93,9 @@ struct sway_container {
 	struct wlr_scene_tree *content_tree;
 	struct wlr_scene_buffer *output_handler;
 
-	struct wl_listener output_enter;
-	struct wl_listener output_leave;
+	list_t *prev_outputs;
+	struct wl_listener outputs_update;
+
 	struct wl_listener output_handler_destroy;
 
 	struct sway_container_state current;
