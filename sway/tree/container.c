@@ -25,27 +25,34 @@
 #include "log.h"
 #include "stringop.h"
 
-static void handle_output_enter(
+static void handle_outputs_update(
 		struct wl_listener *listener, void *data) {
 	struct sway_container *con = wl_container_of(
-			listener, con, output_enter);
-	struct wlr_scene_output *output = data;
+			listener, con, outputs_update);
+	struct wlr_scene_outputs_update_event *event = data;
 
-	if (con->view->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_output_enter(
-			con->view->foreign_toplevel, output->output);
-	}
-}
+	struct wlr_foreign_toplevel_handle_v1 *toplevel = con->view->foreign_toplevel;
+	if (toplevel) {
+		struct wlr_foreign_toplevel_handle_v1_output *toplevel_output, *tmp;
+		wl_list_for_each_safe(toplevel_output, tmp, &toplevel->outputs, link) {
+			bool active = false;
+			for (size_t i = 0; i < event->size; i++) {
+				struct wlr_scene_output *scene_output = event->active[i];
+				if (scene_output->output == toplevel_output->output) {
+					active = true;
+					break;
+				}
+			}
 
-static void handle_output_leave(
-		struct wl_listener *listener, void *data) {
-	struct sway_container *con = wl_container_of(
-			listener, con, output_leave);
-	struct wlr_scene_output *output = data;
+			if (!active) {
+				wlr_foreign_toplevel_handle_v1_output_leave(toplevel, toplevel_output->output);
+			}
+		}
 
-	if (con->view->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_output_leave(
-			con->view->foreign_toplevel, output->output);
+		for (size_t i = 0; i < event->size; i++) {
+			struct wlr_scene_output *scene_output = event->active[i];
+			wlr_foreign_toplevel_handle_v1_output_enter(toplevel, scene_output->output);
+		}
 	}
 }
 
@@ -136,12 +143,9 @@ struct sway_container *container_create(struct sway_view *view) {
 		}
 
 		if (!failed) {
-			c->output_enter.notify = handle_output_enter;
-			wl_signal_add(&c->output_handler->events.output_enter,
-					&c->output_enter);
-			c->output_leave.notify = handle_output_leave;
-			wl_signal_add(&c->output_handler->events.output_leave,
-					&c->output_leave);
+			c->outputs_update.notify = handle_outputs_update;
+			wl_signal_add(&c->output_handler->events.outputs_update,
+					&c->outputs_update);
 			c->output_handler_destroy.notify = handle_destroy;
 			wl_signal_add(&c->output_handler->node.events.destroy,
 					&c->output_handler_destroy);
@@ -562,8 +566,7 @@ void container_begin_destroy(struct sway_container *con) {
 	}
 
 	if (con->view && con->view->container == con) {
-		wl_list_remove(&con->output_enter.link);
-		wl_list_remove(&con->output_leave.link);
+		wl_list_remove(&con->outputs_update.link);
 		wl_list_remove(&con->output_handler_destroy.link);
 	}
 }
