@@ -231,10 +231,11 @@ set|plus|minus|toggle <amount>
 	the per-output *allow_tearing* setting. See *sway-output*(5) for further
 	details.
 
-*move* left|right|up|down [<px> px]
-	Moves the focused container in the direction specified. The optional _px_
-	argument specifies how many pixels to move the container. If unspecified,
-	the default is 10 pixels. Pixels are ignored when moving tiled containers.
+*move* left|right|up|down [<px> [px|ppt]]
+	Moves the focused container in the specified direction. The distance can be
+	specified in pixels or percentage points, omitting the unit defaults to pixels.
+	If unspecified, the default is 10 pixels. Pixels are ignored when moving tiled
+	containers.
 
 *move* [absolute] position <pos_x> [px|ppt] <pos_y> [px|ppt]
 	Moves the focused container to the specified position in the workspace.
