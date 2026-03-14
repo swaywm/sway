@@ -84,6 +84,8 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const PangoFontDescription *desc,
 
 void get_text_size(cairo_t *cairo, const PangoFontDescription *desc, int *width, int *height,
 		int *baseline, double scale, bool markup, const char *fmt, ...) {
+	*width = *height = *baseline = 0;
+
 	va_list args;
 	va_start(args, fmt);
 	char *buf = vformat_str(fmt, args);
