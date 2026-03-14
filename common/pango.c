@@ -91,6 +91,7 @@ void get_text_size(cairo_t *cairo, const PangoFontDescription *desc, int *width,
 	char *buf = vformat_str(fmt, args);
 	va_end(args);
 	if (buf == NULL) {
+		sway_log(SWAY_ERROR, "Failed to format string");
 		return;
 	}
 
@@ -127,6 +128,7 @@ void render_text(cairo_t *cairo, const PangoFontDescription *desc,
 	char *buf = vformat_str(fmt, args);
 	va_end(args);
 	if (buf == NULL) {
+		sway_log(SWAY_ERROR, "Failed to format string");
 		return;
 	}
 
