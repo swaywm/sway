@@ -1136,10 +1136,12 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 
 	if (node == NULL) {
 		// Close any popups on the old focus
-		if (node_is_view(last_focus)) {
-			view_close_popups(last_focus->sway_container->view);
+		if (last_focus) {
+			if (node_is_view(last_focus)) {
+				view_close_popups(last_focus->sway_container->view);
+			}
+			seat_send_unfocus(last_focus, seat);
 		}
-		seat_send_unfocus(last_focus, seat);
 		sway_input_method_relay_set_focus(&seat->im_relay, NULL);
 		seat->has_focus = false;
 		return;
@@ -1291,7 +1293,9 @@ void seat_set_focus_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, bool unfocus) {
 	if (seat->has_focus && unfocus) {
 		struct sway_node *focus = seat_get_focus(seat);
-		seat_send_unfocus(focus, seat);
+		if (focus) {
+			seat_send_unfocus(focus, seat);
+		}
 		seat->has_focus = false;
 	}
 
@@ -1340,7 +1344,9 @@ void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client
 	}
 	if (seat->has_focus) {
 		struct sway_node *focus = seat_get_focus(seat);
-		if (node_is_view(focus) && wl_resource_get_client(
+		if (!focus) {
+			seat->has_focus = false;
+		} else if (node_is_view(focus) && wl_resource_get_client(
 					focus->sway_container->view->surface->resource) != client) {
 			seat_set_focus(seat, NULL);
 		}
