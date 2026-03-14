@@ -98,6 +98,16 @@ void container_resize_tiled(struct sway_container *parent, uint32_t axis,
 struct sway_container *container_find_resize_parent(struct sway_container *con,
 		uint32_t edge);
 
+// Keysym to keycode translation (used by bind.c and keyboard.c)
+struct keycode_matches {
+	xkb_keysym_t keysym;
+	xkb_keycode_t keycode;
+	int count;
+};
+
+void find_keycode(struct xkb_keymap *keymap, xkb_keycode_t keycode, void *data);
+struct keycode_matches get_keycode_for_keysym(xkb_keysym_t keysym);
+
 /**
  * Handlers shared by exec and exec_always.
  */
@@ -168,6 +178,7 @@ sway_cmd cmd_popup_during_fullscreen;
 sway_cmd cmd_primary_selection;
 sway_cmd cmd_reject;
 sway_cmd cmd_reload;
+sway_cmd cmd_remap;
 sway_cmd cmd_rename;
 sway_cmd cmd_resize;
 sway_cmd cmd_scratchpad;
