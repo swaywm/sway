@@ -97,12 +97,20 @@ void get_text_size(cairo_t *cairo, const PangoFontDescription *desc, int *width,
 
 	PangoLayout *layout = get_pango_layout(cairo, desc, buf, scale, markup);
 	pango_cairo_update_layout(cairo, layout);
+	cairo_status_t status = cairo_status(cairo);
+	if (status != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "pango_cairo_update_layout() failed: %s",
+			cairo_status_to_string(status));
+		goto out;
+	}
+
 	pango_layout_get_pixel_size(layout, width, height);
 	if (baseline) {
 		*baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
 	}
-	g_object_unref(layout);
 
+out:
+	g_object_unref(layout);
 	free(buf);
 }
 
@@ -137,9 +145,18 @@ void render_text(cairo_t *cairo, const PangoFontDescription *desc,
 	cairo_get_font_options(cairo, fo);
 	pango_cairo_context_set_font_options(pango_layout_get_context(layout), fo);
 	cairo_font_options_destroy(fo);
-	pango_cairo_update_layout(cairo, layout);
-	pango_cairo_show_layout(cairo, layout);
-	g_object_unref(layout);
 
+	pango_cairo_update_layout(cairo, layout);
+	cairo_status_t status = cairo_status(cairo);
+	if (status != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "pango_cairo_update_layout() failed: %s",
+			cairo_status_to_string(status));
+		goto out;
+	}
+
+	pango_cairo_show_layout(cairo, layout);
+
+out:
+	g_object_unref(layout);
 	free(buf);
 }
