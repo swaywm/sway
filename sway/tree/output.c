@@ -266,6 +266,10 @@ void output_destroy(struct sway_output *output) {
 		return;
 	}
 
+	int dirty_idx = list_find(server.dirty_nodes, &output->node);
+	if (dirty_idx >= 0) {
+		list_del(server.dirty_nodes, dirty_idx);
+	}
 	destroy_scene_layers(output);
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
