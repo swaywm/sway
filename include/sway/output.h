@@ -63,6 +63,7 @@ struct sway_output {
 	struct wl_listener request_state;
 
 	struct wlr_color_transform *color_transform;
+	struct wlr_ext_workspace_group_handle_v1 *ext_workspace_group;
 
 	struct timespec last_presentation;
 	uint32_t refresh_nsec;

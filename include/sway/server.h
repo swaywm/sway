@@ -127,6 +127,9 @@ struct sway_server {
 	struct wl_listener tearing_control_new_object;
 	struct wl_list tearing_controllers; // sway_tearing_controller::link
 
+	struct wlr_ext_workspace_manager_v1 *workspace_manager_v1;
+	struct wl_listener workspace_manager_v1_commit;
+
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
 	// The timeout for transactions, after which a transaction is applied
