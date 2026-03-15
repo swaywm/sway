@@ -301,12 +301,13 @@ static bool gaps_to_edge(struct sway_view *view) {
 
 void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *con = view->container;
-	struct sway_workspace *ws = con->pending.workspace;
 
 	if (container_is_scratchpad_hidden(con) &&
 			con->pending.fullscreen_mode != FULLSCREEN_GLOBAL) {
 		return;
 	}
+
+	struct sway_workspace *ws = con->pending.workspace;
 	struct sway_output *output = ws ? ws->output : NULL;
 
 	if (output && con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
@@ -325,9 +326,9 @@ void view_autoconfigure(struct sway_view *view) {
 
 	con->pending.border_top = con->pending.border_bottom = true;
 	con->pending.border_left = con->pending.border_right = true;
-	double y_offset = 0;
 
-	if (!container_is_floating_or_child(con) && ws) {
+	sway_assert(ws, "containers outside of the scratchpad need a workspace");
+	if (!container_is_floating_or_child(con)) {
 		if (config->hide_edge_borders == E_BOTH
 				|| config->hide_edge_borders == E_VERTICAL) {
 			con->pending.border_left = con->pending.x != ws->x;
@@ -355,60 +356,37 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 
 	if (!container_is_floating(con)) {
-		// In a tabbed or stacked container, the container's y is the top of the
-		// title area. We have to offset the surface y by the height of the title,
-		// bar, and disable any top border because we'll always have the title bar.
+		// In a tabbed or stacked container, disable any top border
+		// due to the presence of the title bar.
 		list_t *siblings = container_get_siblings(con);
 		bool show_titlebar = (siblings && siblings->length > 1)
 			|| !config->hide_lone_tab;
 		if (show_titlebar) {
 			enum sway_container_layout layout = container_parent_layout(con);
-			if (layout == L_TABBED) {
-				y_offset = container_titlebar_height();
-				con->pending.border_top = false;
-			} else if (layout == L_STACKED) {
-				y_offset = container_titlebar_height() * siblings->length;
-				con->pending.border_top = false;
-			}
+			con->pending.border_top = layout != L_TABBED && layout != L_STACKED;
 		}
 	}
 
-	double x, y, width, height;
-	switch (con->pending.border) {
-	default:
-	case B_CSD:
-	case B_NONE:
-		x = con->pending.x;
-		y = con->pending.y + y_offset;
-		width = con->pending.width;
-		height = con->pending.height - y_offset;
-		break;
-	case B_PIXEL:
-		x = con->pending.x + con->pending.border_thickness * con->pending.border_left;
-		y = con->pending.y + con->pending.border_thickness * con->pending.border_top + y_offset;
-		width = con->pending.width
-			- con->pending.border_thickness * con->pending.border_left
-			- con->pending.border_thickness * con->pending.border_right;
-		height = con->pending.height - y_offset
-			- con->pending.border_thickness * con->pending.border_top
+	double x = con->pending.x;
+	double y = con->pending.y;
+	double width = con->pending.width;
+	double height = con->pending.height;
+
+	if (con->pending.border == B_PIXEL) {
+		x += con->pending.border_thickness * con->pending.border_left;
+		y += con->pending.border_thickness * con->pending.border_top;
+		width -= con->pending.border_thickness * con->pending.border_left
+            + con->pending.border_thickness * con->pending.border_right;
+		height -= con->pending.border_thickness * con->pending.border_top
 			- con->pending.border_thickness * con->pending.border_bottom;
-		break;
-	case B_NORMAL:
+	} else if (con->pending.border == B_NORMAL) {
 		// Height is: 1px border + 3px pad + title height + 3px pad + 1px border
-		x = con->pending.x + con->pending.border_thickness * con->pending.border_left;
-		width = con->pending.width
-			- con->pending.border_thickness * con->pending.border_left
-			- con->pending.border_thickness * con->pending.border_right;
-		if (y_offset) {
-			y = con->pending.y + y_offset;
-			height = con->pending.height - y_offset
-				- con->pending.border_thickness * con->pending.border_bottom;
-		} else {
-			y = con->pending.y + container_titlebar_height();
-			height = con->pending.height - container_titlebar_height()
-				- con->pending.border_thickness * con->pending.border_bottom;
-		}
-		break;
+		x += con->pending.border_thickness * con->pending.border_left;
+		y += container_titlebar_height();
+		width -= con->pending.border_thickness * con->pending.border_left
+			+ con->pending.border_thickness * con->pending.border_right;
+		height -= container_titlebar_height()
+			+ con->pending.border_thickness * con->pending.border_bottom;
 	}
 
 	con->pending.content_x = x;
