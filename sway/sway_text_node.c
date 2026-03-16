@@ -9,6 +9,7 @@
 #include "pango.h"
 #include "sway/config.h"
 #include "sway/sway_text_node.h"
+#include "sway/output.h"
 
 struct cairo_buffer {
 	struct wlr_buffer base;
@@ -150,6 +151,39 @@ err:
 	cairo_font_options_destroy(fo);
 }
 
+static void text_calc_size(struct text_buffer *buffer) {
+	struct sway_text_node *props = &buffer->props;
+	props->width = 0;
+
+	cairo_t *c = cairo_create(NULL);
+	if (!c) {
+		sway_log(SWAY_ERROR, "cairo_t allocation failed");
+		return;
+	}
+
+	cairo_set_antialias(c, CAIRO_ANTIALIAS_BEST);
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		if (!output->wlr_output->enabled) {
+			continue;
+		}
+
+		int size, baseline;
+		get_text_size(c, config->font_description, &size, NULL,
+			&baseline, output->wlr_output->scale, props->pango_markup, "%s", buffer->text);
+
+		size = ceil((float)size / output->wlr_output->scale);
+		if (props->width < size) {
+			props->width = size;
+			props->baseline = (float)baseline / output->wlr_output->scale;
+		}
+	}
+	cairo_destroy(c);
+
+	wlr_scene_buffer_set_dest_size(buffer->buffer_node,
+		get_text_width(props), props->height);
+}
+
 static void handle_outputs_update(struct wl_listener *listener, void *data) {
 	struct text_buffer *buffer = wl_container_of(listener, buffer, outputs_update);
 	struct wlr_scene_outputs_update_event *event = data;
@@ -181,6 +215,7 @@ static void handle_outputs_update(struct wl_listener *listener, void *data) {
 	if (scale != buffer->scale || subpixel != buffer->subpixel) {
 		buffer->scale = scale;
 		buffer->subpixel = subpixel;
+		text_calc_size(buffer);
 		render_backing_buffer(buffer);
 	}
 }
@@ -193,24 +228,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	free(buffer->text);
 	free(buffer);
-}
-
-static void text_calc_size(struct text_buffer *buffer) {
-	struct sway_text_node *props = &buffer->props;
-
-	cairo_t *c = cairo_create(NULL);
-	if (!c) {
-		sway_log(SWAY_ERROR, "cairo_t allocation failed");
-		return;
-	}
-
-	cairo_set_antialias(c, CAIRO_ANTIALIAS_BEST);
-	get_text_size(c, config->font_description, &props->width, NULL,
-		&props->baseline, 1, props->pango_markup, "%s", buffer->text);
-	cairo_destroy(c);
-
-	wlr_scene_buffer_set_dest_size(buffer->buffer_node,
-		get_text_width(props), props->height);
 }
 
 struct sway_text_node *sway_text_node_create(struct wlr_scene_tree *parent,
