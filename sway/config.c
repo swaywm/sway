@@ -623,6 +623,72 @@ cleanup:
 	free(wd);
 }
 
+void load_include_one_configs(const char *pattern1, const char *pattern2,
+		struct sway_config *config, struct swaynag_instance *swaynag) {
+	char *wd = getcwd(NULL, 0);
+	if (!wd) {
+		sway_log(SWAY_ERROR, "include_one: failed to get working directory");
+		return;
+	}
+	char *parent_path = strdup(config->current_config_path);
+	const char *parent_dir = dirname(parent_path);
+	if (chdir(parent_dir) < 0) {
+		sway_log(SWAY_ERROR, "include_one: failed to change working directory");
+		goto cleanup;
+	}
+
+	list_t *loaded_basenames = create_list();
+	if (!loaded_basenames) {
+		sway_log(SWAY_ERROR, "include_one: failed to allocate list");
+		goto cleanup;
+	}
+
+	wordexp_t p;
+	if (wordexp(pattern1, &p, 0) == 0) {
+		char **w = p.we_wordv;
+		for (size_t i = 0; i < p.we_wordc; i++) {
+			if (load_include_config(w[i], config, swaynag)) {
+				char *tmp = strdup(w[i]);
+				list_add(loaded_basenames, strdup(basename(tmp)));
+				free(tmp);
+			}
+		}
+		wordfree(&p);
+	}
+
+	if (wordexp(pattern2, &p, 0) == 0) {
+		char **w = p.we_wordv;
+		for (size_t i = 0; i < p.we_wordc; i++) {
+			char *tmp = strdup(w[i]);
+			char *base = basename(tmp);
+			bool already_loaded = false;
+			for (int j = 0; j < loaded_basenames->length; j++) {
+				if (strcmp(loaded_basenames->items[j], base) == 0) {
+					already_loaded = true;
+					break;
+				}
+			}
+			if (!already_loaded) {
+				load_include_config(w[i], config, swaynag);
+			}
+			free(tmp);
+		}
+		wordfree(&p);
+	}
+
+	for (int i = 0; i < loaded_basenames->length; i++) {
+		free(loaded_basenames->items[i]);
+	}
+	list_free(loaded_basenames);
+
+	if (chdir(wd) < 0) {
+		sway_log(SWAY_ERROR, "failed to change working directory");
+	}
+cleanup:
+	free(parent_path);
+	free(wd);
+}
+
 void run_deferred_commands(void) {
 	if (!config->cmd_queue->length) {
 		return;

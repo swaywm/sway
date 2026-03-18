@@ -622,6 +622,14 @@ void load_include_configs(const char *path, struct sway_config *config,
 		struct swaynag_instance *swaynag);
 
 /**
+ * Loads included configs using basename-based shadowing.
+ * Files from pattern1 are always loaded. Files from pattern2 are loaded
+ * only if their basename was not already loaded from pattern1.
+ */
+void load_include_one_configs(const char *pattern1, const char *pattern2,
+        struct sway_config *config, struct swaynag_instance *swaynag);
+
+/**
  * Reads the config from the given FILE.
  */
 bool read_config(FILE *file, struct sway_config *config,

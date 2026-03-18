@@ -72,6 +72,13 @@ The following commands may only be used in the configuration file.
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
 
+*include_one* <pattern1> <pattern2>
+	Include files from _pattern1_. Then include files from _pattern2_ only
+	if a file with the same basename was not already included from
+	_pattern1_. Both patterns expand shell syntax (see *wordexp*(3) for
+	details). This allows user configs to shadow distro-provided defaults
+	by filename.
+
 *swaybg_command* <command>
 	Executes custom background _command_. Default is _swaybg_. Refer to
 	*sway-output*(5) for more information.
