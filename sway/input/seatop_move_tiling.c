@@ -81,6 +81,8 @@ static void resize_box(struct wlr_box *box, enum wlr_edges edge,
 		box->y += thickness;
 		box->width -= thickness * 2;
 		box->height -= thickness * 2;
+		if (box->width < 0) box->width = 0;
+		if (box->height < 0) box->height = 0;
 		break;
 	}
 }
@@ -154,7 +156,9 @@ static bool split_titlebar(struct sway_node *node, struct sway_container *avoid,
 
 static void update_indicator(struct seatop_move_tiling_event *e, struct wlr_box *box) {
 	wlr_scene_node_set_position(&e->indicator_rect->node, box->x, box->y);
-	wlr_scene_rect_set_size(e->indicator_rect, box->width, box->height);
+	wlr_scene_rect_set_size(e->indicator_rect,
+		box->width > 0 ? box->width : 0,
+		box->height > 0 ? box->height : 0);
 }
 
 static void handle_motion_postthreshold(struct sway_seat *seat) {

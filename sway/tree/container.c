@@ -335,7 +335,11 @@ static void update_rect_list(struct wlr_scene_tree *tree, pixman_region32_t *reg
 		if (i < len) {
 			const pixman_box32_t *box = &rects[i++];
 			wlr_scene_node_set_position(&rect->node, box->x1, box->y1);
-			wlr_scene_rect_set_size(rect, box->x2 - box->x1, box->y2 - box->y1);
+			int rect_width = box->x2 - box->x1;
+			int rect_height = box->y2 - box->y1;
+			wlr_scene_rect_set_size(rect,
+				rect_width > 0 ? rect_width : 0,
+				rect_height > 0 ? rect_height : 0);
 		}
 	}
 }

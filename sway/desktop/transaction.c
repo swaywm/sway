@@ -435,9 +435,10 @@ static void arrange_container(struct sway_container *con,
 		int border_left = con->current.border_left ? border_width : 0;
 		int border_right = con->current.border_right ? border_width : 0;
 		int vert_border_height = MAX(0, height - border_top - border_bottom);
+		int horiz_border_width = MAX(0, width);
 
-		wlr_scene_rect_set_size(con->border.top, width, border_top);
-		wlr_scene_rect_set_size(con->border.bottom, width, border_bottom);
+		wlr_scene_rect_set_size(con->border.top, horiz_border_width, border_top);
+		wlr_scene_rect_set_size(con->border.bottom, horiz_border_width, border_bottom);
 		wlr_scene_rect_set_size(con->border.left,
 			border_left, vert_border_height);
 		wlr_scene_rect_set_size(con->border.right,
@@ -449,7 +450,7 @@ static void arrange_container(struct sway_container *con,
 		wlr_scene_node_set_position(&con->border.left->node,
 			0, border_top);
 		wlr_scene_node_set_position(&con->border.right->node,
-			width - border_right, border_top);
+			horiz_border_width - border_right, border_top);
 
 		// make sure to reparent, it's possible that the client just came out of
 		// fullscreen mode where the parent of the surface is not the container
