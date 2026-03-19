@@ -682,7 +682,7 @@ void load_include_one_configs(const char *pattern1, const char *pattern2,
 	list_free(loaded_basenames);
 
 	if (chdir(wd) < 0) {
-		sway_log(SWAY_ERROR, "failed to change working directory");
+		sway_log(SWAY_ERROR, "include_one: failed to change working directory");
 	}
 cleanup:
 	free(parent_path);
