@@ -198,7 +198,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void text_calc_size(struct text_buffer *buffer) {
 	struct sway_text_node *props = &buffer->props;
 
-	cairo_t *c = cairo_create(NULL);
+	cairo_surface_t *dummy_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
+	cairo_t *c = cairo_create(dummy_surface);
 	if (!c) {
 		sway_log(SWAY_ERROR, "cairo_t allocation failed");
 		return;
@@ -208,6 +209,7 @@ static void text_calc_size(struct text_buffer *buffer) {
 	get_text_size(c, config->font_description, &props->width, NULL,
 		&props->baseline, 1, props->pango_markup, "%s", buffer->text);
 	cairo_destroy(c);
+	cairo_surface_destroy(dummy_surface);
 
 	wlr_scene_buffer_set_dest_size(buffer->buffer_node,
 		get_text_width(props), props->height);
