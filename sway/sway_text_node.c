@@ -107,8 +107,10 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	}
 
 	cairo_t *cairo = cairo_create(surface);
-	if (!cairo) {
-		sway_log(SWAY_ERROR, "cairo_create failed");
+	status = cairo_status(cairo);
+	if (status != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "cairo_create() failed: %s",
+			cairo_status_to_string(status));
 		free(cairo_buffer);
 		goto err;
 	}
@@ -200,8 +202,10 @@ static void text_calc_size(struct text_buffer *buffer) {
 
 	cairo_surface_t *dummy_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
 	cairo_t *c = cairo_create(dummy_surface);
-	if (!c) {
-		sway_log(SWAY_ERROR, "cairo_t allocation failed");
+	cairo_status_t status = cairo_status(c);
+	if (status != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "cairo_create() failed: %s",
+			cairo_status_to_string(status));
 		return;
 	}
 
