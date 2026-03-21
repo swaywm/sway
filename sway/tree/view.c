@@ -38,6 +38,41 @@
 #include "sway/xdg_decoration.h"
 #include "stringop.h"
 
+static void handle_outputs_update(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(listener, view, outputs_update);
+	struct wlr_scene_outputs_update_event *event = data;
+
+	struct wlr_foreign_toplevel_handle_v1 *toplevel = view->foreign_toplevel;
+	if (toplevel) {
+		struct wlr_foreign_toplevel_handle_v1_output *toplevel_output, *tmp;
+		wl_list_for_each_safe(toplevel_output, tmp, &toplevel->outputs, link) {
+			bool active = false;
+			for (size_t i = 0; i < event->size; i++) {
+				struct wlr_scene_output *scene_output = event->active[i];
+				if (scene_output->output == toplevel_output->output) {
+					active = true;
+					break;
+				}
+			}
+
+			if (!active) {
+				wlr_foreign_toplevel_handle_v1_output_leave(toplevel, toplevel_output->output);
+			}
+		}
+
+		for (size_t i = 0; i < event->size; i++) {
+			struct wlr_scene_output *scene_output = event->active[i];
+			wlr_foreign_toplevel_handle_v1_output_enter(toplevel, scene_output->output);
+		}
+	}
+}
+
+static bool handle_point_accepts_input(
+		struct wlr_scene_buffer *buffer, double *x, double *y) {
+	return false;
+}
+
 bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	bool failed = false;
@@ -51,11 +86,22 @@ bool view_init(struct sway_view *view, enum sway_view_type type,
 		goto err;
 	}
 
+	view->output_handler = wlr_scene_buffer_create(view->scene_tree, NULL);
+	if (!view->output_handler) {
+		sway_log(SWAY_ERROR, "Failed to allocate a scene node");
+		goto err;
+	}
+
 	view->image_capture_scene = wlr_scene_create();
 	if (view->image_capture_scene == NULL) {
 		goto err;
 	}
 	view->image_capture_scene->restack_xwayland_surfaces = false;
+
+	view->outputs_update.notify = handle_outputs_update;
+	wl_signal_add(&view->output_handler->events.outputs_update,
+		&view->outputs_update);
+	view->output_handler->point_accepts_input = handle_point_accepts_input;
 
 	view->type = type;
 	view->impl = impl;
@@ -102,6 +148,7 @@ void view_begin_destroy(struct sway_view *view) {
 		return;
 	}
 	view->destroying = true;
+	wl_list_remove(&view->outputs_update.link);
 
 	if (!view->container) {
 		view_destroy(view);
@@ -1229,8 +1276,10 @@ void view_save_buffer(struct sway_view *view) {
 		return;
 	}
 
-	// Enable and disable the saved surface tree like so to atomitaclly update
-	// the tree. This will prevent over damaging or other weirdness.
+	// Make sure the output handler is placed above the saved surface so we don't send
+	// spurious events to the foreign toplevel handler. Also, make the saved surface tree
+	// is disabled until it is ready to replace the real surface.
+	wlr_scene_node_place_below(&view->saved_surface_tree->node, &view->output_handler->node);
 	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, false);
 
 	wlr_scene_node_for_each_buffer(&view->content_tree->node,
