@@ -123,8 +123,8 @@ out:
 }
 
 void get_text_metrics(const PangoFontDescription *description, int *height, int *baseline) {
-	cairo_t *cairo = cairo_create(NULL);
-	PangoContext *pango = pango_cairo_create_context(cairo);
+	PangoFontMap *fontmap = pango_cairo_font_map_get_default();
+	PangoContext *pango = pango_font_map_create_context(fontmap);
 	pango_context_set_round_glyph_positions(pango, false);
 	// When passing NULL as a language, pango uses the current locale.
 	PangoFontMetrics *metrics = pango_context_get_metrics(pango, description, NULL);
@@ -134,7 +134,6 @@ void get_text_metrics(const PangoFontDescription *description, int *height, int 
 
 	pango_font_metrics_unref(metrics);
 	g_object_unref(pango);
-	cairo_destroy(cairo);
 }
 
 void render_text(cairo_t *cairo, const PangoFontDescription *desc,
