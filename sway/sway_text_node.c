@@ -198,7 +198,10 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void text_calc_size(struct text_buffer *buffer) {
 	struct sway_text_node *props = &buffer->props;
 
-	cairo_t *c = cairo_create(NULL);
+	cairo_surface_t *recorder = cairo_recording_surface_create(
+		CAIRO_CONTENT_COLOR_ALPHA, NULL);
+	cairo_t *c = cairo_create(recorder);
+	cairo_surface_destroy(recorder);
 	if (!c) {
 		sway_log(SWAY_ERROR, "cairo_t allocation failed");
 		return;
