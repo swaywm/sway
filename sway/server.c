@@ -447,6 +447,7 @@ bool server_init(struct sway_server *server) {
 	if (server->renderer->features.input_color_transform) {
 		const enum wp_color_manager_v1_render_intent render_intents[] = {
 			WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
+			WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE,
 		};
 		size_t transfer_functions_len = 0;
 		enum wp_color_manager_v1_transfer_function *transfer_functions =
