@@ -381,14 +381,16 @@ int main(int argc, char **argv) {
 
 	struct swaynag_instance nag_gpu = (struct swaynag_instance){
 		.args = "--type error "
-		"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' ",
-		.detailed = false,
+			"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' "
+			"--detailed-message",
+		.detailed = true,
 	};
 
 	if (unsupported_gpu_detected && !allow_unsupported_gpu) {
-		if (!swaynag_spawn(config->swaynag_command, &nag_gpu)) {
-			sway_log(SWAY_ERROR, "Unable to start swaynag");
-		}
+		swaynag_log(config->swaynag_command, &nag_gpu,
+			"To remove this message, launch sway with --unsupported-gpu "
+			"or set the environment variable SWAY_UNSUPPORTED_GPU=true.");
+		swaynag_show(&nag_gpu);
 	}
 
 	server_run(&server);

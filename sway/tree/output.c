@@ -2,6 +2,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
+#include "sway/tree/workspace.h"
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -158,6 +160,7 @@ void output_enable(struct sway_output *output) {
 	output->enabled = true;
 	list_add(root->outputs, output);
 
+	sway_ext_workspace_output_enable(output);
 	restore_workspaces(output);
 
 	struct sway_workspace *ws = NULL;
@@ -297,6 +300,7 @@ void output_disable(struct sway_output *output) {
 
 	destroy_layers(output);
 	output_evacuate(output);
+	sway_ext_workspace_output_disable(output);
 }
 
 void output_begin_destroy(struct sway_output *output) {
@@ -338,6 +342,10 @@ void output_add_workspace(struct sway_output *output,
 	}
 	list_add(output->workspaces, workspace);
 	workspace->output = output;
+	if (workspace->output && workspace->output->ext_workspace_group) {
+		wlr_ext_workspace_handle_v1_set_group(workspace->ext_workspace,
+			workspace->output->ext_workspace_group);
+	}
 	node_set_dirty(&output->node);
 	node_set_dirty(&workspace->node);
 }
