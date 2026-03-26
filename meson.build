@@ -1,7 +1,7 @@
 project(
 	'sway',
 	'c',
-	version: '1.12-dev',
+	version: '1.13-dev',
 	license: 'MIT',
 	meson_version: '>=1.3',
 	default_options: [
@@ -39,14 +39,14 @@ if is_freebsd
 endif
 
 # Execute the wlroots subproject, if any
-wlroots_version = ['>=0.20.0', '<0.21.0']
+wlroots_version = ['>=0.21.0', '<0.22.0']
 subproject(
 	'wlroots',
 	default_options: ['examples=false'],
 	required: false,
 	version: wlroots_version,
 )
-wlroots = dependency('wlroots-0.20', version: wlroots_version, fallback: 'wlroots')
+wlroots = dependency('wlroots-0.21', version: wlroots_version, fallback: 'wlroots')
 wlroots_features = {
 	'xwayland': false,
 	'libinput_backend': false,
