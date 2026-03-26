@@ -36,6 +36,13 @@ void node_set_dirty(struct sway_node *node) {
 	list_add(server.dirty_nodes, node);
 }
 
+void node_finish(struct sway_node *node) {
+	int dirty_idx = list_find(server.dirty_nodes, node);
+	if (dirty_idx >= 0) {
+		list_del(server.dirty_nodes, dirty_idx);
+	}
+}
+
 bool node_is_view(struct sway_node *node) {
 	return node->type == N_CONTAINER && node->sway_container->view;
 }

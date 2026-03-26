@@ -60,6 +60,8 @@ const char *node_type_to_str(enum sway_node_type type);
  */
 void node_set_dirty(struct sway_node *node);
 
+void node_finish(struct sway_node *node);
+
 bool node_is_view(struct sway_node *node);
 
 char *node_get_name(struct sway_node *node);

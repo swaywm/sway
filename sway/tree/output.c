@@ -273,6 +273,7 @@ void output_destroy(struct sway_output *output) {
 	list_free(output->workspaces);
 	list_free(output->current.workspaces);
 	wlr_color_transform_unref(output->color_transform);
+	node_finish(&output->node);
 	free(output);
 }
 

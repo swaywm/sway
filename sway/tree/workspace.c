@@ -292,6 +292,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 	list_free(workspace->tiling);
 	list_free(workspace->current.floating);
 	list_free(workspace->current.tiling);
+	node_finish(&workspace->node);
 	free(workspace);
 }
 
