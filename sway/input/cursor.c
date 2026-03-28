@@ -32,15 +32,8 @@
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
-/**
- * Returns the node at the cursor's position. If there is a surface at that
- * location, it is stored in **surface (it may not be a view).
- */
-struct sway_node *node_at_coords(
-		struct sway_seat *seat, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy) {
-	struct wlr_scene_node *scene_node = NULL;
-
+struct wlr_scene_node *scene_node_at_coords(
+		double lx, double ly, double *sx, double *sy) {
 	struct wlr_scene_node *node;
 	wl_list_for_each_reverse(node, &root->layer_tree->children, link) {
 		struct wlr_scene_tree *layer = wlr_scene_tree_from_node(node);
@@ -51,69 +44,58 @@ struct sway_node *node_at_coords(
 			continue;
 		}
 
-		scene_node = wlr_scene_node_at(&layer->node, lx, ly, sx, sy);
-		if (scene_node) {
-			break;
+		struct wlr_scene_node *node = wlr_scene_node_at(&layer->node, lx, ly, sx, sy);
+		if (node) {
+			return node;
 		}
 	}
 
-	if (scene_node) {
-		// determine what wlr_surface we clicked on
-		if (scene_node->type == WLR_SCENE_NODE_BUFFER) {
-			struct wlr_scene_buffer *scene_buffer =
-				wlr_scene_buffer_from_node(scene_node);
-			struct wlr_scene_surface *scene_surface =
-				wlr_scene_surface_try_from_buffer(scene_buffer);
+	return NULL;
+}
 
-			if (scene_surface) {
-				*surface = scene_surface->surface;
-			}
-		}
+struct wlr_surface *surface_try_from_scene_node(struct wlr_scene_node *node) {
+	if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
+		return NULL;
+	}
 
-		// determine what container we clicked on
-		struct wlr_scene_node *current = scene_node;
-		while (true) {
-			struct sway_container *con = scene_descriptor_try_get(current,
-				SWAY_SCENE_DESC_CONTAINER);
+	struct wlr_scene_buffer *scene_buffer =
+		wlr_scene_buffer_from_node(node);
+	struct wlr_scene_surface *scene_surface =
+		wlr_scene_surface_try_from_buffer(scene_buffer);
 
-			if (!con) {
-				struct sway_view *view = scene_descriptor_try_get(current,
-					SWAY_SCENE_DESC_VIEW);
-				if (view) {
-					con = view->container;
-				}
-			}
+	if (scene_surface) {
+		return scene_surface->surface;
+	}
 
-			if (!con) {
-				struct sway_popup_desc *popup =
-					scene_descriptor_try_get(current, SWAY_SCENE_DESC_POPUP);
-				if (popup && popup->view) {
-					con = popup->view->container;
-				}
-			}
+	return NULL;
+}
 
-			if (con && (!con->view || con->view->surface)) {
-				return &con->node;
-			}
-
-			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_LAYER_SHELL)) {
-				// We don't want to feed through the current workspace on
-				// layer shells
+struct sway_node *sway_node_try_from_scene_node(struct wlr_scene_node *node,
+		double lx, double ly) {
+	if (node) {
+		struct sway_container *con =
+			scene_descriptor_find(node, SWAY_SCENE_DESC_CONTAINER);
+		if (con) {
+			// If this condition succeeds, the container is currently in the
+			// process of being destroyed. In this case, ignore the container
+			if (con->view && !con->view->surface) {
 				return NULL;
 			}
+
+			return &con->node;
+		}
+
+		// if we clicked on a layer shell or unmanaged xwayland we don't
+		// want to return the workspace node.
+		if (scene_descriptor_find(node, SWAY_SCENE_DESC_LAYER_SHELL)) {
+			return NULL;
+		}
 
 #if WLR_HAS_XWAYLAND
-			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
-				return NULL;
-			}
-#endif
-
-			if (!current->parent) {
-				break;
-			}
-
-			current = &current->parent->node;
+		if (scene_descriptor_find(node, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
+			return NULL;
 		}
+#endif
 	}
 
 	// if we aren't on a container, determine what workspace we are on
@@ -135,6 +117,18 @@ struct sway_node *node_at_coords(
 	}
 
 	return &ws->node;
+}
+
+/**
+ * Returns the node at the cursor's position. If there is a surface at that
+ * location, it is stored in **surface (it may not be a view).
+ */
+struct sway_node *node_at_coords(double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	struct wlr_scene_node *scene_node = scene_node_at_coords(lx, ly, sx, sy);
+	*surface = surface_try_from_scene_node(scene_node);
+
+	return sway_node_try_from_scene_node(scene_node, lx, ly);
 }
 
 void cursor_rebase(struct sway_cursor *cursor) {
@@ -299,8 +293,7 @@ void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	if (cursor->active_constraint && device->type == WLR_INPUT_DEVICE_POINTER) {
 		struct wlr_surface *surface = NULL;
 		double sx, sy;
-		node_at_coords(cursor->seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+		node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 		if (cursor->active_constraint->surface != surface) {
 			return;
@@ -559,7 +552,7 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
 	struct sway_seat *seat = cursor->seat;
-	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	// The logic for whether we should send a tablet event or an emulated pointer
 	// event is tricky. It comes down to:
@@ -655,8 +648,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
-	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
-		&surface, &sx, &sy);
+	node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	if (cursor->simulating_pointer_from_tool_tip &&
 			event->state == WLR_TABLET_TOOL_TIP_UP) {
@@ -740,8 +732,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
 
-	node_at_coords(cursor->seat, cursor->cursor->x, cursor->cursor->y,
-		&surface, &sx, &sy);
+	node_at_coords(cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	// TODO: floating resize should support graphics tablet events
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(cursor->seat->wlr_seat);
