@@ -63,6 +63,7 @@
 #include "sway/server.h"
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
+#include "sway/tree/workspace.h"
 
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
@@ -74,7 +75,7 @@
 #endif
 
 #define SWAY_XDG_SHELL_VERSION 5
-#define SWAY_LAYER_SHELL_VERSION 4
+#define SWAY_LAYER_SHELL_VERSION 5
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 #define SWAY_PRESENTATION_VERSION 2
 
@@ -272,7 +273,7 @@ bool server_init(struct sway_server *server) {
 
 	if (wlr_renderer_get_texture_formats(server->renderer, WLR_BUFFER_CAP_DMABUF) != NULL) {
 		server->linux_dmabuf_v1 = wlr_linux_dmabuf_v1_create_with_renderer(
-			server->wl_display, 4, server->renderer);
+			server->wl_display, 5, server->renderer);
 	}
 	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
 			server->renderer->features.timeline &&
@@ -377,6 +378,7 @@ bool server_init(struct sway_server *server) {
 		wlr_foreign_toplevel_manager_v1_create(server->wl_display);
 
 	sway_session_lock_init();
+	sway_ext_workspace_init();
 
 #if WLR_HAS_DRM_BACKEND
 	server->drm_lease_manager=
@@ -440,7 +442,7 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_toplevel_tag_manager_v1_set_tag);
 
 	struct wlr_cursor_shape_manager_v1 *cursor_shape_manager =
-		wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
+		wlr_cursor_shape_manager_v1_create(server->wl_display, 2);
 	server->request_set_cursor_shape.notify = handle_request_set_cursor_shape;
 	wl_signal_add(&cursor_shape_manager->events.request_set_shape, &server->request_set_cursor_shape);
 
@@ -543,6 +545,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->xdg_toplevel_tag_manager_v1_set_tag.link);
 	wl_list_remove(&server->request_set_cursor_shape.link);
 	wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
+	wl_list_remove(&server->workspace_manager_v1_commit.link);
 	input_manager_finish(server->input);
 
 	// TODO: free sway-specific resources

@@ -555,8 +555,10 @@ static void queue_output_config(struct output_config *oc,
 	}
 
 	bool hdr = oc && oc->hdr == 1;
-	if (hdr && oc->color_transform != NULL) {
-		sway_log(SWAY_ERROR, "Cannot HDR on output %s: output has an ICC profile set", wlr_output->name);
+	bool color_profile = oc && (oc->color_transform != NULL
+		|| oc->color_profile == COLOR_PROFILE_TRANSFORM_WITH_DEVICE_PRIMARIES);
+	if (hdr && color_profile) {
+		sway_log(SWAY_ERROR, "Cannot use HDR on output %s: output has a color profile set", wlr_output->name);
 		hdr = false;
 	}
 	set_hdr(wlr_output, pending, hdr);

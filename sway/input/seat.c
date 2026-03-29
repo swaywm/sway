@@ -6,6 +6,7 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -1202,6 +1203,15 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 	set_workspace(seat, new_workspace);
 	if (container && container->view) {
 		ipc_event_window(container, "focus");
+	}
+
+	if (last_workspace && last_workspace != new_workspace) {
+		wlr_ext_workspace_handle_v1_set_active(last_workspace->ext_workspace,
+			workspace_is_visible(last_workspace));
+	}
+	if (new_workspace) {
+		wlr_ext_workspace_handle_v1_set_active(new_workspace->ext_workspace,
+			workspace_is_visible(new_workspace));
 	}
 
 	// Move sticky containers to new workspace
