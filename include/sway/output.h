@@ -66,10 +66,7 @@ struct sway_output {
 	struct wlr_color_transform *color_transform;
 	struct wlr_ext_workspace_group_handle_v1 *ext_workspace_group;
 
-	struct timespec last_presentation;
-	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
-	struct wl_event_source *repaint_timer;
 
 	bool allow_tearing;
 	bool hdr;
@@ -116,6 +113,8 @@ void output_sort_workspaces(struct sway_output *output);
 void output_enable(struct sway_output *output);
 
 void output_disable(struct sway_output *output);
+
+void output_set_max_render_time(struct sway_output *output, int max_render_time);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 
