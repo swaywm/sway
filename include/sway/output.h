@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_damage_ring.h>
+#include <wlr/types/wlr_frame_scheduler.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_scene.h>
 #include "config.h"

@@ -9,6 +9,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
+#include <wlr/types/wlr_frame_scheduler.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
@@ -270,7 +271,6 @@ static bool output_can_tear(struct sway_output *output) {
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
-	output->wlr_output->frame_pending = false;
 	if (!output->wlr_output->enabled) {
 		return 0;
 	}
@@ -280,11 +280,6 @@ static int output_repaint_timer_handler(void *data) {
 	struct wlr_scene_output_state_options opts = {
 		.color_transform = output->color_transform,
 	};
-
-	struct wlr_scene_output *scene_output = output->scene_output;
-	if (!wlr_scene_output_needs_frame(scene_output)) {
-		return 0;
-	}
 
 	struct wlr_output_state pending;
 	wlr_output_state_init(&pending);
@@ -362,7 +357,6 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 	if (delay < 1) {
 		output_repaint_timer_handler(output);
 	} else {
-		output->wlr_output->frame_pending = true;
 		wl_event_source_timer_update(output->repaint_timer, delay);
 	}
 
@@ -585,7 +579,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_output->events.present, &output->present);
 	output->present.notify = handle_present;
-	wl_signal_add(&wlr_output->events.frame, &output->frame);
+	wl_signal_add(&scene_output->frame_scheduler->events.frame, &output->frame);
 	output->frame.notify = handle_frame;
 	wl_signal_add(&wlr_output->events.request_state, &output->request_state);
 	output->request_state.notify = handle_request_state;
