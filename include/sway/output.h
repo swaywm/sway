@@ -19,6 +19,8 @@ struct sway_output_state {
 	struct sway_workspace *active_workspace;
 };
 
+#define MAX_RENDER_TIME_AUTO -2
+
 struct sway_output {
 	struct sway_node node;
 
@@ -66,7 +68,7 @@ struct sway_output {
 	struct wlr_color_transform *color_transform;
 	struct wlr_ext_workspace_group_handle_v1 *ext_workspace_group;
 
-	int max_render_time; // In milliseconds
+	int max_render_time;
 
 	bool allow_tearing;
 	bool hdr;

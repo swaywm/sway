@@ -317,7 +317,6 @@ struct sway_timer_frame_scheduler {
 	struct wl_event_source *timer;
 
 	bool frame_pending;
-	bool needs_frame;
 
 	struct wl_listener present;
 };
@@ -333,25 +332,15 @@ static void timed_frame_scheduler_destroy(struct wlr_frame_scheduler *wlr_schedu
 	free(scheduler);
 }
 
-static void timed_frame_scheduler_trigger_frame(
-		struct sway_timer_frame_scheduler *scheduler) {
-	if (!scheduler->needs_frame) {
-		return;
-	}
-	scheduler->needs_frame = false;
-	wl_signal_emit_mutable(&scheduler->base.events.frame, NULL);
-}
-
 static void timed_frame_scheduler_handle_idle(void *data) {
 	struct sway_timer_frame_scheduler *scheduler = data;
 	scheduler->idle = NULL;
-	timed_frame_scheduler_trigger_frame(scheduler);
+	wlr_frame_scheduler_emit_frame(&scheduler->base);
 }
 
 static void timed_frame_scheduler_schedule_frame(struct wlr_frame_scheduler *wlr_scheduler) {
 	struct sway_timer_frame_scheduler *scheduler =
 		wl_container_of(wlr_scheduler, scheduler, base);
-	scheduler->needs_frame = true;
 	if (scheduler->idle != NULL || scheduler->frame_pending) {
 		return;
 	}
@@ -367,7 +356,7 @@ static const struct wlr_frame_scheduler_impl timed_frame_scheduler_impl = {
 static int timed_frame_scheduler_handle_timer(void *data) {
 	struct sway_timer_frame_scheduler *scheduler = data;
 	scheduler->frame_pending = false;
-	timed_frame_scheduler_trigger_frame(scheduler);
+	wlr_frame_scheduler_emit_frame(&scheduler->base);
 	return 0;
 }
 
@@ -393,7 +382,7 @@ static void timed_frame_scheduler_handle_present(struct wl_listener *listener, v
 	// If the delay is less than 1 millisecond (which is the least we can wait)
 	// then just render right away.
 	if (delay < 1) {
-		timed_frame_scheduler_trigger_frame(scheduler);
+		wlr_frame_scheduler_emit_frame(&scheduler->base);
 	} else {
 		scheduler->frame_pending = true;
 		wl_event_source_timer_update(scheduler->timer, delay);
@@ -471,7 +460,9 @@ void output_set_max_render_time(struct sway_output *output, int max_render_time)
 	output->max_render_time = max_render_time;
 
 	struct wlr_frame_scheduler *scheduler;
-	if (max_render_time != 0) {
+	if (max_render_time == MAX_RENDER_TIME_AUTO) {
+		scheduler = wlr_predictive_frame_scheduler_create(output->wlr_output);
+	} else if (max_render_time > 0) {
 		scheduler = timed_frame_scheduler_create(output->wlr_output, max_render_time);
 	} else {
 		scheduler = wlr_frame_scheduler_autocreate(output->wlr_output);
