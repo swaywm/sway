@@ -64,6 +64,7 @@
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
+#include "sway/xdg_session_management_v1.h"
 
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
@@ -662,6 +663,11 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
+	if (!init_xdg_session_management_v1(server)) {
+		sway_log(SWAY_ERROR, "Failed to create XDG session manager");
+		return false;
+	}
+
 	wl_list_init(&server->pending_launcher_ctxs);
 
 	// Avoid using "wayland-0" as display socket
@@ -739,6 +745,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->request_set_cursor_shape.link);
 	wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
 	wl_list_remove(&server->workspace_manager_v1_commit.link);
+	finish_xdg_session_management_v1(server);
 	input_manager_finish(server->input);
 
 	// TODO: free sway-specific resources
