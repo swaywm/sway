@@ -2,10 +2,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_toplevel_drag_v1.h>
 #include <wlr/types/wlr_xdg_toplevel_tag_v1.h>
 #include <wlr/util/edges.h>
 #include "log.h"
+#include "sway/server.h"
 #include "sway/decoration.h"
 #include "sway/scene_descriptor.h"
 #include "sway/desktop/transaction.h"
@@ -228,6 +231,13 @@ static void set_resizing(struct sway_view *view, bool resizing) {
 static bool wants_floating(struct sway_view *view) {
 	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_toplevel;
 	struct wlr_xdg_toplevel_state *state = &toplevel->current;
+
+	// Check if this toplevel is attached to a toplevel drag
+	if (wlr_xdg_toplevel_drag_v1_from_wlr_xdg_toplevel(
+			server.xdg_toplevel_drag_manager, toplevel) != NULL) {
+		return true;
+	}
+
 	return (state->min_width != 0 && state->min_height != 0
 		&& (state->min_width == state->max_width
 		|| state->min_height == state->max_height))
