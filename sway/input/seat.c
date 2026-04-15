@@ -14,7 +14,6 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_xcursor_manager.h>
-#include "config.h"
 #include "list.h"
 #include "log.h"
 #include "sway/config.h"
@@ -1080,6 +1079,7 @@ static void send_unfocus(struct sway_container *con, void *data) {
 static void seat_send_unfocus(struct sway_node *node, struct sway_seat *seat) {
 	sway_cursor_constrain(seat->cursor, NULL);
 	wlr_seat_keyboard_notify_clear_focus(seat->wlr_seat);
+	wlr_seat_keyboard_end_grab(seat->wlr_seat);
 	if (node->type == N_WORKSPACE) {
 		workspace_for_each_container(node->sway_workspace, send_unfocus, seat);
 	} else {
