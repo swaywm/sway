@@ -1071,6 +1071,7 @@ bool seat_is_input_allowed(struct sway_seat *seat,
 
 static void send_unfocus(struct sway_container *con, void *data) {
 	if (con->view) {
+		view_close_popups(con->view);
 		view_set_activated(con->view, false);
 	}
 }
@@ -1079,7 +1080,6 @@ static void send_unfocus(struct sway_container *con, void *data) {
 static void seat_send_unfocus(struct sway_node *node, struct sway_seat *seat) {
 	sway_cursor_constrain(seat->cursor, NULL);
 	wlr_seat_keyboard_notify_clear_focus(seat->wlr_seat);
-	wlr_seat_keyboard_end_grab(seat->wlr_seat);
 	if (node->type == N_WORKSPACE) {
 		workspace_for_each_container(node->sway_workspace, send_unfocus, seat);
 	} else {
@@ -1136,10 +1136,6 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 	struct sway_workspace *last_workspace = seat_get_focused_workspace(seat);
 
 	if (node == NULL) {
-		// Close any popups on the old focus
-		if (node_is_view(last_focus)) {
-			view_close_popups(last_focus->sway_container->view);
-		}
 		seat_send_unfocus(last_focus, seat);
 		sway_input_method_relay_set_focus(&seat->im_relay, NULL);
 		seat->has_focus = false;
@@ -1226,11 +1222,6 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 				--i;
 			}
 		}
-	}
-
-	// Close any popups on the old focus
-	if (last_focus && node_is_view(last_focus)) {
-		view_close_popups(last_focus->sway_container->view);
 	}
 
 	// If urgent, either unset the urgency or start a timer to unset it
