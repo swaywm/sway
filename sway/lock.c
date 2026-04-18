@@ -344,8 +344,12 @@ bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	return false;
 }
 
-void sway_session_lock_init(void) {
+bool sway_session_lock_init(void) {
 	server.session_lock.manager = wlr_session_lock_manager_v1_create(server.wl_display);
+	if (!server.session_lock.manager) {
+		sway_log(SWAY_ERROR, "Failed to create session lock manager");
+		return false;
+	}
 
 	server.session_lock.new_lock.notify = handle_session_lock;
 	server.session_lock.manager_destroy.notify = handle_session_lock_destroy;
@@ -353,4 +357,5 @@ void sway_session_lock_init(void) {
 		&server.session_lock.new_lock);
 	wl_signal_add(&server.session_lock.manager->events.destroy,
 		&server.session_lock.manager_destroy);
+	return true;
 }
