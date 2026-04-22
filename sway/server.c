@@ -227,7 +227,7 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 }
 
 static void handle_new_foreign_toplevel_capture_request(struct wl_listener *listener, void *data) {
-	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request *request = data;
+	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_event *request = data;
 	struct sway_view *view = request->toplevel_handle->data;
 
 	if (view->image_capture_source == NULL) {
@@ -561,7 +561,7 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 	server->new_foreign_toplevel_capture_request.notify = handle_new_foreign_toplevel_capture_request;
-	wl_signal_add(&server->ext_foreign_toplevel_image_capture_source_manager_v1->events.new_request,
+	wl_signal_add(&server->ext_foreign_toplevel_image_capture_source_manager_v1->events.capture_request,
 		&server->new_foreign_toplevel_capture_request);
 
 	server->tearing_control_v1 =
