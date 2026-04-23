@@ -126,7 +126,8 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input->virtual_keyboard->global ||
 		global == server.input->virtual_pointer->global ||
 		global == server.input->transient_seat_manager->global ||
-		global == server.xdg_output_manager_v1->global;
+		global == server.xdg_output_manager_v1->global ||
+		global == server.workspace_manager_v1->global;
 }
 
 static bool filter_global(const struct wl_client *client,
