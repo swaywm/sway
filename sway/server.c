@@ -296,11 +296,8 @@ bool server_init(struct sway_server *server) {
 	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
 			server->renderer->features.timeline &&
 			server->backend->features.timeline) {
-		if (!wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
-				wlr_renderer_get_drm_fd(server->renderer))) {
-			sway_log(SWAY_ERROR, "Failed to create linux-drm-syncobj v1");
-			return false;
-		}
+		wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
+				wlr_renderer_get_drm_fd(server->renderer));
 	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
