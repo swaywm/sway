@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include "sway/config.h"
+#include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -41,6 +42,13 @@ static struct wlr_scene_rect *alloc_rect_node(struct wlr_scene_tree *parent,
 	}
 
 	return rect;
+}
+
+void container_init_border_rects(struct sway_container *c, bool *failed) {
+	c->border.top = alloc_rect_node(c->border.tree, failed);
+	c->border.bottom = alloc_rect_node(c->border.tree, failed);
+	c->border.left = alloc_rect_node(c->border.tree, failed);
+	c->border.right = alloc_rect_node(c->border.tree, failed);
 }
 
 struct sway_container *container_create(struct sway_view *view) {
@@ -87,10 +95,7 @@ struct sway_container *container_create(struct sway_view *view) {
 
 	if (view) {
 		// only containers with views can have borders
-		c->border.top = alloc_rect_node(c->border.tree, &failed);
-		c->border.bottom = alloc_rect_node(c->border.tree, &failed);
-		c->border.left = alloc_rect_node(c->border.tree, &failed);
-		c->border.right = alloc_rect_node(c->border.tree, &failed);
+		container_init_border_rects(c, &failed);
 	}
 
 	if (!failed && !scene_descriptor_assign(&c->scene_tree->node,
@@ -460,6 +465,13 @@ void container_destroy(struct sway_container *con) {
 
 	list_free_items_and_destroy(con->marks);
 
+	if (con->swallows) {
+		for (int i = 0; i < con->swallows->length; ++i) {
+			criteria_destroy(con->swallows->items[i]);
+		}
+		list_free(con->swallows);
+	}
+
 	if (con->view && con->view->container == con) {
 		con->view->container = NULL;
 		if (con->view->destroying) {
@@ -509,9 +521,16 @@ void container_reap_empty(struct sway_container *con) {
 	if (con->view) {
 		return;
 	}
+	// Placeholders are intentionally view-less; do not reap them.
+	if (con->is_placeholder) {
+		return;
+	}
 	struct sway_workspace *ws = con->pending.workspace;
 	while (con) {
 		if (con->pending.children->length) {
+			return;
+		}
+		if (con->is_placeholder) {
 			return;
 		}
 		struct sway_container *parent = con->pending.parent;
