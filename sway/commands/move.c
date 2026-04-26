@@ -24,57 +24,8 @@
 static const char expected_syntax[] =
 	"Expected 'move <left|right|up|down> <[px] px>' or "
 	"'move [--no-auto-back-and-forth] <container|window> [to] workspace <name>' or "
-	"'move <container|window|workspace> [to] output <name|direction>' or "
+	"'move <container|window|workspace> [to] output <name|direction|next|prev|current>' or "
 	"'move <container|window> [to] mark <mark>'";
-
-static struct sway_output *output_in_direction(const char *direction_string,
-		struct sway_output *reference, int ref_lx, int ref_ly) {
-	if (strcasecmp(direction_string, "current") == 0) {
-		struct sway_workspace *active_ws =
-			seat_get_focused_workspace(config->handler_context.seat);
-		if (!active_ws) {
-			return NULL;
-		}
-		return active_ws->output;
-	}
-
-	struct {
-		char *name;
-		enum wlr_direction direction;
-	} names[] = {
-		{ "up", WLR_DIRECTION_UP },
-		{ "down", WLR_DIRECTION_DOWN },
-		{ "left", WLR_DIRECTION_LEFT },
-		{ "right", WLR_DIRECTION_RIGHT },
-	};
-
-	enum wlr_direction direction = 0;
-
-	for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
-		if (strcasecmp(names[i].name, direction_string) == 0) {
-			direction = names[i].direction;
-			break;
-		}
-	}
-
-	if (reference && direction) {
-		struct wlr_output *target = wlr_output_layout_adjacent_output(
-				root->output_layout, direction, reference->wlr_output,
-				ref_lx, ref_ly);
-
-		if (!target) {
-			target = wlr_output_layout_farthest_output(
-					root->output_layout, opposite_direction(direction),
-					reference->wlr_output, ref_lx, ref_ly);
-		}
-
-		if (target) {
-			return target->data;
-		}
-	}
-
-	return output_by_name_or_id(direction_string);
-}
 
 static bool is_parallel(enum sway_container_layout layout,
 		enum wlr_direction dir) {
@@ -516,7 +467,7 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		struct sway_container *dst = seat_get_focus_inactive_tiling(seat, ws);
 		destination = dst ? &dst->node : &ws->node;
 	} else if (strcasecmp(argv[0], "output") == 0) {
-		struct sway_output *new_output = output_in_direction(argv[1],
+		struct sway_output *new_output = output_by_direction_or_name(argv[1],
 				old_output, container->pending.x, container->pending.y);
 		if (!new_output) {
 			return cmd_results_new(CMD_FAILURE,
@@ -650,7 +601,7 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	struct sway_output *old_output = workspace->output;
 	int center_x = workspace->width / 2 + workspace->x,
 		center_y = workspace->height / 2 + workspace->y;
-	struct sway_output *new_output = output_in_direction(argv[0],
+	struct sway_output *new_output = output_by_direction_or_name(argv[0],
 			old_output, center_x, center_y);
 	if (!new_output) {
 		return cmd_results_new(CMD_FAILURE,
