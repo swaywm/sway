@@ -234,18 +234,22 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		if (layout == L_HORIZ || layout == L_TABBED) {
 			if (cursor->cursor->y < thresh_top) {
 				edge = WLR_EDGE_TOP;
+				if (thresh_top < box.y) thresh_top = box.y;
 				box.height = thresh_top - box.y;
 			} else if (cursor->cursor->y > thresh_bottom) {
 				edge = WLR_EDGE_BOTTOM;
+				if (thresh_bottom > box.y + box.height) thresh_bottom = box.y + box.height;
 				box.height = box.y + box.height - thresh_bottom;
 				box.y = thresh_bottom;
 			}
 		} else if (layout == L_VERT || layout == L_STACKED) {
 			if (cursor->cursor->x < thresh_left) {
 				edge = WLR_EDGE_LEFT;
+				if (thresh_left < box.x) thresh_left = box.x;
 				box.width = thresh_left - box.x;
 			} else if (cursor->cursor->x > thresh_right) {
 				edge = WLR_EDGE_RIGHT;
+				if (thresh_right > box.x + box.width) thresh_right = box.x + box.width;
 				box.width = box.x + box.width - thresh_right;
 				box.x = thresh_right;
 			}
