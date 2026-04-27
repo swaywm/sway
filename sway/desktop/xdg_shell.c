@@ -311,6 +311,24 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	struct wlr_box *new_geo = &xdg_surface->geometry;
+
+	if (view->wlr_xdg_toplevel->current.min_width > 0 &&
+		new_geo->width < view->wlr_xdg_toplevel->current.min_width) {
+		new_geo->width = view->wlr_xdg_toplevel->current.min_width;
+	}
+	if (view->wlr_xdg_toplevel->current.min_height > 0 &&
+		new_geo->height < view->wlr_xdg_toplevel->current.min_height) {
+		new_geo->height = view->wlr_xdg_toplevel->current.min_height;
+	}
+	if (view->wlr_xdg_toplevel->current.max_width > 0 &&
+		new_geo->width > view->wlr_xdg_toplevel->current.max_width) {
+		new_geo->width = view->wlr_xdg_toplevel->current.max_width;
+	}
+	if (view->wlr_xdg_toplevel->current.max_height > 0 &&
+		new_geo->height < view->wlr_xdg_toplevel->current.max_height) {
+		new_geo->height = view->wlr_xdg_toplevel->current.max_height;
+	}
+
 	bool new_size = new_geo->width != view->geometry.width ||
 			new_geo->height != view->geometry.height ||
 			new_geo->x != view->geometry.x ||
