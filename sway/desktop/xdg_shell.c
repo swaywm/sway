@@ -325,7 +325,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		new_geo->width = view->wlr_xdg_toplevel->current.max_width;
 	}
 	if (view->wlr_xdg_toplevel->current.max_height > 0 &&
-		new_geo->height < view->wlr_xdg_toplevel->current.max_height) {
+		new_geo->height > view->wlr_xdg_toplevel->current.max_height) {
 		new_geo->height = view->wlr_xdg_toplevel->current.max_height;
 	}
 
