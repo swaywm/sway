@@ -43,6 +43,7 @@ sway_sources = files(
 	'config/input.c',
 
 	'commands/allow_tearing.c',
+	'commands/append_layout.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
