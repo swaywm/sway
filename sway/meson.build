@@ -211,6 +211,7 @@ sway_sources = files(
 
 	'tree/arrange.c',
 	'tree/container.c',
+	'tree/load_layout.c',
 	'tree/node.c',
 	'tree/root.c',
 	'tree/view.c',
