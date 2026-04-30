@@ -565,7 +565,7 @@ static bool load_include_config(const char *path, struct sway_config *config,
 	}
 
 	// check if config has already been included
-	int j;
+	/*int j;
 	for (j = 0; j < config->config_chain->length; ++j) {
 		char *old_path = config->config_chain->items[j];
 		if (strcmp(real_path, old_path) == 0) {
@@ -575,7 +575,7 @@ static bool load_include_config(const char *path, struct sway_config *config,
 			free(real_path);
 			return false;
 		}
-	}
+	}*/
 
 	config->current_config_path = real_path;
 	list_add(config->config_chain, real_path);
