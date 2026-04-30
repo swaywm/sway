@@ -39,14 +39,28 @@ static struct modifier_key {
 };
 
 uint32_t get_modifier_mask_by_name(const char *name) {
-	int i;
-	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
-		if (strcasecmp(modifiers[i].name, name) == 0) {
-			return modifiers[i].mod;
-		}
-	}
+	uint32_t mod = 0;
+	const char *p = name;
 
-	return 0;
+	while (*p) {
+		const char *start = p;
+		const char *end = p;
+
+		while (*end && *end != '+') end++;
+
+		size_t len = (size_t)(end - start);
+
+		for (int i = 0; i < (int)(sizeof(modifiers) / sizeof(modifiers[0])); ++i) {
+			if (strlen(modifiers[i].name) == len &&
+				strncasecmp(modifiers[i].name, start, len) == 0
+			) {
+				mod |= modifiers[i].mod;
+				break;
+			}
+		}
+		p = (*end == '+') ? end + 1 : end;
+	}
+	return mod;
 }
 
 const char *get_modifier_name_by_mask(uint32_t modifier) {
