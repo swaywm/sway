@@ -126,7 +126,8 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.input->virtual_keyboard->global ||
 		global == server.input->virtual_pointer->global ||
 		global == server.input->transient_seat_manager->global ||
-		global == server.xdg_output_manager_v1->global;
+		global == server.xdg_output_manager_v1->global ||
+		global == server.workspace_manager_v1->global;
 }
 
 static bool filter_global(const struct wl_client *client,
@@ -227,7 +228,7 @@ static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 }
 
 static void handle_new_foreign_toplevel_capture_request(struct wl_listener *listener, void *data) {
-	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request *request = data;
+	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_event *request = data;
 	struct sway_view *view = request->toplevel_handle->data;
 
 	if (view->image_capture_source == NULL) {
@@ -295,11 +296,8 @@ bool server_init(struct sway_server *server) {
 	if (wlr_renderer_get_drm_fd(server->renderer) >= 0 &&
 			server->renderer->features.timeline &&
 			server->backend->features.timeline) {
-		if (!wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
-				wlr_renderer_get_drm_fd(server->renderer))) {
-			sway_log(SWAY_ERROR, "Failed to create linux-drm-syncobj v1");
-			return false;
-		}
+		wlr_linux_drm_syncobj_manager_v1_create(server->wl_display, 1,
+				wlr_renderer_get_drm_fd(server->renderer));
 	}
 
 	server->allocator = wlr_allocator_autocreate(server->backend,
@@ -561,7 +559,7 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 	server->new_foreign_toplevel_capture_request.notify = handle_new_foreign_toplevel_capture_request;
-	wl_signal_add(&server->ext_foreign_toplevel_image_capture_source_manager_v1->events.new_request,
+	wl_signal_add(&server->ext_foreign_toplevel_image_capture_source_manager_v1->events.capture_request,
 		&server->new_foreign_toplevel_capture_request);
 
 	server->tearing_control_v1 =
