@@ -46,14 +46,14 @@ uint32_t get_modifier_mask_by_name(const char *name) {
 		const char *start = p;
 		const char *end = p;
 
-		while (*end && *end != '+') end++;
+		while (*end && *end != '+') {
+			end++;
+		}
 
 		size_t len = (size_t)(end - start);
 
 		for (int i = 0; i < (int)(sizeof(modifiers) / sizeof(modifiers[0])); ++i) {
-			if (strlen(modifiers[i].name) == len &&
-				strncasecmp(modifiers[i].name, start, len) == 0
-			) {
+			if (strlen(modifiers[i].name) == len && strncasecmp(modifiers[i].name, start, len) == 0) {
 				mod |= modifiers[i].mod;
 				break;
 			}
