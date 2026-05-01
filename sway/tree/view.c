@@ -16,6 +16,7 @@
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
+#include <json.h>
 #include "list.h"
 #include "log.h"
 #include "sway/criteria.h"
@@ -822,6 +823,10 @@ static void promote_placeholder(struct sway_container *placeholder,
 		}
 		list_free(placeholder->swallows);
 		placeholder->swallows = NULL;
+	}
+	if (placeholder->swallows_json) {
+		json_object_put(placeholder->swallows_json);
+		placeholder->swallows_json = NULL;
 	}
 	placeholder->is_placeholder = false;
 

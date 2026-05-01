@@ -9,6 +9,7 @@
 
 struct sway_view;
 struct sway_seat;
+struct json_object;
 
 enum sway_container_layout {
 	L_NONE,
@@ -146,6 +147,7 @@ struct sway_container {
 	// i3-shaped array so IPC can echo it verbatim for round-trip.
 	bool is_placeholder;
 	list_t *swallows; // struct criteria *
+	struct json_object *swallows_json;
 
 	struct {
 		struct wl_signal destroy;

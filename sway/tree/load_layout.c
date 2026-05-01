@@ -363,6 +363,8 @@ static struct sway_container *build_node(struct json_object *obj,
 		}
 		c->is_placeholder = true;
 		c->swallows = sw;
+		// Retained so IPC can echo it verbatim for round-trip.
+		c->swallows_json = json_object_get(swallows_v);
 	} else {
 		// Leaf without swallows is an empty split with no children. i3 does
 		// not produce these; treat as an error to avoid silently leaving

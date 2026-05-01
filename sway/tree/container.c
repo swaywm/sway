@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
+#include <json.h>
 #include "sway/config.h"
 #include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
@@ -470,6 +471,9 @@ void container_destroy(struct sway_container *con) {
 			criteria_destroy(con->swallows->items[i]);
 		}
 		list_free(con->swallows);
+	}
+	if (con->swallows_json) {
+		json_object_put(con->swallows_json);
 	}
 
 	if (con->view && con->view->container == con) {
