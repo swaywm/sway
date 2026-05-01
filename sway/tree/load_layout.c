@@ -11,9 +11,11 @@
 #include "stringop.h"
 #include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/load_layout.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 
@@ -452,13 +454,53 @@ bool load_layout_from_file(struct sway_workspace *ws, const char *path,
 	return true;
 }
 
+static bool placeholder_matches_view(struct sway_container *placeholder,
+		struct sway_view *view) {
+	if (!placeholder->is_placeholder || !placeholder->swallows) {
+		return false;
+	}
+	for (int i = 0; i < placeholder->swallows->length; i++) {
+		struct criteria *c = placeholder->swallows->items[i];
+		if (criteria_matches_view_unmapped(c, view)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static struct sway_container *search_swallow(struct sway_container *con,
+		struct sway_view *view) {
+	if (placeholder_matches_view(con, view)) {
+		return con;
+	}
+	if (con->pending.children) {
+		for (int i = 0; i < con->pending.children->length; i++) {
+			struct sway_container *child = con->pending.children->items[i];
+			struct sway_container *match = search_swallow(child, view);
+			if (match) {
+				return match;
+			}
+		}
+	}
+	return NULL;
+}
+
 struct sway_container *find_swallow_match(struct sway_view *view) {
-	// Recursive depth-first walker. Returns NULL if no match.
-	struct sway_container *match = NULL;
-	(void)view;
-	(void)match;
-	// Implementation lives in the swallow-on-map commit. Keeping the
-	// declaration here makes the loader self-contained for now; until the
-	// hook lands, placeholders simply render as empty bordered slots.
+	if (!view) {
+		return NULL;
+	}
+	for (int o = 0; o < root->outputs->length; o++) {
+		struct sway_output *output = root->outputs->items[o];
+		for (int w = 0; w < output->workspaces->length; w++) {
+			struct sway_workspace *ws = output->workspaces->items[w];
+			for (int t = 0; t < ws->tiling->length; t++) {
+				struct sway_container *con = ws->tiling->items[t];
+				struct sway_container *match = search_swallow(con, view);
+				if (match) {
+					return match;
+				}
+			}
+		}
+	}
 	return NULL;
 }

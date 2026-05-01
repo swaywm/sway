@@ -32,6 +32,7 @@
 #include "sway/sway_text_node.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/load_layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "sway/config.h"
@@ -809,6 +810,41 @@ static void handle_foreign_destroy(
 	wl_list_remove(&view->foreign_destroy.link);
 }
 
+// Promote a placeholder into a view-backed container in place, fixing up
+// the bits container_create normally branches on `view` for: border rects
+// (only allocated for view-backed) and children lists (only allocated for
+// view-less). The transaction reparents view->scene_tree into content_tree.
+static void promote_placeholder(struct sway_container *placeholder,
+		struct sway_view *view) {
+	if (placeholder->swallows) {
+		for (int i = 0; i < placeholder->swallows->length; i++) {
+			criteria_destroy(placeholder->swallows->items[i]);
+		}
+		list_free(placeholder->swallows);
+		placeholder->swallows = NULL;
+	}
+	placeholder->is_placeholder = false;
+
+	if (placeholder->pending.children) {
+		list_free(placeholder->pending.children);
+		placeholder->pending.children = NULL;
+	}
+	if (placeholder->current.children) {
+		list_free(placeholder->current.children);
+		placeholder->current.children = NULL;
+	}
+
+	bool failed = false;
+	container_init_border_rects(placeholder, &failed);
+	if (failed) {
+		sway_log(SWAY_ERROR, "promote_placeholder: border rect alloc failed");
+	}
+
+	placeholder->view = view;
+	view->container = placeholder;
+	node_set_dirty(&placeholder->node);
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			  bool fullscreen, struct wlr_output *fullscreen_output,
 			  bool decoration) {
@@ -817,7 +853,15 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 	view->surface = wlr_surface;
 	view_populate_pid(view);
-	view->container = container_create(view);
+
+	// On a swallow match, the placeholder is already in the tree; skip the
+	// workspace/target-sibling placement path below.
+	struct sway_container *placeholder = find_swallow_match(view);
+	if (placeholder) {
+		promote_placeholder(placeholder, view);
+	} else {
+		view->container = container_create(view);
+	}
 
 	if (view->ctx == NULL) {
 		struct launcher_ctx *ctx = launcher_ctx_find_pid(view->pid);
@@ -828,14 +872,19 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	// If there is a request to be opened fullscreen on a specific output, try
 	// to honor that request. Otherwise, fallback to assigns, pid mappings,
-	// focused workspace, etc
+	// focused workspace, etc. A swallowed view stays on the placeholder's
+	// workspace.
 	struct sway_workspace *ws = NULL;
-	if (fullscreen_output && fullscreen_output->data) {
-		struct sway_output *output = fullscreen_output->data;
-		ws = output_get_active_workspace(output);
-	}
-	if (!ws) {
-		ws = select_workspace(view);
+	if (placeholder) {
+		ws = view->container->pending.workspace;
+	} else {
+		if (fullscreen_output && fullscreen_output->data) {
+			struct sway_output *output = fullscreen_output->data;
+			ws = output_get_active_workspace(output);
+		}
+		if (!ws) {
+			ws = select_workspace(view);
+		}
 	}
 
 	if (ws && ws->output) {
@@ -846,28 +895,30 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		wlr_surface_set_preferred_buffer_scale(wlr_surface, ceil(scale));
 	}
 
-	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_node *node =
-		seat_get_focus_inactive(seat, ws ? &ws->node : &root->node);
 	struct sway_container *target_sibling = NULL;
-	if (node && node->type == N_CONTAINER) {
-		if (container_is_floating(node->sway_container)) {
-			// If we're about to launch the view into the floating container, then
-			// launch it as a tiled view instead.
-			if (ws) {
-				target_sibling = seat_get_focus_inactive_tiling(seat, ws);
-				if (target_sibling) {
-					struct sway_container *con =
-						seat_get_focus_inactive_view(seat, &target_sibling->node);
-					if (con)  {
-						target_sibling = con;
+	if (!placeholder) {
+		struct sway_seat *seat = input_manager_current_seat();
+		struct sway_node *node =
+			seat_get_focus_inactive(seat, ws ? &ws->node : &root->node);
+		if (node && node->type == N_CONTAINER) {
+			if (container_is_floating(node->sway_container)) {
+				// If we're about to launch the view into the floating container, then
+				// launch it as a tiled view instead.
+				if (ws) {
+					target_sibling = seat_get_focus_inactive_tiling(seat, ws);
+					if (target_sibling) {
+						struct sway_container *con =
+							seat_get_focus_inactive_view(seat, &target_sibling->node);
+						if (con)  {
+							target_sibling = con;
+						}
 					}
+				} else {
+					ws = seat_get_last_known_workspace(seat);
 				}
 			} else {
-				ws = seat_get_last_known_workspace(seat);
+				target_sibling = node->sway_container;
 			}
-		} else {
-			target_sibling = node->sway_container;
 		}
 	}
 
@@ -895,10 +946,12 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 			&view->foreign_destroy);
 
 	struct sway_container *container = view->container;
-	if (target_sibling) {
-		container_add_sibling(target_sibling, container, 1);
-	} else if (ws) {
-		container = workspace_add_tiling(ws, container);
+	if (!placeholder) {
+		if (target_sibling) {
+			container_add_sibling(target_sibling, container, 1);
+		} else if (ws) {
+			container = workspace_add_tiling(ws, container);
+		}
 	}
 	ipc_event_window(view->container, "new");
 
@@ -906,7 +959,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view_update_csd_from_client(view, decoration);
 	}
 
-	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+	if (placeholder) {
+		// Keep the JSON-loaded border; ignore wants_floating since the user
+		// explicitly placed a tiling slot.
+		view_set_tiled(view, true);
+	} else if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		view->container->pending.border = config->floating_border;
 		view->container->pending.border_thickness = config->floating_border_thickness;
 		container_set_floating(view->container, true);
