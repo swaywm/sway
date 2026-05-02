@@ -55,6 +55,38 @@ static char *slurp_file(const char *path, char **error_out) {
 	return buf;
 }
 
+// i3-save-tree prepends a vim modeline; the leading `/` would otherwise
+// confuse preprocess_i3_concat's array-vs-object check.
+static char *strip_header_comments(char *buf) {
+	char *p = buf;
+	for (;;) {
+		while (*p && isspace((unsigned char)*p)) {
+			p++;
+		}
+		if (p[0] == '/' && p[1] == '/') {
+			while (*p && *p != '\n') {
+				p++;
+			}
+			continue;
+		}
+		if (p[0] == '/' && p[1] == '*') {
+			p += 2;
+			while (*p && !(p[0] == '*' && p[1] == '/')) {
+				p++;
+			}
+			if (*p) {
+				p += 2;
+			}
+			continue;
+		}
+		break;
+	}
+	if (p != buf) {
+		memmove(buf, p, strlen(p) + 1);
+	}
+	return buf;
+}
+
 // i3-save-tree emits a sequence of top-level objects separated by `}\n{`
 // rather than wrapping them in an array. Wrap into a strict JSON array.
 // Same string-literal caveat as i3's own loader.
@@ -182,6 +214,42 @@ static bool append_key_value(char **buf, const char *key, const char *value) {
 	return true;
 }
 
+static bool append_bare(char **buf, const char *key, const char *value) {
+	size_t old = *buf ? strlen(*buf) : 0;
+	size_t add = strlen(key) + strlen(value) + 3; // ` k=v`
+	char *grown = realloc(*buf, old + add + 1);
+	if (!grown) {
+		return false;
+	}
+	*buf = grown;
+	int written = snprintf(grown + old, add + 1, "%s%s=%s",
+			old ? " " : "", key, value);
+	return written >= 0;
+}
+
+// i3-save-tree emits window_type as a regex-anchored enum name like
+// "^normal$". The criteria parser treats window_type as a bare enum token,
+// not a regex, so the anchored form fails. Strip a single leading ^ and a
+// single trailing $ before passing through.
+static char *unanchor_enum(const char *value) {
+	size_t n = strlen(value);
+	size_t start = 0;
+	size_t end = n;
+	if (n > 0 && value[0] == '^') {
+		start = 1;
+	}
+	if (end > start && value[end - 1] == '$') {
+		end--;
+	}
+	char *out = malloc(end - start + 1);
+	if (!out) {
+		return NULL;
+	}
+	memcpy(out, value + start, end - start);
+	out[end - start] = '\0';
+	return out;
+}
+
 // app_id is a sway extension over i3's swallows schema; machine is ignored.
 static struct criteria *build_swallow_criteria(struct json_object *entry,
 		char **error_out) {
@@ -189,27 +257,44 @@ static struct criteria *build_swallow_criteria(struct json_object *entry,
 		*error_out = format_str("append_layout: swallows entry is not an object");
 		return NULL;
 	}
-	static const char *keys[] = {
-		"class", "instance", "title", "window_role", "window_type", "app_id",
-		NULL,
+	static const char *regex_keys[] = {
+		"class", "instance", "title", "window_role", "app_id", NULL,
 	};
 	char *body = NULL;
-	for (int i = 0; keys[i]; i++) {
+	for (int i = 0; regex_keys[i]; i++) {
 		struct json_object *v;
-		if (!json_object_object_get_ex(entry, keys[i], &v)) {
+		if (!json_object_object_get_ex(entry, regex_keys[i], &v)) {
 			continue;
 		}
 		if (!json_object_is_type(v, json_type_string)) {
 			free(body);
 			*error_out = format_str("append_layout: swallows.%s is not a string",
-					keys[i]);
+					regex_keys[i]);
 			return NULL;
 		}
-		if (!append_key_value(&body, keys[i], json_object_get_string(v))) {
+		if (!append_key_value(&body, regex_keys[i],
+				json_object_get_string(v))) {
 			free(body);
 			*error_out = format_str("append_layout: out of memory");
 			return NULL;
 		}
+	}
+	struct json_object *wt;
+	if (json_object_object_get_ex(entry, "window_type", &wt)) {
+		if (!json_object_is_type(wt, json_type_string)) {
+			free(body);
+			*error_out = format_str(
+					"append_layout: swallows.window_type is not a string");
+			return NULL;
+		}
+		char *bare = unanchor_enum(json_object_get_string(wt));
+		if (!bare || !append_bare(&body, "window_type", bare)) {
+			free(bare);
+			free(body);
+			*error_out = format_str("append_layout: out of memory");
+			return NULL;
+		}
+		free(bare);
 	}
 	struct json_object *machine;
 	if (json_object_object_get_ex(entry, "machine", &machine)) {
@@ -412,6 +497,7 @@ bool load_layout_from_file(struct sway_workspace *ws, const char *path,
 	if (!buf) {
 		return false;
 	}
+	buf = strip_header_comments(buf);
 	buf = preprocess_i3_concat(buf);
 
 	struct json_tokener *tok = json_tokener_new();
