@@ -446,8 +446,11 @@ bool load_layout_from_file(struct sway_workspace *ws, const char *path,
 		return false;
 	}
 
+	// workspace_add_tiling would wrap each child with container_split when
+	// default_layout is set, which mutates the parsed tree.
 	for (int i = 0; i < children->length; i++) {
-		workspace_add_tiling(ws, children->items[i]);
+		workspace_insert_tiling_direct(ws, children->items[i],
+				ws->tiling->length);
 	}
 	list_free(children);
 
