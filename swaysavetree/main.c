@@ -2,6 +2,7 @@
 // append_layout`. Counterpart to i3-save-tree(1).
 
 #include <getopt.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -168,9 +169,9 @@ static struct json_object *build_layout_node(struct json_object *src) {
 	return out;
 }
 
-// Recursive search of the tree for the requested workspace.
+// Matches by name; if numeric >= 0, also matches num so "1" finds "1: web".
 static struct json_object *find_workspace(struct json_object *node,
-		const char *name) {
+		const char *name, int numeric) {
 	struct json_object *type;
 	if (json_object_object_get_ex(node, "type", &type) &&
 			json_object_get_type(type) == json_type_string &&
@@ -180,6 +181,13 @@ static struct json_object *find_workspace(struct json_object *node,
 				strcmp(json_object_get_string(ws_name), name) == 0) {
 			return node;
 		}
+		if (numeric >= 0) {
+			struct json_object *num;
+			if (json_object_object_get_ex(node, "num", &num) &&
+					json_object_get_int(num) == numeric) {
+				return node;
+			}
+		}
 	}
 	struct json_object *nodes;
 	if (json_object_object_get_ex(node, "nodes", &nodes) &&
@@ -187,7 +195,7 @@ static struct json_object *find_workspace(struct json_object *node,
 		size_t n = json_object_array_length(nodes);
 		for (size_t i = 0; i < n; i++) {
 			struct json_object *child = json_object_array_get_idx(nodes, i);
-			struct json_object *match = find_workspace(child, name);
+			struct json_object *match = find_workspace(child, name, numeric);
 			if (match) {
 				return match;
 			}
@@ -245,7 +253,15 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	struct json_object *ws = find_workspace(root, workspace);
+	int numeric = -1;
+	if (workspace[0] != '\0') {
+		char *end = NULL;
+		long n = strtol(workspace, &end, 10);
+		if (end != workspace && *end == '\0' && n >= 0 && n <= INT_MAX) {
+			numeric = (int)n;
+		}
+	}
+	struct json_object *ws = find_workspace(root, workspace, numeric);
 	if (!ws) {
 		fprintf(stderr, "sway-save-tree: workspace '%s' not found\n",
 				workspace);

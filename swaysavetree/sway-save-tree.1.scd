@@ -25,7 +25,9 @@ This is the sway counterpart of i3-save-tree(1).
 # OPTIONS
 
 *--workspace* <name>
-	Name (or number, as a string) of the workspace to dump. Required.
+	Name or number of the workspace to dump. Required. If the argument is
+	all digits, it is also matched against the workspace's number, so
+	*--workspace 1* finds a workspace named "1: web".
 
 *-h, --help*
 	Show help and exit.
