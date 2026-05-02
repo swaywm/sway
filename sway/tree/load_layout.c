@@ -140,21 +140,42 @@ static enum sway_container_border parse_border_name(const char *s) {
 	return B_NORMAL;
 }
 
-// Append a key="value" fragment to a malloc'd, null-terminated buffer. The
-// value is the raw regex from the swallows entry; we trust json-c to give us
-// a NUL-terminated string and we do NOT escape internal quotes, i3-save-tree
-// already escapes them in its output and hand-written layouts must follow the
-// same rule.
+// Escape `"` so the value survives the criteria tokenizer. Backslashes are
+// left alone since PCRE consumes them and criteria's unescape only collapses
+// `\"`.
+static char *escape_criteria_value(const char *value) {
+	size_t n = strlen(value);
+	char *out = malloc(n * 2 + 1);
+	if (!out) {
+		return NULL;
+	}
+	size_t pos = 0;
+	for (size_t i = 0; i < n; i++) {
+		if (value[i] == '"') {
+			out[pos++] = '\\';
+		}
+		out[pos++] = value[i];
+	}
+	out[pos] = '\0';
+	return out;
+}
+
 static bool append_key_value(char **buf, const char *key, const char *value) {
+	char *escaped = escape_criteria_value(value);
+	if (!escaped) {
+		return false;
+	}
 	size_t old = *buf ? strlen(*buf) : 0;
-	size_t add = strlen(key) + strlen(value) + 5; // ` k="v"`
+	size_t add = strlen(key) + strlen(escaped) + 5; // ` k="v"`
 	char *grown = realloc(*buf, old + add + 1);
 	if (!grown) {
+		free(escaped);
 		return false;
 	}
 	*buf = grown;
 	int written = snprintf(grown + old, add + 1, "%s%s=\"%s\"",
-			old ? " " : "", key, value);
+			old ? " " : "", key, escaped);
+	free(escaped);
 	if (written < 0) {
 		return false;
 	}
