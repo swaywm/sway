@@ -386,10 +386,12 @@ static struct sway_container *build_node(struct json_object *obj,
 		c->swallows = sw;
 		// Retained so IPC can echo it verbatim for round-trip.
 		c->swallows_json = json_object_get(swallows_v);
+		// arrange_children asserts on L_NONE; placeholders end up there
+		// via the view-less branch even with no children.
+		if (c->pending.layout == L_NONE) {
+			c->pending.layout = L_HORIZ;
+		}
 	} else {
-		// Leaf without swallows is an empty split with no children. i3 does
-		// not produce these; treat as an error to avoid silently leaving
-		// orphaned containers.
 		*error_out = format_str("append_layout: node has neither nodes nor "
 				"swallows");
 		free_transient_subtree(c);
