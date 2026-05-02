@@ -414,6 +414,46 @@ set|plus|minus|toggle <amount>
 The following commands may be used either in the configuration file or at
 runtime.
 
+*append_layout* <path>
+	Appends the container tree described by the JSON file at _path_ to the
+	currently focused workspace. Useful for restoring a saved layout: each
+	leaf container in the JSON is a _placeholder_ with a *swallows* array of
+	matchers; when a window opens whose properties match an unmatched
+	placeholder, sway installs that window into the placeholder's slot
+	instead of the usual focus-based placement.
+
+	The format mirrors i3's, with one extension: in addition to i3's
+	*class*, *instance*, *title*, *window_role*, and *window_type* keys
+	(which target xwayland views), each *swallows* entry may include
+	*app_id* to match Wayland views. The *machine* key is logged and
+	ignored. All values are PCRE2 regex strings.
+
+	A minimal example targeting one Wayland and one xwayland window in
+	a vertical split:
+
+```
+[
+	{
+		"layout": "splitv",
+		"nodes": [
+			{ "swallows": [{ "app_id": "^foot$" }] },
+			{ "swallows": [{ "class": "^Firefox$" }] }
+		]
+	}
+]
+```
+
+	The companion command-line tool *sway-save-tree*(1) generates such
+	files from a live workspace. The i3-save-tree(1) concatenated-object
+	output form is also accepted.
+
+	Floating placeholders (the *floating_nodes* JSON array) are not
+	supported in this release; entries are skipped with a debug-log entry.
+	Placeholder match runs before *assign* rules: an explicit slot wins
+	over workspace assignment. *for_window* rules still run on the
+	swallowed view after placement. If multiple placeholders match the
+	same incoming view, the depth-first, document-order first match wins.
+
 *assign* <criteria> [→] [workspace] [number] <workspace>
 	Assigns windows matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
