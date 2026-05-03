@@ -426,7 +426,13 @@ runtime.
 	*class*, *instance*, *title*, *window_role*, and *window_type* keys
 	(which target xwayland views), each *swallows* entry may include
 	*app_id* to match Wayland views. The *machine* key is logged and
-	ignored. All values are PCRE2 regex strings.
+	ignored. *class*, *instance*, *title*, *window_role* and *app_id*
+	are PCRE2 regex strings. *window_type* must be a literal atom name
+	(*normal*, *dialog*, *utility*, *toolbar*, *splash*, *menu*,
+	*dropdown_menu*, *popup_menu*, *tooltip*, *notification*); the
+	i3-save-tree anchored form _^name$_ is accepted, but regex
+	alternation such as _^(normal|dialog)$_ is rejected, split such
+	patterns into multiple swallows entries (which match as OR).
 
 	A minimal example targeting one Wayland and one xwayland window in
 	a vertical split:

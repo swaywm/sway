@@ -227,27 +227,38 @@ static bool append_bare(char **buf, const char *key, const char *value) {
 	return written >= 0;
 }
 
-// i3-save-tree emits window_type as a regex-anchored enum name like
-// "^normal$". The criteria parser treats window_type as a bare enum token,
-// not a regex, so the anchored form fails. Strip a single leading ^ and a
-// single trailing $ before passing through.
-static char *unanchor_enum(const char *value) {
+// window_type is parsed as an enum, not a regex. Accept i3-save-tree's
+// "^name$" form and bare names; reject anything else (including alternation)
+// rather than letting the criteria parser silently fall through to ATOM_LAST.
+static const char *known_window_types[] = {
+	"normal", "dialog", "utility", "toolbar", "splash", "menu",
+	"dropdown_menu", "popup_menu", "tooltip", "notification", NULL,
+};
+
+static char *parse_window_type_value(const char *value, char **error_out) {
 	size_t n = strlen(value);
-	size_t start = 0;
-	size_t end = n;
-	if (n > 0 && value[0] == '^') {
-		start = 1;
-	}
-	if (end > start && value[end - 1] == '$') {
-		end--;
-	}
-	char *out = malloc(end - start + 1);
-	if (!out) {
+	size_t start = (n > 0 && value[0] == '^') ? 1 : 0;
+	size_t end = (n > start && value[n - 1] == '$') ? n - 1 : n;
+	size_t bare_len = end - start;
+	char *bare = malloc(bare_len + 1);
+	if (!bare) {
+		*error_out = format_str("append_layout: out of memory");
 		return NULL;
 	}
-	memcpy(out, value + start, end - start);
-	out[end - start] = '\0';
-	return out;
+	memcpy(bare, value + start, bare_len);
+	bare[bare_len] = '\0';
+	for (int i = 0; known_window_types[i]; i++) {
+		if (strcasecmp(bare, known_window_types[i]) == 0) {
+			return bare;
+		}
+	}
+	*error_out = format_str("append_layout: window_type %s is not a "
+			"supported literal value (use one of: normal, dialog, "
+			"utility, toolbar, splash, menu, dropdown_menu, popup_menu, "
+			"tooltip, notification; regex alternation is not supported, "
+			"split into multiple swallow entries instead)", value);
+	free(bare);
+	return NULL;
 }
 
 // app_id is a sway extension over i3's swallows schema; machine is ignored.
@@ -287,8 +298,13 @@ static struct criteria *build_swallow_criteria(struct json_object *entry,
 					"append_layout: swallows.window_type is not a string");
 			return NULL;
 		}
-		char *bare = unanchor_enum(json_object_get_string(wt));
-		if (!bare || !append_bare(&body, "window_type", bare)) {
+		char *bare = parse_window_type_value(json_object_get_string(wt),
+				error_out);
+		if (!bare) {
+			free(body);
+			return NULL;
+		}
+		if (!append_bare(&body, "window_type", bare)) {
 			free(bare);
 			free(body);
 			*error_out = format_str("append_layout: out of memory");
