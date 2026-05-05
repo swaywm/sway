@@ -39,7 +39,8 @@ tasks:
     cd subprojects
     ln -s ../../wlroots wlroots
     cd ..
-    meson setup build --fatal-meson-warnings -Dtray=enabled -Dsd-bus-provider=basu
+    # libsfdo is not packaged for FreeBSD yet; tray is disabled here.
+    meson setup build --fatal-meson-warnings -Dtray=disabled
 - build: |
     cd sway
     ninja -C build
