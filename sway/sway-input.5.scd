@@ -154,7 +154,7 @@ The following commands may only be used in the configuration file.
 
 *input* <identifier> drag_lock enabled|disabled|enabled_sticky
 	Enables or disables drag lock for specified input device. The default is
-	_enabled_sticky_.
+	_disabled_.
 
 *input* <identifier> dwt enabled|disabled
 	Enables or disables disable-while-typing for the specified input device.
