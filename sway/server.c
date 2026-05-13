@@ -33,6 +33,7 @@
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
+#include <wlr/types/wlr_pointer_warp_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
@@ -424,6 +425,14 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->pointer_constraints->events.new_constraint,
 		&server->pointer_constraint);
 
+	server->pointer_warp_v1 = wlr_pointer_warp_v1_create(server->wl_display, 1);
+	if (!server->pointer_warp_v1) {
+		sway_log(SWAY_ERROR, "Failed to create pointer warp");
+		return false;
+	}
+	server->pointer_warp.notify = handle_pointer_warp;
+	wl_signal_add(&server->pointer_warp_v1->events.warp, &server->pointer_warp);
+
 	if (!wlr_presentation_create(server->wl_display, server->backend, SWAY_PRESENTATION_VERSION)) {
 		sway_log(SWAY_ERROR, "Failed to create presentation");
 		return false;
@@ -722,6 +731,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->server_decoration.link);
 	wl_list_remove(&server->xdg_decoration.link);
 	wl_list_remove(&server->pointer_constraint.link);
+	wl_list_remove(&server->pointer_warp.link);
 	wl_list_remove(&server->output_manager_apply.link);
 	wl_list_remove(&server->output_manager_test.link);
 	wl_list_remove(&server->output_power_manager_set_mode.link);
