@@ -57,7 +57,7 @@ Si vous utilisez déjà i3, copiez votre configuration i3 vers
 `~/.config/sway/config` et sway fonctionnera directement. Sinon, copiez
 l'exemple de fichier de configuration vers `~/.config/sway/config`. Il se
 trouve généralement dans `/etc/sway/config`. Exécutez `man 5 sway` pour lire la
-documentation pour la configuration de sway.
+documentation sur la configuration de sway.
 
 ## Exécution
 
