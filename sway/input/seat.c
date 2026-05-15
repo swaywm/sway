@@ -1266,20 +1266,9 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		seat_set_workspace_focus(seat, node);
 	}
 	if (server.session_lock.lock) {
-		struct sway_output *output = NULL;
-		if (node != NULL) {
-			switch (node->type) {
-			case N_OUTPUT:
-				output = node->sway_output;
-				break;
-			case N_WORKSPACE:
-				output = node->sway_workspace->output;
-				break;
-			default:
-				break;
-			}
-		}
-		if (output != NULL) {
+		// Try focusing the current sway_output's lock-surface
+		struct sway_output *output = node ? node_get_output(node) : NULL;
+		if (output) {
 			sway_session_lock_focus_output(server.session_lock.lock, output);
 			return;
 		}
