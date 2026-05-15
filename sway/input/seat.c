@@ -1269,11 +1269,11 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 		// Try focusing the current sway_output's lock-surface
 		struct sway_output *output = node ? node_get_output(node) : NULL;
 		if (output) {
-			sway_session_lock_focus_output(server.session_lock.lock, output);
+			sway_session_lock_focus_output(server.session_lock.lock, seat, output);
 			return;
 		}
 		// Fallback to the previously focused lock surface
-		seat_set_focus_surface(seat, server.session_lock.lock->focused, false);
+		seat_set_focus_surface(seat, seat->focused_lock, false);
 	}
 }
 
