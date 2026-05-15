@@ -97,17 +97,18 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 }
 
 // Initialize ext-workspace. Must be called once at startup.
-void sway_ext_workspace_init(void) {
+bool sway_ext_workspace_init(void) {
 	server.workspace_manager_v1 =
 		wlr_ext_workspace_manager_v1_create(server.wl_display, 1);
 	if (!server.workspace_manager_v1) {
 		sway_log(SWAY_ERROR, "Failed to create ext_workspace_manager_v1");
-		return;
+		return false;
 	}
 
 	server.workspace_manager_v1_commit.notify = handle_commit;
 	wl_signal_add(&server.workspace_manager_v1->events.commit,
 		&server.workspace_manager_v1_commit);
+	return true;
 }
 
 // Must be called whenever an output is enabled.
@@ -919,7 +920,7 @@ void workspace_unwrap_children(struct sway_workspace *ws,
 	while (wrap->pending.children->length) {
 		struct sway_container *child = wrap->pending.children->items[0];
 		container_detach(child);
-		workspace_add_tiling(ws, child);
+		workspace_insert_tiling_direct(ws, child, ws->tiling->length);
 	}
 }
 

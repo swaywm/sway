@@ -417,6 +417,28 @@ void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
 }
 
 bool ipc_initialize(struct swaybar *bar) {
+	if (!bar->id) {
+		uint32_t len = 0;
+		char *res = ipc_single_command(bar->ipc_socketfd,
+				IPC_GET_BAR_CONFIG, "", &len);
+		json_object *bars = json_tokener_parse(res);
+		if (!json_object_is_type(bars, json_type_array)
+				|| json_object_array_length(bars) == 0) {
+			sway_log(SWAY_ERROR, "No bar configuration found, "
+					"please configure a bar block in your sway config file.");
+			json_object_put(bars);
+			free(res);
+			return false;
+		}
+		json_object *first = json_object_array_get_idx(bars, 0);
+		bar->id = strdup(json_object_get_string(first));
+		json_object_put(bars);
+		free(res);
+		sway_log(SWAY_INFO, "Using first bar config: %s. "
+				"Use --bar_id to manually select a different bar configuration.",
+				bar->id);
+	}
+
 	uint32_t len = strlen(bar->id);
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_BAR_CONFIG, bar->id, &len);
