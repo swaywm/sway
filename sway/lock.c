@@ -82,12 +82,12 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
-	struct sway_output *focused_output = NULL;
-	if (focused_ws != NULL) {
-		focused_output = focused_ws->output;
-	}
+	struct sway_output *focused_output = focused_ws ? focused_ws->output : NULL;
 
-	if (surf->lock->focused == NULL || focused_output == surf->output) {
+	// Only set the initial focus surface when it's on the focused output.
+	// Fallback to the first mapped surface if no focused output can be found.
+	if (focused_output == surf->output
+			|| (!focused_output && surf->lock->focused == NULL)) {
 		focus_surface(surf->lock, surf->surface->surface);
 	}
 	cursor_rebase_all();
