@@ -501,6 +501,14 @@ static json_object *ipc_json_describe_scratchpad_output(void) {
 
 static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 		json_object *object) {
+	// Override the default focused indicator because it's set differently
+	struct sway_seat *seat = input_manager_get_default_seat();
+	json_object_object_del(object, "focused");
+	json_object_object_add(object, "focused", json_object_new_boolean(
+			workspace == seat_get_focused_workspace(seat)));
+	json_object_object_add(object, "visible",
+			json_object_new_boolean(workspace_is_visible(workspace)));
+
 	int num;
 	if (isdigit(workspace->name[0])) {
 		errno = 0;

@@ -584,21 +584,8 @@ void ipc_client_disconnect(struct ipc_client *client) {
 
 static void ipc_get_workspaces_callback(struct sway_workspace *workspace,
 		void *data) {
-	json_object *workspace_json = ipc_json_describe_node(&workspace->node);
-	// override the default focused indicator because
-	// it's set differently for the get_workspaces reply
-	struct sway_seat *seat = input_manager_get_default_seat();
-	struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
-	bool focused = workspace == focused_ws;
-	json_object_object_del(workspace_json, "focused");
-	json_object_object_add(workspace_json, "focused",
-			json_object_new_boolean(focused));
-	json_object_array_add((json_object *)data, workspace_json);
-
-	focused_ws = output_get_active_workspace(workspace->output);
-	bool visible = workspace == focused_ws;
-	json_object_object_add(workspace_json, "visible",
-			json_object_new_boolean(visible));
+	json_object_array_add((json_object *)data,
+			ipc_json_describe_node(&workspace->node));
 }
 
 static void ipc_get_marks_callback(struct sway_container *con, void *data) {
