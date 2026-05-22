@@ -163,6 +163,15 @@ set|plus|minus|toggle <amount>
 	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
 	_vertical_.
 
+	In the config, _gaps_ takes only the first and final arguments. Negative
+	numbers are allowed. Successive _gaps_ options apply cumulatively.
+
+	Example:
+		gaps inner 2
+		gaps outer 20
+		gaps bottom -2
+		gaps top -2
+
 *inhibit_idle* focus|fullscreen|open|none|visible
 	Set/unset an idle inhibitor for the window. _focus_ will inhibit idle when
 	the window is focused by any seat. _fullscreen_ will inhibit idle when the
