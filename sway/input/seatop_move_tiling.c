@@ -256,8 +256,9 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		}
 		if (edge) {
 			e->target_node = node_get_parent(&con->node);
-			if (e->target_node == &e->con->node) {
-				e->target_node = node_get_parent(e->target_node);
+			if (e->target_node && (e->target_node == &e->con->node ||
+					node_has_ancestor(e->target_node, &e->con->node))) {
+				e->target_node = node_get_parent(&e->con->node);
 			}
 			e->target_edge = edge;
 			update_indicator(e, &box);
