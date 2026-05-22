@@ -920,7 +920,7 @@ void workspace_unwrap_children(struct sway_workspace *ws,
 	while (wrap->pending.children->length) {
 		struct sway_container *child = wrap->pending.children->items[0];
 		container_detach(child);
-		workspace_add_tiling(ws, child);
+		workspace_insert_tiling_direct(ws, child, ws->tiling->length);
 	}
 }
 
