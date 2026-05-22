@@ -257,6 +257,7 @@ static void config_defaults(struct sway_config *config) {
 	config->focus_on_window_activation = FOWA_URGENT;
 	config->popup_during_fullscreen = POPUP_SMART;
 	config->xwayland = XWAYLAND_MODE_LAZY;
+	config->exec_out = -1;
 
 	config->titlebar_border_thickness = 1;
 	config->titlebar_h_padding = 5;
