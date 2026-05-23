@@ -82,6 +82,9 @@ _swaymsg_ [options...] [message]
 	Gets a list of all seats,
 	its properties and all assigned devices.
 
+*get\_cursor*
+	Gets the current cursor position and information about the element under it.
+
 *get\_marks*
 	Get a JSON-encoded list of marks.
 
