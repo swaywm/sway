@@ -583,6 +583,9 @@ struct sway_config {
 
 	bool has_focused_tab_title;
 
+	bool stacking_titlebar_follows_border;
+	bool tabbed_titlebar_follows_border;
+
 	// floating view
 	int32_t floating_maximum_width;
 	int32_t floating_maximum_height;
