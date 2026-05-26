@@ -126,6 +126,17 @@ static bool container_is_focused(struct sway_container *con, void *data) {
 	return con->current.focused;
 }
 
+static bool container_is_current_floating(struct sway_container *container) {
+	if (!container->current.parent && container->current.workspace &&
+			list_find(container->current.workspace->floating, container) != -1) {
+		return true;
+	}
+	if (container->scratchpad) {
+		return true;
+	}
+	return false;
+}
+
 static bool container_has_focused_child(struct sway_container *con) {
 	return container_find_child(con, container_is_focused, NULL);
 }
@@ -134,7 +145,7 @@ static bool container_is_current_parent_focused(struct sway_container *con) {
 	if (con->current.parent) {
 		struct sway_container *parent = con->current.parent;
 		return parent->current.focused || container_is_current_parent_focused(parent);
-	} else if (con->current.workspace) {
+	} else if (con->current.workspace && !container_is_current_floating(con)) {
 		struct sway_workspace *ws = con->current.workspace;
 		return ws->current.focused;
 	}
@@ -171,17 +182,6 @@ static struct border_colors *container_get_current_colors(
 	}
 
 	return colors;
-}
-
-static bool container_is_current_floating(struct sway_container *container) {
-	if (!container->current.parent && container->current.workspace &&
-			list_find(container->current.workspace->floating, container) != -1) {
-		return true;
-	}
-	if (container->scratchpad) {
-		return true;
-	}
-	return false;
 }
 
 // scene rect wants premultiplied colors
