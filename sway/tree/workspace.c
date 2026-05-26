@@ -737,7 +737,20 @@ bool workspace_switch(struct sway_workspace *workspace) {
 	if (next == NULL) {
 		next = &workspace->node;
 	}
+
+	// If the currently focused container is sticky, restore focus to it after
+	// the workspace switch.
+	struct sway_container *old_focus = seat_get_focused_container(seat);
+	struct sway_workspace *old_ws = old_focus ? old_focus->pending.workspace : NULL;
+	bool restore_focus = old_ws && old_ws->output == workspace->output &&
+			container_is_sticky_or_child(old_focus);
+
 	seat_set_focus(seat, next);
+
+	if (restore_focus && old_focus->pending.workspace == workspace) {
+		seat_set_focus(seat, &old_focus->node);
+	}
+
 	arrange_workspace(workspace);
 	return true;
 }
