@@ -1127,6 +1127,28 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 }
 
+// Rebuild the focus stack for a given container by pushing its ancestors
+// and then the container itself to the top of the stack.
+static void seat_rebuild_focus_stack(struct sway_seat *seat, struct sway_container *con) {
+	if (!con) {
+		return;
+	}
+	// collect ancestors of the container in order
+	size_t num_ancestors = 0;
+	struct sway_container *ancestors[64];
+	struct sway_container *parent = con->pending.parent;
+	while (parent && num_ancestors < sizeof(ancestors)/sizeof(ancestors[0])) {
+		ancestors[num_ancestors++] = parent;
+		parent = parent->pending.parent;
+	}
+	// push ancestors onto the focus stack from the top down
+	for (size_t i = num_ancestors; i > 0; --i) {
+		seat_set_raw_focus(seat, &ancestors[i - 1]->node);
+	}
+	// finally, push the container itself to the top of the focus stack
+	seat_set_raw_focus(seat, &con->node);
+}
+
 static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *node) {
 	struct sway_node *last_focus = seat_get_focus(seat);
 	if (last_focus == node) {
@@ -1164,8 +1186,13 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 		node_set_dirty(&new_output->node);
 	}
 
+	struct sway_container *last_focus_con = last_focus && last_focus->type == N_CONTAINER ?
+		last_focus->sway_container : NULL;
+	bool sticky_has_focus_on_switch = last_focus_con && container_is_sticky_or_child(last_focus_con) &&
+		new_workspace && last_workspace && new_workspace != last_workspace;
+
 	// Unfocus the previous focus
-	if (last_focus) {
+	if (last_focus && !sticky_has_focus_on_switch) {
 		seat_send_unfocus(last_focus, seat);
 		node_set_dirty(last_focus);
 		struct sway_node *parent = node_get_parent(last_focus);
@@ -1176,19 +1203,18 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 
 	// Put the container parents on the focus stack, then the workspace, then
 	// the focused container.
-	if (container) {
-		struct sway_container *parent = container->pending.parent;
-		while (parent) {
-			seat_set_raw_focus(seat, &parent->node);
-			parent = parent->pending.parent;
-		}
-	}
 	if (new_workspace) {
 		seat_set_raw_focus(seat, &new_workspace->node);
 	}
 	if (container) {
-		seat_set_raw_focus(seat, &container->node);
-		seat_send_focus(&container->node, seat);
+		seat_rebuild_focus_stack(seat, container);
+		if (!sticky_has_focus_on_switch) {
+			seat_send_focus(&container->node, seat);
+		}
+	}
+
+	if (sticky_has_focus_on_switch) {
+		seat_rebuild_focus_stack(seat, last_focus_con);
 	}
 
 	// emit ipc events
