@@ -463,7 +463,10 @@ runtime.
 
 	Unless the flag _--no-repeat_ is set, the command will be run
 	repeatedly when the key is held, according to the repeat
-	settings specified in the input configuration.
+	settings specified in the input configuration. This flag can be useful
+	for commands which may block the main event loop for a noticeable
+	amount of time, as such blocking may delay the processing of key
+	release events and result in unintended repeat triggers.
 
 	Bindings to keysyms are layout-dependent. This can be changed with the
 	_--to-code_ flag. In this case, the keysyms will be translated into the
@@ -497,6 +500,9 @@ runtime.
 ```
 		# Execute firefox when alt, shift, and f are pressed together
 		bindsym Mod1+Shift+f exec firefox
+
+		# Enable output eDP-1 if disabled and vice versa
+		bindsym --no-repeat Mod1+Shift+t output eDP-1 toggle
 ```
 
 	*bindcode* [--whole-window] [--border] [--exclude-titlebar] [--release] \
