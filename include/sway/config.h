@@ -404,6 +404,9 @@ struct bar_config {
 		char *binding_mode_border;
 		char *binding_mode_bg;
 		char *binding_mode_text;
+#if HAVE_TRAY
+		char *tray_background;
+#endif
 	} colors;
 
 #if HAVE_TRAY
