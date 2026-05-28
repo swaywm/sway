@@ -294,6 +294,10 @@ set|plus|minus|toggle <amount>
 	A no operation command that can be used to override default behaviour. The
 	optional comment argument is ignored, but logged for debugging purposes.
 
+*opacity* [set|plus|minus] <value>
+	Adjusts the opacity of the window between 0 (completely transparent) and
+	1 (completely opaque). If the operation is omitted, _set_ will be used.
+
 *reload*
 	Reloads the sway config file and applies any changes. The config file is
 	located at path specified by the command line arguments when started,
@@ -872,10 +876,6 @@ The default colors are:
 	If *show_marks* is yes, marks will be displayed in the window borders.
 	Any mark that starts with an underscore will not be drawn even if
 	*show_marks* is yes. The default is _yes_.
-
-*opacity* [set|plus|minus] <value>
-	Adjusts the opacity of the window between 0 (completely transparent) and
-	1 (completely opaque). If the operation is omitted, _set_ will be used.
 
 *tiling_drag*  enable|disable|toggle
 	Sets whether or not tiling containers can be dragged with the mouse. If
