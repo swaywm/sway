@@ -91,10 +91,6 @@ struct sway_container {
 	} border;
 
 	struct wlr_scene_tree *content_tree;
-	struct wlr_scene_buffer *output_handler;
-
-	struct wl_listener output_enter;
-	struct wl_listener output_leave;
 
 	struct sway_container_state current;
 	struct sway_container_state pending;
@@ -102,6 +98,8 @@ struct sway_container {
 	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
 	int title_width;
+
+	char *title_format;
 
 	enum sway_container_layout prev_split_layout;
 
@@ -175,8 +173,6 @@ struct sway_container *container_obstructing_fullscreen_container(struct sway_co
 bool container_has_ancestor(struct sway_container *container,
 		struct sway_container *ancestor);
 
-void container_update_textures_recursive(struct sway_container *con);
-
 void container_reap_empty(struct sway_container *con);
 
 struct sway_container *container_flatten(struct sway_container *container);
@@ -184,6 +180,8 @@ struct sway_container *container_flatten(struct sway_container *container);
 void container_update_title_bar(struct sway_container *container);
 
 void container_update_marks(struct sway_container *container);
+
+size_t parse_title_format(struct sway_container *container, char *buffer);
 
 size_t container_build_representation(enum sway_container_layout layout,
 		list_t *children, char *buffer);

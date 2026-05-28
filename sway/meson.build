@@ -18,6 +18,7 @@ sway_sources = files(
 	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
 	'desktop/output.c',
+	'desktop/tearing.c',
 	'desktop/transaction.c',
 	'desktop/xdg_shell.c',
 	'desktop/launcher.c',
@@ -41,6 +42,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/allow_tearing.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
@@ -154,6 +156,7 @@ sway_sources = files(
 	'commands/input/accel_profile.c',
 	'commands/input/calibration_matrix.c',
 	'commands/input/click_method.c',
+	'commands/input/clickfinger_button_map.c',
 	'commands/input/drag.c',
 	'commands/input/drag_lock.c',
 	'commands/input/dwt.c',
@@ -187,10 +190,12 @@ sway_sources = files(
 	'commands/input/xkb_variant.c',
 
 	'commands/output/adaptive_sync.c',
+	'commands/output/allow_tearing.c',
 	'commands/output/background.c',
 	'commands/output/disable.c',
 	'commands/output/dpms.c',
 	'commands/output/enable.c',
+	'commands/output/hdr.c',
 	'commands/output/max_render_time.c',
 	'commands/output/mode.c',
 	'commands/output/position.c',
@@ -202,6 +207,7 @@ sway_sources = files(
 	'commands/output/toggle.c',
 	'commands/output/transform.c',
 	'commands/output/unplug.c',
+	'commands/output/color_profile.c',
 
 	'tree/arrange.c',
 	'tree/container.c',
@@ -231,7 +237,7 @@ sway_deps = [
 	xcb_icccm,
 ]
 
-if have_xwayland
+if wlroots_features['xwayland']
 	sway_sources += 'desktop/xwayland.c'
 endif
 

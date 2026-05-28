@@ -1,8 +1,7 @@
 #include <stddef.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-
-void sway_terminate(int exit_code);
+#include "sway/server.h"
 
 struct cmd_results *cmd_exit(int argc, char **argv) {
 	struct cmd_results *error = NULL;

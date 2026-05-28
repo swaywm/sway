@@ -13,11 +13,6 @@ void sig_handler(int signal) {
 	exit(EXIT_FAILURE);
 }
 
-void sway_terminate(int code) {
-	swaynag_destroy(&swaynag);
-	exit(code);
-}
-
 int main(int argc, char **argv) {
 	int status = EXIT_SUCCESS;
 
@@ -50,6 +45,7 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		sway_log(SWAY_DEBUG, "Loading config file: %s", config_path);
 		status = swaynag_load_config(config_path, &swaynag, types);
+		free(config_path);
 		if (status != 0) {
 			goto cleanup;
 		}
@@ -107,7 +103,8 @@ int main(int argc, char **argv) {
 		sway_log(SWAY_DEBUG, "\t[%s] `%s`", button->text, button->action);
 	}
 
-	signal(SIGTERM, sig_handler);
+	struct sigaction sa = { .sa_handler = sig_handler };
+	sigaction(SIGTERM, &sa, NULL);
 
 	swaynag_setup(&swaynag);
 	swaynag_run(&swaynag);

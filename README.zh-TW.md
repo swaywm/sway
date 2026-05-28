@@ -40,7 +40,7 @@ _\*編譯時相依_
 
 執行這些指令:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

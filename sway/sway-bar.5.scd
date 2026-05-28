@@ -143,6 +143,12 @@ runtime.
 
 	This setting also applies to the current binding mode indicator.
 
+The following commands may only be used at runtime.
+
+*mode* toggle [<bar_id>]
+	Toggles the current mode between _hide_ and _dock_. Any other mode
+	is treated as _hide_.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.

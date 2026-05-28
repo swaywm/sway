@@ -72,12 +72,6 @@ int main(int argc, char **argv) {
 		sway_log_init(SWAY_INFO, NULL);
 	}
 
-	if (!swaybar.id) {
-		sway_log(SWAY_ERROR, "No bar_id passed. "
-				"Provide --bar_id or let sway start swaybar");
-		return 1;
-	}
-
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
@@ -93,8 +87,9 @@ int main(int argc, char **argv) {
 
 	free(socket_path);
 
-	signal(SIGINT, sig_handler);
-	signal(SIGTERM, sig_handler);
+	struct sigaction sa = { .sa_handler = sig_handler };
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
 
 	swaybar.running = true;
 	bar_run(&swaybar);

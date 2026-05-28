@@ -40,7 +40,7 @@ _\*Compile-time dep_
 
 Desde su consola, ejecute las órdenes:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

@@ -7,6 +7,7 @@
 #include "sway/criteria.h"
 #include "sway/tree/container.h"
 #include "sway/config.h"
+#include "sway/server.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -22,7 +23,7 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->app_id
 		&& !criteria->con_mark
 		&& !criteria->con_id
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		&& !criteria->class
 		&& !criteria->id
 		&& !criteria->instance
@@ -33,7 +34,11 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->tiling
 		&& !criteria->urgent
 		&& !criteria->workspace
-		&& !criteria->pid;
+		&& !criteria->pid
+		&& !criteria->sandbox_engine
+		&& !criteria->sandbox_app_id
+		&& !criteria->sandbox_instance_id
+		&& !criteria->tag;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -90,13 +95,17 @@ void criteria_destroy(struct criteria *criteria) {
 	pattern_destroy(criteria->title);
 	pattern_destroy(criteria->shell);
 	pattern_destroy(criteria->app_id);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	pattern_destroy(criteria->class);
 	pattern_destroy(criteria->instance);
 	pattern_destroy(criteria->window_role);
 #endif
 	pattern_destroy(criteria->con_mark);
 	pattern_destroy(criteria->workspace);
+	pattern_destroy(criteria->sandbox_engine);
+	pattern_destroy(criteria->sandbox_app_id);
+	pattern_destroy(criteria->sandbox_instance_id);
+	pattern_destroy(criteria->tag);
 	free(criteria->target);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -110,7 +119,7 @@ static int regex_cmp(const char *item, const pcre2_code *regex) {
 	return result;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 	if (view->type != SWAY_VIEW_XWAYLAND) {
 		return false;
@@ -187,6 +196,10 @@ static bool criteria_matches_view(struct criteria *criteria,
 	struct sway_container *focus = seat_get_focused_container(seat);
 	struct sway_view *focused = focus ? focus->view : NULL;
 
+	if (!view->container) {
+		return false;
+	}
+
 	if (criteria->title) {
 		const char *title = view_get_title(view);
 		if (!title) {
@@ -195,7 +208,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->title->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && lenient_strcmp(title, view_get_title(focused))) {
+			if (!focused || lenient_strcmp(title, view_get_title(focused))) {
 				return false;
 			}
 			break;
@@ -215,7 +228,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->shell->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && strcmp(shell, view_get_shell(focused))) {
+			if (!focused || strcmp(shell, view_get_shell(focused))) {
 				return false;
 			}
 			break;
@@ -235,7 +248,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->app_id->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && lenient_strcmp(app_id, view_get_app_id(focused))) {
+			if (!focused || lenient_strcmp(app_id, view_get_app_id(focused))) {
 				return false;
 			}
 			break;
@@ -247,11 +260,91 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
+	if (criteria->sandbox_engine) {
+		const char *sandbox_engine = view_get_sandbox_engine(view);
+		if (!sandbox_engine) {
+			return false;
+		}
+
+		switch (criteria->sandbox_engine->match_type) {
+		case PATTERN_FOCUSED:
+			if (!focused || lenient_strcmp(sandbox_engine, view_get_sandbox_engine(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_engine, criteria->sandbox_engine->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_app_id) {
+		const char *sandbox_app_id = view_get_sandbox_app_id(view);
+		if (!sandbox_app_id) {
+			return false;
+		}
+
+		switch (criteria->sandbox_app_id->match_type) {
+		case PATTERN_FOCUSED:
+			if (!focused || lenient_strcmp(sandbox_app_id, view_get_sandbox_app_id(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_app_id, criteria->sandbox_app_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->sandbox_instance_id) {
+		const char *sandbox_instance_id = view_get_sandbox_instance_id(view);
+		if (!sandbox_instance_id) {
+			return false;
+		}
+
+		switch (criteria->sandbox_instance_id->match_type) {
+		case PATTERN_FOCUSED:
+			if (!focused || lenient_strcmp(sandbox_instance_id, view_get_sandbox_instance_id(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(sandbox_instance_id, criteria->sandbox_instance_id->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
+	if (criteria->tag) {
+		const char *tag = view_get_tag(view);
+		if (!tag) {
+			return false;
+		}
+
+		switch (criteria->tag->match_type) {
+		case PATTERN_FOCUSED:
+			if (!focused || lenient_strcmp(tag, view_get_tag(focused))) {
+				return false;
+			}
+			break;
+		case PATTERN_PCRE2:
+			if (regex_cmp(tag, criteria->tag->regex) < 0) {
+				return false;
+			}
+			break;
+		}
+	}
+
 	if (!criteria_matches_container(criteria, view->container)) {
 		return false;
 	}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (criteria->id) { // X11 window ID
 		uint32_t x11_window_id = view_get_x11_window_id(view);
 		if (!x11_window_id || x11_window_id != criteria->id) {
@@ -267,7 +360,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->class->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && lenient_strcmp(class, view_get_class(focused))) {
+			if (!focused || lenient_strcmp(class, view_get_class(focused))) {
 				return false;
 			}
 			break;
@@ -287,7 +380,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->instance->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && lenient_strcmp(instance, view_get_instance(focused))) {
+			if (!focused || lenient_strcmp(instance, view_get_instance(focused))) {
 				return false;
 			}
 			break;
@@ -307,7 +400,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->window_role->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused && lenient_strcmp(window_role, view_get_window_role(focused))) {
+			if (!focused || lenient_strcmp(window_role, view_get_window_role(focused))) {
 				return false;
 			}
 			break;
@@ -365,7 +458,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 		switch (criteria->workspace->match_type) {
 		case PATTERN_FOCUSED:
-			if (focused &&
+			if (!focused ||
 					strcmp(ws->name, focused->container->pending.workspace->name)) {
 				return false;
 			}
@@ -428,7 +521,7 @@ list_t *criteria_get_containers(struct criteria *criteria) {
 	return matches;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static enum atom_name parse_window_type(const char *type) {
 	if (strcasecmp(type, "normal") == 0) {
 		return NET_WM_WINDOW_TYPE_NORMAL;
@@ -461,7 +554,7 @@ enum criteria_token {
 	T_CON_ID,
 	T_CON_MARK,
 	T_FLOATING,
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	T_CLASS,
 	T_ID,
 	T_INSTANCE,
@@ -474,6 +567,10 @@ enum criteria_token {
 	T_URGENT,
 	T_WORKSPACE,
 	T_PID,
+	T_SANDBOX_ENGINE,
+	T_SANDBOX_APP_ID,
+	T_SANDBOX_INSTANCE_ID,
+	T_TAG,
 
 	T_INVALID,
 };
@@ -487,7 +584,7 @@ static enum criteria_token token_from_name(char *name) {
 		return T_CON_ID;
 	} else if (strcmp(name, "con_mark") == 0) {
 		return T_CON_MARK;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	} else if (strcmp(name, "class") == 0) {
 		return T_CLASS;
 	} else if (strcmp(name, "id") == 0) {
@@ -513,6 +610,14 @@ static enum criteria_token token_from_name(char *name) {
 		return T_FLOATING;
 	} else if (strcmp(name, "pid") == 0) {
 		return T_PID;
+	} else if (strcmp(name, "sandbox_engine") == 0) {
+		return T_SANDBOX_ENGINE;
+	} else if (strcmp(name, "sandbox_app_id") == 0) {
+		return T_SANDBOX_APP_ID;
+	} else if (strcmp(name, "sandbox_instance_id") == 0) {
+		return T_SANDBOX_INSTANCE_ID;
+	} else if (strcmp(name, "tag") == 0) {
+		return T_TAG;
 	}
 	return T_INVALID;
 }
@@ -554,8 +659,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		if (strcmp(value, "__focused__") == 0) {
 			struct sway_seat *seat = input_manager_current_seat();
 			struct sway_container *focus = seat_get_focused_container(seat);
-			struct sway_view *view = focus ? focus->view : NULL;
-			criteria->con_id = view ? view->container->node.id : 0;
+			criteria->con_id = focus ? focus->node.id : 0;
 		} else {
 			criteria->con_id = strtoul(value, &endptr, 10);
 			if (*endptr != 0) {
@@ -566,7 +670,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_CON_MARK:
 		pattern_create(&criteria->con_mark, value);
 		break;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case T_CLASS:
 		pattern_create(&criteria->class, value);
 		break;
@@ -615,6 +719,18 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		if (*endptr != 0) {
 			error = strdup("The value for 'pid' should be numeric");
 		}
+		break;
+	case T_SANDBOX_ENGINE:
+		pattern_create(&criteria->sandbox_engine, value);
+		break;
+	case T_SANDBOX_APP_ID:
+		pattern_create(&criteria->sandbox_app_id, value);
+		break;
+	case T_SANDBOX_INSTANCE_ID:
+		pattern_create(&criteria->sandbox_instance_id, value);
+		break;
+	case T_TAG:
+		pattern_create(&criteria->tag, value);
 		break;
 	case T_INVALID:
 		break;
@@ -674,7 +790,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	++head;
 
 	struct criteria *criteria = calloc(1, sizeof(struct criteria));
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	criteria->window_type = ATOM_LAST; // default value
 #endif
 	char *name = NULL, *value = NULL;

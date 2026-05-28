@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_pointer.h>
 #include "sway/commands.h"
 #include "sway/input/cursor.h"
+#include "sway/server.h"
 
 static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 		char *action, char *button_str);

@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <pango/pangocairo.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,10 +43,6 @@ void sway_terminate(int exit_code) {
 		ipc_event_shutdown("exit");
 		wl_display_terminate(server.wl_display);
 	}
-}
-
-void sig_handler(int signal) {
-	sway_terminate(EXIT_SUCCESS);
 }
 
 void run_as_ipc_client(char *command, char *socket_path) {
@@ -111,18 +108,14 @@ static void log_kernel(void) {
 	pclose(f);
 }
 
-static bool detect_suid(void) {
-	if (geteuid() != 0 && getegid() != 0) {
-		return false;
+static void restore_nofile_limit(void) {
+	if (original_nofile_rlimit.rlim_cur == 0) {
+		return;
 	}
-
-	if (getuid() == geteuid() && getgid() == getegid()) {
-		return false;
+	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
+		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
+			"setrlimit(NOFILE) failed");
 	}
-
-	sway_log(SWAY_ERROR, "SUID operation is no longer supported, refusing to start. "
-			"This check will be removed in a future release.");
-	return true;
 }
 
 static void increase_nofile_limit(void) {
@@ -139,17 +132,38 @@ static void increase_nofile_limit(void) {
 			"setrlimit(NOFILE) failed");
 		sway_log(SWAY_INFO, "Running with %d max open files",
 			(int)original_nofile_rlimit.rlim_cur);
-	}
-}
-
-void restore_nofile_limit(void) {
-	if (original_nofile_rlimit.rlim_cur == 0) {
 		return;
 	}
-	if (setrlimit(RLIMIT_NOFILE, &original_nofile_rlimit) != 0) {
-		sway_log_errno(SWAY_ERROR, "Failed to restore max open files limit: "
-			"setrlimit(NOFILE) failed");
-	}
+
+	pthread_atfork(NULL, NULL, restore_nofile_limit);
+}
+
+static int term_signal(int signal, void *data) {
+	sway_terminate(EXIT_SUCCESS);
+	return 0;
+}
+
+static void restore_signals(void) {
+	sigset_t set;
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, NULL);
+
+	struct sigaction sa_dfl = { .sa_handler = SIG_DFL };
+	sigaction(SIGCHLD, &sa_dfl, NULL);
+	sigaction(SIGPIPE, &sa_dfl, NULL);
+}
+
+static void init_signals(void) {
+	wl_event_loop_add_signal(server.wl_event_loop, SIGTERM, term_signal, NULL);
+	wl_event_loop_add_signal(server.wl_event_loop, SIGINT, term_signal, NULL);
+
+	struct sigaction sa_ign = { .sa_handler = SIG_IGN };
+	// avoid need to reap children
+	sigaction(SIGCHLD, &sa_ign, NULL);
+	// prevent ipc write errors from crashing sway
+	sigaction(SIGPIPE, &sa_ign, NULL);
+
+	pthread_atfork(NULL, NULL, restore_signals);
 }
 
 void enable_debug_flag(const char *flag) {
@@ -159,10 +173,8 @@ void enable_debug_flag(const char *flag) {
 		debug.txn_wait = true;
 	} else if (strcmp(flag, "txn-timings") == 0) {
 		debug.txn_timings = true;
-	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
-		server.txn_timeout_ms = atoi(&flag[12]);
-	} else if (strcmp(flag, "legacy-wl-drm") == 0) {
-		debug.legacy_wl_drm = true;
+	} else if (has_prefix(flag, "txn-timeout=")) {
+		server.txn_timeout_ms = atoi(&flag[strlen("txn-timeout=")]);
 	} else {
 		sway_log(SWAY_ERROR, "Unknown debug flag: %s", flag);
 	}
@@ -212,7 +224,7 @@ static const char usage[] =
 	"\n";
 
 int main(int argc, char **argv) {
-	static bool verbose = false, debug = false, validate = false;
+	bool verbose = false, debug = false, validate = false, allow_unsupported_gpu = false;
 
 	char *config_path = NULL;
 
@@ -266,17 +278,18 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// SUID operation is deprecated, so block it for now.
-	if (detect_suid()) {
-		exit(EXIT_FAILURE);
-	}
-
 	// Since wayland requires XDG_RUNTIME_DIR to be set, abort with just the
 	// clear error message (when not running as an IPC client).
 	if (!getenv("XDG_RUNTIME_DIR") && optind == argc) {
 		fprintf(stderr,
 				"XDG_RUNTIME_DIR is not set in the environment. Aborting.\n");
 		exit(EXIT_FAILURE);
+	}
+
+	char *unsupported_gpu_env = getenv("SWAY_UNSUPPORTED_GPU");
+	// we let the flag override the environment variable
+	if (!allow_unsupported_gpu && unsupported_gpu_env) {
+		allow_unsupported_gpu = parse_boolean(unsupported_gpu_env, false);
 	}
 
 	// As the 'callback' function for wlr_log is equivalent to that for
@@ -322,18 +335,13 @@ int main(int argc, char **argv) {
 
 	increase_nofile_limit();
 
-	// handle SIGTERM signals
-	signal(SIGTERM, sig_handler);
-	signal(SIGINT, sig_handler);
-
-	// prevent ipc from crashing sway
-	signal(SIGPIPE, SIG_IGN);
-
 	sway_log(SWAY_INFO, "Starting sway version " SWAY_VERSION);
 
 	if (!server_init(&server)) {
 		return 1;
 	}
+
+	init_signals();
 
 	if (server.linux_dmabuf_v1) {
 		wlr_scene_set_linux_dmabuf_v1(root->root_scene, server.linux_dmabuf_v1);
@@ -361,6 +369,7 @@ int main(int argc, char **argv) {
 	}
 
 	config->active = true;
+	force_modeset();
 	load_swaybars();
 	run_deferred_commands();
 	run_deferred_bindings();
@@ -368,6 +377,20 @@ int main(int argc, char **argv) {
 
 	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);
+	}
+
+	struct swaynag_instance nag_gpu = (struct swaynag_instance){
+		.args = "--type error "
+			"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' "
+			"--detailed-message",
+		.detailed = true,
+	};
+
+	if (unsupported_gpu_detected && !allow_unsupported_gpu) {
+		swaynag_log(config->swaynag_command, &nag_gpu,
+			"To remove this message, launch sway with --unsupported-gpu "
+			"or set the environment variable SWAY_UNSUPPORTED_GPU=true.");
+		swaynag_show(&nag_gpu);
 	}
 
 	server_run(&server);
@@ -381,6 +404,10 @@ shutdown:
 
 	free(config_path);
 	free_config(config);
+
+	if (nag_gpu.client != NULL) {
+		wl_client_destroy(nag_gpu.client);
+	}
 
 	pango_cairo_font_map_set_default(NULL);
 

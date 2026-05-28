@@ -1,25 +1,24 @@
 # sway
 
-[English][en] - **[Česky][cs]** - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - [Svenska][sv] - [Ελληνικά][gr] - [हिन्दी][hi] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
-
-sway je s [i3] kompatibilní [Wayland] kompozitor. Přečtěte si [FAQ]. Připojte se na
-[IRC kanál][IRC channel] \(#sway na irc.libera.chat).
+sway je [waylandový][Wayland] kompozitor kompatibilní s [i3]. Přečtěte si
+[FAQ (anglicky)][FAQ]. Připojte se na [IRC kanál (anglicky)][IRC channel]
+\(#sway na irc.libera.chat).
 
 ## Podpisy vydání
 
-Vydání jsou podepsána [E88F5E48] a publikována [na GitHubu][GitHub releases].
+Vydané verze jsou podepsány klíčem [E88F5E48] a publikovány
+[na GitHubu][GitHub releases].
 
 ## Instalace
 
-### Z balíčků
+### Z balíků
 
-Sway je dostupný ve spoustě distribucí. Zkuste nainstalovat balíček "sway" ve vaší
-distribuci.
+Sway je dostupný v mnoha distribucích. Zkuste v té vaší nainstalovat balík "sway".
 
 ### Kompilace ze zdrojových kódů
 
-Podívejte se na [tuto stránku wiki][Development setup], pokud chcete sestavit HEAD
-sway a wlroots pro testování nebo vývoj.
+Pokud chcete sestavit HEAD repozitáře sway a wlroots pro testování nebo vývoj,
+použijte návod na [této stránce na wiki (anglicky)][Development setup].
 
 Nainstalujte závislosti:
 
@@ -31,15 +30,16 @@ Nainstalujte závislosti:
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (volitelné: oznamovací oblast)
-* [scdoc] (volitelné: manuálové stránky) \*
+* gdk-pixbuf2 (volitelné: dodatečné formáty ikon pro oznamovací oblast)
+* [swaybg] (volitelné: tapeta plochy)
+* [scdoc] (volitelné: man stránky) \*
 * git (volitelné: informace o verzi) \*
 
-_\* Závislost pouze pro sestavení_
+_\* Závislost pouze pro kompilaci_
 
 Spusťte tyto příkazy:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 
@@ -52,16 +52,16 @@ Pro více informací o konfiguraci spusťte `man 5 sway`.
 
 ## Spuštění
 
-Spusťte `sway` z TTY. Některé správce zobrazení mohou fungovat, ale nejsou
-podporovány sway (je známo, že gdm funguje docela dobře).
+Spusťte `sway` z TTY nebo ze správce displeje.
 
 [en]: https://github.com/swaywm/sway#readme
+[ar]: README.ar.md
 [cs]: README.cs.md
 [de]: README.de.md
 [dk]: README.dk.md
 [es]: README.es.md
 [fr]: README.fr.md
-[sv]: README.sv.md
+[ge]: README.ge.md
 [gr]: README.gr.md
 [hi]: README.hi.md
 [hu]: README.hu.md
@@ -70,10 +70,12 @@ podporovány sway (je známo, že gdm funguje docela dobře).
 [ja]: README.ja.md
 [ko]: README.ko.md
 [nl]: README.nl.md
+[no]: README.no.md
 [pl]: README.pl.md
 [pt]: README.pt.md
 [ro]: README.ro.md
 [ru]: README.ru.md
+[sv]: README.sv.md
 [tr]: README.tr.md
 [uk]: README.uk.md
 [zh-CN]: README.zh-CN.md
@@ -86,4 +88,5 @@ podporovány sway (je známo, že gdm funguje docela dobře).
 [GitHub releases]: https://github.com/swaywm/sway/releases
 [Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
 [wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[swaybg]: https://github.com/swaywm/swaybg/
 [scdoc]: https://git.sr.ht/~sircmpwn/scdoc

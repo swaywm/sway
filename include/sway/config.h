@@ -7,6 +7,7 @@
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/util/box.h>
+#include <wlr/render/color.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xf86drmMode.h>
 #include "../include/config.h"
@@ -148,6 +149,7 @@ struct input_config {
 	int accel_profile;
 	struct calibration_matrix calibration_matrix;
 	int click_method;
+	int clickfinger_button_map;
 	int drag;
 	int drag_lock;
 	int dwt;
@@ -259,9 +261,16 @@ enum scale_filter_mode {
 };
 
 enum render_bit_depth {
-	RENDER_BIT_DEPTH_DEFAULT, // the default is currently 8
+	RENDER_BIT_DEPTH_DEFAULT, // the default is currently 8 for SDR, 10 for HDR
+	RENDER_BIT_DEPTH_6,
 	RENDER_BIT_DEPTH_8,
 	RENDER_BIT_DEPTH_10,
+};
+
+enum color_profile {
+	COLOR_PROFILE_DEFAULT, // default is Transform with NULL color_transform
+	COLOR_PROFILE_TRANSFORM, // use color_transform from output_config
+	COLOR_PROFILE_TRANSFORM_WITH_DEVICE_PRIMARIES, // create transform from wlr_output
 };
 
 /**
@@ -285,6 +294,10 @@ struct output_config {
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
+	enum color_profile color_profile;
+	struct wlr_color_transform *color_transform;
+	int allow_tearing;
+	int hdr;
 
 	char *background;
 	char *background_option;
@@ -689,21 +702,27 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 
 struct output_config *new_output_config(const char *name);
 
-void merge_output_config(struct output_config *dst, struct output_config *src);
+bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
+		bool test_only, bool degrade_to_off);
 
-bool apply_output_config(struct output_config *oc, struct sway_output *output);
+void apply_stored_output_configs(void);
 
-bool test_output_config(struct output_config *oc, struct sway_output *output);
-
-struct output_config *store_output_config(struct output_config *oc);
+/**
+ * store_output_config stores a new output config. An output may be matched by
+ * three different config types, in order of precedence: Identifier, name and
+ * wildcard. When storing a config type of lower precedence, assume that the
+ * user wants the config to take immediate effect by superseding (clearing) the
+ * same values from higher presedence configuration.
+ */
+void store_output_config(struct output_config *oc);
 
 struct output_config *find_output_config(struct sway_output *output);
 
-void apply_output_config_to_outputs(struct output_config *oc);
-
-void reset_outputs(void);
-
 void free_output_config(struct output_config *oc);
+
+void request_modeset(void);
+void force_modeset(void);
+bool modeset_is_pending(void);
 
 bool spawn_swaybg(void);
 

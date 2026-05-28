@@ -16,10 +16,6 @@
 #include "ipc-client.h"
 #include "log.h"
 
-void sway_terminate(int exit_code) {
-	exit(exit_code);
-}
-
 static bool success_object(json_object *result) {
 	json_object *success;
 
@@ -99,7 +95,7 @@ static const char *pretty_type_name(const char *name) {
 		const char *b;
 	} type_names[] = {
 		{ "keyboard", "Keyboard" },
-		{ "pointer", "Mouse" },
+		{ "pointer", "Pointer" },
 		{ "touchpad", "Touchpad" },
 		{ "tablet_pad", "Tablet pad" },
 		{ "tablet_tool", "Tablet tool" },
@@ -193,7 +189,8 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "current_workspace", &ws);
 	json_object_object_get_ex(o, "non_desktop", &non_desktop);
 	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
-		*transform, *max_render_time, *adaptive_sync_status;
+		*transform, *max_render_time, *adaptive_sync_status, *allow_tearing,
+		*hdr;
 	json_object_object_get_ex(o, "make", &make);
 	json_object_object_get_ex(o, "model", &model);
 	json_object_object_get_ex(o, "serial", &serial);
@@ -203,6 +200,8 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "transform", &transform);
 	json_object_object_get_ex(o, "max_render_time", &max_render_time);
 	json_object_object_get_ex(o, "adaptive_sync_status", &adaptive_sync_status);
+	json_object_object_get_ex(o, "allow_tearing", &allow_tearing);
+	json_object_object_get_ex(o, "hdr", &hdr);
 	json_object *x, *y;
 	json_object_object_get_ex(rect, "x", &x);
 	json_object_object_get_ex(rect, "y", &y);
@@ -213,6 +212,10 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(current_mode, "width", &width);
 	json_object_object_get_ex(current_mode, "height", &height);
 	json_object_object_get_ex(current_mode, "refresh", &refresh);
+	json_object *features, *features_adaptive_sync, *features_hdr;
+	json_object_object_get_ex(o, "features", &features);
+	json_object_object_get_ex(features, "adaptive_sync", &features_adaptive_sync);
+	json_object_object_get_ex(features, "hdr", &features_hdr);
 
 	if (json_object_get_boolean(non_desktop)) {
 		printf(
@@ -255,7 +258,18 @@ static void pretty_print_output(json_object *o) {
 		printf(max_render_time_int == 0 ? "off\n" : "%d ms\n", max_render_time_int);
 
 		printf("  Adaptive sync: %s\n",
-			json_object_get_string(adaptive_sync_status));
+			json_object_get_boolean(features_adaptive_sync) ?
+				json_object_get_string(adaptive_sync_status) :
+				"unsupported");
+
+		printf("  Allow tearing: %s\n",
+			json_object_get_boolean(allow_tearing) ? "yes" : "no");
+
+		const char *hdr_str = "unsupported";
+		if (json_object_get_boolean(features_hdr)) {
+			hdr_str = json_object_get_boolean(hdr) ? "on" : "off";
+		}
+		printf("  HDR: %s\n", hdr_str);
 	} else {
 		printf(
 			"Output %s '%s %s %s' (disabled)\n",
@@ -326,6 +340,10 @@ static void pretty_print_tree(json_object *obj, int indent) {
 		const char *instance = json_object_get_string(json_object_object_get(window_props_obj, "instance"));
 		const char *class = json_object_get_string(json_object_object_get(window_props_obj, "class"));
 		int x11_id = json_object_get_int(json_object_object_get(obj, "window"));
+		const char *foreign_toplevel_id = json_object_get_string(json_object_object_get(obj, "foreign_toplevel_identifier"));
+		const char *sandbox_engine = json_object_get_string(json_object_object_get(obj, "sandbox_engine"));
+		const char *sandbox_app_id = json_object_get_string(json_object_object_get(obj, "sandbox_app_id"));
+		const char *sandbox_instance_id = json_object_get_string(json_object_object_get(obj, "sandbox_instance_id"));
 
 		printf(" (%s, pid: %d", shell, pid);
 		if (app_id != NULL) {
@@ -339,6 +357,18 @@ static void pretty_print_tree(json_object *obj, int indent) {
 		}
 		if (x11_id != 0) {
 			printf(", X11 window: 0x%X", x11_id);
+		}
+		if (foreign_toplevel_id != NULL) {
+			printf(", foreign_toplevel_id: \"%s\"", foreign_toplevel_id);
+		}
+		if (sandbox_engine != NULL) {
+			printf(", sandbox_engine: \"%s\"", sandbox_engine);
+		}
+		if (sandbox_app_id != NULL) {
+			printf(", sandbox_app_id: \"%s\"", sandbox_app_id);
+		}
+		if (sandbox_instance_id != NULL) {
+			printf(", sandbox_instance_id: \"%s\"", sandbox_instance_id);
 		}
 		printf(")");
 	}

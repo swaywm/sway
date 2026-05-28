@@ -13,6 +13,7 @@ enum sway_idle_inhibit_mode {
 struct sway_idle_inhibit_manager_v1 {
 	struct wlr_idle_inhibit_manager_v1 *wlr_manager;
 	struct wl_listener new_idle_inhibitor_v1;
+	struct wl_listener manager_destroy;
 	struct wl_list inhibitors;
 };
 

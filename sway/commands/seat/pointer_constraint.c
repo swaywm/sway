@@ -4,6 +4,7 @@
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
+#include "sway/server.h"
 
 enum operation {
 	OP_ENABLE,

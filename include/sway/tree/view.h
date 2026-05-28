@@ -1,10 +1,12 @@
 #ifndef _SWAY_VIEW_H
 #define _SWAY_VIEW_H
 #include <wayland-server-core.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_tearing_control_v1.h>
 #include "sway/config.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
 #include "sway/input/input-manager.h"
@@ -15,7 +17,7 @@ struct sway_xdg_decoration;
 
 enum sway_view_type {
 	SWAY_VIEW_XDG_SHELL,
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	SWAY_VIEW_XWAYLAND,
 #endif
 };
@@ -23,14 +25,21 @@ enum sway_view_type {
 enum sway_view_prop {
 	VIEW_PROP_TITLE,
 	VIEW_PROP_APP_ID,
+	VIEW_PROP_TAG,
 	VIEW_PROP_CLASS,
 	VIEW_PROP_INSTANCE,
 	VIEW_PROP_WINDOW_TYPE,
 	VIEW_PROP_WINDOW_ROLE,
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	VIEW_PROP_X11_WINDOW_ID,
 	VIEW_PROP_X11_PARENT_ID,
 #endif
+};
+
+enum sway_view_tearing_mode {
+	TEARING_OVERRIDE_FALSE,
+	TEARING_OVERRIDE_TRUE,
+	TEARING_WINDOW_HINT,
 };
 
 struct sway_view_impl {
@@ -60,6 +69,12 @@ struct sway_view {
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *content_tree;
 	struct wlr_scene_tree *saved_surface_tree;
+	struct wlr_scene_buffer *output_handler;
+
+	struct wl_listener outputs_update;
+
+	struct wlr_scene *image_capture_scene;
+	struct wlr_ext_image_capture_source_v1 *image_capture_source;
 
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
@@ -71,8 +86,6 @@ struct sway_view {
 	// The size the view would want to be if it weren't tiled.
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
-
-	char *title_format;
 
 	bool using_csd;
 
@@ -98,7 +111,7 @@ struct sway_view {
 
 	union {
 		struct wlr_xdg_toplevel *wlr_xdg_toplevel;
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 #endif
 	};
@@ -110,10 +123,16 @@ struct sway_view {
 	int max_render_time; // In milliseconds
 
 	enum seat_config_shortcuts_inhibit shortcuts_inhibit;
+
+	enum sway_view_tearing_mode tearing_mode;
+	enum wp_tearing_control_v1_presentation_hint tearing_hint;
 };
 
 struct sway_xdg_shell_view {
 	struct sway_view view;
+
+	struct wlr_scene_tree *image_capture_tree;
+	char *tag;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;
@@ -127,11 +146,13 @@ struct sway_xdg_shell_view {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 struct sway_xwayland_view {
 	struct sway_view view;
 
 	struct wlr_scene_tree *surface_tree;
+
+	struct wlr_scene_surface *image_capture_scene_surface;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;
@@ -183,10 +204,12 @@ struct sway_popup_desc {
 
 struct sway_xdg_popup {
 	struct sway_view *view;
+	struct wlr_xdg_popup *wlr_xdg_popup;
 
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *xdg_surface_tree;
-	struct wlr_xdg_popup *wlr_xdg_popup;
+
+	struct wlr_scene_tree *image_capture_tree;
 
 	struct sway_popup_desc desc;
 
@@ -211,6 +234,14 @@ uint32_t view_get_x11_parent_id(struct sway_view *view);
 const char *view_get_window_role(struct sway_view *view);
 
 uint32_t view_get_window_type(struct sway_view *view);
+
+const char *view_get_sandbox_engine(struct sway_view *view);
+
+const char *view_get_sandbox_app_id(struct sway_view *view);
+
+const char *view_get_sandbox_instance_id(struct sway_view *view);
+
+const char *view_get_tag(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
 
@@ -293,7 +324,7 @@ void view_center_and_clip_surface(struct sway_view *view);
 
 struct sway_view *view_from_wlr_xdg_surface(
 	struct wlr_xdg_surface *xdg_surface);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 struct sway_view *view_from_wlr_xwayland_surface(
 	struct wlr_xwayland_surface *xsurface);
 #endif
@@ -333,5 +364,9 @@ bool view_is_transient_for(struct sway_view *child, struct sway_view *ancestor);
 void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx);
 
 void view_send_frame_done(struct sway_view *view);
+
+bool view_can_tear(struct sway_view *view);
+
+void xdg_toplevel_tag_manager_v1_handle_set_tag(struct wl_listener *listener, void *data);
 
 #endif

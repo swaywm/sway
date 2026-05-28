@@ -105,10 +105,7 @@ static void handle_pointer_motion(struct sway_seat *seat, uint32_t time_msec) {
 
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 	struct seatop_resize_tiling_event *e = seat->seatop_data;
-	if (e->con == con) {
-		seatop_begin_default(seat);
-	}
-	if (e->h_sib == con || e->v_sib == con) {
+	if (e->con == con || e->h_sib == con || e->v_sib == con) {
 		seatop_begin_default(seat);
 	}
 }

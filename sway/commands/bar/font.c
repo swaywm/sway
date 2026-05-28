@@ -11,7 +11,7 @@ struct cmd_results *bar_cmd_font(int argc, char **argv) {
 	char *font = join_args(argv, argc);
 	free(config->current_bar->font);
 
-	if (strncmp(font, "pango:", 6) == 0) {
+	if (has_prefix(font, "pango:")) {
 		if (config->current_bar->pango_markup == PANGO_MARKUP_DEFAULT) {
 			config->current_bar->pango_markup = true;
 		}

@@ -63,36 +63,27 @@ bool swaynag_spawn(const char *swaynag_command,
 		sway_log(SWAY_ERROR, "Failed to create fork for swaynag");
 		goto failed;
 	} else if (pid == 0) {
-		restore_nofile_limit();
-
-		pid = fork();
-		if (pid < 0) {
-			sway_log_errno(SWAY_ERROR, "fork failed");
-			_exit(EXIT_FAILURE);
-		} else if (pid == 0) {
-			if (!sway_set_cloexec(sockets[1], false)) {
-				_exit(EXIT_FAILURE);
-			}
-
-			if (swaynag->detailed) {
-				close(swaynag->fd[1]);
-				dup2(swaynag->fd[0], STDIN_FILENO);
-				close(swaynag->fd[0]);
-			}
-
-			char wayland_socket_str[16];
-			snprintf(wayland_socket_str, sizeof(wayland_socket_str),
-					"%d", sockets[1]);
-			setenv("WAYLAND_SOCKET", wayland_socket_str, true);
-
-			size_t length = strlen(swaynag_command) + strlen(swaynag->args) + 2;
-			char *cmd = malloc(length);
-			snprintf(cmd, length, "%s %s", swaynag_command, swaynag->args);
-			execlp("sh", "sh", "-c", cmd, NULL);
-			sway_log_errno(SWAY_ERROR, "execlp failed");
+		if (!sway_set_cloexec(sockets[1], false)) {
 			_exit(EXIT_FAILURE);
 		}
-		_exit(EXIT_SUCCESS);
+
+		if (swaynag->detailed) {
+			close(swaynag->fd[1]);
+			dup2(swaynag->fd[0], STDIN_FILENO);
+			close(swaynag->fd[0]);
+		}
+
+		char wayland_socket_str[16];
+		snprintf(wayland_socket_str, sizeof(wayland_socket_str),
+				"%d", sockets[1]);
+		setenv("WAYLAND_SOCKET", wayland_socket_str, true);
+
+		size_t length = strlen(swaynag_command) + strlen(swaynag->args) + 2;
+		char *cmd = malloc(length);
+		snprintf(cmd, length, "%s %s", swaynag_command, swaynag->args);
+		execlp("sh", "sh", "-c", cmd, NULL);
+		sway_log_errno(SWAY_ERROR, "execlp failed");
+		_exit(EXIT_FAILURE);
 	}
 
 	if (swaynag->detailed) {
@@ -104,11 +95,6 @@ bool swaynag_spawn(const char *swaynag_command,
 
 	if (close(sockets[1]) != 0) {
 		sway_log_errno(SWAY_ERROR, "close failed");
-		return false;
-	}
-
-	if (waitpid(pid, NULL, 0) < 0) {
-		sway_log_errno(SWAY_ERROR, "waitpid failed");
 		return false;
 	}
 
@@ -161,4 +147,3 @@ void swaynag_show(struct swaynag_instance *swaynag) {
 		close(swaynag->fd[1]);
 	}
 }
-

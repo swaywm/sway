@@ -6,11 +6,13 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_content_type_v1.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <xkbcommon/xkbcommon.h>
 #include "config.h"
 #include "log.h"
 #include "sway/config.h"
 #include "sway/ipc-json.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -154,7 +156,7 @@ static json_object *ipc_json_output_mode_description(
 	return mode_object;
 }
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 static const char *ipc_json_xwindow_type_description(struct sway_view *view) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	struct sway_xwayland *xwayland = &server.xwayland;
@@ -316,6 +318,14 @@ static void ipc_json_describe_wlr_output(struct wlr_output *wlr_output, json_obj
 		json_object_array_add(modes_array, mode_object);
 	}
 	json_object_object_add(object, "modes", modes_array);
+
+	json_object *features_object = json_object_new_object();
+	json_object_object_add(features_object, "adaptive_sync",
+		json_object_new_boolean(wlr_output->adaptive_sync_supported ||
+			wlr_output->adaptive_sync_status ==  WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED));
+	json_object_object_add(features_object, "hdr",
+		json_object_new_boolean(output_supports_hdr(wlr_output, NULL)));
+	json_object_object_add(object, "features", features_object);
 }
 
 static void ipc_json_describe_output(struct sway_output *output,
@@ -398,6 +408,8 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 	}
 
 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
+	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
+	json_object_object_add(object, "hdr", json_object_new_boolean(output->hdr));
 }
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
@@ -574,12 +586,17 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "app_id",
 			app_id ? json_object_new_string(app_id) : NULL);
 
+	json_object_object_add(object, "foreign_toplevel_identifier",
+		c->view->ext_foreign_toplevel ?
+			json_object_new_string(c->view->ext_foreign_toplevel->identifier) : NULL);
+
 	bool visible = view_is_visible(c->view);
 	json_object_object_add(object, "visible", json_object_new_boolean(visible));
 
+	bool has_titlebar = c->title_bar.tree->node.enabled;
 	struct wlr_box window_box = {
 		c->pending.content_x - c->pending.x,
-		(c->current.border == B_PIXEL) ? c->pending.content_y - c->pending.y : 0,
+		has_titlebar ? 0 : c->pending.content_y - c->pending.y,
 		c->pending.content_width,
 		c->pending.content_height
 	};
@@ -591,10 +608,27 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 	json_object_object_add(object, "max_render_time", json_object_new_int(c->view->max_render_time));
 
+	json_object_object_add(object, "allow_tearing", json_object_new_boolean(view_can_tear(c->view)));
+
 	json_object_object_add(object, "shell", json_object_new_string(view_get_shell(c->view)));
 
 	json_object_object_add(object, "inhibit_idle",
 		json_object_new_boolean(view_inhibit_idle(c->view)));
+
+	const char *sandbox_engine = view_get_sandbox_engine(c->view);
+	json_object_object_add(object, "sandbox_engine",
+			sandbox_engine ? json_object_new_string(sandbox_engine) : NULL);
+
+	const char *sandbox_app_id = view_get_sandbox_app_id(c->view);
+	json_object_object_add(object, "sandbox_app_id",
+			sandbox_app_id ? json_object_new_string(sandbox_app_id) : NULL);
+
+	const char *sandbox_instance_id = view_get_sandbox_instance_id(c->view);
+	json_object_object_add(object, "sandbox_instance_id",
+			sandbox_instance_id ? json_object_new_string(sandbox_instance_id) : NULL);
+
+	const char *tag = view_get_tag(c->view);
+	json_object_object_add(object, "tag", tag ? json_object_new_string(tag) : NULL);
 
 	json_object *idle_inhibitors = json_object_new_object();
 
@@ -633,7 +667,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 			json_object_new_string(ipc_json_content_type_description(content_type)));
 	}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	if (c->view->type == SWAY_VIEW_XWAYLAND) {
 		json_object_object_add(object, "window",
 				json_object_new_int(view_get_x11_window_id(c->view)));
@@ -925,6 +959,11 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		case LIBINPUT_CONFIG_DRAG_LOCK_DISABLED:
 			drag_lock = "disabled";
 			break;
+#if HAVE_LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY
+		case LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY:
+			drag_lock = "enabled_sticky";
+			break;
+#endif
 		}
 		json_object_object_add(object, "tap_drag_lock",
 				json_object_new_string(drag_lock));
@@ -990,6 +1029,18 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		}
 		json_object_object_add(object, "click_method",
 				json_object_new_string(click_method));
+
+		const char *button_map = "unknown";
+		switch (libinput_device_config_click_get_clickfinger_button_map(device)) {
+		case LIBINPUT_CONFIG_CLICKFINGER_MAP_LRM:
+			button_map = "lrm";
+			break;
+		case LIBINPUT_CONFIG_CLICKFINGER_MAP_LMR:
+			button_map = "lmr";
+			break;
+		}
+		json_object_object_add(object, "clickfinger_button_map",
+				json_object_new_string(button_map));
 	}
 
 	if (libinput_device_config_middle_emulation_is_available(device)) {
@@ -1107,15 +1158,17 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		struct xkb_keymap *keymap = keyboard->keymap;
 		struct xkb_state *state = keyboard->xkb_state;
 
-		json_object_object_add(object, "repeat_delay", 
+		json_object_object_add(object, "repeat_delay",
 			json_object_new_int(keyboard->repeat_info.delay));
-		json_object_object_add(object, "repeat_rate", 
+		json_object_object_add(object, "repeat_rate",
 			json_object_new_int(keyboard->repeat_info.rate));
 
 		json_object *layouts_arr = json_object_new_array();
 		json_object_object_add(object, "xkb_layout_names", layouts_arr);
 
-		xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(keymap);
+		xkb_layout_index_t num_layouts =
+			keymap ? xkb_keymap_num_layouts(keymap) : 0;
+		// Virtual keyboards might have null keymap
 		xkb_layout_index_t layout_idx;
 		for (layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
 			const char *layout = xkb_keymap_layout_get_name(keymap, layout_idx);

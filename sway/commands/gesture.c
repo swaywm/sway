@@ -121,8 +121,7 @@ static struct cmd_results *cmd_bind_or_unbind_gesture(int argc, char **argv, boo
 			binding->flags |= BINDING_EXACT;
 		} else if (strcmp("--no-warn", argv[0]) == 0) {
 			warn = false;
-		} else if (strncmp("--input-device=", argv[0],
-					strlen("--input-device=")) == 0) {
+		} else if (has_prefix(argv[0], "--input-device=")) {
 			free(binding->input);
 			binding->input = strdup(argv[0] + strlen("--input-device="));
 		} else {

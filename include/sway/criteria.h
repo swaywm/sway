@@ -7,6 +7,10 @@
 #include "list.h"
 #include "tree/view.h"
 
+#if WLR_HAS_XWAYLAND
+#include "sway/xwayland.h"
+#endif
+
 enum criteria_type {
 	CT_COMMAND                 = 1 << 0,
 	CT_ASSIGN_OUTPUT           = 1 << 1,
@@ -36,7 +40,7 @@ struct criteria {
 	struct pattern *app_id;
 	struct pattern *con_mark;
 	uint32_t con_id; // internal ID
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct pattern *class;
 	uint32_t id; // X11 window ID
 	struct pattern *instance;
@@ -49,6 +53,10 @@ struct criteria {
 	char urgent; // 'l' for latest or 'o' for oldest
 	struct pattern *workspace;
 	pid_t pid;
+	struct pattern *sandbox_engine;
+	struct pattern *sandbox_app_id;
+	struct pattern *sandbox_instance_id;
+	struct pattern *tag;
 };
 
 bool criteria_is_empty(struct criteria *criteria);

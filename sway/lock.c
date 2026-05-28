@@ -8,6 +8,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/lock.h"
 
 struct sway_session_lock_output {
 	struct wlr_scene_tree *tree;
@@ -19,7 +20,6 @@ struct sway_session_lock_output {
 	struct wl_list link; // sway_session_lock::outputs
 
 	struct wl_listener destroy;
-	struct wl_listener commit;
 
 	struct wlr_session_lock_surface_v1 *surface;
 
@@ -89,6 +89,17 @@ static void lock_output_reconfigure(struct sway_session_lock_output *output) {
 	}
 }
 
+void arrange_locks(void) {
+	if (server.session_lock.lock == NULL) {
+		return;
+	}
+
+	struct sway_session_lock_output *lock_output;
+	wl_list_for_each(lock_output, &server.session_lock.lock->outputs, link) {
+		lock_output_reconfigure(lock_output);
+	}
+}
+
 static void handle_new_surface(struct wl_listener *listener, void *data) {
 	struct sway_session_lock *lock = wl_container_of(listener, lock, new_surface);
 	struct wlr_session_lock_surface_v1 *lock_surface = data;
@@ -125,7 +136,6 @@ static void sway_session_lock_output_destroy(struct sway_session_lock_output *ou
 		wl_list_remove(&output->surface_map.link);
 	}
 
-	wl_list_remove(&output->commit.link);
 	wl_list_remove(&output->destroy.link);
 	wl_list_remove(&output->link);
 
@@ -136,18 +146,6 @@ static void lock_node_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_output *output =
 		wl_container_of(listener, output, destroy);
 	sway_session_lock_output_destroy(output);
-}
-
-static void lock_output_handle_commit(struct wl_listener *listener, void *data) {
-	struct wlr_output_event_commit *event = data;
-	struct sway_session_lock_output *output =
-		wl_container_of(listener, output, commit);
-	if (event->state->committed & (
-			WLR_OUTPUT_STATE_MODE |
-			WLR_OUTPUT_STATE_SCALE |
-			WLR_OUTPUT_STATE_TRANSFORM)) {
-		lock_output_reconfigure(output);
-	}
 }
 
 static struct sway_session_lock_output *session_lock_output_create(
@@ -185,9 +183,6 @@ static struct sway_session_lock_output *session_lock_output_create(
 
 	lock_output->destroy.notify = lock_node_handle_destroy;
 	wl_signal_add(&tree->node.events.destroy, &lock_output->destroy);
-
-	lock_output->commit.notify = lock_output_handle_commit;
-	wl_signal_add(&output->wlr_output->events.commit, &lock_output->commit);
 
 	lock_output_reconfigure(lock_output);
 
@@ -239,6 +234,9 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 		struct sway_output *output = root->outputs->items[i];
 		arrange_layers(output);
 	}
+
+	// Views are now visible, so check if we need to activate inhibition again.
+	sway_idle_inhibit_v1_check_active();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
@@ -302,6 +300,10 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 
 	wlr_session_lock_v1_send_locked(lock);
 	server.session_lock.lock = sway_lock;
+
+	// The lock screen covers everything, so check if any active inhibition got
+	// deactivated due to lost visibility.
+	sway_idle_inhibit_v1_check_active();
 }
 
 static void handle_session_lock_destroy(struct wl_listener *listener, void *data) {
@@ -342,8 +344,12 @@ bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	return false;
 }
 
-void sway_session_lock_init(void) {
+bool sway_session_lock_init(void) {
 	server.session_lock.manager = wlr_session_lock_manager_v1_create(server.wl_display);
+	if (!server.session_lock.manager) {
+		sway_log(SWAY_ERROR, "Failed to create session lock manager");
+		return false;
+	}
 
 	server.session_lock.new_lock.notify = handle_session_lock;
 	server.session_lock.manager_destroy.notify = handle_session_lock_destroy;
@@ -351,4 +357,5 @@ void sway_session_lock_init(void) {
 		&server.session_lock.new_lock);
 	wl_signal_add(&server.session_lock.manager->events.destroy,
 		&server.session_lock.manager_destroy);
+	return true;
 }

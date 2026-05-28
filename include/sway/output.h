@@ -52,25 +52,26 @@ struct sway_output {
 
 	bool enabled;
 	list_t *workspaces;
+	struct wl_list layer_surfaces; // sway_layer_surface.link
 
 	struct sway_output_state current;
 
 	struct wl_listener layout_destroy;
 	struct wl_listener destroy;
-	struct wl_listener commit;
 	struct wl_listener present;
 	struct wl_listener frame;
 	struct wl_listener request_state;
 
-	struct {
-		struct wl_signal disable;
-	} events;
+	struct wlr_color_transform *color_transform;
+	struct wlr_ext_workspace_group_handle_v1 *ext_workspace_group;
 
 	struct timespec last_presentation;
 	uint32_t refresh_nsec;
 	int max_render_time; // In milliseconds
 	struct wl_event_source *repaint_timer;
-	bool gamma_lut_changed;
+
+	bool allow_tearing;
+	bool hdr;
 };
 
 struct sway_output_non_desktop {
@@ -89,6 +90,9 @@ struct sway_output *output_from_wlr_output(struct wlr_output *output);
 
 struct sway_output *output_get_in_direction(struct sway_output *reference,
 		enum wlr_direction direction);
+
+void output_configure_scene(struct sway_output *output,
+	struct wlr_scene_node *node, float opacity);
 
 void output_add_workspace(struct sway_output *output,
 		struct sway_workspace *workspace);
@@ -128,14 +132,12 @@ struct sway_container *output_find_container(struct sway_output *output,
 
 void output_get_box(struct sway_output *output, struct wlr_box *box);
 
+bool output_supports_hdr(struct wlr_output *output, const char **unsupported_reason_ptr);
+
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
 
 enum wlr_direction opposite_direction(enum wlr_direction d);
-
-void handle_output_layout_change(struct wl_listener *listener, void *data);
-
-void handle_gamma_control_set_gamma(struct wl_listener *listener, void *data);
 
 void handle_output_manager_apply(struct wl_listener *listener, void *data);
 
@@ -145,5 +147,7 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 	void *data);
 
 struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr_output);
+
+void update_output_manager_config(struct sway_server *server);
 
 #endif

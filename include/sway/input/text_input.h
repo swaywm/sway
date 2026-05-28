@@ -25,8 +25,10 @@ struct sway_input_method_relay {
 	struct wlr_input_method_v2 *input_method; // doesn't have to be present
 
 	struct wl_listener text_input_new;
+	struct wl_listener text_input_manager_destroy;
 
 	struct wl_listener input_method_new;
+	struct wl_listener input_method_manager_destroy;
 	struct wl_listener input_method_commit;
 	struct wl_listener input_method_new_popup_surface;
 	struct wl_listener input_method_grab_keyboard;

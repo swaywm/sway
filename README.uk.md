@@ -51,7 +51,7 @@ _\*Лише для компіляції_
 
 Виконайте ці команди:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

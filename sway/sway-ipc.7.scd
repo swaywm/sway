@@ -138,7 +138,7 @@ has the following properties:
 :  Whether the workspace is currently focused by the default seat (_seat0_)
 |- urgent
 :  boolean
-:  Whether a view on the workspace has the urgent flag set
+:  Whether a window on the workspace has the urgent flag set
 |- rect
 :  object
 :  The bounds of the workspace. It consists of _x_, _y_, _width_, and _height_
@@ -244,6 +244,9 @@ following properties:
 |- rect
 :  object
 :  The bounds for the output consisting of _x_, _y_, _width_, and _height_
+|- hdr
+:  boolean
+:  Whether HDR is enabled
 
 
 *Example Reply:*
@@ -374,7 +377,7 @@ node and will have the following properties:
    that can be used as an aid in submitting reproduction steps for bug reports
 |- fullscreen_mode
 :  integer
-:  (Only containers and views) The fullscreen mode of the node. 0 means none, 1 means
+:  (Only containers and windows) The fullscreen mode of the node. 0 means none, 1 means
    full workspace, and 2 means global fullscreen
 |- floating
 :  string
@@ -384,32 +387,49 @@ node and will have the following properties:
 :  Whether the window is in the scratchpad. Can be either "none" or "fresh"
 |- app_id
 :  string
-:  (Only views) For an xdg-shell view, the name of the application, if set.
+:  (Only windows) For an xdg-shell window, the name of the application, if set.
    Otherwise, _null_
 |- pid
 :  integer
-:  (Only views) The PID of the application that owns the view
+:  (Only windows) The PID of the application that owns the window
+|- foreign_toplevel_identifier
+:  string
+:  (Only windows) The ext-foreign-toplevel-list-v1 toplevel identifier of this node.
 |- visible
 :  boolean
-:  (Only views) Whether the node is visible
+:  (Only windows) Whether the node is visible
 |- shell
 :  string
-:  (Only views) The shell of the view, such as _xdg\_shell_ or _xwayland_
+:  (Only windows) The shell of the window, such as _xdg\_shell_ or _xwayland_
 |- inhibit_idle
 :  boolean
-:  (Only views) Whether the view is inhibiting the idle state
+:  (Only windows) Whether the window is inhibiting the idle state
 |- idle_inhibitors
 :  object
-:  (Only views) An object containing the state of the _application_ and _user_ idle inhibitors.
+:  (Only windows) An object containing the state of the _application_ and _user_ idle inhibitors.
     _application_ can be _enabled_ or _none_.
     _user_ can be _focus_, _fullscreen_, _open_, _visible_ or _none_.
+|- sandbox_engine
+:  string
+:  (Only windows) The associated sandbox engine (or _null_)
+|- sandbox_app_id
+:  string
+:  (Only windows) The app ID provided by the associated sandbox engine (or _null_)
+|- sandbox_instance_id
+:  string
+:  (Only windows) The instance ID provided by the associated sandbox engine (or
+   _null_)
+|- tag
+:  string
+:  (Only windows) For an xdg-shell window, tag of the toplevel, if set.
+   Otherwise, _null_
 |- window
 :  integer
-:  (Only xwayland views) The X11 window ID for the xwayland view
+:  (Only xwayland windows) The X11 window ID for the xwayland window
 |- window_properties
 :  object
-:  (Only xwayland views) An object containing the _title_, _class_, _instance_,
-   _window\_role_, _window\_type_, and _transient\_for_ for the view
+:  (Only xwayland windows) An object containing the _title_, _class_, _instance_,
+   _window\_role_, _window\_type_, and _transient\_for_ for the window
 
 
 *Example Reply:*
@@ -782,7 +802,7 @@ node and will have the following properties:
 Retrieve the currently set marks
 
 *REPLY*++
-An array of marks current set. Since each mark can only be set for one
+An array of marks currently set. Since each mark can only be set for one
 container, this is a set so each value is unique and the order is undefined.
 
 *Example Reply:*
@@ -813,13 +833,13 @@ An array of bar IDs, which are strings
 
 *MESSAGE*++
 When sent with a bar ID as the payload, this retrieves the config associated
-with the specified by the bar ID in the payload. This is used by swaybar, but
-could also be used for third party bars
+with the bar ID specified in the payload. This is used by swaybar, but could
+also be used for third-party bars
 
 *REPLY*++
 An object that represents the configuration for the bar with the bar ID sent as
-the payload. The following properties exists and more information about what
-their value mean can be found in *sway-bar*(5):
+the payload. The following properties exist, with more information about their
+values in *sway-bar*(5):
 
 [- *PROPERTY*
 :- *DATA TYPE*
@@ -914,13 +934,13 @@ containing the _#RRGGBBAA_ representation of the color:
    that are not visible
 |- urgent_workspace_text
 :  The color to use for the text of the workspace buttons for workspaces that
-   contain an urgent view
+   contain an urgent window
 |- urgent_workspace_bg
 :  The color to use for the background of the workspace buttons for workspaces
-   that contain an urgent view
+   that contain an urgent window
 |- urgent_workspace_border
 :  The color to use for the border of the workspace buttons for workspaces that
-   contain an urgent view
+   contain an urgent window
 |- binding_mode_text
 :  The color to use for the text of the binding mode indicator
 |- binding_mode_bg
@@ -1020,7 +1040,7 @@ An object containing the following properties:
 ## 8. GET_BINDING_MODES
 
 *MESSAGE*++
-Retrieve the list of binding modes that currently configured
+Retrieve the list of binding modes that are currently configured
 
 *REPLY*++
 An array of strings, with each string being the name of a binding mode. This
@@ -1046,7 +1066,7 @@ An object with a single string property containing the contents of the config
 *Example Reply:*
 ```
 {
-	"config": "set $mod Mod4\nbindsym $mod+q exit\n"
+	"config": "set $mod Mod4\\nbindsym $mod+q exit\\n"
 }
 ```
 
@@ -1096,7 +1116,7 @@ Returns the currently active binding mode.
 A single object that contains the property _name_, which is set to the
 currently active binding mode as a string.
 
-*Exact Reply:*
+*Example Reply:*
 ```
 {
 	"name": "default"
@@ -1134,13 +1154,13 @@ following properties:
    _tablet\_tool_, _tablet\_pad_, or _switch_
 |- xkb_active_layout_name
 :  string
-:  (Only keyboards) The name of the active keyboard layout in use
+:  (Only keyboards) The name of the active keyboard layout
 |- xkb_layout_names
 :  array
 :  (Only keyboards) A list a layout names configured for the keyboard
 |- xkb_active_layout_index
 :  integer
-:  (Only keyboards) The index of the active keyboard layout in use
+:  (Only keyboards) The index of the active keyboard layout
 |- scroll_factor
 :  floating
 :  (Only pointers) Multiplier applied on scroll event values.
@@ -1168,13 +1188,14 @@ following properties will be included for devices that support them:
 :  Whether tap to click is enabled. It can be _enabled_ or _disabled_
 |- tap_button_map
 :  string
-:  The finger to button mapping in use. It can be _lmr_ or _lrm_
+:  The finger to button mapping in use for tapping. It can be _lmr_ or _lrm_
 |- tap_drag
 :  string
 :  Whether tap-and-drag is enabled. It can be _enabled_ or _disabled_
 |- tap_drag_lock
 :  string
-:  Whether drag-lock is enabled. It can be _enabled_ or _disabled_
+:  Whether drag-lock is enabled. It can be _enabled_, _disabled_ or
+   _enabled_sticky_
 |- accel_speed
 :  double
 :  The pointer-acceleration in use
@@ -1190,6 +1211,9 @@ following properties will be included for devices that support them:
 |- click_method
 :  string
 :  The click method in use. It can be _none_, _button_areas_, or _clickfinger_
+|- click_button_map
+:  string
+:  The finger to button mapping in use for clickfinger. It can be _lmr_ or _lrm_
 |- middle_emulation
 :  string
 :  Whether middle emulation is enabled. It can be _enabled_ or _disabled_
@@ -1443,7 +1467,7 @@ one seat. Each object has the following properties:
 
 # EVENTS
 
-Events are a way for client to get notified of changes to sway. A client can
+Events are a way for clients to get notified of changes to sway. A client can
 subscribe to any events it wants to be notified of changes for. The event is
 sent in the same format as a reply. The following events are currently
 available:
@@ -1454,7 +1478,7 @@ available:
 |- 0x80000000
 :  workspace
 :[ Sent whenever an event involving a workspace occurs such as initialization
-   of a new workspace or a different workspace gains focus
+   of a new workspace or another workspace gaining focus
 |- 0x80000001
 :  output
 :  Sent when outputs are updated
@@ -1463,7 +1487,7 @@ available:
 :  Sent whenever the binding mode changes
 |- 0x80000003
 :  window
-:  Sent whenever an event involving a view occurs such as being reparented,
+:  Sent whenever an event involving a window occurs such as it being reparented,
    focused, or closed
 |- 0x80000004
 :  barconfig_update
@@ -1479,7 +1503,7 @@ available:
 :  Sent when an ipc client sends a _SEND\_TICK_ message
 |- 0x80000014
 :  bar_state_update
-:  Send when the visibility of a bar should change due to a modifier
+:  Sent when the visibility of a bar should change due to a modifier
 |- 0x80000015
 :  input
 :  Sent when something related to input devices changes
@@ -1498,10 +1522,10 @@ single object with the following properties:
 :[ The type of change that occurred. See below for more information
 |- current
 :  object
-:  An object representing the workspace effected or _null_ for _reload_ changes
+:  An object representing the affected workspace or _null_ for _reload_ changes
 |- old
 :  object
-:  For a _focus_ change, this is will be an object representing the workspace
+:  For a _focus_ change, this will be an object representing the workspace
    being switched from. Otherwise, it is _null_
 
 
@@ -1519,8 +1543,8 @@ The following change types are currently available:
 |- rename
 :  The workspace was renamed
 |- urgent
-:  A view on the workspace has had their urgency hint set or all urgency hints
-   for views on the workspace have been cleared
+:  A window on the workspace has had its urgency hint set or all urgency hints
+   for windows on the workspace have been cleared
 |- reload
 :  The configuration file has been reloaded
 
@@ -1618,7 +1642,7 @@ with the following properties:
 
 ## 0x80000003. WINDOW
 
-Sent whenever a change involving a view occurs. The event consists of a single
+Sent whenever a change involving a window occurs. The event consists of a single
 object with the following properties:
 
 [- *PROPERTY*
@@ -1629,30 +1653,30 @@ object with the following properties:
 :[ The type of change that occurred. See below for more information
 |- container
 :  object
-:  An object representing the view effected
+:  An object representing the affected window
 
 
 The following change types are currently available:
 [- *TYPE*
 :- *DESCRIPTION*
 |- new
-:[ The view was created
+:[ The window was created
 |- close
-:  The view was closed
+:  The window was closed
 |- focus
-:  The view was focused
+:  The window was focused
 |- title
-:  The view's title has changed
+:  The window's title has changed
 |- fullscreen_mode
-:  The view's fullscreen mode has changed
+:  The window's fullscreen mode has changed
 |- move
-:  The view has been reparented in the tree
+:  The window has been reparented in the tree
 |- floating
-:  The view has become floating or is no longer floating
+:  The window has become floating or is no longer floating
 |- urgent
-:  The view's urgency hint has changed status
+:  The window's urgency hint has changed status
 |- mark
-:  A mark has been added or removed from the view
+:  A mark has been added or removed from the window
 
 
 *Example Event:*
@@ -1792,7 +1816,7 @@ event is a single object with the following properties:
 :  Whether this event was triggered by subscribing to the tick events
 |- payload
 :  string
-:  The payload given with a _SEND\_TICK_ message, if any. Otherwise, an empty
+:  The payload provided in a _SEND\_TICK_ message, if any. Otherwise, an empty
    string
 
 
@@ -1814,7 +1838,7 @@ event is a single object with the following properties:
 :- *DESCRIPTION*
 |- id
 :  string
-:[ The bar ID effected
+:[ The bar ID affected
 |- visible_by_modifier
 :  boolean
 :  Whether the bar should be made visible due to a modifier being pressed
@@ -1830,7 +1854,7 @@ event is a single object with the following properties:
 
 ## 0x80000015. INPUT
 
-Sent when something related to the input devices changes. The event is a single
+Sent when something related to input devices changes. The event is a single
 object with the following properties:
 
 [- *PROPERTY*
@@ -1841,7 +1865,7 @@ object with the following properties:
 :[ What has changed
 |- input
 :  object
-:  An object representing the input that is identical the ones GET_INPUTS gives
+:  An object representing the input that is identical to the ones GET_INPUTS gives
 
 The following change types are currently available:
 [- *TYPE*

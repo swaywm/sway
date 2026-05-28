@@ -37,7 +37,7 @@ _\* Compile-time dep_
 
 نفذ هذه الأوامر:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

@@ -11,6 +11,7 @@ static const struct cmd_handler input_handlers[] = {
 	{ "accel_profile", input_cmd_accel_profile },
 	{ "calibration_matrix", input_cmd_calibration_matrix },
 	{ "click_method", input_cmd_click_method },
+	{ "clickfinger_button_map", input_cmd_clickfinger_button_map },
 	{ "drag", input_cmd_drag },
 	{ "drag_lock", input_cmd_drag_lock },
 	{ "dwt", input_cmd_dwt },
@@ -93,7 +94,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			return res;
 		}
 
-		if (!config->reloading) {
+		if (!config->reading) {
 			input_manager_apply_input_config(ic);
 		}
 	} else {

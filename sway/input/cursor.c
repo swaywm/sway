@@ -25,17 +25,12 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
-
-static uint32_t get_current_time_msec(void) {
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	return now.tv_sec * 1000 + now.tv_nsec / 1000000;
-}
 
 /**
  * Returns the node at the cursor's position. If there is a surface at that
@@ -107,7 +102,7 @@ struct sway_node *node_at_coords(
 				return NULL;
 			}
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
 				return NULL;
 			}
@@ -143,7 +138,7 @@ struct sway_node *node_at_coords(
 }
 
 void cursor_rebase(struct sway_cursor *cursor) {
-	uint32_t time_msec = get_current_time_msec();
+	uint32_t time_msec = get_current_time_in_msec();
 	seatop_rebase(cursor->seat, time_msec);
 }
 
@@ -358,7 +353,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
 		enum wl_pointer_button_state state) {
 	if (time_msec == 0) {
-		time_msec = get_current_time_msec();
+		time_msec = get_current_time_in_msec();
 	}
 
 	seatop_button(cursor->seat, time_msec, device, button, state);
@@ -577,12 +572,13 @@ static void handle_tablet_tool_position(struct sway_cursor *cursor,
 	//   tablet events until the drag is released, even if we are now over a
 	//   non-tablet surface.
 	if (!cursor->simulating_pointer_from_tool_tip &&
-			((surface && wlr_surface_accepts_tablet_v2(tablet->tablet_v2, surface)) ||
+			((surface && wlr_surface_accepts_tablet_v2(surface, tablet->tablet_v2)) ||
 				wlr_tablet_tool_v2_has_implicit_grab(tool->tablet_v2_tool))) {
 		seatop_tablet_tool_motion(seat, tool, time_msec);
 	} else {
 		wlr_tablet_v2_tablet_tool_notify_proximity_out(tool->tablet_v2_tool);
 		pointer_motion(cursor, time_msec, input_device->wlr_device, dx, dy, dx, dy);
+		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
 	}
 }
 
@@ -648,6 +644,11 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	cursor_handle_activity_from_device(cursor, &event->tablet->base);
 
 	struct sway_tablet_tool *sway_tool = event->tool->data;
+	if (!sway_tool) {
+		sway_log(SWAY_DEBUG, "tool tip before proximity");
+		return;
+	}
+
 	struct wlr_tablet_v2_tablet *tablet_v2 = sway_tool->tablet->tablet_v2;
 	struct sway_seat *seat = cursor->seat;
 
@@ -663,7 +664,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 		dispatch_cursor_button(cursor, &event->tablet->base, event->time_msec,
 			BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
 		wlr_seat_pointer_notify_frame(cursor->seat->wlr_seat);
-	} else if (!surface || !wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+	} else if (!surface || !wlr_surface_accepts_tablet_v2(surface, tablet_v2)) {
 		// If we started holding the tool tip down on a surface that accepts
 		// tablet v2, we should notify that surface if it gets released over a
 		// surface that doesn't support v2.
@@ -748,7 +749,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	bool mod_pressed = modifiers & config->floating_mod;
 
 	bool surface_supports_tablet_events =
-		surface && wlr_surface_accepts_tablet_v2(tablet_v2, surface);
+		surface && wlr_surface_accepts_tablet_v2(surface, tablet_v2);
 
 	// Simulate pointer when:
 	// 1. The modifier key is pressed, OR
@@ -1046,6 +1047,7 @@ void sway_cursor_destroy(struct sway_cursor *cursor) {
 	wl_list_remove(&cursor->touch_frame.link);
 	wl_list_remove(&cursor->tool_axis.link);
 	wl_list_remove(&cursor->tool_tip.link);
+	wl_list_remove(&cursor->tool_proximity.link);
 	wl_list_remove(&cursor->tool_button.link);
 	wl_list_remove(&cursor->request_set_cursor.link);
 
@@ -1235,7 +1237,7 @@ uint32_t get_mouse_bindsym(const char *name, char **error) {
 			SWAY_SCROLL_UP, SWAY_SCROLL_DOWN, SWAY_SCROLL_LEFT,
 			SWAY_SCROLL_RIGHT, BTN_SIDE, BTN_EXTRA};
 		return buttons[number - 1];
-	} else if (strncmp(name, "BTN_", strlen("BTN_")) == 0) {
+	} else if (has_prefix(name, "BTN_")) {
 		// Get event code from name
 		int code = libevdev_event_code_from_name(EV_KEY, name);
 		if (code == -1) {
@@ -1260,7 +1262,7 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 		return 0;
 	}
 	const char *event = libevdev_event_code_get_name(EV_KEY, code);
-	if (!event || strncmp(event, "BTN_", strlen("BTN_")) != 0) {
+	if (!event || !has_prefix(event, "BTN_")) {
 		*error = format_str("Event code %d (%s) is not a button",
 			code, event ? event : "(null)");
 		return 0;

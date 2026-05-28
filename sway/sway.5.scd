@@ -57,6 +57,7 @@ which you may only select one. *[...]* is used for optional arguments, and
 This section only lists general commands. For input and output commands, refer
 to *sway-input*(5) and *sway-output*(5).
 
+## Config only commands
 The following commands may only be used in the configuration file.
 
 *bar* [<bar-id>] <bar-subcommands...>
@@ -65,8 +66,8 @@ The following commands may only be used in the configuration file.
 *default_orientation* horizontal|vertical|auto
 	Sets the default container layout for tiled containers.
 
-*include* <path>
-	Includes another file from _path_. _path_ can be either a full path or a
+*include* <paths...>
+	Include files from _paths_. _paths_ can include either a full path or a
 	path relative to the parent config, and expands shell syntax (see
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
@@ -98,15 +99,16 @@ The following commands may only be used in the configuration file.
 	machines, it may be desirable to have Xwayland started immediately by
 	using _force_ instead of _enable_.
 
+## Runtime only commands
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 
 *border* none|normal|csd|pixel [<n>]
 	Set border style for focused window. _normal_ includes a border of
 	thickness _n_ and a title bar. _pixel_ is a border without title bar _n_
-	pixels thick. Default is _normal_ with border thickness 2. _csd_ is short
-	for client-side-decorations, which allows the client to draw its own
-	decorations.
+	pixels thick. The title bar always shows in stacking or tabbed layouts.
+	_csd_ is short for client-side-decorations, which allows the client to draw
+	its own decorations. Default is _normal_ with border thickness 2.
 
 *border* toggle
 	Cycles through the available border styles.
@@ -115,7 +117,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	Exit sway and end your Wayland session.
 
 *floating* enable|disable|toggle
-	Make focused view floating, non-floating, or the opposite of what it is now.
+	Make focused window floating, non-floating, or the opposite of what it is now.
 
 <criteria> *focus*
 	Moves focus to the container that matches the specified criteria.
@@ -150,9 +152,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	Moves focus between the floating and tiled layers.
 
 *fullscreen* [enable|disable|toggle] [global]
-	Makes focused view fullscreen, non-fullscreen, or the opposite of what it
+	Makes focused window fullscreen, non-fullscreen, or the opposite of what it
 	is now. If no argument is given, it does the same as _toggle_. If _global_
-	is specified, the view will be fullscreen across all outputs.
+	is specified, the window will be fullscreen across all outputs.
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
 set|plus|minus|toggle <amount>
@@ -162,16 +164,16 @@ set|plus|minus|toggle <amount>
 	_vertical_.
 
 *inhibit_idle* focus|fullscreen|open|none|visible
-	Set/unset an idle inhibitor for the view. _focus_ will inhibit idle when
-	the view is focused by any seat. _fullscreen_ will inhibit idle when the
+	Set/unset an idle inhibitor for the window. _focus_ will inhibit idle when
+	the window is focused by any seat. _fullscreen_ will inhibit idle when the
 	view is fullscreen (or a descendant of a fullscreen container) and is
-	visible. _open_ will inhibit idle until the view is closed (or the
-	inhibitor is unset/changed). _visible_ will inhibit idle when the view is
+	visible. _open_ will inhibit idle until the window is closed (or the
+	inhibitor is unset/changed). _visible_ will inhibit idle when the window is
 	visible on any output. _none_ will remove any existing idle inhibitor for
-	the view.
+	the window.
 
 	This can also be used with criteria to set an idle inhibitor for any
-	existing view or with _for_window_ to set idle inhibitors for future views.
+	existing window or with _for_window_ to set idle inhibitors for future windows.
 
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
@@ -214,6 +216,20 @@ set|plus|minus|toggle <amount>
 	This setting only has an effect if a per-output *max_render_time* is in
 	effect on the output the window is currently on. See *sway-output*(5) for
 	further details.
+
+*allow_tearing* yes|no
+	Allows or disallows screen tearing as a result of immediate page flips
+	for a fullscreen application.
+
+	When this option is not set, the tearing hints provided by the application
+	determine whether tearing is allowed. When _yes_ is specified,
+	the application allows tearing regardless of the tearing hints.
+	When _no_ is specified, tearing will never be allowed on the application,
+	regardless of the tearing hints.
+
+	This setting only has an effect if tearing is allowed on the output through
+	the per-output *allow_tearing* setting. See *sway-output*(5) for further
+	details.
 
 *move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. The optional _px_
@@ -286,28 +302,34 @@ set|plus|minus|toggle <amount>
 *rename* workspace [<old_name>] to <new_name>
 	Rename either <old_name> or the focused workspace to the <new_name>
 
-*resize* shrink|grow width|height [<amount> [px|ppt]]
+*resize* shrink|grow up|right|down|left|width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are resized
 	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
+	For tiling containers, space is taken/given from the container in the
+	specified direction. If _width_ or _height_ is specified, space will be
+	taken/given from all other containers.
 
 *resize* set height <height> [px|ppt]
 	Sets the height of the container to _height_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _height_ is 0, the container
-	will not be resized.
+	will not be resized. For tiling containers, space is taken/given from all
+	other containers.
 
 *resize* set [width] <width> [px|ppt]
 	Sets the width of the container to _width_, specified in pixels or
 	percentage points. If the units are omitted, floating containers are
 	resized in px and tiled containers by ppt. If _width_ is 0, the container
-	will not be resized.
+	will not be resized. For tiling containers, space is taken/given from all
+	other containers.
 
 *resize* set [width] <width> [px|ppt] [height] <height> [px|ppt]
 	Sets the width and height of the container to _width_ and _height_,
 	specified in pixels or percentage points. If the units are omitted,
 	floating containers are resized in px and tiled containers by ppt. If
 	_width_ or _height_ is 0, the container will not be resized on that axis.
+	For tiling containers, space is taken/given from all other containers.
 
 *scratchpad* show
 	Shows a window from the scratchpad. Repeatedly using this command will
@@ -315,12 +337,12 @@ set|plus|minus|toggle <amount>
 
 *shortcuts_inhibitor* enable|disable
 	Enables or disables the ability of clients to inhibit keyboard
-	shortcuts for a view. This is primarily useful for virtualization and
-	remote desktop software. It affects either the currently focused view
-	or a set of views selected by criteria. Subcommand _disable_
-	additionally deactivates any active inhibitors for the given view(s).
+	shortcuts for a window. This is primarily useful for virtualization and
+	remote desktop software. It affects either the currently focused window
+	or a set of windows selected by criteria. Subcommand _disable_
+	additionally deactivates any active inhibitors for the given window(s).
 	Criteria are particularly useful with the *for_window* command to
-	configure a class of views differently from the per-seat defaults
+	configure a class of windows differently from the per-seat defaults
 	established by the *seat* subcommand of the same name. See
 	*sway-input*(5) for more ways to affect inhibitors.
 
@@ -348,7 +370,7 @@ set|plus|minus|toggle <amount>
 	Swaps the position, geometry, and fullscreen status of two containers. The
 	first container can be selected either by criteria or focus. The second
 	container can be selected by _id_, _con_id_, or _mark_. _id_ can only be
-	used with xwayland views. If the first container has focus, it will retain
+	used with xwayland windows. If the first container has focus, it will retain
 	focus unless it is moved to a different workspace or the second container
 	becomes fullscreen on the same workspace as the first container. In either
 	of those cases, the second container will gain focus.
@@ -356,12 +378,29 @@ set|plus|minus|toggle <amount>
 *title_format* <format>
 	Sets the format of window titles. The following placeholders may be used:
 
-		%title - The title supplied by the window ++
-		%app_id - The wayland app ID (applicable to wayland windows only) ++
-		%class - The X11 classname (applicable to xwayland windows only) ++
-		%instance - The X11 instance (applicable to xwayland windows only) ++
-		%shell - The protocol the window is using (typically xwayland or
-			xdg_shell)
+	*%title*
+		The title supplied by the window
+
+	*%app_id*
+		The wayland app ID (applicable to wayland windows only)
+
+	*%class*
+		The X11 classname (applicable to xwayland windows only)
+
+	*%instance*
+		The X11 instance (applicable to xwayland windows only)
+
+	*%shell*
+		The protocol the window is using (typically xwayland or xdg_shell)
+
+	*%sandbox_engine*
+		The associated sandbox engine
+
+	*%sandbox_app_id*
+		The app ID provided by the associated sandbox engine
+
+	*%sandbox_instance_id*
+		The instance ID provided by the associated sandbox engine
 
 	This command is typically used with *for_window* criteria. For example:
 
@@ -371,18 +410,19 @@ set|plus|minus|toggle <amount>
 
 	The default format is "%title".
 
+## Config or runtime commands
 The following commands may be used either in the configuration file or at
 runtime.
 
 *assign* <criteria> [→] [workspace] [number] <workspace>
-	Assigns views matching _criteria_ (see *CRITERIA* for details) to
+	Assigns windows matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
 		for_window <criteria> move container to workspace <workspace>
 
 *assign* <criteria> [→] output left|right|up|down|<name>
-	Assigns views matching _criteria_ (see *CRITERIA* for details) to the
+	Assigns windows matching _criteria_ (see *CRITERIA* for details) to the
 	specified output. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
@@ -399,6 +439,12 @@ runtime.
 	generic to all devices. If a group number is given, then the binding will
 	only be available for that group. By default, if you overwrite a binding,
 	swaynag will give you a warning. To silence this, use the _--no-warn_ flag.
+
+	For specifying modifier keys, you can use the XKB modifier names _Shift_,
+	_Lock_ (for Caps Lock), _Control_, _Mod1_ (for Alt), _Mod2_ (for Num Lock),
+	_Mod3_ (for XKB modifier Mod3), _Mod4_ (for the Logo key), and _Mod5_ (for
+	AltGr). In addition, you can use the aliases  _Ctrl_ (for Control), _Alt_
+	(for Alt), and _Super_ (for the Logo key).
 
 	Unless the flag _--locked_ is set, the command will not be run when a
 	screen locking program is active. If there is a matching binding with
@@ -460,11 +506,12 @@ runtime.
 
 *bindswitch* [--locked] [--no-warn] [--reload] <switch>:<state> <command>
 	Binds <switch> to execute the sway command _command_ on state changes.
-	Supported switches are _lid_ (laptop lid) and _tablet_ (tablet mode)
-	switches. Valid values for _state_ are _on_, _off_ and _toggle_. These
-	switches are on when the device lid is shut and when tablet mode is active
-	respectively. _toggle_ is also supported to run a command both when the
-	switch is toggled on or off.
+	Supported switches are _lid_ (laptop lid), _tablet_ (tablet mode) and
+	_keypad_slide_ (whether the device keypad is exposed or not) switches. Valid
+	values for _state_ are _on_, _off_ and _toggle_. These switches are on when
+	the device lid is shut, when tablet mode is active and when the keypad is
+	exposed respectively. _toggle_ is also supported to run a command both when
+	the switch is toggled on or off.
 
 	Unless the flag _--locked_ is set, the command will not be run when a
 	screen locking program is active. If there is a matching binding with
@@ -559,10 +606,10 @@ runtime.
 		The window that has focus.
 
 	*client.focused_inactive*
-		The most recently focused view within a container which is not focused.
+		The most recently focused window within a container which is not focused.
 
 	*client.focused_tab_title*
-		A view that has focused descendant container.
+		A window that has focused descendant container.
 		Tab or stack container title that is the parent of the focused container
 		but is not directly focused. Defaults to focused_inactive if not
 		specified and does not use the indicator and child_border colors.
@@ -571,10 +618,10 @@ runtime.
 		Ignored (present for i3 compatibility).
 
 	*client.unfocused*
-		A view that does not have focus.
+		A window that does not have focus.
 
 	*client.urgent*
-		A view with an urgency hint. *Note*: Native Wayland windows do not
+		A window with an urgency hint. *Note*: Native Wayland windows do not
 		support urgency. Urgency only works for Xwayland windows.
 
 	The meaning of each color is:
@@ -589,12 +636,12 @@ runtime.
 		The text color of the title bar.
 
 	_indicator_
-		The color used to indicate where a new view will open. In a tiled
-		container, this would paint the right border of the current view if a
-		new view would be opened to the right.
+		The color used to indicate where a new window will open. In a tiled
+		container, this would paint the right border of the current window if a
+		new window would be opened to the right.
 
 	_child_border_
-		The border around the view itself.
+		The border around the window itself.
 
 The default colors are:
 
@@ -732,7 +779,7 @@ The default colors are:
 
 *gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
-	affects spacing around each view and outer affects the spacing around each
+	affects spacing around each window and outer affects the spacing around each
 	workspace. Outer gaps are in addition to inner gaps. To reduce or remove
 	outer gaps, outer gaps can be set to a negative value. _outer_ gaps can
 	also be specified per side with _top_, _right_, _bottom_, and _left_ or
@@ -809,9 +856,9 @@ The default colors are:
 	A list of output names may be obtained via *swaymsg -t get_outputs*.
 
 *popup_during_fullscreen* smart|ignore|leave_fullscreen
-	Determines what to do when a fullscreen view opens a dialog.
+	Determines what to do when a fullscreen window opens a dialog.
 	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
-	dialog will not be rendered. If _leave_fullscreen_, the view will exit
+	dialog will not be rendered. If _leave_fullscreen_, the window will exit
 	fullscreen mode and the dialog will be rendered.
 
 *primary_selection* enabled|disabled
@@ -937,18 +984,18 @@ The default colors are:
 A criteria is a string in the form of, for example:
 
 ```
-[class="[Rr]egex.*" title="some title"]
+[app_id="some-application" title="[Rr]egex.*"]
 ```
 
 The string contains one or more (space separated) attribute/value pairs. They
-are used by some commands to choose which views to execute actions on. All
+are used by some commands to choose which windows to execute actions on. All
 attributes must match for the criteria to match. Criteria is retained across
 commands separated by a *,*, but will be reset (and allow for new criteria, if
 desired) for commands separated by a *;*.
 
 Criteria may be used with either the *for_window* or *assign* commands to
-specify operations to perform on new views. A criteria may also be used to
-perform specific commands (ones that normally act upon one window) on all views
+specify operations to perform on new windows. A criteria may also be used to
+perform specific commands (ones that normally act upon one window) on all windows
 that match that criteria. For example:
 
 Focus on a window with the mark "IRC":
@@ -957,10 +1004,19 @@ Focus on a window with the mark "IRC":
 [con_mark="IRC"] focus
 ```
 
-Kill all windows with the title "Emacs":
+Kill all windows where the title contains "Emacs":
 
 ```
-[class="Emacs"] kill
+[title="Emacs"] kill
+```
+
+Several attributes allow regular expressions. These use Perl-compatible regular
+expressions (PCRE2), which are documented in *pcre2pattern*(3) and summarized in
+*pcre2syntax*(3). For example, this moves all windows with titles ending in
+"sway" or "Sway" to workspace 1:
+
+```
+[title="[Ss]way$"] move workspace 1
 ```
 
 You may like to use swaymsg -t get_tree for finding the values of these
@@ -1011,6 +1067,9 @@ The following attributes may be matched with:
 	Can be a regular expression. If value is \_\_focused\_\_, then the shell
 	must be the same as that of the currently focused window.
 
+*tag*
+	Compare value against the tag. _tag_ is specific to Wayland applications.
+
 *tiling*
 	Matches tiling windows.
 
@@ -1036,10 +1095,27 @@ The following attributes may be matched with:
 	applications and requires XWayland.
 
 *workspace*
-	Compare against the workspace name for this view. Can be a regular
-	expression. If the value is \_\_focused\_\_, then all the views on the
+	Compare against the workspace name for this window. Can be a regular
+	expression. If the value is \_\_focused\_\_, then all the windows on the
 	currently focused workspace matches.
+
+*sandbox_engine*
+	Compare against the associated sandbox engine. Can be a regular expression.
+	If the value is \_\_focused\_\_, then the sandbox engine must be the same as
+	that of the currently focused window.
+
+*sandbox_app_id*
+	Compare against the app ID provided by the associated sandbox engine. Can be
+	a regular expression. If the value is \_\_focused\_\_, then the sandbox app
+	ID must be the same as that of the currently focused window.
+
+*sandbox_instance_id*
+	Compare against the instance ID provided by the associated sandbox engine.
+	Can be a regular expression. If the value is \_\_focused\_\_, then the
+	sandbox instance ID must be the same as that of the currently focused
+	window.
 
 # SEE ALSO
 
 *sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5) *sway-ipc*(7)
+*pcre2pattern*(3) *pcre2syntax*(3)

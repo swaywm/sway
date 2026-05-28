@@ -23,7 +23,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	}
 
 	bool add = false, toggle = false;
-	while (argc > 0 && strncmp(*argv, "--", 2) == 0) {
+	while (argc > 0 && has_prefix(*argv, "--")) {
 		if (strcmp(*argv, "--add") == 0) {
 			add = true;
 		} else if (strcmp(*argv, "--replace") == 0) {

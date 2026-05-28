@@ -8,11 +8,14 @@
 // must be in order for the bsearch
 static const struct cmd_handler output_handlers[] = {
 	{ "adaptive_sync", output_cmd_adaptive_sync },
+	{ "allow_tearing", output_cmd_allow_tearing },
 	{ "background", output_cmd_background },
 	{ "bg", output_cmd_background },
+	{ "color_profile", output_cmd_color_profile },
 	{ "disable", output_cmd_disable },
 	{ "dpms", output_cmd_dpms },
 	{ "enable", output_cmd_enable },
+	{ "hdr", output_cmd_hdr },
 	{ "max_render_time", output_cmd_max_render_time },
 	{ "mode", output_cmd_mode },
 	{ "modeline", output_cmd_modeline },
@@ -103,19 +106,18 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	bool background = output->background;
 
-	output = store_output_config(output);
+	store_output_config(output);
 
-	// If reloading, the output configs will be applied after reading the
-	// entire config and before the deferred commands so that an auto generated
-	// workspace name is not given to re-enabled outputs.
-	if (!config->reloading && !config->validating) {
-		apply_output_config_to_outputs(output);
-		if (background) {
-			if (!spawn_swaybg()) {
-				return cmd_results_new(CMD_FAILURE,
-					"Failed to apply background configuration");
-			}
-		}
+	if (config->reading) {
+		// When reading the config file, we wait till the end to do a single
+		// modeset and swaybg spawn.
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+	request_modeset();
+
+	if (background && !spawn_swaybg()) {
+		return cmd_results_new(CMD_FAILURE,
+			"Failed to apply background configuration");
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

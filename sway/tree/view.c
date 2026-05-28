@@ -1,16 +1,19 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <wayland-server-core.h>
+#include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_security_context_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
-#include "config.h"
-#if HAVE_XWAYLAND
+#include <wlr/types/wlr_session_lock_v1.h>
+#if WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
 #include "list.h"
@@ -33,32 +36,85 @@
 #include "sway/tree/workspace.h"
 #include "sway/config.h"
 #include "sway/xdg_decoration.h"
-#include "pango.h"
 #include "stringop.h"
+
+static void handle_outputs_update(
+		struct wl_listener *listener, void *data) {
+	struct sway_view *view = wl_container_of(listener, view, outputs_update);
+	struct wlr_scene_outputs_update_event *event = data;
+
+	struct wlr_foreign_toplevel_handle_v1 *toplevel = view->foreign_toplevel;
+	if (toplevel) {
+		struct wlr_foreign_toplevel_handle_v1_output *toplevel_output, *tmp;
+		wl_list_for_each_safe(toplevel_output, tmp, &toplevel->outputs, link) {
+			bool active = false;
+			for (size_t i = 0; i < event->size; i++) {
+				struct wlr_scene_output *scene_output = event->active[i];
+				if (scene_output->output == toplevel_output->output) {
+					active = true;
+					break;
+				}
+			}
+
+			if (!active) {
+				wlr_foreign_toplevel_handle_v1_output_leave(toplevel, toplevel_output->output);
+			}
+		}
+
+		for (size_t i = 0; i < event->size; i++) {
+			struct wlr_scene_output *scene_output = event->active[i];
+			wlr_foreign_toplevel_handle_v1_output_enter(toplevel, scene_output->output);
+		}
+	}
+}
+
+static bool handle_point_accepts_input(
+		struct wlr_scene_buffer *buffer, double *x, double *y) {
+	return false;
+}
 
 bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	bool failed = false;
 	view->scene_tree = alloc_scene_tree(root->staging, &failed);
 	view->content_tree = alloc_scene_tree(view->scene_tree, &failed);
-
-	if (!failed && !scene_descriptor_assign(&view->scene_tree->node,
-			SWAY_SCENE_DESC_VIEW, view)) {
-		failed = true;
-	}
-
 	if (failed) {
-		wlr_scene_node_destroy(&view->scene_tree->node);
-		return false;
+		goto err;
 	}
+
+	if (!scene_descriptor_assign(&view->scene_tree->node, SWAY_SCENE_DESC_VIEW, view)) {
+		goto err;
+	}
+
+	view->output_handler = wlr_scene_buffer_create(view->scene_tree, NULL);
+	if (!view->output_handler) {
+		sway_log(SWAY_ERROR, "Failed to allocate a scene node");
+		goto err;
+	}
+
+	view->image_capture_scene = wlr_scene_create();
+	if (view->image_capture_scene == NULL) {
+		goto err;
+	}
+	view->image_capture_scene->restack_xwayland_surfaces = false;
+
+	view->outputs_update.notify = handle_outputs_update;
+	wl_signal_add(&view->output_handler->events.outputs_update,
+		&view->outputs_update);
+	view->output_handler->point_accepts_input = handle_point_accepts_input;
 
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
 	view->allow_request_urgent = true;
 	view->shortcuts_inhibit = SHORTCUTS_INHIBIT_DEFAULT;
+	view->tearing_mode = TEARING_WINDOW_HINT;
 	wl_signal_init(&view->events.unmap);
 	return true;
+
+err:
+	wlr_scene_node_destroy(&view->scene_tree->node);
+	return false;
 }
 
 void view_destroy(struct sway_view *view) {
@@ -78,9 +134,8 @@ void view_destroy(struct sway_view *view) {
 	list_free(view->executed_criteria);
 
 	view_assign_ctx(view, NULL);
+	wlr_scene_node_destroy(&view->image_capture_scene->tree.node);
 	wlr_scene_node_destroy(&view->scene_tree->node);
-	free(view->title_format);
-
 	if (view->impl->destroy) {
 		view->impl->destroy(view);
 	} else {
@@ -93,6 +148,7 @@ void view_begin_destroy(struct sway_view *view) {
 		return;
 	}
 	view->destroying = true;
+	wl_list_remove(&view->outputs_update.link);
 
 	if (!view->container) {
 		view_destroy(view);
@@ -126,7 +182,7 @@ const char *view_get_instance(struct sway_view *view) {
 	}
 	return NULL;
 }
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 uint32_t view_get_x11_window_id(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
@@ -155,11 +211,46 @@ uint32_t view_get_window_type(struct sway_view *view) {
 	return 0;
 }
 
+static const struct wlr_security_context_v1_state *security_context_from_view(
+		struct sway_view *view) {
+	const struct wl_client *client =
+		wl_resource_get_client(view->surface->resource);
+	const struct wlr_security_context_v1_state *security_context =
+		wlr_security_context_manager_v1_lookup_client(
+				server.security_context_manager_v1, client);
+	return security_context;
+}
+
+const char *view_get_sandbox_engine(struct sway_view *view) {
+	const struct wlr_security_context_v1_state *security_context =
+		security_context_from_view(view);
+	return security_context ? security_context->sandbox_engine : NULL;
+}
+
+const char *view_get_sandbox_app_id(struct sway_view *view) {
+	const struct wlr_security_context_v1_state *security_context =
+		security_context_from_view(view);
+	return security_context ? security_context->app_id : NULL;
+}
+
+const char *view_get_sandbox_instance_id(struct sway_view *view) {
+	const struct wlr_security_context_v1_state *security_context =
+		security_context_from_view(view);
+	return security_context ? security_context->instance_id : NULL;
+}
+
+const char *view_get_tag(struct sway_view *view) {
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_TAG);
+	}
+	return NULL;
+}
+
 const char *view_get_shell(struct sway_view *view) {
 	switch(view->type) {
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
 #endif
@@ -173,9 +264,9 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 		view->impl->get_constraints(view,
 				min_width, max_width, min_height, max_height);
 	} else {
-		*min_width = DBL_MIN;
+		*min_width = 1;
 		*max_width = DBL_MAX;
-		*min_height = DBL_MIN;
+		*min_height = 1;
 		*max_height = DBL_MAX;
 	}
 }
@@ -189,6 +280,10 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 }
 
 bool view_inhibit_idle(struct sway_view *view) {
+	if (server.session_lock.lock) {
+		return false;
+	}
+
 	struct sway_idle_inhibitor_v1 *user_inhibitor =
 		sway_idle_inhibit_v1_user_inhibitor_for_view(view);
 
@@ -261,7 +356,7 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 	struct sway_output *output = ws ? ws->output : NULL;
 
-	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
+	if (output && con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
 		con->pending.content_x = output->lx;
 		con->pending.content_y = output->ly;
 		con->pending.content_width = output->width;
@@ -365,8 +460,8 @@ void view_autoconfigure(struct sway_view *view) {
 
 	con->pending.content_x = x;
 	con->pending.content_y = y;
-	con->pending.content_width = width;
-	con->pending.content_height = height;
+	con->pending.content_width = fmax(width, 1);
+	con->pending.content_height = fmax(height, 1);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -484,10 +579,12 @@ void view_execute_criteria(struct sway_view *view) {
 		sway_log(SWAY_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
-		list_t *res_list = execute_command(
-				criteria->cmdlist, NULL, view->container);
+		list_t *res_list = execute_command(criteria->cmdlist, NULL, view->container);
 		while (res_list->length) {
 			struct cmd_results *res = res_list->items[0];
+			if (res->status != CMD_SUCCESS) {
+				sway_log(SWAY_ERROR, "for_window '%s' failed: %s", criteria->raw, res->error);
+			}
 			free_cmd_results(res);
 			list_del(res_list, 0);
 		}
@@ -499,7 +596,7 @@ void view_execute_criteria(struct sway_view *view) {
 static void view_populate_pid(struct sway_view *view) {
 	pid_t pid;
 	switch (view->type) {
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:;
 		struct wlr_xwayland_surface *surf =
 			wlr_xwayland_surface_try_from_wlr_surface(view->surface);
@@ -741,6 +838,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		ws = select_workspace(view);
 	}
 
+	if (ws && ws->output) {
+		// Once the output is determined, we can notify the client early about
+		// scale to reduce startup jitter.
+		float scale = ws->output->wlr_output->scale;
+		wlr_fractional_scale_v1_notify_scale(wlr_surface, scale);
+		wlr_surface_set_preferred_buffer_scale(wlr_surface, ceil(scale));
+	}
+
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_node *node =
 		seat_get_focus_inactive(seat, ws ? &ws->node : &root->node);
@@ -772,6 +877,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	};
 	view->ext_foreign_toplevel =
 		wlr_ext_foreign_toplevel_handle_v1_create(server.foreign_toplevel_list, &foreign_toplevel_state);
+	view->ext_foreign_toplevel->data = view;
 
 	view->foreign_toplevel =
 		wlr_foreign_toplevel_handle_v1_create(server.foreign_toplevel_manager);
@@ -838,10 +944,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	bool set_focus = should_focus(view);
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
-		set_focus &= wlr_xwayland_icccm_input_model(xsurface) !=
+		set_focus &= wlr_xwayland_surface_icccm_input_model(xsurface) !=
 				WLR_ICCCM_INPUT_MODEL_NONE;
 	}
 #endif
@@ -927,11 +1033,14 @@ void view_update_size(struct sway_view *view) {
 void view_center_and_clip_surface(struct sway_view *view) {
 	struct sway_container *con = view->container;
 
-	if (container_is_floating(con)) {
+	bool clip_to_geometry = true;
+
+	if (container_is_floating(con) || con->pending.fullscreen_mode != FULLSCREEN_NONE) {
 		// We always center the current coordinates rather than the next, as the
 		// geometry immediately affects the currently active rendering.
 		int x = (int) fmax(0, (con->current.content_width - view->geometry.width) / 2);
 		int y = (int) fmax(0, (con->current.content_height - view->geometry.height) / 2);
+		clip_to_geometry = !view->using_csd;
 
 		wlr_scene_node_set_position(&view->content_tree->node, x, y);
 	} else {
@@ -940,12 +1049,16 @@ void view_center_and_clip_surface(struct sway_view *view) {
 
 	// only make sure to clip the content if there is content to clip
 	if (!wl_list_empty(&con->view->content_tree->children)) {
-		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &(struct wlr_box){
-			.x = con->view->geometry.x,
-			.y = con->view->geometry.y,
-			.width = con->current.content_width,
-			.height = con->current.content_height,
-		});
+		struct wlr_box clip = {0};
+		if (clip_to_geometry) {
+			clip = (struct wlr_box){
+				.x = con->view->geometry.x,
+				.y = con->view->geometry.y,
+				.width = con->current.content_width,
+				.height = con->current.content_height,
+			};
+		}
+		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &clip);
 	}
 }
 
@@ -954,7 +1067,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xdg_surface(xdg_surface);
 	}
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface))) {
 		return view_from_wlr_xwayland_surface(xsurface);
@@ -967,82 +1080,14 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	if (wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
 		return NULL;
 	}
+	if (wlr_session_lock_surface_v1_try_from_wlr_surface(wlr_surface) != NULL) {
+		return NULL;
+	}
 
 	const char *role = wlr_surface->role ? wlr_surface->role->name : NULL;
 	sway_log(SWAY_DEBUG, "Surface of unknown type (role %s): %p",
 		role, wlr_surface);
 	return NULL;
-}
-
-static char *escape_pango_markup(const char *buffer) {
-	size_t length = escape_markup_text(buffer, NULL);
-	char *escaped_title = calloc(length + 1, sizeof(char));
-	escape_markup_text(buffer, escaped_title);
-	return escaped_title;
-}
-
-static size_t append_prop(char *buffer, const char *value) {
-	if (!value) {
-		return 0;
-	}
-	// If using pango_markup in font, we need to escape all markup chars
-	// from values to make sure tags are not inserted by clients
-	if (config->pango_markup) {
-		char *escaped_value = escape_pango_markup(value);
-		lenient_strcat(buffer, escaped_value);
-		size_t len = strlen(escaped_value);
-		free(escaped_value);
-		return len;
-	} else {
-		lenient_strcat(buffer, value);
-		return strlen(value);
-	}
-}
-
-/**
- * Calculate and return the length of the formatted title.
- * If buffer is not NULL, also populate the buffer with the formatted title.
- */
-static size_t parse_title_format(struct sway_view *view, char *buffer) {
-	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
-		return append_prop(buffer, view_get_title(view));
-	}
-
-	size_t len = 0;
-	char *format = view->title_format;
-	char *next = strchr(format, '%');
-	while (next) {
-		// Copy everything up to the %
-		lenient_strncat(buffer, format, next - format);
-		len += next - format;
-		format = next;
-
-		if (strncmp(next, "%title", 6) == 0) {
-			len += append_prop(buffer, view_get_title(view));
-			format += 6;
-		} else if (strncmp(next, "%app_id", 7) == 0) {
-			len += append_prop(buffer, view_get_app_id(view));
-			format += 7;
-		} else if (strncmp(next, "%class", 6) == 0) {
-			len += append_prop(buffer, view_get_class(view));
-			format += 6;
-		} else if (strncmp(next, "%instance", 9) == 0) {
-			len += append_prop(buffer, view_get_instance(view));
-			format += 9;
-		} else if (strncmp(next, "%shell", 6) == 0) {
-			len += append_prop(buffer, view_get_shell(view));
-			format += 6;
-		} else {
-			lenient_strcat(buffer, "%");
-			++format;
-			++len;
-		}
-		next = strchr(format, '%');
-	}
-	lenient_strcat(buffer, format);
-	len += strlen(format);
-
-	return len;
 }
 
 void view_update_app_id(struct sway_view *view) {
@@ -1073,7 +1118,7 @@ void view_update_title(struct sway_view *view, bool force) {
 	free(view->container->title);
 	free(view->container->formatted_title);
 
-	size_t len = parse_title_format(view, NULL);
+	size_t len = parse_title_format(view->container, NULL);
 
 	if (len) {
 		char *buffer = calloc(len + 1, sizeof(char));
@@ -1081,7 +1126,7 @@ void view_update_title(struct sway_view *view, bool force) {
 			return;
 		}
 
-		parse_title_format(view, buffer);
+		parse_title_format(view->container, buffer);
 		view->container->formatted_title = buffer;
 	} else {
 		view->container->formatted_title = NULL;
@@ -1178,7 +1223,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 	ipc_event_window(view->container, "urgent");
 
-	if (!container_is_scratchpad_hidden(view->container)) {
+	if (!container_is_scratchpad_hidden_or_child(view->container)) {
 		workspace_detect_urgent(view->container->pending.workspace);
 	}
 }
@@ -1210,6 +1255,10 @@ static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
 	wlr_scene_buffer_set_dest_size(sbuf,
 		buffer->dst_width, buffer->dst_height);
 	wlr_scene_buffer_set_opaque_region(sbuf, &buffer->opaque_region);
+	wlr_scene_buffer_set_opacity(sbuf, buffer->opacity);
+	wlr_scene_buffer_set_filter_mode(sbuf, buffer->filter_mode);
+	wlr_scene_buffer_set_transfer_function(sbuf, buffer->transfer_function);
+	wlr_scene_buffer_set_primaries(sbuf, buffer->primaries);
 	wlr_scene_buffer_set_source_box(sbuf, &buffer->src_box);
 	wlr_scene_node_set_position(&sbuf->node, sx, sy);
 	wlr_scene_buffer_set_transform(sbuf, buffer->transform);
@@ -1227,8 +1276,10 @@ void view_save_buffer(struct sway_view *view) {
 		return;
 	}
 
-	// Enable and disable the saved surface tree like so to atomitaclly update
-	// the tree. This will prevent over damaging or other weirdness.
+	// Make sure the output handler is placed above the saved surface so we don't send
+	// spurious events to the foreign toplevel handler. Also, make the saved surface tree
+	// is disabled until it is ready to replace the real surface.
+	wlr_scene_node_place_below(&view->saved_surface_tree->node, &view->output_handler->node);
 	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, false);
 
 	wlr_scene_node_for_each_buffer(&view->content_tree->node,
@@ -1244,10 +1295,27 @@ bool view_is_transient_for(struct sway_view *child,
 		child->impl->is_transient_for(child, ancestor);
 }
 
+bool view_can_tear(struct sway_view *view) {
+	switch (view->tearing_mode) {
+	case TEARING_OVERRIDE_FALSE:
+		return false;
+	case TEARING_OVERRIDE_TRUE:
+		return true;
+	case TEARING_WINDOW_HINT:
+		return view->tearing_hint ==
+			WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC;
+	}
+	return false;
+}
+
 static void send_frame_done_iterator(struct wlr_scene_buffer *scene_buffer,
 		int x, int y, void *data) {
 	struct timespec *when = data;
-	wl_signal_emit_mutable(&scene_buffer->events.frame_done, when);
+	struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+	if (scene_surface == NULL) {
+		return;
+	}
+	wlr_surface_send_frame_done(scene_surface->surface, when);
 }
 
 void view_send_frame_done(struct sway_view *view) {

@@ -104,6 +104,7 @@ struct sway_container *container_find_resize_parent(struct sway_container *con,
 sway_cmd cmd_exec_validate;
 sway_cmd cmd_exec_process;
 
+sway_cmd cmd_allow_tearing;
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;
 sway_cmd cmd_bindcode;
@@ -250,6 +251,7 @@ sway_cmd input_cmd_seat;
 sway_cmd input_cmd_accel_profile;
 sway_cmd input_cmd_calibration_matrix;
 sway_cmd input_cmd_click_method;
+sway_cmd input_cmd_clickfinger_button_map;
 sway_cmd input_cmd_drag;
 sway_cmd input_cmd_drag_lock;
 sway_cmd input_cmd_dwt;
@@ -283,10 +285,13 @@ sway_cmd input_cmd_xkb_switch_layout;
 sway_cmd input_cmd_xkb_variant;
 
 sway_cmd output_cmd_adaptive_sync;
+sway_cmd output_cmd_allow_tearing;
 sway_cmd output_cmd_background;
+sway_cmd output_cmd_color_profile;
 sway_cmd output_cmd_disable;
 sway_cmd output_cmd_dpms;
 sway_cmd output_cmd_enable;
+sway_cmd output_cmd_hdr;
 sway_cmd output_cmd_max_render_time;
 sway_cmd output_cmd_mode;
 sway_cmd output_cmd_modeline;

@@ -1,4 +1,5 @@
 #include <cairo.h>
+#include <poll.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -90,9 +91,16 @@ void destroy_tray(struct swaybar_tray *tray) {
 }
 
 void tray_in(int fd, short mask, void *data) {
-	sd_bus *bus = data;
+	struct swaybar *bar = data;
 	int ret;
-	while ((ret = sd_bus_process(bus, NULL)) > 0) {
+
+	if (mask & (POLLHUP | POLLERR)) {
+        sway_log(SWAY_ERROR, "D-Bus connection closed unexpectedly");
+		bar->running = false;
+		return;
+    }
+
+	while ((ret = sd_bus_process(bar->tray->bus, NULL)) > 0) {
 		// This space intentionally left blank
 	}
 	if (ret < 0) {

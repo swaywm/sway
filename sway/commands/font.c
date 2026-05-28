@@ -13,9 +13,9 @@ struct cmd_results *cmd_font(int argc, char **argv) {
 	char *font = join_args(argv, argc);
 	free(config->font);
 
-	if (strncmp(font, "pango:", 6) == 0) {
+	if (has_prefix(font, "pango:")) {
 		config->pango_markup = true;
-		config->font = strdup(font + 6);
+		config->font = strdup(font + strlen("pango:"));
 		free(font);
 	} else {
 		config->pango_markup = false;

@@ -1,13 +1,14 @@
 project(
 	'sway',
 	'c',
-	version: '1.10-dev',
+	version: '1.13-dev',
 	license: 'MIT',
-	meson_version: '>=0.60.0',
+	meson_version: '>=1.3',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
 		'werror=true',
+		'wrap_mode=nodownload',
 	],
 )
 
@@ -38,14 +39,14 @@ if is_freebsd
 endif
 
 # Execute the wlroots subproject, if any
-wlroots_version = ['>=0.18.0', '<0.19.0']
+wlroots_version = ['>=0.21.0', '<0.22.0']
 subproject(
 	'wlroots',
 	default_options: ['examples=false'],
 	required: false,
 	version: wlroots_version,
 )
-wlroots = dependency('wlroots', version: wlroots_version)
+wlroots = dependency('wlroots-0.21', version: wlroots_version, fallback: 'wlroots')
 wlroots_features = {
 	'xwayland': false,
 	'libinput_backend': false,
@@ -57,10 +58,6 @@ foreach name, _ : wlroots_features
 	wlroots_features += { name: have }
 endforeach
 
-if get_option('xwayland').enabled() and not wlroots_features['xwayland']
-	error('Cannot enable Xwayland in sway: wlroots has been built without Xwayland support')
-endif
-
 null_dep = dependency('', required: false)
 
 jsonc = dependency('json-c', version: '>=0.13')
@@ -68,7 +65,7 @@ pcre2 = dependency('libpcre2-8')
 wayland_server = dependency('wayland-server', version: '>=1.21.0')
 wayland_client = dependency('wayland-client')
 wayland_cursor = dependency('wayland-cursor')
-wayland_protos = dependency('wayland-protocols', version: '>=1.24')
+wayland_protos = dependency('wayland-protocols', version: '>=1.41', default_options: ['tests=false'])
 xkbcommon = dependency('xkbcommon', version: '>=1.5.0')
 cairo = dependency('cairo')
 pango = dependency('pango')
@@ -76,16 +73,14 @@ pangocairo = dependency('pangocairo')
 gdk_pixbuf = dependency('gdk-pixbuf-2.0', required: get_option('gdk-pixbuf'))
 pixman = dependency('pixman-1')
 libevdev = dependency('libevdev')
-libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.21.0') : null_dep
-xcb = dependency('xcb', required: get_option('xwayland'))
+libinput = wlroots_features['libinput_backend'] ? dependency('libinput', version: '>=1.26.0') : null_dep
+xcb = wlroots_features['xwayland'] ? dependency('xcb') : null_dep
 drm = dependency('libdrm')
 libudev = wlroots_features['libinput_backend'] ? dependency('libudev') : null_dep
 math = cc.find_library('m')
 rt = cc.find_library('rt')
-xcb_icccm = dependency('xcb-icccm', required: get_option('xwayland'))
-threads = dependency('threads') # for pthread_setschedparam
-
-have_xwayland = xcb.found() and xcb_icccm.found() and wlroots_features['xwayland']
+xcb_icccm = wlroots_features['xwayland'] ? dependency('xcb-icccm') : null_dep
+threads = dependency('threads') # for pthread_setschedparam and pthread_atfork
 
 if get_option('sd-bus-provider') == 'auto'
 	if not get_option('tray').disabled()
@@ -110,17 +105,14 @@ have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
 conf_data = configuration_data()
 
-conf_data.set10('HAVE_XWAYLAND', have_xwayland)
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd')
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
-conf_data.set10('HAVE_LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', cc.has_header_symbol(
-	'libinput.h',
-	'LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM',
-	dependencies: libinput,
-))
+foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY', 'LIBINPUT_SWITCH_KEYPAD_SLIDE']
+	conf_data.set10('HAVE_' + sym, cc.has_header_symbol('libinput.h', sym, dependencies: libinput))
+endforeach
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
@@ -167,8 +159,8 @@ add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir
 version = '"@0@"'.format(meson.project_version())
 git = find_program('git', native: true, required: false)
 if git.found()
-	git_commit = run_command([git, 'rev-parse', '--short', 'HEAD'], check: false)
-	git_branch = run_command([git, 'rev-parse', '--abbrev-ref', 'HEAD'], check: false)
+	git_commit = run_command([git, '--git-dir=.git', 'rev-parse', '--short', 'HEAD'], check: false)
+	git_branch = run_command([git, '--git-dir=.git', 'rev-parse', '--abbrev-ref', 'HEAD'], check: false)
 	if git_commit.returncode() == 0 and git_branch.returncode() == 0
 		version = '"@0@-@1@ (" __DATE__ ", branch \'@2@\')"'.format(
 			meson.project_version(),
@@ -179,31 +171,10 @@ if git.found()
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
-# Compute the relative path used by compiler invocations.
-source_root = meson.current_source_dir().split('/')
-build_root = meson.global_build_root().split('/')
-relative_dir_parts = []
-i = 0
-in_prefix = true
-foreach p : build_root
-	if i >= source_root.length() or not in_prefix or p != source_root[i]
-		in_prefix = false
-		relative_dir_parts += '..'
-	endif
-	i += 1
-endforeach
-i = 0
-in_prefix = true
-foreach p : source_root
-	if i >= build_root.length() or not in_prefix or build_root[i] != p
-		in_prefix = false
-		relative_dir_parts += p
-	endif
-	i += 1
-endforeach
-relative_dir = join_paths(relative_dir_parts) + '/'
+fs = import('fs')
 
 # Strip relative path prefixes from the code if possible, otherwise hide them.
+relative_dir = fs.relative_to(meson.current_source_dir(), meson.global_build_root()) + '/'
 if cc.has_argument('-fmacro-prefix-map=/prefix/to/hide=')
 	add_project_arguments(
 		'-fmacro-prefix-map=@0@='.format(relative_dir),
@@ -271,7 +242,6 @@ endif
 subdir('completions')
 
 summary({
-	'xwayland': have_xwayland,
 	'gdk-pixbuf': gdk_pixbuf.found(),
 	'tray': have_tray,
 	'man-pages': scdoc.found(),

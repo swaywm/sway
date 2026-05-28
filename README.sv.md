@@ -1,7 +1,5 @@
 # sway
 
-[English][en] - [Deutsch][de] - [Dansk][dk] - [Español][es] - [Français][fr] - **[Svenska][sv]** - [Ελληνικά][gr] - [Magyar][hu] - [فارسی][ir] - [Italiano][it] - [日本語][ja] - [한국어][ko] - [Nederlands][nl] - [Polski][pl] - [Português][pt] - [Română][ro] - [Русский][ru] - [Türkçe][tr] - [Українська][uk] - [中文-简体][zh-CN] - [中文-繁體][zh-TW]
-
 sway är en [i3]-kompatibel [Wayland] compositor. Läs våran [FAQ]-sida. Gå med i vår
 [IRC-kanal] \(#sway på irc.libera.chat).
 
@@ -37,7 +35,7 @@ _\* Krav för kompilering_
 
 Kör dessa kommandon:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

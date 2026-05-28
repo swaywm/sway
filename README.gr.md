@@ -40,7 +40,7 @@ _\*Compile-time dep_
 
 Τρέξτε αυτά τα commands:
 
-    meson build/
+    meson setup build/
     ninja -C build/
     sudo ninja -C build/ install
 

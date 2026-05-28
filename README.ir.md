@@ -41,7 +41,7 @@ _\*نیازمندی‌های زمان کامپایل برنامه_
 
 این فرمان‌ها را اجرا کنید:
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 

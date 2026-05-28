@@ -2,6 +2,7 @@
 #include "sway/commands.h"
 #include "sway/input/seat.h"
 #include "sway/input/input-manager.h"
+#include "sway/server.h"
 #include "util.h"
 
 static struct cmd_results *handle_action(struct seat_config *sc,

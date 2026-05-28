@@ -5,7 +5,7 @@
 #include "config.h"
 #include "list.h"
 #include "sway/desktop/idle_inhibit_v1.h"
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 #include "sway/xwayland.h"
 #endif
 
@@ -27,7 +27,7 @@ struct sway_session_lock {
 struct sway_server {
 	struct wl_display *wl_display;
 	struct wl_event_loop *wl_event_loop;
-	const char *socket;
+	char *socket;
 
 	struct wlr_backend *backend;
 	struct wlr_session *session;
@@ -45,8 +45,8 @@ struct sway_server {
 	struct sway_input_manager *input;
 
 	struct wl_listener new_output;
-	struct wl_listener output_layout_change;
 	struct wl_listener renderer_lost;
+	struct wl_event_source *recreating_renderer;
 
 	struct wlr_idle_notifier_v1 *idle_notifier_v1;
 	struct sway_idle_inhibit_manager_v1 idle_inhibit_manager_v1;
@@ -59,7 +59,7 @@ struct sway_server {
 
 	struct wlr_tablet_manager_v2 *tablet_v2;
 
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
@@ -80,6 +80,8 @@ struct sway_server {
 
 	struct wlr_pointer_constraints_v1 *pointer_constraints;
 	struct wl_listener pointer_constraint;
+
+	struct wlr_xdg_output_manager_v1 *xdg_output_manager_v1;
 
 	struct wlr_output_manager_v1 *output_manager_v1;
 	struct wl_listener output_manager_apply;
@@ -103,16 +105,30 @@ struct sway_server {
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_content_type_manager_v1 *content_type_manager_v1;
-	struct wlr_data_control_manager_v1 *data_control_manager_v1;
+	struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1;
+	struct wlr_ext_data_control_manager_v1 *ext_data_control_manager_v1;
 	struct wlr_screencopy_manager_v1 *screencopy_manager_v1;
+	struct wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager_v1;
 	struct wlr_export_dmabuf_manager_v1 *export_dmabuf_manager_v1;
 	struct wlr_security_context_manager_v1 *security_context_manager_v1;
+
+	struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1 *ext_foreign_toplevel_image_capture_source_manager_v1;
+	struct wl_listener new_foreign_toplevel_capture_request;
 
 	struct wlr_xdg_activation_v1 *xdg_activation_v1;
 	struct wl_listener xdg_activation_v1_request_activate;
 	struct wl_listener xdg_activation_v1_new_token;
 
+	struct wl_listener xdg_toplevel_tag_manager_v1_set_tag;
+
 	struct wl_listener request_set_cursor_shape;
+
+	struct wlr_tearing_control_manager_v1 *tearing_control_v1;
+	struct wl_listener tearing_control_new_object;
+	struct wl_list tearing_controllers; // sway_tearing_controller::link
+
+	struct wlr_ext_workspace_manager_v1 *workspace_manager_v1;
+	struct wl_listener workspace_manager_v1_commit;
 
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
@@ -133,6 +149,8 @@ struct sway_server {
 	// Stores the nodes that have been marked as "dirty" and will be put into
 	// the pending transaction.
 	list_t *dirty_nodes;
+
+	struct wl_event_source *delayed_modeset;
 };
 
 extern struct sway_server server;
@@ -141,31 +159,30 @@ struct sway_debug {
 	bool noatomic;         // Ignore atomic layout updates
 	bool txn_timings;      // Log verbose messages about transactions
 	bool txn_wait;         // Always wait for the timeout before applying
-	bool legacy_wl_drm;    // Enable the legacy wl_drm interface
 };
 
 extern struct sway_debug debug;
 
-extern bool allow_unsupported_gpu;
+extern bool unsupported_gpu_detected;
+
+void sway_terminate(int exit_code);
 
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
 bool server_start(struct sway_server *server);
 void server_run(struct sway_server *server);
 
-void restore_nofile_limit(void);
-
 void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
-void sway_session_lock_init(void);
+bool sway_session_lock_init(void);
 void sway_session_lock_add_output(struct sway_session_lock *lock,
 	struct sway_output *output);
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	struct wlr_surface *surface);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
-#if HAVE_XWAYLAND
+#if WLR_HAS_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif
 void handle_server_decoration(struct wl_listener *listener, void *data);
@@ -177,5 +194,7 @@ void xdg_activation_v1_handle_new_token(struct wl_listener *listener,
 	void *data);
 
 void set_rr_scheduling(void);
+
+void handle_new_tearing_hint(struct wl_listener *listener, void *data);
 
 #endif

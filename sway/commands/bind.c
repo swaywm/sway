@@ -367,8 +367,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			}
 		} else if (strcmp("--exclude-titlebar", argv[0]) == 0) {
 			exclude_titlebar = true;
-		} else if (strncmp("--input-device=", argv[0],
-					strlen("--input-device=")) == 0) {
+		} else if (has_prefix(argv[0], "--input-device=")) {
 			free(binding->input);
 			binding->input = strdup(argv[0] + strlen("--input-device="));
 			strip_quotes(binding->input);
@@ -399,7 +398,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
 		// Check for group
-		if (strncmp(split->items[i], "Group", strlen("Group")) == 0) {
+		if (has_prefix(split->items[i], "Group")) {
 			if (binding->group != XKB_LAYOUT_INVALID) {
 				free_sway_binding(binding);
 				list_free_items_and_destroy(split);
@@ -544,6 +543,10 @@ struct cmd_results *cmd_bind_or_unbind_switch(int argc, char **argv,
 		binding->type = WLR_SWITCH_TYPE_TABLET_MODE;
 	} else if (strcmp(split->items[0], "lid") == 0) {
 		binding->type = WLR_SWITCH_TYPE_LID;
+#if HAVE_LIBINPUT_SWITCH_KEYPAD_SLIDE
+	} else if (strcmp(split->items[0], "keypad_slide") == 0) {
+		binding->type = WLR_SWITCH_TYPE_KEYPAD_SLIDE;
+#endif
 	} else {
 		free_switch_binding(binding);
 		return cmd_results_new(CMD_FAILURE,

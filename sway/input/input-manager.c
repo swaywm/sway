@@ -4,7 +4,6 @@
 #include <math.h>
 #include <assert.h>
 #include <wlr/config.h>
-#include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
@@ -494,6 +493,14 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	return input;
 }
 
+void input_manager_finish(struct sway_input_manager *input) {
+	wl_list_remove(&input->new_input.link);
+	wl_list_remove(&input->virtual_keyboard_new.link);
+	wl_list_remove(&input->virtual_pointer_new.link);
+	wl_list_remove(&input->keyboard_shortcuts_inhibit_new_inhibitor.link);
+	wl_list_remove(&input->transient_seat_create.link);
+}
+
 bool input_manager_has_focus(struct sway_node *node) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
@@ -578,7 +585,7 @@ void input_manager_configure_all_input_mappings(void) {
 void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
 	bool wildcard = strcmp(input_config->identifier, "*") == 0;
-	bool type_wildcard = strncmp(input_config->identifier, "type:", 5) == 0;
+	bool type_wildcard = has_prefix(input_config->identifier, "type:");
 	wl_list_for_each(input_device, &server.input->devices, link) {
 		bool type_matches = type_wildcard &&
 			strcmp(input_device_get_type(input_device), input_config->identifier + 5) == 0;

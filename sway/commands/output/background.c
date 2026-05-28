@@ -3,10 +3,8 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#include <errno.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/swaynag.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -42,14 +40,14 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 	}
 
 	struct output_config *output = config->handler_context.output_config;
-
+	char *src = NULL;
 	if (strcasecmp(argv[1], "solid_color") == 0) {
 		if (!validate_color(argv[0])) {
 			return cmd_results_new(CMD_INVALID,
 					"Colors should be of the form #RRGGBB");
 		}
-		output->background = strdup(argv[0]);
-		output->background_option = strdup("solid_color");
+		if (!(output->background = strdup(argv[0]))) goto cleanup;
+		if (!(output->background_option = strdup("solid_color"))) goto cleanup;
 		output->background_fallback = NULL;
 		argc -= 2; argv += 2;
 	} else {
@@ -77,37 +75,25 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "Missing background file");
 		}
 
-		char *src = join_args(argv, j);
+		if (!(src = join_args(argv, j))) goto cleanup;
 		if (!expand_path(&src)) {
 			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID,
 				"Invalid syntax (%s)", src);
 			free(src);
 			return cmd_res;
 		}
-		if (!src) {
-			sway_log(SWAY_ERROR, "Failed to allocate expanded path");
-			return cmd_results_new(CMD_FAILURE, "Unable to allocate resource");
-		}
 
 		if (config->reading && *src != '/') {
 			// src file is inside configuration dir
 
 			char *conf = strdup(config->current_config_path);
-			if (!conf) {
-				sway_log(SWAY_ERROR, "Failed to duplicate string");
-				free(src);
-				return cmd_results_new(CMD_FAILURE,
-						"Unable to allocate resources");
-			}
+			if (!conf) goto cleanup;
 
 			char *conf_path = dirname(conf);
 			char *real_src = malloc(strlen(conf_path) + strlen(src) + 2);
 			if (!real_src) {
-				free(src);
 				free(conf);
-				sway_log(SWAY_ERROR, "Unable to allocate memory");
-				return cmd_results_new(CMD_FAILURE,
-						"Unable to allocate resources");
+				goto cleanup;
 			}
 
 			snprintf(real_src, strlen(conf_path) + strlen(src) + 2, "%s/%s", conf_path, src);
@@ -117,40 +103,48 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		}
 
 		bool can_access = access(src, F_OK) != -1;
+		argc -= j + 1; argv += j + 1;
+		free(output->background_option);
+		free(output->background_fallback);
+		free(output->background);
+		output->background = output->background_option = output->background_fallback = NULL;
+		char *fallback = NULL;
+
+		if (argc && *argv[0] == '#') {
+			if (validate_color(argv[0])) {
+				if (!(fallback = strdup(argv[0]))) goto cleanup;
+				output->background_fallback = fallback;
+			} else {
+				sway_log(SWAY_ERROR, "fallback '%s' should be of the form #RRGGBB", argv[0]);
+				config_add_swaynag_warning("fallback '%s' should be of the form #RRGGBB\n", argv[0]);
+			}
+			argc--; argv++;
+		}
+
 		if (!can_access) {
-			sway_log_errno(SWAY_ERROR, "Unable to access background file '%s'",
-					src);
-			config_add_swaynag_warning("Unable to access background file '%s'",
-					src);
-			struct cmd_results *result = cmd_results_new(CMD_FAILURE,
-					"unable to access background file '%s'", src);
-			free(src);
-			return result;
+			if (!fallback) {
+				sway_log(SWAY_ERROR, "Unable to access background file '%s' "
+				   "and no valid fallback provided", src);
+				struct cmd_results *res = cmd_results_new(CMD_FAILURE, "Unable to access "
+											  "background file '%s' and no valid fallback provided", src);
+				free(src);
+				return res;
+			}
+			sway_log(SWAY_DEBUG, "Cannot access file '%s', using fallback '%s'", src, fallback);
+			output->background = fallback;
+			if (!(output->background_option = strdup("solid_color"))) goto cleanup;
+			output->background_fallback = NULL;
 		} else {
 			output->background = src;
-			output->background_option = strdup(mode);
-		}
-		argc -= j + 1; argv += j + 1;
-
-		output->background_fallback = NULL;
-		if (argc && *argv[0] == '#') {
-			if (!validate_color(argv[0])) {
-				return cmd_results_new(CMD_INVALID,
-						"fallback color should be of the form #RRGGBB");
-			}
-
-			output->background_fallback = strdup(argv[0]);
-			argc--; argv++;
-
-			if (!can_access) {
-				output->background = output->background_fallback;
-				output->background_option = strdup("solid_color");
-				output->background_fallback = NULL;
-			}
+			if (!(output->background_option = strdup(mode))) goto cleanup;
 		}
 	}
-
 	config->handler_context.leftovers.argc = argc;
 	config->handler_context.leftovers.argv = argv;
 	return NULL;
+
+cleanup:
+	free(src);
+	sway_log(SWAY_ERROR, "Failed to allocate resources");
+	return cmd_results_new(CMD_FAILURE, "Unable to allocate resources");
 }

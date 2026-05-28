@@ -23,6 +23,7 @@
 #include "sway/config.h"
 #include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
+#include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
@@ -516,7 +517,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	// Only really necessary if not explicitly `font` is set in the config.
 	config_update_font_height();
 
-	if (is_active && !validating) {
+	if (!validating) {
 		input_manager_verify_fallback_seat();
 
 		for (int i = 0; i < config->input_configs->length; i++) {
@@ -533,12 +534,14 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		}
 		sway_switch_retrigger_bindings_for_all();
 
-		reset_outputs();
 		spawn_swaybg();
 
 		config->reloading = false;
-		if (config->swaynag_config_errors.client != NULL) {
-			swaynag_show(&config->swaynag_config_errors);
+		if (is_active) {
+			request_modeset();
+			if (config->swaynag_config_errors.client != NULL) {
+				swaynag_show(&config->swaynag_config_errors);
+			}
 		}
 	}
 
@@ -550,28 +553,12 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	return success;
 }
 
-static bool load_include_config(const char *path, const char *parent_dir,
-		struct sway_config *config, struct swaynag_instance *swaynag) {
+static bool load_include_config(const char *path, struct sway_config *config,
+		struct swaynag_instance *swaynag) {
 	// save parent config
 	const char *parent_config = config->current_config_path;
 
-	char *full_path;
-	int len = strlen(path);
-	if (len >= 1 && path[0] != '/') {
-		len = len + strlen(parent_dir) + 2;
-		full_path = malloc(len * sizeof(char));
-		if (!full_path) {
-			sway_log(SWAY_ERROR,
-				"Unable to allocate full path to included config");
-			return false;
-		}
-		snprintf(full_path, len, "%s/%s", parent_dir, path);
-	} else {
-		full_path = strdup(path);
-	}
-
-	char *real_path = realpath(full_path, NULL);
-	free(full_path);
+	char *real_path = realpath(path, NULL);
 
 	if (real_path == NULL) {
 		sway_log(SWAY_DEBUG, "%s not found.", path);
@@ -623,7 +610,7 @@ void load_include_configs(const char *path, struct sway_config *config,
 		char **w = p.we_wordv;
 		size_t i;
 		for (i = 0; i < p.we_wordc; ++i) {
-			load_include_config(w[i], parent_dir, config, swaynag);
+			load_include_config(w[i], config, swaynag);
 		}
 		wordfree(&p);
 	}
@@ -923,8 +910,8 @@ char *do_var_replacement(char *str) {
 		// Find matching variable
 		for (i = 0; i < config->symbols->length; ++i) {
 			struct sway_variable *var = config->symbols->items[i];
-			int vnlen = strlen(var->name);
-			if (strncmp(find, var->name, vnlen) == 0) {
+			if (has_prefix(find, var->name)) {
+				int vnlen = strlen(var->name);
 				int vvlen = strlen(var->value);
 				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
 				if (!newstr) {

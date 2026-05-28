@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_scene.h>
@@ -53,7 +54,7 @@ struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
 }
 
 static void arrange_surface(struct sway_output *output, const struct wlr_box *full_area,
-		struct wlr_box *usable_area, struct wlr_scene_tree *tree) {
+		struct wlr_box *usable_area, struct wlr_scene_tree *tree, bool exclusive) {
 	struct wlr_scene_node *node;
 	wl_list_for_each(node, &tree->children, link) {
 		struct sway_layer_surface *surface = scene_descriptor_try_get(node,
@@ -67,6 +68,10 @@ static void arrange_surface(struct sway_output *output, const struct wlr_box *fu
 			continue;
 		}
 
+		if ((surface->scene->layer_surface->current.exclusive_zone > 0) != exclusive) {
+			continue;
+		}
+
 		wlr_scene_layer_surface_v1_configure(surface->scene, full_area, usable_area);
 	}
 }
@@ -77,10 +82,15 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area.width, &usable_area.height);
 	const struct wlr_box full_area = usable_area;
 
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top);
-	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true);
+
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false);
+	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, false);
 
 	if (!wlr_box_equal(&usable_area, &output->usable_area)) {
 		sway_log(SWAY_DEBUG, "Usable area changed, rearranging output");
@@ -88,6 +98,43 @@ void arrange_layers(struct sway_output *output) {
 		arrange_output(output);
 	} else {
 		arrange_popups(root->layers.popup);
+	}
+
+	// Find topmost keyboard interactive layer, if such a layer exists
+	struct wlr_scene_tree *layers_above_shell[] = {
+		output->layers.shell_overlay,
+		output->layers.shell_top,
+	};
+	size_t nlayers = sizeof(layers_above_shell) / sizeof(layers_above_shell[0]);
+	struct wlr_scene_node *node;
+	struct sway_layer_surface *topmost = NULL;
+	for (size_t i = 0; i < nlayers; ++i) {
+		wl_list_for_each_reverse(node,
+				&layers_above_shell[i]->children, link) {
+			struct sway_layer_surface *surface = scene_descriptor_try_get(node,
+				SWAY_SCENE_DESC_LAYER_SHELL);
+			if (surface && surface->layer_surface->current.keyboard_interactive
+					== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
+					surface->layer_surface->surface->mapped) {
+				topmost = surface;
+				break;
+			}
+		}
+		if (topmost != NULL) {
+			break;
+		}
+	}
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		seat->has_exclusive_layer = false;
+		if (topmost != NULL) {
+			seat_set_focus_layer(seat, topmost->layer_surface);
+		} else if (seat->focused_layer &&
+				seat->focused_layer->current.keyboard_interactive
+					!= ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
+			seat_set_focus_layer(seat, NULL);
+		}
 	}
 }
 
@@ -169,14 +216,6 @@ static struct sway_layer_surface *find_mapped_layer_by_client(
 	return NULL;
 }
 
-static void handle_output_destroy(struct wl_listener *listener, void *data) {
-	struct sway_layer_surface *layer =
-		wl_container_of(listener, layer, output_destroy);
-
-	layer->output = NULL;
-	wlr_scene_node_destroy(&layer->scene->tree->node);
-}
-
 static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *layer =
 		wl_container_of(listener, layer, node_destroy);
@@ -209,10 +248,11 @@ static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&layer->unmap.link);
 	wl_list_remove(&layer->surface_commit.link);
 	wl_list_remove(&layer->node_destroy.link);
-	wl_list_remove(&layer->output_destroy.link);
+	wl_list_remove(&layer->new_popup.link);
 
 	layer->layer_surface->data = NULL;
 
+	wl_list_remove(&layer->link);
 	free(layer);
 }
 
@@ -221,12 +261,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, surface_commit);
 
 	struct wlr_layer_surface_v1 *layer_surface = surface->layer_surface;
-	if (!layer_surface->initialized) {
-		return;
-	}
-
 	uint32_t committed = layer_surface->current.committed;
-	if (committed & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
+	if (layer_surface->initialized && committed & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
 		enum zwlr_layer_shell_v1_layer layer_type = layer_surface->current.layer;
 		struct wlr_scene_tree *output_layer = sway_layer_get_scene(
 			surface->output, layer_type);
@@ -285,6 +321,7 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&popup->destroy.link);
 	wl_list_remove(&popup->new_popup.link);
 	wl_list_remove(&popup->commit.link);
+	wl_list_remove(&popup->reposition.link);
 	free(popup);
 }
 
@@ -320,6 +357,11 @@ static void popup_handle_commit(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void popup_handle_reposition(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, reposition);
+	popup_unconstrain(popup);
+}
+
 static void popup_handle_new_popup(struct wl_listener *listener, void *data);
 
 static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
@@ -340,11 +382,13 @@ static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
 	}
 
 	popup->destroy.notify = popup_handle_destroy;
-	wl_signal_add(&wlr_popup->base->events.destroy, &popup->destroy);
+	wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
 	popup->new_popup.notify = popup_handle_new_popup;
 	wl_signal_add(&wlr_popup->base->events.new_popup, &popup->new_popup);
 	popup->commit.notify = popup_handle_commit;
 	wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
+	popup->reposition.notify = popup_handle_reposition;
+	wl_signal_add(&wlr_popup->events.reposition, &popup->reposition);
 
 	return popup;
 }
@@ -431,6 +475,13 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	}
 
 	surface->output = output;
+	wl_list_insert(&output->layer_surfaces, &surface->link);
+
+	// now that the surface's output is known, we can advertise its scale
+	wlr_fractional_scale_v1_notify_scale(surface->layer_surface->surface,
+		layer_surface->output->scale);
+	wlr_surface_set_preferred_buffer_scale(surface->layer_surface->surface,
+		ceil(layer_surface->output->scale));
 
 	surface->surface_commit.notify = handle_surface_commit;
 	wl_signal_add(&layer_surface->surface->events.commit,
@@ -442,9 +493,14 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	surface->new_popup.notify = handle_new_popup;
 	wl_signal_add(&layer_surface->events.new_popup, &surface->new_popup);
 
-	surface->output_destroy.notify = handle_output_destroy;
-	wl_signal_add(&output->events.disable, &surface->output_destroy);
-
 	surface->node_destroy.notify = handle_node_destroy;
 	wl_signal_add(&scene_surface->tree->node.events.destroy, &surface->node_destroy);
+}
+
+void destroy_layers(struct sway_output *output) {
+	struct sway_layer_surface *layer, *layer_tmp;
+	wl_list_for_each_safe(layer, layer_tmp, &output->layer_surfaces, link) {
+		layer->output = NULL;
+		wlr_layer_surface_v1_destroy(layer->layer_surface);
+	}
 }

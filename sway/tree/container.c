@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_subcompositor.h>
-#include "linux-dmabuf-unstable-v1-protocol.h"
 #include "sway/config.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
@@ -22,37 +21,9 @@
 #include "sway/tree/workspace.h"
 #include "sway/xdg_decoration.h"
 #include "list.h"
+#include "pango.h"
 #include "log.h"
 #include "stringop.h"
-
-static void handle_output_enter(
-		struct wl_listener *listener, void *data) {
-	struct sway_container *con = wl_container_of(
-			listener, con, output_enter);
-	struct wlr_scene_output *output = data;
-
-	if (con->view->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_output_enter(
-			con->view->foreign_toplevel, output->output);
-	}
-}
-
-static void handle_output_leave(
-		struct wl_listener *listener, void *data) {
-	struct sway_container *con = wl_container_of(
-			listener, con, output_leave);
-	struct wlr_scene_output *output = data;
-
-	if (con->view->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_output_leave(
-			con->view->foreign_toplevel, output->output);
-	}
-}
-
-static bool handle_point_accepts_input(
-		struct wlr_scene_buffer *buffer, double *x, double *y) {
-	return false;
-}
 
 static struct wlr_scene_rect *alloc_rect_node(struct wlr_scene_tree *parent,
 		bool *failed) {
@@ -120,22 +91,6 @@ struct sway_container *container_create(struct sway_view *view) {
 		c->border.bottom = alloc_rect_node(c->border.tree, &failed);
 		c->border.left = alloc_rect_node(c->border.tree, &failed);
 		c->border.right = alloc_rect_node(c->border.tree, &failed);
-
-		c->output_handler = wlr_scene_buffer_create(c->border.tree, NULL);
-		if (!c->output_handler) {
-			sway_log(SWAY_ERROR, "Failed to allocate a scene node");
-			failed = true;
-		}
-
-		if (!failed) {
-			c->output_enter.notify = handle_output_enter;
-			wl_signal_add(&c->output_handler->events.output_enter,
-					&c->output_enter);
-			c->output_leave.notify = handle_output_leave;
-			wl_signal_add(&c->output_handler->events.output_leave,
-					&c->output_leave);
-			c->output_handler->point_accepts_input = handle_point_accepts_input;
-		}
 	}
 
 	if (!failed && !scene_descriptor_assign(&c->scene_tree->node,
@@ -348,10 +303,12 @@ void container_arrange_title_bar(struct sway_container *con) {
 			h_padding = width - config->titlebar_h_padding - marks_buffer_width;
 		}
 
-		h_padding = MAX(h_padding, 0);
+		h_padding = MAX(h_padding, config->titlebar_h_padding);
 
 		int alloc_width = MIN((int)node->width,
 			width - h_padding - config->titlebar_h_padding);
+		alloc_width = MAX(alloc_width, 0);
+
 		sway_text_node_set_max_width(node, alloc_width);
 		wlr_scene_node_set_position(node->node,
 			h_padding, (height - node->height) >> 1);
@@ -372,10 +329,12 @@ void container_arrange_title_bar(struct sway_container *con) {
 			h_padding = config->titlebar_h_padding;
 		}
 
-		h_padding = MAX(h_padding, 0);
+		h_padding = MAX(h_padding, config->titlebar_h_padding);
 
 		int alloc_width = MIN((int) node->width,
 			width - h_padding - config->titlebar_h_padding);
+		alloc_width = MAX(alloc_width, 0);
+
 		sway_text_node_set_max_width(node, alloc_width);
 		wlr_scene_node_set_position(node->node,
 			h_padding, (height - node->height) >> 1);
@@ -495,6 +454,7 @@ void container_destroy(struct sway_container *con) {
 	}
 	free(con->title);
 	free(con->formatted_title);
+	free(con->title_format);
 	list_free(con->pending.children);
 	list_free(con->current.children);
 
@@ -502,7 +462,6 @@ void container_destroy(struct sway_container *con) {
 
 	if (con->view && con->view->container == con) {
 		con->view->container = NULL;
-		wlr_scene_node_destroy(&con->output_handler->node);
 		if (con->view->destroying) {
 			view_destroy(con->view);
 		}
@@ -530,8 +489,8 @@ void container_begin_destroy(struct sway_container *con) {
 
 	container_end_mouse_operation(con);
 
-	con->node.destroying = true;
 	node_set_dirty(&con->node);
+	con->node.destroying = true;
 
 	if (con->scratchpad) {
 		root_scratchpad_remove_container(con);
@@ -641,6 +600,100 @@ bool container_has_ancestor(struct sway_container *descendant,
 	return false;
 }
 
+static char *escape_pango_markup(const char *buffer) {
+	size_t length = escape_markup_text(buffer, NULL);
+	char *escaped_title = calloc(length + 1, sizeof(char));
+	escape_markup_text(buffer, escaped_title);
+	return escaped_title;
+}
+
+static size_t append_prop(char *buffer, const char *value) {
+	if (!value) {
+		return 0;
+	}
+	// If using pango_markup in font, we need to escape all markup chars
+	// from values to make sure tags are not inserted by clients
+	if (config->pango_markup) {
+		char *escaped_value = escape_pango_markup(value);
+		lenient_strcat(buffer, escaped_value);
+		size_t len = strlen(escaped_value);
+		free(escaped_value);
+		return len;
+	} else {
+		lenient_strcat(buffer, value);
+		return strlen(value);
+	}
+}
+
+/**
+ * Calculate and return the length of the formatted title.
+ * If buffer is not NULL, also populate the buffer with the formatted title.
+ */
+size_t parse_title_format(struct sway_container *container, char *buffer) {
+	if (!container->title_format || strcmp(container->title_format, "%title") == 0) {
+		if (container->view) {
+			return append_prop(buffer, view_get_title(container->view));
+		} else {
+			return container_build_representation(container->pending.layout, container->pending.children, buffer);
+		}
+	}
+
+	size_t len = 0;
+	char *format = container->title_format;
+	char *next = strchr(format, '%');
+	while (next) {
+		// Copy everything up to the %
+		lenient_strncat(buffer, format, next - format);
+		len += next - format;
+		format = next;
+
+		if (has_prefix(next, "%title")) {
+			if (container->view) {
+				len += append_prop(buffer, view_get_title(container->view));
+			} else {
+				len += container_build_representation(container->pending.layout, container->pending.children, buffer);
+			}
+			format += strlen("%title");
+		} else if (container->view) {
+			if (has_prefix(next, "%app_id")) {
+				len += append_prop(buffer, view_get_app_id(container->view));
+				format += strlen("%app_id");
+			} else if (has_prefix(next, "%class")) {
+				len += append_prop(buffer, view_get_class(container->view));
+				format += strlen("%class");
+			} else if (has_prefix(next, "%instance")) {
+				len += append_prop(buffer, view_get_instance(container->view));
+				format += strlen("%instance");
+			} else if (has_prefix(next, "%shell")) {
+				len += append_prop(buffer, view_get_shell(container->view));
+				format += strlen("%shell");
+			} else if (has_prefix(next, "%sandbox_engine")) {
+				len += append_prop(buffer, view_get_sandbox_engine(container->view));
+				format += strlen("%sandbox_engine");
+			} else if (has_prefix(next, "%sandbox_app_id")) {
+				len += append_prop(buffer, view_get_sandbox_app_id(container->view));
+				format += strlen("%sandbox_app_id");
+			} else if (has_prefix(next, "%sandbox_instance_id")) {
+				len += append_prop(buffer, view_get_sandbox_instance_id(container->view));
+				format += strlen("%sandbox_instance_id");
+			} else {
+				lenient_strcat(buffer, "%");
+				++format;
+				++len;
+			}
+		} else {
+			lenient_strcat(buffer, "%");
+			++format;
+			++len;
+		}
+		next = strchr(format, '%');
+	}
+	lenient_strcat(buffer, format);
+	len += strlen(format);
+
+	return len;
+}
+
 /**
  * Calculate and return the length of the tree representation.
  * An example tree representation is: V[Terminal, Firefox]
@@ -685,7 +738,7 @@ size_t container_build_representation(enum sway_container_layout layout,
 			len += strlen(identifier);
 			lenient_strcat(buffer, identifier);
 		} else {
-			len += 6;
+			len += strlen("(null)");
 			lenient_strcat(buffer, "(null)");
 		}
 	}
@@ -696,16 +749,14 @@ size_t container_build_representation(enum sway_container_layout layout,
 
 void container_update_representation(struct sway_container *con) {
 	if (!con->view) {
-		size_t len = container_build_representation(con->pending.layout,
-				con->pending.children, NULL);
+		size_t len = parse_title_format(con, NULL);
 		free(con->formatted_title);
 		con->formatted_title = calloc(len + 1, sizeof(char));
 		if (!sway_assert(con->formatted_title,
 					"Unable to allocate title string")) {
 			return;
 		}
-		container_build_representation(con->pending.layout, con->pending.children,
-				con->formatted_title);
+		parse_title_format(con, con->formatted_title);
 
 		if (con->title_bar.title_text) {
 			sway_text_node_set_text(con->title_bar.title_text, con->formatted_title);
@@ -769,11 +820,11 @@ void floating_fix_coordinates(struct sway_container *con, struct wlr_box *old, s
 		// Fall back to centering on the workspace.
 		container_floating_move_to_center(con);
 	} else {
-		int rel_x = con->pending.x - old->x + (con->pending.width / 2);
-		int rel_y = con->pending.y - old->y + (con->pending.height / 2);
+		double rel_x = con->pending.x - old->x + (con->pending.width / 2);
+		double rel_y = con->pending.y - old->y + (con->pending.height / 2);
 
-		con->pending.x = new->x + (double)(rel_x * new->width) / old->width - (con->pending.width / 2);
-		con->pending.y = new->y + (double)(rel_y * new->height) / old->height - (con->pending.height / 2);
+		con->pending.x = new->x + (rel_x * new->width) / old->width - (con->pending.width / 2);
+		con->pending.y = new->y + (rel_y * new->height) / old->height - (con->pending.height / 2);
 
 		sway_log(SWAY_DEBUG, "Transformed container %p to coords (%f, %f)", con, con->pending.x, con->pending.y);
 	}

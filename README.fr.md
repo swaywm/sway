@@ -47,7 +47,7 @@ _\* Requis uniquement pour la compilation_
 
 Exécutez ces commandes :
 
-    meson build
+    meson setup build
     ninja -C build
     sudo ninja -C build install
 
@@ -57,13 +57,11 @@ Si vous utilisez déjà i3, copiez votre configuration i3 vers
 `~/.config/sway/config` et sway fonctionnera directement. Sinon, copiez
 l'exemple de fichier de configuration vers `~/.config/sway/config`. Il se
 trouve généralement dans `/etc/sway/config`. Exécutez `man 5 sway` pour lire la
-documentation pour la configuration de sway.
+documentation sur la configuration de sway.
 
 ## Exécution
 
-Exécutez `sway` à partir d'un TTY. Certains gestionnaires d'affichage peuvent
-fonctionner, mais ne sont pas supportés par Sway (gdm est réputé pour assez
-bien fonctionner).
+Exécutez `sway` à partir d'un TTY ou d'un gestionnaires d'affichage.
 
 [Wayland]: http://wayland.freedesktop.org/
 [i3]: https://i3wm.org/

@@ -132,6 +132,16 @@ static bool set_click_method(struct libinput_device *device,
 	return true;
 }
 
+static bool set_clickfinger_button_map(struct libinput_device *device,
+		enum libinput_config_clickfinger_button_map map) {
+	if (libinput_device_config_click_get_clickfinger_button_map(device) == map) {
+		return false;
+	}
+	sway_log(SWAY_DEBUG, "clickfinger_set_button_map(%d)", map);
+	log_status(libinput_device_config_click_set_clickfinger_button_map(device, map));
+	return true;
+}
+
 static bool set_middle_emulation(struct libinput_device *dev,
 		enum libinput_config_middle_emulation_state mid) {
 	if (!libinput_device_config_middle_emulation_is_available(dev) ||
@@ -281,6 +291,9 @@ bool sway_input_configure_libinput_device(struct sway_input_device *input_device
 	if (ic->click_method != INT_MIN) {
 		changed |= set_click_method(device, ic->click_method);
 	}
+	if (ic->clickfinger_button_map != INT_MIN) {
+		changed |= set_clickfinger_button_map(device, ic->clickfinger_button_map);
+	}
 	if (ic->middle_emulation != INT_MIN) {
 		changed |= set_middle_emulation(device, ic->middle_emulation);
 	}
@@ -356,6 +369,8 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 		libinput_device_config_left_handed_get_default(device));
 	changed |= set_click_method(device,
 		libinput_device_config_click_get_default_method(device));
+	changed |= set_clickfinger_button_map(device,
+		libinput_device_config_click_get_default_clickfinger_button_map(device));
 	changed |= set_middle_emulation(device,
 		libinput_device_config_middle_emulation_get_default_enabled(device));
 	changed |= set_scroll_method(device,
@@ -376,6 +391,19 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 	}
 }
 
+static bool sway_udev_device_is_builtin(struct udev_device *udev_device) {
+	const char *id_path = udev_device_get_property_value(udev_device, "ID_PATH");
+	if (!id_path) {
+		return false;
+	}
+
+	if (has_prefix(id_path, "platform-")) {
+		return true;
+	}
+
+	return has_prefix(id_path, "pci-") && strstr(id_path, "-platform-");
+}
+
 bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
 	if (!wlr_input_device_is_libinput(sway_device->wlr_device)) {
 		return false;
@@ -389,18 +417,7 @@ bool sway_libinput_device_is_builtin(struct sway_input_device *sway_device) {
 		return false;
 	}
 
-	const char *id_path = udev_device_get_property_value(udev_device, "ID_PATH");
-	if (!id_path) {
-		return false;
-	}
-
-	const char prefix_platform[] = "platform-";
-	if (strncmp(id_path, prefix_platform, strlen(prefix_platform)) != 0) {
-		return false;
-	}
-
-	const char prefix_pci[] = "pci-";
-	const char infix_platform[] = "-platform-";
-	return (strncmp(id_path, prefix_pci, strlen(prefix_pci)) == 0) &&
-		strstr(id_path, infix_platform);
+	bool is_builtin = sway_udev_device_is_builtin(udev_device);
+	udev_device_unref(udev_device);
+	return is_builtin;
 }
