@@ -1377,17 +1377,52 @@ int container_sibling_index(struct sway_container *child) {
 	return list_find(container_get_siblings(child), child);
 }
 
+static bool find_fullscreen_workspace(struct sway_container *con, void *data) {
+	return con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE;
+}
+
+static bool find_fullscreen_global(struct sway_container *con, void *data) {
+	return con->pending.fullscreen_mode == FULLSCREEN_GLOBAL;
+}
+
 void container_handle_fullscreen_reparent(struct sway_container *con) {
-	if (con->pending.fullscreen_mode != FULLSCREEN_WORKSPACE || !con->pending.workspace ||
-			con->pending.workspace->fullscreen == con) {
+	struct sway_container *fs = NULL;
+	// handle fullscreen global container or descendant
+	if (con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+		fs = con;
+	} else {
+		fs = container_find_child(con, find_fullscreen_global, NULL);
+	}
+	// if the reparented container or descendant is global fullscreen,
+	// update the root pointer and disable the previous fullscreen.
+	if (fs) {
+		if (root->fullscreen_global == fs) {
+			return;
+		}
+		if (root->fullscreen_global) {
+			container_fullscreen_disable(root->fullscreen_global);
+		}
+		root->fullscreen_global = fs;
+		arrange_root();
 		return;
 	}
-	if (con->pending.workspace->fullscreen) {
-		container_fullscreen_disable(con->pending.workspace->fullscreen);
+	// handle fullscreen workspace container or descendant
+	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
+		fs = con;
+	} else {
+		fs = container_find_child(con, find_fullscreen_workspace, NULL);
 	}
-	con->pending.workspace->fullscreen = con;
-
-	arrange_workspace(con->pending.workspace);
+	// if the reparented container or descendant is workspace fullscreen,
+	// update the workspace pointer and disable the previous fullscreen.
+	if (!fs || !fs->pending.workspace ||
+			fs->pending.workspace->fullscreen == fs) {
+		return;
+	}
+	if (fs->pending.workspace->fullscreen) {
+		container_fullscreen_disable(fs->pending.workspace->fullscreen);
+	}
+	fs->pending.workspace->fullscreen = fs;
+	arrange_workspace(fs->pending.workspace);
 }
 
 static void set_workspace(struct sway_container *container, void *data) {
@@ -1438,15 +1473,23 @@ void container_add_child(struct sway_container *parent,
 }
 
 void container_detach(struct sway_container *child) {
-	if (child->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
-		child->pending.workspace->fullscreen = NULL;
+	struct sway_workspace *old_workspace = child->pending.workspace;
+	// Clear the workspace's fullscreen pointer if the detached container is the
+	// active fullscreen container or an ancestor of it.
+	if (old_workspace && old_workspace->fullscreen &&
+			(old_workspace->fullscreen == child ||
+			container_has_ancestor(old_workspace->fullscreen, child))) {
+		old_workspace->fullscreen = NULL;
 	}
-	if (child->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+	// Clear the global fullscreen pointer if the detached container is the
+	// active global fullscreen container or an ancestor of it.
+	if (root->fullscreen_global &&
+			(root->fullscreen_global == child ||
+			container_has_ancestor(root->fullscreen_global, child))) {
 		root->fullscreen_global = NULL;
 	}
 
 	struct sway_container *old_parent = child->pending.parent;
-	struct sway_workspace *old_workspace = child->pending.workspace;
 	list_t *siblings = container_get_siblings(child);
 	if (siblings) {
 		int index = list_find(siblings, child);
