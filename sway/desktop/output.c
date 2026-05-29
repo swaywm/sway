@@ -303,6 +303,11 @@ static int output_repaint_timer_handler(void *data) {
 		}
 	}
 
+	if (output->brightness_changed) {
+		wlr_output_state_set_brightness(&pending, output->brightness);
+		output->brightness_changed = false;
+	}
+
 	if (!wlr_output_commit_state(output->wlr_output, &pending)) {
 		sway_log(SWAY_ERROR, "Page-flip failed on output %s", output->wlr_output->name);
 	}
@@ -724,4 +729,14 @@ void handle_output_power_manager_set_mode(struct wl_listener *listener,
 	}
 	store_output_config(oc);
 	request_modeset();
+}
+
+void handle_output_power_manager_set_brightness(struct wl_listener *listener,
+		void *data) {
+	struct wlr_output_power_v1_set_brightness_event *event = data;
+	struct sway_output *output = event->output->data;
+
+	output->brightness_changed = true;
+	output->brightness = event->value;
+	wlr_output_schedule_frame(output->wlr_output);
 }

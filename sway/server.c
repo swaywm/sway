@@ -456,6 +456,10 @@ bool server_init(struct sway_server *server) {
 		handle_output_power_manager_set_mode;
 	wl_signal_add(&server->output_power_manager_v1->events.set_mode,
 		&server->output_power_manager_set_mode);
+	server->output_power_manager_set_brightness.notify =
+		handle_output_power_manager_set_brightness;
+	wl_signal_add(&server->output_power_manager_v1->events.set_brightness,
+		&server->output_power_manager_set_brightness);
 	server->input_method = wlr_input_method_manager_v2_create(server->wl_display);
 	if (!server->input_method) {
 		sway_log(SWAY_ERROR, "Failed to create input method manager");
