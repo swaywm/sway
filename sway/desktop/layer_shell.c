@@ -291,7 +291,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			// but only if the currently focused layer has a lower precedence
 			if (!seat->focused_layer ||
-					seat->focused_layer->current.layer >= layer_surface->current.layer) {
+					seat->focused_layer->current.layer <= layer_surface->current.layer) {
 				seat_set_focus_layer(seat, layer_surface);
 			}
 		}
