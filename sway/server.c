@@ -78,6 +78,7 @@
 #define SWAY_LAYER_SHELL_VERSION 5
 #define SWAY_FOREIGN_TOPLEVEL_LIST_VERSION 1
 #define SWAY_PRESENTATION_VERSION 2
+#define SWAY_XDG_DECORATION_VERSION 2
 
 bool unsupported_gpu_detected = false;
 
@@ -396,7 +397,8 @@ bool server_init(struct sway_server *server) {
 	wl_list_init(&server->decorations);
 
 	server->xdg_decoration_manager =
-		wlr_xdg_decoration_manager_v1_create(server->wl_display);
+		wlr_xdg_decoration_manager_v1_create(server->wl_display,
+			SWAY_XDG_DECORATION_VERSION);
 	if (!server->xdg_decoration_manager) {
 		sway_log(SWAY_ERROR, "Failed to create XDG decoration manager");
 		return false;
