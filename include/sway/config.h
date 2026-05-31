@@ -291,7 +291,7 @@ struct output_config {
 	enum scale_filter_mode scale_filter;
 	int32_t transform;
 	enum wl_output_subpixel subpixel;
-	int max_render_time; // In milliseconds
+	int max_render_time; // In milliseconds, -2 means auto
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
 	enum color_profile color_profile;
