@@ -260,6 +260,10 @@ static struct sway_node *node_get_in_direction_floating(
 
 static struct cmd_results *focus_mode(struct sway_workspace *ws,
 		struct sway_seat *seat, bool floating) {
+	if (!ws) {
+		return cmd_results_new(CMD_FAILURE,
+				"Target container is not in a workspace");
+	}
 	struct sway_container *new_focus = NULL;
 	if (floating) {
 		new_focus = seat_get_focus_inactive_floating(seat, ws);
