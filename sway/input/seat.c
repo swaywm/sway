@@ -1323,6 +1323,10 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	}
 	seat_set_focus_surface(seat, layer->surface, true);
 	seat->focused_layer = layer;
+
+	if (server.session_lock.lock) {
+		seat_set_focus_surface(seat, server.session_lock.lock->focused, false);
+	}
 }
 
 void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client) {
