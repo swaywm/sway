@@ -1,6 +1,5 @@
 tray_files = have_tray ? [
 	'tray/host.c',
-	'tray/icon.c',
 	'tray/item.c',
 	'tray/tray.c',
 	'tray/watcher.c'
@@ -18,7 +17,7 @@ swaybar_deps = [
 	wayland_cursor
 ]
 if have_tray
-	swaybar_deps += sdbus
+	swaybar_deps += [sdbus, sfdo_icon, sfdo_basedir]
 endif
 
 executable(
