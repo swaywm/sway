@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
+#include <wlr/types/wlr_pointer_warp_v1.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_tablet_pad.h>
@@ -1414,4 +1415,44 @@ void handle_request_set_cursor_shape(struct wl_listener *listener, void *data) {
 	}
 
 	cursor_set_image(seat->cursor, wlr_cursor_shape_v1_name(event->shape), focused_client);
+}
+
+void handle_pointer_warp(struct wl_listener *listener, void *data) {
+	const struct wlr_pointer_warp_v1_event_warp *event = data;
+	struct sway_seat *seat = event->seat_client->seat->data;
+	struct sway_cursor *cursor = seat->cursor;
+
+	struct wl_client *focused_client = NULL;
+	struct wlr_surface *focused_surface =
+		cursor->seat->wlr_seat->pointer_state.focused_surface;
+	if (focused_surface != NULL) {
+		focused_client = wl_resource_get_client(focused_surface->resource);
+	}
+
+	if (focused_client == NULL || event->seat_client->client != focused_client) {
+		sway_log(SWAY_DEBUG, "denying request to warp cursor from unfocused client");
+		return;
+	}
+
+	struct wlr_box surface_box = {
+		.width = event->surface->current.width,
+		.height = event->surface->current.height,
+	};
+
+	if (!wlr_box_contains_point(&surface_box, event->x, event->y)) {
+		sway_log(SWAY_DEBUG, "denying request to warp cursor out of surface");
+		return;
+	}
+
+	struct sway_view *view = view_from_wlr_surface(event->surface);
+	if (view == NULL) {
+		return;
+	}
+
+	struct sway_container *con = view->container;
+	double lx = event->x + con->pending.content_x - view->geometry.x;
+	double ly = event->y + con->pending.content_y - view->geometry.y;
+	wlr_cursor_warp(cursor->cursor, NULL, lx, ly);
+	wlr_seat_pointer_warp(event->seat_client->seat, event->x, event->y);
+	cursor_rebase(cursor);
 }
