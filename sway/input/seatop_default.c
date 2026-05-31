@@ -370,7 +370,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle clicking an empty workspace
-	if (node && node->type == N_WORKSPACE) {
+	if (node && node->type == N_WORKSPACE && surface == NULL) {
 		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
 			seat_set_focus(seat, node);
 			transaction_commit_dirty();
