@@ -411,6 +411,7 @@ struct bar_config {
 	struct wl_list tray_bindings; // struct tray_binding::link
 	list_t *tray_outputs; // char *
 	int tray_padding;
+	bool tray_last;
 #endif
 };
 
