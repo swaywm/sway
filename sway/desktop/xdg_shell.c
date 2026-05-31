@@ -18,6 +18,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "sway/xdg_decoration.h"
+#include "sway/xdg_session_management_v1.h"
 
 static struct sway_xdg_popup *popup_create(
 	struct wlr_xdg_popup *wlr_popup, struct sway_view *view,
@@ -193,7 +194,8 @@ static void set_activated(struct sway_view *view, bool activated) {
 }
 
 static void set_tiled(struct sway_view *view, bool tiled) {
-	if (xdg_shell_view_from_view(view) == NULL) {
+	struct sway_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	if (xdg_shell_view == NULL) {
 		return;
 	}
 	if (wl_resource_get_version(view->wlr_xdg_toplevel->resource) >=
@@ -209,6 +211,8 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 		// to stop the client from drawing decorations outside of the toplevel geometry.
 		wlr_xdg_toplevel_set_maximized(view->wlr_xdg_toplevel, tiled);
 	}
+
+	notify_xdg_session_management_v1_toplevel_update(xdg_shell_view);
 }
 
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
@@ -263,6 +267,11 @@ static void close_popups(struct sway_view *view) {
 	}
 }
 
+static void notify_state_update(struct sway_view *view) {
+	struct sway_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	notify_xdg_session_management_v1_toplevel_update(xdg_shell_view);
+}
+
 static void destroy(struct sway_view *view) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		xdg_shell_view_from_view(view);
@@ -285,6 +294,7 @@ static const struct sway_view_impl view_impl = {
 	.is_transient_for = is_transient_for,
 	.close = _close,
 	.close_popups = close_popups,
+	.notify_state_update = notify_state_update,
 	.destroy = destroy,
 };
 
@@ -303,6 +313,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wlr_xdg_toplevel_set_wm_capabilities(view->wlr_xdg_toplevel,
 			WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN);
 		// TODO: wlr_xdg_toplevel_set_bounds()
+
+		notify_xdg_session_management_v1_toplevel_initial_configure(xdg_shell_view);
 		return;
 	}
 
@@ -528,6 +540,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->set_app_id.notify = handle_set_app_id;
 	wl_signal_add(&toplevel->events.set_app_id,
 			&xdg_shell_view->set_app_id);
+
+	notify_xdg_session_management_v1_toplevel_update(xdg_shell_view);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -545,6 +559,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	if (view->xdg_decoration) {
 		view->xdg_decoration->view = NULL;
 	}
+	wl_list_remove(&xdg_shell_view->xdg_session_v1.link);
+	free(xdg_shell_view->xdg_session_v1.name);
 	view_begin_destroy(view);
 }
 
@@ -571,6 +587,8 @@ void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data) {
 		return;
 	}
 	xdg_shell_view->view.wlr_xdg_toplevel = xdg_toplevel;
+
+	wl_list_init(&xdg_shell_view->xdg_session_v1.link);
 
 	xdg_shell_view->map.notify = handle_map;
 	wl_signal_add(&xdg_toplevel->base->surface->events.map, &xdg_shell_view->map);
