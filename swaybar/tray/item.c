@@ -66,17 +66,17 @@ static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		}
 
 		const void *pixels;
-		size_t npixels;
-		ret = sd_bus_message_read_array(msg, 'y', &pixels, &npixels);
+		size_t pixel_data_size; // size in bytes, each pixel is 4 bytes
+		ret = sd_bus_message_read_array(msg, 'y', &pixels, &pixel_data_size);
 		if (ret < 0) {
 			sway_log(SWAY_ERROR, "%s %s: %s", sni->watcher_id, prop, strerror(-ret));
 			goto error;
 		}
 
-		if (height > 0 && width == height) {
+		if (height > 0 && width == height && (size_t)width * height <= pixel_data_size / 4) {
 			sway_log(SWAY_DEBUG, "%s %s: found icon w:%d h:%d", sni->watcher_id, prop, width, height);
 			struct swaybar_pixmap *pixmap =
-				malloc(sizeof(struct swaybar_pixmap) + npixels);
+				malloc(sizeof(struct swaybar_pixmap) + pixel_data_size);
 			pixmap->size = height;
 
 			// convert from network byte order to host byte order
