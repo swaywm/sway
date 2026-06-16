@@ -666,8 +666,8 @@ void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 		} else if (text_input->input->focused_surface) {
 			assert(text_input->pending_focused_surface == NULL);
 			if (surface != text_input->input->focused_surface) {
-				relay_disable_text_input(relay, text_input);
 				wlr_text_input_v3_send_leave(text_input->input);
+				relay_disable_text_input(relay, text_input);
 			} else {
 				sway_log(SWAY_DEBUG, "IM relay set_focus already focused");
 				continue;
