@@ -119,6 +119,11 @@ void root_scratchpad_add_container(struct sway_container *con, struct sway_works
 	}
 
 	container_detach(con);
+	// parent might have been reaped and destroyed in container_set_floating.
+	// Verify it is not destroying before using it.
+	if (parent && parent->node.destroying) {
+		parent = NULL;
+	}
 	con->scratchpad = true;
 	list_add(root->scratchpad, con);
 	if (ws) {
