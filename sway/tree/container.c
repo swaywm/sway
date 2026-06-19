@@ -452,6 +452,7 @@ void container_destroy(struct sway_container *con) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+	node_map_remove(&con->node);
 	free(con->title);
 	free(con->formatted_title);
 	free(con->title_format);
