@@ -64,6 +64,8 @@
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
+#include "sway/desktop/transaction.h"
 
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
@@ -752,8 +754,16 @@ void server_fini(struct sway_server *server) {
 #endif
 	wl_display_destroy_clients(server->wl_display);
 	wlr_backend_destroy(server->backend);
+	transaction_shut_down(server);
+	input_manager_destroy(server->input);
+	server->input = NULL;
+	wlr_allocator_destroy(server->allocator);
+	server->allocator = NULL;
+	wlr_renderer_destroy(server->renderer);
+	server->renderer = NULL;
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
+	server->dirty_nodes = NULL;
 	free(server->socket);
 }
 
