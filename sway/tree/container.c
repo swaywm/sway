@@ -1447,6 +1447,9 @@ void container_detach(struct sway_container *child) {
 
 	struct sway_container *old_parent = child->pending.parent;
 	struct sway_workspace *old_workspace = child->pending.workspace;
+	if (old_parent && old_parent->pending.focused_inactive_child == child) {
+		old_parent->pending.focused_inactive_child = NULL;
+	}
 	list_t *siblings = container_get_siblings(child);
 	if (siblings) {
 		int index = list_find(siblings, child);
