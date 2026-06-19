@@ -3,6 +3,7 @@
 #include <fontconfig/fontconfig.h>
 #include <pthread.h>
 #include <signal.h>
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -410,6 +411,7 @@ shutdown:
 	wl_event_source_remove(sigterm_source);
 	wl_event_source_remove(sigint_source);
 
+	root_prepare_shutdown();
 	server_fini(&server);
 	root_destroy(root);
 	root = NULL;

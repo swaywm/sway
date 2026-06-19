@@ -73,6 +73,8 @@ void seat_destroy(struct sway_seat *seat) {
 static void handle_seat_destroy(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = wl_container_of(listener, seat, destroy);
 
+	seatop_end(seat);
+
 	if (seat == config->handler_context.seat) {
 		config->handler_context.seat = input_manager_get_default_seat();
 	}
