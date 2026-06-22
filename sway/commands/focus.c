@@ -132,7 +132,7 @@ static struct sway_node *get_node_in_output_direction(
 		return &container->node;
 	}
 
-	return &ws->node;
+	return seat_get_focus_inactive(seat, &ws->node);
 }
 
 static struct sway_node *node_get_in_direction_tiling(
