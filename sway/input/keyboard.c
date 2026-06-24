@@ -598,6 +598,25 @@ static void handle_keyboard_group_key(struct wl_listener *listener,
 	handle_key_event(sway_group->seat_device->keyboard, data);
 }
 
+static void keyboard_group_refocus(struct sway_keyboard *keyboard) {
+	// Refocus the focused node, layer surface, or unmanaged surface so that
+	// it picks up the current keyboard state.
+	struct sway_seat *seat = keyboard->seat_device->sway_seat;
+	struct sway_node *focus = seat_get_focus(seat);
+	if (focus) {
+		seat_set_focus(seat, NULL);
+		seat_set_focus(seat, focus);
+	} else if (seat->focused_layer) {
+		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
+		seat_set_focus_layer(seat, NULL);
+		seat_set_focus_layer(seat, layer);
+	} else {
+		struct wlr_surface *unmanaged = seat->wlr_seat->keyboard_state.focused_surface;
+		seat_set_focus_surface(seat, NULL, false);
+		seat_set_focus_surface(seat, unmanaged, false);
+	}
+}
+
 static void handle_keyboard_group_enter(struct wl_listener *listener,
 		void *data) {
 	struct sway_keyboard_group *sway_group =
@@ -605,10 +624,19 @@ static void handle_keyboard_group_enter(struct wl_listener *listener,
 	struct sway_keyboard *keyboard = sway_group->seat_device->keyboard;
 	struct wl_array *keycodes = data;
 
+	bool pressed_sent = false;
+
 	uint32_t *keycode;
 	wl_array_for_each(keycode, keycodes) {
 		struct key_info keyinfo;
 		update_keyboard_state(keyboard, *keycode, WL_KEYBOARD_KEY_STATE_PRESSED, &keyinfo);
+
+		pressed_sent |= update_shortcut_state(&keyboard->state_pressed_sent,
+				*keycode, WL_KEYBOARD_KEY_STATE_PRESSED, keyinfo.keycode, 0);
+	}
+
+	if (pressed_sent) {
+		keyboard_group_refocus(keyboard);
 	}
 }
 
@@ -630,25 +658,8 @@ static void handle_keyboard_group_leave(struct wl_listener *listener,
 				*keycode, WL_KEYBOARD_KEY_STATE_RELEASED, keyinfo.keycode, 0);
 	}
 
-	if (!pressed_sent) {
-		return;
-	}
-
-	// Refocus the focused node, layer surface, or unmanaged surface so that
-	// it picks up the current keyboard state.
-	struct sway_seat *seat = keyboard->seat_device->sway_seat;
-	struct sway_node *focus = seat_get_focus(seat);
-	if (focus) {
-		seat_set_focus(seat, NULL);
-		seat_set_focus(seat, focus);
-	} else if (seat->focused_layer) {
-		struct wlr_layer_surface_v1 *layer = seat->focused_layer;
-		seat_set_focus_layer(seat, NULL);
-		seat_set_focus_layer(seat, layer);
-	} else {
-		struct wlr_surface *unmanaged = seat->wlr_seat->keyboard_state.focused_surface;
-		seat_set_focus_surface(seat, NULL, false);
-		seat_set_focus_surface(seat, unmanaged, false);
+	if (pressed_sent) {
+		keyboard_group_refocus(keyboard);
 	}
 }
 
