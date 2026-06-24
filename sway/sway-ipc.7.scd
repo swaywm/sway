@@ -1201,7 +1201,8 @@ following properties will be included for devices that support them:
 :  The pointer-acceleration in use
 |- accel_profile
 :  string
-:  The acceleration profile in use. It can be _none_, _flat_, or _adaptive_
+:  The acceleration profile in use. It can be _none_, _flat_, _adaptive_, or
+   _custom_
 |- natural_scroll
 :  string
 :  Whether natural scrolling is enabled. It can be _enabled_ or _disabled_
