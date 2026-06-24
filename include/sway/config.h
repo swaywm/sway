@@ -297,6 +297,7 @@ struct output_config {
 	enum color_profile color_profile;
 	struct wlr_color_transform *color_transform;
 	int allow_tearing;
+	int allow_drm_leasing;
 	int hdr;
 
 	char *background;
