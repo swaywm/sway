@@ -139,6 +139,13 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* output up|right|down|left
 	Moves focus to the next output in the specified direction.
 
+*focus* output next|prev
+	Moves focus to the next or previous output, wrapping around.
+
+*focus* output current
+	Moves focus to the output containing the focused workspace. Mainly useful
+	with criteria to refocus the seat's current output.
+
 *focus* output <name>
 	Moves focus to the named output.
 
@@ -275,6 +282,10 @@ set|plus|minus|toggle <amount>
 	Moves the focused container to next output in the specified
 	direction.
 
+*move* [container|window] [to] output next|prev
+	Moves the focused container to the next or previous output,
+	wrapping around.
+
 *move* [container|window] [to] scratchpad
 	Moves the focused container to the scratchpad.
 
@@ -289,6 +300,14 @@ set|plus|minus|toggle <amount>
 
 *move* workspace to [output] up|right|down|left
 	Moves the focused workspace to next output in the specified direction.
+
+*move* workspace [to] output next|prev
+	Moves the focused workspace to the next or previous output,
+	wrapping around.
+
+*move* workspace to [output] next|prev
+	Moves the focused workspace to the next or previous output,
+	wrapping around.
 
 *nop* <comment>
 	A no operation command that can be used to override default behaviour. The
