@@ -303,12 +303,14 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 					cmd_results_new(CMD_FAILURE, "No matching node."));
 		} else {
 			struct cmd_results *fail_res = NULL;
+			bool has_success = false;
 			for (int i = 0; i < containers->length; ++i) {
 				struct sway_container *container = containers->items[i];
 				set_config_node(&container->node, true);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status == CMD_SUCCESS) {
 					free_cmd_results(res);
+					has_success = true;
 				} else {
 					// last failure will take precedence
 					if (fail_res) {
@@ -320,6 +322,18 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 						free_argv(argc, argv);
 						goto cleanup;
 					}
+				}
+			}
+			if(handler->handle == cmd_scratchpad) {
+				if (fail_res) {
+					free_cmd_results(fail_res);
+					fail_res = NULL;
+				}
+				if(!has_success) {
+					fail_res = cmd_results_new(CMD_INVALID, "Container is not in scratchpad.");
+					list_add(res_list, fail_res);
+					free_argv(argc, argv);
+					goto cleanup;
 				}
 			}
 			list_add(res_list,
