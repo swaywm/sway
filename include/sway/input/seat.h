@@ -99,6 +99,7 @@ struct sway_seat {
 	char *prev_workspace_name; // for workspace back_and_forth
 
 	struct wlr_layer_surface_v1 *focused_layer;
+	struct wlr_surface *focused_lock;
 	// If the exclusive layer is set, views cannot receive keyboard focus
 	bool has_exclusive_layer;
 
