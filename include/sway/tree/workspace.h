@@ -166,4 +166,6 @@ bool sway_ext_workspace_init(void);
 void sway_ext_workspace_output_enable(struct sway_output *output);
 void sway_ext_workspace_output_disable(struct sway_output *output);
 
+void workspace_reorient_auto(struct sway_workspace *ws);
+
 #endif
