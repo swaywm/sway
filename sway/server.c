@@ -489,8 +489,8 @@ bool server_init(struct sway_server *server) {
 	}
 
 #if WLR_HAS_DRM_BACKEND
-	server->drm_lease_manager=
-		wlr_drm_lease_v1_manager_create(server->wl_display, server->backend);
+	server->drm_lease_manager =
+		wlr_drm_lease_v1_manager_create_lazy(server->wl_display);
 	if (server->drm_lease_manager) {
 		server->drm_lease_request.notify = handle_drm_lease_request;
 		wl_signal_add(&server->drm_lease_manager->events.request,
