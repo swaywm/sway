@@ -273,6 +273,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		surface->mapped = layer_surface->surface->mapped;
 		arrange_layers(surface->output);
 		transaction_commit_dirty();
+		cursor_rebase_all();
 	}
 }
 
@@ -297,8 +298,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		}
 		arrange_layers(surface->output);
 	}
-
-	cursor_rebase_all();
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
