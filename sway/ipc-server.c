@@ -17,6 +17,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/desktop/transaction.h"
+#include "sway/desktop/launcher.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
@@ -923,6 +924,25 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		goto exit_cleanup;
 	}
 
+	case IPC_MINT_ACTIVATION_TOKEN: {
+		struct launcher_ctx *ctx = launcher_ctx_create_internal();
+		if (!ctx) {
+			const char *error =
+					"{ \"success\": false, \"error\": \"Failed to create activation context\" }";
+			ipc_send_reply(client, payload_type, error, (uint32_t)strlen(error));
+			goto exit_cleanup;
+		}
+
+		const char *token = launcher_ctx_get_token_name(ctx);
+		json_object *reply = json_object_new_object();
+		json_object_object_add(reply, "success", json_object_new_boolean(true));
+		json_object_object_add(reply, "token", json_object_new_string(token));
+
+		const char *json_string = json_object_to_json_string(reply);
+		ipc_send_reply(client, payload_type, json_string, (uint32_t)strlen(json_string));
+		json_object_put(reply);
+		goto exit_cleanup;
+	}
 	default:
 		sway_log(SWAY_INFO, "Unknown IPC command type %x", payload_type);
 		goto exit_cleanup;

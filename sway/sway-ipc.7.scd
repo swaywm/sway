@@ -84,6 +84,10 @@ supported. *For all replies, any properties not listed are subject to removal.*
 |- 101
 :  GET_SEATS
 :  Get the list of seats
+|- 102
+:  MINT_ACTIVATION_TOKEN
+:  Mint a new XDG activation token
+
 
 ## 0. RUN_COMMAND
 
@@ -1469,6 +1473,35 @@ one seat. Each object has the following properties:
 		]
 	}
 ]
+```
+
+## 102. MINT_ACTIVATION_TOKEN
+
+*MESSAGE*++
+Request the compositor to mint a new XDG activation token.
+
+*REPLY*++
+An object indicating success, and the generated token string.
+
+[- *PROPERTY*
+:- *DATA TYPE*
+:- *DESCRIPTION*
+|- success
+:  boolean
+:[ Whether the request succeeded
+|- token
+:  string
+:  The generated activation token (only on success)
+|- error
+:  string
+:  A human readable error message (only on failure)
+
+*Example Reply:*
+```
+{
+  "success": true,
+  "token": "3cbaea5a9d821213fdf109503023023"
+}
 ```
 
 # EVENTS
