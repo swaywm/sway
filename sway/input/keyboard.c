@@ -857,8 +857,12 @@ static void sway_keyboard_group_remove(struct sway_keyboard *keyboard) {
 
 		// To prevent use-after-free conditions when handling key events, defer
 		// freeing the wlr_keyboard_group until idle
-		wl_event_loop_add_idle(server.wl_event_loop,
-				destroy_empty_wlr_keyboard_group, wlr_group);
+		if (server.exiting) {
+			wlr_keyboard_group_destroy(wlr_group);
+		} else {
+			wl_event_loop_add_idle(
+					server.wl_event_loop, destroy_empty_wlr_keyboard_group, wlr_group);
+		}
 	}
 }
 

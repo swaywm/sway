@@ -716,6 +716,7 @@ bool server_init(struct sway_server *server) {
 }
 
 void server_fini(struct sway_server *server) {
+	server->exiting = true;
 	// remove listeners
 	wl_list_remove(&server->renderer_lost.link);
 	wl_list_remove(&server->new_output.link);
