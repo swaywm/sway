@@ -84,6 +84,18 @@ struct criteria *criteria_parse(char *raw, char **error);
 list_t *criteria_for_view(struct sway_view *view, enum criteria_type types);
 
 /**
+ * Match a criteria against a view without requiring view->container to be
+ * set. Used by append_layout's swallow matching, which runs before a view
+ * is attached to a container in the tree. Only view-intrinsic fields are
+ * considered: title, shell, app_id, sandbox_*, tag, pid, and (when xwayland
+ * is enabled) class, instance, window_role, window_type, X11 id. Criteria
+ * fields that depend on container state (con_mark, con_id, floating, tiling,
+ * workspace, urgent) are ignored.
+ */
+bool criteria_matches_view_unmapped(struct criteria *criteria,
+		struct sway_view *view);
+
+/**
  * Compile a list of containers matching the given criteria.
  */
 list_t *criteria_get_containers(struct criteria *criteria);
