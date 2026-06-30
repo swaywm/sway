@@ -135,6 +135,7 @@ void view_destroy(struct sway_view *view) {
 
 	view_assign_ctx(view, NULL);
 	free(view->exec_cmdlist);
+	free(view->initial_activation_token);
 	wlr_scene_node_destroy(&view->image_capture_scene->tree.node);
 	wlr_scene_node_destroy(&view->scene_tree->node);
 	if (view->impl->destroy) {
@@ -645,6 +646,12 @@ void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx) {
 	}
 	free(view->exec_cmdlist);
 	view->exec_cmdlist = NULL;
+
+	const char *token_name = launcher_ctx_get_token_name(ctx);
+	if (token_name) {
+		free(view->initial_activation_token);
+		view->initial_activation_token = strdup(token_name);
+	}
 
 	launcher_ctx_consume(ctx);
 

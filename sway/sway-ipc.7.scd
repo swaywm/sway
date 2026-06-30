@@ -389,6 +389,10 @@ node and will have the following properties:
 :  string
 :  (Only windows) For an xdg-shell window, the name of the application, if set.
    Otherwise, _null_
+|- initial_activation_token
+:  string
+:  (Only windows) The initial activation token of the window, if it was launched
+   with one. Otherwise, _null_
 |- pid
 :  integer
 :  (Only windows) The PID of the application that owns the window
@@ -718,6 +722,7 @@ node and will have the following properties:
 							"fullscreen_mode": 0,
 							"pid": 23959,
 							"app_id": null,
+							"initial_activation_token": null,
 							"visible": true,
 							"shell": "xwayland",
 							"inhibit_idle": true,
@@ -778,6 +783,7 @@ node and will have the following properties:
 							"fullscreen_mode": 0,
 							"pid": 25370,
 							"app_id": "termite",
+							"initial_activation_token": null,
 							"visible": true,
 							"shell": "xdg_shell",
 							"inhibit_idle": false,
@@ -1724,6 +1730,7 @@ The following change types are currently available:
 		"type": "con",
 		"pid": 19787,
 		"app_id": null,
+		"initial_activation_token": null,
 		"window_properties": {
 			"class": "URxvt",
 			"instance": "urxvt",

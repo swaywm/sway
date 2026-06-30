@@ -102,6 +102,23 @@ struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
 	return ctx;
 }
 
+struct launcher_ctx *launcher_ctx_find_token(const char *token_name) {
+	if (wl_list_empty(&server.pending_launcher_ctxs)) {
+		return NULL;
+	}
+
+	struct launcher_ctx *ctx = NULL;
+	wl_list_for_each(ctx, &server.pending_launcher_ctxs, link) {
+		if (ctx->token) {
+			const char *name = wlr_xdg_activation_token_v1_get_name(ctx->token);
+			if (name && strcmp(name, token_name) == 0) {
+				return ctx;
+			}
+		}
+	}
+	return NULL;
+}
+
 struct sway_workspace *launcher_ctx_get_workspace(
 		struct launcher_ctx *ctx) {
 	struct sway_workspace *ws = NULL;

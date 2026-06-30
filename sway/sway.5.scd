@@ -1028,6 +1028,15 @@ The following attributes may be matched with:
 *all*
 	Matches all windows.
 
+*initial_activation_token*
+	Compare value against the initial activation token. Only exact matches are
+	supported. Can only be used with *for_window* and cannot be combined
+	with other criteria. It is used to match a window that was launched
+	with the corresponding activation token (either Wayland XDG activation
+	or X11 startup ID). Specifying this criteria makes the rule
+	automatically expire when the token expires (either because a window
+	maps and consumes it, or it times out, typically after 30 seconds).
+
 *app_id*
 	Compare value against the app id. Can be a regular expression. If value is
 	\_\_focused\_\_, then the app id must be the same as that of the currently

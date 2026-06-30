@@ -25,6 +25,8 @@ struct launcher_ctx {
 
 struct launcher_ctx *launcher_ctx_find_pid(pid_t pid);
 
+struct launcher_ctx *launcher_ctx_find_token(const char *token_name);
+
 struct sway_workspace *launcher_ctx_get_workspace(struct launcher_ctx *ctx);
 
 void launcher_ctx_consume(struct launcher_ctx *ctx);
