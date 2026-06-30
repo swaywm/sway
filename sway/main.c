@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <pango/pangocairo.h>
+#include <fontconfig/fontconfig.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -421,6 +422,8 @@ shutdown:
 	}
 
 	pango_cairo_font_map_set_default(NULL);
+	cairo_debug_reset_static_data();
+	FcFini();
 
 	return exit_value;
 }
