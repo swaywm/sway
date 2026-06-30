@@ -134,6 +134,7 @@ void view_destroy(struct sway_view *view) {
 	list_free(view->executed_criteria);
 
 	view_assign_ctx(view, NULL);
+	free(view->exec_cmdlist);
 	wlr_scene_node_destroy(&view->image_capture_scene->tree.node);
 	wlr_scene_node_destroy(&view->scene_tree->node);
 	if (view->impl->destroy) {
@@ -593,6 +594,27 @@ void view_execute_criteria(struct sway_view *view) {
 	list_free(criterias);
 }
 
+static void view_execute_launch_commands(struct sway_view *view) {
+	sway_log(SWAY_DEBUG, "view_execute_launch_commands: view=%p, exec_cmdlist=%s", view,
+			view->exec_cmdlist);
+	if (view->exec_cmdlist) {
+		sway_log(SWAY_DEBUG, "Executing for_exec_window commands for view %p: %s", view,
+				view->exec_cmdlist);
+		list_t *res_list = execute_command(view->exec_cmdlist, NULL, view->container);
+		while (res_list->length) {
+			struct cmd_results *res = res_list->items[0];
+			if (res->status != CMD_SUCCESS) {
+				sway_log(SWAY_ERROR, "for_exec_window command failed: %s", res->error);
+			}
+			free_cmd_results(res);
+			list_del(res_list, 0);
+		}
+		list_free(res_list);
+		free(view->exec_cmdlist);
+		view->exec_cmdlist = NULL;
+	}
+}
+
 static void view_populate_pid(struct sway_view *view) {
 	pid_t pid;
 	switch (view->type) {
@@ -621,9 +643,15 @@ void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx) {
 	if (ctx == NULL) {
 		return;
 	}
+	free(view->exec_cmdlist);
+	view->exec_cmdlist = NULL;
+
 	launcher_ctx_consume(ctx);
 
 	view->ctx = ctx;
+	if (ctx->cmdlist) {
+		view->exec_cmdlist = strdup(ctx->cmdlist);
+	}
 }
 
 static struct sway_workspace *select_workspace(struct sway_view *view) {
@@ -941,6 +969,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 
 	view_execute_criteria(view);
+	view_execute_launch_commands(view);
 
 	bool set_focus = should_focus(view);
 

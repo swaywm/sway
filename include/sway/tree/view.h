@@ -82,6 +82,7 @@ struct sway_view {
 
 	pid_t pid;
 	struct launcher_ctx *ctx;
+	char *exec_cmdlist;
 
 	// The size the view would want to be if it weren't tiled.
 	// Used when changing a view from tiled to floating.

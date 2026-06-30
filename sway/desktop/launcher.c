@@ -73,6 +73,7 @@ void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 	wl_list_remove(&ctx->link);
 	wlr_xdg_activation_token_v1_destroy(ctx->token);
 	free(ctx->fallback_name);
+	free(ctx->cmdlist);
 	free(ctx);
 }
 

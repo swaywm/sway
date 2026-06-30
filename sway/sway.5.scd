@@ -777,6 +777,12 @@ The default colors are:
 	should be greater than titlebar_border_thickness. If _vertical_ value is
 	not specified it is set to the _horizontal_ value.
 
+*for_exec_window* "<commands>" <exec command>
+	Execute _exec command_ and whenever the window created by that process
+	appears, run the list of _commands_ (specified as a quoted string) on it.
+	The window is matched based on the xdg activation token, or process ID
+	(PID) as a fallback.
+
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.

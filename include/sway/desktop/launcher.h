@@ -20,6 +20,7 @@ struct launcher_ctx {
 	struct wl_listener node_destroy;
 
 	struct wl_list link; // sway_server::pending_launcher_ctxs
+	char *cmdlist;
 };
 
 struct launcher_ctx *launcher_ctx_find_pid(pid_t pid);
