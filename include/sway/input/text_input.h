@@ -1,9 +1,11 @@
 #ifndef _SWAY_INPUT_TEXT_INPUT_H
 #define _SWAY_INPUT_TEXT_INPUT_H
 
+#include <stdint.h>
 #include <wlr/types/wlr_text_input_v3.h>
 #include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_virtual_keyboard_v1.h>
 
 /**
  * The relay structure manages the relationship between text-input and
@@ -22,7 +24,9 @@ struct sway_input_method_relay {
 
 	struct wl_list text_inputs; // sway_text_input::link
 	struct wl_list input_popups; // sway_input_popup::link
+	struct wl_list pending_im_events; // sway_pending_im_event::link
 	struct wlr_input_method_v2 *input_method; // doesn't have to be present
+	uint32_t pending_key_responses;
 
 	struct wl_listener text_input_new;
 	struct wl_listener text_input_manager_destroy;
@@ -65,6 +69,15 @@ void sway_input_method_relay_finish(struct sway_input_method_relay *relay);
 // Updates currently focused surface. Surface must belong to the same seat.
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 	struct wlr_surface *surface);
+
+void sway_input_method_relay_keyboard_grab_key(
+	struct sway_input_method_relay *relay,
+	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab,
+	struct wlr_keyboard *keyboard, uint32_t time, uint32_t key, uint32_t state);
+
+void sway_input_method_relay_virtual_keyboard_key(
+	struct sway_input_method_relay *relay,
+	struct wlr_virtual_keyboard_v1 *virtual_keyboard, uint32_t state);
 
 struct sway_text_input *sway_text_input_create(
 	struct sway_input_method_relay *relay,

@@ -436,6 +436,8 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
+	struct wlr_virtual_keyboard_v1 *virtual_keyboard =
+		wlr_input_device_get_virtual_keyboard(wlr_device);
 	char *device_identifier = input_device_get_identifier(wlr_device);
 	bool exact_identifier = keyboard->wlr->group != NULL;
 	seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
@@ -446,6 +448,8 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 
 	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		cursor_notify_key_press(seat->cursor);
+		sway_input_method_relay_virtual_keyboard_key(&seat->im_relay,
+			virtual_keyboard, event->state);
 	}
 
 	// Identify new keycode, raw keysym(s), and translated keysym(s)
@@ -564,9 +568,9 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 		struct wlr_input_method_keyboard_grab_v2 *kb_grab = keyboard_get_im_grab(keyboard);
 
 		if (kb_grab) {
-			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, keyboard->wlr);
-			wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
-				event->time_msec, event->keycode, event->state);
+			sway_input_method_relay_keyboard_grab_key(&seat->im_relay,
+				kb_grab, keyboard->wlr, event->time_msec,
+				event->keycode, event->state);
 			handled = true;
 		}
 	}
