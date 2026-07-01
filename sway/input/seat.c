@@ -1364,10 +1364,19 @@ struct sway_node *seat_get_focus_inactive(struct sway_seat *seat,
 		return node;
 	}
 	struct sway_seat_node *current;
+	struct sway_node *fallback = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
+		// prioritize a focused descendant
 		if (node_has_ancestor(current->node, node)) {
 			return current->node;
 		}
+		// if the node itself is in the focus stack, save it as a fallback
+		if (!fallback && current->node == node) {
+			fallback = current->node;
+		}
+	}
+	if (fallback) {
+		return fallback;
 	}
 	if (node->type == N_WORKSPACE) {
 		return node;
