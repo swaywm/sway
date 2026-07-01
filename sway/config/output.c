@@ -684,7 +684,22 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	}
 	output->color_transform = config_applied->color_transform;
 
-	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
+	int64_t refresh_ns = output->refresh_nsec;
+	if (refresh_ns == 0 && output->wlr_output->refresh > 0) {
+		refresh_ns = 1000000000000LL / output->wlr_output->refresh;
+	}
+
+	if (refresh_ns > 0 && oc && oc->max_render_time == -2) {
+		output->adaptive_render_time = true;
+		output->render_ema_ns = refresh_ns / 2;
+		output->max_render_time_ns = output->render_ema_ns;
+	} else {
+		output->adaptive_render_time = false;
+		output->max_render_time_ns =
+			(refresh_ns > 0 && oc && oc->max_render_time > 0) ?
+			(int64_t)oc->max_render_time * 1000000 : 0;
+	}
+
 	output->allow_tearing = oc && oc->allow_tearing > 0;
 	output->hdr = applied->image_description != NULL;
 
