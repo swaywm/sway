@@ -280,6 +280,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+	node_map_remove(&workspace->node);
 
 	scene_node_disown_children(workspace->layers.tiling);
 	scene_node_disown_children(workspace->layers.fullscreen);
