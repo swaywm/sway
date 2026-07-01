@@ -349,6 +349,10 @@ node and will have the following properties:
 |- geometry
 :  object
 :  The natural geometry of the contents if it were to size itself
+|- surface_content_rect
+:  object
+:  (Only windows) The geometry of the view content relative to its surface.
+   This includes _x_, _y_, _width_, and _height_.
 |- urgent
 :  boolean
 :  Whether the node or any of its descendants has the urgent hint set. Note:
