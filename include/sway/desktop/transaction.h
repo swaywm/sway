@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <wlr/types/wlr_scene.h>
 
+struct sway_server;
+
 /**
  * Transactions enable us to perform atomic layout updates.
  *
@@ -61,4 +63,5 @@ bool transaction_notify_view_ready_by_geometry(struct sway_view *view,
 
 void arrange_popups(struct wlr_scene_tree *popups);
 
+void transaction_shut_down(struct sway_server *server);
 #endif
