@@ -1,15 +1,17 @@
 #include <arpa/inet.h>
 #include <cairo.h>
 #include <limits.h>
+#include <sfdo-icon.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/image.h"
 #include "swaybar/input.h"
 #include "swaybar/tray/host.h"
-#include "swaybar/tray/icon.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
 #include "cairo_util.h"
@@ -28,7 +30,7 @@ static bool sni_ready(struct swaybar_sni *sni) {
 
 static void set_sni_dirty(struct swaybar_sni *sni) {
 	if (sni_ready(sni)) {
-		sni->target_size = sni->min_size = sni->max_size = 0; // invalidate previous icon
+		sni->target_size = sni->icon_size = 0; // invalidate previous icon
 		set_bar_dirty(sni->tray->bar);
 	}
 }
@@ -159,6 +161,13 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 			sway_log(SWAY_DEBUG, "%s %s = %s", sni->watcher_id, prop,
 					*(bool *)dest ? "true" : "false");
 		}
+	}
+
+	// IconThemePath may change at runtime; the cached override theme is
+	// keyed on the old path, so drop it.
+	if (strcmp(prop, "IconThemePath") == 0) {
+		sfdo_icon_theme_destroy(sni->icon_theme_override);
+		sni->icon_theme_override = NULL;
 	}
 
 	if (strcmp(prop, "Status") == 0 || (sni->status && (sni->status[0] == 'N' ?
@@ -313,6 +322,7 @@ void destroy_sni(struct swaybar_sni *sni) {
 	}
 
 	cairo_surface_destroy(sni->icon);
+	sfdo_icon_theme_destroy(sni->icon_theme_override);
 	free(sni->watcher_id);
 	free(sni->service);
 	free(sni->path);
@@ -415,25 +425,88 @@ static enum hotspot_event_handling icon_hotspot_callback(
 	return HOTSPOT_PROCESS;
 }
 
-static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
+// Some apps send "foo.png" as an icon name. The icon theme spec doesn't
+// allow extensions in lookups; strip a known one before passing to libsfdo.
+static size_t name_len_without_extension(const char *name) {
+	size_t len = strlen(name);
+	if (len >= 4 && name[len - 4] == '.') {
+		const char *ext = &name[len - 3];
+		if (strcmp(ext, "png") == 0 || strcmp(ext, "svg") == 0 ||
+				strcmp(ext, "xpm") == 0) {
+			return len - 4;
+		}
+	}
+	return len;
+}
+
+static struct sfdo_icon_theme *get_sni_icon_theme(struct swaybar_sni *sni,
+		const char *theme_name) {
+	if (!sni->icon_theme_path) {
+		return sni->tray->icon_theme;
+	}
+	if (sni->icon_theme_override) {
+		return sni->icon_theme_override;
+	}
+	struct sfdo_string basedir = {
+		.data = sni->icon_theme_path,
+		.len = strlen(sni->icon_theme_path),
+	};
+	int options = SFDO_ICON_THEME_LOAD_OPTION_ALLOW_MISSING |
+		SFDO_ICON_THEME_LOAD_OPTION_RELAXED;
+	sni->icon_theme_override = sfdo_icon_theme_load_from(sni->tray->icon_ctx,
+			theme_name, &basedir, 1, options);
+	if (!sni->icon_theme_override) {
+		sway_log(SWAY_DEBUG, "%s: failed to load theme '%s' from '%s', "
+				"falling back to global theme", sni->watcher_id,
+				theme_name ? theme_name : "(default)", sni->icon_theme_path);
+		return sni->tray->icon_theme;
+	}
+	return sni->icon_theme_override;
+}
+
+static char *lookup_icon_path(struct swaybar_sni *sni, const char *icon_name,
+		const char *theme_name, int target_size) {
+	// Absolute paths are outside the XDG icon theme spec; handle directly
+	if (icon_name[0] == '/') {
+		return access(icon_name, R_OK) == 0 ? strdup(icon_name) : NULL;
+	}
+
+	struct sfdo_icon_theme *theme = get_sni_icon_theme(sni, theme_name);
+	if (!theme) {
+		return NULL;
+	}
+
+	int options = SFDO_ICON_THEME_LOOKUP_OPTIONS_DEFAULT;
+#if !HAVE_GDK_PIXBUF
+	options |= SFDO_ICON_THEME_LOOKUP_OPTION_NO_SVG;
+#endif
+	size_t name_len = name_len_without_extension(icon_name);
+	struct sfdo_icon_file *file = sfdo_icon_theme_lookup(theme, icon_name,
+			name_len, target_size, 1, options);
+	if (!file || file == SFDO_ICON_FILE_INVALID) {
+		return NULL;
+	}
+	char *path = strdup(sfdo_icon_file_get_path(file, NULL));
+	sfdo_icon_file_destroy(file);
+	return path;
+}
+
+static void reload_sni(struct swaybar_sni *sni, const char *icon_theme,
 		int target_size) {
 	char *icon_name = sni->status[0] == 'N' ?
 		sni->attention_icon_name : sni->icon_name;
 	if (icon_name) {
-		list_t *icon_search_paths = create_list();
-		list_cat(icon_search_paths, sni->tray->basedirs);
-		if (sni->icon_theme_path) {
-			list_add(icon_search_paths, sni->icon_theme_path);
-		}
-		char *icon_path = find_icon(sni->tray->themes, icon_search_paths,
-				icon_name, target_size, icon_theme,
-				&sni->min_size, &sni->max_size);
-		list_free(icon_search_paths);
+		char *icon_path = lookup_icon_path(sni, icon_name, icon_theme,
+				target_size);
 		if (icon_path) {
 			cairo_surface_destroy(sni->icon);
 			sni->icon = load_image(icon_path);
 			free(icon_path);
-			return;
+			if (sni->icon) {
+				return;
+			}
+			// load_image() failed (unsupported format, file vanished,
+			// etc); fall through to pixmap fallback if available.
 		}
 	}
 
@@ -463,11 +536,10 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	int padding = output->bar->config->tray_padding;
 	int target_size = height - 2*padding;
 	if (target_size != sni->target_size && sni_ready(sni)) {
-		// check if another icon should be loaded
-		if (target_size < sni->min_size || target_size > sni->max_size) {
+		if (target_size != sni->icon_size) {
 			reload_sni(sni, output->bar->config->icon_theme, target_size);
+			sni->icon_size = target_size;
 		}
-
 		sni->target_size = target_size;
 	}
 
