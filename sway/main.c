@@ -1,7 +1,9 @@
 #include <getopt.h>
 #include <pango/pangocairo.h>
+#include <fontconfig/fontconfig.h>
 #include <pthread.h>
 #include <signal.h>
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +31,8 @@
 static bool terminate_request = false;
 static int exit_value = 0;
 static struct rlimit original_nofile_rlimit = {0};
+static struct wl_event_source *sigterm_source = NULL;
+static struct wl_event_source *sigint_source = NULL;
 struct sway_server server = {0};
 struct sway_debug debug = {0};
 
@@ -154,8 +158,14 @@ static void restore_signals(void) {
 }
 
 static void init_signals(void) {
-	wl_event_loop_add_signal(server.wl_event_loop, SIGTERM, term_signal, NULL);
-	wl_event_loop_add_signal(server.wl_event_loop, SIGINT, term_signal, NULL);
+	sigterm_source = wl_event_loop_add_signal(server.wl_event_loop, SIGTERM, term_signal, NULL);
+	if (!sigterm_source) {
+		sway_abort("Unable to create SIGTERM handler");
+	}
+	sigint_source = wl_event_loop_add_signal(server.wl_event_loop, SIGINT, term_signal, NULL);
+	if (!sigint_source) {
+		sway_abort("Unable to create SIGINT handler");
+	}
 
 	struct sigaction sa_ign = { .sa_handler = SIG_IGN };
 	// avoid need to reap children
@@ -398,6 +408,10 @@ int main(int argc, char **argv) {
 shutdown:
 	sway_log(SWAY_INFO, "Shutting down sway");
 
+	wl_event_source_remove(sigterm_source);
+	wl_event_source_remove(sigint_source);
+
+	root_prepare_shutdown();
 	server_fini(&server);
 	root_destroy(root);
 	root = NULL;
@@ -410,6 +424,8 @@ shutdown:
 	}
 
 	pango_cairo_font_map_set_default(NULL);
+	cairo_debug_reset_static_data();
+	FcFini();
 
 	return exit_value;
 }
