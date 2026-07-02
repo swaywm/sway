@@ -777,6 +777,12 @@ The default colors are:
 	should be greater than titlebar_border_thickness. If _vertical_ value is
 	not specified it is set to the _horizontal_ value.
 
+*for_exec_window* "<commands>" <exec command>
+	Execute _exec command_ and whenever the window created by that process
+	appears, run the list of _commands_ (specified as a quoted string) on it.
+	The window is matched based on the xdg activation token, or process ID
+	(PID) as a fallback.
+
 *for_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
@@ -1021,6 +1027,15 @@ The following attributes may be matched with:
 
 *all*
 	Matches all windows.
+
+*initial_activation_token*
+	Compare value against the initial activation token. Only exact matches are
+	supported. Can only be used with *for_window* and cannot be combined
+	with other criteria. It is used to match a window that was launched
+	with the corresponding activation token (either Wayland XDG activation
+	or X11 startup ID). Specifying this criteria makes the rule
+	automatically expire when the token expires (either because a window
+	maps and consumes it, or it times out, typically after 30 seconds).
 
 *app_id*
 	Compare value against the app id. Can be a regular expression. If value is

@@ -15,5 +15,5 @@ struct cmd_results *cmd_exec(int argc, char **argv) {
 		free(args);
 		return cmd_results_new(CMD_SUCCESS, NULL);
 	}
-	return cmd_exec_process(argc, argv);
+	return cmd_exec_process(argc, argv, NULL);
 }
