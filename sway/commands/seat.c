@@ -16,6 +16,7 @@ static const struct cmd_handler seat_action_handlers[] = {
 // these handlers alter the seat config
 static const struct cmd_handler seat_handlers[] = {
 	{ "attach", seat_cmd_attach },
+	{ "edge_resistance", seat_cmd_edge_resistance },
 	{ "fallback", seat_cmd_fallback },
 	{ "hide_cursor", seat_cmd_hide_cursor },
 	{ "idle_inhibit", seat_cmd_idle_inhibit },

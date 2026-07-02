@@ -255,6 +255,20 @@ correct seat.
 
 	Deprecated: use the virtual-pointer Wayland protocol instead.
 
+*seat* <name> edge_resistance <pixels>
+	Makes shared monitor edges "sticky": when the cursor would cross from one
+	output to another, it is held at the boundary until the pointer has been
+	pushed a further _pixels_ of accumulated motion into the next output, at
+	which point it crosses. This makes it easier to hit small targets along a
+	shared edge, which the cursor would otherwise slide straight past.
+
+	_pixels_ is measured in layout (logical) coordinates, so the threshold is
+	independent of output scale. A value of 0 (default) disables the feature.
+	Resistance is only applied to the boundary between two outputs, not the
+	outer edges of the layout, and it is bypassed while a mouse button is held
+	so that drags cross freely. When the threshold is reached the cursor
+	advances by the current motion delta only; it does not jump ahead.
+
 *seat* <name> fallback true|false
 	Set this seat as the fallback seat. A fallback seat will attach any device
 	not explicitly attached to another seat (similar to a "default" seat).

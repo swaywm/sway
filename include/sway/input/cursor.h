@@ -72,6 +72,9 @@ struct sway_cursor {
 
 	struct wl_listener constraint_commit;
 
+	double edge_resistance_accumulated;
+	int cached_edge_resistance; // -1 = invalid cache
+
 	struct wl_event_source *hide_source;
 	bool hidden;
 	// This field is just a cache of the field in seat_config in order to avoid

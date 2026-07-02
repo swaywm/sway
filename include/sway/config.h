@@ -251,6 +251,7 @@ struct seat_config {
 		char *name;
 		int size;
 	} xcursor_theme;
+	int edge_resistance; // -1 = not set, 0 = disabled, >0 = threshold in pixels
 };
 
 enum scale_filter_mode {
