@@ -243,6 +243,19 @@ static void handle_new_foreign_toplevel_capture_request(struct wl_listener *list
 	wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_accept(request, view->image_capture_source);
 }
 
+static void handle_new_output_capture_request(struct wl_listener *listener, void *data) {
+	struct wlr_ext_output_image_capture_source_manager_v1_request_event *request = data;
+
+	struct wlr_ext_image_capture_source_v1 *source =
+		wlr_ext_image_capture_source_v1_create_with_raw_output(request->output);
+	if (source == NULL) {
+		wl_client_post_no_memory(request->client);
+		return;
+	}
+
+	wlr_ext_output_image_capture_source_manager_v1_request_accept(request, source);
+}
+
 bool server_init(struct sway_server *server) {
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
@@ -516,10 +529,6 @@ bool server_init(struct sway_server *server) {
 		sway_log(SWAY_ERROR, "Failed to create ext image copy capture manager");
 		return false;
 	}
-	if (!wlr_ext_output_image_capture_source_manager_v1_create(server->wl_display, 1)) {
-		sway_log(SWAY_ERROR, "Failed to create ext output image capture source manager");
-		return false;
-	}
 	server->wlr_data_control_manager_v1 = wlr_data_control_manager_v1_create(server->wl_display);
 	if (!server->wlr_data_control_manager_v1) {
 		sway_log(SWAY_ERROR, "Failed to create data control manager");
@@ -553,6 +562,15 @@ bool server_init(struct sway_server *server) {
 		sway_log(SWAY_ERROR, "Failed to create fractional scale manager");
 		return false;
 	}
+
+	server->ext_output_image_capture_source_manager_v1 = wlr_ext_output_image_capture_source_manager_v1_create(server->wl_display, 1);
+	if (!server->ext_output_image_capture_source_manager_v1) {
+		sway_log(SWAY_ERROR, "Failed to create ext output image capture source manager");
+		return false;
+	}
+	server->new_output_capture_request.notify = handle_new_output_capture_request;
+	wl_signal_add(&server->ext_output_image_capture_source_manager_v1->events.capture_request,
+		&server->new_output_capture_request);
 
 	server->ext_foreign_toplevel_image_capture_source_manager_v1 =
 		wlr_ext_foreign_toplevel_image_capture_source_manager_v1_create(server->wl_display, 1);
@@ -737,6 +755,7 @@ void server_fini(struct sway_server *server) {
 	wl_list_remove(&server->xdg_activation_v1_new_token.link);
 	wl_list_remove(&server->xdg_toplevel_tag_manager_v1_set_tag.link);
 	wl_list_remove(&server->request_set_cursor_shape.link);
+	wl_list_remove(&server->new_output_capture_request.link);
 	wl_list_remove(&server->new_foreign_toplevel_capture_request.link);
 	wl_list_remove(&server->workspace_manager_v1_commit.link);
 	input_manager_finish(server->input);
