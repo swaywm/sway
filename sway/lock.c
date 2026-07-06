@@ -9,6 +9,7 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/lock.h"
+#include "sway/desktop/transaction.h"
 
 struct sway_session_lock_output {
 	struct wlr_scene_tree *tree;
@@ -237,6 +238,8 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 
 	// Views are now visible, so check if we need to activate inhibition again.
 	sway_idle_inhibit_v1_check_active();
+
+	transaction_commit_dirty();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {

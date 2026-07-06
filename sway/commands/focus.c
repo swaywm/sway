@@ -132,7 +132,7 @@ static struct sway_node *get_node_in_output_direction(
 		return &container->node;
 	}
 
-	return &ws->node;
+	return seat_get_focus_inactive(seat, &ws->node);
 }
 
 static struct sway_node *node_get_in_direction_tiling(
@@ -230,6 +230,8 @@ static struct sway_node *node_get_in_direction_floating(
 	double ref_ly = con->pending.y + con->pending.height / 2;
 	double closest_distance = DBL_MAX;
 	struct sway_container *closest_con = NULL;
+	double furthest_distance = 1;
+	struct sway_container *furthest_con = NULL;
 
 	if (!con->pending.workspace) {
 		return NULL;
@@ -246,13 +248,23 @@ static struct sway_node *node_get_in_direction_floating(
 		if (dir == WLR_DIRECTION_LEFT || dir == WLR_DIRECTION_UP) {
 			distance = -distance;
 		}
-		if (distance < 0) {
+		if (distance <= 0) {
+			// Track the furthest window in the opposite direction for wrapping
+			if (distance < furthest_distance) {
+				furthest_distance = distance;
+				furthest_con = floater;
+			}
 			continue;
 		}
 		if (distance < closest_distance) {
 			closest_distance = distance;
 			closest_con = floater;
 		}
+	}
+	// If there is no window in the requested direction, wrap around to the
+	// furthest window in the opposite direction.
+	if (!closest_con && config->focus_wrapping != WRAP_NO) {
+		closest_con = furthest_con;
 	}
 
 	return closest_con ? &closest_con->node : NULL;

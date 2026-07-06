@@ -132,7 +132,7 @@ void arrange_layers(struct sway_output *output) {
 			seat_set_focus_layer(seat, topmost->layer_surface);
 		} else if (seat->focused_layer &&
 				seat->focused_layer->current.keyboard_interactive
-					!= ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
+					== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
 			seat_set_focus_layer(seat, NULL);
 		}
 	}
@@ -273,6 +273,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		surface->mapped = layer_surface->surface->mapped;
 		arrange_layers(surface->output);
 		transaction_commit_dirty();
+		cursor_rebase_all();
 	}
 }
 
@@ -291,14 +292,12 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			// but only if the currently focused layer has a lower precedence
 			if (!seat->focused_layer ||
-					seat->focused_layer->current.layer >= layer_surface->current.layer) {
+					seat->focused_layer->current.layer <= layer_surface->current.layer) {
 				seat_set_focus_layer(seat, layer_surface);
 			}
 		}
 		arrange_layers(surface->output);
 	}
-
-	cursor_rebase_all();
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
