@@ -32,10 +32,8 @@ struct sway_session_lock_output {
 
 static void focus_surface(struct sway_session_lock *lock,
 		struct sway_seat *seat, struct wlr_surface *focused) {
-	if (seat) {
-		seat->focused_lock = focused;
-		seat_set_focus_surface(seat, focused, false);
-	}
+	seat->focused_lock = focused;
+	seat_set_focus_surface(seat, focused, false);
 }
 
 static void refocus_output(struct sway_session_lock_output *output) {
@@ -64,6 +62,10 @@ static void refocus_output(struct sway_session_lock_output *output) {
 
 void sway_session_lock_focus_output(struct sway_session_lock *lock,
 		struct sway_seat *seat, struct sway_output *output) {
+	if (!seat) {
+		return;
+	}
+
 	// Try focusing the lock surface on the provided output
 	struct sway_session_lock_output *candidate;
 	wl_list_for_each(candidate, &lock->outputs, link) {
