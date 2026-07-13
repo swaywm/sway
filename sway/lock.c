@@ -3,7 +3,6 @@
 #include <wlr/types/wlr_session_lock_v1.h>
 #include "log.h"
 #include "sway/input/cursor.h"
-#include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -30,15 +29,9 @@ struct sway_session_lock_output {
 	struct wl_listener surface_map;
 };
 
-static void focus_surface(struct sway_session_lock *lock,
-		struct sway_seat *seat, struct wlr_surface *focused) {
-	seat->focused_lock = focused;
-	seat_set_focus_surface(seat, focused, false);
-}
-
 static void refocus_output(struct sway_session_lock_output *output) {
 	// Move the seat focus to another surface if one is available
-	struct wlr_surface *next_focus = NULL;
+	struct wlr_session_lock_surface_v1 *next_focus = NULL;
 
 	struct sway_session_lock_output *candidate;
 	wl_list_for_each(candidate, &output->lock->outputs, link) {
@@ -47,15 +40,15 @@ static void refocus_output(struct sway_session_lock_output *output) {
 		}
 
 		if (candidate->surface->surface->mapped) {
-			next_focus = candidate->surface->surface;
+			next_focus = candidate->surface;
 			break;
 		}
 	}
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		if (seat->focused_lock == output->surface->surface) {
-			focus_surface(output->lock, seat, next_focus);
+		if (!next_focus || seat->focused_lock == output->surface) {
+			seat_set_focus_lock(seat, next_focus);
 		}
 	}
 }
@@ -74,7 +67,7 @@ void sway_session_lock_focus_output(struct sway_session_lock *lock,
 		}
 
 		if (candidate->surface->surface->mapped) {
-			focus_surface(lock, seat, candidate->surface->surface);
+			seat_set_focus_lock(seat, candidate->surface);
 			break;
 		}
 	}
@@ -93,7 +86,7 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 		// output can be found.
 		if (focused_output == surf->output
 				|| (!focused_output && seat->focused_lock == NULL)) {
-			focus_surface(surf->lock, seat, surf->surface->surface);
+			seat_set_focus_lock(seat, surf->surface);
 		}
 	}
 	cursor_rebase_all();
@@ -232,7 +225,7 @@ static void sway_session_lock_destroy(struct sway_session_lock* lock) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat->focused_lock = NULL;
+		seat_set_focus_lock(seat, NULL);
 	}
 
 	if (server.session_lock.lock == lock) {
@@ -256,15 +249,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat->focused_lock = NULL;
-
-		// copied from seat_set_focus_layer -- deduplicate?
-		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);
-		if (previous) {
-			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, NULL);
-			seat_set_focus(seat, previous);
-		}
+		seat_set_focus_lock(seat, NULL);
 	}
 
 	// Triggers a refocus of the topmost surface layer if necessary

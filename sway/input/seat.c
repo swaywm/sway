@@ -1273,7 +1273,9 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 			return;
 		}
 		// Fallback to the previously focused lock surface
-		seat_set_focus_surface(seat, seat->focused_lock, false);
+		if (seat->focused_lock) {
+			seat_set_focus_surface(seat, seat->focused_lock->surface, false);
+		}
 	}
 }
 
@@ -1334,6 +1336,28 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	}
 	seat_set_focus_surface(seat, layer->surface, true);
 	seat->focused_layer = layer;
+}
+
+void seat_set_focus_lock(struct sway_seat *seat,
+		struct wlr_session_lock_surface_v1 *lock_surface) {
+	if (!lock_surface && seat->focused_lock) {
+		seat->focused_lock = NULL;
+		// copied from seat_set_focus_layer -- deduplicate?
+		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);
+		if (previous) {
+			// Hack to get seat to re-focus the return value of get_focus
+			seat_set_focus(seat, NULL);
+			seat_set_focus(seat, previous);
+		}
+		return;
+	} else if (!lock_surface) {
+		return;
+	}
+	if (seat->focused_lock == lock_surface) {
+		return;
+	}
+	seat_set_focus_surface(seat, lock_surface->surface, false);
+	seat->focused_lock = lock_surface;
 }
 
 void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client) {

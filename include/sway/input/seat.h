@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/util/edges.h>
 #include "sway/config.h"
@@ -99,7 +100,7 @@ struct sway_seat {
 	char *prev_workspace_name; // for workspace back_and_forth
 
 	struct wlr_layer_surface_v1 *focused_layer;
-	struct wlr_surface *focused_lock;
+	struct wlr_session_lock_surface_v1 *focused_lock;
 	// If the exclusive layer is set, views cannot receive keyboard focus
 	bool has_exclusive_layer;
 
@@ -193,6 +194,9 @@ void seat_set_focus_surface(struct sway_seat *seat,
 
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface_v1 *layer);
+
+void seat_set_focus_lock(struct sway_seat *seat,
+		struct wlr_session_lock_surface_v1 *lock_surface);
 
 void seat_unfocus_unless_client(struct sway_seat *seat, struct wl_client *client);
 
