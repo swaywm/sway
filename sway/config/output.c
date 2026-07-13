@@ -498,7 +498,9 @@ static void queue_output_config(struct output_config *oc,
 	} else if (oc && oc->width > 0 && oc->height > 0) {
 		set_mode(wlr_output, pending, oc->width, oc->height,
 			oc->refresh_rate, oc->custom_mode == 1);
-	} else if (!wl_list_empty(&wlr_output->modes)) {
+	} else if (!wl_list_empty(&wlr_output->modes) && !output->enabled) {
+        // Only use preferred mode when "mode" is not specified and output is
+        // not already enabled.
 		struct wlr_output_mode *preferred_mode =
 			wlr_output_preferred_mode(wlr_output);
 		wlr_output_state_set_mode(pending, preferred_mode);
