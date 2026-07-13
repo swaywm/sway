@@ -181,7 +181,7 @@ void sway_session_lock_add_output(struct sway_session_lock *lock,
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	struct wlr_surface *surface);
 void sway_session_lock_focus_output(struct sway_session_lock *lock,
-	struct sway_seat* seat, struct sway_output *output);
+	struct sway_seat *seat, struct sway_output *output);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if WLR_HAS_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

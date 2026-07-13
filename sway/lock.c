@@ -63,7 +63,7 @@ static void refocus_output(struct sway_session_lock_output *output) {
 }
 
 void sway_session_lock_focus_output(struct sway_session_lock *lock,
-	struct sway_seat* seat, struct sway_output *output) {
+		struct sway_seat *seat, struct sway_output *output) {
 	// Try focusing the lock surface on the provided output
 	struct sway_session_lock_output *candidate;
 	wl_list_for_each(candidate, &lock->outputs, link) {
