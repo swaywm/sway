@@ -127,7 +127,7 @@ static void constrain_popup(struct sway_input_popup *popup) {
 	struct sway_text_input *text_input =
 		relay_get_focused_text_input(popup->relay);
 
-	if (!popup->desc.relative) {
+	if (!text_input || !popup->desc.relative) {
 		return;
 	}
 
