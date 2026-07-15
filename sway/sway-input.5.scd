@@ -149,6 +149,10 @@ The following commands may only be used in the configuration file.
 	treats 1 finger as left click, 2 fingers as middle click, and 3 fingers as
 	right click.
 
+*input* <identifier> three_finger_drag three_finger|four_finger|disabled
+	Enables three-finger-drag for the specified input device, with either
+	three fingers or four fingers.
+
 *input* <identifier> drag enabled|disabled
 	Enables or disables tap-and-drag for specified input device.
 
