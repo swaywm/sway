@@ -157,6 +157,7 @@ sway_sources = files(
 	'commands/input/calibration_matrix.c',
 	'commands/input/click_method.c',
 	'commands/input/clickfinger_button_map.c',
+	'commands/input/three_finger_drag.c',
 	'commands/input/drag.c',
 	'commands/input/drag_lock.c',
 	'commands/input/dwt.c',

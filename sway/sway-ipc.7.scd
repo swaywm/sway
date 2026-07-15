@@ -1189,6 +1189,9 @@ following properties will be included for devices that support them:
 |- tap_button_map
 :  string
 :  The finger to button mapping in use for tapping. It can be _lmr_ or _lrm_
+|- three_finger_drag
+:  string
+:  Whether three-finger-drag is enabled. It can be _three_finger_, _four_finger_ or _disabled_
 |- tap_drag
 :  string
 :  Whether tap-and-drag is enabled. It can be _enabled_ or _disabled_
@@ -1265,6 +1268,7 @@ following properties will be included for devices that support them:
 			"send_events": "enabled",
 			"tap": "enabled",
 			"tap_button_map": "lmr",
+			"three_finger_drag": "three_finger",
 			"tap_drag": "enabled",
 			"tap_drag_lock": "disabled",
 			"accel_speed": 0.0,
@@ -1393,6 +1397,7 @@ one seat. Each object has the following properties:
 					"send_events": "enabled",
 					"tap": "enabled",
 					"tap_button_map": "lmr",
+					"three_finger_drag": "three_finger",
 					"tap_drag": "enabled",
 					"tap_drag_lock": "disabled",
 					"accel_speed": 0.0,

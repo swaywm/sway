@@ -47,6 +47,16 @@ static bool set_tap_button_map(struct libinput_device *device,
 	return true;
 }
 
+static bool set_3fg_drag(struct libinput_device *device,
+		enum libinput_config_3fg_drag_state drag_3fg) {
+	if (libinput_device_config_3fg_drag_get_enabled(device) == drag_3fg) {
+		return false;
+	}
+	sway_log(SWAY_DEBUG, "3fg_drag_set_enabled(%d)", drag_3fg);
+	log_status(libinput_device_config_3fg_drag_set_enabled(device, drag_3fg));
+	return true;
+}
+
 static bool set_tap_drag(struct libinput_device *device,
 		enum libinput_config_drag_state drag) {
 	if (libinput_device_config_tap_get_finger_count(device) <= 0 ||
@@ -267,6 +277,9 @@ bool sway_input_configure_libinput_device(struct sway_input_device *input_device
 	if (ic->tap_button_map != INT_MIN) {
 		changed |= set_tap_button_map(device, ic->tap_button_map);
 	}
+	if (ic->drag_3fg != INT_MIN) {
+		changed |= set_3fg_drag(device, ic->drag_3fg);
+	}
 	if (ic->drag != INT_MIN) {
 		changed |= set_tap_drag(device, ic->drag);
 	}
@@ -352,6 +365,8 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 		libinput_device_config_tap_get_default_enabled(device));
 	changed |= set_tap_button_map(device,
 		libinput_device_config_tap_get_default_button_map(device));
+	changed |= set_3fg_drag(device,
+		libinput_device_config_3fg_drag_get_default_enabled(device));
 	changed |= set_tap_drag(device,
 		libinput_device_config_tap_get_default_drag_enabled(device));
 	changed |= set_tap_drag_lock(device,
