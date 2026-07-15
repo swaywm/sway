@@ -969,6 +969,25 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 				json_object_new_string(drag_lock));
 	}
 
+#if HAVE_LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG
+	if (libinput_device_config_3fg_drag_get_finger_count(device) > 0) {
+		const char *three_finger_drag = "unknown";
+		switch (libinput_device_config_3fg_drag_get_enabled(device)) {
+		case LIBINPUT_CONFIG_3FG_DRAG_DISABLED:
+			three_finger_drag = "disabled";
+			break;
+		case LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG:
+			three_finger_drag = "enabled_3fg";
+			break;
+		case LIBINPUT_CONFIG_3FG_DRAG_ENABLED_4FG:
+			three_finger_drag = "enabled_4fg";
+			break;
+		}
+		json_object_object_add(object, "three_finger_drag",
+				json_object_new_string(three_finger_drag));
+	}
+#endif
+
 	if (libinput_device_config_accel_is_available(device)) {
 		double accel = libinput_device_config_accel_get_speed(device);
 		json_object_object_add(object, "accel_speed",

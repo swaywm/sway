@@ -69,6 +69,23 @@ static bool set_tap_drag_lock(struct libinput_device *device,
 	return true;
 }
 
+#if HAVE_LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG
+static bool set_3fg_drag(struct libinput_device *device,
+		enum libinput_config_3fg_drag_state drag) {
+	int fingers = libinput_device_config_3fg_drag_get_finger_count(device);
+	if (fingers <= 0 ||
+			libinput_device_config_3fg_drag_get_enabled(device) == drag) {
+		return false;
+	}
+	if (drag == LIBINPUT_CONFIG_3FG_DRAG_ENABLED_4FG && fingers < 4) {
+		return false;
+	}
+	sway_log(SWAY_DEBUG, "3fg_drag_set_enabled(%d)", drag);
+	log_status(libinput_device_config_3fg_drag_set_enabled(device, drag));
+	return true;
+}
+#endif
+
 static bool set_accel_speed(struct libinput_device *device, double speed) {
 	if (!libinput_device_config_accel_is_available(device) ||
 			libinput_device_config_accel_get_speed(device) == speed) {
@@ -273,6 +290,11 @@ bool sway_input_configure_libinput_device(struct sway_input_device *input_device
 	if (ic->drag_lock != INT_MIN) {
 		changed |= set_tap_drag_lock(device, ic->drag_lock);
 	}
+#if HAVE_LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG
+	if (ic->three_finger_drag != INT_MIN) {
+		changed |= set_3fg_drag(device, ic->three_finger_drag);
+	}
+#endif
 	if (ic->pointer_accel != FLT_MIN) {
 		changed |= set_accel_speed(device, ic->pointer_accel);
 	}
@@ -356,6 +378,10 @@ void sway_input_reset_libinput_device(struct sway_input_device *input_device) {
 		libinput_device_config_tap_get_default_drag_enabled(device));
 	changed |= set_tap_drag_lock(device,
 		libinput_device_config_tap_get_default_drag_lock_enabled(device));
+#if HAVE_LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG
+	changed |= set_3fg_drag(device,
+		libinput_device_config_3fg_drag_get_default_enabled(device));
+#endif
 	changed |= set_accel_speed(device,
 		libinput_device_config_accel_get_default_speed(device));
 	changed |= set_rotation_angle(device,

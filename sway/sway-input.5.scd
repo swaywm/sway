@@ -156,6 +156,11 @@ The following commands may only be used in the configuration file.
 	Enables or disables drag lock for specified input device. The default is
 	_disabled_.
 
+*input* <identifier> three_finger_drag enabled|disabled|3|4
+	Enables or disables 3/4 finger drag for specified touchpads. _enabled_ is
+	shorthand for _3_. When enabled, 3/4 finger swipes are converted into a
+	button down + motion + button up sequence.
+
 *input* <identifier> dwt enabled|disabled
 	Enables or disables disable-while-typing for the specified input device.
 

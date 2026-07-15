@@ -152,6 +152,7 @@ struct input_config {
 	int clickfinger_button_map;
 	int drag;
 	int drag_lock;
+	int three_finger_drag;
 	int dwt;
 	int dwtp;
 	int left_handed;
