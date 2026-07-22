@@ -307,6 +307,7 @@ sway_cmd output_cmd_unplug;
 
 sway_cmd seat_cmd_attach;
 sway_cmd seat_cmd_cursor;
+sway_cmd seat_cmd_edge_resistance;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
 sway_cmd seat_cmd_idle_inhibit;

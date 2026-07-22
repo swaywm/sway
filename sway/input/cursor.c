@@ -316,6 +316,33 @@ void pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		dy = sy_confined - sy;
 	}
 
+	// Sticky monitor borders: resist cursor crossing between outputs
+	if (cursor->cached_edge_resistance == -1) {
+		const struct seat_config *sc = seat_get_config(cursor->seat);
+		if (!sc) {
+			sc = seat_get_config_by_name("*");
+		}
+		int r = (sc && sc->edge_resistance >= 0) ? sc->edge_resistance : 0;
+		cursor->cached_edge_resistance = r;
+	}
+	if (cursor->cached_edge_resistance > 0 && cursor->pressed_button_count == 0) {
+		double new_x = cursor->cursor->x + dx;
+		double new_y = cursor->cursor->y + dy;
+		struct wlr_output *cur_out = wlr_output_layout_output_at(
+			root->output_layout, cursor->cursor->x, cursor->cursor->y);
+		struct wlr_output *new_out = wlr_output_layout_output_at(
+			root->output_layout, new_x, new_y);
+		if (cur_out && new_out && cur_out != new_out) {
+			cursor->edge_resistance_accumulated += sqrt(dx * dx + dy * dy);
+			if (cursor->edge_resistance_accumulated < cursor->cached_edge_resistance) {
+				return; // hold at edge
+			}
+			cursor->edge_resistance_accumulated = 0.0;
+		} else {
+			cursor->edge_resistance_accumulated = 0.0;
+		}
+	}
+
 	wlr_cursor_move(cursor->cursor, device, dx, dy);
 
 	seatop_pointer_motion(cursor->seat, time_msec);
@@ -1072,6 +1099,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	cursor->previous.y = wlr_cursor->y;
 
 	cursor->seat = seat;
+	cursor->edge_resistance_accumulated = 0.0;
+	cursor->cached_edge_resistance = -1;
 	wlr_cursor_attach_output_layout(wlr_cursor, root->output_layout);
 
 	cursor->hide_source = wl_event_loop_add_timer(server.wl_event_loop,

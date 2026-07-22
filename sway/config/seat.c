@@ -34,6 +34,7 @@ struct seat_config *new_seat_config(const char* name) {
 	seat->keyboard_grouping = KEYBOARD_GROUP_DEFAULT;
 	seat->xcursor_theme.name = NULL;
 	seat->xcursor_theme.size = 24;
+	seat->edge_resistance = -1;
 
 	return seat;
 }
@@ -178,6 +179,10 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 
 	if (source->idle_wake_sources != UINT32_MAX) {
 		dest->idle_wake_sources = source->idle_wake_sources;
+	}
+
+	if (source->edge_resistance != -1) {
+		dest->edge_resistance = source->edge_resistance;
 	}
 }
 
