@@ -59,6 +59,7 @@ struct sway_view_impl {
 			struct sway_view *ancestor);
 	void (*close)(struct sway_view *view);
 	void (*close_popups)(struct sway_view *view);
+	void (*notify_state_update)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
 
@@ -117,6 +118,12 @@ struct sway_view {
 	};
 
 	struct {
+		bool pending;
+		char *workspace;
+		bool floating;
+	} session_restore;
+
+	struct {
 		struct wl_signal unmap;
 	} events;
 
@@ -133,6 +140,12 @@ struct sway_xdg_shell_view {
 
 	struct wlr_scene_tree *image_capture_tree;
 	char *tag;
+
+	struct {
+		struct sway_xdg_session_v1 *session;
+		char *name;
+		struct wl_list link; // sway_xdg_session_v1.toplevels
+	} xdg_session_v1;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;
@@ -368,5 +381,7 @@ void view_send_frame_done(struct sway_view *view);
 bool view_can_tear(struct sway_view *view);
 
 void xdg_toplevel_tag_manager_v1_handle_set_tag(struct wl_listener *listener, void *data);
+
+void view_notify_state_update(struct sway_view *view);
 
 #endif

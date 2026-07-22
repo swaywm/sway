@@ -132,6 +132,7 @@ void view_destroy(struct sway_view *view) {
 	}
 	wl_list_remove(&view->events.unmap.listener_list);
 	list_free(view->executed_criteria);
+	free(view->session_restore.workspace);
 
 	view_assign_ctx(view, NULL);
 	wlr_scene_node_destroy(&view->image_capture_scene->tree.node);
@@ -665,6 +666,15 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 		return ws;
 	}
 
+	// Check session restoration
+	if (view->session_restore.pending && view->session_restore.workspace != NULL) {
+		ws = workspace_by_name(view->session_restore.workspace);
+		if (ws) {
+			view_assign_ctx(view, NULL);
+			return ws;
+		}
+	}
+
 	// Check if there's a PID mapping
 	ws = view->ctx ? launcher_ctx_get_workspace(view->ctx) : NULL;
 	if (ws) {
@@ -906,7 +916,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view_update_csd_from_client(view, decoration);
 	}
 
-	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+	bool floating;
+	if (view->session_restore.pending) {
+		floating = view->session_restore.floating;
+	} else {
+		floating = view->impl->wants_floating && view->impl->wants_floating(view);
+	}
+
+	if (floating) {
 		view->container->pending.border = config->floating_border;
 		view->container->pending.border_thickness = config->floating_border_thickness;
 		container_set_floating(view->container, true);
@@ -955,6 +972,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	if (set_focus) {
 		input_manager_set_focus(&view->container->node);
 	}
+
+	view->session_restore.pending = false;
+	free(view->session_restore.workspace);
+	view->session_restore.workspace = NULL;
 
 	if (view->ext_foreign_toplevel) {
 		update_ext_foreign_toplevel(view);
@@ -1325,5 +1346,11 @@ void view_send_frame_done(struct sway_view *view) {
 	struct wlr_scene_node *node;
 	wl_list_for_each(node, &view->content_tree->children, link) {
 		wlr_scene_node_for_each_buffer(node, send_frame_done_iterator, &when);
+	}
+}
+
+void view_notify_state_update(struct sway_view *view) {
+	if (view->impl->notify_state_update) {
+		view->impl->notify_state_update(view);
 	}
 }
