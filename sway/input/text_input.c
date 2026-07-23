@@ -1,5 +1,7 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include "log.h"
 #include "sway/input/seat.h"
 #include "sway/scene_descriptor.h"
@@ -11,6 +13,44 @@
 #include "sway/layers.h"
 #include "sway/server.h"
 #include <wlr/types/wlr_session_lock_v1.h>
+
+enum sway_pending_im_event_type {
+	SWAY_PENDING_IM_STATE,
+	SWAY_PENDING_IM_KEY,
+};
+
+enum sway_pending_im_state_change {
+	SWAY_PENDING_IM_STATE_UPDATE,
+	SWAY_PENDING_IM_STATE_ACTIVATE,
+	SWAY_PENDING_IM_STATE_DEACTIVATE,
+};
+
+struct sway_pending_im_event {
+	struct wl_list link;
+	enum sway_pending_im_event_type type;
+};
+
+struct sway_pending_im_state {
+	struct sway_pending_im_event event;
+	enum sway_pending_im_state_change change;
+	uint32_t active_features;
+	char *surrounding_text;
+	uint32_t surrounding_cursor;
+	uint32_t surrounding_anchor;
+	uint32_t text_change_cause;
+	uint32_t content_hint;
+	uint32_t content_purpose;
+};
+
+struct sway_pending_im_key {
+	struct sway_pending_im_event event;
+	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab;
+	struct wlr_keyboard *keyboard;
+	struct wl_listener keyboard_destroy;
+	uint32_t time;
+	uint32_t key;
+	uint32_t state;
+};
 
 static struct sway_text_input *relay_get_focusable_text_input(
 		struct sway_input_method_relay *relay) {
@@ -34,12 +74,18 @@ static struct sway_text_input *relay_get_focused_text_input(
 	return NULL;
 }
 
+static void relay_process_pending_im_events(struct sway_input_method_relay *relay);
+static void relay_clear_pending_im_events(struct sway_input_method_relay *relay);
+static void relay_drop_pending_im_keys(struct sway_input_method_relay *relay);
+static void relay_note_key_response(struct sway_input_method_relay *relay);
+
 static void handle_im_commit(struct wl_listener *listener, void *data) {
 	struct sway_input_method_relay *relay = wl_container_of(listener, relay,
 		input_method_commit);
 
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
 	if (!text_input) {
+		relay_note_key_response(relay);
 		return;
 	}
 	if (relay->input_method->current.preedit.text) {
@@ -59,6 +105,7 @@ static void handle_im_commit(struct wl_listener *listener, void *data) {
 			relay->input_method->current.delete.after_length);
 	}
 	wlr_text_input_v3_send_done(text_input->input);
+	relay_note_key_response(relay);
 }
 
 static void handle_im_keyboard_grab_destroy(struct wl_listener *listener, void *data) {
@@ -67,6 +114,9 @@ static void handle_im_keyboard_grab_destroy(struct wl_listener *listener, void *
 	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = relay->input_method->keyboard_grab;
 	struct wlr_seat *wlr_seat = keyboard_grab->input_method->seat;
 	wl_list_remove(&relay->input_method_keyboard_grab_destroy.link);
+	relay->pending_key_responses = 0;
+	relay_drop_pending_im_keys(relay);
+	relay_process_pending_im_events(relay);
 
 	if (keyboard_grab->keyboard) {
 		// send modifier state to original client
@@ -113,6 +163,8 @@ static void handle_im_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&relay->input_method_destroy.link);
 	wl_list_remove(&relay->input_method_new_popup_surface.link);
 	relay->input_method = NULL;
+	relay->pending_key_responses = 0;
+	relay_clear_pending_im_events(relay);
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
 	if (text_input) {
 		// keyboard focus is still there, so keep the surface at hand in case
@@ -206,25 +258,58 @@ static void constrain_popup(struct sway_input_popup *popup) {
 static void input_popup_set_focus(struct sway_input_popup *popup,
 		struct wlr_surface *surface);
 
+static void relay_finish_pending_im_state(struct sway_pending_im_state *state) {
+	free(state->surrounding_text);
+}
+
+static bool relay_init_pending_im_state(struct sway_pending_im_state *state,
+		struct wlr_text_input_v3 *input,
+		enum sway_pending_im_state_change change) {
+	state->event.type = SWAY_PENDING_IM_STATE;
+	state->change = change;
+	state->active_features = input->active_features;
+	state->surrounding_cursor = input->current.surrounding.cursor;
+	state->surrounding_anchor = input->current.surrounding.anchor;
+	state->text_change_cause = input->current.text_change_cause;
+	state->content_hint = input->current.content_type.hint;
+	state->content_purpose = input->current.content_type.purpose;
+
+	if ((state->active_features & WLR_TEXT_INPUT_V3_FEATURE_SURROUNDING_TEXT) &&
+			input->current.surrounding.text) {
+		state->surrounding_text = strdup(input->current.surrounding.text);
+		if (!state->surrounding_text) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static void relay_send_im_state(struct sway_input_method_relay *relay,
-		struct wlr_text_input_v3 *input) {
+		struct sway_pending_im_state *state) {
 	struct wlr_input_method_v2 *input_method = relay->input_method;
 	if (!input_method) {
 		sway_log(SWAY_INFO, "Sending IM_DONE but im is gone");
 		return;
 	}
+
+	if (state->change == SWAY_PENDING_IM_STATE_ACTIVATE) {
+		wlr_input_method_v2_send_activate(input_method);
+	} else if (state->change == SWAY_PENDING_IM_STATE_DEACTIVATE) {
+		wlr_input_method_v2_send_deactivate(input_method);
+	}
+
 	// TODO: only send each of those if they were modified
-	if (input->active_features & WLR_TEXT_INPUT_V3_FEATURE_SURROUNDING_TEXT) {
+	if (state->active_features & WLR_TEXT_INPUT_V3_FEATURE_SURROUNDING_TEXT) {
 		wlr_input_method_v2_send_surrounding_text(input_method,
-			input->current.surrounding.text, input->current.surrounding.cursor,
-			input->current.surrounding.anchor);
+			state->surrounding_text ? state->surrounding_text : "",
+			state->surrounding_cursor, state->surrounding_anchor);
 	}
 	wlr_input_method_v2_send_text_change_cause(input_method,
-		input->current.text_change_cause);
-	if (input->active_features & WLR_TEXT_INPUT_V3_FEATURE_CONTENT_TYPE) {
+		state->text_change_cause);
+	if (state->active_features & WLR_TEXT_INPUT_V3_FEATURE_CONTENT_TYPE) {
 		wlr_input_method_v2_send_content_type(input_method,
-			input->current.content_type.hint,
-			input->current.content_type.purpose);
+			state->content_hint, state->content_purpose);
 	}
 
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
@@ -241,6 +326,167 @@ static void relay_send_im_state(struct sway_input_method_relay *relay,
 	// TODO: pass intent, display popup size
 }
 
+static void relay_destroy_pending_im_event(struct sway_pending_im_event *event) {
+	if (event->type == SWAY_PENDING_IM_STATE) {
+		struct sway_pending_im_state *state =
+			wl_container_of(event, state, event);
+		relay_finish_pending_im_state(state);
+		free(state);
+	} else {
+		struct sway_pending_im_key *key =
+			wl_container_of(event, key, event);
+		wl_list_remove(&key->keyboard_destroy.link);
+		free(key);
+	}
+}
+
+static void relay_clear_pending_im_events(struct sway_input_method_relay *relay) {
+	struct sway_pending_im_event *event, *tmp;
+	wl_list_for_each_safe(event, tmp, &relay->pending_im_events, link) {
+		wl_list_remove(&event->link);
+		relay_destroy_pending_im_event(event);
+	}
+}
+
+static void relay_drop_pending_im_keys(struct sway_input_method_relay *relay) {
+	struct sway_pending_im_event *event, *tmp;
+	wl_list_for_each_safe(event, tmp, &relay->pending_im_events, link) {
+		if (event->type != SWAY_PENDING_IM_KEY) {
+			continue;
+		}
+		wl_list_remove(&event->link);
+		relay_destroy_pending_im_event(event);
+	}
+}
+
+static void relay_send_keyboard_grab_key(struct sway_input_method_relay *relay,
+		struct wlr_input_method_keyboard_grab_v2 *keyboard_grab,
+		struct wlr_keyboard *keyboard, uint32_t time, uint32_t key,
+		uint32_t state) {
+	if (!keyboard) {
+		return;
+	}
+
+	wlr_input_method_keyboard_grab_v2_set_keyboard(keyboard_grab, keyboard);
+	wlr_input_method_keyboard_grab_v2_send_key(keyboard_grab, time, key, state);
+	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		relay->pending_key_responses++;
+	}
+}
+
+static void handle_pending_im_key_keyboard_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_pending_im_key *key =
+		wl_container_of(listener, key, keyboard_destroy);
+	wl_list_remove(&key->keyboard_destroy.link);
+	wl_list_init(&key->keyboard_destroy.link);
+	key->keyboard = NULL;
+}
+
+static bool relay_queue_keyboard_grab_key(struct sway_input_method_relay *relay,
+		struct wlr_input_method_keyboard_grab_v2 *keyboard_grab,
+		struct wlr_keyboard *keyboard, uint32_t time, uint32_t key,
+		uint32_t state) {
+	struct sway_pending_im_key *event = calloc(1, sizeof(*event));
+	if (!event) {
+		sway_log(SWAY_ERROR, "Unable to allocate pending input-method key");
+		return false;
+	}
+
+	event->event.type = SWAY_PENDING_IM_KEY;
+	event->keyboard_grab = keyboard_grab;
+	event->keyboard = keyboard;
+	event->time = time;
+	event->key = key;
+	event->state = state;
+	wl_list_init(&event->keyboard_destroy.link);
+	if (keyboard) {
+		event->keyboard_destroy.notify = handle_pending_im_key_keyboard_destroy;
+		wl_signal_add(&keyboard->base.events.destroy,
+			&event->keyboard_destroy);
+	}
+	wl_list_insert(relay->pending_im_events.prev, &event->event.link);
+	return true;
+}
+
+/*
+ * zwp_input_method_v2.commit is serial-checked against the number of done
+ * events Sway has already issued, but zwp_input_method_keyboard_grab_v2.key
+ * has no matching response or ack serial. If Sway sends a new done after a key
+ * has been forwarded to the input method, a later commit for that key can be
+ * rejected as stale. Keep text-input state updates behind forwarded key presses
+ * until the input method produces one of the responses Sway can observe
+ * (input_method.commit or a same-client virtual-keyboard press), and keep later
+ * key events behind any queued state so the input method sees the same order
+ * Sway received.
+ */
+static void relay_process_pending_im_events(struct sway_input_method_relay *relay) {
+	while (!wl_list_empty(&relay->pending_im_events)) {
+		struct sway_pending_im_event *event =
+			wl_container_of(relay->pending_im_events.next, event, link);
+		if (event->type == SWAY_PENDING_IM_STATE) {
+			if (relay->pending_key_responses > 0) {
+				return;
+			}
+
+			struct sway_pending_im_state *state =
+				wl_container_of(event, state, event);
+			wl_list_remove(&event->link);
+			relay_send_im_state(relay, state);
+			relay_destroy_pending_im_event(event);
+		} else {
+			struct sway_pending_im_key *key =
+				wl_container_of(event, key, event);
+			wl_list_remove(&event->link);
+			if (key->keyboard && relay->input_method &&
+					relay->input_method->keyboard_grab == key->keyboard_grab) {
+				relay_send_keyboard_grab_key(relay, key->keyboard_grab,
+					key->keyboard, key->time, key->key, key->state);
+			}
+			relay_destroy_pending_im_event(event);
+		}
+	}
+}
+
+static void relay_queue_im_state(struct sway_input_method_relay *relay,
+		struct wlr_text_input_v3 *input,
+		enum sway_pending_im_state_change change) {
+	if (wl_list_empty(&relay->pending_im_events) &&
+			relay->pending_key_responses == 0) {
+		struct sway_pending_im_state state = {0};
+		if (!relay_init_pending_im_state(&state, input, change)) {
+			sway_log(SWAY_ERROR, "Unable to allocate input-method state");
+			return;
+		}
+		relay_send_im_state(relay, &state);
+		relay_finish_pending_im_state(&state);
+		return;
+	}
+
+	struct sway_pending_im_state *state = calloc(1, sizeof(*state));
+	if (!state) {
+		sway_log(SWAY_ERROR, "Unable to allocate pending input-method state");
+		return;
+	}
+	if (!relay_init_pending_im_state(state, input, change)) {
+		free(state);
+		sway_log(SWAY_ERROR, "Unable to allocate pending input-method state");
+		return;
+	}
+
+	wl_list_insert(relay->pending_im_events.prev, &state->event.link);
+	relay_process_pending_im_events(relay);
+}
+
+static void relay_note_key_response(struct sway_input_method_relay *relay) {
+	if (relay->pending_key_responses > 0) {
+		relay->pending_key_responses--;
+	}
+	if (relay->pending_key_responses == 0) {
+		relay_process_pending_im_events(relay);
+	}
+}
+
 static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 	struct sway_text_input *text_input = wl_container_of(listener, text_input,
 		text_input_enable);
@@ -252,8 +498,8 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 		sway_log(SWAY_INFO, "Enabling text input when input method is gone");
 		return;
 	}
-	wlr_input_method_v2_send_activate(text_input->relay->input_method);
-	relay_send_im_state(text_input->relay, text_input->input);
+	relay_queue_im_state(text_input->relay, text_input->input,
+		SWAY_PENDING_IM_STATE_ACTIVATE);
 }
 
 static void handle_text_input_commit(struct wl_listener *listener,
@@ -273,7 +519,8 @@ static void handle_text_input_commit(struct wl_listener *listener,
 		sway_log(SWAY_INFO, "Text input committed, but input method is gone");
 		return;
 	}
-	relay_send_im_state(text_input->relay, text_input->input);
+	relay_queue_im_state(text_input->relay, text_input->input,
+		SWAY_PENDING_IM_STATE_UPDATE);
 }
 
 static void relay_disable_text_input(struct sway_input_method_relay *relay,
@@ -282,8 +529,8 @@ static void relay_disable_text_input(struct sway_input_method_relay *relay,
 		sway_log(SWAY_DEBUG, "Disabling text input, but input method is gone");
 		return;
 	}
-	wlr_input_method_v2_send_deactivate(relay->input_method);
-	relay_send_im_state(relay, text_input->input);
+	relay_queue_im_state(relay, text_input->input,
+		SWAY_PENDING_IM_STATE_DEACTIVATE);
 }
 
 static void handle_text_input_disable(struct wl_listener *listener,
@@ -632,6 +879,7 @@ void sway_input_method_relay_init(struct sway_seat *seat,
 	relay->seat = seat;
 	wl_list_init(&relay->text_inputs);
 	wl_list_init(&relay->input_popups);
+	wl_list_init(&relay->pending_im_events);
 
 	relay->text_input_new.notify = relay_handle_text_input;
 	wl_signal_add(&server.text_input->events.new_text_input,
@@ -652,6 +900,39 @@ void sway_input_method_relay_init(struct sway_seat *seat,
 void sway_input_method_relay_finish(struct sway_input_method_relay *relay) {
 	sway_input_method_relay_finish_text_input(relay);
 	sway_input_method_relay_finish_input_method(relay);
+	relay_clear_pending_im_events(relay);
+}
+
+void sway_input_method_relay_keyboard_grab_key(
+		struct sway_input_method_relay *relay,
+		struct wlr_input_method_keyboard_grab_v2 *keyboard_grab,
+		struct wlr_keyboard *keyboard, uint32_t time, uint32_t key,
+		uint32_t state) {
+	if (!wl_list_empty(&relay->pending_im_events)) {
+		relay_queue_keyboard_grab_key(relay, keyboard_grab, keyboard, time,
+			key, state);
+		relay_process_pending_im_events(relay);
+		return;
+	}
+
+	relay_send_keyboard_grab_key(relay, keyboard_grab, keyboard, time, key,
+		state);
+}
+
+void sway_input_method_relay_virtual_keyboard_key(
+		struct sway_input_method_relay *relay,
+		struct wlr_virtual_keyboard_v1 *virtual_keyboard, uint32_t state) {
+	if (state != WL_KEYBOARD_KEY_STATE_PRESSED || !virtual_keyboard ||
+			!relay->input_method || !relay->input_method->keyboard_grab) {
+		return;
+	}
+
+	if (wl_resource_get_client(virtual_keyboard->resource) ==
+			wl_resource_get_client(relay->input_method->keyboard_grab->resource)) {
+		// The input method forwarded the grabbed key instead of committing text.
+		// This is the only observable response for the unhandled-key path.
+		relay_note_key_response(relay);
+	}
 }
 
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
