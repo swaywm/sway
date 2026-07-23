@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
+#include <wlr/types/wlr_ext_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
 #include "sway/config.h"
 #include "sway/input/cursor.h"
@@ -395,6 +396,37 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	seat_add_device(seat, input_device);
 }
 
+void handle_ext_virtual_keyboard(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input_manager =
+		wl_container_of(listener, input_manager, ext_virtual_keyboard_new);
+	struct wlr_ext_virtual_keyboard_v1 *keyboard = data;
+	struct wlr_input_device *device = &keyboard->keyboard.base;
+
+	struct sway_seat *seat = keyboard->seat ?
+		input_manager_sway_seat_from_wlr_seat(keyboard->seat) :
+		input_manager_get_default_seat();
+
+	struct sway_input_device *input_device =
+		calloc(1, sizeof(struct sway_input_device));
+	if (!sway_assert(input_device, "could not allocate input device")) {
+		return;
+	}
+	device->data = input_device;
+
+	input_device->is_virtual = true;
+	input_device->wlr_device = device;
+	input_device->identifier = input_device_get_identifier(device);
+	wl_list_insert(&input_manager->devices, &input_device->link);
+
+	sway_log(SWAY_DEBUG, "adding virtual keyboard: '%s'",
+		input_device->identifier);
+
+	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
+	input_device->device_destroy.notify = handle_device_destroy;
+
+	seat_add_device(seat, input_device);
+}
+
 void handle_virtual_pointer(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input_manager =
 		wl_container_of(listener, input_manager, virtual_pointer_new);
@@ -464,6 +496,12 @@ struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	wl_signal_add(&input->virtual_keyboard->events.new_virtual_keyboard,
 		&input->virtual_keyboard_new);
 	input->virtual_keyboard_new.notify = handle_virtual_keyboard;
+
+	input->ext_virtual_keyboard = wlr_ext_virtual_keyboard_manager_v1_create(
+		server->wl_display);
+	wl_signal_add(&input->ext_virtual_keyboard->events.new_ext_virtual_keyboard,
+		&input->ext_virtual_keyboard_new);
+	input->ext_virtual_keyboard_new.notify = handle_ext_virtual_keyboard;
 
 	input->virtual_pointer = wlr_virtual_pointer_manager_v1_create(
 		server->wl_display
