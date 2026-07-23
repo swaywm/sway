@@ -63,6 +63,7 @@ sway_sources = files(
 	'commands/focus_on_window_activation.c',
 	'commands/focus_wrapping.c',
 	'commands/font.c',
+	'commands/for_exec_window.c',
 	'commands/for_window.c',
 	'commands/force_display_urgency_hint.c',
 	'commands/force_focus_wrapping.c',

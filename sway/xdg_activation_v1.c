@@ -3,6 +3,7 @@
 #include "sway/desktop/launcher.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "log.h"
 
 void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 		void *data) {
@@ -32,6 +33,7 @@ void xdg_activation_v1_handle_request_activate(struct wl_listener *listener,
 			return;
 		} else {
 			ctx->activated = true;
+			sway_log(SWAY_DEBUG, "Matched view %p via XDG activation token", view);
 			view_assign_ctx(view, ctx);
 		}
 		return;
