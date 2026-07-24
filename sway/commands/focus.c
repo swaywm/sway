@@ -1,6 +1,5 @@
 #include <float.h>
 #include <strings.h>
-#include <wlr/types/wlr_output_layout.h>
 #include "log.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
@@ -12,7 +11,6 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "stringop.h"
-#include "util.h"
 
 static bool get_direction_from_next_prev(struct sway_container *container,
 		struct sway_seat *seat, const char *name, enum wlr_direction *out) {
@@ -311,43 +309,31 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 		int argc, char **argv) {
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID,
-			"Expected 'focus output <direction|name>'.");
+			"Expected 'focus output <direction|name|next|prev|current>'.");
 	}
 	char *identifier = join_args(argv, argc);
-	struct sway_output *output = output_by_name_or_id(identifier);
+
+	struct sway_workspace *ws = seat_get_focused_workspace(seat);
+	struct sway_output *reference = ws ? ws->output : NULL;
+	double ref_lx = 0, ref_ly = 0;
+	if (reference) {
+		ref_lx = reference->lx + reference->width / 2;
+		ref_ly = reference->ly + reference->height / 2;
+	}
+
+	struct sway_output *output = output_by_direction_or_name(identifier,
+			reference, ref_lx, ref_ly);
 
 	if (!output) {
-		enum wlr_direction direction;
-		if (!parse_direction(identifier, &direction)) {
-			free(identifier);
-			return cmd_results_new(CMD_INVALID,
-				"There is no output with that name.");
-		}
-		struct sway_workspace *ws = seat_get_focused_workspace(seat);
-		if (!ws) {
-			free(identifier);
-			return cmd_results_new(CMD_FAILURE,
-				"No focused workspace to base directions off of.");
-		}
-		output = output_get_in_direction(ws->output, direction);
-
-		if (!output) {
-			int center_lx = ws->output->lx + ws->output->width / 2;
-			int center_ly = ws->output->ly + ws->output->height / 2;
-			struct wlr_output *target = wlr_output_layout_farthest_output(
-					root->output_layout, opposite_direction(direction),
-					ws->output->wlr_output, center_lx, center_ly);
-			if (target) {
-				output = output_from_wlr_output(target);
-			}
-		}
+		struct cmd_results *err = cmd_results_new(CMD_INVALID,
+			"No output matches '%s'.", identifier);
+		free(identifier);
+		return err;
 	}
-
 	free(identifier);
-	if (output) {
-		seat_set_focus(seat, seat_get_focus_inactive(seat, &output->node));
-		seat_consider_warp_to_focus(seat);
-	}
+
+	seat_set_focus(seat, seat_get_focus_inactive(seat, &output->node));
+	seat_consider_warp_to_focus(seat);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
@@ -442,7 +428,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		if (!get_direction_from_next_prev(container, seat, argv[0], &direction)) {
 			return cmd_results_new(CMD_INVALID,
 				"Expected 'focus <direction|next|prev|parent|child|mode_toggle|floating|tiling>' "
-				"or 'focus output <direction|name>'");
+				"or 'focus output <direction|name|next|prev|current>'");
 		} else if (argc == 2 && strcasecmp(argv[1], "sibling") == 0) {
 			descend = false;
 		}
