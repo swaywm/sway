@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #include "log.h"
@@ -164,12 +165,8 @@ static struct sway_session_lock_output *session_lock_output_create(
 		return NULL;
 	}
 
-	struct wlr_scene_rect *background = wlr_scene_rect_create(tree, 0, 0, (float[4]){
-		lock->abandoned ? 1.f : 0.f,
-		0.f,
-		0.f,
-		1.f,
-	});
+	struct wlr_scene_rect *background =
+		wlr_scene_rect_create(tree, 0, 0, lock->background);
 	if (!background) {
 		sway_log(SWAY_ERROR, "failed to allocate a session lock output scene background");
 		wlr_scene_node_destroy(&tree->node);
@@ -247,9 +244,10 @@ static void handle_abandon(struct wl_listener *listener, void *data) {
 	sway_log(SWAY_INFO, "session lock abandoned");
 
 	struct sway_session_lock_output *lock_output;
+	static const float crashed[4] = { 1.f, 0.f, 0.f, 1.f };
+	memcpy(lock->background, crashed, sizeof(lock->background));
 	wl_list_for_each(lock_output, &lock->outputs, link) {
-		wlr_scene_rect_set_color(lock_output->background,
-			(float[4]){ 1.f, 0.f, 0.f, 1.f });
+		wlr_scene_rect_set_color(lock_output->background, crashed);
 	}
 
 	lock->abandoned = true;
@@ -281,6 +279,7 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 	}
 
 	wl_list_init(&sway_lock->outputs);
+	sway_lock->background[3] = 1.f;
 
 	sway_log(SWAY_DEBUG, "session locked");
 
@@ -345,6 +344,25 @@ bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	}
 
 	return false;
+}
+
+void sway_session_lock_start_locked(void) {
+	struct sway_session_lock *lock = calloc(1, sizeof(*lock));
+	if (!lock) {
+		sway_log(SWAY_ERROR, "aborting: failed to allocate the startup lock");
+		abort();
+	}
+
+	wl_list_init(&lock->outputs);
+	// No client has locked the session yet: the lock is in the same state as
+	// one whose client died, so that the first ext-session-lock client to
+	// show up replaces it instead of being refused.
+	lock->abandoned = true;
+	lock->background[3] = 1.f;
+
+	server.session_lock.lock = lock;
+
+	sway_log(SWAY_INFO, "session locked at startup, waiting for a lock client");
 }
 
 bool sway_session_lock_init(void) {
