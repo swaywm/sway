@@ -356,6 +356,13 @@ int main(int argc, char **argv) {
 
 	ipc_init(&server);
 
+	struct swaynag_instance nag_gpu = (struct swaynag_instance){
+		.args = "--type error "
+			"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' "
+			"--detailed-message",
+		.detailed = true,
+	};
+
 	setenv("WAYLAND_DISPLAY", server.socket, true);
 	if (!load_main_config(config_path, false, false)) {
 		sway_terminate(EXIT_FAILURE);
@@ -379,13 +386,6 @@ int main(int argc, char **argv) {
 	if (config->swaynag_config_errors.client != NULL) {
 		swaynag_show(&config->swaynag_config_errors);
 	}
-
-	struct swaynag_instance nag_gpu = (struct swaynag_instance){
-		.args = "--type error "
-			"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' "
-			"--detailed-message",
-		.detailed = true,
-	};
 
 	if (unsupported_gpu_detected && !allow_unsupported_gpu) {
 		swaynag_log(config->swaynag_command, &nag_gpu,
