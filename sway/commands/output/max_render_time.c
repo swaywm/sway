@@ -1,6 +1,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/output.h"
 
 struct cmd_results *output_cmd_max_render_time(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
@@ -13,6 +14,8 @@ struct cmd_results *output_cmd_max_render_time(int argc, char **argv) {
 	int max_render_time;
 	if (!strcmp(*argv, "off")) {
 		max_render_time = 0;
+	} else if (!strcmp(*argv, "auto")) {
+		max_render_time = MAX_RENDER_TIME_AUTO;
 	} else {
 		char *end;
 		max_render_time = strtol(*argv, &end, 10);
