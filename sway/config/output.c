@@ -21,6 +21,7 @@
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 #include "util.h"
 
@@ -1088,6 +1089,10 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		struct matched_output_config *cfg = &configs[idx];
 		output_update_position(cfg->output);
 		arrange_layers(cfg->output);
+		for (int i = 0; i < cfg->output->workspaces->length; i++) {
+			struct sway_workspace *ws = cfg->output->workspaces->items[i];
+			workspace_reorient_auto(ws);
+		}
 	}
 
 	arrange_root();
