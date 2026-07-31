@@ -288,6 +288,20 @@ static const struct sway_view_impl view_impl = {
 	.destroy = destroy,
 };
 
+static bool is_commit_stale(struct sway_view *view, struct wlr_xdg_surface *xdg_surface) {
+	uint32_t latest_serial = 0;
+	if (xdg_surface->configure_idle != NULL) {
+		latest_serial = xdg_surface->scheduled_serial;
+	} else if (!wl_list_empty(&xdg_surface->configure_list)) {
+		struct wlr_xdg_surface_configure *configure =
+				wl_container_of(xdg_surface->configure_list.prev, configure, link);
+		latest_serial = configure->serial;
+	} else {
+		return false;
+	}
+	return xdg_surface->current.configure_serial < latest_serial;
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, commit);
@@ -315,20 +329,21 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			new_geo->height != view->geometry.height ||
 			new_geo->x != view->geometry.x ||
 			new_geo->y != view->geometry.y;
-
 	if (new_size) {
 		// The client changed its surface size in this commit. For floating
 		// containers, we resize the container to match. For tiling containers,
 		// we only recenter the surface.
 		memcpy(&view->geometry, new_geo, sizeof(struct wlr_box));
 		if (container_is_floating(view->container)) {
-			view_update_size(view);
-			// Only set the toplevel size the current container actually has a size.
-			if (view->container->current.width) {
-				wlr_xdg_toplevel_set_size(view->wlr_xdg_toplevel, view->geometry.width,
-					view->geometry.height);
+			if (!is_commit_stale(view, xdg_surface)) {
+				view_update_size(view);
+				// Only set the toplevel size the current container actually has a size.
+				if (view->container->current.width) {
+					wlr_xdg_toplevel_set_size(
+							view->wlr_xdg_toplevel, view->geometry.width, view->geometry.height);
+				}
+				transaction_commit_dirty_client();
 			}
-			transaction_commit_dirty_client();
 		}
 
 		view_center_and_clip_surface(view);
