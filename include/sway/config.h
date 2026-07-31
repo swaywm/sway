@@ -95,6 +95,15 @@ struct sway_gesture_binding {
 };
 
 /**
+ * A bell binding and an associated command.
+ */
+struct criteria;
+struct sway_bell_binding {
+	char *command;
+	struct criteria *criteria;
+};
+
+/**
  * Focus on window activation.
  */
 enum sway_fowa {
@@ -114,6 +123,7 @@ struct sway_mode {
 	list_t *mouse_bindings;
 	list_t *switch_bindings;
 	list_t *gesture_bindings;
+	list_t *bell_bindings;
 	bool pango;
 };
 
@@ -725,6 +735,8 @@ void free_sway_binding(struct sway_binding *sb);
 void free_switch_binding(struct sway_switch_binding *binding);
 
 void free_gesture_binding(struct sway_gesture_binding *binding);
+
+void free_bell_binding(struct sway_bell_binding *binding);
 
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 

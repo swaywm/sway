@@ -10,6 +10,7 @@ protocols = [
 	wl_protocol_dir / 'stable/tablet/tablet-v2.xml',
 	wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
 	wl_protocol_dir / 'staging/cursor-shape/cursor-shape-v1.xml',
+	wl_protocol_dir / 'staging/xdg-system-bell/xdg-system-bell-v1.xml',
 	wl_protocol_dir / 'unstable/xdg-output/xdg-output-unstable-v1.xml',
 	'wlr-layer-shell-unstable-v1.xml',
 	'wlr-output-power-management-unstable-v1.xml',

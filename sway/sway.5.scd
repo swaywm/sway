@@ -595,6 +595,39 @@ runtime.
 
 ```
 
+*bindbell* [--no-warn] [<criteria>] <command>
+	Binds a bell event to execute the sway command _command_. When a client
+	rings the system bell (via the xdg-system-bell-v1 protocol), the bound
+	command will be executed. If a surface is associated with the bell event,
+	the view associated with that surface will be passed as context for
+	executing the command.
+
+	By default, if you overwrite a binding, swaynag will give you a warning. To
+	silence this, use the _--no-warn_ flag.
+
+	If _<criteria>_ is specified, the binding will only be executed when the
+	view matching the criteria is associated with the bell event. The criteria
+	uses the same syntax as *for_window*.
+
+	Example:
+```
+		# Set the urgent hint when any bell is rung
+		bindbell urgent enable
+
+		# Play a sound when any bell is rung
+		bindbell exec mpv /path/to/beep.ogg
+
+		# Only for a specific application
+		bindbell [app_id="foot"] urgent enable
+
+		# Multiple actions
+		bindbell urgent enable, exec mpv /path/to/beep.ogg
+```
+
+*unbindbell* [<criteria>] <command>
+	Removes the binding for the bell event matching the given command. If
+	_<criteria>_ is specified, removes criteria-based bindings.
+
 *client.background* <color>
 	This command is ignored and is only present for i3 compatibility.
 
@@ -836,7 +869,7 @@ The default colors are:
 
 *mode* [--pango_markup] <mode> <mode-subcommands...>
 	The only valid _mode-subcommands..._ are *bindsym*, *bindcode*,
-	*bindswitch*, and *set*. If _--pango_markup_ is given, then _mode_ will be
+	*bindswitch*, *bindbell*, and *set*. If _--pango_markup_ is given, then _mode_ will be
 	interpreted as pango markup.
 
 *mouse_warping* output|container|none

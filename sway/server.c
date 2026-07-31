@@ -51,6 +51,7 @@
 #include <wlr/types/wlr_xdg_foreign_v1.h>
 #include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_xdg_system_bell_v1.h>
 #include <wlr/types/wlr_xdg_toplevel_tag_v1.h>
 #include <xf86drm.h>
 #include "config.h"
@@ -58,6 +59,7 @@
 #include "log.h"
 #include "sway/config.h"
 #include "sway/desktop/idle_inhibit_v1.h"
+#include "sway/desktop/system_bell.h"
 #include "sway/input/input-manager.h"
 #include "sway/output.h"
 #include "sway/server.h"
@@ -375,6 +377,11 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_shell->events.new_toplevel,
 		&server->xdg_shell_toplevel);
 	server->xdg_shell_toplevel.notify = handle_xdg_shell_toplevel;
+
+	server->xdg_system_bell_v1 = wlr_xdg_system_bell_v1_create(server->wl_display, 1);
+	if (server->xdg_system_bell_v1) {
+		sway_xdg_system_bell_v1_init();
+	}
 
 	server->tablet_v2 = wlr_tablet_v2_create(server->wl_display);
 	if (!server->tablet_v2) {

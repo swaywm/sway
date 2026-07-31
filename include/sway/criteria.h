@@ -84,6 +84,11 @@ struct criteria *criteria_parse(char *raw, char **error);
 list_t *criteria_for_view(struct sway_view *view, enum criteria_type types);
 
 /**
+ * Check whether a single criteria matches the given view.
+ */
+bool criteria_matches_view(struct criteria *criteria, struct sway_view *view);
+
+/**
  * Compile a list of containers matching the given criteria.
  */
 list_t *criteria_get_containers(struct criteria *criteria);
