@@ -1237,12 +1237,6 @@ uint32_t get_mouse_bindcode(const char *name, char **error) {
 		*error = strdup("Button event code out of range.");
 		return 0;
 	}
-	const char *event = libevdev_event_code_get_name(EV_KEY, code);
-	if (!event || !has_prefix(event, "BTN_")) {
-		*error = format_str("Event code %d (%s) is not a button",
-			code, event ? event : "(null)");
-		return 0;
-	}
 	return code;
 }
 
