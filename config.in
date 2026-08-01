@@ -239,3 +239,27 @@ bar {
 }
 
 include @sysconfdir@/sway/config.d/*
+
+# Basic clipboard operations (non-conflicting)
+remap Super-c C-c
+remap Super-x C-x
+remap Super-z C-z
+remap Super-Shift-z C-Shift-z
+
+remap Super-t C-t          # New tab
+remap Super-n C-n          # New window
+remap Super-o C-o          # Open file
+remap Super-q C-q          # Quit
+
+# Tab navigation
+remap Super-Shift-bracketleft C-Page_Up
+remap Super-Shift-bracketright C-Page_Down
+
+
+# Terminal-specific 
+remap Super-c C-Shift-c for foot
+remap Super-x C-Shift-x for foot
+
+remap Super-t C-Shift-t for com.mitchellh.ghostty
+remap Super-n C-Shift-n for com.mitchellh.ghostty
+
