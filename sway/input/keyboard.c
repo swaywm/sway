@@ -415,6 +415,7 @@ static void update_keyboard_state(struct sway_keyboard *keyboard,
  * Returns NULL if the keyboard is not grabbed by an input method,
  * or if event is from virtual keyboard of the same client as grab.
  * TODO: see swaywm/wlroots#2322
+ * TODO: ext-virtual-keyboard-v1
  */
 static struct wlr_input_method_keyboard_grab_v2 *keyboard_get_im_grab(
 		struct sway_keyboard *keyboard) {
