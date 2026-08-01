@@ -121,7 +121,7 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		// we'll return an error. The same is true if the
 		// overridden node is not a container.
 		if (!con || !con->scratchpad) {
-			return cmd_results_new(CMD_INVALID, "Container is not in scratchpad.");
+			return cmd_results_new(CMD_FAILURE, NULL);
 		}
 		scratchpad_toggle_container(con);
 	} else {
