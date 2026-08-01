@@ -62,7 +62,7 @@ struct sway_binding {
 	char *input;
 	uint32_t flags;
 	list_t *keys; // sorted in ascending order
-	list_t *syms; // sorted in ascending order; NULL if BINDING_CODE is not set
+	list_t **translations; // translations[i] = all keycodes for keysym keys[i]
 	uint32_t modifiers;
 	xkb_layout_index_t group;
 	char *command;
