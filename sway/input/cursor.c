@@ -725,6 +725,38 @@ static void handle_tool_proximity(struct wl_listener *listener, void *data) {
 		0, 0, event->time_msec);
 }
 
+static void handle_tool_axis_scroll(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis_scroll);
+	struct wlr_tablet_tool_axis_scroll_event *event = data;
+	cursor_handle_activity_from_device(cursor, &event->tablet->base);
+
+	struct sway_tablet_tool *sway_tool = event->tool->data;
+	struct wlr_tablet_v2_tablet *tablet_v2 = sway_tool->tablet->tablet_v2;
+	struct sway_seat *seat = cursor->seat;
+
+
+	double sx, sy;
+	struct wlr_surface *surface = NULL;
+	node_at_coords(seat, cursor->cursor->x, cursor->cursor->y,
+		&surface, &sx, &sy);
+
+	if (surface && wlr_surface_accepts_tablet_v2(tablet_v2, surface)) {
+		sway_log(SWAY_DEBUG, "axis_scroll, accepts tablet");
+		seatop_tablet_tool_axis_scroll(cursor->seat, sway_tool, event);
+	} else {
+		struct wlr_pointer_axis_event simulated_pointer_event = {
+			.pointer = NULL, // FIXME
+			.time_msec = event->time_msec,
+			.source = event->source,
+			.orientation = event->orientation,
+			.delta = event->delta,
+			.delta_discrete = 0,
+		};
+		seatop_pointer_axis(cursor->seat, &simulated_pointer_event);
+		sway_log(SWAY_DEBUG, "axis_scroll, simulating");
+	}
+}
+
 static void handle_tool_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_button);
 	struct wlr_tablet_tool_button_event *event = data;
@@ -1141,6 +1173,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 
 	wl_signal_add(&wlr_cursor->events.tablet_tool_proximity, &cursor->tool_proximity);
 	cursor->tool_proximity.notify = handle_tool_proximity;
+
+	wl_signal_add(&wlr_cursor->events.tablet_tool_axis_scroll, &cursor->tool_axis_scroll);
+	cursor->tool_axis_scroll.notify = handle_tool_axis_scroll;
 
 	wl_signal_add(&wlr_cursor->events.tablet_tool_button, &cursor->tool_button);
 	cursor->tool_button.notify = handle_tool_button;
