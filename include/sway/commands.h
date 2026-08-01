@@ -287,6 +287,7 @@ sway_cmd input_cmd_xkb_variant;
 sway_cmd output_cmd_adaptive_sync;
 sway_cmd output_cmd_allow_tearing;
 sway_cmd output_cmd_background;
+sway_cmd output_cmd_color_format;
 sway_cmd output_cmd_color_profile;
 sway_cmd output_cmd_disable;
 sway_cmd output_cmd_dpms;

@@ -75,6 +75,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	oc->color_format = WLR_OUTPUT_COLOR_FORMAT_AUTO;
 	oc->color_profile = COLOR_PROFILE_DEFAULT;
 	oc->color_transform = NULL;
 	oc->power = -1;
@@ -129,6 +130,9 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	}
+	if (src->color_format != WLR_OUTPUT_COLOR_FORMAT_AUTO) {
+		dst->color_format = WLR_OUTPUT_COLOR_FORMAT_AUTO;
 	}
 	if (src->color_profile != COLOR_PROFILE_DEFAULT) {
 		if (dst->color_transform) {
@@ -206,6 +210,9 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = src->render_bit_depth;
+	}
+	if (src->color_format != WLR_OUTPUT_COLOR_FORMAT_AUTO) {
+		dst->color_format = src->color_format;
 	}
 	if (src->color_profile != COLOR_PROFILE_DEFAULT) {
 		if (src->color_transform) {
@@ -552,6 +559,9 @@ static void queue_output_config(struct output_config *oc,
 		wlr_output_state_set_render_format(pending, DRM_FORMAT_RGB565);
 	} else {
 		wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
+	}
+	if (oc && oc->color_format != WLR_OUTPUT_COLOR_FORMAT_AUTO) {
+		wlr_output_state_set_color_format(pending, oc->color_format);
 	}
 
 	bool hdr = oc && oc->hdr == 1;

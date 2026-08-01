@@ -628,6 +628,7 @@ static struct output_config *output_config_for_config_head(
 	oc->transform = config_head->state.transform;
 	oc->scale = config_head->state.scale;
 	oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
+	oc->color_format = config_head->state.color_format;
 	return oc;
 }
 

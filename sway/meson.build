@@ -193,6 +193,7 @@ sway_sources = files(
 	'commands/output/adaptive_sync.c',
 	'commands/output/allow_tearing.c',
 	'commands/output/background.c',
+	'commands/output/color_format.c',
 	'commands/output/disable.c',
 	'commands/output/dpms.c',
 	'commands/output/enable.c',
