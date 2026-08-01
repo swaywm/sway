@@ -514,6 +514,9 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
 
 	cairo_matrix_t scale_matrix;
+	cairo_set_source_u32(cairo, output->bar->config->colors.tray_background);
+	cairo_rectangle(cairo, *x, icon_y, size, size);
+	cairo_fill(cairo);
 	cairo_pattern_t *icon_pattern = cairo_pattern_create_for_surface(icon);
 	// TODO: check cairo_pattern_status for "ENOMEM"
 	cairo_matrix_init_scale(&scale_matrix, output->scale, output->scale);
