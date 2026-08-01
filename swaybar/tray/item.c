@@ -458,10 +458,10 @@ static void reload_sni(struct swaybar_sni *sni, char *icon_theme,
 }
 
 uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
-		struct swaybar_sni *sni) {
-	uint32_t height = output->height * output->scale;
+		uint32_t height, struct swaybar_sni *sni) {
+	uint32_t scaled_height = height * output->scale;
 	int padding = output->bar->config->tray_padding;
-	int target_size = height - 2*padding;
+	int target_size = scaled_height - 2*padding;
 	if (target_size != sni->target_size && sni_ready(sni)) {
 		// check if another icon should be loaded
 		if (target_size < sni->min_size || target_size > sni->max_size) {
@@ -508,7 +508,7 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 
 	int size = descaled_icon_size + 2 * descaled_padding;
 	*x -= size;
-	int icon_y = floor((output->height - size) / 2.0);
+	int icon_y = floor((height - size) / 2.0);
 
 	cairo_operator_t op = cairo_get_operator(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
@@ -532,11 +532,11 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	hotspot->x = *x;
 	hotspot->y = 0;
 	hotspot->width = size;
-	hotspot->height = output->height;
+	hotspot->height = height;
 	hotspot->callback = icon_hotspot_callback;
 	hotspot->destroy = free;
 	hotspot->data = strdup(sni->watcher_id);
 	wl_list_insert(&output->hotspots, &hotspot->link);
 
-	return output->height;
+	return height;
 }
