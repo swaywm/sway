@@ -127,7 +127,9 @@ void cursor_set_image_surface(struct sway_cursor *cursor,
 		struct wl_client *client);
 
 void cursor_warp_to_container(struct sway_cursor *cursor,
-	struct sway_container *container, bool force);
+	struct sway_container *container,
+                              enum mouse_warping_position pos,
+                              bool force);
 
 void cursor_warp_to_workspace(struct sway_cursor *cursor,
 		struct sway_workspace *workspace);
