@@ -147,4 +147,5 @@ const char *get_mouse_button_name(uint32_t button);
 
 void handle_request_set_cursor_shape(struct wl_listener *listener, void *data);
 
+void handle_pointer_warp(struct wl_listener *listener, void *data);
 #endif
