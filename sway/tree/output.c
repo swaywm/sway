@@ -268,6 +268,7 @@ void output_destroy(struct sway_output *output) {
 				"which is still referenced by transactions")) {
 		return;
 	}
+	node_map_remove(&output->node);
 
 	destroy_scene_layers(output);
 	list_free(output->workspaces);

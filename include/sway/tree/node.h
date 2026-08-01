@@ -87,4 +87,9 @@ void scene_node_disown_children(struct wlr_scene_tree *tree);
 struct wlr_scene_tree *alloc_scene_tree(struct wlr_scene_tree *parent,
 		bool *failed);
 
+void node_map_remove(struct sway_node *node);
+struct sway_node *node_by_id(size_t id);
+void node_map_init(void);
+void node_map_fini(void);
 #endif
+

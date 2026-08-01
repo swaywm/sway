@@ -11,6 +11,7 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
@@ -513,6 +514,18 @@ static void criteria_get_containers_iterator(struct sway_container *container,
 
 list_t *criteria_get_containers(struct criteria *criteria) {
 	list_t *matches = create_list();
+	if (criteria->con_id) {
+		struct sway_node *node = node_by_id(criteria->con_id);
+		if (node && node->type == N_CONTAINER && !node->destroying) {
+			struct sway_container *container = node->sway_container;
+			struct match_data data = {
+				.criteria = criteria,
+				.matches = matches,
+			};
+			criteria_get_containers_iterator(container, &data);
+		}
+		return matches;
+	}
 	struct match_data data = {
 		.criteria = criteria,
 		.matches = matches,

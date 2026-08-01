@@ -8,15 +8,12 @@
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
 #include "stringop.h"
 
 static const char expected_syntax[] =
 	"Expected 'swap container with id|con_id|mark <arg>'";
 
-static bool test_con_id(struct sway_container *container, void *data) {
-	size_t *con_id = data;
-	return container->node.id == *con_id;
-}
 
 #if WLR_HAS_XWAYLAND
 static bool test_id(struct sway_container *container, void *data) {
@@ -58,8 +55,16 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 		other = root_find_container(test_id, &id);
 #endif
 	} else if (strcasecmp(argv[2], "con_id") == 0) {
-		size_t con_id = atoi(value);
-		other = root_find_container(test_con_id, &con_id);
+		char *endptr;
+		size_t con_id = strtoul(value, &endptr, 10);
+		if (*value == '\0' || *endptr != '\0') {
+			free(value);
+			return cmd_results_new(CMD_INVALID, "Invalid container ID");
+		}
+		struct sway_node *node = node_by_id(con_id);
+		if (node && node->type == N_CONTAINER && !node->destroying) {
+			other = node->sway_container;
+		}
 	} else if (strcasecmp(argv[2], "mark") == 0) {
 		other = root_find_container(test_mark, value);
 	} else {
