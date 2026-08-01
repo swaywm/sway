@@ -177,7 +177,10 @@ void cursor_update_image(struct sway_cursor *cursor,
 static void cursor_hide(struct sway_cursor *cursor) {
 	wlr_cursor_unset_image(cursor->cursor);
 	cursor->hidden = true;
-	wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
+	if (cursor->seat->config->hide_cursor_but_keep_active
+	    != HIDE_CURSOR_BUT_KEEP_ACTIVE_ENABLE) {
+	    wlr_seat_pointer_notify_clear_focus(cursor->seat->wlr_seat);
+	}
 }
 
 static int hide_notify(void *data) {
@@ -192,10 +195,8 @@ int cursor_get_timeout(struct sway_cursor *cursor) {
 		return 0;
 	}
 
-	struct seat_config *sc = seat_get_config(cursor->seat);
-	if (!sc) {
-		sc = seat_get_config_by_name("*");
-	}
+	struct seat_config *sc = cursor->seat->config;
+
 	int timeout = sc ? sc->hide_cursor_timeout : 0;
 	if (timeout < 0) {
 		timeout = 0;
@@ -208,23 +209,7 @@ void cursor_notify_key_press(struct sway_cursor *cursor) {
 		return;
 	}
 
-	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_DEFAULT) {
-		// No cached value, need to lookup in the seat_config
-		const struct seat_config *seat_config = seat_get_config(cursor->seat);
-		if (!seat_config) {
-			seat_config = seat_get_config_by_name("*");
-			if (!seat_config) {
-				return;
-			}
-		}
-		cursor->hide_when_typing = seat_config->hide_cursor_when_typing;
-		// The default is currently disabled
-		if (cursor->hide_when_typing == HIDE_WHEN_TYPING_DEFAULT) {
-			cursor->hide_when_typing = HIDE_WHEN_TYPING_DISABLE;
-		}
-	}
-
-	if (cursor->hide_when_typing == HIDE_WHEN_TYPING_ENABLE) {
+	if (cursor->seat->config->hide_cursor_when_typing == HIDE_WHEN_TYPING_ENABLE) {
 		cursor_hide(cursor);
 	}
 }
@@ -1340,10 +1325,7 @@ void handle_pointer_constraint(struct wl_listener *listener, void *data) {
 
 void sway_cursor_constrain(struct sway_cursor *cursor,
 		struct wlr_pointer_constraint_v1 *constraint) {
-	struct seat_config *config = seat_get_config(cursor->seat);
-	if (!config) {
-		config = seat_get_config_by_name("*");
-	}
+	struct seat_config *config = cursor->seat->config;
 
 	if (!config || config->allow_constrain == CONSTRAIN_DISABLE) {
 		return;
