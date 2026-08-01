@@ -39,6 +39,8 @@ struct sway_output {
 	struct wlr_scene_rect *fullscreen_background;
 
 	struct wlr_output *wlr_output;
+	char *previous_output_name;
+
 	struct wlr_scene_output *scene_output;
 	struct sway_server *server;
 	struct wl_list link;
