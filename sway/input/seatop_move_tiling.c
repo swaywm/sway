@@ -251,9 +251,17 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	while (con) {
 		enum wlr_edges edge = WLR_EDGE_NONE;
 		enum sway_container_layout layout = container_parent_layout(con);
+		// At the root of the tiling tree there's no ancestor level to fall
+		// back to for the other axis. L_TABBED/L_STACKED have no inherent
+		// direction, so both axes are valid drop targets there. L_HORIZ/
+		// L_VERT already have a well-defined perpendicular axis and must
+		// not be widened, or dropping near the parallel edge would create
+		// a redundant nested split.
+		bool no_perpendicular_axis = con->pending.parent == NULL &&
+			(layout == L_TABBED || layout == L_STACKED);
 		struct wlr_box box;
 		node_get_box(node_get_parent(&con->node), &box);
-		if (layout == L_HORIZ || layout == L_TABBED) {
+		if (layout == L_HORIZ || layout == L_TABBED || no_perpendicular_axis) {
 			if (cursor->cursor->y < thresh_top) {
 				edge = WLR_EDGE_TOP;
 				if (thresh_top < box.y) thresh_top = box.y;
@@ -264,7 +272,9 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 				box.height = box.y + box.height - thresh_bottom;
 				box.y = thresh_bottom;
 			}
-		} else if (layout == L_VERT || layout == L_STACKED) {
+		}
+		if (edge == WLR_EDGE_NONE &&
+				(layout == L_VERT || layout == L_STACKED || no_perpendicular_axis)) {
 			if (cursor->cursor->x < thresh_left) {
 				edge = WLR_EDGE_LEFT;
 				if (thresh_left < box.x) thresh_left = box.x;
