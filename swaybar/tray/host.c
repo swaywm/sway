@@ -143,27 +143,25 @@ bool init_host(struct swaybar_host *host, char *protocol,
 		return false;
 	}
 
-	sd_bus_slot *reg_slot = NULL, *unreg_slot = NULL, *watcher_slot = NULL;
-	int ret = sd_bus_match_signal(tray->bus, &reg_slot, host->watcher_interface,
-			watcher_path, host->watcher_interface,
-			"StatusNotifierItemRegistered", handle_sni_registered, tray);
+	int ret = sd_bus_match_signal(tray->bus, &host->reg_slot, host->watcher_interface, watcher_path,
+			host->watcher_interface, "StatusNotifierItemRegistered", handle_sni_registered, tray);
 	if (ret < 0) {
 		sway_log(SWAY_ERROR, "Failed to subscribe to registering events: %s",
 				strerror(-ret));
 		goto error;
 	}
-	ret = sd_bus_match_signal(tray->bus, &unreg_slot, host->watcher_interface,
-			watcher_path, host->watcher_interface,
-			"StatusNotifierItemUnregistered", handle_sni_unregistered, tray);
+	ret = sd_bus_match_signal(tray->bus, &host->unreg_slot, host->watcher_interface, watcher_path,
+			host->watcher_interface, "StatusNotifierItemUnregistered", handle_sni_unregistered,
+			tray);
 	if (ret < 0) {
 		sway_log(SWAY_ERROR, "Failed to subscribe to unregistering events: %s",
 				strerror(-ret));
 		goto error;
 	}
 
-	ret = sd_bus_match_signal(tray->bus, &watcher_slot, "org.freedesktop.DBus",
-			"/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged",
-			handle_new_watcher, host);
+	ret = sd_bus_match_signal(tray->bus, &host->watcher_slot, "org.freedesktop.DBus",
+			"/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged", handle_new_watcher,
+			host);
 	if (ret < 0) {
 		sway_log(SWAY_ERROR, "Failed to subscribe to unregistering events: %s",
 				strerror(-ret));
@@ -186,21 +184,20 @@ bool init_host(struct swaybar_host *host, char *protocol,
 		goto error;
 	}
 
-	sd_bus_slot_set_floating(reg_slot, 0);
-	sd_bus_slot_set_floating(unreg_slot, 0);
-	sd_bus_slot_set_floating(watcher_slot, 0);
-
 	sway_log(SWAY_DEBUG, "Registered %s", host->service);
 	return true;
 error:
-	sd_bus_slot_unref(reg_slot);
-	sd_bus_slot_unref(unreg_slot);
-	sd_bus_slot_unref(watcher_slot);
+	sd_bus_slot_unref(host->reg_slot);
+	sd_bus_slot_unref(host->unreg_slot);
+	sd_bus_slot_unref(host->watcher_slot);
 	finish_host(host);
 	return false;
 }
 
 void finish_host(struct swaybar_host *host) {
+	sd_bus_slot_unref(host->reg_slot);
+	sd_bus_slot_unref(host->unreg_slot);
+	sd_bus_slot_unref(host->watcher_slot);
 	sd_bus_release_name(host->tray->bus, host->service);
 	free(host->service);
 	free(host->watcher_interface);

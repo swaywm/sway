@@ -9,6 +9,7 @@ struct cmd_results *cmd_include(int argc, char **argv) {
 	char *files = join_args(argv, argc);
 	// We don't care if the included config(s) fails to load.
 	load_include_configs(files, config, &config->swaynag_config_errors);
+	free(files);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }

@@ -428,7 +428,7 @@ void force_modeset(void) {
 	apply_stored_output_configs();
 }
 
-static void begin_destroy(struct sway_output *output) {
+void desktop_output_destroy(struct sway_output *output) {
 
 	wl_list_remove(&output->layout_destroy.link);
 	wl_list_remove(&output->destroy.link);
@@ -458,12 +458,12 @@ static void begin_destroy(struct sway_output *output) {
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
-	begin_destroy(output);
+	desktop_output_destroy(output);
 }
 
 static void handle_layout_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, layout_destroy);
-	begin_destroy(output);
+	desktop_output_destroy(output);
 }
 
 static void handle_present(struct wl_listener *listener, void *data) {

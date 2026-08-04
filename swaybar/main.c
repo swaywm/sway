@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include <fontconfig/fontconfig.h>
+#include <cairo.h>
+#include <pango/pangocairo.h>
 #include "swaybar/bar.h"
 #include "ipc-client.h"
 #include "log.h"
@@ -94,5 +97,8 @@ int main(int argc, char **argv) {
 	swaybar.running = true;
 	bar_run(&swaybar);
 	bar_teardown(&swaybar);
+	pango_cairo_font_map_set_default(NULL);
+	cairo_debug_reset_static_data();
+	FcFini();
 	return 0;
 }

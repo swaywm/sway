@@ -13,6 +13,8 @@
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
+#include "sway/layers.h"
 #include "list.h"
 #include "log.h"
 #include "util.h"
@@ -76,6 +78,79 @@ struct sway_root *root_create(struct wl_display *wl_display) {
 	root->scratchpad = create_list();
 
 	return root;
+}
+
+static void collect_containers(struct sway_container *con, list_t *nodes) {
+	list_add(nodes, con);
+	if (con->pending.children) {
+		for (int i = 0; i < con->pending.children->length; ++i) {
+			collect_containers(con->pending.children->items[i], nodes);
+		}
+	}
+}
+
+void root_prepare_shutdown(void) {
+	if (!root) {
+		return;
+	}
+
+	list_t *containers = create_list();
+	list_t *workspaces = create_list();
+	list_t *outputs = create_list();
+
+	if (root->scratchpad) {
+		for (int i = 0; i < root->scratchpad->length; ++i) {
+			collect_containers(root->scratchpad->items[i], containers);
+		}
+	}
+
+	if (root->outputs) {
+		for (int i = 0; i < root->outputs->length; ++i) {
+			struct sway_output *output = root->outputs->items[i];
+			list_add(outputs, output);
+			if (output->workspaces) {
+				for (int j = 0; j < output->workspaces->length; ++j) {
+					struct sway_workspace *ws = output->workspaces->items[j];
+					list_add(workspaces, ws);
+					if (ws->tiling) {
+						for (int k = 0; k < ws->tiling->length; ++k) {
+							collect_containers(ws->tiling->items[k], containers);
+						}
+					}
+					if (ws->floating) {
+						for (int k = 0; k < ws->floating->length; ++k) {
+							collect_containers(ws->floating->items[k], containers);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < containers->length; ++i) {
+		struct sway_container *con = containers->items[i];
+		container_begin_destroy(con);
+	}
+	for (int i = 0; i < workspaces->length; ++i) {
+		struct sway_workspace *ws = workspaces->items[i];
+		workspace_begin_destroy(ws);
+	}
+	for (int i = 0; i < outputs->length; ++i) {
+		struct sway_output *output = outputs->items[i];
+		desktop_output_destroy(output);
+	}
+
+	if (root->fallback_output) {
+		output_begin_destroy(root->fallback_output);
+		root->fallback_output->wlr_output = NULL;
+		root->fallback_output = NULL;
+	}
+
+	list_free(containers);
+	list_free(workspaces);
+	list_free(outputs);
+
+	transaction_commit_dirty();
 }
 
 void root_destroy(struct sway_root *root) {

@@ -78,6 +78,8 @@ struct sway_root *root_create(struct wl_display *display);
 
 void root_destroy(struct sway_root *root);
 
+void root_prepare_shutdown(void);
+
 /**
  * Move a container to the scratchpad.
  * If a workspace is passed, the container is assumed to have been in

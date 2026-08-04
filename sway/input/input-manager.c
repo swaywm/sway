@@ -501,6 +501,17 @@ void input_manager_finish(struct sway_input_manager *input) {
 	wl_list_remove(&input->transient_seat_create.link);
 }
 
+void input_manager_destroy(struct sway_input_manager *input) {
+	if (!input) {
+		return;
+	}
+	struct sway_seat *seat, *next_seat;
+	wl_list_for_each_safe(seat, next_seat, &input->seats, link) {
+		seat_destroy(seat);
+	}
+	free(input);
+}
+
 bool input_manager_has_focus(struct sway_node *node) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {

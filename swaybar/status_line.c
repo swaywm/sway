@@ -65,7 +65,7 @@ bool status_handle_readable(struct status_line *status) {
 
 		// the header must be sent completely the first time round
 		char *newline = strchr(status->buffer, '\n');
-		json_object *header, *version;
+		json_object *header = NULL, *version;
 		if (newline != NULL
 				&& (header = json_tokener_parse(status->buffer))
 				&& json_object_object_get_ex(header, "version", &version)
@@ -109,6 +109,9 @@ bool status_handle_readable(struct status_line *status) {
 			status->buffer_index = strlen(newline + 1);
 			memmove(status->buffer, newline + 1, status->buffer_index + 1);
 			return i3bar_handle_readable(status);
+		}
+		if (header != NULL) {
+			json_object_put(header);
 		}
 
 		sway_log(SWAY_DEBUG, "Using text protocol.");

@@ -50,11 +50,28 @@ static struct sway_transaction *transaction_create(void) {
 }
 
 static void transaction_destroy(struct sway_transaction *transaction) {
+	if (!transaction) {
+		return;
+	}
 	// Free instructions
 	for (int i = 0; i < transaction->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_node *node = instruction->node;
+		switch (node->type) {
+		case N_OUTPUT:
+			list_free(instruction->output_state.workspaces);
+			break;
+		case N_WORKSPACE:
+			list_free(instruction->workspace_state.floating);
+			list_free(instruction->workspace_state.tiling);
+			break;
+		case N_CONTAINER:
+			list_free(instruction->container_state.children);
+			break;
+		default:
+			break;
+		}
 		node->ntxnrefs--;
 		if (node->instruction == instruction) {
 			node->instruction = NULL;
@@ -216,6 +233,7 @@ static void apply_output_state(struct sway_output *output,
 		struct sway_output_state *state) {
 	list_free(output->current.workspaces);
 	memcpy(&output->current, state, sizeof(struct sway_output_state));
+	*state = (struct sway_output_state){ 0 };
 }
 
 static void apply_workspace_state(struct sway_workspace *ws,
@@ -223,6 +241,7 @@ static void apply_workspace_state(struct sway_workspace *ws,
 	list_free(ws->current.floating);
 	list_free(ws->current.tiling);
 	memcpy(&ws->current, state, sizeof(struct sway_workspace_state));
+	*state = (struct sway_workspace_state){ 0 };
 }
 
 static void apply_container_state(struct sway_container *container,
@@ -236,6 +255,7 @@ static void apply_container_state(struct sway_container *container,
 	list_free(container->current.children);
 
 	memcpy(&container->current, state, sizeof(struct sway_container_state));
+	*state = (struct sway_container_state){ 0 };
 
 	if (view) {
 		if (view->saved_surface_tree) {
@@ -966,4 +986,37 @@ void transaction_commit_dirty(void) {
 
 void transaction_commit_dirty_client(void) {
 	_transaction_commit_dirty(false);
+}
+
+void transaction_shut_down(struct sway_server *server) {
+	for (int i = 0; i < server->dirty_nodes->length; ++i) {
+		struct sway_node *node = server->dirty_nodes->items[i];
+		node->dirty = false;
+	}
+
+	transaction_destroy(server->queued_transaction);
+	server->queued_transaction = NULL;
+
+	transaction_destroy(server->pending_transaction);
+	server->pending_transaction = NULL;
+
+	for (int i = 0; i < server->dirty_nodes->length; ++i) {
+		struct sway_node *node = server->dirty_nodes->items[i];
+		if (!node->destroying || node->ntxnrefs != 0) {
+			continue;
+		}
+		switch (node->type) {
+		case N_OUTPUT:
+			output_destroy(node->sway_output);
+			break;
+		case N_WORKSPACE:
+			workspace_destroy(node->sway_workspace);
+			break;
+		case N_CONTAINER:
+			container_destroy(node->sway_container);
+			break;
+		default:
+			break;
+		}
+	}
 }

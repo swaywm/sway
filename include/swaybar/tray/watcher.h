@@ -10,6 +10,8 @@ struct swaybar_watcher {
 	list_t *hosts;
 	list_t *items;
 	int version;
+	sd_bus_slot *vtable_slot;
+	sd_bus_slot *signal_slot;
 };
 
 struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus);

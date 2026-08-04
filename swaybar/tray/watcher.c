@@ -171,17 +171,16 @@ struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus) {
 
 	watcher->interface = format_str("org.%s.StatusNotifierWatcher", protocol);
 
-	sd_bus_slot *signal_slot = NULL, *vtable_slot = NULL;
-	int ret = sd_bus_add_object_vtable(bus, &vtable_slot, obj_path,
-			watcher->interface, watcher_vtable, watcher);
+	int ret = sd_bus_add_object_vtable(
+			bus, &watcher->vtable_slot, obj_path, watcher->interface, watcher_vtable, watcher);
 	if (ret < 0) {
 		sway_log(SWAY_ERROR, "Failed to add object vtable: %s", strerror(-ret));
 		goto error;
 	}
 
-	ret = sd_bus_match_signal(bus, &signal_slot, "org.freedesktop.DBus",
-			"/org/freedesktop/DBus", "org.freedesktop.DBus",
-			"NameOwnerChanged", handle_lost_service, watcher);
+	ret = sd_bus_match_signal(bus, &watcher->signal_slot, "org.freedesktop.DBus",
+			"/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged",
+			handle_lost_service, watcher);
 	if (ret < 0) {
 		sway_log(SWAY_ERROR, "Failed to subscribe to unregistering events: %s",
 				strerror(-ret));
@@ -200,9 +199,6 @@ struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus) {
 		goto error;
 	}
 
-	sd_bus_slot_set_floating(signal_slot, 0);
-	sd_bus_slot_set_floating(vtable_slot, 0);
-
 	watcher->bus = bus;
 	watcher->hosts = create_list();
 	watcher->items = create_list();
@@ -210,8 +206,8 @@ struct swaybar_watcher *create_watcher(char *protocol, sd_bus *bus) {
 	sway_log(SWAY_DEBUG, "Registered %s", watcher->interface);
 	return watcher;
 error:
-	sd_bus_slot_unref(signal_slot);
-	sd_bus_slot_unref(vtable_slot);
+	sd_bus_slot_unref(watcher->signal_slot);
+	sd_bus_slot_unref(watcher->vtable_slot);
 	destroy_watcher(watcher);
 	return NULL;
 }
@@ -220,6 +216,8 @@ void destroy_watcher(struct swaybar_watcher *watcher) {
 	if (!watcher) {
 		return;
 	}
+	sd_bus_slot_unref(watcher->signal_slot);
+	sd_bus_slot_unref(watcher->vtable_slot);
 	list_free_items_and_destroy(watcher->hosts);
 	list_free_items_and_destroy(watcher->items);
 	free(watcher->interface);

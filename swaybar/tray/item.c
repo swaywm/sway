@@ -167,6 +167,7 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 	}
 cleanup:
 	wl_list_remove(&d->link);
+	sd_bus_slot_unref(d->slot);
 	free(data);
 	return ret;
 }

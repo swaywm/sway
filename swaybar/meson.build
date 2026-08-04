@@ -8,6 +8,7 @@ tray_files = have_tray ? [
 
 swaybar_deps = [
 	cairo,
+	fontconfig,
 	gdk_pixbuf,
 	jsonc,
 	math,
