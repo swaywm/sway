@@ -29,6 +29,10 @@ enum wlr_direction opposite_direction(enum wlr_direction d) {
 }
 
 static void restore_workspaces(struct sway_output *output) {
+	struct wlr_box output_box;
+	wlr_output_layout_get_box(root->output_layout,
+			output->wlr_output, &output_box);
+
 	// Workspace output priority
 	for (int i = 0; i < root->outputs->length; i++) {
 		struct sway_output *other = root->outputs->items[i];
@@ -72,12 +76,12 @@ static void restore_workspaces(struct sway_output *output) {
 		for (int i = 0; i < ws->floating->length; i++) {
 			struct sway_container *floater = ws->floating->items[i];
 			if (floater->pending.width == 0 || floater->pending.height == 0 ||
-					floater->pending.width > output->width ||
-					floater->pending.height > output->height ||
-					floater->pending.x > output->lx + output->width ||
-					floater->pending.y > output->ly + output->height ||
-					floater->pending.x + floater->pending.width < output->lx ||
-					floater->pending.y + floater->pending.height < output->ly) {
+					floater->pending.width > output_box.width ||
+					floater->pending.height > output_box.height ||
+					floater->pending.x > output_box.x + output_box.width ||
+					floater->pending.y > output_box.y + output_box.height ||
+					floater->pending.x + floater->pending.width < output_box.x ||
+					floater->pending.y + floater->pending.height < output_box.y) {
 				container_floating_resize_and_center(floater);
 			}
 		}
