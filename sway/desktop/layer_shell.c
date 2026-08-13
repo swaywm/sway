@@ -188,7 +188,7 @@ static struct sway_layer_surface *sway_layer_surface_create(
 	return surface;
 }
 
-static struct sway_layer_surface *find_mapped_layer_by_client(
+static struct sway_layer_surface *find_mapped_exclusive_layer_by_client(
 		struct wl_client *client, struct sway_output *ignore_output) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
@@ -207,6 +207,8 @@ static struct sway_layer_surface *find_mapped_layer_by_client(
 			struct wlr_layer_surface_v1 *layer_surface = surface->layer_surface;
 			struct wl_resource *resource = layer_surface->resource;
 			if (wl_resource_get_client(resource) == client
+					&& layer_surface->current.keyboard_interactive ==
+						ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE
 					&& layer_surface->surface->mapped) {
 				return surface;
 			}
@@ -228,9 +230,11 @@ static void handle_node_destroy(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = input_manager_get_default_seat();
 	struct wl_client *client =
 		wl_resource_get_client(layer->layer_surface->resource);
-	if (!server.session_lock.lock) {
+	if (!server.session_lock.lock &&
+			layer->layer_surface->current.keyboard_interactive ==
+				ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
 		struct sway_layer_surface *consider_layer =
-			find_mapped_layer_by_client(client, layer->output);
+			find_mapped_exclusive_layer_by_client(client, layer->output);
 		if (consider_layer) {
 			seat_set_focus_layer(seat, consider_layer->layer_surface);
 		}
