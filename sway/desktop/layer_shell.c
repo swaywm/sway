@@ -127,7 +127,6 @@ void arrange_layers(struct sway_output *output) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat->has_exclusive_layer = false;
 		if (topmost != NULL) {
 			seat_set_focus_layer(seat, topmost->layer_surface);
 		} else if (seat->focused_layer &&
