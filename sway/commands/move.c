@@ -627,40 +627,6 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	return cmd_results_new(CMD_SUCCESS, NULL);
 }
 
-static void workspace_move_to_output(struct sway_workspace *workspace,
-		struct sway_output *output) {
-	if (workspace->output == output) {
-		return;
-	}
-	struct sway_output *old_output = workspace->output;
-	workspace_detach(workspace);
-	struct sway_workspace *new_output_old_ws =
-		output_get_active_workspace(output);
-	if (!sway_assert(new_output_old_ws, "Expected output to have a workspace")) {
-		return;
-	}
-
-	output_add_workspace(output, workspace);
-
-	// If moving the last workspace from the old output, create a new workspace
-	// on the old output
-	struct sway_seat *seat = config->handler_context.seat;
-	if (old_output->workspaces->length == 0) {
-		char *ws_name = workspace_next_name(old_output->wlr_output->name);
-		struct sway_workspace *ws = workspace_create(old_output, ws_name);
-		free(ws_name);
-		seat_set_raw_focus(seat, &ws->node);
-	}
-
-	workspace_consider_destroy(new_output_old_ws);
-
-	output_sort_workspaces(output);
-	struct sway_node *focus = seat_get_focus_inactive(seat, &workspace->node);
-	seat_set_focus(seat, focus);
-	workspace_output_raise_priority(workspace, old_output, output);
-	ipc_event_workspace(NULL, workspace, "move");
-}
-
 static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "move workspace", EXPECTED_AT_LEAST, 1))) {
@@ -696,6 +662,8 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	arrange_output(new_output);
 
 	struct sway_seat *seat = config->handler_context.seat;
+	struct sway_node *focus = seat_get_focus_inactive(seat, &workspace->node);
+	seat_set_focus(seat, focus);
 	seat_consider_warp_to_focus(seat);
 
 	return cmd_results_new(CMD_SUCCESS, NULL);

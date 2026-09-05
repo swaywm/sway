@@ -132,7 +132,7 @@ void arrange_layers(struct sway_output *output) {
 			seat_set_focus_layer(seat, topmost->layer_surface);
 		} else if (seat->focused_layer &&
 				seat->focused_layer->current.keyboard_interactive
-					!= ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE) {
+					== ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
 			seat_set_focus_layer(seat, NULL);
 		}
 	}
@@ -273,6 +273,7 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		surface->mapped = layer_surface->surface->mapped;
 		arrange_layers(surface->output);
 		transaction_commit_dirty();
+		cursor_rebase_all();
 	}
 }
 
@@ -291,14 +292,12 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		wl_list_for_each(seat, &server.input->seats, link) {
 			// but only if the currently focused layer has a lower precedence
 			if (!seat->focused_layer ||
-					seat->focused_layer->current.layer >= layer_surface->current.layer) {
+					seat->focused_layer->current.layer <= layer_surface->current.layer) {
 				seat_set_focus_layer(seat, layer_surface);
 			}
 		}
 		arrange_layers(surface->output);
 	}
-
-	cursor_rebase_all();
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -321,6 +320,7 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&popup->destroy.link);
 	wl_list_remove(&popup->new_popup.link);
 	wl_list_remove(&popup->commit.link);
+	wl_list_remove(&popup->reposition.link);
 	free(popup);
 }
 
@@ -356,6 +356,11 @@ static void popup_handle_commit(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void popup_handle_reposition(struct wl_listener *listener, void *data) {
+	struct sway_layer_popup *popup = wl_container_of(listener, popup, reposition);
+	popup_unconstrain(popup);
+}
+
 static void popup_handle_new_popup(struct wl_listener *listener, void *data);
 
 static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
@@ -376,11 +381,13 @@ static struct sway_layer_popup *create_popup(struct wlr_xdg_popup *wlr_popup,
 	}
 
 	popup->destroy.notify = popup_handle_destroy;
-	wl_signal_add(&wlr_popup->base->events.destroy, &popup->destroy);
+	wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
 	popup->new_popup.notify = popup_handle_new_popup;
 	wl_signal_add(&wlr_popup->base->events.new_popup, &popup->new_popup);
 	popup->commit.notify = popup_handle_commit;
 	wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
+	popup->reposition.notify = popup_handle_reposition;
+	wl_signal_add(&wlr_popup->events.reposition, &popup->reposition);
 
 	return popup;
 }

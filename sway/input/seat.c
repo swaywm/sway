@@ -6,6 +6,7 @@
 #include <wlr/config.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
 #include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -13,7 +14,6 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/types/wlr_xcursor_manager.h>
-#include "config.h"
 #include "list.h"
 #include "log.h"
 #include "sway/config.h"
@@ -73,7 +73,7 @@ void seat_destroy(struct sway_seat *seat) {
 static void handle_seat_destroy(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = wl_container_of(listener, seat, destroy);
 
-	if (seat == config->handler_context.seat) {
+	if (config != NULL && seat == config->handler_context.seat) {
 		config->handler_context.seat = input_manager_get_default_seat();
 	}
 	struct sway_seat_device *seat_device, *next;
@@ -1015,9 +1015,9 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 				server.xwayland.xcursor_manager, "default", 1);
 			if (xcursor != NULL) {
 				struct wlr_xcursor_image *image = xcursor->images[0];
+				struct wlr_buffer *buffer = wlr_xcursor_image_get_buffer(image);
 				wlr_xwayland_set_cursor(
-					server.xwayland.wlr_xwayland, image->buffer,
-					image->width * 4, image->width, image->height,
+					server.xwayland.wlr_xwayland, buffer,
 					image->hotspot_x, image->hotspot_y);
 			}
 		}
@@ -1071,6 +1071,7 @@ bool seat_is_input_allowed(struct sway_seat *seat,
 
 static void send_unfocus(struct sway_container *con, void *data) {
 	if (con->view) {
+		view_close_popups(con->view);
 		view_set_activated(con->view, false);
 	}
 }
@@ -1132,13 +1133,7 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 		return;
 	}
 
-	struct sway_workspace *last_workspace = seat_get_focused_workspace(seat);
-
 	if (node == NULL) {
-		// Close any popups on the old focus
-		if (node_is_view(last_focus)) {
-			view_close_popups(last_focus->sway_container->view);
-		}
 		seat_send_unfocus(last_focus, seat);
 		sway_input_method_relay_set_focus(&seat->im_relay, NULL);
 		seat->has_focus = false;
@@ -1160,16 +1155,14 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 		return;
 	}
 
+	// Find the output's last workspace, which might have to be removed if empty
 	struct sway_output *new_output =
 		new_workspace ? new_workspace->output : NULL;
-
+	struct sway_workspace *last_workspace =
+		new_output ? output_get_active_workspace(new_output) : NULL;
 	if (last_workspace != new_workspace && new_output) {
 		node_set_dirty(&new_output->node);
 	}
-
-	// find new output's old workspace, which might have to be removed if empty
-	struct sway_workspace *new_output_last_ws =
-		new_output ? output_get_active_workspace(new_output) : NULL;
 
 	// Unfocus the previous focus
 	if (last_focus) {
@@ -1204,23 +1197,27 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 		ipc_event_window(container, "focus");
 	}
 
+	if (last_workspace && last_workspace != new_workspace) {
+		wlr_ext_workspace_handle_v1_set_active(last_workspace->ext_workspace,
+			workspace_is_visible(last_workspace));
+	}
+	if (new_workspace) {
+		wlr_ext_workspace_handle_v1_set_active(new_workspace->ext_workspace,
+			workspace_is_visible(new_workspace));
+	}
+
 	// Move sticky containers to new workspace
-	if (new_workspace && new_output_last_ws
-			&& new_workspace != new_output_last_ws) {
-		for (int i = 0; i < new_output_last_ws->floating->length; ++i) {
+	if (new_workspace && last_workspace
+			&& new_workspace != last_workspace) {
+		for (int i = 0; i < last_workspace->floating->length; ++i) {
 			struct sway_container *floater =
-				new_output_last_ws->floating->items[i];
+				last_workspace->floating->items[i];
 			if (container_is_sticky(floater)) {
 				container_detach(floater);
 				workspace_add_floating(new_workspace, floater);
 				--i;
 			}
 		}
-	}
-
-	// Close any popups on the old focus
-	if (last_focus && node_is_view(last_focus)) {
-		view_close_popups(last_focus->sway_container->view);
 	}
 
 	// If urgent, either unset the urgency or start a timer to unset it
@@ -1243,13 +1240,9 @@ static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *n
 		}
 	}
 
-	if (new_output_last_ws) {
-		workspace_consider_destroy(new_output_last_ws);
-	}
-	if (last_workspace && last_workspace != new_output_last_ws) {
+	if (last_workspace) {
 		workspace_consider_destroy(last_workspace);
 	}
-
 	seat->has_focus = true;
 
 	if (config->smart_gaps && new_workspace) {
@@ -1292,6 +1285,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 	if (seat->has_focus && unfocus) {
 		struct sway_node *focus = seat_get_focus(seat);
 		seat_send_unfocus(focus, seat);
+		node_set_dirty(focus);
 		seat->has_focus = false;
 	}
 
@@ -1317,6 +1311,9 @@ void seat_set_focus_layer(struct sway_seat *seat,
 		}
 		return;
 	} else if (!layer) {
+		return;
+	}
+	if (server.session_lock.lock) {
 		return;
 	}
 	assert(layer->surface->mapped);

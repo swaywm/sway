@@ -22,6 +22,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->input_type = NULL;
 	input->tap = INT_MIN;
 	input->tap_button_map = INT_MIN;
+	input->drag_3fg = INT_MIN;
 	input->drag = INT_MIN;
 	input->drag_lock = INT_MIN;
 	input->dwt = INT_MIN;
@@ -58,6 +59,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 	if (src->clickfinger_button_map != INT_MIN) {
 		dst->clickfinger_button_map = src->clickfinger_button_map;
+	}
+	if (src->drag_3fg != INT_MIN) {
+		dst->drag_3fg = src->drag_3fg;
 	}
 	if (src->drag != INT_MIN) {
 		dst->drag = src->drag;

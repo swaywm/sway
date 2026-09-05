@@ -150,6 +150,7 @@ struct input_config {
 	struct calibration_matrix calibration_matrix;
 	int click_method;
 	int clickfinger_button_map;
+	int drag_3fg;
 	int drag;
 	int drag_lock;
 	int dwt;
@@ -267,6 +268,12 @@ enum render_bit_depth {
 	RENDER_BIT_DEPTH_10,
 };
 
+enum color_profile {
+	COLOR_PROFILE_DEFAULT, // default is Transform with NULL color_transform
+	COLOR_PROFILE_TRANSFORM, // use color_transform from output_config
+	COLOR_PROFILE_TRANSFORM_WITH_DEVICE_PRIMARIES, // create transform from wlr_output
+};
+
 /**
  * Size and position configuration for a particular output.
  *
@@ -288,7 +295,7 @@ struct output_config {
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
-	bool set_color_transform;
+	enum color_profile color_profile;
 	struct wlr_color_transform *color_transform;
 	int allow_tearing;
 	int hdr;

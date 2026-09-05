@@ -27,12 +27,34 @@ struct seatop_move_tiling_event {
 	bool split_target;
 	bool insert_after_target;
 	struct wlr_scene_rect *indicator_rect;
+	struct wl_listener target_node_destroy; // Clears target_node if destroyed mid-drag
 };
 
 static void handle_end(struct sway_seat *seat) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
+	wl_list_remove(&e->target_node_destroy.link);
 	wlr_scene_node_destroy(&e->indicator_rect->node);
 	e->indicator_rect = NULL;
+}
+
+// Update target_node and its destruction listener
+static void set_target_node(struct seatop_move_tiling_event *e, struct sway_node *node) {
+	if (e->target_node == node) {
+		return;
+	}
+	wl_list_remove(&e->target_node_destroy.link);
+	e->target_node = node;
+	if (node) {
+		wl_signal_add(&node->events.destroy, &e->target_node_destroy);
+	} else {
+		wl_list_init(&e->target_node_destroy.link);
+	}
+}
+
+static void handle_target_node_destroy(struct wl_listener *listener, void *data) {
+	struct seatop_move_tiling_event *e =
+		wl_container_of(listener, e, target_node_destroy);
+	set_target_node(e, NULL);
 }
 
 static void handle_motion_prethreshold(struct sway_seat *seat) {
@@ -168,14 +190,14 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 
 	if (!node) {
 		// Eg. hovered over a layer surface such as swaybar
-		e->target_node = NULL;
+		set_target_node(e, NULL);
 		e->target_edge = WLR_EDGE_NONE;
 		return;
 	}
 
 	if (node->type == N_WORKSPACE) {
 		// Empty workspace
-		e->target_node = node;
+		set_target_node(e, node);
 		e->target_edge = WLR_EDGE_NONE;
 
 		struct wlr_box drop_box;
@@ -188,7 +210,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	struct sway_container *con = node->sway_container;
 	if (workspace_num_tiling_views(e->con->pending.workspace) == 1 &&
 			con->pending.workspace == e->con->pending.workspace) {
-		e->target_node = NULL;
+		set_target_node(e, NULL);
 		e->target_edge = WLR_EDGE_NONE;
 		return;
 	}
@@ -208,9 +230,9 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		// Don't allow dropping over the source container's titlebar
 		// to give users a chance to cancel a drag operation.
 		if (con == e->con) {
-			e->target_node = NULL;
+			set_target_node(e, NULL);
 		} else {
-			e->target_node = node;
+			set_target_node(e, node);
 			e->split_target = true;
 		}
 		e->target_edge = WLR_EDGE_NONE;
@@ -234,26 +256,31 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		if (layout == L_HORIZ || layout == L_TABBED) {
 			if (cursor->cursor->y < thresh_top) {
 				edge = WLR_EDGE_TOP;
+				if (thresh_top < box.y) thresh_top = box.y;
 				box.height = thresh_top - box.y;
 			} else if (cursor->cursor->y > thresh_bottom) {
 				edge = WLR_EDGE_BOTTOM;
+				if (thresh_bottom > box.y + box.height) thresh_bottom = box.y + box.height;
 				box.height = box.y + box.height - thresh_bottom;
 				box.y = thresh_bottom;
 			}
 		} else if (layout == L_VERT || layout == L_STACKED) {
 			if (cursor->cursor->x < thresh_left) {
 				edge = WLR_EDGE_LEFT;
+				if (thresh_left < box.x) thresh_left = box.x;
 				box.width = thresh_left - box.x;
 			} else if (cursor->cursor->x > thresh_right) {
 				edge = WLR_EDGE_RIGHT;
+				if (thresh_right > box.x + box.width) thresh_right = box.x + box.width;
 				box.width = box.x + box.width - thresh_right;
 				box.x = thresh_right;
 			}
 		}
 		if (edge) {
-			e->target_node = node_get_parent(&con->node);
-			if (e->target_node == &e->con->node) {
-				e->target_node = node_get_parent(e->target_node);
+			set_target_node(e, node_get_parent(&con->node));
+			if (e->target_node && (e->target_node == &e->con->node ||
+					node_has_ancestor(e->target_node, &e->con->node))) {
+				set_target_node(e, node_get_parent(&e->con->node));
 			}
 			e->target_edge = edge;
 			update_indicator(e, &box);
@@ -266,7 +293,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 	con = node->sway_container;
 	if (!con->view || !con->view->surface || node == &e->con->node
 			|| node_has_ancestor(node, &e->con->node)) {
-		e->target_node = NULL;
+		set_target_node(e, NULL);
 		e->target_edge = WLR_EDGE_NONE;
 		return;
 	}
@@ -297,7 +324,7 @@ static void handle_motion_postthreshold(struct sway_seat *seat) {
 		e->target_edge = WLR_EDGE_NONE;
 	}
 
-	e->target_node = node;
+	set_target_node(e, node);
 	resize_box(&drop_box, e->target_edge, thickness);
 	update_indicator(e, &drop_box);
 }
@@ -373,7 +400,7 @@ static void finalize_move(struct sway_seat *seat) {
 		enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
 			edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
 		workspace_split(new_ws, new_layout);
-		workspace_insert_tiling(new_ws, con, after);
+		workspace_insert_tiling(new_ws, con, after ? new_ws->tiling->length : 0);
 	}
 
 	if (old_parent) {
@@ -422,7 +449,7 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 static void handle_unref(struct sway_seat *seat, struct sway_container *con) {
 	struct seatop_move_tiling_event *e = seat->seatop_data;
 	if (e->target_node == &con->node) { // Drop target
-		e->target_node = NULL;
+		set_target_node(e, NULL);
 	}
 	if (e->con == con) { // The container being moved
 		seatop_begin_default(seat);
@@ -463,6 +490,8 @@ void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
 	e->con = con;
 	e->ref_lx = seat->cursor->cursor->x;
 	e->ref_ly = seat->cursor->cursor->y;
+	wl_list_init(&e->target_node_destroy.link);
+	e->target_node_destroy.notify = handle_target_node_destroy;
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;

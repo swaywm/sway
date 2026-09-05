@@ -198,19 +198,24 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void text_calc_size(struct text_buffer *buffer) {
 	struct sway_text_node *props = &buffer->props;
 
-	cairo_t *c = cairo_create(NULL);
-	if (!c) {
-		sway_log(SWAY_ERROR, "cairo_t allocation failed");
-		return;
+	cairo_surface_t *recorder = cairo_recording_surface_create(
+		CAIRO_CONTENT_COLOR_ALPHA, NULL);
+	cairo_t *c = cairo_create(recorder);
+	cairo_surface_destroy(recorder);
+	if (cairo_status(c) != CAIRO_STATUS_SUCCESS) {
+		sway_log(SWAY_ERROR, "cairo_t allocation failed: %s",
+			cairo_status_to_string(cairo_status(c)));
+		goto out;
 	}
 
 	cairo_set_antialias(c, CAIRO_ANTIALIAS_BEST);
 	get_text_size(c, config->font_description, &props->width, NULL,
 		&props->baseline, 1, props->pango_markup, "%s", buffer->text);
-	cairo_destroy(c);
 
 	wlr_scene_buffer_set_dest_size(buffer->buffer_node,
 		get_text_width(props), props->height);
+out:
+	cairo_destroy(c);
 }
 
 struct sway_text_node *sway_text_node_create(struct wlr_scene_tree *parent,

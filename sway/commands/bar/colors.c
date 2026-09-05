@@ -72,6 +72,10 @@ static struct cmd_results *parse_three_colors(char ***colors,
 }
 
 struct cmd_results *bar_cmd_colors(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "colors", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
 	return config_subcommand(argv, argc, bar_colors_handlers,
 			sizeof(bar_colors_handlers));
 }

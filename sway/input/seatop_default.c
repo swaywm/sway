@@ -370,7 +370,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle clicking an empty workspace
-	if (node && node->type == N_WORKSPACE) {
+	if (node && node->type == N_WORKSPACE && surface == NULL) {
 		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
 			seat_set_focus(seat, node);
 			transaction_commit_dirty();
@@ -1114,6 +1114,7 @@ static void handle_rebase(struct sway_seat *seat, uint32_t time_msec) {
 		if (seat_is_input_allowed(seat, surface) && !cursor->hidden) {
 			wlr_seat_pointer_notify_enter(seat->wlr_seat, surface, sx, sy);
 			wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
+			wlr_seat_pointer_notify_frame(seat->wlr_seat);
 		}
 	} else {
 		cursor_update_image(cursor, e->previous_node);

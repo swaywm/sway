@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include <wlr/types/wlr_ext_workspace_v1.h>
 #include "log.h"
 #include "stringop.h"
 #include "sway/commands.h"
@@ -94,6 +95,8 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 
 	free(workspace->name);
 	workspace->name = new_name;
+
+	wlr_ext_workspace_handle_v1_set_name(workspace->ext_workspace, workspace->name);
 
 	output_sort_workspaces(workspace->output);
 	ipc_event_workspace(NULL, workspace, "rename");

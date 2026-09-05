@@ -9,6 +9,7 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/lock.h"
+#include "sway/desktop/transaction.h"
 
 struct sway_session_lock_output {
 	struct wlr_scene_tree *tree;
@@ -237,6 +238,8 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 
 	// Views are now visible, so check if we need to activate inhibition again.
 	sway_idle_inhibit_v1_check_active();
+
+	transaction_commit_dirty();
 }
 
 static void handle_abandon(struct wl_listener *listener, void *data) {
@@ -344,8 +347,12 @@ bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	return false;
 }
 
-void sway_session_lock_init(void) {
+bool sway_session_lock_init(void) {
 	server.session_lock.manager = wlr_session_lock_manager_v1_create(server.wl_display);
+	if (!server.session_lock.manager) {
+		sway_log(SWAY_ERROR, "Failed to create session lock manager");
+		return false;
+	}
 
 	server.session_lock.new_lock.notify = handle_session_lock;
 	server.session_lock.manager_destroy.notify = handle_session_lock_destroy;
@@ -353,4 +360,5 @@ void sway_session_lock_init(void) {
 		&server.session_lock.new_lock);
 	wl_signal_add(&server.session_lock.manager->events.destroy,
 		&server.session_lock.manager_destroy);
+	return true;
 }

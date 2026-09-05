@@ -55,14 +55,30 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 	if (!config->handler_context.output_config) {
 		return cmd_results_new(CMD_FAILURE, "Missing output config");
 	}
+
+	enum color_profile new_mode = COLOR_PROFILE_TRANSFORM;
+	if (argc >= 2 && strcmp(*argv, "--device-primaries") == 0) {
+		new_mode = COLOR_PROFILE_TRANSFORM_WITH_DEVICE_PRIMARIES;
+		argc--;
+		argv++;
+	}
+
 	if (!argc) {
 		return cmd_results_new(CMD_INVALID, "Missing color_profile first argument.");
 	}
 
-	if (strcmp(*argv, "srgb") == 0) {
+	if (strcmp(*argv, "gamma22") == 0) {
 		wlr_color_transform_unref(config->handler_context.output_config->color_transform);
 		config->handler_context.output_config->color_transform = NULL;
-		config->handler_context.output_config->set_color_transform = true;
+		config->handler_context.output_config->color_profile = new_mode;
+
+		config->handler_context.leftovers.argc = argc - 1;
+		config->handler_context.leftovers.argv = argv + 1;
+	} else if (strcmp(*argv, "srgb") == 0) {
+		wlr_color_transform_unref(config->handler_context.output_config->color_transform);
+		config->handler_context.output_config->color_transform =
+			wlr_color_transform_init_linear_to_inverse_eotf(WLR_COLOR_TRANSFER_FUNCTION_SRGB);
+		config->handler_context.output_config->color_profile = new_mode;
 
 		config->handler_context.leftovers.argc = argc - 1;
 		config->handler_context.leftovers.argv = argv + 1;
@@ -70,6 +86,10 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 		if (argc < 2) {
 			return cmd_results_new(CMD_INVALID,
 				"Invalid color profile specification: icc type requires a file");
+		}
+		if (new_mode != COLOR_PROFILE_TRANSFORM) {
+			return cmd_results_new(CMD_INVALID,
+				"Invalid color profile specification: --device-primaries cannot be used with icc");
 		}
 
 		char *icc_path = strdup(argv[1]);
@@ -100,13 +120,14 @@ struct cmd_results *output_cmd_color_profile(int argc, char **argv) {
 
 		wlr_color_transform_unref(config->handler_context.output_config->color_transform);
 		config->handler_context.output_config->color_transform = tmp;
-		config->handler_context.output_config->set_color_transform = true;
+		config->handler_context.output_config->color_profile = COLOR_PROFILE_TRANSFORM;
 
 		config->handler_context.leftovers.argc = argc - 2;
 		config->handler_context.leftovers.argv = argv + 2;
 	} else {
 		return cmd_results_new(CMD_INVALID,
-			"Invalid color profile specification: first argument should be icc|srgb");
+			"Invalid color profile specification: "
+			"first argument should be gamma22|icc|srgb");
 	}
 
 	return NULL;

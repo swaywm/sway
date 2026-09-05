@@ -33,6 +33,7 @@ static const struct cmd_handler input_handlers[] = {
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
 	{ "tap_button_map", input_cmd_tap_button_map },
+	{ "three_finger_drag", input_cmd_three_finger_drag },
 	{ "tool_mode", input_cmd_tool_mode },
 	{ "xkb_file", input_cmd_xkb_file },
 	{ "xkb_layout", input_cmd_xkb_layout },

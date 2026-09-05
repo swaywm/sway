@@ -939,6 +939,21 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		json_object_object_add(object, "tap_button_map",
 				json_object_new_string(button_map));
 
+		const char *drag_3fg = "unknown";
+		switch (libinput_device_config_3fg_drag_get_enabled(device)) {
+		case LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG:
+			drag_3fg = "three_finger";
+			break;
+		case LIBINPUT_CONFIG_3FG_DRAG_ENABLED_4FG:
+			drag_3fg = "four_finger";
+			break;
+		case LIBINPUT_CONFIG_3FG_DRAG_DISABLED:
+			drag_3fg = "disabled";
+			break;
+		}
+		json_object_object_add(object, "three_finger_drag",
+			json_object_new_string(drag_3fg));
+
 		const char* drag = "unknown";
 		switch (libinput_device_config_tap_get_drag_enabled(device)) {
 		case LIBINPUT_CONFIG_DRAG_ENABLED:

@@ -25,43 +25,6 @@
 #include "log.h"
 #include "stringop.h"
 
-static void handle_output_enter(
-		struct wl_listener *listener, void *data) {
-	struct sway_container *con = wl_container_of(
-			listener, con, output_enter);
-	struct wlr_scene_output *output = data;
-
-	if (con->view->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_output_enter(
-			con->view->foreign_toplevel, output->output);
-	}
-}
-
-static void handle_output_leave(
-		struct wl_listener *listener, void *data) {
-	struct sway_container *con = wl_container_of(
-			listener, con, output_leave);
-	struct wlr_scene_output *output = data;
-
-	if (con->view->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_output_leave(
-			con->view->foreign_toplevel, output->output);
-	}
-}
-
-static void handle_destroy(
-		struct wl_listener *listener, void *data) {
-	struct sway_container *con = wl_container_of(
-			listener, con, output_handler_destroy);
-
-	container_begin_destroy(con);
-}
-
-static bool handle_point_accepts_input(
-		struct wlr_scene_buffer *buffer, double *x, double *y) {
-	return false;
-}
-
 static struct wlr_scene_rect *alloc_rect_node(struct wlr_scene_tree *parent,
 		bool *failed) {
 	if (*failed) {
@@ -128,25 +91,6 @@ struct sway_container *container_create(struct sway_view *view) {
 		c->border.bottom = alloc_rect_node(c->border.tree, &failed);
 		c->border.left = alloc_rect_node(c->border.tree, &failed);
 		c->border.right = alloc_rect_node(c->border.tree, &failed);
-
-		c->output_handler = wlr_scene_buffer_create(c->border.tree, NULL);
-		if (!c->output_handler) {
-			sway_log(SWAY_ERROR, "Failed to allocate a scene node");
-			failed = true;
-		}
-
-		if (!failed) {
-			c->output_enter.notify = handle_output_enter;
-			wl_signal_add(&c->output_handler->events.output_enter,
-					&c->output_enter);
-			c->output_leave.notify = handle_output_leave;
-			wl_signal_add(&c->output_handler->events.output_leave,
-					&c->output_leave);
-			c->output_handler_destroy.notify = handle_destroy;
-			wl_signal_add(&c->output_handler->node.events.destroy,
-					&c->output_handler_destroy);
-			c->output_handler->point_accepts_input = handle_point_accepts_input;
-		}
 	}
 
 	if (!failed && !scene_descriptor_assign(&c->scene_tree->node,
@@ -518,7 +462,6 @@ void container_destroy(struct sway_container *con) {
 
 	if (con->view && con->view->container == con) {
 		con->view->container = NULL;
-		wlr_scene_node_destroy(&con->output_handler->node);
 		if (con->view->destroying) {
 			view_destroy(con->view);
 		}
@@ -559,12 +502,6 @@ void container_begin_destroy(struct sway_container *con) {
 
 	if (con->pending.parent || con->pending.workspace) {
 		container_detach(con);
-	}
-
-	if (con->view && con->view->container == con) {
-		wl_list_remove(&con->output_enter.link);
-		wl_list_remove(&con->output_leave.link);
-		wl_list_remove(&con->output_handler_destroy.link);
 	}
 }
 
@@ -1440,17 +1377,52 @@ int container_sibling_index(struct sway_container *child) {
 	return list_find(container_get_siblings(child), child);
 }
 
+static bool find_fullscreen_workspace(struct sway_container *con, void *data) {
+	return con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE;
+}
+
+static bool find_fullscreen_global(struct sway_container *con, void *data) {
+	return con->pending.fullscreen_mode == FULLSCREEN_GLOBAL;
+}
+
 void container_handle_fullscreen_reparent(struct sway_container *con) {
-	if (con->pending.fullscreen_mode != FULLSCREEN_WORKSPACE || !con->pending.workspace ||
-			con->pending.workspace->fullscreen == con) {
+	struct sway_container *fs = NULL;
+	// handle fullscreen global container or descendant
+	if (con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+		fs = con;
+	} else {
+		fs = container_find_child(con, find_fullscreen_global, NULL);
+	}
+	// if the reparented container or descendant is global fullscreen,
+	// update the root pointer and disable the previous fullscreen.
+	if (fs) {
+		if (root->fullscreen_global == fs) {
+			return;
+		}
+		if (root->fullscreen_global) {
+			container_fullscreen_disable(root->fullscreen_global);
+		}
+		root->fullscreen_global = fs;
+		arrange_root();
 		return;
 	}
-	if (con->pending.workspace->fullscreen) {
-		container_fullscreen_disable(con->pending.workspace->fullscreen);
+	// handle fullscreen workspace container or descendant
+	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
+		fs = con;
+	} else {
+		fs = container_find_child(con, find_fullscreen_workspace, NULL);
 	}
-	con->pending.workspace->fullscreen = con;
-
-	arrange_workspace(con->pending.workspace);
+	// if the reparented container or descendant is workspace fullscreen,
+	// update the workspace pointer and disable the previous fullscreen.
+	if (!fs || !fs->pending.workspace ||
+			fs->pending.workspace->fullscreen == fs) {
+		return;
+	}
+	if (fs->pending.workspace->fullscreen) {
+		container_fullscreen_disable(fs->pending.workspace->fullscreen);
+	}
+	fs->pending.workspace->fullscreen = fs;
+	arrange_workspace(fs->pending.workspace);
 }
 
 static void set_workspace(struct sway_container *container, void *data) {
@@ -1501,15 +1473,23 @@ void container_add_child(struct sway_container *parent,
 }
 
 void container_detach(struct sway_container *child) {
-	if (child->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
-		child->pending.workspace->fullscreen = NULL;
+	struct sway_workspace *old_workspace = child->pending.workspace;
+	// Clear the workspace's fullscreen pointer if the detached container is the
+	// active fullscreen container or an ancestor of it.
+	if (old_workspace && old_workspace->fullscreen &&
+			(old_workspace->fullscreen == child ||
+			container_has_ancestor(old_workspace->fullscreen, child))) {
+		old_workspace->fullscreen = NULL;
 	}
-	if (child->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+	// Clear the global fullscreen pointer if the detached container is the
+	// active global fullscreen container or an ancestor of it.
+	if (root->fullscreen_global &&
+			(root->fullscreen_global == child ||
+			container_has_ancestor(root->fullscreen_global, child))) {
 		root->fullscreen_global = NULL;
 	}
 
 	struct sway_container *old_parent = child->pending.parent;
-	struct sway_workspace *old_workspace = child->pending.workspace;
 	list_t *siblings = container_get_siblings(child);
 	if (siblings) {
 		int index = list_find(siblings, child);

@@ -734,6 +734,7 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		if (request == NULL || !json_object_is_type(request, json_type_array)) {
 			const char msg[] = "{\"success\": false}";
 			ipc_send_reply(client, payload_type, msg, strlen(msg));
+			json_object_put(request);
 			sway_log(SWAY_INFO, "Failed to parse subscribe request");
 			goto exit_cleanup;
 		}
