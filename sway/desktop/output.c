@@ -404,7 +404,12 @@ static int timer_modeset_handle(void *data) {
 	wl_event_source_remove(server->delayed_modeset);
 	server->delayed_modeset = NULL;
 
-	apply_stored_output_configs();
+	if (!apply_stored_output_configs()) {
+		// If applying output config fails, update output manager state so
+		// clients are notified of added/removed heads. On success, this
+		// is already handled in apply_resolved_output_configs().
+		update_output_manager_config(server);
+	}
 	return 0;
 }
 
@@ -425,7 +430,9 @@ void force_modeset(void) {
 		wl_event_source_remove(server.delayed_modeset);
 		server.delayed_modeset = NULL;
 	}
-	apply_stored_output_configs();
+	if (!apply_stored_output_configs()) {
+		update_output_manager_config(&server);
+	}
 }
 
 static void begin_destroy(struct sway_output *output) {
