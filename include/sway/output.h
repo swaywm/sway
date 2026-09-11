@@ -43,6 +43,8 @@ struct sway_output {
 	struct sway_server *server;
 	struct wl_list link;
 
+	struct wlr_ext_image_capture_source_v1 *image_capture_source;
+
 	struct wlr_box usable_area;
 
 	int lx, ly; // layout coords
