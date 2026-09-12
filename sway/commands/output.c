@@ -1,3 +1,5 @@
+#include <limits.h>
+#include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -32,6 +34,100 @@ static const struct cmd_handler output_handlers[] = {
 	{ "transform", output_cmd_transform },
 	{ "unplug", output_cmd_unplug },
 };
+
+static bool str_eq(const char *a, const char *b) {
+	if (!a || !b) {
+		return a == b;
+	}
+	return strcmp(a, b) == 0;
+}
+
+// True when merging oc into the stored configs would change nothing, so the
+// caller can skip the modeset (and its output event) entirely. Only fields
+// actually set in oc are compared, mirroring merge_output_config; anything
+// not provably identical counts as a change.
+static bool output_config_noop(const struct output_config *oc) {
+	for (int i = 0; i < config->output_configs->length; i++) {
+		struct output_config *old = config->output_configs->items[i];
+		if (strcmp(old->name, oc->name) != 0) {
+			continue;
+		}
+		if (oc->enabled != -1 && old->enabled != oc->enabled) {
+			return false;
+		}
+		if (oc->width != -1 && old->width != oc->width) {
+			return false;
+		}
+		if (oc->height != -1 && old->height != oc->height) {
+			return false;
+		}
+		if (oc->refresh_rate != -1 && old->refresh_rate != oc->refresh_rate) {
+			return false;
+		}
+		if (oc->custom_mode != -1 && old->custom_mode != oc->custom_mode) {
+			return false;
+		}
+		if (oc->drm_mode.type != 0 && oc->drm_mode.type != (uint32_t)-1) {
+			return false;
+		}
+		if (oc->x != INT_MAX && old->x != oc->x) {
+			return false;
+		}
+		if (oc->y != INT_MAX && old->y != oc->y) {
+			return false;
+		}
+		if (oc->scale != -1 && old->scale != oc->scale) {
+			return false;
+		}
+		if (oc->scale_filter != SCALE_FILTER_DEFAULT
+				&& old->scale_filter != oc->scale_filter) {
+			return false;
+		}
+		if (oc->subpixel != WL_OUTPUT_SUBPIXEL_UNKNOWN
+				&& old->subpixel != oc->subpixel) {
+			return false;
+		}
+		if (oc->transform != -1 && old->transform != oc->transform) {
+			return false;
+		}
+		if (oc->max_render_time != -1 && old->max_render_time != oc->max_render_time) {
+			return false;
+		}
+		if (oc->adaptive_sync != -1 && old->adaptive_sync != oc->adaptive_sync) {
+			return false;
+		}
+		if (oc->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT
+				&& old->render_bit_depth != oc->render_bit_depth) {
+			return false;
+		}
+		if (oc->color_profile != COLOR_PROFILE_DEFAULT
+				|| oc->color_transform != NULL) {
+			return false;
+		}
+		if (oc->background && !str_eq(old->background, oc->background)) {
+			return false;
+		}
+		if (oc->background_option
+				&& !str_eq(old->background_option, oc->background_option)) {
+			return false;
+		}
+		if (oc->background_fallback
+				&& !str_eq(old->background_fallback, oc->background_fallback)) {
+			return false;
+		}
+		if (oc->power != -1 && old->power != oc->power) {
+			return false;
+		}
+		if (oc->allow_tearing != -1 && old->allow_tearing != oc->allow_tearing) {
+			return false;
+		}
+		if (oc->hdr != -1 && old->hdr != oc->hdr) {
+			return false;
+		}
+		return true;
+	}
+	return false;
+}
 
 struct cmd_results *cmd_output(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1);
@@ -105,6 +201,11 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	config->handler_context.leftovers.argv = NULL;
 
 	bool background = output->background;
+
+	if (output_config_noop(output)) {
+		free_output_config(output);
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
 
 	store_output_config(output);
 
