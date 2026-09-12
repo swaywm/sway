@@ -80,6 +80,8 @@ struct swaybar_config {
 	list_t *tray_outputs; // char *
 	int tray_padding;
 #endif
+
+  bool active_only;
 };
 
 #if HAVE_TRAY
