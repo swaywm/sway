@@ -209,6 +209,7 @@ static const struct option long_options[] = {
 	{"verbose", no_argument, NULL, 'V'},
 	{"get-socketpath", no_argument, NULL, 'p'},
 	{"unsupported-gpu", no_argument, NULL, 'u'},
+	{"locked", no_argument, NULL, 'l'},
 	{0, 0, 0, 0}
 };
 
@@ -221,18 +222,20 @@ static const char usage[] =
 	"  -d, --debug            Enables full logging, including debug information.\n"
 	"  -v, --version          Show the version number and quit.\n"
 	"  -V, --verbose          Enables more verbose logging.\n"
+	"  -l, --locked           Start with the session locked, awaiting a lock client.\n"
 	"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
 	"\n";
 
 int main(int argc, char **argv) {
 	bool verbose = false, debug = false, validate = false, allow_unsupported_gpu = false;
+	bool start_locked = false;
 
 	char *config_path = NULL;
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdD:vVc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdD:lvVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -253,6 +256,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'D': // extended debug options
 			enable_debug_flag(optarg);
+			break;
+		case 'l': // locked
+			start_locked = true;
 			break;
 		case 'u':
 			allow_unsupported_gpu = true;
@@ -370,6 +376,13 @@ int main(int argc, char **argv) {
 	}
 
 	set_rr_scheduling();
+
+	// Must happen before the backend starts: outputs created afterwards are
+	// added to the lock by handle_new_output(), so no output is ever composited
+	// unlocked, and input is filtered from the very first event.
+	if (start_locked) {
+		sway_session_lock_start_locked();
+	}
 
 	if (!server_start(&server)) {
 		sway_terminate(EXIT_FAILURE);
