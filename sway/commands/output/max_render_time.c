@@ -13,6 +13,8 @@ struct cmd_results *output_cmd_max_render_time(int argc, char **argv) {
 	int max_render_time;
 	if (!strcmp(*argv, "off")) {
 		max_render_time = 0;
+	} else if (!strcmp(*argv, "auto")) {
+		max_render_time = -2;
 	} else {
 		char *end;
 		max_render_time = strtol(*argv, &end, 10);

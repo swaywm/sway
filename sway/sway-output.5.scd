@@ -132,20 +132,23 @@ must be separated by one space. For example:
 *output* <name> dpms on|off|toggle
 	Deprecated. Alias for _power_.
 
-*output* <name> max_render_time off|<msec>
+*output* <name> max_render_time off|auto|<msec>
 	Controls when sway composites the output, as a positive number of
 	milliseconds before the next display refresh. A smaller number leads to
 	fresher composited frames and lower perceived input latency, but if set too
 	low, sway may not finish compositing in time for display refresh, leading to
 	delayed frames.
 
-	When set to off, sway composites immediately after display refresh,
+	When set to *off*, sway composites immediately after display refresh,
 	maximizing time available for compositing.
+
+	When set to *auto*, sway monitors composition statistics and dynamically
+	adjusts the composition time to minimize latency with some headroom.
 
 	To adjust when applications are instructed to render, see *max_render_time*
 	in *sway*(5).
 
-	To set this up for optimal latency:
+	To set this up manually for optimal latency:
 	. Launch some _full-screen_ application that renders continuously, like
 	  *glxgears*.
 	. Start with *max_render_time 1*. Increment by *1* if you see frame
