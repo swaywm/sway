@@ -3,7 +3,8 @@ tray_files = have_tray ? [
 	'tray/icon.c',
 	'tray/item.c',
 	'tray/tray.c',
-	'tray/watcher.c'
+	'tray/watcher.c',
+	'tray/dbusmenu.c'
 ] : []
 
 swaybar_deps = [
