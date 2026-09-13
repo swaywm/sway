@@ -131,6 +131,91 @@ static bool is_privileged(const struct wl_global *global) {
 		global == server.workspace_manager_v1->global;
 }
 
+struct security_context_allow {
+	char *app_id;
+	char *protocol;
+};
+
+static void security_context_allow_destroy(
+		struct security_context_allow *rule) {
+	if (rule == NULL) {
+		return;
+	}
+	free(rule->app_id);
+	free(rule->protocol);
+	free(rule);
+}
+
+bool server_add_security_context_allow(const char *arg) {
+	const char *colon = strchr(arg, ':');
+	if (colon == NULL || colon == arg || colon[1] == '\0') {
+		sway_log(SWAY_ERROR, "Invalid --security-context-allow \"%s\": "
+			"expected <app_id>:<protocol>[,<protocol>...]", arg);
+		return false;
+	}
+
+	size_t app_id_len = colon - arg;
+	if (app_id_len == 1 && arg[0] == '*') {
+		sway_log(SWAY_ERROR, "Invalid --security-context-allow \"%s\": "
+			"wildcards are not supported", arg);
+		return false;
+	}
+
+	if (server.security_context_allows == NULL) {
+		server.security_context_allows = create_list();
+		if (server.security_context_allows == NULL) {
+			return false;
+		}
+	}
+
+	const char *proto = colon + 1;
+	while (proto != NULL) {
+		const char *comma = strchr(proto, ',');
+		size_t len = comma != NULL ? (size_t)(comma - proto) : strlen(proto);
+		if (len == 0) {
+			sway_log(SWAY_ERROR, "Invalid --security-context-allow \"%s\": "
+				"empty protocol name", arg);
+			return false;
+		}
+		struct security_context_allow *rule =
+			calloc(1, sizeof(struct security_context_allow));
+		if (rule == NULL) {
+			return false;
+		}
+		rule->app_id = strndup(arg, app_id_len);
+		rule->protocol = strndup(proto, len);
+		if (rule->app_id == NULL || rule->protocol == NULL) {
+			security_context_allow_destroy(rule);
+			return false;
+		}
+		list_add(server.security_context_allows, rule);
+		sway_log(SWAY_DEBUG, "Allowing app id \"%s\" to bind %s",
+			rule->app_id, rule->protocol);
+		proto = comma != NULL ? comma + 1 : NULL;
+	}
+
+	return true;
+}
+
+static bool security_context_allows_global(
+		const struct wlr_security_context_v1_state *security_context,
+		const struct wl_global *global) {
+	if (server.security_context_allows == NULL ||
+			security_context->app_id == NULL) {
+		return false;
+	}
+	const char *protocol = wl_global_get_interface(global)->name;
+	for (int i = 0; i < server.security_context_allows->length; i++) {
+		struct security_context_allow *rule =
+			server.security_context_allows->items[i];
+		if (strcmp(rule->app_id, security_context->app_id) == 0 &&
+				strcmp(rule->protocol, protocol) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static bool filter_global(const struct wl_client *client,
 		const struct wl_global *global, void *data) {
 #if WLR_HAS_XWAYLAND
@@ -140,13 +225,14 @@ static bool filter_global(const struct wl_client *client,
 	}
 #endif
 
-	// Restrict usage of privileged protocols to unsandboxed clients
-	// TODO: add a way for users to configure an allow-list
+	// Restrict usage of privileged protocols to unsandboxed clients,
+	// except where --security-context-allow names the app id
 	const struct wlr_security_context_v1_state *security_context =
 		wlr_security_context_manager_v1_lookup_client(
 		server.security_context_manager_v1, (struct wl_client *)client);
 	if (is_privileged(global)) {
-		return security_context == NULL;
+		return security_context == NULL ||
+			security_context_allows_global(security_context, global);
 	}
 
 	return true;
@@ -755,6 +841,13 @@ void server_fini(struct sway_server *server) {
 	wlr_backend_destroy(server->backend);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_nodes);
+	if (server->security_context_allows != NULL) {
+		for (int i = 0; i < server->security_context_allows->length; i++) {
+			security_context_allow_destroy(
+				server->security_context_allows->items[i]);
+		}
+		list_free(server->security_context_allows);
+	}
 	free(server->socket);
 }
 

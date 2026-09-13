@@ -28,6 +28,11 @@ sway - An i3-compatible Wayland compositor
 *-V, --verbose*
 	Enables more verbose logging.
 
+*--security-context-allow* <app_id>:<protocol>[,<protocol>...]
+	Permit sandboxed clients whose security context is <app_id>
+	to bind the named Wayland <protocol>, which are otherwise
+	hidden from sandboxed clients.
+
 *--get-socketpath*
 	Gets the IPC socket path and prints it, then exits.
 

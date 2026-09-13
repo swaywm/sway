@@ -209,6 +209,7 @@ static const struct option long_options[] = {
 	{"verbose", no_argument, NULL, 'V'},
 	{"get-socketpath", no_argument, NULL, 'p'},
 	{"unsupported-gpu", no_argument, NULL, 'u'},
+	{"security-context-allow", required_argument, NULL, 'S'},
 	{0, 0, 0, 0}
 };
 
@@ -222,6 +223,8 @@ static const char usage[] =
 	"  -v, --version          Show the version number and quit.\n"
 	"  -V, --verbose          Enables more verbose logging.\n"
 	"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
+	"      --security-context-allow <app_id>:<protocol>[,<protocol>...]\n"
+	"                         Let a sandboxed app id bind privileged globals.\n"
 	"\n";
 
 int main(int argc, char **argv) {
@@ -256,6 +259,11 @@ int main(int argc, char **argv) {
 			break;
 		case 'u':
 			allow_unsupported_gpu = true;
+			break;
+		case 'S': // security-context-allow
+			if (!server_add_security_context_allow(optarg)) {
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 'v': // version
 			printf("sway version " SWAY_VERSION "\n");
