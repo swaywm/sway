@@ -1051,13 +1051,13 @@ void view_center_and_clip_surface(struct sway_view *view) {
 		struct wlr_box clip = {0};
 		if (clip_to_geometry) {
 			clip = (struct wlr_box){
-				.x = con->view->geometry.x,
-				.y = con->view->geometry.y,
+				.x = 0,
+				.y = 0,
 				.width = con->current.content_width,
 				.height = con->current.content_height,
 			};
 		}
-		wlr_scene_subsurface_tree_set_clip(&con->view->content_tree->node, &clip);
+		wlr_scene_tree_set_clip(con->view->content_tree, &clip);
 	}
 }
 
@@ -1273,6 +1273,8 @@ void view_save_buffer(struct sway_view *view) {
 	// is disabled until it is ready to replace the real surface.
 	wlr_scene_node_place_below(&view->saved_surface_tree->node, &view->output_handler->node);
 	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, false);
+
+	wlr_scene_tree_set_clip(view->saved_surface_tree, &view->content_tree->clip);
 
 	wlr_scene_node_for_each_buffer(&view->content_tree->node,
 		view_save_buffer_iterator, view->saved_surface_tree);
