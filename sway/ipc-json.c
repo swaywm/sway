@@ -516,8 +516,9 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 	}
 	json_object_object_add(object, "num", json_object_new_int(num));
 	json_object_object_add(object, "fullscreen_mode", json_object_new_int(1));
-	json_object_object_add(object, "output", workspace->output ?
-			json_object_new_string(workspace->output->wlr_output->name) : NULL);
+	json_object_object_add(object, "output",
+			workspace->output && workspace->output->wlr_output->name ?
+				json_object_new_string(workspace->output->wlr_output->name) : NULL);
 	json_object_object_add(object, "urgent",
 			json_object_new_boolean(workspace->urgent));
 	json_object_object_add(object, "representation", workspace->representation ?
