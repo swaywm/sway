@@ -776,6 +776,11 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	if (c->view) {
 		ipc_json_describe_view(c, object);
 	}
+
+	if (c->is_placeholder && c->swallows_json) {
+		json_object_object_add(object, "swallows",
+				json_object_get(c->swallows_json));
+	}
 }
 
 struct focus_inactive_data {
