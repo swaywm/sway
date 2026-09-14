@@ -130,7 +130,7 @@ static void seat_send_activate(struct sway_node *node, struct sway_seat *seat) {
 	}
 }
 
-static struct sway_keyboard *sway_keyboard_for_wlr_keyboard(
+struct sway_keyboard *sway_keyboard_for_wlr_keyboard(
 		struct sway_seat *seat, struct wlr_keyboard *wlr_keyboard) {
 	struct sway_seat_device *seat_device;
 	wl_list_for_each(seat_device, &seat->devices, link) {
