@@ -67,6 +67,7 @@ static const struct cmd_handler handlers[] = {
 	{ "focus_on_window_activation", cmd_focus_on_window_activation },
 	{ "focus_wrapping", cmd_focus_wrapping },
 	{ "font", cmd_font },
+	{ "for_exec_window", cmd_for_exec_window },
 	{ "for_window", cmd_for_window },
 	{ "force_display_urgency_hint", cmd_force_display_urgency_hint },
 	{ "force_focus_wrapping", cmd_force_focus_wrapping },
@@ -262,9 +263,8 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		//TODO better handling of argv
 		int argc;
 		char **argv = split_args(cmd, &argc);
-		if (strcmp(argv[0], "exec") != 0 &&
-				strcmp(argv[0], "exec_always") != 0 &&
-				strcmp(argv[0], "mode") != 0) {
+		if (strcmp(argv[0], "exec") != 0 && strcmp(argv[0], "exec_always") != 0 &&
+				strcmp(argv[0], "for_exec_window") != 0 && strcmp(argv[0], "mode") != 0) {
 			for (int i = 1; i < argc; ++i) {
 				if (*argv[i] == '\"' || *argv[i] == '\'') {
 					strip_quotes(argv[i]);
@@ -408,15 +408,12 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 
 	// Strip quotes and unescape the string
 	for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
-		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always
-				&& handler->handle != cmd_mode
-				&& handler->handle != cmd_bindsym
-				&& handler->handle != cmd_bindcode
-				&& handler->handle != cmd_bindswitch
-				&& handler->handle != cmd_bindgesture
-				&& handler->handle != cmd_set
-				&& handler->handle != cmd_for_window
-				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
+		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always &&
+				handler->handle != cmd_mode && handler->handle != cmd_bindsym &&
+				handler->handle != cmd_bindcode && handler->handle != cmd_bindswitch &&
+				handler->handle != cmd_bindgesture && handler->handle != cmd_set &&
+				handler->handle != cmd_for_window && handler->handle != cmd_for_exec_window &&
+				(*argv[i] == '\"' || *argv[i] == '\'')) {
 			strip_quotes(argv[i]);
 		}
 		unescape_string(argv[i]);

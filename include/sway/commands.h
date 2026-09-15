@@ -102,7 +102,7 @@ struct sway_container *container_find_resize_parent(struct sway_container *con,
  * Handlers shared by exec and exec_always.
  */
 sway_cmd cmd_exec_validate;
-sway_cmd cmd_exec_process;
+struct cmd_results *cmd_exec_process(int argc, char **argv, const char *cmdlist);
 
 sway_cmd cmd_allow_tearing;
 sway_cmd cmd_assign;
@@ -138,6 +138,7 @@ sway_cmd cmd_focus_follows_mouse;
 sway_cmd cmd_focus_on_window_activation;
 sway_cmd cmd_focus_wrapping;
 sway_cmd cmd_font;
+sway_cmd cmd_for_exec_window;
 sway_cmd cmd_for_window;
 sway_cmd cmd_force_display_urgency_hint;
 sway_cmd cmd_force_focus_wrapping;

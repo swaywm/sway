@@ -103,6 +103,9 @@ _swaymsg_ [options...] [message]
 *send\_tick*
 	Sends a tick event to all subscribed clients.
 
+*mint\_activation\_token*
+	Mint a new XDG activation token.
+
 *subscribe*
 	Subscribe to a list of event types. The argument for this type should be
 	provided in the form of a valid JSON array. If any of the types are invalid
