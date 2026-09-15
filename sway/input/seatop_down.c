@@ -1,5 +1,6 @@
 #include <float.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_touch.h>
 #include "sway/input/cursor.h"
@@ -39,6 +40,32 @@ static void handle_touch_motion(struct sway_seat *seat,
 	}
 	if (!found) {
 		return; // Probably not a point_event from this seatop_down
+	}
+
+	// If this touch point is driving an active drag-and-drop session,
+	// keep the drag focus in sync with the surface under the touch
+	// point, like pointer drags do via wlr_seat_pointer_notify_enter().
+	// The drag grab in wlroots only sends wl_data_device.enter from
+	// wlr_seat_touch_point_focus() and only sends wl_data_device.motion
+	// when the drag has a focused surface.
+	struct wlr_drag *drag = seat->wlr_seat->drag;
+	if (drag != NULL && drag->grab_type == WLR_DRAG_GRAB_KEYBOARD_TOUCH &&
+			drag->touch_id == event->touch_id) {
+		double sx, sy;
+		struct wlr_surface *surface = NULL;
+		node_at_coords(seat, lx, ly, &surface, &sx, &sy);
+		if (surface != NULL) {
+			wlr_seat_touch_point_focus(seat->wlr_seat, surface,
+				event->time_msec, event->touch_id, sx, sy);
+			wlr_seat_touch_notify_motion(seat->wlr_seat,
+				event->time_msec, event->touch_id, sx, sy);
+		} else {
+			wlr_seat_touch_notify_clear_focus(seat->wlr_seat,
+				event->time_msec, event->touch_id);
+			wlr_seat_touch_point_clear_focus(seat->wlr_seat,
+				event->time_msec, event->touch_id);
+		}
+		return;
 	}
 
 	double moved_x = lx - point_event->ref_lx;
