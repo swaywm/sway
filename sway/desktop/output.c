@@ -597,6 +597,16 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		sway_session_lock_add_output(server->session_lock.lock, output);
 	}
 
+	struct output_config *oc = find_output_config(output);
+	if (oc && oc->allow_drm_leasing > 0) {
+#if WLR_HAS_DRM_BACKEND
+		if (server->drm_lease_manager) {
+			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
+					wlr_output);
+		}
+#endif
+	}
+
 	request_modeset();
 }
 
