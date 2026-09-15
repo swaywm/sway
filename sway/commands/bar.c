@@ -30,6 +30,7 @@ static const struct cmd_handler bar_handlers[] = {
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
 	{ "tray_bindcode", bar_cmd_tray_bindcode },
 	{ "tray_bindsym", bar_cmd_tray_bindsym },
+	{ "tray_last", bar_cmd_tray_last },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "unbindcode", bar_cmd_unbindcode },
