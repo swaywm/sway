@@ -441,6 +441,14 @@ char *workspace_next_name(const char *output_name) {
 	struct sway_mode *mode = config->current_mode;
 
 	struct sway_output *output = output_by_name_or_id(output_name);
+	if (!output && root->fallback_output && output_match_name_or_id(
+				root->fallback_output, output_name)) {
+		// The fallback output holds the workspaces while no real output is
+		// connected, but it is not part of root->outputs so the lookup above
+		// cannot find it. No workspace config can name it either, which leaves
+		// the numeric fall back below as the only source of a name.
+		output = root->fallback_output;
+	}
 	if (!output) {
 		return NULL;
 	}

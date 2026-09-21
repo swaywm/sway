@@ -679,10 +679,21 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 		return node->sway_container->pending.workspace;
 	}
 
-	// When there's no outputs connected, the above should match a workspace on
-	// the noop output.
-	sway_assert(false, "Expected to find a workspace");
-	return NULL;
+	// With no outputs connected the fallback output is supposed to hold the
+	// workspaces, but output_evacuate() destroys an evacuated workspace when it
+	// is empty, so losing the last output with nothing open leaves the tree
+	// without a workspace anywhere.
+	struct sway_output *output = root->outputs->length > 0 ?
+		root->outputs->items[0] : root->fallback_output;
+	char *ws_name = workspace_next_name(output->wlr_output->name);
+	sway_log(SWAY_DEBUG, "No workspace to map onto, creating %s on output %s",
+			ws_name, output->wlr_output->name);
+	ws = workspace_create(output, ws_name);
+	free(ws_name);
+	if (ws) {
+		ipc_event_workspace(NULL, ws, "init");
+	}
+	return ws;
 }
 
 static void update_ext_foreign_toplevel(struct sway_view *view) {
