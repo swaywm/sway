@@ -32,6 +32,9 @@ struct swaybar_tray {
 
 	list_t *basedirs; // char *
 	list_t *themes; // struct swaybar_theme *
+
+	struct swaybar_dbusmenu *menu;
+	struct swaybar_dbusmenu_menu *menu_pointer_focus;
 };
 
 struct swaybar_tray *create_tray(struct swaybar *bar);
