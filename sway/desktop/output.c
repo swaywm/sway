@@ -149,12 +149,14 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 	struct sway_output *output = data->output;
 	int view_max_render_time = 0;
 
-	if (buffer->primary_output != data->output->scene_output) {
+	struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(buffer);
+	if (scene_surface == NULL) {
 		return;
 	}
 
-	struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(buffer);
-	if (scene_surface == NULL) {
+	struct wlr_output *pacing_output = wlr_surface_get_frame_pacing_output(
+		scene_surface->surface);
+	if (pacing_output != data->output->wlr_output) {
 		return;
 	}
 
