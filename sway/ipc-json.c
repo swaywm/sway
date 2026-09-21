@@ -1088,6 +1088,9 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
 		case LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN:
 			scroll_method = "on_button_down";
 			break;
+		case LIBINPUT_CONFIG_SCROLL_CIRCULAR:
+			scroll_method = "circular";
+			break;
 		}
 		json_object_object_add(object, "scroll_method",
 				json_object_new_string(scroll_method));

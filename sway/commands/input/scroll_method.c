@@ -22,9 +22,12 @@ struct cmd_results *input_cmd_scroll_method(int argc, char **argv) {
 		ic->scroll_method = LIBINPUT_CONFIG_SCROLL_EDGE;
 	} else if (strcasecmp(argv[0], "on_button_down") == 0) {
 		ic->scroll_method = LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
+	} else if (strcasecmp(argv[0], "circular") == 0) {
+		ic->scroll_method = LIBINPUT_CONFIG_SCROLL_CIRCULAR;
 	} else {
 		return cmd_results_new(CMD_INVALID,
-			"Expected 'scroll_method <none|two_finger|edge|on_button_down>'");
+			"Expected 'scroll_method "
+			"<none|two_finger|edge|on_button_down|circular>'");
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
