@@ -139,6 +139,13 @@ static void container_move_to_container_from_direction(
 		return;
 	}
 
+	struct sway_seat *seat = config->handler_context.seat;
+	if (seat_get_focus(seat) == &container->node) {
+		sway_log(SWAY_DEBUG, "Moving a focused container");
+		seat_set_raw_focus(seat, &destination->node);
+		seat_set_raw_focus(seat, &container->node);
+	}
+
 	if (is_parallel(destination->pending.layout, move_dir)) {
 		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
 		int index =
@@ -153,7 +160,7 @@ static void container_move_to_container_from_direction(
 
 	sway_log(SWAY_DEBUG, "Reparenting container (perpendicular)");
 	struct sway_node *focus_inactive = seat_get_active_tiling_child(
-			config->handler_context.seat, &destination->node);
+			seat, &destination->node);
 	if (!focus_inactive || focus_inactive == &destination->node) {
 		// The container has no children
 		container_add_child(destination, container);
