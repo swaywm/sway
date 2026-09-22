@@ -932,6 +932,11 @@ void workspace_detach(struct sway_workspace *workspace) {
 	}
 	workspace->output = NULL;
 
+	struct sway_workspace *new_active = output_get_active_workspace(output);
+	if (new_active) {
+		wlr_ext_workspace_handle_v1_set_active(new_active->ext_workspace, true);
+	}
+
 	node_set_dirty(&workspace->node);
 	node_set_dirty(&output->node);
 }
