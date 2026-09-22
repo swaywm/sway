@@ -362,7 +362,10 @@ static void relay_handle_text_input(struct wl_listener *listener,
 		return;
 	}
 
-	sway_text_input_create(relay, wlr_text_input);
+	if (sway_text_input_create(relay, wlr_text_input)) {
+		sway_input_method_relay_set_focus(relay,
+			relay->seat->wlr_seat->keyboard_state.focused_surface);
+	}
 }
 
 static void input_popup_set_focus(struct sway_input_popup *popup,
