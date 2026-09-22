@@ -100,6 +100,7 @@ struct sway_server {
 
 	struct wlr_output_power_manager_v1 *output_power_manager_v1;
 	struct wl_listener output_power_manager_set_mode;
+	struct wl_listener output_power_manager_set_brightness;
 	struct wlr_input_method_manager_v2 *input_method;
 	struct wlr_text_input_manager_v3 *text_input;
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
