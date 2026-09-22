@@ -12,6 +12,9 @@
 #include "sway/server.h"
 #include <wlr/types/wlr_session_lock_v1.h>
 
+static void relay_resolve_deferred_deactivate(
+	struct sway_input_method_relay *relay);
+
 static struct sway_text_input *relay_get_focusable_text_input(
 		struct sway_input_method_relay *relay) {
 	struct sway_text_input *text_input = NULL;
@@ -67,6 +70,8 @@ static void handle_im_keyboard_grab_destroy(struct wl_listener *listener, void *
 	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = relay->input_method->keyboard_grab;
 	struct wlr_seat *wlr_seat = keyboard_grab->input_method->seat;
 	wl_list_remove(&relay->input_method_keyboard_grab_destroy.link);
+	relay->grab_pressed_keys.size = 0;
+	relay_resolve_deferred_deactivate(relay);
 
 	if (keyboard_grab->keyboard) {
 		// send modifier state to original client
@@ -113,6 +118,8 @@ static void handle_im_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&relay->input_method_destroy.link);
 	wl_list_remove(&relay->input_method_new_popup_surface.link);
 	relay->input_method = NULL;
+	relay->grab_pressed_keys.size = 0;
+	relay->deactivate_deferred = false;
 	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
 	if (text_input) {
 		// keyboard focus is still there, so keep the surface at hand in case
@@ -206,6 +213,16 @@ static void constrain_popup(struct sway_input_popup *popup) {
 static void input_popup_set_focus(struct sway_input_popup *popup,
 		struct wlr_surface *surface);
 
+static void relay_send_im_done(struct sway_input_method_relay *relay) {
+	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
+	struct sway_input_popup *popup;
+	wl_list_for_each(popup, &relay->input_popups, link) {
+		input_popup_set_focus(popup,
+			text_input ? text_input->input->focused_surface : NULL);
+	}
+	wlr_input_method_v2_send_done(relay->input_method);
+}
+
 static void relay_send_im_state(struct sway_input_method_relay *relay,
 		struct wlr_text_input_v3 *input) {
 	struct wlr_input_method_v2 *input_method = relay->input_method;
@@ -227,18 +244,110 @@ static void relay_send_im_state(struct sway_input_method_relay *relay,
 			input->current.content_type.purpose);
 	}
 
-	struct sway_text_input *text_input = relay_get_focused_text_input(relay);
+	relay_send_im_done(relay);
+	// TODO: pass intent, display popup size
+}
 
-	struct sway_input_popup *popup;
-	wl_list_for_each(popup, &relay->input_popups, link) {
-		if (text_input != NULL) {
-			input_popup_set_focus(popup, text_input->input->focused_surface);
-		} else {
-			input_popup_set_focus(popup, NULL);
+static bool relay_has_enabled_text_input(
+		struct sway_input_method_relay *relay) {
+	struct sway_text_input *text_input;
+	wl_list_for_each(text_input, &relay->text_inputs, link) {
+		if (text_input->input->focused_surface != NULL
+				&& text_input->input->current_enabled) {
+			return true;
 		}
 	}
-	wlr_input_method_v2_send_done(input_method);
-	// TODO: pass intent, display popup size
+	return false;
+}
+
+struct relay_grab_pressed_key {
+	struct wlr_keyboard *keyboard;
+	uint32_t keycode;
+};
+
+static size_t relay_find_grab_key(struct sway_input_method_relay *relay,
+		struct wlr_keyboard *keyboard, uint32_t keycode) {
+	struct relay_grab_pressed_key *keys = relay->grab_pressed_keys.data;
+	size_t length = relay->grab_pressed_keys.size / sizeof(*keys);
+	size_t index = 0;
+	while (index < length && (keys[index].keyboard != keyboard
+			|| keys[index].keycode != keycode)) {
+		index++;
+	}
+	return index;
+}
+
+bool sway_input_method_relay_has_grab_key(
+		struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard,
+		uint32_t keycode) {
+	return relay_find_grab_key(relay, keyboard, keycode)
+		< relay->grab_pressed_keys.size / sizeof(struct relay_grab_pressed_key);
+}
+
+static void relay_resolve_deferred_deactivate(
+		struct sway_input_method_relay *relay) {
+	if (!relay->deactivate_deferred) {
+		return;
+	}
+	relay->deactivate_deferred = false;
+	if (relay->input_method != NULL
+			&& !relay_has_enabled_text_input(relay)) {
+		wlr_input_method_v2_send_deactivate(relay->input_method);
+		relay_send_im_done(relay);
+	}
+}
+
+bool sway_input_method_relay_track_grab_key(
+		struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard,
+		uint32_t keycode) {
+	struct relay_grab_pressed_key *keys = relay->grab_pressed_keys.data;
+	size_t length = relay->grab_pressed_keys.size / sizeof(*keys);
+	size_t index = relay_find_grab_key(relay, keyboard, keycode);
+
+	if (index == length) {
+		struct relay_grab_pressed_key *key =
+			wl_array_add(&relay->grab_pressed_keys, sizeof(*key));
+		if (key == NULL) {
+			sway_log(SWAY_ERROR, "Unable to track input-method grab key");
+			return false;
+		}
+		key->keyboard = keyboard;
+		key->keycode = keycode;
+	}
+	return true;
+}
+
+void sway_input_method_relay_release_grab_key(
+		struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard,
+		uint32_t keycode) {
+	struct relay_grab_pressed_key *keys = relay->grab_pressed_keys.data;
+	size_t length = relay->grab_pressed_keys.size / sizeof(*keys);
+	size_t index = relay_find_grab_key(relay, keyboard, keycode);
+	if (index < length) {
+		keys[index] = keys[length - 1];
+		relay->grab_pressed_keys.size -= sizeof(*keys);
+	}
+
+	if (relay->deactivate_deferred && relay->grab_pressed_keys.size == 0) {
+		relay_resolve_deferred_deactivate(relay);
+	}
+}
+
+void sway_input_method_relay_remove_grab_keyboard(
+		struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard) {
+	struct relay_grab_pressed_key *keys = relay->grab_pressed_keys.data;
+	size_t length = relay->grab_pressed_keys.size / sizeof(*keys);
+	for (size_t index = 0; index < length;) {
+		if (keys[index].keyboard == keyboard) {
+			keys[index] = keys[--length];
+		} else {
+			index++;
+		}
+	}
+	relay->grab_pressed_keys.size = length * sizeof(*keys);
+	if (length == 0) {
+		relay_resolve_deferred_deactivate(relay);
+	}
 }
 
 static void handle_text_input_enable(struct wl_listener *listener, void *data) {
@@ -252,7 +361,12 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 		sway_log(SWAY_INFO, "Enabling text input when input method is gone");
 		return;
 	}
-	wlr_input_method_v2_send_activate(text_input->relay->input_method);
+	if (text_input->relay->deactivate_deferred) {
+		// Preserve the current activation across a text-input handoff.
+		text_input->relay->deactivate_deferred = false;
+	} else {
+		wlr_input_method_v2_send_activate(text_input->relay->input_method);
+	}
 	relay_send_im_state(text_input->relay, text_input->input);
 }
 
@@ -282,6 +396,12 @@ static void relay_disable_text_input(struct sway_input_method_relay *relay,
 		sway_log(SWAY_DEBUG, "Disabling text input, but input method is gone");
 		return;
 	}
+	if (relay->grab_pressed_keys.size > 0) {
+		// Keep the grab alive until every press sent to it has a release.
+		relay->deactivate_deferred = true;
+		return;
+	}
+	relay->deactivate_deferred = false;
 	wlr_input_method_v2_send_deactivate(relay->input_method);
 	relay_send_im_state(relay, text_input->input);
 }
@@ -632,6 +752,7 @@ void sway_input_method_relay_init(struct sway_seat *seat,
 	relay->seat = seat;
 	wl_list_init(&relay->text_inputs);
 	wl_list_init(&relay->input_popups);
+	wl_array_init(&relay->grab_pressed_keys);
 
 	relay->text_input_new.notify = relay_handle_text_input;
 	wl_signal_add(&server.text_input->events.new_text_input,
@@ -652,6 +773,7 @@ void sway_input_method_relay_init(struct sway_seat *seat,
 void sway_input_method_relay_finish(struct sway_input_method_relay *relay) {
 	sway_input_method_relay_finish_text_input(relay);
 	sway_input_method_relay_finish_input_method(relay);
+	wl_array_release(&relay->grab_pressed_keys);
 }
 
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,

@@ -35,6 +35,8 @@ struct sway_input_method_relay {
 	struct wl_listener input_method_destroy;
 
 	struct wl_listener input_method_keyboard_grab_destroy;
+	struct wl_array grab_pressed_keys;
+	bool deactivate_deferred;
 };
 
 
@@ -65,6 +67,22 @@ void sway_input_method_relay_finish(struct sway_input_method_relay *relay);
 // Updates currently focused surface. Surface must belong to the same seat.
 void sway_input_method_relay_set_focus(struct sway_input_method_relay *relay,
 	struct wlr_surface *surface);
+
+// Reserve tracking before forwarding a press to the current input-method grab.
+// Returns false if the press must not be forwarded because it cannot be tracked.
+bool sway_input_method_relay_track_grab_key(
+	struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard,
+	uint32_t keycode);
+// Remove tracking after forwarding the matching release to the grab. This
+// ordering ensures that the release arrives before a deferred deactivation.
+void sway_input_method_relay_release_grab_key(
+	struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard,
+	uint32_t keycode);
+bool sway_input_method_relay_has_grab_key(
+	struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard,
+	uint32_t keycode);
+void sway_input_method_relay_remove_grab_keyboard(
+	struct sway_input_method_relay *relay, struct wlr_keyboard *keyboard);
 
 struct sway_text_input *sway_text_input_create(
 	struct sway_input_method_relay *relay,

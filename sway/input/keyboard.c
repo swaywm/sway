@@ -546,6 +546,19 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	}
 
 	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+		struct wlr_input_method_keyboard_grab_v2 *kb_grab =
+			keyboard_get_im_grab(keyboard);
+		if (kb_grab && sway_input_method_relay_has_grab_key(
+				&seat->im_relay, keyboard->wlr, event->keycode)) {
+			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
+				keyboard->wlr);
+			wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
+				event->time_msec, event->keycode, event->state);
+			sway_input_method_relay_release_grab_key(&seat->im_relay,
+				keyboard->wlr, event->keycode);
+			handled = true;
+		}
+
 		// If the pressed event was sent to a client and we have a focused
 		// surface immediately before this event, also send the released
 		// event. In particular, don't send the released event to the IM grab.
@@ -563,6 +576,13 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	if (!handled) {
 		struct wlr_input_method_keyboard_grab_v2 *kb_grab = keyboard_get_im_grab(keyboard);
 
+		if (kb_grab) {
+			if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
+					&& !sway_input_method_relay_track_grab_key(
+						&seat->im_relay, keyboard->wlr, event->keycode)) {
+				kb_grab = NULL;
+			}
+		}
 		if (kb_grab) {
 			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, keyboard->wlr);
 			wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
@@ -1133,6 +1153,8 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (keyboard->wlr->group) {
 		sway_keyboard_group_remove(keyboard);
 	}
+	sway_input_method_relay_remove_grab_keyboard(
+		&keyboard->seat_device->sway_seat->im_relay, keyboard->wlr);
 	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
 	if (wlr_seat_get_keyboard(wlr_seat) == keyboard->wlr) {
 		wlr_seat_set_keyboard(wlr_seat, NULL);
