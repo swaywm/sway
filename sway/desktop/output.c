@@ -7,29 +7,22 @@
 #include <wlr/backend/headless.h>
 #include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
-#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_compositor.h>
-#include <wlr/util/region.h>
-#include <wlr/util/transform.h>
-#include "config.h"
 #include "log.h"
 #include "sway/config.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
-#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
 #include "sway/server.h"
-#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
@@ -72,6 +65,75 @@ struct sway_output *all_output_by_name_or_id(const char *name_or_id) {
 	return NULL;
 }
 
+static struct sway_output *output_cycle(const struct sway_output *reference,
+		bool forward) {
+	if (root->outputs->length == 0) {
+		return NULL;
+	}
+	int ref_idx = -1;
+	if (reference) {
+		for (int i = 0; i < root->outputs->length; ++i) {
+			if (root->outputs->items[i] == reference) {
+				ref_idx = i;
+				break;
+			}
+		}
+	}
+	int next_idx;
+	if (ref_idx < 0) {
+		next_idx = forward ? 0 : root->outputs->length - 1;
+	} else {
+		next_idx = forward
+			? (ref_idx + 1) % root->outputs->length
+			: (ref_idx - 1 + root->outputs->length) % root->outputs->length;
+	}
+	return root->outputs->items[next_idx];
+}
+
+struct sway_output *output_by_direction_or_name(const char *spec,
+		const struct sway_output *reference, double ref_lx, double ref_ly) {
+	if (strcasecmp(spec, "current") == 0) {
+		const struct sway_workspace *active_ws =
+			seat_get_focused_workspace(config->handler_context.seat);
+		return active_ws ? active_ws->output : NULL;
+	}
+
+	if (strcasecmp(spec, "next") == 0) {
+		return output_cycle(reference, true);
+	}
+	if (strcasecmp(spec, "prev") == 0) {
+		return output_cycle(reference, false);
+	}
+
+	enum wlr_direction direction = 0;
+	if (strcasecmp(spec, "up") == 0) {
+		direction = WLR_DIRECTION_UP;
+	} else if (strcasecmp(spec, "down") == 0) {
+		direction = WLR_DIRECTION_DOWN;
+	} else if (strcasecmp(spec, "left") == 0) {
+		direction = WLR_DIRECTION_LEFT;
+	} else if (strcasecmp(spec, "right") == 0) {
+		direction = WLR_DIRECTION_RIGHT;
+	}
+
+	if (reference && direction) {
+		struct wlr_output *target = wlr_output_layout_adjacent_output(
+				root->output_layout, direction, reference->wlr_output,
+				ref_lx, ref_ly);
+
+		if (!target) {
+			target = wlr_output_layout_farthest_output(
+					root->output_layout, opposite_direction(direction),
+					reference->wlr_output, ref_lx, ref_ly);
+		}
+
+		if (target) {
+			return target->data;
+		}
+	}
+
+	return output_by_name_or_id(spec);
+}
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 	struct sway_seat *seat = input_manager_current_seat();
