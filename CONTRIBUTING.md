@@ -243,3 +243,29 @@ error_session:
 	return NULL;
 }
 ```
+
+## Bisecting
+
+When bisecting, it is often necessary to build older commits with their
+contemporary version of wlroots:
+
+```python
+#!/usr/bin/env python3
+#
+# Check out the wlroots commit that was the current master at the time that the current
+# sway HEAD was committed. Requires pygit2. E.g.: apk add py3-pygit2
+
+import pygit2
+
+sway = pygit2.Repository(".")
+head = sway.revparse_single("HEAD")
+sway_time = head.commit_time
+
+wlroots = pygit2.Repository("subprojects/wlroots")
+master = wlroots.revparse_single("master")
+for commit in wlroots.walk(master.id, pygit2.enums.SortMode.TIME):
+    if commit.commit_time < sway_time:
+        break
+
+wlroots.checkout_tree(commit)
+```
