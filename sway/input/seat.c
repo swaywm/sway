@@ -1417,8 +1417,11 @@ struct sway_node *seat_get_active_tiling_child(struct sway_seat *seat,
 	struct sway_seat_node *current;
 	wl_list_for_each(current, &seat->focus_stack, link) {
 		struct sway_node *node = current->node;
-		if (node_get_parent(node) != parent) {
+		if (node == parent || !node_has_ancestor(node, parent)) {
 			continue;
+		}
+		while (node_get_parent(node) != parent) {
+			node = node_get_parent(node);
 		}
 		if (parent->type == N_WORKSPACE) {
 			// Only consider tiling children
