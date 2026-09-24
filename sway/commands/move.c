@@ -394,6 +394,9 @@ static bool container_move_in_direction(struct sway_container *container,
 	} else {
 		// Container will be promoted
 		struct sway_container *old_parent = container->pending.parent;
+		// The container's fractions were relative to its former parent.
+		container->pending.height = container->pending.width = 0;
+		container->height_fraction = container->width_fraction = 0;
 		if (ancestor->pending.parent) {
 			// Container will move in with its parent
 			container_insert_child(ancestor->pending.parent, container,
@@ -404,8 +407,8 @@ static bool container_move_in_direction(struct sway_container *container,
 			workspace_insert_tiling(ancestor->pending.workspace, container,
 					index + (offs < 0 ? 0 : 1));
 		}
+		// The ancestor remains in the same parent, so preserve its fractions.
 		ancestor->pending.height = ancestor->pending.width = 0;
-		ancestor->height_fraction = ancestor->width_fraction = 0;
 		if (old_parent) {
 			container_reap_empty(old_parent);
 		}
