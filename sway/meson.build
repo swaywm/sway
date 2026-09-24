@@ -14,6 +14,7 @@ sway_sources = files(
 	'swaynag.c',
 	'xdg_activation_v1.c',
 	'xdg_decoration.c',
+	'xdg_session_management_v1.c',
 
 	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',

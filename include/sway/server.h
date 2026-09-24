@@ -130,6 +130,12 @@ struct sway_server {
 	struct wlr_ext_workspace_manager_v1 *workspace_manager_v1;
 	struct wl_listener workspace_manager_v1_commit;
 
+	struct {
+		char *dir;
+		FILE *urandom;
+		struct wl_listener new_session;
+	} xdg_session_manager_v1;
+
 	struct wl_list pending_launcher_ctxs; // launcher_ctx::link
 
 	// The timeout for transactions, after which a transaction is applied
