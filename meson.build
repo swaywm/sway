@@ -127,6 +127,7 @@ if scdoc.found()
 		'sway/sway-output.5.scd',
 		'swaybar/swaybar-protocol.7.scd',
 		'swaymsg/swaymsg.1.scd',
+		'swaysavetree/sway-save-tree.1.scd',
 	]
 
 	if get_option('swaynag')
@@ -195,6 +196,7 @@ subdir('protocols')
 subdir('common')
 subdir('sway')
 subdir('swaymsg')
+subdir('swaysavetree')
 
 if get_option('swaybar') or get_option('swaynag')
 	subdir('client')
