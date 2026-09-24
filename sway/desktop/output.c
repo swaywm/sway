@@ -546,6 +546,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		struct sway_output_non_desktop *non_desktop = output_non_desktop_create(wlr_output);
 #if WLR_HAS_DRM_BACKEND
 		if (server->drm_lease_manager) {
+			wlr_drm_lease_device_v1_add_backend(server->drm_lease_manager,
+					wlr_output->backend);
 			wlr_drm_lease_v1_manager_offer_output(server->drm_lease_manager,
 					wlr_output);
 		}
