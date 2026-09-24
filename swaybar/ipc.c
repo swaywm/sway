@@ -333,6 +333,13 @@ static bool ipc_parse_config(
 	}
 #endif
 
+	json_object *active_only =
+		json_object_object_get(bar_config, "active_only");
+	if (active_only) {
+		config->active_only =
+			json_object_get_boolean(active_only);
+	}
+
 	json_object_put(bar_config);
 	return true;
 }

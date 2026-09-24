@@ -81,6 +81,8 @@ struct swaybar_config *init_config(void) {
 	wl_list_init(&config->tray_bindings);
 #endif
 
+  config->active_only = false;
+
 	return config;
 }
 
