@@ -190,7 +190,7 @@ static bool criteria_matches_container(struct criteria *criteria,
 	return true;
 }
 
-static bool criteria_matches_view(struct criteria *criteria,
+bool criteria_matches_view(struct criteria *criteria,
 		struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
