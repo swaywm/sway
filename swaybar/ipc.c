@@ -546,6 +546,8 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 		loop_remove_fd(bar->eventloop, bar->tray->fd);
 		destroy_tray(bar->tray);
 		bar->tray = NULL;
+	} else if (bar->tray) {
+		tray_reload_icon_theme(bar->tray, newcfg->icon_theme);
 	}
 #endif
 

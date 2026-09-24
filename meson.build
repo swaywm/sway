@@ -97,9 +97,12 @@ else
 	sdbus = dependency(get_option('sd-bus-provider'), required: get_option('tray'))
 endif
 
-tray_deps_found = sdbus.found()
+sfdo_icon = dependency('libsfdo-icon', version: '>=0.1.3', required: get_option('tray'))
+sfdo_basedir = dependency('libsfdo-basedir', version: '>=0.1.3', required: get_option('tray'))
+
+tray_deps_found = sdbus.found() and sfdo_icon.found() and sfdo_basedir.found()
 if get_option('tray').enabled() and not tray_deps_found
-	error('Building with -Dtray=enabled, but sd-bus has not been not found')
+	error('Building with -Dtray=enabled, but sd-bus or libsfdo has not been found')
 endif
 have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
