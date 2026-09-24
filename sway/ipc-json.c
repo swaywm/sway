@@ -605,6 +605,8 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 	struct wlr_box geometry = {0, 0, c->view->natural_width, c->view->natural_height};
 	json_object_object_add(object, "geometry", ipc_json_create_rect(&geometry));
+	json_object_object_add(
+			object, "surface_content_rect", ipc_json_create_rect(&c->view->geometry));
 
 	json_object_object_add(object, "max_render_time", json_object_new_int(c->view->max_render_time));
 
