@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -52,6 +53,14 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	pid_t child = fork();
 	if (child == 0) {
 		setsid();
+
+		int devnull = open("/dev/null", O_RDWR);
+		if (devnull > STDERR_FILENO) {
+			dup2(devnull, STDIN_FILENO);
+			dup2(devnull, STDOUT_FILENO);
+			dup2(devnull, STDERR_FILENO);
+			close(devnull);
+		}
 
 		if (ctx) {
 			const char *token = launcher_ctx_get_token_name(ctx);
