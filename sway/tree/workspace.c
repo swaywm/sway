@@ -6,6 +6,7 @@
 #include <string.h>
 #include <strings.h>
 #include <wlr/types/wlr_ext_workspace_v1.h>
+#include <wlr/types/wlr_cursor.h>
 #include "log.h"
 #include "stringop.h"
 #include "sway/desktop/transaction.h"
@@ -733,12 +734,22 @@ bool workspace_switch(struct sway_workspace *workspace) {
 
 	sway_log(SWAY_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
+
 	struct sway_node *next = seat_get_focus_inactive(seat, &workspace->node);
 	if (next == NULL) {
 		next = &workspace->node;
 	}
 	seat_set_focus(seat, next);
 	arrange_workspace(workspace);
+	transaction_commit_dirty();
+	if (config->focus_follows_mouse == FOLLOWS_ALWAYS) {
+		struct sway_cursor *cursor = seat->cursor;
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
+		struct sway_node *node = node_at_coords(seat,
+				cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+		seat_set_focus(seat, node);
+	}
 	return true;
 }
 
