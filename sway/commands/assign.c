@@ -25,7 +25,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 
 	if (has_prefix(*argv, "→")) {
 		if (argc < 2) {
-			free(criteria);
+			criteria_destroy(criteria);
 			return cmd_results_new(CMD_INVALID, "Missing workspace");
 		}
 		--argc;
@@ -42,7 +42,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 		if (strcmp(*argv, "number") == 0) {
 			--argc; ++argv;
 			if (argv[0][0] < '0' || argv[0][0] > '9') {
-				free(criteria);
+				criteria_destroy(criteria);
 				return cmd_results_new(CMD_INVALID,
 						"Invalid workspace number '%s'", argv[0]);
 			}
@@ -53,6 +53,14 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	}
 
 	criteria->target = join_args(argv, argc);
+
+	// Check if it already exists.
+	if (criteria_already_exists(criteria)) {
+		sway_log(SWAY_DEBUG, "assign already exists: '%s' -> '%s'",
+				criteria->raw, criteria->target);
+		criteria_destroy(criteria);
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
 
 	list_add(config->criteria, criteria);
 	sway_log(SWAY_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,

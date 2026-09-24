@@ -877,25 +877,22 @@ bool criteria_is_equal(struct criteria *left, struct criteria *right) {
 	if (left->type != right->type) {
 		return false;
 	}
-	// XXX Only implemented for CT_NO_FOCUS for now.
-	if (left->type == CT_NO_FOCUS) {
+	switch (left->type) {
+	case CT_NO_FOCUS:
 		return strcmp(left->raw, right->raw) == 0;
-	}
-	if (left->type == CT_COMMAND) {
+	case CT_COMMAND:
 		return strcmp(left->raw, right->raw) == 0
 				&& strcmp(left->cmdlist, right->cmdlist) == 0;
+	case CT_ASSIGN_OUTPUT:
+	case CT_ASSIGN_WORKSPACE:
+	case CT_ASSIGN_WORKSPACE_NUMBER:
+		return strcmp(left->raw, right->raw) == 0
+				&& strcmp(left->target, right->target) == 0;
 	}
-	return false;
+	abort(); // unreachable
 }
 
 bool criteria_already_exists(struct criteria *criteria) {
-	// XXX Only implemented for CT_NO_FOCUS and CT_COMMAND for now.
-	// While criteria_is_equal also obeys this limitation, this is a shortcut
-	// to avoid processing the list.
-	if (criteria->type != CT_NO_FOCUS && criteria->type != CT_COMMAND) {
-		return false;
-	}
-
 	list_t *criterias = config->criteria;
 	for (int i = 0; i < criterias->length; ++i) {
 		struct criteria *existing = criterias->items[i];
