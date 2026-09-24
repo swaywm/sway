@@ -684,7 +684,11 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	}
 	output->color_transform = config_applied->color_transform;
 
-	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
+	int max_render_time = 0;
+	if (oc && (oc->max_render_time > 0 || oc->max_render_time == MAX_RENDER_TIME_AUTO)) {
+		max_render_time = oc->max_render_time;
+	}
+	output_set_max_render_time(output, max_render_time);
 	output->allow_tearing = oc && oc->allow_tearing > 0;
 	output->hdr = applied->image_description != NULL;
 
