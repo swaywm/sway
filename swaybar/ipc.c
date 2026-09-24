@@ -80,6 +80,7 @@ static void ipc_parse_colors(
 		{ "binding_mode_border", &config->colors.binding_mode.border },
 		{ "binding_mode_bg", &config->colors.binding_mode.background },
 		{ "binding_mode_text", &config->colors.binding_mode.text },
+		{ "tray_background", &config->colors.tray_background },
 	};
 
 	for (size_t i = 0; i < sizeof(properties) / sizeof(properties[i]); i++) {

@@ -77,6 +77,7 @@ struct swaybar_config *init_config(void) {
 	config->colors.binding_mode.text = 0xFFFFFFFF;
 
 #if HAVE_TRAY
+	config->colors.tray_background = 0x000000FF;
 	config->tray_padding = 2;
 	wl_list_init(&config->tray_bindings);
 #endif
