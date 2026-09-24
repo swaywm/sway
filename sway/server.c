@@ -64,6 +64,7 @@
 #include "sway/input/cursor.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
 
 #if WLR_HAS_XWAYLAND
 #include <wlr/xwayland/shell.h>
@@ -244,6 +245,7 @@ static void handle_new_foreign_toplevel_capture_request(struct wl_listener *list
 }
 
 bool server_init(struct sway_server *server) {
+	node_map_init();
 	sway_log(SWAY_DEBUG, "Initializing Wayland server");
 	server->wl_display = wl_display_create();
 	if (!server->wl_display) {

@@ -13,6 +13,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
+#include "sway/tree/node.h"
 #include "list.h"
 #include "log.h"
 #include "util.h"
@@ -83,6 +84,7 @@ void root_destroy(struct sway_root *root) {
 	list_free(root->non_desktop_outputs);
 	list_free(root->outputs);
 	wlr_scene_node_destroy(&root->root_scene->tree.node);
+	node_map_remove(&root->node);
 	free(root);
 }
 
