@@ -25,6 +25,7 @@ types=(
 'get_binding_modes'
 'get_binding_state'
 'get_config'
+'get_cursor'
 'send_tick'
 'subscribe'
 )
