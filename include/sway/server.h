@@ -13,7 +13,6 @@ struct sway_transaction;
 
 struct sway_session_lock {
 	struct wlr_session_lock_v1 *lock;
-	struct wlr_surface *focused;
 	bool abandoned;
 
 	struct wl_list outputs; // struct sway_session_lock_output
@@ -181,6 +180,8 @@ void sway_session_lock_add_output(struct sway_session_lock *lock,
 	struct sway_output *output);
 bool sway_session_lock_has_surface(struct sway_session_lock *lock,
 	struct wlr_surface *surface);
+void sway_session_lock_focus_output(struct sway_session_lock *lock,
+	struct sway_seat *seat, struct sway_output *output);
 void handle_xdg_shell_toplevel(struct wl_listener *listener, void *data);
 #if WLR_HAS_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
