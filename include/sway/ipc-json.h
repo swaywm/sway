@@ -8,6 +8,8 @@
 json_object *ipc_json_get_version(void);
 
 json_object *ipc_json_get_binding_mode(void);
+json_object *ipc_json_describe_binding(struct sway_binding *binding);
+json_object *ipc_json_describe_binding_mode(struct sway_mode *mode);
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *o);
 json_object *ipc_json_describe_non_desktop_output(struct sway_output_non_desktop *o);
