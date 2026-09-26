@@ -3,7 +3,6 @@ install_manifest.txt
 *.o
 *.a
 bin/
-test/
 build/
 build-*/
 .cache/
