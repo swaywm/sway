@@ -19,6 +19,7 @@ _swaymsg()
     'get_config'
     'send_tick'
     'subscribe'
+    'mint_activation_token'
   )
 
   short=(

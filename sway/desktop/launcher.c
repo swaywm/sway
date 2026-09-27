@@ -73,6 +73,7 @@ void launcher_ctx_destroy(struct launcher_ctx *ctx) {
 	wl_list_remove(&ctx->link);
 	wlr_xdg_activation_token_v1_destroy(ctx->token);
 	free(ctx->fallback_name);
+	free(ctx->cmdlist);
 	free(ctx);
 }
 
@@ -99,6 +100,23 @@ struct launcher_ctx *launcher_ctx_find_pid(pid_t pid) {
 	} while (pid > 1);
 
 	return ctx;
+}
+
+struct launcher_ctx *launcher_ctx_find_token(const char *token_name) {
+	if (wl_list_empty(&server.pending_launcher_ctxs)) {
+		return NULL;
+	}
+
+	struct launcher_ctx *ctx = NULL;
+	wl_list_for_each(ctx, &server.pending_launcher_ctxs, link) {
+		if (ctx->token) {
+			const char *name = wlr_xdg_activation_token_v1_get_name(ctx->token);
+			if (name && strcmp(name, token_name) == 0) {
+				return ctx;
+			}
+		}
+	}
+	return NULL;
 }
 
 struct sway_workspace *launcher_ctx_get_workspace(

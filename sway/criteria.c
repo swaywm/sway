@@ -17,28 +17,16 @@
 #include "config.h"
 
 bool criteria_is_empty(struct criteria *criteria) {
-	return !criteria->title
-		&& !criteria->shell
-		&& !criteria->all
-		&& !criteria->app_id
-		&& !criteria->con_mark
-		&& !criteria->con_id
+	return !criteria->title && !criteria->shell && !criteria->all && !criteria->app_id &&
+			!criteria->con_mark && !criteria->con_id
 #if WLR_HAS_XWAYLAND
-		&& !criteria->class
-		&& !criteria->id
-		&& !criteria->instance
-		&& !criteria->window_role
-		&& criteria->window_type == ATOM_LAST
+			&& !criteria->class && !criteria->id && !criteria->instance && !criteria->window_role &&
+			criteria->window_type == ATOM_LAST
 #endif
-		&& !criteria->floating
-		&& !criteria->tiling
-		&& !criteria->urgent
-		&& !criteria->workspace
-		&& !criteria->pid
-		&& !criteria->sandbox_engine
-		&& !criteria->sandbox_app_id
-		&& !criteria->sandbox_instance_id
-		&& !criteria->tag;
+			&& !criteria->floating && !criteria->tiling && !criteria->urgent &&
+			!criteria->workspace && !criteria->pid && !criteria->sandbox_engine &&
+			!criteria->sandbox_app_id && !criteria->sandbox_instance_id && !criteria->tag &&
+			!criteria->initial_activation_token;
 }
 
 // The error pointer is used for parsing functions, and saves having to pass it
@@ -108,6 +96,7 @@ void criteria_destroy(struct criteria *criteria) {
 	pattern_destroy(criteria->tag);
 	free(criteria->target);
 	free(criteria->cmdlist);
+	free(criteria->initial_activation_token);
 	free(criteria->raw);
 	free(criteria);
 }
@@ -337,6 +326,13 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
+		}
+	}
+
+	if (criteria->initial_activation_token) {
+		const char *token = view->initial_activation_token;
+		if (!token || strcmp(token, criteria->initial_activation_token) != 0) {
+			return false;
 		}
 	}
 
@@ -571,6 +567,7 @@ enum criteria_token {
 	T_SANDBOX_APP_ID,
 	T_SANDBOX_INSTANCE_ID,
 	T_TAG,
+	T_INITIAL_ACTIVATION_TOKEN,
 
 	T_INVALID,
 };
@@ -618,6 +615,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_SANDBOX_INSTANCE_ID;
 	} else if (strcmp(name, "tag") == 0) {
 		return T_TAG;
+	} else if (strcmp(name, "initial_activation_token") == 0) {
+		return T_INITIAL_ACTIVATION_TOKEN;
 	}
 	return T_INVALID;
 }
@@ -731,6 +730,9 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		break;
 	case T_TAG:
 		pattern_create(&criteria->tag, value);
+		break;
+	case T_INITIAL_ACTIVATION_TOKEN:
+		criteria->initial_activation_token = strdup(value);
 		break;
 	case T_INVALID:
 		break;

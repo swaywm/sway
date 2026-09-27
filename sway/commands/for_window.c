@@ -4,6 +4,7 @@
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "sway/desktop/launcher.h"
 
 struct cmd_results *cmd_for_window(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -21,6 +22,34 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 
 	criteria->type = CT_COMMAND;
 	criteria->cmdlist = join_args(argv + 1, argc - 1);
+
+	if (criteria->initial_activation_token) {
+		char *temp_token = criteria->initial_activation_token;
+		criteria->initial_activation_token = NULL;
+		bool has_others = !criteria_is_empty(criteria);
+		criteria->initial_activation_token = temp_token;
+
+		if (has_others) {
+			criteria_destroy(criteria);
+			return cmd_results_new(CMD_INVALID,
+					"initial_activation_token criteria cannot be combined with other criteria");
+		}
+
+		struct launcher_ctx *ctx = launcher_ctx_find_token(criteria->initial_activation_token);
+		if (ctx) {
+			free(ctx->cmdlist);
+			ctx->cmdlist = strdup(criteria->cmdlist);
+			sway_log(SWAY_DEBUG, "Bound commands '%s' to activation token '%s'", ctx->cmdlist,
+					criteria->initial_activation_token);
+		} else {
+			criteria_destroy(criteria);
+			return cmd_results_new(
+					CMD_INVALID, "Activation token '%s' not found or expired", temp_token);
+		}
+
+		criteria_destroy(criteria);
+		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
 
 	// Check if it already exists
 	if (criteria_already_exists(criteria)) {

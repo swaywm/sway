@@ -586,6 +586,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "app_id",
 			app_id ? json_object_new_string(app_id) : NULL);
 
+	const char *initial_activation_token = c->view->initial_activation_token;
+	json_object_object_add(object, "initial_activation_token",
+			initial_activation_token ? json_object_new_string(initial_activation_token) : NULL);
+
 	json_object_object_add(object, "foreign_toplevel_identifier",
 		c->view->ext_foreign_toplevel ?
 			json_object_new_string(c->view->ext_foreign_toplevel->identifier) : NULL);
