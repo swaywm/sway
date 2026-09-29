@@ -33,6 +33,7 @@ struct swaybar {
 	struct zxdg_output_manager_v1 *xdg_output_manager;
 	struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
 	struct wl_shm *shm;
+	struct xdg_wm_base *wm_base;
 
 	struct swaybar_config *config;
 	struct status_line *status;
