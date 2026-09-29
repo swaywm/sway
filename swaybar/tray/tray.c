@@ -116,6 +116,28 @@ static int cmp_output(const void *item, const void *cmp_to) {
 	return strcmp(item, output->name);
 }
 
+uint32_t get_tray_width(struct swaybar_output *output) {
+	struct swaybar_config *config = output->bar->config;
+	if (config->tray_outputs &&
+			list_seq_find(config->tray_outputs, cmp_output, output) == -1) {
+		return 0;
+	}
+	if ((int)(output->height * output->scale) <= 2 * config->tray_padding) {
+		return 0;
+	}
+
+	uint32_t width = 0;
+	struct swaybar_tray *tray = output->bar->tray;
+	for (int i = 0; i < tray->items->length; ++i) {
+		struct swaybar_sni *sni = tray->items->items[i];
+		if (!sni->status || sni->status[0] != 'P') {
+			// A tray item is at most as wide as the bar is high.
+			width += output->height;
+		}
+	}
+	return width;
+}
+
 uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output, double *x) {
 	struct swaybar_config *config = output->bar->config;
 	if (config->tray_outputs) {
