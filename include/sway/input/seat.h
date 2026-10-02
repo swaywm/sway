@@ -80,9 +80,15 @@ struct sway_drag {
 	struct wl_listener destroy;
 };
 
+struct sway_scroll_axis {
+	double value;
+	uint32_t time_msec;
+};
+
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
+	struct sway_scroll_axis axis[2];
 
 	// Seat scene tree structure
 	// - scene_tree
