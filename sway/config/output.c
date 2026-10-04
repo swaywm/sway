@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <drm_fourcc.h>
 #include <stdbool.h>
+#include <math.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -398,14 +399,12 @@ static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
 		(output->phys_width == 16 && output->phys_height == 10);
 }
 
-// The minimum DPI at which we turn on a scale of 2
-#define HIDPI_DPI_LIMIT (2 * 96)
-// The minimum screen height at which we turn on a scale of 2
-#define HIDPI_MIN_HEIGHT 1200
+#define HIDPI_PPI_HIGH 200
+#define HIDPI_PPI_MEDIUM 140
 // 1 inch = 25.4 mm
 #define MM_PER_INCH 25.4
 
-static int compute_default_scale(struct wlr_output *output,
+static float compute_default_scale(struct wlr_output *output,
 		struct wlr_output_state *pending) {
 	struct wlr_box box = { .width = output->width, .height = output->height };
 	if (pending->committed & WLR_OUTPUT_STATE_MODE) {
@@ -420,16 +419,11 @@ static int compute_default_scale(struct wlr_output *output,
 			break;
 		}
 	}
-	enum wl_output_transform transform = output->transform;
-	if (pending->committed & WLR_OUTPUT_STATE_TRANSFORM) {
-		transform = pending->transform;
-	}
-	wlr_box_transform(&box, &box, transform, box.width, box.height);
 
 	int width = box.width;
 	int height = box.height;
 
-	if (height < HIDPI_MIN_HEIGHT) {
+	if (width <= 0 || height <= 0) {
 		return 1;
 	}
 
@@ -441,13 +435,19 @@ static int compute_default_scale(struct wlr_output *output,
 		return 1;
 	}
 
-	double dpi_x = (double) width / (output->phys_width / MM_PER_INCH);
-	double dpi_y = (double) height / (output->phys_height / MM_PER_INCH);
-	if (dpi_x <= HIDPI_DPI_LIMIT || dpi_y <= HIDPI_DPI_LIMIT) {
-		return 1;
-	}
+	double diag_px = sqrt((double) width * width + (double) height * height);
+	double phys_w_in = output->phys_width / MM_PER_INCH;
+	double phys_h_in = output->phys_height / MM_PER_INCH;
+	double diag_in = sqrt(phys_w_in * phys_w_in + phys_h_in * phys_h_in);
+	double ppi = diag_px / diag_in;
 
-	return 2;
+	if (ppi > HIDPI_PPI_HIGH) {
+		return 2;
+	}
+	if (ppi > HIDPI_PPI_MEDIUM) {
+		return 1.5;
+	}
+	return 1;
 }
 
 static enum render_bit_depth bit_depth_from_format(uint32_t render_format) {
