@@ -75,6 +75,7 @@ struct output_config *new_output_config(const char *name) {
 	oc->max_render_time = -1;
 	oc->adaptive_sync = -1;
 	oc->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	oc->color_format = WLR_OUTPUT_COLOR_FORMAT_AUTO;
 	oc->color_profile = COLOR_PROFILE_DEFAULT;
 	oc->color_transform = NULL;
 	oc->power = -1;
@@ -129,6 +130,9 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = RENDER_BIT_DEPTH_DEFAULT;
+	}
+	if (src->color_format != WLR_OUTPUT_COLOR_FORMAT_AUTO) {
+		dst->color_format = WLR_OUTPUT_COLOR_FORMAT_AUTO;
 	}
 	if (src->color_profile != COLOR_PROFILE_DEFAULT) {
 		if (dst->color_transform) {
@@ -206,6 +210,9 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	}
 	if (src->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT) {
 		dst->render_bit_depth = src->render_bit_depth;
+	}
+	if (src->color_format != WLR_OUTPUT_COLOR_FORMAT_AUTO) {
+		dst->color_format = src->color_format;
 	}
 	if (src->color_profile != COLOR_PROFILE_DEFAULT) {
 		if (src->color_transform) {
@@ -387,6 +394,30 @@ static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending,
 	wlr_output_state_set_image_description(pending, &image_desc);
 }
 
+static void set_color_format(struct wlr_output *output,
+		struct wlr_output_state *pending, struct output_config *oc) {
+	if (!oc || oc->color_format == WLR_OUTPUT_COLOR_FORMAT_AUTO) {
+		return;
+	}
+
+	// If the display advertises the color formats it supports, check the
+	// requested one against them. A value of 0 means the information is not
+	// available (e.g. no "color format" connector property), in which case
+	// the backend decides whether to honor the request.
+	if (output->supported_color_formats != 0 &&
+			!(output->supported_color_formats &
+				(1u << oc->color_format))) {
+		sway_log(SWAY_ERROR,
+			"Cannot set color format %s on output %s: not supported by the display",
+			sway_output_color_format_to_string(oc->color_format), output->name);
+		return;
+	}
+
+	sway_log(SWAY_DEBUG, "Setting color format %s on output %s",
+		sway_output_color_format_to_string(oc->color_format), output->name);
+	wlr_output_state_set_color_format(pending, oc->color_format);
+}
+
 /* Some manufacturers hardcode the aspect-ratio of the output in the physical
  * size field. */
 static bool phys_size_is_aspect_ratio(struct wlr_output *output) {
@@ -553,6 +584,7 @@ static void queue_output_config(struct output_config *oc,
 	} else {
 		wlr_output_state_set_render_format(pending, DRM_FORMAT_XRGB8888);
 	}
+	set_color_format(wlr_output, pending, oc);
 
 	bool hdr = oc && oc->hdr == 1;
 	bool color_profile = oc && (oc->color_transform != NULL
