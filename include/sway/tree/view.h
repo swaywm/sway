@@ -107,6 +107,8 @@ struct sway_view {
 
 	bool destroying;
 
+	bool needs_configure;
+
 	list_t *executed_criteria; // struct criteria *
 
 	union {
