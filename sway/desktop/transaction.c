@@ -844,10 +844,19 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_node *node = instruction->node;
-		bool hidden = node_is_view(node) && !node->destroying &&
-			!view_is_visible(node->sway_container->view);
-		if (should_configure(node, instruction)) {
-			instruction->serial = view_configure(node->sway_container->view,
+		struct sway_view *view = node_is_view(node) ?
+			node->sway_container->view : NULL;
+		bool hidden = view && !node->destroying && !view_is_visible(view);
+		bool workspace_hidden = hidden && view->container->pending.workspace &&
+			!workspace_is_visible(view->container->pending.workspace);
+		bool should = should_configure(node, instruction);
+		bool flush_deferred = view && !node->destroying &&
+			view->needs_configure && !hidden;
+
+		if (should && workspace_hidden) {
+			view->needs_configure = true;
+		} else if (should || flush_deferred) {
+			instruction->serial = view_configure(view,
 					instruction->container_state.content_x,
 					instruction->container_state.content_y,
 					instruction->container_state.content_width,
@@ -857,11 +866,11 @@ static void transaction_commit(struct sway_transaction *transaction) {
 				++transaction->num_waiting;
 			}
 
-			view_send_frame_done(node->sway_container->view);
+			view_send_frame_done(view);
+			view->needs_configure = false;
 		}
-		if (!hidden && node_is_view(node) &&
-				!node->sway_container->view->saved_surface_tree) {
-			view_save_buffer(node->sway_container->view);
+		if (!hidden && view && !view->saved_surface_tree) {
+			view_save_buffer(view);
 		}
 		node->instruction = instruction;
 	}
