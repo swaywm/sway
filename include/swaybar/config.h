@@ -79,6 +79,7 @@ struct swaybar_config {
 	bool tray_hidden;
 	list_t *tray_outputs; // char *
 	int tray_padding;
+	bool tray_last;
 #endif
 };
 

@@ -508,6 +508,11 @@ static uint32_t render_status_line_i3bar(struct render_context *ctx, double *x) 
 			predict_workspace_buttons_length(cairo, output) +
 			predict_binding_mode_indicator_length(cairo, output) +
 			3; // require a bit of space for margin
+#if HAVE_TRAY
+	if (output->bar->tray && !output->bar->config->tray_last) {
+		reserved_width += get_tray_width(output);
+	}
+#endif
 
 	double predicted_full_pos =
 			predict_status_line_pos(cairo, output, *x);
@@ -675,8 +680,9 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 	 * utilize the available space.
 	 */
 	double x = output->width;
+
 #if HAVE_TRAY
-	if (bar->tray) {
+	if (bar->tray && config->tray_last) {
 		uint32_t h = render_tray(cairo, output, &x);
 		max_height = h > max_height ? h : max_height;
 	}
@@ -685,6 +691,13 @@ static uint32_t render_to_cairo(struct render_context *ctx) {
 		uint32_t h = render_status_line(ctx, &x);
 		max_height = h > max_height ? h : max_height;
 	}
+#if HAVE_TRAY
+	if (bar->tray && !config->tray_last) {
+		uint32_t h = render_tray(cairo, output, &x);
+		max_height = h > max_height ? h : max_height;
+	}
+#endif
+
 	x = 0;
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;
