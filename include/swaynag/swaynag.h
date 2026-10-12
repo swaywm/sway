@@ -90,6 +90,7 @@ struct swaynag {
 	struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
 	struct wl_surface *surface;
 
+	bool needs_redraw;
 	uint32_t width;
 	uint32_t height;
 	int32_t scale;
