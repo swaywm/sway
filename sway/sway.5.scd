@@ -40,6 +40,13 @@ output eDP-1 resolution 1920x1080
 These commands can be executed in your config file, via *swaymsg*(1), or via
 the bindsym command.
 
+# TERMINOLOGY
+
+Every window can be split horizontally or vertically. The terminology is
+"window" for a container that actually contains an Wayland window
+(like a terminal or browser) and "container" for containers that consist of
+one or more windows.
+
 # COMMAND CONVENTIONS
 
 Commands are split into several arguments using spaces. You can enclose
