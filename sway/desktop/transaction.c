@@ -679,6 +679,24 @@ static void arrange_root(struct sway_root *root) {
 		wlr_scene_node_set_enabled(&con->scene_tree->node, false);
 	}
 
+	// Disabled outputs are no longer in root->outputs, but their layers are still
+	// attached to the root layers from earlier arranges. Move them back to the
+	// unrendered staging tree, or leftovers such as the black fullscreen background
+	// show up on whichever output later covers that area.
+	struct sway_output *output;
+	wl_list_for_each(output, &root->all_outputs, link) {
+		if (output->enabled) {
+			continue;
+		}
+		wlr_scene_node_reparent(&output->layers.shell_background->node, root->staging);
+		wlr_scene_node_reparent(&output->layers.shell_bottom->node, root->staging);
+		wlr_scene_node_reparent(&output->layers.tiling->node, root->staging);
+		wlr_scene_node_reparent(&output->layers.shell_top->node, root->staging);
+		wlr_scene_node_reparent(&output->layers.shell_overlay->node, root->staging);
+		wlr_scene_node_reparent(&output->layers.fullscreen->node, root->staging);
+		wlr_scene_node_reparent(&output->layers.session_lock->node, root->staging);
+	}
+
 	if (fs) {
 		for (int i = 0; i < root->outputs->length; i++) {
 			struct sway_output *output = root->outputs->items[i];
