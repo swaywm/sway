@@ -309,6 +309,7 @@ static void config_defaults(struct sway_config *config) {
 	config->hide_lone_tab = false;
 
 	config->has_focused_tab_title = false;
+	config->has_unfocused_tab_title = false;
 
 	// border colors
 	color_to_rgba(config->border_colors.focused.border, 0x4C7899FF);
