@@ -410,6 +410,20 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
 	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
 	json_object_object_add(object, "hdr", json_object_new_boolean(output->hdr));
+
+	json_object_object_add(object, "color_format",
+		json_object_new_string(
+			sway_output_color_format_to_string(wlr_output->wire_encoding.format)));
+
+	json_object *color_formats = json_object_new_array();
+	for (int i = 0; i <= WLR_OUTPUT_COLOR_FORMAT_YCBCR420; i++) {
+		if (wlr_output->supported_color_formats & (1u << i)) {
+			json_object_array_add(color_formats,
+				json_object_new_string(
+					sway_output_color_format_to_string(i)));
+		}
+	}
+	json_object_object_add(object, "color_formats", color_formats);
 }
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *output) {

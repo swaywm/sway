@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/util/box.h>
 #include <wlr/render/color.h>
+#include <wlr/types/wlr_output.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xf86drmMode.h>
 #include "../include/config.h"
@@ -295,6 +296,7 @@ struct output_config {
 	int max_render_time; // In milliseconds
 	int adaptive_sync;
 	enum render_bit_depth render_bit_depth;
+	enum wlr_output_color_format color_format;
 	enum color_profile color_profile;
 	struct wlr_color_transform *color_transform;
 	int allow_tearing;
