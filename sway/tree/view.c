@@ -4,6 +4,7 @@
 #include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
@@ -953,6 +954,19 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 
 	if (set_focus) {
 		input_manager_set_focus(&view->container->node);
+
+		// If the newly mapped view stole focus while the pointer rests over a
+		// different window, re-run the focus-follows-mouse check so "always"
+		// restores focus to the window under the cursor instead of waiting
+		// for the next pointer motion event.
+		if (config->focus_follows_mouse == FOLLOWS_ALWAYS) {
+			struct wlr_surface *surface = NULL;
+			double sx, sy;
+			struct sway_node *node = node_at_coords(seat,
+					seat->cursor->cursor->x, seat->cursor->cursor->y,
+					&surface, &sx, &sy);
+			seat_set_focus(seat, node);
+		}
 	}
 
 	if (view->ext_foreign_toplevel) {
