@@ -220,7 +220,10 @@ static void container_move_to_workspace(struct sway_container *container,
 		}
 	} else {
 		container_detach(container);
-		if (workspace_is_empty(workspace) && container->pending.children) {
+		// A fullscreen split stays whole: unwrapping destroys it, and then
+		// cmd_move_in_direction() has no workspace left to arrange.
+		if (workspace_is_empty(workspace) && container->pending.children &&
+				container->pending.fullscreen_mode != FULLSCREEN_WORKSPACE) {
 			workspace_unwrap_children(workspace, container);
 			container_reap_empty(container);
 		} else {
