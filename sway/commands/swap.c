@@ -80,6 +80,12 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 			|| container_has_ancestor(other, current)) {
 		error = cmd_results_new(CMD_FAILURE,
 				"Cannot swap ancestor and descendant");
+	} else if ((container_is_scratchpad_hidden_or_child(current)
+				&& !container_is_scratchpad_hidden(current))
+			|| (container_is_scratchpad_hidden_or_child(other)
+				&& !container_is_scratchpad_hidden(other))) {
+		error = cmd_results_new(CMD_FAILURE,
+				"Cannot swap with a child of a hidden scratchpad container");
 	}
 
 	free(value);
