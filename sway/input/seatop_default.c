@@ -759,8 +759,20 @@ static void handle_pointer_axis(struct sway_seat *seat,
 			struct sway_node *active =
 				seat_get_active_tiling_child(seat, tabcontainer);
 			list_t *siblings = container_get_siblings(cont);
-			int desired = list_find(siblings, active->sway_container) +
-				roundf(scroll_factor * event->delta_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+			int steps;
+			if (event->delta_discrete != 0) {
+				// Mouse wheel: use delta_discrete
+				steps = roundf(scroll_factor *
+					event->delta_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+				cursor->tab_scroll_acc = 0;
+			} else {
+				// Touchpad: accumulate until threshold
+				const float tab_scroll_step = 40.0;
+				cursor->tab_scroll_acc += scroll_factor * event->delta;
+				steps = trunc(cursor->tab_scroll_acc / tab_scroll_step);
+				cursor->tab_scroll_acc -= steps * tab_scroll_step;
+			}
+			int desired = list_find(siblings, active->sway_container) + steps;
 			if (desired < 0) {
 				desired = 0;
 			} else if (desired >= siblings->length) {
