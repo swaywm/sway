@@ -62,22 +62,13 @@ static void restore_workspaces(struct sway_output *output) {
 		workspace_detach(ws);
 		output_add_workspace(output, ws);
 
-		// If the floater was made floating while on the NOOP output, its width
-		// and height will be zero and it should be reinitialized as a floating
-		// container to get the appropriate size and location. Additionally, if
-		// the floater is wider or taller than the output or is completely
-		// outside of the output's bounds, do the same as the output layout has
-		// likely changed and the maximum size needs to be checked and the
-		// floater re-centered
+		// Floaters created on the NOOP output have no geometry yet. Initialize
+		// only those floaters here. Existing floaters still use their previous
+		// workspace coordinates; arrange_workspace() adjusts them after the
+		// destination output geometry is updated.
 		for (int i = 0; i < ws->floating->length; i++) {
 			struct sway_container *floater = ws->floating->items[i];
-			if (floater->pending.width == 0 || floater->pending.height == 0 ||
-					floater->pending.width > output->width ||
-					floater->pending.height > output->height ||
-					floater->pending.x > output->lx + output->width ||
-					floater->pending.y > output->ly + output->height ||
-					floater->pending.x + floater->pending.width < output->lx ||
-					floater->pending.y + floater->pending.height < output->ly) {
+			if (floater->pending.width == 0 || floater->pending.height == 0) {
 				container_floating_resize_and_center(floater);
 			}
 		}

@@ -278,17 +278,22 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	struct wlr_box prev_box;
 	workspace_get_box(workspace, &prev_box);
 
-	double prev_x = workspace->x - workspace->current_gaps.left;
-	double prev_y = workspace->y - workspace->current_gaps.top;
+	// Floating coordinates use the usable area, without tiling gaps.
+	prev_box.x -= workspace->current_gaps.left;
+	prev_box.y -= workspace->current_gaps.top;
+	prev_box.width += workspace->current_gaps.left + workspace->current_gaps.right;
+	prev_box.height += workspace->current_gaps.top + workspace->current_gaps.bottom;
 	workspace->width = area->width;
 	workspace->height = area->height;
 	workspace->x = output->lx + area->x;
 	workspace->y = output->ly + area->y;
 
 	// Adjust any floating containers
-	double diff_x = workspace->x - prev_x;
-	double diff_y = workspace->y - prev_y;
-	if (!first_arrange && (diff_x != 0 || diff_y != 0)) {
+	double diff_x = workspace->x - prev_box.x;
+	double diff_y = workspace->y - prev_box.y;
+	if (!first_arrange && (diff_x != 0 || diff_y != 0 ||
+			prev_box.width != workspace->width ||
+			prev_box.height != workspace->height)) {
 		for (int i = 0; i < workspace->floating->length; ++i) {
 			struct sway_container *floater = workspace->floating->items[i];
 			struct wlr_box workspace_box;
