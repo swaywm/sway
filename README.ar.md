@@ -1,26 +1,25 @@
 # sway
 
-sway 
+sway هو مُركِّب (compositor) لـ [Wayland] متوافق مع [i3]. اطّلع على
+[الأسئلة الشائعة][FAQ]. انضم إلى [قناة IRC][IRC channel] \(القناة #sway على irc.libera.chat).
 
-هو مدير للمجموعات المركبة لـ[Wayland] متوافق مع [i3] -
+## توقيعات الإصدارات
 
-إقرأ [الأسئلة الشائعة](https://github.com/swaywm/sway/wiki)
-
- انضم الى [قناة IRC](https://web.libera.chat/gamja/?channels=#sway)
-
-
-## تواقيع الإصدار
- تٌوقع الإصدارات بـواسطة [E88F5E48] و تُنشر على [GitHub](https://github.com/swaywm/sway/releases)
+تُوقَّع الإصدارات بالمفتاح [E88F5E48] وتُنشر [على GitHub][GitHub releases].
 
 ## التثبيت
 
-### بإستخدام الحزم
+### من الحزم
 
-يتوفر Sway للعديد من التوزيعات، حاول تثبيت حزمة "sway" لتوزيعتك
-### التجميع من المصدر
-إطلع على [صفحة الويكي هذه](https://github.com/swaywm/sway/wiki/Development-Setup) إذا أردت بناء الـHEAD من sway و wlroots لأغراض الفحص والتطوير 
+يتوفر Sway في كثير من التوزيعات. جرّب تثبيت حزمة "sway" في توزيعتك.
 
-تثبيت اللوازم: 
+### البناء من المصدر
+
+اطّلع على [صفحة الويكي هذه][Development setup] إذا أردت بناء النسخة الأحدث (HEAD)
+من sway وwlroots لأغراض الاختبار أو التطوير.
+
+ثبّت المتطلبات:
+
 * meson \*
 * [wlroots]
 * wayland
@@ -29,13 +28,14 @@ sway
 * json-c
 * pango
 * cairo
-* gdk-pixbuf2 (optional: system tray)
-* [scdoc] (optional: man pages) \*
-* git (optional: version info) \*
+* gdk-pixbuf2 (اختياري: صيغ صور إضافية لشريط النظام)
+* [swaybg] (اختياري: خلفية الشاشة)
+* [scdoc] (اختياري: صفحات الدليل man) \*
+* git (اختياري: معلومات الإصدار) \*
 
-_\* Compile-time dep_
+_\* متطلب وقت البناء فقط_
 
-نفذ هذه الأوامر:
+نفّذ هذه الأوامر:
 
     meson setup build/
     ninja -C build/
@@ -43,17 +43,25 @@ _\* Compile-time dep_
 
 ## الإعدادات
 
-إذا كنت بالفعل تستخدم i3، فعليك نسخ إعدادات i3 لديك إلى  `~/.config/sway/config` وسوف تعمل تلقائياً.
-
-و إلا عليك نسخ ملف الإعدادات النموذج إلى `config/sway/config` الموجود عادةً في `/etc/sway/config.` 
-
+إذا كنت تستخدم i3 مسبقاً، فانسخ ملف إعدادات i3 إلى `~/.config/sway/config`
+وسيعمل مباشرة بدون أي تعديل. وإلا فانسخ ملف الإعدادات النموذجي إلى
+`~/.config/sway/config`، وهو موجود عادةً في `/etc/sway/config`.
+شغّل الأمر `man 5 sway` لمعرفة تفاصيل الإعدادات.
 
 ## التشغيل
 
-شغل `sway` بإستخدام أمر TTY. 
-قد يعمل بعض مدراء العرض مع أنهم غير مدعومون من sway 
-(gdm مثلاً يعمل بشكل جيد إلى حد ما)
+شغّل `sway` من TTY أو من مدير العرض.
 
+[i3]: https://i3wm.org/
+[Wayland]: http://wayland.freedesktop.org/
+[FAQ]: https://github.com/swaywm/sway/wiki
+[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
+[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+[GitHub releases]: https://github.com/swaywm/sway/releases
+[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
+[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
+[swaybg]: https://github.com/swaywm/swaybg/
+[scdoc]: https://git.sr.ht/~sircmpwn/scdoc
 [en]: https://github.com/swaywm/sway#readme
 [ar]: README.ar.md
 [cs]: README.cs.md
@@ -80,12 +88,3 @@ _\* Compile-time dep_
 [uk]: README.uk.md
 [zh-CN]: README.zh-CN.md
 [zh-TW]: README.zh-TW.md
-[i3]: https://i3wm.org/
-[Wayland]: http://wayland.freedesktop.org/
-[FAQ]: https://github.com/swaywm/sway/wiki
-[IRC channel]: https://web.libera.chat/gamja/?channels=#sway
-[E88F5E48]: https://keys.openpgp.org/search?q=34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
-[GitHub releases]: https://github.com/swaywm/sway/releases
-[Development setup]: https://github.com/swaywm/sway/wiki/Development-Setup
-[wlroots]: https://gitlab.freedesktop.org/wlroots/wlroots
-[scdoc]: https://git.sr.ht/~sircmpwn/scdoc
