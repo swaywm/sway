@@ -262,6 +262,18 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		//TODO better handling of argv
 		int argc;
 		char **argv = split_args(cmd, &argc);
+		// Make sure the command is not stored in a variable
+		if (*argv[0] == '$') {
+			argv[0] = do_var_replacement(argv[0]);
+			char *temp = join_args(argv, argc);
+			free_argv(argc, argv);
+			argv = split_args(temp, &argc);
+			free(temp);
+			if (!argc) {
+				free_argv(argc, argv);
+				continue;
+			}
+		}
 		if (strcmp(argv[0], "exec") != 0 &&
 				strcmp(argv[0], "exec_always") != 0 &&
 				strcmp(argv[0], "mode") != 0) {
