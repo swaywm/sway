@@ -102,12 +102,30 @@ void ipc_init(struct sway_server *server) {
 	}
 
 	unlink(ipc_sockaddr->sun_path);
-	if (bind(ipc_socket, (struct sockaddr *)ipc_sockaddr, sizeof(*ipc_sockaddr)) == -1) {
+
+	// bind() creates the socket file, but connections to it are refused
+	// until listen(). Bind to a temporary path and rename it once the socket
+	// listens, so that clients waiting for the file can connect right away.
+	struct sockaddr_un tmp_sockaddr = *ipc_sockaddr;
+	int path_size = sizeof(tmp_sockaddr.sun_path);
+	bool use_tmp = snprintf(tmp_sockaddr.sun_path, path_size, "%s.tmp",
+		ipc_sockaddr->sun_path) < path_size;
+	struct sockaddr_un *bind_sockaddr = use_tmp ? &tmp_sockaddr : ipc_sockaddr;
+	if (use_tmp) {
+		unlink(tmp_sockaddr.sun_path);
+	}
+
+	if (bind(ipc_socket, (struct sockaddr *)bind_sockaddr, sizeof(*bind_sockaddr)) == -1) {
 		sway_abort("Unable to bind IPC socket");
 	}
 
 	if (listen(ipc_socket, 3) == -1) {
 		sway_abort("Unable to listen on IPC socket");
+	}
+
+	if (use_tmp && rename(tmp_sockaddr.sun_path, ipc_sockaddr->sun_path) == -1) {
+		unlink(tmp_sockaddr.sun_path);
+		sway_abort("Unable to move IPC socket into place");
 	}
 
 	// Set i3 IPC socket path so that i3-msg works out of the box
