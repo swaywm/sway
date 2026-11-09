@@ -1126,6 +1126,26 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 
 }
 
+static struct wlr_keyboard *seat_find_other_keyboard(struct sway_seat *seat,
+		struct sway_keyboard *exclude) {
+	struct sway_keyboard_group *group;
+	wl_list_for_each(group, &seat->keyboard_groups, link) {
+		struct sway_keyboard *keyboard = group->seat_device->keyboard;
+		if (keyboard && keyboard != exclude && keyboard->wlr->keymap) {
+			return keyboard->wlr;
+		}
+	}
+	struct sway_seat_device *seat_device;
+	wl_list_for_each(seat_device, &seat->devices, link) {
+		struct sway_keyboard *keyboard = seat_device->keyboard;
+		if (keyboard && keyboard != exclude && !keyboard->wlr->group &&
+				keyboard->wlr->keymap) {
+			return keyboard->wlr;
+		}
+	}
+	return NULL;
+}
+
 void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (!keyboard) {
 		return;
@@ -1133,9 +1153,12 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (keyboard->wlr->group) {
 		sway_keyboard_group_remove(keyboard);
 	}
-	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
+	struct sway_seat *seat = keyboard->seat_device->sway_seat;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	if (wlr_seat_get_keyboard(wlr_seat) == keyboard->wlr) {
-		wlr_seat_set_keyboard(wlr_seat, NULL);
+		// Hand over to another keyboard, so that clients keep a keymap
+		wlr_seat_set_keyboard(wlr_seat,
+			seat_find_other_keyboard(seat, keyboard));
 	}
 	if (keyboard->keymap) {
 		xkb_keymap_unref(keyboard->keymap);
