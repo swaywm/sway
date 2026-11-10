@@ -276,28 +276,13 @@ static void container_move_to_workspace_from_direction(
 	container->pending.width = container->pending.height = 0;
 	container->width_fraction = container->height_fraction = 0;
 
-	if (is_parallel(workspace->layout, move_dir)) {
-		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
-		int index =
-			move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
-			0 : workspace->tiling->length;
-		workspace_insert_tiling(workspace, container, index);
-		return;
-	}
-
-	sway_log(SWAY_DEBUG, "Reparenting container (perpendicular)");
-	struct sway_container *focus_inactive = seat_get_focus_inactive_tiling(
-			config->handler_context.seat, workspace);
-	if (!focus_inactive) {
-		// The workspace has no tiling children
-		workspace_add_tiling(workspace, container);
-		return;
-	}
-	while (focus_inactive->pending.parent) {
-		focus_inactive = focus_inactive->pending.parent;
-	}
-	container_move_to_container_from_direction(container, focus_inactive,
-			move_dir);
+	// Like i3, the container becomes a direct child of the workspace: the
+	// first one when moving right or down, the last one otherwise, whatever
+	// the workspace's layout.
+	int index =
+		move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
+		0 : workspace->tiling->length;
+	workspace_insert_tiling(workspace, container, index);
 }
 
 static void container_move_to_workspace(struct sway_container *container,
