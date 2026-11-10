@@ -67,9 +67,23 @@ Though *swaymsg*(1) is generally preferred, you may run *sway* _command_ to
 send _command_ to the running instance of sway. You can also issue commands
 with *i3-msg*(1) or even with *i3*(1).
 
+# ACCESSIBILITY
+
+Unless built with _-Da11y=disabled_ or without sd-bus, sway owns the name
+_org.freedesktop.a11y.Manager_ on the session bus and provides the
+_org.freedesktop.a11y.KeyboardMonitor_ interface at
+_/org/freedesktop/a11y/Manager_. Screen readers such as Orca use it to watch
+key presses and to grab their own key combinations before they reach the
+focused application or a key binding. Only the client that owns the bus name
+_org.gnome.Orca.KeyboardMonitor_ may use it. Without a session bus, sway runs
+without it.
+
 # ENVIRONMENT
 
 The following environment variables have an effect on sway:
+
+_DBUS\_SESSION\_BUS\_ADDRESS_
+	Specifies the session bus used for the accessibility interface.
 
 _SWAYSOCK_
 	Specifies the path to the sway IPC socket.
