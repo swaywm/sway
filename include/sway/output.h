@@ -12,6 +12,9 @@
 
 struct sway_server;
 struct sway_container;
+struct wlr_color_transform;
+struct wlr_drm_syncobj_timeline;
+struct wlr_swapchain;
 
 struct sway_output_state {
 	list_t *workspaces;
@@ -72,6 +75,23 @@ struct sway_output {
 
 	bool allow_tearing;
 	bool hdr;
+
+	// Set while this output mirrors another one. A mirror is enabled at the
+	// wlr_output level but disabled for the tree: it isn't part of the
+	// layout, and has no workspaces, wl_output global or scene output.
+	struct sway_output *mirror_source;
+	struct {
+		struct wl_listener source_commit;
+		// Latest frame committed by the source, the timeline point to wait
+		// on before reading it, and the source's transform and logical size
+		// for that frame
+		struct wlr_buffer *buffer;
+		struct wlr_drm_syncobj_timeline *wait_timeline;
+		uint64_t wait_point;
+		enum wl_output_transform transform;
+		int width, height;
+		bool needs_frame;
+	} mirror;
 };
 
 struct sway_output_non_desktop {
@@ -115,6 +135,20 @@ void output_sort_workspaces(struct sway_output *output);
 void output_enable(struct sway_output *output);
 
 void output_disable(struct sway_output *output);
+
+void output_start_mirroring(struct sway_output *output,
+		struct sway_output *source);
+
+void output_stop_mirroring(struct sway_output *output);
+
+/**
+ * Renders the frame of a mirror of source into state, with the given swapchain
+ * (or the output's own one if NULL) and color transform.
+ */
+bool output_mirror_build_state(struct sway_output *output,
+		struct sway_output *source, struct wlr_output_state *state,
+		struct wlr_swapchain *swapchain,
+		struct wlr_color_transform *color_transform);
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output);
 

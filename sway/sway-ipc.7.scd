@@ -243,10 +243,17 @@ following properties:
    _refresh_
 |- rect
 :  object
-:  The bounds for the output consisting of _x_, _y_, _width_, and _height_
+:  The bounds for the output consisting of _x_, _y_, _width_, and _height_.
+   For a mirror, the bounds of its source
 |- hdr
 :  boolean
 :  Whether HDR is enabled
+|- mirror
+:  string
+:  The name of the output this output currently mirrors, or _null_ if it
+   doesn't mirror an output. A mirror is active, has its own _current\_mode_,
+   _scale_ and _transform_, no _current\_workspace_, and is not part of the
+   tree
 
 
 *Example Reply:*
@@ -289,7 +296,8 @@ following properties:
 			"width": 1920,
 			"height": 1080,
 			"refresh": 60000
-		}
+		},
+		"mirror": null
 	}
 ]
 ```
