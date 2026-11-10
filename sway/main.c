@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <wlr/util/log.h>
 #include <wlr/version.h>
+#include "config.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
@@ -25,6 +26,10 @@
 #include "log.h"
 #include "stringop.h"
 #include "util.h"
+
+#if HAVE_A11Y
+#include "sway/a11y.h"
+#endif
 
 static int exit_value = 0;
 static struct rlimit original_nofile_rlimit = {0};
@@ -354,6 +359,10 @@ int main(int argc, char **argv) {
 
 	ipc_init(&server);
 
+#if HAVE_A11Y
+	a11y_init(server.wl_event_loop);
+#endif
+
 	struct swaynag_instance nag_gpu = (struct swaynag_instance){
 		.args = "--type error "
 			"--message 'Proprietary GPU drivers are not supported by sway. Do not report issues.' "
@@ -397,6 +406,9 @@ int main(int argc, char **argv) {
 shutdown:
 	sway_log(SWAY_INFO, "Shutting down sway");
 
+#if HAVE_A11Y
+	a11y_finish();
+#endif
 	server_fini(&server);
 	root_destroy(root);
 	root = NULL;
