@@ -8,6 +8,7 @@
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <xkbcommon/xkbcommon-names.h>
+#include "config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
@@ -16,6 +17,10 @@
 #include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "log.h"
+
+#if HAVE_A11Y
+#include "sway/a11y.h"
+#endif
 
 #if WLR_HAS_SESSION
 #include <wlr/backend/session.h>
@@ -439,6 +444,16 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	char *device_identifier = input_device_get_identifier(wlr_device);
 	bool exact_identifier = keyboard->wlr->group != NULL;
 	seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
+
+#if HAVE_A11Y
+	// A key grabbed by a screen reader reaches neither the focused client
+	// nor any binding, including device-specific ones.
+	if (a11y_handle_key(keyboard, event)) {
+		free(device_identifier);
+		return;
+	}
+#endif
+
 	bool locked = server.session_lock.lock;
 	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
 		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);

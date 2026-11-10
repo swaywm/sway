@@ -242,6 +242,11 @@ if wlroots_features['xwayland']
 	sway_sources += 'desktop/xwayland.c'
 endif
 
+if have_a11y
+	sway_sources += 'a11y.c'
+	sway_deps += sdbus
+endif
+
 if wlroots_features['libinput_backend']
 	sway_sources += 'input/libinput.c'
 endif
