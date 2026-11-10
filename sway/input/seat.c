@@ -1127,6 +1127,104 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 }
 
+void seat_raise_focus_path(struct sway_seat *seat, struct sway_node *node) {
+	if (node->type == N_CONTAINER) {
+		struct sway_container *con = node->sway_container;
+		struct sway_container *parent = con->pending.parent;
+		while (parent) {
+			seat_set_raw_focus(seat, &parent->node);
+			parent = parent->pending.parent;
+		}
+		if (con->pending.workspace) {
+			seat_set_raw_focus(seat, &con->pending.workspace->node);
+		}
+	} else if (node->type != N_WORKSPACE) {
+		return;
+	}
+	seat_set_raw_focus(seat, node);
+}
+
+list_t *seat_get_focus_order_children(struct sway_seat *seat,
+		struct sway_node *parent) {
+	list_t *children = create_list();
+	struct sway_seat_node *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (node_get_parent(current->node) == parent) {
+			list_add(children, current->node);
+		}
+	}
+	return children;
+}
+
+void seat_set_focus_order(struct sway_seat *seat, list_t *nodes) {
+	int count = nodes->length;
+	if (count < 2) {
+		return;
+	}
+	struct sway_seat_node **wanted = calloc(count, sizeof(*wanted));
+	struct sway_seat_node **slots = calloc(count, sizeof(*slots));
+	struct wl_list *marks = calloc(count, sizeof(*marks));
+	if (!wanted || !slots || !marks) {
+		sway_log(SWAY_ERROR, "Unable to allocate focus order");
+		goto out;
+	}
+
+	// The focused node is on top of the stack, so it keeps the first slot
+	struct sway_node *focus = seat_get_focus(seat);
+	int focus_index = focus ? list_find(nodes, focus) : -1;
+	for (int i = 0, j = 0; i < count; i++) {
+		struct sway_node *node;
+		if (i == 0 && focus_index != -1) {
+			node = focus;
+		} else {
+			if (j == focus_index) {
+				j++;
+			}
+			node = nodes->items[j++];
+		}
+		wanted[i] = seat_node_from_node(seat, node);
+		if (!wanted[i]) {
+			goto out;
+		}
+	}
+
+	int found = 0;
+	struct sway_seat_node *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		for (int i = 0; i < count; i++) {
+			if (wanted[i] == current) {
+				slots[found++] = current;
+				break;
+			}
+		}
+	}
+	if (found != count) {
+		// A node is listed twice
+		goto out;
+	}
+
+	for (int i = 0; i < count; i++) {
+		wl_list_insert(&slots[i]->link, &marks[i]);
+	}
+	for (int i = 0; i < count; i++) {
+		wl_list_remove(&wanted[i]->link);
+	}
+	for (int i = 0; i < count; i++) {
+		wl_list_insert(&marks[i], &wanted[i]->link);
+		wl_list_remove(&marks[i]);
+		node_set_dirty(wanted[i]->node);
+		struct sway_node *parent = node_get_parent(wanted[i]->node);
+		if (parent) {
+			node_set_dirty(parent);
+		}
+	}
+
+out:
+	free(wanted);
+	free(slots);
+	free(marks);
+}
+
 static void seat_set_workspace_focus(struct sway_seat *seat, struct sway_node *node) {
 	struct sway_node *last_focus = seat_get_focus(seat);
 	if (last_focus == node) {
