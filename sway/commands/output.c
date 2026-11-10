@@ -17,6 +17,7 @@ static const struct cmd_handler output_handlers[] = {
 	{ "enable", output_cmd_enable },
 	{ "hdr", output_cmd_hdr },
 	{ "max_render_time", output_cmd_max_render_time },
+	{ "mirror", output_cmd_mirror },
 	{ "mode", output_cmd_mode },
 	{ "modeline", output_cmd_modeline },
 	{ "pos", output_cmd_position },

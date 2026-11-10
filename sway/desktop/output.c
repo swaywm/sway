@@ -1,10 +1,13 @@
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <time.h>
 #include <wayland-server-core.h>
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
+#include <wlr/interfaces/wlr_output.h>
+#include <wlr/render/drm_syncobj.h>
 #include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
@@ -16,6 +19,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/util/box.h>
 #include <wlr/util/region.h>
 #include <wlr/util/transform.h>
 #include "config.h"
@@ -271,7 +275,8 @@ static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
 	output->wlr_output->frame_pending = false;
-	if (!output->wlr_output->enabled) {
+	if (!output->wlr_output->enabled || !output->scene_output) {
+		// The output may have started mirroring since the timer was armed
 		return 0;
 	}
 
@@ -310,9 +315,221 @@ static int output_repaint_timer_handler(void *data) {
 	return 0;
 }
 
+bool output_mirror_build_state(struct sway_output *output,
+		struct sway_output *source, struct wlr_output_state *state,
+		struct wlr_swapchain *swapchain,
+		struct wlr_color_transform *color_transform) {
+	struct wlr_output *wlr_output = output->wlr_output;
+	bool enabled = wlr_output->enabled;
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		enabled = state->enabled;
+	}
+	if (!enabled) {
+		return true;
+	}
+
+	if (!swapchain) {
+		if (!wlr_output_configure_primary_swapchain(wlr_output, state,
+				&wlr_output->swapchain)) {
+			return false;
+		}
+		swapchain = wlr_output->swapchain;
+	}
+
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(swapchain);
+	if (!buffer) {
+		return false;
+	}
+
+	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(
+		wlr_output->renderer, buffer, &(struct wlr_buffer_pass_options){
+			.color_transform = color_transform,
+		});
+	if (!pass) {
+		wlr_buffer_unlock(buffer);
+		return false;
+	}
+
+	// Black wherever the picture doesn't reach
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = buffer->width, .height = buffer->height },
+		.color = { .r = 0, .g = 0, .b = 0, .a = 1 },
+		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+	});
+
+	// The stored frame is only valid for the source it came from
+	struct wlr_texture *texture = NULL;
+	if (output->mirror_source == source && output->mirror.buffer != NULL) {
+		texture = wlr_texture_from_buffer(wlr_output->renderer,
+			output->mirror.buffer);
+	}
+
+	if (texture != NULL && output->mirror.width > 0 &&
+			output->mirror.height > 0) {
+		enum wl_output_transform transform = wlr_output->transform;
+		if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
+			transform = state->transform;
+		}
+
+		// Fit the source's logical size into the mirror's transformed size
+		// with the same factor on both axes, and centre it. Output scales
+		// don't change the picture, only the aspect ratios matter.
+		int width = buffer->width, height = buffer->height;
+		if (transform & WL_OUTPUT_TRANSFORM_90) {
+			width = buffer->height;
+			height = buffer->width;
+		}
+		double fit = fmin((double)width / output->mirror.width,
+			(double)height / output->mirror.height);
+		struct wlr_box box = {
+			.width = fmin(round(output->mirror.width * fit), width),
+			.height = fmin(round(output->mirror.height * fit), height),
+		};
+		box.x = (width - box.width) / 2;
+		box.y = (height - box.height) / 2;
+
+		struct wlr_box dst_box;
+		wlr_box_transform(&dst_box, &box,
+			wlr_output_transform_invert(transform), width, height);
+
+		// The source's buffer holds its content with the source's transform
+		// applied: undo it, then apply the mirror's
+		struct wlr_render_texture_options options = {
+			.texture = texture,
+			.dst_box = dst_box,
+			.transform = wlr_output_transform_compose(
+				wlr_output_transform_invert(output->mirror.transform),
+				transform),
+			.filter_mode = WLR_SCALE_FILTER_BILINEAR,
+			.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+		};
+		if (wlr_output->renderer->features.timeline) {
+			options.wait_timeline = output->mirror.wait_timeline;
+			options.wait_point = output->mirror.wait_point;
+		}
+		wlr_render_pass_add_texture(pass, &options);
+	}
+
+	bool ok = wlr_render_pass_submit(pass);
+	wlr_texture_destroy(texture);
+	if (ok) {
+		wlr_output_state_set_buffer(state, buffer);
+	}
+	wlr_buffer_unlock(buffer);
+	return ok;
+}
+
+static void mirror_repaint(struct sway_output *output) {
+	output->mirror.needs_frame = false;
+
+	struct wlr_output_state pending;
+	wlr_output_state_init(&pending);
+	if (output_mirror_build_state(output, output->mirror_source, &pending,
+			NULL, output->color_transform)) {
+		if (!wlr_output_commit_state(output->wlr_output, &pending)) {
+			sway_log(SWAY_ERROR, "Page-flip failed on mirror output %s",
+				output->wlr_output->name);
+		}
+	}
+	wlr_output_state_finish(&pending);
+}
+
+static void mirror_clear_frame(struct sway_output *output) {
+	wlr_buffer_unlock(output->mirror.buffer);
+	output->mirror.buffer = NULL;
+	if (output->mirror.wait_timeline != NULL) {
+		wlr_drm_syncobj_timeline_unref(output->mirror.wait_timeline);
+		output->mirror.wait_timeline = NULL;
+	}
+}
+
+static void handle_mirror_source_commit(struct wl_listener *listener,
+		void *data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, mirror.source_commit);
+	struct wlr_output_event_commit *event = data;
+	const struct wlr_output_state *state = event->state;
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && !state->enabled) {
+		// The source shows nothing while it is powered off, and neither
+		// does the mirror
+		mirror_clear_frame(output);
+		output->mirror.needs_frame = true;
+		wlr_output_schedule_frame(output->wlr_output);
+		return;
+	}
+	if (!(state->committed & WLR_OUTPUT_STATE_BUFFER) || !state->buffer) {
+		return;
+	}
+
+	// Keep the source's latest frame. The source's swapchain doesn't reuse
+	// the buffer while it is locked.
+	mirror_clear_frame(output);
+	output->mirror.buffer = wlr_buffer_lock(state->buffer);
+	if ((state->committed & WLR_OUTPUT_STATE_WAIT_TIMELINE) &&
+			state->wait_timeline != NULL) {
+		output->mirror.wait_timeline =
+			wlr_drm_syncobj_timeline_ref(state->wait_timeline);
+		output->mirror.wait_point = state->wait_point;
+	}
+	output->mirror.transform = event->output->transform;
+	wlr_output_effective_resolution(event->output, &output->mirror.width,
+		&output->mirror.height);
+
+	output->mirror.needs_frame = true;
+	wlr_output_schedule_frame(output->wlr_output);
+}
+
+void output_start_mirroring(struct sway_output *output,
+		struct sway_output *source) {
+	// A mirror shows its source's frames, not the scene
+	wlr_scene_output_destroy(output->scene_output);
+	output->scene_output = NULL;
+
+	if (output->mirror_source == source) {
+		return;
+	}
+	output_stop_mirroring(output);
+
+	output->mirror_source = source;
+	output->mirror.source_commit.notify = handle_mirror_source_commit;
+	wl_signal_add(&source->wlr_output->events.commit,
+		&output->mirror.source_commit);
+
+	// Every frame of the source has to be composited by the renderer, with
+	// the cursor in it: a buffer scanned out directly may be a client buffer
+	// that doesn't cover the whole output, and hardware cursors aren't part
+	// of the buffer.
+	wlr_output_lock_attach_render(source->wlr_output, true);
+	wlr_output_lock_software_cursors(source->wlr_output, true);
+
+	// Ask the source for a new frame, which the mirror then shows
+	wlr_output_update_needs_frame(source->wlr_output);
+	output->mirror.needs_frame = true;
+	wlr_output_schedule_frame(output->wlr_output);
+}
+
+void output_stop_mirroring(struct sway_output *output) {
+	struct sway_output *source = output->mirror_source;
+	if (!source) {
+		return;
+	}
+	wlr_output_lock_attach_render(source->wlr_output, false);
+	wlr_output_lock_software_cursors(source->wlr_output, false);
+	wl_list_remove(&output->mirror.source_commit.link);
+	mirror_clear_frame(output);
+	output->mirror_source = NULL;
+	output->mirror.needs_frame = false;
+}
+
 static void handle_frame(struct wl_listener *listener, void *user_data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, frame);
+	if (output->mirror_source) {
+		if (output->mirror.needs_frame && output->wlr_output->enabled) {
+			mirror_repaint(output);
+		}
+		return;
+	}
 	if (!output->enabled || !output->wlr_output->enabled) {
 		return;
 	}
@@ -385,9 +602,13 @@ void update_output_manager_config(struct sway_server *server) {
 		}
 		struct wlr_output_configuration_head_v1 *config_head =
 			wlr_output_configuration_head_v1_create(config, output->wlr_output);
+		// A mirror is shown at the position of its source, which is the
+		// area of the layout it shows
+		struct wlr_output *layout_output = output->mirror_source ?
+			output->mirror_source->wlr_output : output->wlr_output;
 		struct wlr_box output_box;
-		wlr_output_layout_get_box(root->output_layout,
-			output->wlr_output, &output_box);
+		wlr_output_layout_get_box(root->output_layout, layout_output,
+			&output_box);
 		// We mark the output enabled when it's switched off but not disabled
 		config_head->state.enabled = !wlr_box_empty(&output_box);
 		config_head->state.x = output_box.x;
@@ -429,6 +650,15 @@ void force_modeset(void) {
 }
 
 static void begin_destroy(struct sway_output *output) {
+	// Mirrors of this output stop mirroring; the modeset requested below
+	// turns them into normal outputs.
+	struct sway_output *other;
+	wl_list_for_each(other, &root->all_outputs, link) {
+		if (other->mirror_source == output) {
+			output_stop_mirroring(other);
+		}
+	}
+	output_stop_mirroring(output);
 
 	wl_list_remove(&output->layout_destroy.link);
 	wl_list_remove(&output->destroy.link);
