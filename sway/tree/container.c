@@ -1740,6 +1740,56 @@ static void container_squash_children(struct sway_container *con) {
 	}
 }
 
+/**
+ * Order the focus of a redundant pair's former grandchildren like i3 does when
+ * it flattens the pair: they follow con's siblings in node order, except that
+ * the most recently focused one comes first if con came first.
+ */
+static void squash_focus_order(struct sway_container *con, list_t *moved) {
+	struct sway_node *parent = node_get_parent(&con->node);
+	if (!parent) {
+		return;
+	}
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		list_t *order = seat_get_focus_order_children(seat, parent);
+		struct sway_node *focus_next = NULL;
+		struct sway_node *first_sibling = NULL;
+		for (int i = 0; i < order->length; i++) {
+			struct sway_node *node = order->items[i];
+			if (list_find(moved, node) != -1) {
+				if (!focus_next) {
+					focus_next = node;
+				}
+			} else if (!first_sibling) {
+				first_sibling = node;
+			}
+		}
+		if (first_sibling != &con->node) {
+			focus_next = NULL;
+		}
+
+		list_t *wanted = create_list();
+		if (focus_next) {
+			list_add(wanted, focus_next);
+		}
+		for (int i = 0; i < order->length; i++) {
+			struct sway_node *node = order->items[i];
+			if (node != &con->node && list_find(moved, node) == -1) {
+				list_add(wanted, node);
+			}
+		}
+		for (int i = 0; i < moved->length; i++) {
+			if (moved->items[i] != focus_next) {
+				list_add(wanted, moved->items[i]);
+			}
+		}
+		seat_set_focus_order(seat, wanted);
+		list_free(wanted);
+		list_free(order);
+	}
+}
+
 int container_squash(struct sway_container *con) {
 	if (!con->pending.children) {
 		return 0;
@@ -1752,7 +1802,9 @@ int container_squash(struct sway_container *con) {
 	int idx = container_sibling_index(con);
 	int change = 0;
 	if (container_is_squashable(con, child)) {
-		// con and child are a redundant H/V pair. Destroy them.
+		// con and child are a redundant H/V pair. Destroy them, keeping the
+		// order of the child's children.
+		list_t *moved = create_list();
 		while (child->pending.children->length) {
 			struct sway_container *current = child->pending.children->items[0];
 			container_detach(current);
@@ -1761,8 +1813,12 @@ int container_squash(struct sway_container *con) {
 			} else {
 				workspace_insert_tiling_direct(con->pending.workspace, current, idx);
 			}
+			list_add(moved, &current->node);
+			idx++;
 			change++;
 		}
+		squash_focus_order(con, moved);
+		list_free(moved);
 		// This will also destroy con because child was its only child
 		container_reap_empty(child);
 		change--;
