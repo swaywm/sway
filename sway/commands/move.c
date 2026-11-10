@@ -109,6 +109,88 @@ static void workspace_focus_fullscreen(struct sway_workspace *workspace) {
 	}
 }
 
+/**
+ * Return the child of ancestor that holds node, or NULL.
+ */
+static struct sway_node *child_holding(struct sway_node *ancestor,
+		struct sway_node *node) {
+	while (node && node_get_parent(node) != ancestor) {
+		node = node_get_parent(node);
+	}
+	return node;
+}
+
+/**
+ * Prepare the focus order for inserting container into parent next to target
+ * (NULL when parent has no children), like i3's insert_con_into(). Let A be
+ * the child of the lowest common ancestor of container and parent that holds
+ * container, and B the one that will hold it. If container leads the focus
+ * inside A and A comes before B in the focus order, B moves right before A.
+ * Container then goes before its new siblings in the focus order if A came
+ * before B (or, when A is B, if container led the focus inside A), and after
+ * them otherwise. When parent is the common ancestor, this is relative to
+ * target only.
+ */
+static void focus_order_for_insert(struct sway_container *container,
+		struct sway_node *parent, struct sway_node *target) {
+	struct sway_seat *seat = config->handler_context.seat;
+	struct sway_node *con = &container->node;
+	struct sway_node *lca = parent;
+	while (lca && !node_has_ancestor(con, lca)) {
+		lca = node_get_parent(lca);
+	}
+	if (!lca) {
+		return;
+	}
+	struct sway_node *con_ancestor = child_holding(lca, con);
+	struct sway_node *target_ancestor =
+		child_holding(lca, target ? target : parent);
+
+	bool leads_focus = true;
+	for (struct sway_node *node = con; node && node != con_ancestor;
+			node = node_get_parent(node)) {
+		list_t *order =
+			seat_get_focus_order_children(seat, node_get_parent(node));
+		leads_focus = order->length && order->items[0] == node;
+		list_free(order);
+		if (!leads_focus) {
+			break;
+		}
+	}
+
+	bool focus_before = leads_focus;
+	if (target_ancestor && target_ancestor != con_ancestor) {
+		list_t *order = seat_get_focus_order_children(seat, lca);
+		int con_index = list_find(order, con_ancestor);
+		int target_index = list_find(order, target_ancestor);
+		focus_before = con_index != -1 && target_index != -1 &&
+			con_index < target_index;
+		if (leads_focus && focus_before) {
+			list_del(order, target_index);
+			list_insert(order, list_find(order, con_ancestor),
+					target_ancestor);
+			seat_set_focus_order(seat, order);
+		}
+		list_free(order);
+	}
+
+	list_t *order = seat_get_focus_order_children(seat, parent);
+	int con_index = list_find(order, con);
+	if (con_index != -1) {
+		list_del(order, con_index);
+	}
+	struct sway_node *ref = parent == lca ? target : NULL;
+	if (!ref && order->length) {
+		ref = order->items[focus_before ? 0 : order->length - 1];
+	}
+	int ref_index = ref ? list_find(order, ref) : -1;
+	if (ref_index != -1) {
+		list_insert(order, ref_index + (focus_before ? 0 : 1), con);
+		seat_set_focus_order(seat, order);
+	}
+	list_free(order);
+}
+
 static void container_move_to_container_from_direction(
 		struct sway_container *container, struct sway_container *destination,
 		enum wlr_direction move_dir) {
@@ -126,6 +208,9 @@ static void container_move_to_container_from_direction(
 			int offset =
 				move_dir == WLR_DIRECTION_LEFT || move_dir == WLR_DIRECTION_UP;
 			int index = container_sibling_index(destination) + offset;
+			struct sway_node *parent = node_get_parent(&destination->node);
+			focus_order_for_insert(container, parent,
+					child_holding(parent, &container->node));
 			if (destination->pending.parent) {
 				container_insert_child(destination->pending.parent, container, index);
 			} else {
@@ -139,30 +224,50 @@ static void container_move_to_container_from_direction(
 		return;
 	}
 
-	if (is_parallel(destination->pending.layout, move_dir)) {
-		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
-		int index =
-			move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
-			0 : destination->pending.children->length;
-		container_insert_child(destination, container, index);
-		container->pending.width = container->pending.height = 0;
-		container->width_fraction = container->height_fraction = 0;
-		workspace_squash(destination->pending.workspace);
-		return;
+	// Descend into the destination like i3 does: in a container split along
+	// the movement take the child nearest to where the moving container comes
+	// from, in any other container take the most recently focused child, and
+	// stop at the first view.
+	bool forward =
+		move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN;
+	struct sway_container *target = destination;
+	while (!target->view && target->pending.children &&
+			target->pending.children->length) {
+		list_t *children = target->pending.children;
+		if (is_parallel(target->pending.layout, move_dir)) {
+			target = children->items[forward ? 0 : children->length - 1];
+			continue;
+		}
+		struct sway_node *focus_inactive = seat_get_active_tiling_child(
+				config->handler_context.seat, &target->node);
+		if (!focus_inactive || focus_inactive->type != N_CONTAINER ||
+				focus_inactive == &target->node) {
+			target = children->items[0];
+		} else {
+			target = focus_inactive->sway_container;
+		}
 	}
 
-	sway_log(SWAY_DEBUG, "Reparenting container (perpendicular)");
-	struct sway_node *focus_inactive = seat_get_active_tiling_child(
-			config->handler_context.seat, &destination->node);
-	if (!focus_inactive || focus_inactive == &destination->node) {
+	if (!target->view) {
+		sway_log(SWAY_DEBUG, "Reparenting container (empty destination)");
 		// The container has no children
-		container_add_child(destination, container);
+		focus_order_for_insert(container, &target->node, NULL);
+		container_add_child(target, container);
 		return;
 	}
 
-	// Try again but with the child
-	container_move_to_container_from_direction(container,
-			focus_inactive->sway_container, move_dir);
+	// Insert next to the view: before it when its parent is split along the
+	// movement and the move is right or down, after it otherwise.
+	struct sway_container *parent = target->pending.parent;
+	bool before = forward && is_parallel(parent->pending.layout, move_dir);
+	sway_log(SWAY_DEBUG, "Reparenting container (%s view)",
+			before ? "before" : "after");
+	focus_order_for_insert(container, &parent->node, &target->node);
+	int index = container_sibling_index(target) + (before ? 0 : 1);
+	container_insert_child(parent, container, index);
+	container->pending.width = container->pending.height = 0;
+	container->width_fraction = container->height_fraction = 0;
+	workspace_squash(parent->pending.workspace);
 }
 
 static void container_move_to_workspace_from_direction(
@@ -171,28 +276,13 @@ static void container_move_to_workspace_from_direction(
 	container->pending.width = container->pending.height = 0;
 	container->width_fraction = container->height_fraction = 0;
 
-	if (is_parallel(workspace->layout, move_dir)) {
-		sway_log(SWAY_DEBUG, "Reparenting container (parallel)");
-		int index =
-			move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
-			0 : workspace->tiling->length;
-		workspace_insert_tiling(workspace, container, index);
-		return;
-	}
-
-	sway_log(SWAY_DEBUG, "Reparenting container (perpendicular)");
-	struct sway_container *focus_inactive = seat_get_focus_inactive_tiling(
-			config->handler_context.seat, workspace);
-	if (!focus_inactive) {
-		// The workspace has no tiling children
-		workspace_add_tiling(workspace, container);
-		return;
-	}
-	while (focus_inactive->pending.parent) {
-		focus_inactive = focus_inactive->pending.parent;
-	}
-	container_move_to_container_from_direction(container, focus_inactive,
-			move_dir);
+	// Like i3, the container becomes a direct child of the workspace: the
+	// first one when moving right or down, the last one otherwise, whatever
+	// the workspace's layout.
+	int index =
+		move_dir == WLR_DIRECTION_RIGHT || move_dir == WLR_DIRECTION_DOWN ?
+		0 : workspace->tiling->length;
+	workspace_insert_tiling(workspace, container, index);
 }
 
 static void container_move_to_workspace(struct sway_container *container,
@@ -394,6 +484,8 @@ static bool container_move_in_direction(struct sway_container *container,
 	} else {
 		// Container will be promoted
 		struct sway_container *old_parent = container->pending.parent;
+		focus_order_for_insert(container, node_get_parent(&ancestor->node),
+				&ancestor->node);
 		if (ancestor->pending.parent) {
 			// Container will move in with its parent
 			container_insert_child(ancestor->pending.parent, container,
@@ -715,6 +807,15 @@ static struct cmd_results *cmd_move_in_direction(
 	if (!container_move_in_direction(container, direction)) {
 		// Container didn't move
 		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+
+	// When the moved container holds the focus, make every container above
+	// it list the child leading to the focus first
+	struct sway_seat *seat = config->handler_context.seat;
+	struct sway_node *focus = seat_get_focus(seat);
+	if (focus && (focus == &container->node ||
+			node_has_ancestor(focus, &container->node))) {
+		seat_raise_focus_path(seat, focus);
 	}
 
 	// clean-up, destroying parents if the container was the last child

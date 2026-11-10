@@ -1740,6 +1740,56 @@ static void container_squash_children(struct sway_container *con) {
 	}
 }
 
+/**
+ * Order the focus of a redundant pair's former grandchildren like i3 does when
+ * it flattens the pair: they follow con's siblings in node order, except that
+ * the most recently focused one comes first if con came first.
+ */
+static void squash_focus_order(struct sway_container *con, list_t *moved) {
+	struct sway_node *parent = node_get_parent(&con->node);
+	if (!parent) {
+		return;
+	}
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		list_t *order = seat_get_focus_order_children(seat, parent);
+		struct sway_node *focus_next = NULL;
+		struct sway_node *first_sibling = NULL;
+		for (int i = 0; i < order->length; i++) {
+			struct sway_node *node = order->items[i];
+			if (list_find(moved, node) != -1) {
+				if (!focus_next) {
+					focus_next = node;
+				}
+			} else if (!first_sibling) {
+				first_sibling = node;
+			}
+		}
+		if (first_sibling != &con->node) {
+			focus_next = NULL;
+		}
+
+		list_t *wanted = create_list();
+		if (focus_next) {
+			list_add(wanted, focus_next);
+		}
+		for (int i = 0; i < order->length; i++) {
+			struct sway_node *node = order->items[i];
+			if (node != &con->node && list_find(moved, node) == -1) {
+				list_add(wanted, node);
+			}
+		}
+		for (int i = 0; i < moved->length; i++) {
+			if (moved->items[i] != focus_next) {
+				list_add(wanted, moved->items[i]);
+			}
+		}
+		seat_set_focus_order(seat, wanted);
+		list_free(wanted);
+		list_free(order);
+	}
+}
+
 int container_squash(struct sway_container *con) {
 	if (!con->pending.children) {
 		return 0;
@@ -1752,7 +1802,9 @@ int container_squash(struct sway_container *con) {
 	int idx = container_sibling_index(con);
 	int change = 0;
 	if (container_is_squashable(con, child)) {
-		// con and child are a redundant H/V pair. Destroy them.
+		// con and child are a redundant H/V pair. Destroy them, keeping the
+		// order of the child's children.
+		list_t *moved = create_list();
 		while (child->pending.children->length) {
 			struct sway_container *current = child->pending.children->items[0];
 			container_detach(current);
@@ -1761,8 +1813,12 @@ int container_squash(struct sway_container *con) {
 			} else {
 				workspace_insert_tiling_direct(con->pending.workspace, current, idx);
 			}
+			list_add(moved, &current->node);
+			idx++;
 			change++;
 		}
+		squash_focus_order(con, moved);
+		list_free(moved);
 		// This will also destroy con because child was its only child
 		container_reap_empty(child);
 		change--;
@@ -1820,38 +1876,30 @@ static void swap_places(struct sway_container *con1,
 	free(temp);
 }
 
-static void swap_focus(struct sway_container *con1,
-		struct sway_container *con2, struct sway_seat *seat,
-		struct sway_container *focus) {
-	if (focus == con1 || focus == con2) {
-		struct sway_workspace *ws1 = con1->pending.workspace;
-		struct sway_workspace *ws2 = con2->pending.workspace;
-		enum sway_container_layout layout1 = container_parent_layout(con1);
-		enum sway_container_layout layout2 = container_parent_layout(con2);
-		if (focus == con1 && (layout2 == L_TABBED || layout2 == L_STACKED)) {
-			if (workspace_is_visible(ws2)) {
-				seat_set_focus(seat, &con2->node);
-			}
-			seat_set_focus_container(seat, ws1 != ws2 ? con2 : con1);
-		} else if (focus == con2 && (layout1 == L_TABBED
-					|| layout1 == L_STACKED)) {
-			if (workspace_is_visible(ws1)) {
-				seat_set_focus(seat, &con1->node);
-			}
-			seat_set_focus_container(seat, ws1 != ws2 ? con1 : con2);
-		} else if (ws1 != ws2) {
-			seat_set_focus_container(seat, focus == con1 ? con2 : con1);
-		} else {
-			seat_set_focus_container(seat, focus);
-		}
-	} else {
-		seat_set_focus_container(seat, focus);
+static bool node_is_or_inside(struct sway_node *node,
+		struct sway_container *con) {
+	if (!node || node->type != N_CONTAINER) {
+		return false;
 	}
+	return node->sway_container == con ||
+		container_has_ancestor(node->sway_container, con);
+}
 
-	if (root->fullscreen_global) {
-		seat_set_focus(seat,
-				seat_get_focus_inactive(seat, &root->fullscreen_global->node));
+/**
+ * Give con1 and con2 each other's place in a focus order taken before they
+ * were swapped, apply it and free it.
+ */
+static void swap_focus_order(struct sway_seat *seat, list_t *order,
+		struct sway_container *con1, struct sway_container *con2) {
+	for (int i = 0; i < order->length; i++) {
+		if (order->items[i] == &con1->node) {
+			order->items[i] = &con2->node;
+		} else if (order->items[i] == &con2->node) {
+			order->items[i] = &con1->node;
+		}
 	}
+	seat_set_focus_order(seat, order);
+	list_free(order);
 }
 
 void container_swap(struct sway_container *con1, struct sway_container *con2) {
@@ -1894,7 +1942,8 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 	}
 
 	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_node *focus = seat_get_focus(seat);
+	struct sway_workspace *focus_ws = seat_get_focused_workspace(seat);
 	struct sway_workspace *vis1 =
 		output_get_active_workspace(con1->pending.workspace->output);
 	struct sway_workspace *vis2 =
@@ -1904,21 +1953,62 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 		return;
 	}
 
+	// Like i3: when both containers are on the focused workspace, the focused
+	// node keeps the focus. Otherwise, when the focus is in one of them, it
+	// goes to the container that takes that one's place.
+	struct sway_node *restore_focus = NULL;
+	if (con1->pending.workspace == con2->pending.workspace &&
+			con1->pending.workspace == focus_ws) {
+		restore_focus = focus;
+	} else if (node_is_or_inside(focus, con1)) {
+		restore_focus = &con2->node;
+	} else if (node_is_or_inside(focus, con2)) {
+		restore_focus = &con1->node;
+	}
+
 	char *stored_prev_name = NULL;
 	if (seat->prev_workspace_name) {
 		stored_prev_name = strdup(seat->prev_workspace_name);
 	}
 
+	// Each container will take the place the other one has in the focus order
+	struct sway_node *parent1 = node_get_parent(&con1->node);
+	struct sway_node *parent2 = node_get_parent(&con2->node);
+	list_t *orders1 = create_list();
+	list_t *orders2 = create_list();
+	struct sway_seat *each_seat;
+	wl_list_for_each(each_seat, &server.input->seats, link) {
+		list_add(orders1, seat_get_focus_order_children(each_seat, parent1));
+		list_add(orders2, parent2 == parent1 ? NULL :
+				seat_get_focus_order_children(each_seat, parent2));
+	}
+
 	swap_places(con1, con2);
 
-	if (!workspace_is_visible(vis1)) {
-		seat_set_focus(seat, seat_get_focus_inactive(seat, &vis1->node));
-	}
-	if (!workspace_is_visible(vis2)) {
-		seat_set_focus(seat, seat_get_focus_inactive(seat, &vis2->node));
+	// Move the focus first, so that the focus change is sent
+	if (restore_focus && restore_focus != focus) {
+		seat_set_focus(seat, restore_focus);
 	}
 
-	swap_focus(con1, con2, seat, focus);
+	int i = 0;
+	wl_list_for_each(each_seat, &server.input->seats, link) {
+		swap_focus_order(each_seat, orders1->items[i], con1, con2);
+		if (orders2->items[i]) {
+			swap_focus_order(each_seat, orders2->items[i], con1, con2);
+		}
+		i++;
+	}
+	list_free(orders1);
+	list_free(orders2);
+
+	if (restore_focus && restore_focus == focus) {
+		seat_raise_focus_path(seat, focus);
+	}
+
+	if (root->fullscreen_global) {
+		seat_set_focus(seat,
+				seat_get_focus_inactive(seat, &root->fullscreen_global->node));
+	}
 
 	if (stored_prev_name) {
 		free(seat->prev_workspace_name);

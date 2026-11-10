@@ -187,6 +187,27 @@ void seat_set_focus_workspace(struct sway_seat *seat,
  */
 void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node);
 
+/**
+ * Put a node and all its ancestors on top of the focus stack, so that the
+ * focus path from the root leads to it, without the side effects of
+ * seat_set_focus.
+ */
+void seat_raise_focus_path(struct sway_seat *seat, struct sway_node *node);
+
+/**
+ * Return a new list of the children of parent, in focus order (most recently
+ * focused first).
+ */
+list_t *seat_get_focus_order_children(struct sway_seat *seat,
+		struct sway_node *parent);
+
+/**
+ * Rearrange the given nodes in the focus stack so that they appear in the
+ * given order, reusing the positions they occupy. Nothing else moves. If the
+ * focused node is one of them, it stays on top.
+ */
+void seat_set_focus_order(struct sway_seat *seat, list_t *nodes);
+
 void seat_set_focus_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, bool unfocus);
 
