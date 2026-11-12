@@ -15,6 +15,9 @@ struct sway_session_lock {
 	struct wlr_session_lock_v1 *lock;
 	struct wlr_surface *focused;
 	bool abandoned;
+	struct wlr_session_lock_v1 *wlr_lock;
+	struct wl_event_source *timer;
+	bool locked_sent;
 
 	struct wl_list outputs; // struct sway_session_lock_output
 
