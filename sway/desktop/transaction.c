@@ -859,10 +859,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 
 			view_send_frame_done(node->sway_container->view);
 		}
-		if (!hidden && node_is_view(node) &&
-				!node->sway_container->view->saved_surface_tree) {
-			view_save_buffer(node->sway_container->view);
-		}
 		node->instruction = instruction;
 	}
 	transaction->num_configures = transaction->num_waiting;
@@ -877,19 +873,35 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		transaction->num_waiting += 1000000;
 	}
 
-	if (transaction->num_waiting) {
-		// Set up a timer which the views must respond within
-		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
-				handle_timeout, transaction);
-		if (transaction->timer) {
-			wl_event_source_timer_update(transaction->timer,
-					server.txn_timeout_ms);
-		} else {
-			sway_log_errno(SWAY_ERROR, "Unable to create transaction timer "
-					"(some imperfect frames might be rendered)");
-			transaction->num_waiting = 0;
+	// Only save buffers when the transaction will wait for views.
+	if (transaction->num_waiting == 0) {
+		return;
+	}
+
+	transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
+		handle_timeout, transaction);
+	if (!transaction->timer) {
+		sway_log_errno(SWAY_ERROR, "Unable to create transaction timer "
+			"(some imperfect frames might be rendered)");
+		transaction->num_waiting = 0;
+		return;
+	}
+
+	for (int i = 0; i < transaction->instructions->length; ++i) {
+		struct sway_transaction_instruction *instruction =
+			transaction->instructions->items[i];
+		struct sway_node *node = instruction->node;
+		if (!node_is_view(node)) {
+			continue;
+		}
+		struct sway_view *view = node->sway_container->view;
+		if ((node->destroying || view_is_visible(view)) &&
+			!view->saved_surface_tree) {
+			view_save_buffer(view);
 		}
 	}
+
+	wl_event_source_timer_update(transaction->timer, server.txn_timeout_ms);
 }
 
 static void transaction_commit_pending(void) {
