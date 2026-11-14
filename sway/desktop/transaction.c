@@ -859,10 +859,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 
 			view_send_frame_done(node->sway_container->view);
 		}
-		if (!hidden && node_is_view(node) &&
-				!node->sway_container->view->saved_surface_tree) {
-			view_save_buffer(node->sway_container->view);
-		}
 		node->instruction = instruction;
 	}
 	transaction->num_configures = transaction->num_waiting;
@@ -875,6 +871,25 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		// Force the transaction to time out even if all views are ready.
 		// We do this by inflating the waiting counter.
 		transaction->num_waiting += 1000000;
+	}
+
+	// Only save buffers when the transaction will wait for views.
+	if (transaction->num_waiting == 0) {
+		return;
+	}
+
+	for (int i = 0; i < transaction->instructions->length; ++i) {
+		struct sway_transaction_instruction *instruction =
+			transaction->instructions->items[i];
+		struct sway_node *node = instruction->node;
+		if (!node_is_view(node)) {
+			continue;
+		}
+		struct sway_view *view = node->sway_container->view;
+		if ((node->destroying || view_is_visible(view)) &&
+			!view->saved_surface_tree) {
+			view_save_buffer(view);
+		}
 	}
 
 	if (transaction->num_waiting) {
