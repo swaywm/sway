@@ -878,6 +878,15 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		return;
 	}
 
+	transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
+		handle_timeout, transaction);
+	if (!transaction->timer) {
+		sway_log_errno(SWAY_ERROR, "Unable to create transaction timer "
+			"(some imperfect frames might be rendered)");
+		transaction->num_waiting = 0;
+		return;
+	}
+
 	for (int i = 0; i < transaction->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
@@ -892,19 +901,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		}
 	}
 
-	if (transaction->num_waiting) {
-		// Set up a timer which the views must respond within
-		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
-				handle_timeout, transaction);
-		if (transaction->timer) {
-			wl_event_source_timer_update(transaction->timer,
-					server.txn_timeout_ms);
-		} else {
-			sway_log_errno(SWAY_ERROR, "Unable to create transaction timer "
-					"(some imperfect frames might be rendered)");
-			transaction->num_waiting = 0;
-		}
-	}
+	wl_event_source_timer_update(transaction->timer, server.txn_timeout_ms);
 }
 
 static void transaction_commit_pending(void) {
