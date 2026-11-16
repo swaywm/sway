@@ -667,6 +667,14 @@ static void handle_touch_down(struct sway_seat *seat,
 
 	if (surface && wlr_surface_accepts_touch(surface, wlr_seat)) {
 		if (seat_is_input_allowed(seat, surface)) {
+			// Like a click (handle_button), a touch on a layer surface that
+			// takes keyboard input focuses it
+			struct wlr_layer_surface_v1 *layer =
+				toplevel_layer_surface_from_surface(surface);
+			if (layer && layer->current.keyboard_interactive) {
+				seat_set_focus_layer(seat, layer);
+				transaction_commit_dirty();
+			}
 			cursor->simulating_pointer_from_touch = false;
 			seatop_begin_touch_down(seat, surface, event, sx, sy, lx, ly);
 		}
