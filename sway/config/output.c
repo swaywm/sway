@@ -1152,8 +1152,8 @@ bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
 	return ok;
 }
 
-void apply_stored_output_configs(void) {
-	apply_output_configs((struct output_config **)config->output_configs->items,
+bool apply_stored_output_configs(void) {
+	return apply_output_configs((struct output_config **)config->output_configs->items,
 			config->output_configs->length, false, true);
 }
 
