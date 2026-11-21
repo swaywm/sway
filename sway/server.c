@@ -641,6 +641,8 @@ bool server_init(struct sway_server *server) {
 			.features = {
 				.parametric = true,
 				.set_mastering_display_primaries = true,
+				.set_primaries = true,
+				.set_luminances = true,
 			},
 			.render_intents = render_intents,
 			.render_intents_len = sizeof(render_intents) / sizeof(render_intents[0]),

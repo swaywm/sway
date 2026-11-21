@@ -1250,7 +1250,10 @@ static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
 	wlr_scene_buffer_set_opacity(sbuf, buffer->opacity);
 	wlr_scene_buffer_set_filter_mode(sbuf, buffer->filter_mode);
 	wlr_scene_buffer_set_transfer_function(sbuf, buffer->transfer_function);
-	wlr_scene_buffer_set_primaries(sbuf, buffer->primaries);
+	wlr_scene_buffer_set_primaries(sbuf,
+		buffer->has_primaries ? &buffer->primaries : NULL);
+	wlr_scene_buffer_set_luminances(sbuf,
+		buffer->has_luminances ? &buffer->luminances : NULL);
 	wlr_scene_buffer_set_source_box(sbuf, &buffer->src_box);
 	wlr_scene_node_set_position(&sbuf->node, sx, sy);
 	wlr_scene_buffer_set_transform(sbuf, buffer->transform);
