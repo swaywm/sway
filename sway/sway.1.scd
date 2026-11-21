@@ -28,6 +28,13 @@ sway - An i3-compatible Wayland compositor
 *-V, --verbose*
 	Enables more verbose logging.
 
+*-l, --locked*
+	Start with the session already locked, waiting for an
+	ext-session-lock-v1 client to attach. No output is ever composited
+	unlocked and input is filtered from the first event, which closes the
+	window during which a lock client started from *exec* is still busy
+	initialising. Intended for auto-login setups.
+
 *--get-socketpath*
 	Gets the IPC socket path and prints it, then exits.
 
