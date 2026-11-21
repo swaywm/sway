@@ -26,6 +26,8 @@ struct sway_session_lock {
 
 struct sway_server {
 	struct wl_display *wl_display;
+	// Allowlisted privileged globals sandboxed clients may bind.
+	list_t *security_context_allows;
 	struct wl_event_loop *wl_event_loop;
 	char *socket;
 
@@ -166,6 +168,8 @@ extern struct sway_debug debug;
 extern bool unsupported_gpu_detected;
 
 void sway_terminate(int exit_code);
+
+bool server_add_security_context_allow(const char *arg);
 
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
