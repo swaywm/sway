@@ -253,10 +253,8 @@ static void apply_container_state(struct sway_container *container,
 	state->formatted_title = NULL;
 
 	if (view) {
-		if (view->saved_surface_tree) {
-			if (!container->node.destroying || container->node.ntxnrefs == 1) {
-				view_remove_saved_buffer(view);
-			}
+		if (!container->node.destroying || container->node.ntxnrefs == 1) {
+			view_remove_saved_buffer(view);
 		}
 
 		// If the view hasn't responded to the configure, center it within
@@ -859,8 +857,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 
 			view_send_frame_done(node->sway_container->view);
 		}
-		if (!hidden && node_is_view(node) &&
-				!node->sway_container->view->saved_surface_tree) {
+		if (!hidden && node_is_view(node)) {
 			view_save_buffer(node->sway_container->view);
 		}
 		node->instruction = instruction;

@@ -68,7 +68,6 @@ struct sway_view {
 
 	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *content_tree;
-	struct wlr_scene_tree *saved_surface_tree;
 	struct wlr_scene_buffer *output_handler;
 
 	struct wl_listener outputs_update;
