@@ -400,15 +400,24 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	return 0;
 }
 
+static uint32_t output_set_workspace_coordinates(struct sway_output *output,
+		uint32_t coord) {
+	for (int i = 0; i < output->workspaces->length; ++i) {
+		struct sway_workspace *ws = output->workspaces->items[i];
+		wlr_ext_workspace_handle_v1_set_coordinates(ws->ext_workspace, &coord, 1);
+		++coord;
+	}
+	return coord;
+}
+
 void output_sort_workspaces(struct sway_output *output) {
 	list_stable_sort(output->workspaces, sort_workspace_cmp_qsort);
-	for (int i = 0; i < output->workspaces->length; i++) {
-	   struct sway_workspace *ws = output->workspaces->items[i];
-	   if (ws->ext_workspace) {
-		  uint32_t coord = i;
-		  wlr_ext_workspace_handle_v1_set_coordinates(ws->ext_workspace, &coord, 1);
-	   }
+
+	uint32_t coord = 0;
+	for (int i = 0; i < root->outputs->length; ++i) {
+		coord = output_set_workspace_coordinates(root->outputs->items[i], coord);
 	}
+	output_set_workspace_coordinates(root->fallback_output, coord);
 }
 
 void output_get_box(struct sway_output *output, struct wlr_box *box) {
