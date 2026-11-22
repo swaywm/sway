@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -901,6 +902,13 @@ error_config:
 	for (size_t idx = start_new_configs; idx < configs_len; idx++) {
 		struct output_config *cfg = configs[idx];
 		if (!test_only && ok) {
+			// A mirror only keeps mirroring at its source's position, which
+			// clients send back because it is the one reported. Keep the
+			// position it has as a normal output.
+			struct sway_output *output = all_output_by_name_or_id(cfg->name);
+			if (output && output->mirror_source) {
+				cfg->x = cfg->y = INT_MAX;
+			}
 			store_output_config(cfg);
 		} else {
 			free_output_config(cfg);
