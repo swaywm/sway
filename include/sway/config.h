@@ -21,6 +21,8 @@
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include <pango/pangocairo.h>
 
+struct wlr_output_configuration_v1;
+
 // TODO: Refactor this shit
 
 /**
@@ -698,8 +700,13 @@ const char *sway_output_scale_filter_to_string(enum scale_filter_mode scale_filt
 
 struct output_config *new_output_config(const char *name);
 
+/**
+ * Applies the output configs. manager_config is the output manager
+ * configuration they come from, or NULL if they don't come from one.
+ */
 bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
-		bool test_only, bool degrade_to_off);
+		bool test_only, bool degrade_to_off,
+		struct wlr_output_configuration_v1 *manager_config);
 
 void apply_stored_output_configs(void);
 

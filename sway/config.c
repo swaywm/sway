@@ -23,6 +23,7 @@
 #include "sway/config.h"
 #include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
@@ -537,6 +538,11 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 		config->reloading = false;
 		if (is_active) {
+			// The new config decides again which outputs mirror
+			struct sway_output *output;
+			wl_list_for_each(output, &root->all_outputs, link) {
+				output->mirror_suspended_source = NULL;
+			}
 			request_modeset();
 			if (config->swaynag_config_errors.client != NULL) {
 				swaynag_show(&config->swaynag_config_errors);

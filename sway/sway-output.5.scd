@@ -150,6 +150,15 @@ must be separated by one space. For example:
 	that another output is configured to mirror: there are no chains. _off_
 	always succeeds.
 
+	Output management clients see a mirror as enabled at the position of its
+	source. A configuration from such a client that enables the mirror at
+	another position than the one the source ends up at suspends mirroring:
+	the output works as a normal output at that position, and keeps its
+	_mirror_ setting. Mirroring resumes with a later output management
+	configuration that leaves the mirror out or places it at its source, an
+	*output* command for the mirror, or a config reload. It also resumes when
+	_source_ is connected again after being disconnected.
+
 *output* <name> power on|off|toggle
 	Turns on or off the specified output.
 

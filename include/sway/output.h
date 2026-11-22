@@ -80,6 +80,10 @@ struct sway_output {
 	// wlr_output level but disabled for the tree: it isn't part of the
 	// layout, and has no workspaces, wl_output global or scene output.
 	struct sway_output *mirror_source;
+	// Set while this output works as a normal output, instead of mirroring
+	// the source it is configured to mirror, because an output manager
+	// configuration placed it away from that source
+	struct sway_output *mirror_suspended_source;
 	struct {
 		struct wl_listener source_commit;
 		// Latest frame committed by the source, the timeline point to wait

@@ -107,6 +107,14 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	bool background = output->background;
 
+	// A new config decides again whether the output mirrors
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
+		if (output_match_name_or_id(sway_output, output->name)) {
+			sway_output->mirror_suspended_source = NULL;
+		}
+	}
+
 	store_output_config(output);
 
 	if (config->reading) {

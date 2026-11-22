@@ -651,11 +651,15 @@ void force_modeset(void) {
 
 static void begin_destroy(struct sway_output *output) {
 	// Mirrors of this output stop mirroring; the modeset requested below
-	// turns them into normal outputs.
+	// turns them into normal outputs. Suspended ones mirror again when it
+	// comes back.
 	struct sway_output *other;
 	wl_list_for_each(other, &root->all_outputs, link) {
 		if (other->mirror_source == output) {
 			output_stop_mirroring(other);
+		}
+		if (other->mirror_suspended_source == output) {
+			other->mirror_suspended_source = NULL;
 		}
 	}
 	output_stop_mirroring(output);
@@ -891,7 +895,7 @@ static void output_manager_apply(struct sway_server *server,
 	// Try to commit without degrade to off enabled. Note that this will fail
 	// if any output configured for enablement fails to be enabled, even if it
 	// was not part of the config heads we were asked to configure.
-	ok = apply_output_configs(configs, configs_len, test_only, false);
+	ok = apply_output_configs(configs, configs_len, test_only, false, cfg);
 
 error_config:
 	for (size_t idx = start_new_configs; idx < configs_len; idx++) {
