@@ -188,4 +188,10 @@ struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr
 
 void update_output_manager_config(struct sway_server *server);
 
+/**
+ * Makes the next update_output_manager_config() send a new configuration
+ * serial, even if no reported value changes.
+ */
+void mark_output_manager_config_dirty(struct sway_server *server);
+
 #endif

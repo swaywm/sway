@@ -2,6 +2,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "list.h"
 #include "log.h"
 
@@ -107,12 +108,22 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	bool background = output->background;
 
-	// A new config decides again whether the output mirrors
+	// A new config decides again whether the output mirrors. Output managers
+	// don't see mirror settings, so they get a new configuration serial when
+	// mirroring may change even if no reported value does.
+	bool mirroring = output->mirror && output->mirror[0] != '\0';
 	struct sway_output *sway_output;
 	wl_list_for_each(sway_output, &root->all_outputs, link) {
-		if (output_match_name_or_id(sway_output, output->name)) {
-			sway_output->mirror_suspended_source = NULL;
+		if (!output_match_name_or_id(sway_output, output->name)) {
+			continue;
 		}
+		struct output_config *current = find_output_config(sway_output);
+		if (sway_output->mirror_suspended_source || (current &&
+				current->mirror && current->mirror[0] != '\0')) {
+			mirroring = true;
+		}
+		free_output_config(current);
+		sway_output->mirror_suspended_source = NULL;
 	}
 
 	store_output_config(output);
@@ -121,6 +132,9 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		// When reading the config file, we wait till the end to do a single
 		// modeset and swaybg spawn.
 		return cmd_results_new(CMD_SUCCESS, NULL);
+	}
+	if (mirroring) {
+		mark_output_manager_config_dirty(&server);
 	}
 	request_modeset();
 

@@ -621,6 +621,10 @@ void update_output_manager_config(struct sway_server *server) {
 	ipc_event_output();
 }
 
+void mark_output_manager_config_dirty(struct sway_server *server) {
+	server->output_manager_v1->current_configuration_dirty = true;
+}
+
 static int timer_modeset_handle(void *data) {
 	struct sway_server *server = data;
 	wl_event_source_remove(server->delayed_modeset);
