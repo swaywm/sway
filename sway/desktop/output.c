@@ -158,20 +158,22 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 		return;
 	}
 
-	struct wlr_scene_node *current = &buffer->node;
-	while (true) {
-		struct sway_view *view = scene_descriptor_try_get(current,
+	if (output->max_render_time == 0 ||
+			data->msec_until_refresh <= output->max_render_time) {
+		wlr_scene_surface_send_frame_done(scene_surface, &data->when);
+		return;
+	}
+
+	struct wlr_scene_tree *current = buffer->node.parent;
+	while (current) {
+		struct sway_view *view = scene_descriptor_try_get(&current->node,
 			SWAY_SCENE_DESC_VIEW);
 		if (view) {
 			view_max_render_time = view->max_render_time;
 			break;
 		}
 
-		if (!current->parent) {
-			break;
-		}
-
-		current = &current->parent->node;
+		current = current->node.parent;
 	}
 
 	int delay = data->msec_until_refresh - output->max_render_time
@@ -179,7 +181,7 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 
 	struct buffer_timer *timer = NULL;
 
-	if (output->max_render_time != 0 && view_max_render_time != 0 && delay > 0) {
+	if (view_max_render_time != 0 && delay > 0) {
 		timer = buffer_timer_get_or_create(scene_surface);
 	}
 
@@ -215,12 +217,6 @@ void output_configure_scene(struct sway_output *output,
 		return;
 	}
 
-	struct sway_container *con =
-		scene_descriptor_try_get(node, SWAY_SCENE_DESC_CONTAINER);
-	if (con) {
-		opacity = con->alpha;
-	}
-
 	if (node->type == WLR_SCENE_NODE_BUFFER) {
 		struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
 		struct wlr_scene_surface *surface = wlr_scene_surface_try_from_buffer(buffer);
@@ -242,6 +238,11 @@ void output_configure_scene(struct sway_output *output,
 
 		wlr_scene_buffer_set_opacity(buffer, opacity);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
+		struct sway_container *con =
+			scene_descriptor_try_get(node, SWAY_SCENE_DESC_CONTAINER);
+		if (con) {
+			opacity = con->alpha;
+		}
 		struct wlr_scene_tree *tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *node;
 		wl_list_for_each(node, &tree->children, link) {
