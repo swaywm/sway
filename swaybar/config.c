@@ -3,7 +3,6 @@
 #include "swaybar/config.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "config.h"
-#include "stringop.h"
 #include "list.h"
 #include "log.h"
 
