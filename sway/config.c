@@ -97,6 +97,12 @@ static void free_mode(struct sway_mode *mode) {
 		}
 		list_free(mode->gesture_bindings);
 	}
+	if (mode->bell_bindings) {
+		for (int i = 0; i < mode->bell_bindings->length; i++) {
+			free_bell_binding(mode->bell_bindings->items[i]);
+		}
+		list_free(mode->bell_bindings);
+	}
 	free(mode);
 }
 
@@ -238,6 +244,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->current_mode->mouse_bindings = create_list())) goto cleanup;
 	if (!(config->current_mode->switch_bindings = create_list())) goto cleanup;
 	if (!(config->current_mode->gesture_bindings = create_list())) goto cleanup;
+	if (!(config->current_mode->bell_bindings = create_list())) goto cleanup;
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;

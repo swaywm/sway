@@ -17,6 +17,7 @@ sway_sources = files(
 
 	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
+	'desktop/system_bell.c',
 	'desktop/output.c',
 	'desktop/tearing.c',
 	'desktop/transaction.c',
@@ -45,6 +46,7 @@ sway_sources = files(
 	'commands/allow_tearing.c',
 	'commands/assign.c',
 	'commands/bar.c',
+	'commands/bell.c',
 	'commands/bind.c',
 	'commands/border.c',
 	'commands/client.c',

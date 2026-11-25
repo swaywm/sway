@@ -44,6 +44,7 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 static const struct cmd_handler handlers[] = {
 	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
+	{ "bindbell", cmd_bindbell },
 	{ "bindcode", cmd_bindcode },
 	{ "bindgesture", cmd_bindgesture },
 	{ "bindswitch", cmd_bindswitch },
@@ -92,6 +93,7 @@ static const struct cmd_handler handlers[] = {
 	{ "titlebar_border_thickness", cmd_titlebar_border_thickness },
 	{ "titlebar_padding", cmd_titlebar_padding },
 	{ "unbindcode", cmd_unbindcode },
+	{ "unbindbell", cmd_unbindbell },
 	{ "unbindgesture", cmd_unbindgesture },
 	{ "unbindswitch", cmd_unbindswitch },
 	{ "unbindsym", cmd_unbindsym },
@@ -414,6 +416,7 @@ struct cmd_results *config_command(char *exec, char **new_block) {
 				&& handler->handle != cmd_bindcode
 				&& handler->handle != cmd_bindswitch
 				&& handler->handle != cmd_bindgesture
+				&& handler->handle != cmd_bindbell
 				&& handler->handle != cmd_set
 				&& handler->handle != cmd_for_window
 				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
