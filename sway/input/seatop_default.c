@@ -436,6 +436,15 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		return;
 	}
 
+	// Handle moving a tiling container via mod. Like i3, this doesn't change
+	// the focus.
+	if ((config->tiling_drag & TILING_DRAG_MODIFIER) && mod_move_btn_pressed &&
+			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating_or_child &&
+			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
+		seatop_begin_move_tiling(seat, cont);
+		return;
+	}
+
 	// Handle changing focus when clicking on a container
 	if (cont && state == WL_POINTER_BUTTON_STATE_PRESSED) {
 		// Default case: focus the container that was just clicked.
@@ -488,16 +497,11 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 		}
 	}
 
-	// Handle moving a tiling container
-	bool tiling_drag_mod = (config->tiling_drag & TILING_DRAG_MODIFIER) &&
-		mod_move_btn_pressed;
-	bool tiling_drag_titlebar = (config->tiling_drag & TILING_DRAG_TITLEBAR) &&
-		titlebar_left_btn_pressed;
-	if ((tiling_drag_mod || tiling_drag_titlebar) &&
+	// Handle moving a tiling container by its title bar
+	if ((config->tiling_drag & TILING_DRAG_TITLEBAR) && titlebar_left_btn_pressed &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating_or_child &&
 			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
-		// If moving a container by its title bar, use a threshold for the drag
-		if (!tiling_drag_mod && config->tiling_drag_threshold > 0) {
+		if (config->tiling_drag_threshold > 0) {
 			seatop_begin_move_tiling_threshold(seat, cont);
 		} else {
 			seatop_begin_move_tiling(seat, cont);

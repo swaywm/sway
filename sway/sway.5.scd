@@ -880,12 +880,13 @@ The default colors are:
 *tiling_drag* off|modifier|titlebar|modifier titlebar
 	Sets how tiling containers can be dragged with the mouse. With _modifier_,
 	the _floating_mod_ can be held while pressing the move button on a tiling
-	container to drag it. With _titlebar_, the left mouse button can be pressed
-	on a title bar, without the _floating_mod_, to drag the container.
-	_modifier titlebar_ (or _titlebar modifier_) enables both and is the
-	default; _off_ disables dragging tiling containers. _enable_, _enabled_,
-	_yes_, _on_, _true_, _active_ and _1_ are aliases for _modifier titlebar_;
-	_disable_, _no_, _false_, _inactive_ and _0_ are aliases for _off_.
+	container to drag it; this does not change focus. With _titlebar_, the left
+	mouse button can be pressed on a title bar, without the _floating_mod_, to
+	focus the container and drag it. _modifier titlebar_ (or _titlebar
+	modifier_) enables both and is the default; _off_ disables dragging tiling
+	containers. _enable_, _enabled_, _yes_, _on_, _true_, _active_ and _1_ are
+	aliases for _modifier titlebar_; _disable_, _no_, _false_, _inactive_ and
+	_0_ are aliases for _off_.
 
 *tiling_drag* toggle
 	Switches between _off_ and _modifier titlebar_. _toggle_ should not be
