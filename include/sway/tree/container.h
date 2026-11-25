@@ -309,6 +309,13 @@ void container_replace(struct sway_container *container,
 
 void container_swap(struct sway_container *con1, struct sway_container *con2);
 
+/**
+ * Like container_swap, but the focus stays on the node that has it, even if
+ * that node moves to another workspace.
+ */
+void container_swap_keep_focus(struct sway_container *con1,
+		struct sway_container *con2);
+
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);
 

@@ -877,17 +877,38 @@ The default colors are:
 	Any mark that starts with an underscore will not be drawn even if
 	*show_marks* is yes. The default is _yes_.
 
-*tiling_drag*  enable|disable|toggle
-	Sets whether or not tiling containers can be dragged with the mouse. If
-	_enabled_ (default), the _floating_mod_ can be used to drag tiling, as well
-	as floating, containers. Using the left mouse button on title bars without
-	the _floating_mod_ will also allow the container to be dragged. _toggle_
-	should not be used in the config file.
+*tiling_drag* off|modifier|titlebar|modifier titlebar
+	Sets how tiling containers can be dragged with the mouse. With _modifier_,
+	the _floating_mod_ can be held while pressing the move button on a tiling
+	container to drag it; this does not change focus. With _titlebar_, the left
+	mouse button can be pressed on a title bar, without the _floating_mod_, to
+	focus the container and drag it. _modifier titlebar_ (or _titlebar
+	modifier_) enables both and is the default; _off_ disables dragging tiling
+	containers. _enable_, _enabled_, _yes_, _on_, _true_, _active_ and _1_ are
+	aliases for _modifier titlebar_; _disable_, _no_, _false_, _inactive_ and
+	_0_ are aliases for _off_.
+
+	Dropping a container onto the middle of a window places it after that
+	window. If the _swap_modifier_ was held when the drag started, the two
+	containers are swapped instead, and the focus stays where it is. Dropping
+	it close to the edge of a window places it beside that window.
+
+*tiling_drag* toggle
+	Switches between _off_ and _modifier titlebar_. _toggle_ should not be
+	used in the config file.
+
+*tiling_drag* swap_modifier <modifier>[+<modifier>...]|none
+	Sets the modifier which, when held at the start of a drag, makes dropping
+	a tiling container onto the middle of a window swap the two containers.
+	Accepts the same modifier names as *floating_modifier*, or several of them
+	joined with _+_ (for example _Mod1+Shift_), in which case all of them must
+	be held. _none_ disables swapping. The default is _Shift_. This does not
+	change which drag styles are enabled.
 
 *tiling_drag_threshold* <threshold>
 	Sets the threshold that must be exceeded for a container to be dragged by
-	its titlebar. This has no effect if _floating_mod_ is used or if
-	_tiling_drag_ is set to _disable_.  Once the threshold has been exceeded
+	its titlebar. This has no effect on drags started with the _floating_mod_
+	(see *tiling_drag* _modifier_).  Once the threshold has been exceeded
 	once, the drag starts and the cursor can come back inside the threshold
 	without stopping the drag.  _threshold_ is multiplied by the scale of the
 	output that the cursor on.  The default is 9.
