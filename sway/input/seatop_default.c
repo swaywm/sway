@@ -260,7 +260,8 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		}
 
 		// Handle moving a tiling container
-		if (config->tiling_drag && mod_pressed && !is_floating_or_child &&
+		if ((config->tiling_drag & TILING_DRAG_MODIFIER) && mod_pressed &&
+				!is_floating_or_child &&
 				cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
 			seatop_begin_move_tiling(seat, cont);
 			return;
@@ -488,11 +489,15 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	}
 
 	// Handle moving a tiling container
-	if (config->tiling_drag && (mod_move_btn_pressed || titlebar_left_btn_pressed) &&
+	bool tiling_drag_mod = (config->tiling_drag & TILING_DRAG_MODIFIER) &&
+		mod_move_btn_pressed;
+	bool tiling_drag_titlebar = (config->tiling_drag & TILING_DRAG_TITLEBAR) &&
+		titlebar_left_btn_pressed;
+	if ((tiling_drag_mod || tiling_drag_titlebar) &&
 			state == WL_POINTER_BUTTON_STATE_PRESSED && !is_floating_or_child &&
 			cont && cont->pending.fullscreen_mode == FULLSCREEN_NONE) {
 		// If moving a container by its title bar, use a threshold for the drag
-		if (!mod_pressed && config->tiling_drag_threshold > 0) {
+		if (!tiling_drag_mod && config->tiling_drag_threshold > 0) {
 			seatop_begin_move_tiling_threshold(seat, cont);
 		} else {
 			seatop_begin_move_tiling(seat, cont);

@@ -462,6 +462,14 @@ enum focus_follows_mouse_mode {
 	FOLLOWS_ALWAYS,
 };
 
+enum tiling_drag_mode {
+	TILING_DRAG_OFF = 0,
+	TILING_DRAG_MODIFIER = 1 << 0,
+	TILING_DRAG_TITLEBAR = 1 << 1,
+	TILING_DRAG_MODIFIER_OR_TITLEBAR =
+		TILING_DRAG_MODIFIER | TILING_DRAG_TITLEBAR,
+};
+
 enum focus_wrapping_mode {
 	WRAP_NO,
 	WRAP_YES,
@@ -549,7 +557,7 @@ struct sway_config {
 	enum alignment title_align;
 	bool primary_selection;
 
-	bool tiling_drag;
+	enum tiling_drag_mode tiling_drag;
 	int tiling_drag_threshold;
 
 	enum smart_gaps_mode smart_gaps;

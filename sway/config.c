@@ -280,7 +280,7 @@ static void config_defaults(struct sway_config *config) {
 	config->reading = false;
 	config->show_marks = true;
 	config->title_align = ALIGN_LEFT;
-	config->tiling_drag = true;
+	config->tiling_drag = TILING_DRAG_MODIFIER_OR_TITLEBAR;
 	config->tiling_drag_threshold = 9;
 	config->primary_selection = true;
 
