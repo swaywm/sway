@@ -1,5 +1,6 @@
 #include <limits.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/util/edges.h>
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
@@ -26,6 +27,7 @@ struct seatop_move_tiling_event {
 	bool threshold_reached;
 	bool split_target;
 	bool insert_after_target;
+	bool swap; // swap_modifier held when the drag began
 	struct wlr_scene_rect *indicator_rect;
 	struct wl_listener target_node_destroy; // Clears target_node if destroyed mid-drag
 };
@@ -362,8 +364,10 @@ static void finalize_move(struct sway_seat *seat) {
 		target_node->sway_workspace : target_node->sway_container->pending.workspace;
 	enum wlr_edges edge = e->target_edge;
 	int after = edge != WLR_EDGE_TOP && edge != WLR_EDGE_LEFT;
+	// Dropping onto the middle of a view puts the container after it, or
+	// swaps the two if the swap modifier was held when the drag began.
 	bool swap = edge == WLR_EDGE_NONE && target_node->type == N_CONTAINER &&
-		!e->split_target;
+		!e->split_target && e->swap;
 
 	if (!swap) {
 		container_detach(con);
@@ -384,7 +388,9 @@ static void finalize_move(struct sway_seat *seat) {
 		// Moving container before/after another
 		struct sway_container *target = target_node->sway_container;
 		if (swap) {
-			container_swap(target_node->sway_container, con);
+			container_swap_keep_focus(target, con);
+			ipc_event_window(con, "move");
+			ipc_event_window(target, "move");
 		} else {
 			enum sway_container_layout layout = container_parent_layout(target);
 			if (edge && !is_parallel(layout, edge)) {
@@ -492,6 +498,11 @@ void seatop_begin_move_tiling_threshold(struct sway_seat *seat,
 	e->ref_ly = seat->cursor->cursor->y;
 	wl_list_init(&e->target_node_destroy.link);
 	e->target_node_destroy.notify = handle_target_node_destroy;
+
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+	uint32_t swap_mod = config->tiling_drag_swap_mod;
+	e->swap = swap_mod && (modifiers & swap_mod) == swap_mod;
 
 	seat->seatop_impl = &seatop_impl;
 	seat->seatop_data = e;

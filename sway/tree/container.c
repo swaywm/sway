@@ -1855,7 +1855,8 @@ static void swap_focus(struct sway_container *con1,
 	}
 }
 
-void container_swap(struct sway_container *con1, struct sway_container *con2) {
+static void swap(struct sway_container *con1, struct sway_container *con2,
+		bool keep_focus) {
 	if (!sway_assert(con1 && con2, "Cannot swap with nothing")) {
 		return;
 	}
@@ -1919,7 +1920,9 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 		seat_set_focus(seat, seat_get_focus_inactive(seat, &vis2->node));
 	}
 
-	swap_focus(con1, con2, seat, focus);
+	if (!keep_focus) {
+		swap_focus(con1, con2, seat, focus);
+	}
 
 	if (stored_prev_name) {
 		free(seat->prev_workspace_name);
@@ -1945,4 +1948,13 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 	if (fs2) {
 		container_set_fullscreen(con1, fs2);
 	}
+}
+
+void container_swap(struct sway_container *con1, struct sway_container *con2) {
+	swap(con1, con2, false);
+}
+
+void container_swap_keep_focus(struct sway_container *con1,
+		struct sway_container *con2) {
+	swap(con1, con2, true);
 }

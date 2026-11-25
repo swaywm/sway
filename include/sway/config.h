@@ -559,6 +559,7 @@ struct sway_config {
 
 	enum tiling_drag_mode tiling_drag;
 	int tiling_drag_threshold;
+	uint32_t tiling_drag_swap_mod;
 
 	enum smart_gaps_mode smart_gaps;
 	int gaps_inner;

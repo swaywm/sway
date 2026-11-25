@@ -15,6 +15,7 @@
 #include <dirent.h>
 #include <strings.h>
 #include <linux/input-event-codes.h>
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_output.h>
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -282,6 +283,7 @@ static void config_defaults(struct sway_config *config) {
 	config->title_align = ALIGN_LEFT;
 	config->tiling_drag = TILING_DRAG_MODIFIER_OR_TITLEBAR;
 	config->tiling_drag_threshold = 9;
+	config->tiling_drag_swap_mod = WLR_MODIFIER_SHIFT;
 	config->primary_selection = true;
 
 	config->smart_gaps = SMART_GAPS_OFF;

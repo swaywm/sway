@@ -1,9 +1,12 @@
+#include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/input/keyboard.h"
 
 static const char expected_syntax[] = "Expected 'tiling_drag "
-	"enable|disable|toggle|off|modifier|titlebar|modifier titlebar'";
+	"enable|disable|toggle|off|modifier|titlebar|modifier titlebar' or "
+	"'tiling_drag swap_modifier <modifier>[+<modifier>...]'";
 
 static bool parse_style(const char *word, enum tiling_drag_mode *style) {
 	if (strcasecmp(word, "modifier") == 0) {
@@ -50,11 +53,63 @@ static bool parse_single_word(const char *word, enum tiling_drag_mode *mode) {
 	return true;
 }
 
+// Parses a modifier name or a '+'-joined combination of names, as i3 spells
+// them (e.g. 'Mod1+Shift'). Returns 0 if any part is not a modifier name.
+static uint32_t parse_modifier_combination(const char *spec) {
+	uint32_t mask = 0;
+	const char *part = spec;
+	while (true) {
+		const char *end = strchr(part, '+');
+		size_t len = end ? (size_t)(end - part) : strlen(part);
+		char name[32];
+		if (len == 0 || len >= sizeof(name)) {
+			return 0;
+		}
+		memcpy(name, part, len);
+		name[len] = '\0';
+		uint32_t mod = get_modifier_mask_by_name(name);
+		if (!mod) {
+			return 0;
+		}
+		mask |= mod;
+		if (!end) {
+			return mask;
+		}
+		part = end + 1;
+	}
+}
+
+static struct cmd_results *cmd_tiling_drag_swap_modifier(int argc,
+		char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "tiling_drag swap_modifier",
+					EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	uint32_t mod = 0;
+	if (strcasecmp(argv[0], "none") != 0) {
+		mod = parse_modifier_combination(argv[0]);
+		if (!mod) {
+			return cmd_results_new(CMD_INVALID,
+					"Invalid modifier '%s'", argv[0]);
+		}
+	}
+
+	config->tiling_drag_swap_mod = mod;
+	return cmd_results_new(CMD_SUCCESS, NULL);
+}
+
 struct cmd_results *cmd_tiling_drag(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "tiling_drag", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+
+	if (strcasecmp(argv[0], "swap_modifier") == 0) {
+		return cmd_tiling_drag_swap_modifier(argc - 1, argv + 1);
+	}
+
 	if ((error = checkarg(argc, "tiling_drag", EXPECTED_AT_MOST, 2))) {
 		return error;
 	}
