@@ -661,6 +661,25 @@ void arrange_popups(struct wlr_scene_tree *popups) {
 	}
 }
 
+static void arrange_output_layers(struct sway_root *root,
+		struct sway_output *output) {
+	wlr_scene_node_reparent(&output->layers.shell_background->node, root->layers.shell_background);
+	wlr_scene_node_reparent(&output->layers.shell_bottom->node, root->layers.shell_bottom);
+	wlr_scene_node_reparent(&output->layers.tiling->node, root->layers.tiling);
+	wlr_scene_node_reparent(&output->layers.shell_top->node, root->layers.shell_top);
+	wlr_scene_node_reparent(&output->layers.shell_overlay->node, root->layers.shell_overlay);
+	wlr_scene_node_reparent(&output->layers.fullscreen->node, root->layers.fullscreen);
+	wlr_scene_node_reparent(&output->layers.session_lock->node, root->layers.session_lock);
+
+	wlr_scene_node_set_position(&output->layers.shell_background->node, output->lx, output->ly);
+	wlr_scene_node_set_position(&output->layers.shell_bottom->node, output->lx, output->ly);
+	wlr_scene_node_set_position(&output->layers.tiling->node, output->lx, output->ly);
+	wlr_scene_node_set_position(&output->layers.fullscreen->node, output->lx, output->ly);
+	wlr_scene_node_set_position(&output->layers.shell_top->node, output->lx, output->ly);
+	wlr_scene_node_set_position(&output->layers.shell_overlay->node, output->lx, output->ly);
+	wlr_scene_node_set_position(&output->layers.session_lock->node, output->lx, output->ly);
+}
+
 static void arrange_root(struct sway_root *root) {
 	struct sway_container *fs = root->fullscreen_global;
 
@@ -685,6 +704,7 @@ static void arrange_root(struct sway_root *root) {
 			struct sway_workspace *ws = output->current.active_workspace;
 
 			wlr_scene_output_set_position(output->scene_output, output->lx, output->ly);
+			arrange_output_layers(root, output);
 
 			// disable all workspaces to get to a known state
 			for (int j = 0; j < output->current.workspaces->length; j++) {
@@ -705,22 +725,7 @@ static void arrange_root(struct sway_root *root) {
 			struct sway_output *output = root->outputs->items[i];
 
 			wlr_scene_output_set_position(output->scene_output, output->lx, output->ly);
-
-			wlr_scene_node_reparent(&output->layers.shell_background->node, root->layers.shell_background);
-			wlr_scene_node_reparent(&output->layers.shell_bottom->node, root->layers.shell_bottom);
-			wlr_scene_node_reparent(&output->layers.tiling->node, root->layers.tiling);
-			wlr_scene_node_reparent(&output->layers.shell_top->node, root->layers.shell_top);
-			wlr_scene_node_reparent(&output->layers.shell_overlay->node, root->layers.shell_overlay);
-			wlr_scene_node_reparent(&output->layers.fullscreen->node, root->layers.fullscreen);
-			wlr_scene_node_reparent(&output->layers.session_lock->node, root->layers.session_lock);
-
-			wlr_scene_node_set_position(&output->layers.shell_background->node, output->lx, output->ly);
-			wlr_scene_node_set_position(&output->layers.shell_bottom->node, output->lx, output->ly);
-			wlr_scene_node_set_position(&output->layers.tiling->node, output->lx, output->ly);
-			wlr_scene_node_set_position(&output->layers.fullscreen->node, output->lx, output->ly);
-			wlr_scene_node_set_position(&output->layers.shell_top->node, output->lx, output->ly);
-			wlr_scene_node_set_position(&output->layers.shell_overlay->node, output->lx, output->ly);
-			wlr_scene_node_set_position(&output->layers.session_lock->node, output->lx, output->ly);
+			arrange_output_layers(root, output);
 
 			arrange_output(output, output->width, output->height);
 		}
