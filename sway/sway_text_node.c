@@ -82,7 +82,6 @@ static void render_backing_buffer(struct text_buffer *buffer) {
 	PangoContext *pango = NULL;
 
 	cairo_font_options_t *fo = cairo_font_options_create();
-	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
 	enum wl_output_subpixel subpixel = buffer->subpixel;
 	if (subpixel == WL_OUTPUT_SUBPIXEL_NONE || subpixel == WL_OUTPUT_SUBPIXEL_UNKNOWN) {
 		cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
