@@ -80,6 +80,10 @@ struct sway_cursor {
 	enum seat_config_hide_cursor_when_typing hide_when_typing;
 
 	size_t pressed_button_count;
+
+	// Accumulated continuous (touchpad) scroll distance in pixels,
+	// used to switch tabs on tabbed/stacked title bars
+	double tab_scroll_acc;
 };
 
 struct sway_node;
