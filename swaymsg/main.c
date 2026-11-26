@@ -1,4 +1,3 @@
-
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -391,6 +390,46 @@ static void pretty_print_tree(json_object *obj, int indent) {
 	}
 }
 
+static void pretty_print_cursor(json_object *c) {
+	json_object *x, *y, *surface_x, *surface_y, *node_type, *window_title, *app_id, *workspace_name, *pid;
+	json_object_object_get_ex(c, "x", &x);
+	json_object_object_get_ex(c, "y", &y);
+	json_object_object_get_ex(c, "surface_x", &surface_x);
+	json_object_object_get_ex(c, "surface_y", &surface_y);
+	json_object_object_get_ex(c, "node_type", &node_type);
+	json_object_object_get_ex(c, "window_title", &window_title);
+	json_object_object_get_ex(c, "app_id", &app_id);
+	json_object_object_get_ex(c, "workspace_name", &workspace_name);
+	json_object_object_get_ex(c, "pid", &pid);
+
+	printf("Cursor position: %d, %d", 
+		json_object_get_int(x), json_object_get_int(y));
+	
+	if (surface_x && surface_y) {
+		printf(" (relative: %d, %d)", 
+			json_object_get_int(surface_x), json_object_get_int(surface_y));
+	}
+	printf("\n");
+
+	if (node_type) {
+		printf("Under cursor: %s", json_object_get_string(node_type));
+		
+		if (workspace_name) {
+			printf(" \"%s\"", json_object_get_string(workspace_name));
+		}
+		if (window_title) {
+			printf(" - %s", json_object_get_string(window_title));
+		}
+		if (app_id) {
+			printf(" (%s)", json_object_get_string(app_id));
+		}
+		if (pid) {
+			printf(" [PID: %d]", json_object_get_int(pid));
+		}
+		printf("\n");
+	}
+}
+
 static void pretty_print(int type, json_object *resp) {
 	switch (type) {
 	case IPC_SEND_TICK:
@@ -403,6 +442,9 @@ static void pretty_print(int type, json_object *resp) {
 		return;
 	case IPC_GET_TREE:
 		pretty_print_tree(resp, 0);
+		return;
+	case IPC_GET_CURSOR:
+		pretty_print_cursor(resp);
 		return;
 	case IPC_COMMAND:
 	case IPC_GET_WORKSPACES:
@@ -532,6 +574,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_WORKSPACES;
 	} else if (strcasecmp(cmdtype, "get_seats") == 0) {
 		type = IPC_GET_SEATS;
+	} else if (strcasecmp(cmdtype, "get_cursor") == 0) {
+		type = IPC_GET_CURSOR;
 	} else if (strcasecmp(cmdtype, "get_inputs") == 0) {
 		type = IPC_GET_INPUTS;
 	} else if (strcasecmp(cmdtype, "get_outputs") == 0) {
