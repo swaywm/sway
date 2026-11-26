@@ -10,6 +10,7 @@
 #include <basu/sd-bus.h>
 #endif
 #include <cairo.h>
+#include <sfdo-icon.h>
 #include <stdint.h>
 #include "swaybar/tray/host.h"
 #include "list.h"
@@ -30,13 +31,15 @@ struct swaybar_tray {
 	struct swaybar_watcher *watcher_xdg;
 	struct swaybar_watcher *watcher_kde;
 
-	list_t *basedirs; // char *
-	list_t *themes; // struct swaybar_theme *
+	struct sfdo_icon_ctx *icon_ctx;
+	struct sfdo_icon_theme *icon_theme;
+	char *icon_theme_name;
 };
 
 struct swaybar_tray *create_tray(struct swaybar *bar);
 void destroy_tray(struct swaybar_tray *tray);
 void tray_in(int fd, short mask, void *data);
+void tray_reload_icon_theme(struct swaybar_tray *tray, const char *name);
 uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output, double *x);
 
 #endif

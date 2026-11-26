@@ -28,9 +28,9 @@ struct swaybar_sni {
 	// icon properties
 	struct swaybar_tray *tray;
 	cairo_surface_t *icon;
-	int min_size;
-	int max_size;
+	int icon_size;
 	int target_size;
+	struct sfdo_icon_theme *icon_theme_override; // non-NULL if IconThemePath set
 
 	// dbus properties
 	char *watcher_id;
