@@ -1225,60 +1225,13 @@ bool view_is_urgent(struct sway_view *view) {
 }
 
 void view_remove_saved_buffer(struct sway_view *view) {
-	if (!sway_assert(view->saved_surface_tree, "Expected a saved buffer")) {
-		return;
-	}
-
-	wlr_scene_node_destroy(&view->saved_surface_tree->node);
-	view->saved_surface_tree = NULL;
-	wlr_scene_node_set_enabled(&view->content_tree->node, true);
-}
-
-static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
-		int sx, int sy, void *data) {
-	struct wlr_scene_tree *tree = data;
-
-	struct wlr_scene_buffer *sbuf = wlr_scene_buffer_create(tree, NULL);
-	if (!sbuf) {
-		sway_log(SWAY_ERROR, "Could not allocate a scene buffer when saving a surface");
-		return;
-	}
-
-	wlr_scene_buffer_set_dest_size(sbuf,
-		buffer->dst_width, buffer->dst_height);
-	wlr_scene_buffer_set_opaque_region(sbuf, &buffer->opaque_region);
-	wlr_scene_buffer_set_opacity(sbuf, buffer->opacity);
-	wlr_scene_buffer_set_filter_mode(sbuf, buffer->filter_mode);
-	wlr_scene_buffer_set_transfer_function(sbuf, buffer->transfer_function);
-	wlr_scene_buffer_set_primaries(sbuf, buffer->primaries);
-	wlr_scene_buffer_set_source_box(sbuf, &buffer->src_box);
-	wlr_scene_node_set_position(&sbuf->node, sx, sy);
-	wlr_scene_buffer_set_transform(sbuf, buffer->transform);
-	wlr_scene_buffer_set_buffer(sbuf, buffer->buffer);
+	wlr_scene_tree_end_freeze(view->content_tree);
 }
 
 void view_save_buffer(struct sway_view *view) {
-	if (!sway_assert(!view->saved_surface_tree, "Didn't expect saved buffer")) {
-		view_remove_saved_buffer(view);
+	if (!wlr_scene_tree_do_freeze(view->content_tree)) {
+		sway_log(SWAY_ERROR, "Could not freeze the view's scene tree");
 	}
-
-	view->saved_surface_tree = wlr_scene_tree_create(view->scene_tree);
-	if (!view->saved_surface_tree) {
-		sway_log(SWAY_ERROR, "Could not allocate a scene tree node when saving a surface");
-		return;
-	}
-
-	// Make sure the output handler is placed above the saved surface so we don't send
-	// spurious events to the foreign toplevel handler. Also, make the saved surface tree
-	// is disabled until it is ready to replace the real surface.
-	wlr_scene_node_place_below(&view->saved_surface_tree->node, &view->output_handler->node);
-	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, false);
-
-	wlr_scene_node_for_each_buffer(&view->content_tree->node,
-		view_save_buffer_iterator, view->saved_surface_tree);
-
-	wlr_scene_node_set_enabled(&view->content_tree->node, false);
-	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, true);
 }
 
 bool view_is_transient_for(struct sway_view *child,
