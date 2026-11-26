@@ -438,6 +438,7 @@ static bool load_config(const char *path, struct sway_config *config,
 
 	if (!config_load_success) {
 		sway_log(SWAY_ERROR, "Error(s) loading config!");
+		config->load_errors = true;
 	}
 
 	return config->active || !config->validating || config_load_success;
@@ -508,6 +509,10 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	bool success = load_config(path, config, &config->swaynag_config_errors);
 
 	if (validating) {
+		// sway -C fails on errors in included files as well
+		if (!is_active && config->load_errors) {
+			success = false;
+		}
 		free_config(config);
 		config = old_config;
 		return success;

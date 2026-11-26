@@ -544,6 +544,7 @@ struct sway_config {
 	bool reloading;
 	bool reading;
 	bool validating;
+	bool load_errors; // the main config or an included file had errors
 	bool auto_back_and_forth;
 	bool show_marks;
 	enum alignment title_align;
