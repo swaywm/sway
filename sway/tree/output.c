@@ -335,12 +335,22 @@ void output_add_workspace(struct sway_output *output,
 	if (workspace->output) {
 		workspace_detach(workspace);
 	}
+
+	struct sway_workspace *old_active = output_get_active_workspace(output);
 	list_add(output->workspaces, workspace);
 	workspace->output = output;
 	if (workspace->output && workspace->output->ext_workspace_group) {
 		wlr_ext_workspace_handle_v1_set_group(workspace->ext_workspace,
 			workspace->output->ext_workspace_group);
 	}
+
+	struct sway_workspace *new_active = output_get_active_workspace(output);
+	if (old_active && old_active != new_active) {
+		wlr_ext_workspace_handle_v1_set_active(old_active->ext_workspace, false);
+	}
+	wlr_ext_workspace_handle_v1_set_active(workspace->ext_workspace,
+		workspace == new_active);
+
 	node_set_dirty(&output->node);
 	node_set_dirty(&workspace->node);
 }
