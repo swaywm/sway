@@ -27,7 +27,45 @@ struct sway_session_lock_output {
 	// invalid if surface is NULL
 	struct wl_listener surface_destroy;
 	struct wl_listener surface_map;
+	bool surface_mapped;
 };
+
+static void lock_stop_timer(struct sway_session_lock *lock) {
+	if (lock->timer) {
+		wl_event_source_remove(lock->timer);
+		lock->timer = NULL;
+	}
+}
+
+static void lock_send_locked(struct sway_session_lock *lock) {
+	if (lock->locked_sent) {
+		return;
+	}
+	lock->locked_sent = true;
+	lock_stop_timer(lock);
+	struct sway_session_lock_output *o;
+	wl_list_for_each(o, &lock->outputs, link) {
+		wlr_scene_node_set_enabled(&o->background->node, true);
+	}
+	if (!lock->abandoned && lock->wlr_lock) {
+		wlr_session_lock_v1_send_locked(lock->wlr_lock);
+	}
+}
+
+static void lock_check_ready(struct sway_session_lock *lock) {
+	struct sway_session_lock_output *o;
+	wl_list_for_each(o, &lock->outputs, link) {
+		if (!o->surface_mapped) {
+			return;
+		}
+	}
+	lock_send_locked(lock);
+}
+
+static int handle_lock_timeout(void *data) {
+	lock_send_locked(data);
+	return 0;
+}
 
 static void focus_surface(struct sway_session_lock *lock,
 		struct wlr_surface *focused) {
@@ -65,6 +103,8 @@ static void handle_surface_map(struct wl_listener *listener, void *data) {
 	if (surf->lock->focused == NULL) {
 		focus_surface(surf->lock, surf->surface->surface);
 	}
+	surf->surface_mapped = true;
+	lock_check_ready(surf->lock);
 	cursor_rebase_all();
 }
 
@@ -177,6 +217,8 @@ static struct sway_session_lock_output *session_lock_output_create(
 		return NULL;
 	}
 
+	wlr_scene_node_set_enabled(&background->node, lock->locked_sent || lock->abandoned);
+
 	lock_output->output = output;
 	lock_output->tree = tree;
 	lock_output->background = background;
@@ -193,6 +235,7 @@ static struct sway_session_lock_output *session_lock_output_create(
 }
 
 static void sway_session_lock_destroy(struct sway_session_lock* lock) {
+	lock_stop_timer(lock);
 	struct sway_session_lock_output *lock_output, *tmp_lock_output;
 	wl_list_for_each_safe(lock_output, tmp_lock_output, &lock->outputs, link) {
 		// destroying the node will also destroy the whole lock output
@@ -245,11 +288,14 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 static void handle_abandon(struct wl_listener *listener, void *data) {
 	struct sway_session_lock *lock = wl_container_of(listener, lock, destroy);
 	sway_log(SWAY_INFO, "session lock abandoned");
+	lock_stop_timer(lock);
+	lock->wlr_lock = NULL;
 
 	struct sway_session_lock_output *lock_output;
 	wl_list_for_each(lock_output, &lock->outputs, link) {
 		wlr_scene_rect_set_color(lock_output->background,
 			(float[4]){ 1.f, 0.f, 0.f, 1.f });
+		wlr_scene_node_set_enabled(&lock_output->background->node, true);
 	}
 
 	lock->abandoned = true;
@@ -301,8 +347,15 @@ static void handle_session_lock(struct wl_listener *listener, void *data) {
 	sway_lock->destroy.notify = handle_abandon;
 	wl_signal_add(&lock->events.destroy, &sway_lock->destroy);
 
-	wlr_session_lock_v1_send_locked(lock);
+	sway_lock->wlr_lock = lock;
 	server.session_lock.lock = sway_lock;
+	sway_lock->timer = wl_event_loop_add_timer(server.wl_event_loop,
+		handle_lock_timeout, sway_lock);
+	if (sway_lock->timer) {
+		wl_event_source_timer_update(sway_lock->timer, 200);
+	} else {
+		lock_send_locked(sway_lock);
+	}
 
 	// The lock screen covers everything, so check if any active inhibition got
 	// deactivated due to lost visibility.
