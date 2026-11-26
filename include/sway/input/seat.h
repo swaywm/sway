@@ -83,6 +83,7 @@ struct sway_drag {
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
+	struct seat_config *config;
 
 	// Seat scene tree structure
 	// - scene_tree
@@ -242,10 +243,6 @@ void seat_for_each_node(struct sway_seat *seat,
 		void (*f)(struct sway_node *node, void *data), void *data);
 
 void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
-
-struct seat_config *seat_get_config(struct sway_seat *seat);
-
-struct seat_config *seat_get_config_by_name(const char *name);
 
 void seat_idle_notify_activity(struct sway_seat *seat,
 		enum sway_input_idle_source source);
