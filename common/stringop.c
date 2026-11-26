@@ -203,20 +203,19 @@ int unescape_string(char *string) {
 				string[i] = '\0';
 				break;
 			case 'x':
-				{
-					unsigned char c = 0;
-					if (string[i+1] >= '0' && string[i+1] <= '9') {
-						c = string[i+1] - '0';
-						if (string[i+2] >= '0' && string[i+2] <= '9') {
-							c *= 0x10;
-							c += string[i+2] - '0';
-							string[i+2] = '\0';
-						}
-						string[i+1] = '\0';
+				if (isxdigit((unsigned char)string[i+1])) {
+					char hex[3] = { string[i+1], '\0', '\0' };
+					string[i+1] = '\0';
+					if (isxdigit((unsigned char)string[i+2])) {
+						hex[1] = string[i+2];
+						string[i+2] = '\0';
 					}
 					string[i] = '\0';
-					string[i - 1] = c;
+					string[i - 1] = strtol(hex, NULL, 16);
+					i += strlen(hex);
 				}
+				// Without a hex digit, keep \x as it is
+				break;
 			}
 		}
 	}
