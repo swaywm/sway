@@ -837,8 +837,12 @@ void floating_fix_coordinates(struct sway_container *con, struct wlr_box *old, s
 		double rel_x = con->pending.x - old->x + (con->pending.width / 2);
 		double rel_y = con->pending.y - old->y + (con->pending.height / 2);
 
-		con->pending.x = new->x + (rel_x * new->width) / old->width - (con->pending.width / 2);
-		con->pending.y = new->y + (rel_y * new->height) / old->height - (con->pending.height / 2);
+		double new_x = new->x + (rel_x * new->width) / old->width - (con->pending.width / 2);
+		double new_y = new->y + (rel_y * new->height) / old->height - (con->pending.height / 2);
+		// Translate rather than set x/y directly, so that content_x/y (used
+		// e.g. to unconstrain popups) and any children move along
+		container_floating_translate(con,
+			new_x - con->pending.x, new_y - con->pending.y);
 
 		sway_log(SWAY_DEBUG, "Transformed container %p to coords (%f, %f)", con, con->pending.x, con->pending.y);
 	}
