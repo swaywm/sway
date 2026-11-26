@@ -18,28 +18,57 @@
 #include "stringop.h"
 #include "util.h"
 
-void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
-	uint32_t size = strlen("workspace \"\"") + strlen(ws);
-	for (size_t i = 0; i < strlen(ws); ++i) {
-		if (ws[i] == '"' || ws[i] == '\\') {
-			++size;
+// Quotes a workspace name for sway's command parser, which removes quotes but
+// keeps backslashes: runs of characters go in single quotes, and each single
+// quote that no backslash escapes goes in double quotes. A backslash at the
+// very end is left outside, where it can't escape a closing quote.
+static char *quote_workspace_name(const char *ws) {
+	size_t len = strlen(ws);
+	char *quoted = malloc(4 * len + 3);
+	if (!quoted) {
+		return NULL;
+	}
+	size_t d = 0, i = 0;
+	if (len == 0) {
+		quoted[d++] = '\'';
+		quoted[d++] = '\'';
+	}
+	while (i < len) {
+		if (ws[i] == '\'') {
+			quoted[d++] = '"';
+			quoted[d++] = '\'';
+			quoted[d++] = '"';
+			++i;
+			continue;
+		}
+		quoted[d++] = '\'';
+		size_t backslashes = 0;
+		while (i < len && (ws[i] != '\'' || backslashes % 2 == 1)) {
+			backslashes = ws[i] == '\\' ? backslashes + 1 : 0;
+			quoted[d++] = ws[i++];
+		}
+		if (backslashes % 2 == 1) {
+			quoted[d - 1] = '\'';
+			quoted[d++] = '\\';
+		} else {
+			quoted[d++] = '\'';
 		}
 	}
+	quoted[d] = '\0';
+	return quoted;
+}
 
-	char *command = malloc(size + 1);
+void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
+	char *quoted = quote_workspace_name(ws);
+	if (!quoted) {
+		return;
+	}
+	char *command = format_str("workspace %s", quoted);
+	free(quoted);
 	if (!command) {
 		return;
 	}
-
-	strcpy(command, "workspace \"");
-	strcpy(&command[size - 1], "\"");
-	for (size_t i = 0, d = strlen("workspace \""); i < strlen(ws); ++i) {
-		if (ws[i] == '"' || ws[i] == '\\') {
-			command[d++] = '\\';
-		}
-		command[d++] = ws[i];
-	}
-
+	uint32_t size = strlen(command);
 	free(ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size));
 	free(command);
 }
