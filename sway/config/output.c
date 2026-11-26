@@ -1234,12 +1234,14 @@ bool spawn_swaybg(void) {
 		return true;
 	}
 
+	bool background_found = false;
 	size_t length = 2;
 	for (int i = 0; i < config->output_configs->length; i++) {
 		struct output_config *oc = config->output_configs->items[i];
 		if (!oc->background) {
 			continue;
 		}
+		background_found = true;
 		if (strcmp(oc->background_option, "solid_color") == 0) {
 			length += 4;
 		} else if (oc->background_fallback) {
@@ -1247,6 +1249,13 @@ bool spawn_swaybg(void) {
 		} else {
 			length += 6;
 		}
+	}
+
+	// No backgrounds configured anywhere: spawning a bare swaybg would only
+	// have it report "Could not find config" for every output.
+	if (!background_found) {
+		sway_log(SWAY_DEBUG, "Not spawning swaybg, no backgrounds configured");
+		return true;
 	}
 
 	char **cmd = calloc(length, sizeof(char *));
