@@ -18,9 +18,17 @@ struct cmd_results *input_cmd_accel_profile(int argc, char **argv) {
 		ic->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
 	} else if (strcasecmp(argv[0], "flat") == 0) {
 		ic->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
+	} else if (strcasecmp(argv[0], "custom") == 0) {
+#if HAVE_LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM
+		ic->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM;
+#else
+		return cmd_results_new(CMD_INVALID,
+				"Config 'accel_profile custom' not supported (requires libinput >= 1.23.0).");
+#endif
 	} else {
 		return cmd_results_new(CMD_INVALID,
-				"Expected 'accel_profile <adaptive|flat>'");
+				"Expected 'accel_profile <adaptive|flat|custom>'"
+		);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL);
