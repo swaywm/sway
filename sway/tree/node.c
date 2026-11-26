@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/container.h"
@@ -6,13 +7,85 @@
 #include "sway/tree/workspace.h"
 #include "log.h"
 
+#include "khashl.h"
+
+typedef struct sway_node *sway_node_ptr;
+
+static kh_inline khint_t node_hash_fn(sway_node_ptr node) {
+	return node->id;
+}
+
+static kh_inline int node_eq_fn(sway_node_ptr a, sway_node_ptr b) {
+	return a->id == b->id;
+}
+
+KHASHL_INIT(KH_LOCAL, node_map_t, node_kh, sway_node_ptr, node_hash_fn, node_eq_fn)
+
+static node_map_t *node_table = NULL;
+
+void node_map_init(void) {
+	if (node_table) {
+		sway_abort("node_table already initialized");
+	}
+	node_table = node_kh_init();
+	if (!node_table) {
+		sway_abort("Failed to allocate node map table");
+	}
+}
+
+void node_map_fini(void) {
+	if (!node_table) {
+		sway_abort("node_table not initialized");
+	}
+	node_kh_destroy(node_table);
+	node_table = NULL;
+}
+
+static void node_map_add(struct sway_node *node) {
+	if (!node_table) {
+		sway_abort("node_table not initialized");
+	}
+	int ret;
+	node_kh_put(node_table, node, &ret);
+	if (ret == -1) {
+		sway_abort("Failed to insert node into hash map (OOM)");
+	}
+}
+
+struct sway_node *node_by_id(size_t id) {
+	if (!node_table) {
+		return NULL;
+	}
+	struct sway_node dummy = {.id = id};
+	khint_t k = node_kh_get(node_table, &dummy);
+	if (k == kh_end(node_table)) {
+		return NULL;
+	}
+	return kh_bucket(node_table, k);
+}
+
+void node_map_remove(struct sway_node *node) {
+	if (!node_table) {
+		sway_abort("node_table not initialized");
+	}
+	khint_t k = node_kh_get(node_table, node);
+	if (k == kh_end(node_table)) {
+		sway_abort("Node not present in table");
+	}
+	node_kh_del(node_table, k);
+}
+
+
+
 void node_init(struct sway_node *node, enum sway_node_type type, void *thing) {
 	static size_t next_id = 1;
 	node->id = next_id++;
 	node->type = type;
 	node->sway_root = thing;
 	wl_signal_init(&node->events.destroy);
+	node_map_add(node);
 }
+
 
 const char *node_type_to_str(enum sway_node_type type) {
 	switch (type) {

@@ -20,6 +20,7 @@
 #include "sway/swaynag.h"
 #include "sway/desktop/transaction.h"
 #include "sway/tree/root.h"
+#include "sway/tree/node.h"
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
 #include "log.h"
@@ -400,6 +401,7 @@ shutdown:
 	server_fini(&server);
 	root_destroy(root);
 	root = NULL;
+	node_map_fini();
 
 	free(config_path);
 	free_config(config);
