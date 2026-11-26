@@ -134,6 +134,8 @@ void output_get_box(struct sway_output *output, struct wlr_box *box);
 
 bool output_supports_hdr(struct wlr_output *output, const char **unsupported_reason_ptr);
 
+const char *sway_output_color_format_to_string(enum wlr_output_color_format format);
+
 enum sway_container_layout output_get_default_layout(
 		struct sway_output *output);
 

@@ -11,6 +11,7 @@ static const struct cmd_handler output_handlers[] = {
 	{ "allow_tearing", output_cmd_allow_tearing },
 	{ "background", output_cmd_background },
 	{ "bg", output_cmd_background },
+	{ "color_format", output_cmd_color_format },
 	{ "color_profile", output_cmd_color_profile },
 	{ "disable", output_cmd_disable },
 	{ "dpms", output_cmd_dpms },

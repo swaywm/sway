@@ -40,6 +40,23 @@
 #include <wlr/types/wlr_drm_lease_v1.h>
 #endif
 
+const char *sway_output_color_format_to_string(enum wlr_output_color_format format) {
+	switch (format) {
+	case WLR_OUTPUT_COLOR_FORMAT_AUTO:
+		return "auto";
+	case WLR_OUTPUT_COLOR_FORMAT_RGB444:
+		return "rgb";
+	case WLR_OUTPUT_COLOR_FORMAT_YCBCR444:
+		return "yuv444";
+	case WLR_OUTPUT_COLOR_FORMAT_YCBCR422:
+		return "yuv422";
+	case WLR_OUTPUT_COLOR_FORMAT_YCBCR420:
+		return "yuv420";
+	}
+	sway_assert(false, "Unknown value for wlr_output_color_format.");
+	return NULL;
+}
+
 bool output_match_name_or_id(struct sway_output *output,
 		const char *name_or_id) {
 	if (strcmp(name_or_id, "*") == 0) {
@@ -628,6 +645,7 @@ static struct output_config *output_config_for_config_head(
 	oc->transform = config_head->state.transform;
 	oc->scale = config_head->state.scale;
 	oc->adaptive_sync = config_head->state.adaptive_sync_enabled;
+	oc->color_format = config_head->state.color_format;
 	return oc;
 }
 

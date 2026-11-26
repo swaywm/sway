@@ -202,6 +202,9 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "adaptive_sync_status", &adaptive_sync_status);
 	json_object_object_get_ex(o, "allow_tearing", &allow_tearing);
 	json_object_object_get_ex(o, "hdr", &hdr);
+	json_object *color_format, *color_formats;
+	json_object_object_get_ex(o, "color_format", &color_format);
+	json_object_object_get_ex(o, "color_formats", &color_formats);
 	json_object *x, *y;
 	json_object_object_get_ex(rect, "x", &x);
 	json_object_object_get_ex(rect, "y", &y);
@@ -270,6 +273,7 @@ static void pretty_print_output(json_object *o) {
 			hdr_str = json_object_get_boolean(hdr) ? "on" : "off";
 		}
 		printf("  HDR: %s\n", hdr_str);
+		printf("  Color format: %s\n", json_object_get_string(color_format));
 	} else {
 		printf(
 			"Output %s '%s %s %s' (disabled)\n",
@@ -303,6 +307,16 @@ static void pretty_print_output(json_object *o) {
 				printf(" (%s)", json_object_get_string(mode_picture_aspect_ratio));
 			}
 			printf("\n");
+		}
+	}
+
+	size_t color_formats_len = json_object_is_type(color_formats, json_type_array)
+		? json_object_array_length(color_formats) : 0;
+	if (color_formats_len > 0) {
+		printf("  Available color formats:\n");
+		for (size_t i = 0; i < color_formats_len; ++i) {
+			printf("    %s\n",
+				json_object_get_string(json_object_array_get_idx(color_formats, i)));
 		}
 	}
 
