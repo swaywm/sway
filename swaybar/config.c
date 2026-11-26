@@ -78,6 +78,7 @@ struct swaybar_config *init_config(void) {
 
 #if HAVE_TRAY
 	config->tray_padding = 2;
+	config->tray_last = true;
 	wl_list_init(&config->tray_bindings);
 #endif
 

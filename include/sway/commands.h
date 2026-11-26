@@ -226,6 +226,7 @@ sway_cmd bar_cmd_strip_workspace_name;
 sway_cmd bar_cmd_swaybar_command;
 sway_cmd bar_cmd_tray_bindcode;
 sway_cmd bar_cmd_tray_bindsym;
+sway_cmd bar_cmd_tray_last;
 sway_cmd bar_cmd_tray_output;
 sway_cmd bar_cmd_tray_padding;
 sway_cmd bar_cmd_unbindcode;
