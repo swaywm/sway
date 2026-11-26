@@ -72,6 +72,9 @@ struct sway_output {
 
 	bool allow_tearing;
 	bool hdr;
+
+	bool brightness_changed;
+	float brightness;
 };
 
 struct sway_output_non_desktop {
@@ -144,6 +147,8 @@ void handle_output_manager_apply(struct wl_listener *listener, void *data);
 void handle_output_manager_test(struct wl_listener *listener, void *data);
 
 void handle_output_power_manager_set_mode(struct wl_listener *listener,
+	void *data);
+void handle_output_power_manager_set_brightness(struct wl_listener *listener,
 	void *data);
 
 struct sway_output_non_desktop *output_non_desktop_create(struct wlr_output *wlr_output);
