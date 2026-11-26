@@ -190,16 +190,9 @@ static bool criteria_matches_container(struct criteria *criteria,
 	return true;
 }
 
-static bool criteria_matches_view(struct criteria *criteria,
-		struct sway_view *view) {
-	struct sway_seat *seat = input_manager_current_seat();
-	struct sway_container *focus = seat_get_focused_container(seat);
-	struct sway_view *focused = focus ? focus->view : NULL;
-
-	if (!view->container) {
-		return false;
-	}
-
+// View-intrinsic checks; does not require view->container.
+static bool match_view_intrinsic(struct criteria *criteria,
+		struct sway_view *view, struct sway_view *focused) {
 	if (criteria->title) {
 		const char *title = view_get_title(view);
 		if (!title) {
@@ -340,10 +333,6 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
-	if (!criteria_matches_container(criteria, view->container)) {
-		return false;
-	}
-
 #if WLR_HAS_XWAYLAND
 	if (criteria->id) { // X11 window ID
 		uint32_t x11_window_id = view_get_x11_window_id(view);
@@ -419,6 +408,42 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 #endif
 
+	if (criteria->pid) {
+		if (criteria->pid != view->pid) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool criteria_matches_view_unmapped(struct criteria *criteria,
+		struct sway_view *view) {
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_view *focused = focus ? focus->view : NULL;
+
+	return match_view_intrinsic(criteria, view, focused);
+}
+
+static bool criteria_matches_view(struct criteria *criteria,
+		struct sway_view *view) {
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_view *focused = focus ? focus->view : NULL;
+
+	if (!view->container) {
+		return false;
+	}
+
+	if (!match_view_intrinsic(criteria, view, focused)) {
+		return false;
+	}
+
+	if (!criteria_matches_container(criteria, view->container)) {
+		return false;
+	}
+
 	if (criteria->floating) {
 		if (!container_is_floating(view->container)) {
 			return false;
@@ -468,12 +493,6 @@ static bool criteria_matches_view(struct criteria *criteria,
 				return false;
 			}
 			break;
-		}
-	}
-
-	if (criteria->pid) {
-		if (criteria->pid != view->pid) {
-			return false;
 		}
 	}
 
