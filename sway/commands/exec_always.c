@@ -25,7 +25,7 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	return error;
 }
 
-struct cmd_results *cmd_exec_process(int argc, char **argv) {
+struct cmd_results *cmd_exec_process(int argc, char **argv, const char *cmdlist) {
 	struct cmd_results *error = NULL;
 	char *cmd = NULL;
 	bool no_startup_id = false;
@@ -47,6 +47,10 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	sway_log(SWAY_DEBUG, "Executing %s", cmd);
 
 	struct launcher_ctx *ctx = launcher_ctx_create_internal();
+	if (ctx && cmdlist) {
+		ctx->cmdlist = strdup(cmdlist);
+		sway_log(SWAY_DEBUG, "Recorded cmdlist '%s' to ctx %p", ctx->cmdlist, ctx);
+	}
 
 	// Fork process
 	pid_t child = fork();
@@ -85,5 +89,5 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if ((error = cmd_exec_validate(argc, argv))) {
 		return error;
 	}
-	return cmd_exec_process(argc, argv);
+	return cmd_exec_process(argc, argv, NULL);
 }

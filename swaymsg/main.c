@@ -391,8 +391,30 @@ static void pretty_print_tree(json_object *obj, int indent) {
 	}
 }
 
+static void pretty_print_mint_activation_token(json_object *r) {
+	json_object *success;
+	if (json_object_object_get_ex(r, "success", &success) && !json_object_get_boolean(success)) {
+		json_object *error;
+		if (!json_object_object_get_ex(r, "error", &error)) {
+			printf("An unknown error occurred\n");
+		} else {
+			printf("Error: %s\n", json_object_get_string(error));
+		}
+	} else {
+		json_object *token;
+		if (json_object_object_get_ex(r, "token", &token)) {
+			printf("%s\n", json_object_get_string(token));
+		} else {
+			printf("Error: Token not found in response\n");
+		}
+	}
+}
+
 static void pretty_print(int type, json_object *resp) {
 	switch (type) {
+	case IPC_MINT_ACTIVATION_TOKEN:
+		pretty_print_mint_activation_token(resp);
+		return;
 	case IPC_SEND_TICK:
 		return;
 	case IPC_GET_VERSION:
@@ -554,6 +576,8 @@ int main(int argc, char **argv) {
 		type = IPC_SEND_TICK;
 	} else if (strcasecmp(cmdtype, "subscribe") == 0) {
 		type = IPC_SUBSCRIBE;
+	} else if (strcasecmp(cmdtype, "mint_activation_token") == 0) {
+		type = IPC_MINT_ACTIVATION_TOKEN;
 	} else {
 		if (quiet) {
 			exit(EXIT_FAILURE);

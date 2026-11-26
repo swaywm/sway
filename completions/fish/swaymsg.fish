@@ -23,3 +23,5 @@ complete -c swaymsg -s t -l type -fra 'get_config' --description "Gets a JSON-en
 complete -c swaymsg -s t -l type -fra 'get_seats' --description "Gets a JSON-encoded list of all seats, its properties and all assigned devices."
 complete -c swaymsg -s t -l type -fra 'send_tick' --description "Sends a tick event to all subscribed clients."
 complete -c swaymsg -s t -l type -fra 'subscribe' --description "Subscribe to a list of event types."
+complete -c swaymsg -s t -l type -fra 'mint_activation_token' --description "Mint a new XDG activation token."
+
