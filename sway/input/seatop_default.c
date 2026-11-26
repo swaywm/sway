@@ -565,7 +565,9 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		struct sway_output *hovered_output = wlr_output->data;
 		if (focus && hovered_output != node_get_output(focus)) {
 			struct sway_workspace *ws = output_get_active_workspace(hovered_output);
-			seat_set_focus(seat, &ws->node);
+			struct sway_container *con = seat_get_focus_inactive_view(seat, &ws->node);
+			struct sway_node *next = con ? &con->node : seat_get_focus_inactive(seat, &ws->node);
+			seat_set_focus(seat, next);
 			transaction_commit_dirty();
 		}
 		return;
@@ -577,7 +579,9 @@ static void check_focus_follows_mouse(struct sway_seat *seat,
 		struct sway_output *focused_output = node_get_output(focus);
 		struct sway_output *hovered_output = node_get_output(hovered_node);
 		if (hovered_output != focused_output) {
-			seat_set_focus(seat, seat_get_focus_inactive(seat, hovered_node));
+			struct sway_container *con = seat_get_focus_inactive_view(seat, hovered_node);
+			struct sway_node *next = con ? &con->node : seat_get_focus_inactive(seat, hovered_node);
+			seat_set_focus(seat, next);
 			transaction_commit_dirty();
 		}
 		return;
