@@ -56,6 +56,10 @@ For more information on these xkb configuration options, see
 	Sets all xkb configurations from a complete .xkb file. This file can be
 	dumped from _xkbcomp $DISPLAY keymap.xkb_. This setting overrides
 	xkb_layout, xkb_model, xkb_options, xkb_rules, and xkb_variant settings.
+	Custom XKB symbol files may placed in _$XDG_CONFIG_HOME/xkb/symbols_ and
+	other locations. See
+	https://xkbcommon.org/doc/current/md_doc_user_configuration.html
+	for details.
 
 *input* <identifier> xkb_layout <layout_name>
 	Sets the layout of the keyboard like _us_ or _de_.
