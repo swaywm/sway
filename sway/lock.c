@@ -3,11 +3,11 @@
 #include <wlr/types/wlr_session_lock_v1.h>
 #include "log.h"
 #include "sway/input/cursor.h"
-#include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/workspace.h"
 #include "sway/lock.h"
 #include "sway/desktop/transaction.h"
 
@@ -29,41 +29,65 @@ struct sway_session_lock_output {
 	struct wl_listener surface_map;
 };
 
-static void focus_surface(struct sway_session_lock *lock,
-		struct wlr_surface *focused) {
-	lock->focused = focused;
+static void refocus_output(struct sway_session_lock_output *output) {
+	// Move the seat focus to another surface if one is available
+	struct wlr_session_lock_surface_v1 *next_focus = NULL;
+
+	struct sway_session_lock_output *candidate;
+	wl_list_for_each(candidate, &output->lock->outputs, link) {
+		if (candidate == output || !candidate->surface) {
+			continue;
+		}
+
+		if (candidate->surface->surface->mapped) {
+			next_focus = candidate->surface;
+			break;
+		}
+	}
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		seat_set_focus_surface(seat, focused, false);
+		if (!next_focus || seat->focused_lock == output->surface) {
+			seat_set_focus_lock(seat, next_focus);
+		}
 	}
 }
 
-static void refocus_output(struct sway_session_lock_output *output) {
-	// Move the seat focus to another surface if one is available
-	if (output->lock->focused == output->surface->surface) {
-		struct wlr_surface *next_focus = NULL;
+void sway_session_lock_focus_output(struct sway_session_lock *lock,
+		struct sway_seat *seat, struct sway_output *output) {
+	if (!seat) {
+		return;
+	}
 
-		struct sway_session_lock_output *candidate;
-		wl_list_for_each(candidate, &output->lock->outputs, link) {
-			if (candidate == output || !candidate->surface) {
-				continue;
-			}
-
-			if (candidate->surface->surface->mapped) {
-				next_focus = candidate->surface->surface;
-				break;
-			}
+	// Try focusing the lock surface on the provided output
+	struct sway_session_lock_output *candidate;
+	wl_list_for_each(candidate, &lock->outputs, link) {
+		if (candidate->output != output || !candidate->surface) {
+			continue;
 		}
 
-		focus_surface(output->lock, next_focus);
+		if (candidate->surface->surface->mapped) {
+			seat_set_focus_lock(seat, candidate->surface);
+			break;
+		}
 	}
 }
 
 static void handle_surface_map(struct wl_listener *listener, void *data) {
 	struct sway_session_lock_output *surf = wl_container_of(listener, surf, surface_map);
-	if (surf->lock->focused == NULL) {
-		focus_surface(surf->lock, surf->surface->surface);
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
+		struct sway_output *focused_output = focused_ws ? focused_ws->output : NULL;
+
+		// Only set the initial focus lock-surface when the surface is on the
+		// focused output. Fallback to the first mapped surface if no focused
+		// output can be found.
+		if (focused_output == surf->output
+				|| (!focused_output && seat->focused_lock == NULL)) {
+			seat_set_focus_lock(seat, surf->surface);
+		}
 	}
 	cursor_rebase_all();
 }
@@ -199,6 +223,11 @@ static void sway_session_lock_destroy(struct sway_session_lock* lock) {
 		wlr_scene_node_destroy(&lock_output->tree->node);
 	}
 
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		seat_set_focus_lock(seat, NULL);
+	}
+
 	if (server.session_lock.lock == lock) {
 		server.session_lock.lock = NULL;
 	}
@@ -220,13 +249,7 @@ static void handle_unlock(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
-		// copied from seat_set_focus_layer -- deduplicate?
-		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);
-		if (previous) {
-			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, NULL);
-			seat_set_focus(seat, previous);
-		}
+		seat_set_focus_lock(seat, NULL);
 	}
 
 	// Triggers a refocus of the topmost surface layer if necessary
