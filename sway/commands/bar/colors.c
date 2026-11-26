@@ -16,6 +16,9 @@ static const struct cmd_handler bar_colors_handlers[] = {
 	{ "separator", bar_colors_cmd_separator },
 	{ "statusline", bar_colors_cmd_statusline },
 	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
+#if HAVE_TRAY
+	{ "tray_background", bar_colors_cmd_tray_background },
+#endif
 };
 
 static char *hex_to_rgba_hex(const char *hex) {
@@ -154,3 +157,10 @@ struct cmd_results *bar_colors_cmd_urgent_workspace(int argc, char **argv) {
 	};
 	return parse_three_colors(colors, "urgent_workspace", argc, argv);
 }
+
+#if HAVE_TRAY
+struct cmd_results *bar_colors_cmd_tray_background(int argc, char **argv) {
+	return parse_single_color(&(config->current_bar->colors.tray_background),
+			"tray_background", argc, argv);
+}
+#endif
