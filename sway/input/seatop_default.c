@@ -248,9 +248,12 @@ static void handle_tablet_tool_tip(struct sway_seat *seat,
 		bool is_floating_or_child = container_is_floating_or_child(cont);
 		bool is_fullscreen_or_child = container_is_fullscreen_or_child(cont);
 		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
-		bool mod_pressed = keyboard &&
-			(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
-
+		bool mod_pressed = 0;
+		if (keyboard) {
+			uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard);
+			mod_pressed = (modifiers & config->floating_mod) == config->floating_mod;
+		}
+		
 		// Handle beginning floating move
 		if (is_floating_or_child && !is_fullscreen_or_child && mod_pressed) {
 			seat_set_focus_container(seat,
@@ -356,7 +359,7 @@ static void handle_button(struct sway_seat *seat, uint32_t time_msec,
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
 
-	bool mod_pressed = modifiers & config->floating_mod;
+	bool mod_pressed = (modifiers & config->floating_mod) == config->floating_mod;
 	uint32_t mod_move_btn = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 	uint32_t mod_resize_btn = config->floating_mod_inverse ? BTN_LEFT : BTN_RIGHT;
 	bool mod_move_btn_pressed = mod_pressed && button == mod_move_btn;

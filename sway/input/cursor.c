@@ -746,7 +746,7 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	// TODO: floating resize should support graphics tablet events
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(cursor->seat->wlr_seat);
 	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
-	bool mod_pressed = modifiers & config->floating_mod;
+	bool mod_pressed = (modifiers & config->floating_mod) == config->floating_mod;
 
 	bool surface_supports_tablet_events =
 		surface && wlr_surface_accepts_tablet_v2(surface, tablet_v2);
