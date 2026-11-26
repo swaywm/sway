@@ -90,3 +90,13 @@ struct cmd_results *cmd_client_focused_tab_title(int argc, char **argv) {
 	}
 	return result;
 }
+
+struct cmd_results *cmd_client_unfocused_tab_title(int argc, char **argv) {
+	struct cmd_results *result =  handle_command(argc, argv,
+			"client.unfocused_tab_title",
+			&config->border_colors.unfocused_tab_title, "#2e9ef4ff");
+	if (result && result->status == CMD_SUCCESS) {
+		config->has_unfocused_tab_title = true;
+	}
+	return result;
+}

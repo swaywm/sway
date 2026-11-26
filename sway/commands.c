@@ -54,6 +54,7 @@ static const struct cmd_handler handlers[] = {
 	{ "client.focused_tab_title", cmd_client_focused_tab_title },
 	{ "client.placeholder", cmd_client_noop },
 	{ "client.unfocused", cmd_client_unfocused },
+	{ "client.unfocused_tab_title", cmd_client_unfocused_tab_title },
 	{ "client.urgent", cmd_client_urgent },
 	{ "default_border", cmd_default_border },
 	{ "default_floating_border", cmd_default_floating_border },
