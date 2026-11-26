@@ -303,6 +303,10 @@ struct output_config {
 	char *background;
 	char *background_option;
 	char *background_fallback;
+
+	// Name of the output this output mirrors. NULL when not configured, an
+	// empty string when mirroring was explicitly turned off.
+	char *mirror;
 };
 
 /**

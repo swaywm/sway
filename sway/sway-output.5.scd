@@ -123,6 +123,33 @@ must be separated by one space. For example:
 *output* <name> toggle
 	Toggle the specified output.
 
+*output* <name> mirror <source>|off
+	Makes the output _name_ show what the output _source_ shows, or stops
+	mirroring with _off_. Both outputs are referred to by name. The mirror
+	shows exactly the area of the layout that _source_ covers, including the
+	cursor, scaled by the same factor on both axes to the largest size that
+	fits the mirror, centred, with black bars filling the rest. Nothing
+	outside the source's area is shown, and the output scales don't change
+	the picture.
+
+	While it mirrors, the output takes no space in the layout, has no
+	workspaces (its workspaces move to other outputs as when it is disabled)
+	and is not advertised to clients as a _wl\_output_. Its _mode_,
+	_transform_ and _color\_profile_ still apply; its _scale_ doesn't change
+	the picture, its _position_ is ignored and _hdr_ is turned off. Several
+	outputs may mirror the same source.
+
+	Mirroring only happens while both outputs are connected and enabled.
+	Otherwise, including while _source_ isn't connected yet, the output works
+	as a normal output, and it switches as _source_ connects, disconnects, is
+	enabled or disabled. While _source_ is powered off, the mirror is black.
+	A new _mirror_ for the same output replaces the previous one.
+
+	The output can't mirror itself, _name_ can't be _\*_, _source_ can't be an
+	output configured to mirror another output, and _name_ can't be an output
+	that another output is configured to mirror: there are no chains. _off_
+	always succeeds.
+
 *output* <name> power on|off|toggle
 	Turns on or off the specified output.
 
