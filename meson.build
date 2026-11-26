@@ -83,7 +83,7 @@ xcb_icccm = wlroots_features['xwayland'] ? dependency('xcb-icccm') : null_dep
 threads = dependency('threads') # for pthread_setschedparam and pthread_atfork
 
 if get_option('sd-bus-provider') == 'auto'
-	if not get_option('tray').disabled()
+	if not get_option('tray').disabled() or not get_option('a11y').disabled()
 		assert(get_option('auto_features').auto(), 'sd-bus-provider must not be set to auto since auto_features != auto')
 	endif
 	sdbus = dependency(['libsystemd', 'libelogind'],
@@ -93,8 +93,12 @@ if get_option('sd-bus-provider') == 'auto'
 	if not sdbus.found()
 		sdbus = dependency('basu', required: false)
 	endif
+elif get_option('tray').disabled() and get_option('a11y').disabled()
+	sdbus = null_dep
 else
-	sdbus = dependency(get_option('sd-bus-provider'), required: get_option('tray'))
+	sdbus = dependency(get_option('sd-bus-provider'),
+		required: get_option('tray').enabled() or get_option('a11y').enabled(),
+	)
 endif
 
 tray_deps_found = sdbus.found()
@@ -103,6 +107,11 @@ if get_option('tray').enabled() and not tray_deps_found
 endif
 have_tray = (not get_option('tray').disabled()) and tray_deps_found
 
+if get_option('a11y').enabled() and not sdbus.found()
+	error('Building with -Da11y=enabled, but sd-bus has not been found')
+endif
+have_a11y = (not get_option('a11y').disabled()) and sdbus.found()
+
 conf_data = configuration_data()
 
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
@@ -110,6 +119,7 @@ conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd
 conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
 conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
 conf_data.set10('HAVE_TRAY', have_tray)
+conf_data.set10('HAVE_A11Y', have_a11y)
 foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY', 'LIBINPUT_SWITCH_KEYPAD_SLIDE', 'LIBINPUT_CONFIG_SCROLL_CIRCULAR']
 	conf_data.set10('HAVE_' + sym, cc.has_header_symbol('libinput.h', sym, dependencies: libinput))
 endforeach
@@ -244,5 +254,6 @@ subdir('completions')
 summary({
 	'gdk-pixbuf': gdk_pixbuf.found(),
 	'tray': have_tray,
+	'a11y': have_a11y,
 	'man-pages': scdoc.found(),
 }, bool_yn: true)
