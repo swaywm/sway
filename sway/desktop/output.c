@@ -3,6 +3,7 @@
 #include <strings.h>
 #include <time.h>
 #include <wayland-server-core.h>
+#include <wlr/render/drm_syncobj.h>
 #include <wlr/config.h>
 #include <wlr/backend/headless.h>
 #include <wlr/render/swapchain.h>
@@ -87,7 +88,7 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 
 struct send_frame_done_data {
 	struct timespec when;
-	int msec_until_refresh;
+	int64_t nsec_until_refresh;
 	struct sway_output *output;
 };
 
@@ -174,12 +175,13 @@ static void send_frame_done_iterator(struct wlr_scene_buffer *buffer,
 		current = &current->parent->node;
 	}
 
-	int delay = data->msec_until_refresh - output->max_render_time
+	int delay = (data->nsec_until_refresh - output->max_render_time_ns) / 1000000
 			- view_max_render_time;
 
 	struct buffer_timer *timer = NULL;
 
-	if (output->max_render_time != 0 && view_max_render_time != 0 && delay > 0) {
+	if (output->max_render_time_ns != 0 && view_max_render_time != 0
+			&& delay > 0) {
 		timer = buffer_timer_get_or_create(scene_surface);
 	}
 
@@ -267,6 +269,51 @@ static bool output_can_tear(struct sway_output *output) {
 	return false;
 }
 
+static void update_render_tracker(struct sway_output *output) {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	int64_t duration_ns =
+		(now.tv_sec - output->render_start.tv_sec) * 1000000000LL
+		+ (now.tv_nsec - output->render_start.tv_nsec);
+
+	// Asymmetric EMA: fast ramp-up (alpha=0.5), slow ramp-down (alpha=1/50)
+	if (duration_ns > output->render_ema_ns) {
+		output->render_ema_ns =
+			(output->render_ema_ns + duration_ns) / 2;
+	} else {
+		output->render_ema_ns = output->render_ema_ns
+			- output->render_ema_ns / 50
+			+ duration_ns / 50;
+	}
+
+	// Headroom = max(10% of refresh, 1ms)
+	int64_t refresh_ns = (int64_t)output->refresh_nsec;
+	int64_t headroom = refresh_ns / 10;
+	if (headroom < 1000000) {
+		headroom = 1000000; // 1ms minimum
+	}
+
+	int64_t target_ns = output->render_ema_ns + headroom;
+
+	// Clamp to [1ms, refresh - 1ms]
+	if (target_ns < 1000000) {
+		target_ns = 1000000;
+	} else if (refresh_ns > 1000000 && target_ns >= refresh_ns) {
+		target_ns = refresh_ns - 1000000;
+	}
+
+	output->max_render_time_ns = target_ns;
+}
+
+static void handle_render_timeline_done(
+		struct wlr_drm_syncobj_timeline_waiter *waiter) {
+	struct sway_output *output =
+		wl_container_of(waiter, output, render_waiter);
+	wlr_drm_syncobj_timeline_waiter_finish(&output->render_waiter);
+	output->render_waiter_active = false;
+	update_render_tracker(output);
+}
+
 static int output_repaint_timer_handler(void *data) {
 	struct sway_output *output = data;
 
@@ -284,6 +331,12 @@ static int output_repaint_timer_handler(void *data) {
 	struct wlr_scene_output *scene_output = output->scene_output;
 	if (!wlr_scene_output_needs_frame(scene_output)) {
 		return 0;
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &output->render_start);
+	if (output->render_waiter_active) {
+		wlr_drm_syncobj_timeline_waiter_finish(&output->render_waiter);
+		output->render_waiter_active = false;
 	}
 
 	struct wlr_output_state pending;
@@ -306,6 +359,18 @@ static int output_repaint_timer_handler(void *data) {
 	if (!wlr_output_commit_state(output->wlr_output, &pending)) {
 		sway_log(SWAY_ERROR, "Page-flip failed on output %s", output->wlr_output->name);
 	}
+
+	if (output->adaptive_render_time) {
+		if (pending.wait_timeline != NULL) {
+			output->render_waiter_active = wlr_drm_syncobj_timeline_waiter_init(&output->render_waiter,
+					pending.wait_timeline, pending.wait_point, 0,
+					server.wl_event_loop, handle_render_timeline_done);
+		} else if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+			// Direct scanout without KMS fence, assume we're done
+			update_render_tracker(output);
+		}
+	}
+
 	wlr_output_state_finish(&pending);
 	return 0;
 }
@@ -317,59 +382,52 @@ static void handle_frame(struct wl_listener *listener, void *user_data) {
 		return;
 	}
 
-	// Compute predicted milliseconds until the next refresh. It's used for
+	// Compute predicted nanoseconds until the next refresh. It's used for
 	// delaying both output rendering and surface frame callbacks.
-	int msec_until_refresh = 0;
+	int64_t nsec_until_refresh = 0;
 
-	if (output->max_render_time != 0) {
+	if (output->max_render_time_ns != 0) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 
-		const long NSEC_IN_SECONDS = 1000000000;
-		struct timespec predicted_refresh = output->last_presentation;
-		predicted_refresh.tv_nsec += output->refresh_nsec % NSEC_IN_SECONDS;
-		predicted_refresh.tv_sec += output->refresh_nsec / NSEC_IN_SECONDS;
-		if (predicted_refresh.tv_nsec >= NSEC_IN_SECONDS) {
-			predicted_refresh.tv_sec += 1;
-			predicted_refresh.tv_nsec -= NSEC_IN_SECONDS;
-		}
+		const int64_t NSEC_IN_SECONDS = 1000000000;
+		int64_t refresh_ns = output->refresh_nsec;
 
-		// If the predicted refresh time is before the current time then
-		// there's no point in delaying.
-		//
-		// We only check tv_sec because if the predicted refresh time is less
-		// than a second before the current time, then msec_until_refresh will
-		// end up slightly below zero, which will effectively disable the delay
-		// without potential disastrous negative overflows that could occur if
-		// tv_sec was not checked.
-		if (predicted_refresh.tv_sec >= now.tv_sec) {
-			long nsec_until_refresh
-				= (predicted_refresh.tv_sec - now.tv_sec) * NSEC_IN_SECONDS
-					+ (predicted_refresh.tv_nsec - now.tv_nsec);
+		if (refresh_ns > 0 &&
+				(output->last_presentation.tv_sec |
+				 output->last_presentation.tv_nsec) != 0) {
+			// Nanoseconds elapsed since last hardware presentation
+			int64_t since_last =
+				(int64_t)(now.tv_sec - output->last_presentation.tv_sec)
+					* NSEC_IN_SECONDS
+				+ (now.tv_nsec - output->last_presentation.tv_nsec);
 
-			// We want msec_until_refresh to be conservative, that is, floored.
-			// If we have 7.9 msec until refresh, we better compute the delay
-			// as if we had only 7 msec, so that we don't accidentally delay
-			// more than necessary and miss a frame.
-			msec_until_refresh = nsec_until_refresh / 1000000;
+			// Find the smallest N >= 1 such that VBlank N leaves
+			// enough time to render:
+			//   N * refresh_ns - since_last >= max_render_time_ns
+			int64_t deadline = since_last + output->max_render_time_ns;
+			int64_t n = (deadline > 0) ? deadline / refresh_ns + 1 : 1;
+
+			nsec_until_refresh = n * refresh_ns - since_last;
 		}
 	}
 
-	int delay = msec_until_refresh - output->max_render_time;
+	// delay_ns is guaranteed non-negative: the VBlank extrapolation
+	// ensures nsec_until_refresh >= max_render_time_ns
+	int64_t delay_ns = nsec_until_refresh - output->max_render_time_ns;
+	int delay_ms = (int)(delay_ns / 1000000);
 
-	// If the delay is less than 1 millisecond (which is the least we can wait)
-	// then just render right away.
-	if (delay < 1) {
+	if (delay_ms < 1) {
 		output_repaint_timer_handler(output);
 	} else {
 		output->wlr_output->frame_pending = true;
-		wl_event_source_timer_update(output->repaint_timer, delay);
+		wl_event_source_timer_update(output->repaint_timer, delay_ms);
 	}
 
 	// Send frame done to all visible surfaces
 	struct send_frame_done_data data = {0};
 	clock_gettime(CLOCK_MONOTONIC, &data.when);
-	data.msec_until_refresh = msec_until_refresh;
+	data.nsec_until_refresh = nsec_until_refresh;
 	data.output = output;
 	wlr_scene_output_for_each_buffer(output->scene_output, send_frame_done_iterator, &data);
 }
@@ -435,6 +493,11 @@ static void begin_destroy(struct sway_output *output) {
 	wl_list_remove(&output->present.link);
 	wl_list_remove(&output->frame.link);
 	wl_list_remove(&output->request_state.link);
+
+	if (output->render_waiter_active) {
+		wlr_drm_syncobj_timeline_waiter_finish(&output->render_waiter);
+		output->render_waiter_active = false;
+	}
 
 	// Remove the scene_output first to ensure that the scene does not emit
 	// events for this output.
