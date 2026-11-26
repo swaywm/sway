@@ -722,6 +722,14 @@ static void arrange_root(struct sway_root *root) {
 			wlr_scene_node_set_position(&output->layers.shell_overlay->node, output->lx, output->ly);
 			wlr_scene_node_set_position(&output->layers.session_lock->node, output->lx, output->ly);
 
+			// Prevent layer surfaces from leaking onto adjacent outputs
+			struct wlr_box clip = {0};
+			wlr_output_effective_resolution(output->wlr_output, &clip.width, &clip.height);
+			wlr_scene_tree_set_clip(output->layers.shell_background, &clip);
+			wlr_scene_tree_set_clip(output->layers.shell_bottom, &clip);
+			wlr_scene_tree_set_clip(output->layers.shell_top, &clip);
+			wlr_scene_tree_set_clip(output->layers.shell_overlay, &clip);
+
 			arrange_output(output, output->width, output->height);
 		}
 	}
