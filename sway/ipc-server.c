@@ -698,7 +698,19 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 		}
 		struct sway_output *output;
 		wl_list_for_each(output, &root->all_outputs, link) {
-			if (!output->enabled && output != root->fallback_output) {
+			if (output->mirror_source) {
+				// A mirror is active, but not part of the tree
+				json_object *output_json =
+					ipc_json_describe_node(&output->node);
+				json_object_object_del(output_json, "focused");
+				json_object_object_add(output_json, "focused",
+					json_object_new_boolean(false));
+				const char *subpixel = sway_wl_output_subpixel_to_string(
+					output->wlr_output->subpixel);
+				json_object_object_add(output_json, "subpixel_hinting",
+					json_object_new_string(subpixel));
+				json_object_array_add(outputs, output_json);
+			} else if (!output->enabled && output != root->fallback_output) {
 				json_object_array_add(outputs,
 						ipc_json_describe_disabled_output(output));
 			}

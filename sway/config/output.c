@@ -9,6 +9,7 @@
 #include <wlr/render/allocator.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_swapchain_manager.h>
 #include <xf86drm.h>
@@ -158,6 +159,10 @@ static void supersede_output_config(struct output_config *dst, struct output_con
 	if (src->hdr != -1) {
 		dst->hdr = -1;
 	}
+	if (src->mirror) {
+		free(dst->mirror);
+		dst->mirror = NULL;
+	}
 }
 
 // merge_output_config sets all fields in dst that were set in src
@@ -235,6 +240,10 @@ static void merge_output_config(struct output_config *dst, struct output_config 
 	}
 	if (src->hdr != -1) {
 		dst->hdr = src->hdr;
+	}
+	if (src->mirror) {
+		free(dst->mirror);
+		dst->mirror = strdup(src->mirror);
 	}
 }
 
@@ -632,12 +641,34 @@ static struct wlr_color_transform *get_color_profile(struct wlr_output *output,
 }
 
 static bool finalize_output_config(struct output_config *oc, struct sway_output *output,
-		const struct wlr_output_state *applied, const struct config_output_state *config_applied) {
+		const struct wlr_output_state *applied, const struct config_output_state *config_applied,
+		struct sway_output *mirror_source) {
 	if (output == root->fallback_output) {
 		return false;
 	}
 
 	struct wlr_output *wlr_output = output->wlr_output;
+	wlr_color_transform_unref(output->color_transform);
+	if (config_applied->color_transform != NULL) {
+		wlr_color_transform_ref(config_applied->color_transform);
+	}
+	output->color_transform = config_applied->color_transform;
+
+	if (mirror_source) {
+		// A mirror takes no space in the layout and has no workspaces: for
+		// the tree, it is a disabled output
+		sway_log(SWAY_DEBUG, "Output %s mirrors %s", wlr_output->name,
+			mirror_source->wlr_output->name);
+		if (output->enabled) {
+			output_disable(output);
+			wlr_output_layout_remove(root->output_layout, wlr_output);
+		}
+		output_start_mirroring(output, mirror_source);
+		output->hdr = false;
+		return true;
+	}
+	output_stop_mirroring(output);
+
 	if (oc && !oc->enabled) {
 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
 		if (output->enabled) {
@@ -677,12 +708,6 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output 
 	if (!output->enabled) {
 		output_enable(output);
 	}
-
-	wlr_color_transform_unref(output->color_transform);
-	if (config_applied->color_transform != NULL) {
-		wlr_color_transform_ref(config_applied->color_transform);
-	}
-	output->color_transform = config_applied->color_transform;
 
 	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
 	output->allow_tearing = oc && oc->allow_tearing > 0;
@@ -755,6 +780,14 @@ static bool config_has_manual_mode(struct output_config *oc) {
 struct matched_output_config {
 	struct sway_output *output;
 	struct output_config *config;
+	// The output this output mirrors with this configuration, if any
+	struct sway_output *mirror_source;
+	// The source this output is configured to mirror while mirroring is
+	// suspended, if any
+	struct sway_output *mirror_suspended_source;
+	// The head of the output manager configuration being applied for this
+	// output, if it has one
+	struct wlr_output_configuration_head_v1 *manager_head;
 };
 
 struct search_context {
@@ -993,8 +1026,212 @@ static void sort_output_configs_by_priority(
 	qsort(configs, configs_len, sizeof(*configs), compare_matched_output_config_priority);
 }
 
+static bool config_mirrors(struct output_config *oc) {
+	return oc && oc->mirror && oc->mirror[0] != '\0';
+}
+
+static bool config_is_disabled(struct output_config *oc) {
+	return oc && oc->enabled == 0;
+}
+
+// Returns the index of the output that the output of configs[idx] can mirror
+// under this configuration, or -1 if it works as a normal output. Mirroring
+// needs both outputs connected and enabled; powering one of them off doesn't
+// end it. There are no chains.
+static int find_mirror_source(struct matched_output_config *configs,
+		size_t configs_len, size_t idx) {
+	struct output_config *oc = configs[idx].config;
+	if (!config_mirrors(oc) || config_is_disabled(oc)) {
+		return -1;
+	}
+	for (size_t i = 0; i < configs_len; i++) {
+		struct matched_output_config *other = &configs[i];
+		if (i == idx || strcmp(other->output->wlr_output->name,
+				oc->mirror) != 0) {
+			continue;
+		}
+		if (config_is_disabled(other->config) ||
+				config_mirrors(other->config)) {
+			return -1;
+		}
+		return i;
+	}
+	return -1;
+}
+
+// Size of the output in the layout once state is committed, computed as
+// wlr_output_effective_resolution() does
+static void get_layout_size(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state, int *width, int *height) {
+	struct wlr_box box = { .width = wlr_output->width, .height = wlr_output->height };
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		switch (state->mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			box.width = state->mode->width;
+			box.height = state->mode->height;
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			box.width = state->custom_mode.width;
+			box.height = state->custom_mode.height;
+			break;
+		}
+	}
+	enum wl_output_transform transform = wlr_output->transform;
+	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		transform = state->transform;
+	}
+	float scale = wlr_output->scale;
+	if (state->committed & WLR_OUTPUT_STATE_SCALE) {
+		scale = state->scale;
+	}
+	wlr_box_transform(&box, &box, transform, box.width, box.height);
+	*width = box.width / scale;
+	*height = box.height / scale;
+}
+
+// Computes the position that each output taking space in the layout gets
+// once finalize_output_config() has applied the configuration, the way
+// wlr_output_layout places outputs: outputs with a position go there, and the
+// others are placed side by side to the right of the rightmost one with a
+// position, in the order of the layout's list. Outputs already in the layout
+// keep their place in that list, and the others are appended in configuration
+// order. Mirrors and disabled outputs take no space.
+static void predict_layout(struct matched_output_config *configs,
+		size_t configs_len, struct wlr_backend_output_state *states,
+		size_t *order, struct wlr_box *boxes) {
+	size_t order_len = 0;
+	struct wlr_output_layout_output *l_output;
+	wl_list_for_each(l_output, &root->output_layout->outputs, link) {
+		for (size_t idx = 0; idx < configs_len; idx++) {
+			if (configs[idx].output->wlr_output == l_output->output) {
+				order[order_len++] = idx;
+			}
+		}
+	}
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		if (!wlr_output_layout_get(root->output_layout,
+				configs[idx].output->wlr_output)) {
+			order[order_len++] = idx;
+		}
+	}
+
+	int max_x = INT_MIN, max_x_y = 0;
+	for (size_t i = 0; i < order_len; i++) {
+		struct matched_output_config *cfg = &configs[order[i]];
+		struct wlr_box *box = &boxes[order[i]];
+		*box = (struct wlr_box){0};
+		if (cfg->mirror_source || config_is_disabled(cfg->config)) {
+			continue;
+		}
+		get_layout_size(cfg->output->wlr_output, &states[order[i]].base,
+			&box->width, &box->height);
+		if (cfg->config && cfg->config->x != INT_MAX &&
+				cfg->config->y != INT_MAX) {
+			box->x = cfg->config->x;
+			box->y = cfg->config->y;
+			if (box->x + box->width > max_x) {
+				max_x = box->x + box->width;
+				max_x_y = box->y;
+			}
+		}
+	}
+	if (max_x == INT_MIN) {
+		max_x = 0;
+	}
+	for (size_t i = 0; i < order_len; i++) {
+		struct matched_output_config *cfg = &configs[order[i]];
+		struct wlr_box *box = &boxes[order[i]];
+		if (cfg->mirror_source || config_is_disabled(cfg->config) ||
+				(cfg->config && cfg->config->x != INT_MAX &&
+				cfg->config->y != INT_MAX)) {
+			continue;
+		}
+		box->x = max_x;
+		box->y = max_x_y;
+		max_x += box->width;
+	}
+}
+
+// Decides which outputs mirror under this configuration.
+//
+// An output manager configuration decides every mirror again. A mirror whose
+// head it enables at another position than the one its source ends up at
+// works as a normal output at that position: mirroring is suspended, and its
+// mirror config is kept. A mirror whose head is omitted, or placed at its
+// source's position, mirrors. Since a suspended mirror takes space in the
+// layout, which can move a source placed automatically, the decisions are
+// repeated until they agree with the layout they lead to. They start from
+// every mirror mirroring, so that a client applying the reported heads as
+// they are keeps them mirroring.
+//
+// Other configurations keep the suspensions decided by the last output
+// manager configuration.
+static bool resolve_mirror_sources(struct matched_output_config *configs,
+		size_t configs_len, struct wlr_backend_output_state *states,
+		bool from_manager) {
+	if (configs_len == 0) {
+		return true;
+	}
+	bool ok = false;
+	int *sources = calloc(configs_len, sizeof(*sources));
+	size_t *order = calloc(configs_len, sizeof(*order));
+	struct wlr_box *boxes = calloc(configs_len, sizeof(*boxes));
+	if (!sources || !order || !boxes) {
+		goto out;
+	}
+
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		sources[idx] = find_mirror_source(configs, configs_len, idx);
+		cfg->mirror_source = NULL;
+		cfg->mirror_suspended_source = NULL;
+		if (sources[idx] < 0) {
+			continue;
+		}
+		struct sway_output *source = configs[sources[idx]].output;
+		if (!from_manager && cfg->output->mirror_suspended_source == source) {
+			cfg->mirror_suspended_source = source;
+		} else {
+			cfg->mirror_source = source;
+		}
+	}
+
+	for (size_t i = 0; from_manager && i <= configs_len; i++) {
+		predict_layout(configs, configs_len, states, order, boxes);
+		bool changed = false;
+		for (size_t idx = 0; idx < configs_len; idx++) {
+			struct matched_output_config *cfg = &configs[idx];
+			struct wlr_output_configuration_head_v1 *head = cfg->manager_head;
+			if (sources[idx] < 0 || !head || !head->state.enabled) {
+				continue;
+			}
+			struct wlr_box *source_box = &boxes[sources[idx]];
+			bool at_source = head->state.x == source_box->x &&
+				head->state.y == source_box->y;
+			if (at_source == (cfg->mirror_source != NULL)) {
+				continue;
+			}
+			struct sway_output *source = configs[sources[idx]].output;
+			cfg->mirror_source = at_source ? source : NULL;
+			cfg->mirror_suspended_source = at_source ? NULL : source;
+			changed = true;
+		}
+		if (!changed) {
+			break;
+		}
+	}
+	ok = true;
+
+out:
+	free(sources);
+	free(order);
+	free(boxes);
+	return ok;
+}
+
 static bool apply_resolved_output_configs(struct matched_output_config *configs,
-		size_t configs_len, bool test_only, bool degrade_to_off) {
+		size_t configs_len, bool test_only, bool degrade_to_off,
+		bool from_manager) {
 	struct wlr_backend_output_state *states = calloc(configs_len, sizeof(*states));
 	if (!states) {
 		return false;
@@ -1004,6 +1241,9 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		free(states);
 		return false;
 	}
+
+	struct wlr_output_swapchain_manager swapchain_mgr;
+	wlr_output_swapchain_manager_init(&swapchain_mgr, server.backend);
 
 	sway_log(SWAY_DEBUG, "Committing %zd outputs", configs_len);
 	for (size_t idx = 0; idx < configs_len; idx++) {
@@ -1015,15 +1255,29 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		wlr_output_state_init(&backend_state->base);
 
 		queue_output_config(cfg->config, cfg->output, &backend_state->base);
-		dump_output_state(cfg->output->wlr_output, &backend_state->base);
 
 		config_state->color_transform = get_color_profile(cfg->output->wlr_output, cfg->config);
 	}
 
-	struct wlr_output_swapchain_manager swapchain_mgr;
-	wlr_output_swapchain_manager_init(&swapchain_mgr, server.backend);
+	// Which outputs mirror depends on the layout the requested states lead to
+	bool ok = resolve_mirror_sources(configs, configs_len, states,
+		from_manager);
+	if (!ok) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		goto out;
+	}
 
-	bool ok = wlr_output_swapchain_manager_prepare(&swapchain_mgr, states, configs_len);
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct matched_output_config *cfg = &configs[idx];
+		struct wlr_backend_output_state *backend_state = &states[idx];
+		if (cfg->mirror_source) {
+			// A mirror shows the source's buffers as they are
+			set_hdr(cfg->output->wlr_output, &backend_state->base, false);
+		}
+		dump_output_state(cfg->output->wlr_output, &backend_state->base);
+	}
+
+	ok = wlr_output_swapchain_manager_prepare(&swapchain_mgr, states, configs_len);
 	if (!ok) {
 		sway_log(SWAY_ERROR, "Requested backend configuration failed, searching for valid fallbacks");
 		struct search_context ctx = {
@@ -1054,8 +1308,26 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 				&swapchain_mgr, backend_state->output),
 			.color_transform = config_state->color_transform,
 		};
-		struct wlr_scene_output *scene_output = cfg->output->scene_output;
 		struct wlr_output_state *state = &backend_state->base;
+		if (cfg->mirror_source) {
+			if (!output_mirror_build_state(cfg->output, cfg->mirror_source,
+					state, opts.swapchain, opts.color_transform)) {
+				sway_log(SWAY_ERROR, "Building mirror state for '%s' failed",
+					backend_state->output->name);
+				goto out;
+			}
+			continue;
+		}
+		if (!cfg->output->scene_output) {
+			// The output stops mirroring and needs its scene output back
+			cfg->output->scene_output = wlr_scene_output_create(
+				root->root_scene, cfg->output->wlr_output);
+			if (!cfg->output->scene_output) {
+				sway_log(SWAY_ERROR, "Failed to create a scene output");
+				goto out;
+			}
+		}
+		struct wlr_scene_output *scene_output = cfg->output->scene_output;
 		if (!wlr_scene_output_build_state(scene_output, state, &opts)) {
 			sway_log(SWAY_ERROR, "Building output state for '%s' failed",
 				backend_state->output->name);
@@ -1071,6 +1343,13 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 
 	sway_log(SWAY_DEBUG, "Commit of %zd outputs succeeded", configs_len);
 
+	if (from_manager) {
+		for (size_t idx = 0; idx < configs_len; idx++) {
+			struct matched_output_config *cfg = &configs[idx];
+			cfg->output->mirror_suspended_source = cfg->mirror_suspended_source;
+		}
+	}
+
 	wlr_output_swapchain_manager_apply(&swapchain_mgr);
 
 	for (size_t idx = 0; idx < configs_len; idx++) {
@@ -1079,7 +1358,8 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		struct config_output_state *config_state = &config_states[idx];
 		sway_log(SWAY_DEBUG, "Finalizing config for %s",
 			cfg->output->wlr_output->name);
-		finalize_output_config(cfg->config, cfg->output, &backend_state->base, config_state);
+		finalize_output_config(cfg->config, cfg->output, &backend_state->base,
+			config_state, cfg->mirror_source);
 	}
 
 	// Output layout being applied in finalize_output_config can shift outputs
@@ -1090,12 +1370,32 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
 		arrange_layers(cfg->output);
 	}
 
+	// A mirror shows, and reports, the area of the layout its source covers
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct sway_output *output = configs[idx].output;
+		if (output->mirror_source) {
+			output->lx = output->mirror_source->lx;
+			output->ly = output->mirror_source->ly;
+			output->width = output->mirror_source->width;
+			output->height = output->mirror_source->height;
+		}
+	}
+
 	arrange_root();
 	arrange_locks();
 	update_output_manager_config(&server);
 	transaction_commit_dirty();
 
 out:
+	// Outputs that keep mirroring (for instance after a failed commit) must not
+	// keep a scene output created for them above.
+	for (size_t idx = 0; idx < configs_len; idx++) {
+		struct sway_output *output = configs[idx].output;
+		if (output->mirror_source && output->scene_output) {
+			wlr_scene_output_destroy(output->scene_output);
+			output->scene_output = NULL;
+		}
+	}
 	wlr_output_swapchain_manager_finish(&swapchain_mgr);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct wlr_backend_output_state *backend_state = &states[idx];
@@ -1122,7 +1422,8 @@ out:
 }
 
 bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
-		bool test_only, bool degrade_to_off) {
+		bool test_only, bool degrade_to_off,
+		struct wlr_output_configuration_v1 *manager_config) {
 	size_t configs_len = wl_list_length(&root->all_outputs);
 	struct matched_output_config *configs = calloc(configs_len, sizeof(*configs));
 	if (!configs) {
@@ -1140,10 +1441,21 @@ bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
 		struct matched_output_config *config = &configs[config_idx++];
 		config->output = sway_output;
 		config->config = find_output_config_from_list(ocs, ocs_len, sway_output);
+		if (!manager_config) {
+			continue;
+		}
+		struct wlr_output_configuration_head_v1 *head;
+		wl_list_for_each(head, &manager_config->heads, link) {
+			if (head->state.output == sway_output->wlr_output) {
+				config->manager_head = head;
+				break;
+			}
+		}
 	}
 
 	sort_output_configs_by_priority(configs, configs_len);
-	bool ok = apply_resolved_output_configs(configs, configs_len, test_only, degrade_to_off);
+	bool ok = apply_resolved_output_configs(configs, configs_len, test_only,
+		degrade_to_off, manager_config != NULL);
 	for (size_t idx = 0; idx < configs_len; idx++) {
 		struct matched_output_config *cfg = &configs[idx];
 		free_output_config(cfg->config);
@@ -1154,7 +1466,7 @@ bool apply_output_configs(struct output_config **ocs, size_t ocs_len,
 
 void apply_stored_output_configs(void) {
 	apply_output_configs((struct output_config **)config->output_configs->items,
-			config->output_configs->length, false, true);
+			config->output_configs->length, false, true, NULL);
 }
 
 void free_output_config(struct output_config *oc) {
@@ -1165,6 +1477,7 @@ void free_output_config(struct output_config *oc) {
 	free(oc->background);
 	free(oc->background_option);
 	free(oc->background_fallback);
+	free(oc->mirror);
 	wlr_color_transform_unref(oc->color_transform);
 	free(oc);
 }

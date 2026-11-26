@@ -331,6 +331,8 @@ static void ipc_json_describe_wlr_output(struct wlr_output *wlr_output, json_obj
 static void ipc_json_describe_output(struct sway_output *output,
 		json_object *object) {
 	ipc_json_describe_wlr_output(output->wlr_output, object);
+	json_object_object_add(object, "mirror", output->mirror_source ?
+		json_object_new_string(output->mirror_source->wlr_output->name) : NULL);
 }
 
 static void ipc_json_describe_enabled_output(struct sway_output *output,
@@ -362,12 +364,17 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
 	json_object_object_add(object, "adaptive_sync_status",
 		json_object_new_string(adaptive_sync_status));
 
-	struct sway_workspace *ws = output_get_active_workspace(output);
-	if (!sway_assert(ws, "Expected output to have a workspace")) {
-		return;
+	if (output->mirror_source) {
+		// A mirror has no workspaces
+		json_object_object_add(object, "current_workspace", NULL);
+	} else {
+		struct sway_workspace *ws = output_get_active_workspace(output);
+		if (!sway_assert(ws, "Expected output to have a workspace")) {
+			return;
+		}
+		json_object_object_add(object, "current_workspace",
+				json_object_new_string(ws->name));
 	}
-	json_object_object_add(object, "current_workspace",
-			json_object_new_string(ws->name));
 
 	json_object *modes_array = json_object_new_array();
 	struct wlr_output_mode *mode;
@@ -449,6 +456,7 @@ json_object *ipc_json_describe_non_desktop_output(struct sway_output_non_desktop
 	ipc_json_describe_wlr_output(wlr_output, object);
 
 	json_object_object_add(object, "non_desktop", json_object_new_boolean(true));
+	json_object_object_add(object, "mirror", NULL);
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "name",
 				json_object_new_string(wlr_output->name));

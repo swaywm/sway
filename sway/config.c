@@ -23,6 +23,7 @@
 #include "sway/config.h"
 #include "sway/criteria.h"
 #include "sway/desktop/transaction.h"
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
@@ -443,6 +444,19 @@ static bool load_config(const char *path, struct sway_config *config,
 	return config->active || !config->validating || config_load_success;
 }
 
+static bool config_has_mirrors(struct sway_config *cfg) {
+	if (!cfg) {
+		return false;
+	}
+	for (int i = 0; i < cfg->output_configs->length; i++) {
+		struct output_config *oc = cfg->output_configs->items[i];
+		if (oc->mirror && oc->mirror[0] != '\0') {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool load_main_config(const char *file, bool is_active, bool validating) {
 	char *path;
 	if (file != NULL) {
@@ -537,6 +551,22 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 		config->reloading = false;
 		if (is_active) {
+			// The new config decides again which outputs mirror. Output
+			// managers don't see mirror settings, so they get a new
+			// configuration serial when mirroring may change even if no
+			// reported value does.
+			bool mirroring = config_has_mirrors(old_config) ||
+				config_has_mirrors(config);
+			struct sway_output *output;
+			wl_list_for_each(output, &root->all_outputs, link) {
+				if (output->mirror_suspended_source) {
+					mirroring = true;
+				}
+				output->mirror_suspended_source = NULL;
+			}
+			if (mirroring) {
+				mark_output_manager_config_dirty(&server);
+			}
 			request_modeset();
 			if (config->swaynag_config_errors.client != NULL) {
 				swaynag_show(&config->swaynag_config_errors);
