@@ -46,6 +46,7 @@ struct sway_workspace {
 	struct side_gaps gaps_outer;
 
 	struct sway_output *output; // NULL if no outputs are connected
+	char *previous_output_name; // NULL if no previous output
 	list_t *floating;           // struct sway_container
 	list_t *tiling;             // struct sway_container
 	list_t *output_priority;
