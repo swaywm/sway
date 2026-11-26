@@ -10,9 +10,28 @@
 #include "sway/desktop/launcher.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
+#include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
+
+static void export_id(const char *env_var_name, size_t id) {
+	int id_len = snprintf(NULL, 0, "%zu", id);
+	if (id_len < 0) {
+		sway_log(SWAY_ERROR, "Unable to determine buffer length for %s", env_var_name);
+		return;
+	}
+	// accommodate \0
+	id_len++;
+	char* id_str = malloc(id_len);
+	if (!id_str) {
+		sway_log(SWAY_ERROR, "Unable to allocate buffer for %s", env_var_name);
+		return;
+	}
+	snprintf(id_str, id_len, "%zu", id);
+	setenv(env_var_name, id_str, 1);
+	free(id_str);
+}
 
 struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -28,13 +47,22 @@ struct cmd_results *cmd_exec_validate(int argc, char **argv) {
 struct cmd_results *cmd_exec_process(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	char *cmd = NULL;
+	bool matched_ids = false;
 	bool no_startup_id = false;
-	if (strcmp(argv[0], "--no-startup-id") == 0) {
-		no_startup_id = true;
-		--argc; ++argv;
-		if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
-			return error;
+	int argv_counter = -1;
+	while (argc > 0 && has_prefix(*argv, "--")) {
+		if (strcmp(argv[0], "--matched-ids") == 0) {
+			matched_ids = true;
+		} else if (strcmp(argv[0], "--no-startup-id") == 0) {
+			no_startup_id = true;
+		} else {
+			return cmd_results_new(CMD_INVALID, "Unrecognized argument '%s'", *argv);
 		}
+		--argc; ++argv; --argv_counter;
+	}
+
+	if ((error = checkarg(argc, argv[argv_counter], EXPECTED_AT_LEAST, 1))) {
+		return error;
 	}
 
 	if (argc == 1 && (argv[0][0] == '\'' || argv[0][0] == '"')) {
@@ -60,6 +88,22 @@ struct cmd_results *cmd_exec_process(int argc, char **argv) {
 				setenv("DESKTOP_STARTUP_ID", token, 1);
 			}
 		}
+
+		if (!matched_ids || config->handler_context.node == NULL) {
+			goto no_con_id_export;
+		}
+
+		struct sway_node *node = config->handler_context.node;
+		export_id("SWAY_EXEC_CON_ID", node->id);
+#if WLR_HAS_XWAYLAND
+		if (node->type == N_CONTAINER &&
+				node->sway_container->view != NULL &&
+				node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {
+			export_id("I3_WINDOW_ID", view_get_x11_window_id(node->sway_container->view));
+		}
+#endif
+
+no_con_id_export:
 
 		execlp("sh", "sh", "-c", cmd, (void*)NULL);
 		sway_log_errno(SWAY_ERROR, "execve failed");
@@ -87,3 +131,4 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	}
 	return cmd_exec_process(argc, argv);
 }
+
