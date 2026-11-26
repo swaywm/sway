@@ -881,7 +881,11 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
 }
 
 static void set_workspace(struct sway_container *container, void *data) {
+	bool changed = container->pending.workspace != container->pending.parent->pending.workspace;
 	container->pending.workspace = container->pending.parent->pending.workspace;
+	if (changed && container->view) {
+		view_notify_state_update(container->view);
+	}
 }
 
 static void workspace_attach_tiling(struct sway_workspace *ws,
