@@ -189,7 +189,7 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "current_workspace", &ws);
 	json_object_object_get_ex(o, "non_desktop", &non_desktop);
 	json_object *make, *model, *serial, *scale, *scale_filter, *subpixel,
-		*transform, *max_render_time, *adaptive_sync_status, *allow_tearing,
+		*transform, *max_render_time, *adaptive_sync_status, *allow_tearing, *allow_drm_leasing,
 		*hdr;
 	json_object_object_get_ex(o, "make", &make);
 	json_object_object_get_ex(o, "model", &model);
@@ -201,6 +201,7 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(o, "max_render_time", &max_render_time);
 	json_object_object_get_ex(o, "adaptive_sync_status", &adaptive_sync_status);
 	json_object_object_get_ex(o, "allow_tearing", &allow_tearing);
+	json_object_object_get_ex(o, "allow_drm_leasing", &allow_drm_leasing);
 	json_object_object_get_ex(o, "hdr", &hdr);
 	json_object *x, *y;
 	json_object_object_get_ex(rect, "x", &x);
@@ -264,6 +265,9 @@ static void pretty_print_output(json_object *o) {
 
 		printf("  Allow tearing: %s\n",
 			json_object_get_boolean(allow_tearing) ? "yes" : "no");
+
+		printf("  Allow DRM leasing: %s\n",
+			json_object_get_boolean(allow_drm_leasing) ? "yes" : "no");
 
 		const char *hdr_str = "unsupported";
 		if (json_object_get_boolean(features_hdr)) {
