@@ -154,18 +154,28 @@ static bool update_shortcut_state(struct sway_shortcut_state *state,
 /**
  * If one exists, finds a binding which matches the shortcut model state,
  * current modifiers, release state, and locked state.
+ *
+ * The modifiers include Mod2 while Num Lock is on. A binding that names Mod2
+ * requires it; when numlock_optional is set, a binding without Mod2 also
+ * matches while Num Lock is on.
  */
 static void get_active_binding(const struct sway_shortcut_state *state,
 		list_t *bindings, struct sway_binding **current_binding,
-		uint32_t modifiers, bool release, bool locked, bool inhibited,
-		const char *input, bool exact_input, xkb_layout_index_t group) {
+		uint32_t modifiers, bool numlock_optional, bool release, bool locked,
+		bool inhibited, const char *input, bool exact_input,
+		xkb_layout_index_t group) {
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
 		bool binding_locked = (binding->flags & BINDING_LOCKED) != 0;
 		bool binding_inhibited = (binding->flags & BINDING_INHIBITED) != 0;
 		bool binding_release = binding->flags & BINDING_RELEASE;
 
-		if (modifiers ^ binding->modifiers ||
+		uint32_t binding_modifiers = binding->modifiers;
+		if (numlock_optional && !(binding_modifiers & WLR_MODIFIER_MOD2)) {
+			binding_modifiers |= modifiers & WLR_MODIFIER_MOD2;
+		}
+
+		if (modifiers ^ binding_modifiers ||
 				release != binding_release ||
 				locked > binding_locked ||
 				inhibited > binding_inhibited ||
@@ -314,6 +324,105 @@ static bool keyboard_execute_pointer_keysyms(struct sway_keyboard *keyboard,
 	return false;
 }
 
+static xkb_mod_mask_t keyboard_mod_mask(struct wlr_keyboard *wlr,
+		const char *name) {
+	if (!wlr->keymap) {
+		return 0;
+	}
+	xkb_mod_index_t index = xkb_keymap_mod_get_index(wlr->keymap, name);
+	return index == XKB_MOD_INVALID ? 0 : (xkb_mod_mask_t)1 << index;
+}
+
+static uint32_t keyboard_locked_mods(struct wlr_keyboard *wlr) {
+	uint32_t locks = 0;
+	xkb_mod_mask_t num = keyboard_mod_mask(wlr, XKB_MOD_NAME_NUM);
+	xkb_mod_mask_t caps = keyboard_mod_mask(wlr, XKB_MOD_NAME_CAPS);
+	if (num && (wlr->modifiers.locked & num)) {
+		locks |= WLR_MODIFIER_MOD2;
+	}
+	if (caps && (wlr->modifiers.locked & caps)) {
+		locks |= WLR_MODIFIER_CAPS;
+	}
+	return locks;
+}
+
+/**
+ * Get the modifiers used to match bindings: the pressed and latched
+ * modifiers, plus Mod2 while Num Lock is on.
+ */
+static uint32_t keyboard_binding_modifiers(struct wlr_keyboard *wlr) {
+	return wlr_keyboard_get_modifiers(wlr) |
+		(keyboard_locked_mods(wlr) & WLR_MODIFIER_MOD2);
+}
+
+/**
+ * Get the shift level of a key when Num Lock is the only modifier.
+ */
+static xkb_level_index_t keyboard_numlock_level(struct sway_keyboard *keyboard,
+		xkb_keycode_t keycode, xkb_layout_index_t layout) {
+	struct wlr_keyboard *wlr = keyboard->wlr;
+	xkb_mod_mask_t num = keyboard_mod_mask(wlr, XKB_MOD_NAME_NUM);
+	if (!num) {
+		return 0;
+	}
+
+	// The state holds a reference to the keymap it was made for, so the
+	// keymap cannot be replaced by a new one at the same address
+	if (!keyboard->numlock_state ||
+			xkb_state_get_keymap(keyboard->numlock_state) != wlr->keymap) {
+		xkb_state_unref(keyboard->numlock_state);
+		keyboard->numlock_state = xkb_state_new(wlr->keymap);
+		if (!keyboard->numlock_state) {
+			return 0;
+		}
+	}
+	xkb_state_update_mask(keyboard->numlock_state, 0, 0, num, 0, 0, layout);
+	xkb_level_index_t level = xkb_state_key_get_level(keyboard->numlock_state,
+		keycode, layout);
+	return level == XKB_LEVEL_INVALID ? 0 : level;
+}
+
+/**
+ * Get the keysyms a key produces when no modifier is applied, except Num Lock
+ * if numlock is set.
+ */
+static size_t keyboard_keysyms_numlock(struct sway_keyboard *keyboard,
+		xkb_keycode_t keycode, bool numlock, const xkb_keysym_t **keysyms) {
+	struct wlr_keyboard *wlr = keyboard->wlr;
+	xkb_layout_index_t layout = xkb_state_key_get_layout(wlr->xkb_state,
+		keycode);
+	if (layout == XKB_LAYOUT_INVALID) {
+		*keysyms = NULL;
+		return 0;
+	}
+
+	xkb_level_index_t level =
+		numlock ? keyboard_numlock_level(keyboard, keycode, layout) : 0;
+	return xkb_keymap_key_get_syms_by_level(wlr->keymap, keycode, layout,
+		level, keysyms);
+}
+
+/**
+ * Whether Num Lock changes the keysyms a key produces.
+ */
+static bool keyboard_key_depends_on_numlock(struct sway_keyboard *keyboard,
+		xkb_keycode_t keycode) {
+	const xkb_keysym_t *plain, *numlock;
+	size_t plain_len =
+		keyboard_keysyms_numlock(keyboard, keycode, false, &plain);
+	size_t numlock_len =
+		keyboard_keysyms_numlock(keyboard, keycode, true, &numlock);
+	if (plain_len != numlock_len) {
+		return true;
+	}
+	for (size_t i = 0; i < plain_len; ++i) {
+		if (plain[i] != numlock[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
  * Get keysyms and modifiers from the keyboard as xkb sees them.
  *
@@ -326,7 +435,7 @@ static bool keyboard_execute_pointer_keysyms(struct sway_keyboard *keyboard,
 static size_t keyboard_keysyms_translated(struct sway_keyboard *keyboard,
 		xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
 		uint32_t *modifiers) {
-	*modifiers = wlr_keyboard_get_modifiers(keyboard->wlr);
+	*modifiers = keyboard_binding_modifiers(keyboard->wlr);
 	xkb_mod_mask_t consumed = xkb_state_key_get_consumed_mods2(
 		keyboard->wlr->xkb_state, keycode, XKB_CONSUMED_MODE_XKB);
 	*modifiers = *modifiers & ~consumed;
@@ -336,23 +445,21 @@ static size_t keyboard_keysyms_translated(struct sway_keyboard *keyboard,
 }
 
 /**
- * Get keysyms and modifiers from the keyboard as if modifiers didn't change
- * keysyms.
+ * Get keysyms and modifiers from the keyboard as if modifiers other than Num
+ * Lock didn't change keysyms.
  *
  * This avoids the xkb keysym translation based on modifiers considered pressed
- * in the state.
+ * in the state. Keypad keys produce the keysym of the current Num Lock state.
  *
  * This will trigger keybinds such as Alt+Shift+2.
  */
 static size_t keyboard_keysyms_raw(struct sway_keyboard *keyboard,
 		xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
 		uint32_t *modifiers) {
-	*modifiers = wlr_keyboard_get_modifiers(keyboard->wlr);
+	*modifiers = keyboard_binding_modifiers(keyboard->wlr);
 
-	xkb_layout_index_t layout_index = xkb_state_key_get_layout(
-		keyboard->wlr->xkb_state, keycode);
-	return xkb_keymap_key_get_syms_by_level(keyboard->wlr->keymap,
-		keycode, layout_index, 0, keysyms);
+	return keyboard_keysyms_numlock(keyboard, keycode,
+		*modifiers & WLR_MODIFIER_MOD2, keysyms);
 }
 
 void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard) {
@@ -368,6 +475,8 @@ void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard) {
 struct key_info {
 	uint32_t keycode;
 	uint32_t code_modifiers;
+	// Whether keycode bindings without Mod2 match while Num Lock is on
+	bool code_numlock_optional;
 
 	const xkb_keysym_t *raw_keysyms;
 	uint32_t raw_modifiers;
@@ -391,21 +500,30 @@ static void update_keyboard_state(struct sway_keyboard *keyboard,
 			keyinfo->keycode, &keyinfo->translated_keysyms,
 			&keyinfo->translated_modifiers);
 
-	keyinfo->code_modifiers = wlr_keyboard_get_modifiers(keyboard->wlr);
+	// The shortcut model tracks pressed and latched modifiers only, so that
+	// a Num Lock change does not count as a modifier key press
+	uint32_t pressed_modifiers = wlr_keyboard_get_modifiers(keyboard->wlr);
 
 	// Update shortcut model keyinfo
 	update_shortcut_state(&keyboard->state_keycodes, raw_keycode, keystate,
-			keyinfo->keycode, keyinfo->code_modifiers);
+			keyinfo->keycode, pressed_modifiers);
 	for (size_t i = 0; i < keyinfo->raw_keysyms_len; ++i) {
 		update_shortcut_state(&keyboard->state_keysyms_raw,
 				raw_keycode, keystate, keyinfo->raw_keysyms[i],
-				keyinfo->code_modifiers);
+				pressed_modifiers);
 	}
 	for (size_t i = 0; i < keyinfo->translated_keysyms_len; ++i) {
 		update_shortcut_state(&keyboard->state_keysyms_translated,
 				raw_keycode, keystate, keyinfo->translated_keysyms[i],
-				keyinfo->code_modifiers);
+				pressed_modifiers);
 	}
+
+	// A keycode binding without Mod2 also matches while Num Lock is on,
+	// unless Num Lock changes the keysym of the key
+	keyinfo->code_modifiers = keyboard_binding_modifiers(keyboard->wlr);
+	keyinfo->code_numlock_optional =
+		!(keyinfo->code_modifiers & WLR_MODIFIER_MOD2) ||
+		!keyboard_key_depends_on_numlock(keyboard, keyinfo->keycode);
 }
 
 /**
@@ -457,17 +575,18 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	struct sway_binding *binding_released = NULL;
 	get_active_binding(&keyboard->state_keycodes,
 			config->current_mode->keycode_bindings, &binding_released,
-			keyinfo.code_modifiers, true, locked,
+			keyinfo.code_modifiers, keyinfo.code_numlock_optional,
+			true, locked,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 	get_active_binding(&keyboard->state_keysyms_raw,
 			config->current_mode->keysym_bindings, &binding_released,
-			keyinfo.raw_modifiers, true, locked,
+			keyinfo.raw_modifiers, true, true, locked,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 	get_active_binding(&keyboard->state_keysyms_translated,
 			config->current_mode->keysym_bindings, &binding_released,
-			keyinfo.translated_modifiers, true, locked,
+			keyinfo.translated_modifiers, true, true, locked,
 			shortcuts_inhibited, device_identifier,
 			exact_identifier, keyboard->effective_layout);
 
@@ -489,17 +608,18 @@ static void handle_key_event(struct sway_keyboard *keyboard,
 	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		get_active_binding(&keyboard->state_keycodes,
 				config->current_mode->keycode_bindings, &binding,
-				keyinfo.code_modifiers, false, locked,
+				keyinfo.code_modifiers, keyinfo.code_numlock_optional,
+				false, locked,
 				shortcuts_inhibited, device_identifier,
 				exact_identifier, keyboard->effective_layout);
 		get_active_binding(&keyboard->state_keysyms_raw,
 				config->current_mode->keysym_bindings, &binding,
-				keyinfo.raw_modifiers, false, locked,
+				keyinfo.raw_modifiers, true, false, locked,
 				shortcuts_inhibited, device_identifier,
 				exact_identifier, keyboard->effective_layout);
 		get_active_binding(&keyboard->state_keysyms_translated,
 				config->current_mode->keysym_bindings, &binding,
-				keyinfo.translated_modifiers, false, locked,
+				keyinfo.translated_modifiers, true, false, locked,
 				shortcuts_inhibited, device_identifier,
 				exact_identifier, keyboard->effective_layout);
 	}
@@ -1163,6 +1283,7 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (keyboard->keymap) {
 		xkb_keymap_unref(keyboard->keymap);
 	}
+	xkb_state_unref(keyboard->numlock_state);
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
 	sway_keyboard_disarm_key_repeat(keyboard);

@@ -69,6 +69,9 @@ struct sway_keyboard {
 
 	struct wl_event_source *key_repeat_source;
 	struct sway_binding *repeat_binding;
+
+	// State with only Num Lock locked, for the keymap of wlr
+	struct xkb_state *numlock_state;
 };
 
 struct sway_keyboard_group {
