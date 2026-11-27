@@ -171,12 +171,21 @@ struct sway_xwayland_view {
 	struct wl_listener set_decorations;
 	struct wl_listener associate;
 	struct wl_listener dissociate;
+	struct wl_listener map_request;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener override_redirect;
 
 	struct wl_listener surface_tree_destroy;
+
+	// _NET_WM_DESKTOP as last published on the X window
+	bool desktop_published;
+	uint32_t desktop;
+
+	// _NET_WM_DESKTOP as set by the client when it asked to be mapped
+	bool initial_desktop_set;
+	uint32_t initial_desktop;
 };
 
 struct sway_xwayland_unmanaged {

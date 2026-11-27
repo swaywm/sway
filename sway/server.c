@@ -767,6 +767,7 @@ void server_fini(struct sway_server *server) {
 	if (server->xwayland.wlr_xwayland != NULL) {
 		wl_list_remove(&server->xwayland_surface.link);
 		wl_list_remove(&server->xwayland_ready.link);
+		xwayland_desktops_finish(&server->xwayland);
 		wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 	}
 #endif
@@ -795,6 +796,8 @@ bool server_start(struct sway_server *server) {
 			wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
 				&server->xwayland_ready);
 			server->xwayland_ready.notify = handle_xwayland_ready;
+			server->xwayland.wlr_xwayland->user_event_handler =
+				handle_xwayland_event;
 
 			setenv("DISPLAY", server->xwayland.wlr_xwayland->display_name, true);
 

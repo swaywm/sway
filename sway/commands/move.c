@@ -416,6 +416,9 @@ static bool container_move_in_direction(struct sway_container *container,
 
 static struct cmd_results *cmd_move_to_scratchpad(void);
 
+static struct cmd_results *move_container_to_node(struct sway_seat *seat,
+		struct sway_container *container, struct sway_node *destination);
+
 static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 		int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -441,7 +444,6 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	}
 
 	struct sway_seat *seat = config->handler_context.seat;
-	struct sway_container *old_parent = container->pending.parent;
 	struct sway_workspace *old_ws = container->pending.workspace;
 	struct sway_output *old_output = old_ws ? old_ws->output : NULL;
 	struct sway_node *destination = NULL;
@@ -533,6 +535,26 @@ static struct cmd_results *cmd_move_container(bool no_auto_back_and_forth,
 	} else {
 		return cmd_results_new(CMD_INVALID, "%s", expected_syntax);
 	}
+
+	return move_container_to_node(seat, container, destination);
+}
+
+struct cmd_results *move_container_to_workspace(struct sway_seat *seat,
+		struct sway_container *container, struct sway_workspace *workspace) {
+	if (container->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+		return cmd_results_new(CMD_FAILURE,
+				"Can't move fullscreen global container");
+	}
+	struct sway_container *dst = seat_get_focus_inactive_tiling(seat, workspace);
+	return move_container_to_node(seat, container,
+			dst ? &dst->node : &workspace->node);
+}
+
+static struct cmd_results *move_container_to_node(struct sway_seat *seat,
+		struct sway_container *container, struct sway_node *destination) {
+	struct sway_container *old_parent = container->pending.parent;
+	struct sway_workspace *old_ws = container->pending.workspace;
+	struct sway_output *old_output = old_ws ? old_ws->output : NULL;
 
 	if (destination->type == N_CONTAINER &&
 			container_is_scratchpad_hidden(destination->sway_container)) {

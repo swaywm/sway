@@ -625,8 +625,20 @@ void view_assign_ctx(struct sway_view *view, struct launcher_ctx *ctx) {
 	view->ctx = ctx;
 }
 
-static struct sway_workspace *select_workspace(struct sway_view *view) {
+static struct sway_workspace *select_workspace(struct sway_view *view,
+		bool *all_desktops) {
 	struct sway_seat *seat = input_manager_current_seat();
+
+#if WLR_HAS_XWAYLAND
+	// Check if an X11 window named its desktop (_NET_WM_DESKTOP) before it
+	// mapped. As in i3, a desktop index yields to `assign` criteria, and a
+	// window shown on all desktops is placed as usual and then shows on the
+	// workspace displayed on that output.
+	struct sway_workspace *initial_ws = NULL;
+	if (view->type == SWAY_VIEW_XWAYLAND) {
+		initial_ws = xwayland_view_initial_workspace(view, all_desktops);
+	}
+#endif
 
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
@@ -647,22 +659,38 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 				workspace_by_name(criteria->target);
 
 			if (!ws) {
+				const char *name = criteria->target;
 				if (strcasecmp(criteria->target, "back_and_forth") == 0) {
-					if (seat->prev_workspace_name) {
-						ws = workspace_create(NULL, seat->prev_workspace_name);
-					}
-				} else {
-					ws = workspace_create(NULL, criteria->target);
+					name = seat->prev_workspace_name;
+				}
+				if (name && *all_desktops) {
+					// Only its output matters: don't create the workspace
+					struct sway_output *output =
+						workspace_get_initial_output(name);
+					ws = output ? output_get_active_workspace(output) : NULL;
+				} else if (name) {
+					ws = workspace_create(NULL, name);
 				}
 			}
 			break;
 		}
 	}
 	list_free(criterias);
+	if (ws && *all_desktops && ws->output) {
+		// Shown on all desktops of that output
+		ws = output_get_active_workspace(ws->output);
+	}
 	if (ws) {
 		view_assign_ctx(view, NULL);
 		return ws;
 	}
+
+#if WLR_HAS_XWAYLAND
+	if (initial_ws) {
+		view_assign_ctx(view, NULL);
+		return initial_ws;
+	}
+#endif
 
 	// Check if there's a PID mapping
 	ws = view->ctx ? launcher_ctx_get_workspace(view->ctx) : NULL;
@@ -829,12 +857,13 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	// to honor that request. Otherwise, fallback to assigns, pid mappings,
 	// focused workspace, etc
 	struct sway_workspace *ws = NULL;
+	bool all_desktops = false;
 	if (fullscreen_output && fullscreen_output->data) {
 		struct sway_output *output = fullscreen_output->data;
 		ws = output_get_active_workspace(output);
 	}
 	if (!ws) {
-		ws = select_workspace(view);
+		ws = select_workspace(view, &all_desktops);
 	}
 
 	if (ws && ws->output) {
@@ -905,7 +934,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view_update_csd_from_client(view, decoration);
 	}
 
-	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+	if (all_desktops ||
+			(view->impl->wants_floating && view->impl->wants_floating(view))) {
 		view->container->pending.border = config->floating_border;
 		view->container->pending.border_thickness = config->floating_border_thickness;
 		container_set_floating(view->container, true);
@@ -913,6 +943,10 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view->container->pending.border = config->border;
 		view->container->pending.border_thickness = config->border_thickness;
 		view_set_tiled(view, true);
+	}
+	if (all_desktops) {
+		// Shown on all desktops: floating and sticky
+		view->container->is_sticky = true;
 	}
 
 	if (config->popup_during_fullscreen == POPUP_LEAVE &&
@@ -940,6 +974,23 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 
 	view_execute_criteria(view);
+
+	struct sway_workspace *old_ws = container->pending.workspace;
+	if (all_desktops && container_is_sticky(container) && old_ws &&
+			old_ws->output) {
+		// Shown on all desktops: rules may take it to another output, but
+		// it shows on the workspace showing there
+		struct sway_workspace *showing =
+			output_get_active_workspace(old_ws->output);
+		if (showing && old_ws != showing) {
+			container_detach(container);
+			workspace_add_floating(showing, container);
+			container_handle_fullscreen_reparent(container);
+			arrange_workspace(showing);
+			arrange_workspace(old_ws);
+			workspace_consider_destroy(old_ws);
+		}
+	}
 
 	bool set_focus = should_focus(view);
 
