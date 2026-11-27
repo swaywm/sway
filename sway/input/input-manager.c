@@ -564,21 +564,47 @@ void input_manager_configure_all_input_mappings(void) {
 	}
 }
 
+static bool input_identifier_matches(const char *identifier,
+		struct sway_input_device *input_device) {
+	if (strcmp(identifier, "*") == 0 ||
+			strcmp(input_device->identifier, identifier) == 0) {
+		return true;
+	}
+	return has_prefix(identifier, "type:") &&
+		strcmp(input_device_get_type(input_device), identifier + 5) == 0;
+}
+
 void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
-	bool wildcard = strcmp(input_config->identifier, "*") == 0;
-	bool type_wildcard = has_prefix(input_config->identifier, "type:");
 	wl_list_for_each(input_device, &server.input->devices, link) {
-		bool type_matches = type_wildcard &&
-			strcmp(input_device_get_type(input_device), input_config->identifier + 5) == 0;
-		if (strcmp(input_device->identifier, input_config->identifier) == 0
-				|| wildcard
-				|| type_matches) {
+		if (input_identifier_matches(input_config->identifier, input_device)) {
 			input_manager_configure_input(input_device);
 		}
 	}
 
 	retranslate_keysyms(input_config);
+}
+
+void input_manager_apply_keyboard_locks(const char *identifier, int numlock,
+		int capslock) {
+	struct sway_input_device *input_device = NULL;
+	wl_list_for_each(input_device, &server.input->devices, link) {
+		if (input_device->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD ||
+				!input_identifier_matches(identifier, input_device)) {
+			continue;
+		}
+		struct sway_seat *seat = NULL;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			struct sway_seat_device *seat_device = NULL;
+			wl_list_for_each(seat_device, &seat->devices, link) {
+				if (seat_device->input_device == input_device &&
+						seat_device->keyboard) {
+					sway_keyboard_set_locks(seat_device->keyboard,
+						numlock, capslock);
+				}
+			}
+		}
+	}
 }
 
 void input_manager_reset_input(struct sway_input_device *input_device) {

@@ -107,4 +107,13 @@ void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard);
  * is the state of the group, which is the state clients receive.
  */
 uint32_t sway_keyboard_get_locks(struct wlr_keyboard *wlr_keyboard);
+
+/**
+ * Turns Num Lock and Caps Lock on (> 0) or off (0) for a keyboard, or leaves
+ * them as they are (INT_MIN). A keyboard in a keyboard group has the state
+ * of its group changed. Keyboards whose keymap is not managed by sway
+ * (virtual keyboards) are left alone.
+ */
+void sway_keyboard_set_locks(struct sway_keyboard *keyboard, int numlock,
+		int capslock);
 #endif

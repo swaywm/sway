@@ -1293,6 +1293,63 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	keyboard_update_reported_locks(keyboard);
 }
 
+static xkb_mod_mask_t apply_lock_setting(xkb_mod_mask_t locked,
+		xkb_mod_mask_t mask, int setting) {
+	if (!mask || setting == INT_MIN) {
+		return locked;
+	}
+	return setting > 0 ? locked | mask : locked & ~mask;
+}
+
+void sway_keyboard_set_locks(struct sway_keyboard *keyboard, int numlock,
+		int capslock) {
+	if (keyboard->seat_device->input_device->is_virtual) {
+		return;
+	}
+	struct wlr_keyboard *wlr = keyboard->wlr;
+	if (wlr_keyboard_group_from_wlr_keyboard(wlr) || !wlr->keymap) {
+		return;
+	}
+
+	// A grouped keyboard shares the state of its group, which is what the
+	// seat sends to clients
+	struct wlr_keyboard *target = wlr->group ? &wlr->group->keyboard : wlr;
+	if (!target->keymap) {
+		return;
+	}
+	xkb_mod_mask_t locked = target->modifiers.locked;
+	locked = apply_lock_setting(locked,
+		keyboard_mod_mask(target, XKB_MOD_NAME_NUM), numlock);
+	locked = apply_lock_setting(locked,
+		keyboard_mod_mask(target, XKB_MOD_NAME_CAPS), capslock);
+	if (locked == target->modifiers.locked) {
+		return;
+	}
+
+	sway_log(SWAY_DEBUG, "Setting locked modifiers of %s to 0x%x",
+		keyboard->seat_device->input_device->identifier, locked);
+	wlr_keyboard_notify_modifiers(target, target->modifiers.depressed,
+		target->modifiers.latched, locked, target->modifiers.group);
+
+	if (wlr->group) {
+		// Keep the group's devices in step, so that a later modifier
+		// update from one of them does not bring back the old locks
+		struct sway_seat_device *seat_device;
+		wl_list_for_each(seat_device,
+				&keyboard->seat_device->sway_seat->devices, link) {
+			struct wlr_keyboard *member = seat_device->keyboard ?
+				seat_device->keyboard->wlr : NULL;
+			if (member && member->group == wlr->group &&
+					member->modifiers.locked != locked) {
+				wlr_keyboard_notify_modifiers(member,
+					member->modifiers.depressed,
+					member->modifiers.latched, locked,
+					member->modifiers.group);
+			}
+		}
+	}
+}
+
 static struct wlr_keyboard *seat_find_other_keyboard(struct sway_seat *seat,
 		struct sway_keyboard *exclude) {
 	struct sway_keyboard_group *group;

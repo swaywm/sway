@@ -86,13 +86,17 @@ For more information on these xkb configuration options, see
 *input* <identifier> xkb_variant <variant>
 	Sets the variant of the keyboard like _dvorak_ or _colemak_.
 
-The following commands may only be used in the configuration file.
-
 *input* <identifier> xkb_capslock enabled|disabled
-	Initially enables or disables CapsLock on startup, the default is disabled.
+	Enables or disables CapsLock. In the configuration file, this sets the
+	state applied when the keyboard's keymap is created or the configuration
+	is reloaded; the default is disabled. At runtime, CapsLock is turned on or
+	off immediately on the matching keyboards; later input commands do not
+	apply it again. A keyboard in a keyboard group changes the state of its
+	group. Virtual keyboards are not affected.
 
 *input* <identifier> xkb_numlock enabled|disabled
-	Initially enables or disables NumLock on startup, the default is disabled.
+	Enables or disables NumLock, in the same way as *xkb_capslock*; the
+	default is disabled.
 
 ## TABLET CONFIGURATION
 
