@@ -203,6 +203,7 @@ static void container_move_to_workspace(struct sway_container *container,
 	struct sway_workspace *old_workspace = container->pending.workspace;
 	if (container_is_floating(container)) {
 		struct sway_output *old_output = container->pending.workspace->output;
+		container_sticky_home_clear(container);
 		container_detach(container);
 		workspace_add_floating(workspace, container);
 		container_handle_fullscreen_reparent(container);

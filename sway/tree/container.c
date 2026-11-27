@@ -2,6 +2,7 @@
 #include <drm_fourcc.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
@@ -472,6 +473,7 @@ void container_destroy(struct sway_container *con) {
 	free(con->pending.formatted_title);
 	free(con->current.formatted_title);
 	free(con->title_format);
+	free(con->sticky_home.output_name);
 	list_free(con->pending.children);
 	list_free(con->current.children);
 
@@ -989,6 +991,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		}
 	} else {
 		// Returning to tiled
+		container_sticky_home_clear(container);
 		if (container->scratchpad) {
 			root_scratchpad_remove_container(container);
 		}
@@ -1130,6 +1133,8 @@ void container_floating_move_to(struct sway_container *con,
 			"Expected a floating container")) {
 		return;
 	}
+	// The user placed it, so it stays where it is now
+	container_sticky_home_clear(con);
 	container_floating_translate(con, lx - con->pending.x, ly - con->pending.y);
 	if (container_is_scratchpad_hidden(con)) {
 		return;
@@ -1168,6 +1173,40 @@ void container_floating_move_to_center(struct sway_container *con) {
 	double new_lx = ws->x + (ws->width - con->pending.width) / 2;
 	double new_ly = ws->y + (ws->height - con->pending.height) / 2;
 	container_floating_translate(con, new_lx - con->pending.x, new_ly - con->pending.y);
+}
+
+void container_sticky_home_clear(struct sway_container *con) {
+	free(con->sticky_home.output_name);
+	con->sticky_home.output_name = NULL;
+	con->sticky_home.returning = false;
+}
+
+bool container_has_sticky_home(struct sway_container *con) {
+	return con->sticky_home.output_name != NULL;
+}
+
+bool container_sticky_home_is(struct sway_container *con,
+		struct sway_output *output) {
+	return container_has_sticky_home(con) && output->wlr_output &&
+		strcmp(con->sticky_home.output_name, output->wlr_output->name) == 0;
+}
+
+bool container_sticky_home_place(struct sway_container *con,
+		struct wlr_box *area) {
+	if (!con->sticky_home.returning) {
+		return false;
+	}
+	con->pending.x = con->sticky_home.x;
+	con->pending.y = con->sticky_home.y;
+	if (wlr_box_equal(area, &con->sticky_home.area)) {
+		// Back where it was, against the same area
+		container_sticky_home_clear(con);
+		return true;
+	}
+	// The output's usable area isn't what it was yet (e.g. its bars are still
+	// to come back): keep the container's place relative to it meanwhile
+	floating_fix_coordinates(con, &con->sticky_home.area, area);
+	return true;
 }
 
 static bool find_urgent_iterator(struct sway_container *con, void *data) {
@@ -1867,6 +1906,10 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 
 	sway_log(SWAY_DEBUG, "Swapping containers %zu and %zu",
 			con1->node.id, con2->node.id);
+
+	// The user placed them, so they stay where they are put
+	container_sticky_home_clear(con1);
+	container_sticky_home_clear(con2);
 
 	bool scratch1 = con1->scratchpad;
 	bool hidden1 = container_is_scratchpad_hidden(con1);

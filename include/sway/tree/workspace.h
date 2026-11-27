@@ -46,6 +46,8 @@ struct sway_workspace {
 	struct side_gaps gaps_outer;
 
 	struct sway_output *output; // NULL if no outputs are connected
+	// Moved to another output since it was last arranged
+	bool output_changed;
 	list_t *floating;           // struct sway_container
 	list_t *tiling;             // struct sway_container
 	list_t *output_priority;
@@ -147,9 +149,31 @@ void workspace_update_representation(struct sway_workspace *ws);
 
 void workspace_get_box(struct sway_workspace *workspace, struct wlr_box *box);
 
+/**
+ * Get the area the workspace was last arranged in: its output's usable area,
+ * before gaps were taken off.
+ */
+void workspace_get_usable_box(struct sway_workspace *workspace,
+		struct wlr_box *box);
+
 size_t workspace_num_tiling_views(struct sway_workspace *ws);
 
 size_t workspace_num_sticky_containers(struct sway_workspace *ws);
+
+/**
+ * Lay the workspace out if it moved to another output since it was last laid
+ * out, so that its floating containers move along before other containers
+ * join it. Otherwise it is laid out with its output (with global fullscreen
+ * on, only once that ends).
+ */
+void workspace_arrange_if_moved(struct sway_workspace *ws);
+
+/**
+ * Move the sticky floating containers of the other workspaces on the
+ * workspace's output to it, keeping their positions. Workspaces this leaves
+ * empty are destroyed.
+ */
+void workspace_gather_sticky(struct sway_workspace *ws);
 
 /**
  * workspace_squash is container_flatten in the reverse

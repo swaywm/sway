@@ -261,6 +261,22 @@ void arrange_container(struct sway_container *container) {
 	node_set_dirty(&container->node);
 }
 
+// A floating container in global fullscreen goes back to its saved geometry
+// when that ends, which is when its workspace would be laid out otherwise; so
+// that geometry is what keeps its place
+static void floating_fix_saved_coordinates(struct sway_container *con,
+		struct wlr_box *old, struct wlr_box *new) {
+	if (!old->width || !old->height) {
+		return;
+	}
+	double rel_x = con->saved_x - old->x + con->saved_width / 2;
+	double rel_y = con->saved_y - old->y + con->saved_height / 2;
+	con->saved_x = new->x + rel_x * new->width / old->width -
+		con->saved_width / 2;
+	con->saved_y = new->y + rel_y * new->height / old->height -
+		con->saved_height / 2;
+}
+
 void arrange_workspace(struct sway_workspace *workspace) {
 	if (config->reloading) {
 		return;
@@ -277,6 +293,14 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	bool first_arrange = workspace->width == 0 && workspace->height == 0;
 	struct wlr_box prev_box;
 	workspace_get_box(workspace, &prev_box);
+	// A workspace that moved to a different output (which can be at the same
+	// position) keeps its floating containers at their place relative to the
+	// usable area as a whole; gaps don't shrink it
+	bool output_changed = workspace->output_changed;
+	workspace->output_changed = false;
+	if (output_changed) {
+		workspace_get_usable_box(workspace, &prev_box);
+	}
 
 	double prev_x = workspace->x - workspace->current_gaps.left;
 	double prev_y = workspace->y - workspace->current_gaps.top;
@@ -288,18 +312,25 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	// Adjust any floating containers
 	double diff_x = workspace->x - prev_x;
 	double diff_y = workspace->y - prev_y;
-	if (!first_arrange && (diff_x != 0 || diff_y != 0)) {
-		for (int i = 0; i < workspace->floating->length; ++i) {
-			struct sway_container *floater = workspace->floating->items[i];
-			struct wlr_box workspace_box;
-			workspace_get_box(workspace, &workspace_box);
+	bool moved = !first_arrange &&
+		(output_changed || diff_x != 0 || diff_y != 0);
+	struct wlr_box workspace_box;
+	workspace_get_box(workspace, &workspace_box);
+	for (int i = 0; i < workspace->floating->length; ++i) {
+		struct sway_container *floater = workspace->floating->items[i];
+		if (container_sticky_home_place(floater, &workspace_box) || !moved) {
+			continue;
+		}
+		if (floater->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
+			floating_fix_saved_coordinates(floater, &prev_box, &workspace_box);
+		} else {
 			floating_fix_coordinates(floater, &prev_box, &workspace_box);
-			// Set transformation for scratchpad windows.
-			if (floater->scratchpad) {
-				struct wlr_box output_box;
-				output_get_box(output, &output_box);
-				floater->transform = output_box;
-			}
+		}
+		// Set transformation for scratchpad windows.
+		if (floater->scratchpad) {
+			struct wlr_box output_box;
+			output_get_box(output, &output_box);
+			floater->transform = output_box;
 		}
 	}
 

@@ -28,12 +28,40 @@ enum wlr_direction opposite_direction(enum wlr_direction d) {
 	return 0;
 }
 
-static void restore_workspaces(struct sway_output *output) {
+static void restore_workspaces(struct sway_output *output,
+		list_t *returning) {
 	// Workspace output priority
 	for (int i = 0; i < root->outputs->length; i++) {
 		struct sway_output *other = root->outputs->items[i];
 		if (other == output) {
 			continue;
+		}
+
+		// Sticky containers that left this output come back to it; the other
+		// ones stay on the output they're on, even if their workspace moves
+		list_t *staying = create_list();
+		list_t *left = create_list();
+		for (int j = 0; j < other->workspaces->length; j++) {
+			struct sway_workspace *ws = other->workspaces->items[j];
+			bool moving = workspace_output_get_highest_available(ws) == output;
+			for (int k = 0; k < ws->floating->length; k++) {
+				struct sway_container *floater = ws->floating->items[k];
+				if (!container_is_sticky(floater)) {
+					continue;
+				}
+				if (container_sticky_home_is(floater, output)) {
+					list_add(returning, floater);
+					if (!moving && list_find(left, ws) == -1) {
+						list_add(left, ws);
+					}
+				} else if (moving) {
+					list_add(staying, floater);
+				} else {
+					continue;
+				}
+				container_detach(floater);
+				k--;
+			}
 		}
 
 		for (int j = 0; j < other->workspaces->length; j++) {
@@ -54,6 +82,20 @@ static void restore_workspaces(struct sway_output *output) {
 			free(next);
 			ipc_event_workspace(NULL, ws, "init");
 		}
+
+		struct sway_workspace *active = output_get_active_workspace(other);
+		for (int j = 0; j < staying->length; j++) {
+			workspace_arrange_if_moved(active);
+			workspace_add_floating(active, staying->items[j]);
+		}
+		list_free(staying);
+
+		for (int j = 0; j < left->length; j++) {
+			struct sway_workspace *ws = left->items[j];
+			workspace_detect_urgent(ws);
+			workspace_consider_destroy(ws);
+		}
+		list_free(left);
 	}
 
 	// Saved workspaces
@@ -156,7 +198,8 @@ void output_enable(struct sway_output *output) {
 	list_add(root->outputs, output);
 
 	sway_ext_workspace_output_enable(output);
-	restore_workspaces(output);
+	list_t *returning = create_list();
+	restore_workspaces(output, returning);
 
 	struct sway_workspace *ws = NULL;
 	if (!output->workspaces->length) {
@@ -182,24 +225,84 @@ void output_enable(struct sway_output *output) {
 		ws->layout = output_get_default_layout(output);
 	}
 
+	// The output's position and usable area are only known once it is
+	// arranged, which places the returning sticky containers
+	struct sway_workspace *active = output_get_active_workspace(output);
+	for (int i = 0; i < returning->length; i++) {
+		struct sway_container *sticky = returning->items[i];
+		workspace_add_floating(active, sticky);
+		container_handle_fullscreen_reparent(sticky);
+		sticky->sticky_home.returning = true;
+		ipc_event_window(sticky, "move");
+	}
+	if (returning->length) {
+		workspace_detect_urgent(active);
+	}
+	list_free(returning);
+
 	wl_signal_emit_mutable(&root->events.new_node, &output->node);
 }
 
-static void evacuate_sticky(struct sway_workspace *old_ws,
-		struct sway_output *new_output) {
-	struct sway_workspace *new_ws = output_get_active_workspace(new_output);
-	if (!sway_assert(new_ws, "New output does not have a workspace")) {
-		return;
-	}
-	while(old_ws->floating->length) {
-		struct sway_container *sticky = old_ws->floating->items[0];
+static void output_get_usable_box(struct sway_output *output,
+		struct wlr_box *box) {
+	box->x = output->lx + output->usable_area.x;
+	box->y = output->ly + output->usable_area.y;
+	box->width = output->usable_area.width;
+	box->height = output->usable_area.height;
+}
+
+static void evacuate_sticky(struct sway_output *old_output,
+		struct sway_workspace *old_ws, struct sway_workspace *new_ws) {
+	struct wlr_box old_box;
+	workspace_get_usable_box(old_ws, &old_box);
+	struct wlr_box new_box;
+	output_get_usable_box(new_ws->output, &new_box);
+
+	bool moved = false;
+	for (int i = 0; i < old_ws->floating->length; ++i) {
+		struct sway_container *sticky = old_ws->floating->items[i];
+		if (!container_is_sticky(sticky)) {
+			continue;
+		}
+		bool has_home = container_has_sticky_home(sticky);
+		workspace_arrange_if_moved(new_ws);
 		container_detach(sticky);
 		workspace_add_floating(new_ws, sticky);
 		container_handle_fullscreen_reparent(sticky);
-		container_floating_move_to_center(sticky);
+		if (new_ws->output == root->fallback_output) {
+			// The noop output has no area to keep a place in
+			container_sticky_home_clear(sticky);
+			container_floating_move_to_center(sticky);
+		} else {
+			// Remember where it was, so that it can return with the output,
+			// unless it already came from an output that went away before
+			if (!has_home) {
+				sticky->sticky_home.output_name =
+					strdup(old_output->wlr_output->name);
+				sticky->sticky_home.area = old_box;
+				sticky->sticky_home.x = sticky->pending.x;
+				sticky->sticky_home.y = sticky->pending.y;
+			}
+			sticky->sticky_home.returning = false;
+			floating_fix_coordinates(sticky, &old_box, &new_box);
+
+			// It was not on its output (e.g. the output's scale changed
+			// after it was placed), so it can't keep a place on the new one
+			struct wlr_box output_box, box;
+			output_get_box(new_ws->output, &output_box);
+			container_get_box(sticky, &box);
+			if (!wlr_box_intersection(&box, &box, &output_box)) {
+				container_sticky_home_clear(sticky);
+				container_floating_move_to_center(sticky);
+			}
+		}
 		ipc_event_window(sticky, "move");
+		moved = true;
+		--i;
 	}
-	workspace_detect_urgent(new_ws);
+	if (moved) {
+		workspace_detect_urgent(new_ws);
+	}
 }
 
 static void output_evacuate(struct sway_output *output) {
@@ -211,6 +314,7 @@ static void output_evacuate(struct sway_output *output) {
 		fallback_output = root->outputs->items[0];
 	}
 
+	list_t *new_outputs = create_list();
 	while (output->workspaces->length) {
 		struct sway_workspace *workspace = output->workspaces->items[0];
 
@@ -228,18 +332,20 @@ static void output_evacuate(struct sway_output *output) {
 		struct sway_workspace *new_output_ws =
 			output_get_active_workspace(new_output);
 
-		if (workspace_is_empty(workspace)) {
-			// If the new output has an active workspace (the noop output may
-			// not have one), move all sticky containers to it
-			if (new_output_ws &&
-					workspace_num_sticky_containers(workspace) > 0) {
-				evacuate_sticky(workspace, new_output);
+		// Sticky containers stay on the screen: if the new output has an
+		// active workspace (the noop output may not have one), move them to
+		// it at the same place relative to the output
+		if (new_output_ws) {
+			evacuate_sticky(output, workspace, new_output_ws);
+			if (list_find(new_outputs, new_output) == -1) {
+				list_add(new_outputs, new_output);
 			}
+		}
 
-			if (workspace_num_sticky_containers(workspace) == 0) {
-				workspace_begin_destroy(workspace);
-				continue;
-			}
+		if (workspace_is_empty(workspace) &&
+				workspace_num_sticky_containers(workspace) == 0) {
+			workspace_begin_destroy(workspace);
+			continue;
 		}
 
 		workspace_output_add_priority(workspace, new_output);
@@ -253,6 +359,17 @@ static void output_evacuate(struct sway_output *output) {
 			workspace_consider_destroy(new_output_ws);
 		}
 	}
+
+	// A workspace that came over with the focus is the one shown now; it
+	// gets the sticky containers
+	for (int i = 0; i < new_outputs->length; ++i) {
+		struct sway_workspace *ws =
+			output_get_active_workspace(new_outputs->items[i]);
+		if (ws) {
+			workspace_gather_sticky(ws);
+		}
+	}
+	list_free(new_outputs);
 }
 
 void output_destroy(struct sway_output *output) {
@@ -337,6 +454,7 @@ void output_add_workspace(struct sway_output *output,
 	}
 	list_add(output->workspaces, workspace);
 	workspace->output = output;
+	workspace->output_changed = true;
 	if (workspace->output && workspace->output->ext_workspace_group) {
 		wlr_ext_workspace_handle_v1_set_group(workspace->ext_workspace,
 			workspace->output->ext_workspace_group);

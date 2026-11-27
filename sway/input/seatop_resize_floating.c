@@ -168,6 +168,8 @@ void seatop_begin_resize_floating(struct sway_seat *seat,
 		return;
 	}
 	e->con = con;
+	// The user resizes it, so it stays where it is put
+	container_sticky_home_clear(con);
 
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	e->preserve_ratio = keyboard &&

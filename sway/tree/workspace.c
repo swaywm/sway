@@ -1095,6 +1095,15 @@ void workspace_get_box(struct sway_workspace *workspace, struct wlr_box *box) {
 	box->height = workspace->height;
 }
 
+void workspace_get_usable_box(struct sway_workspace *workspace,
+		struct wlr_box *box) {
+	struct side_gaps *gaps = &workspace->current_gaps;
+	box->x = workspace->x - gaps->left;
+	box->y = workspace->y - gaps->top;
+	box->width = workspace->width + gaps->left + gaps->right;
+	box->height = workspace->height + gaps->top + gaps->bottom;
+}
+
 static void count_tiling_views(struct sway_container *con, void *data) {
 	if (con->view && !container_is_floating_or_child(con)) {
 		size_t *count = data;
@@ -1121,6 +1130,49 @@ size_t workspace_num_sticky_containers(struct sway_workspace *ws) {
 	return count;
 }
 
+void workspace_arrange_if_moved(struct sway_workspace *ws) {
+	if (ws->output && ws->output != root->fallback_output &&
+			ws->output_changed) {
+		arrange_workspace(ws);
+	}
+}
+
+void workspace_gather_sticky(struct sway_workspace *ws) {
+	struct sway_output *output = ws->output;
+	if (!output) {
+		return;
+	}
+	list_t *sources = create_list();
+	for (int i = 0; i < output->workspaces->length; ++i) {
+		struct sway_workspace *other = output->workspaces->items[i];
+		if (other == ws) {
+			continue;
+		}
+		for (int j = 0; j < other->floating->length; ++j) {
+			struct sway_container *floater = other->floating->items[j];
+			if (!container_is_sticky(floater)) {
+				continue;
+			}
+			workspace_arrange_if_moved(ws);
+			container_detach(floater);
+			workspace_add_floating(ws, floater);
+			--j;
+			if (list_find(sources, other) == -1) {
+				list_add(sources, other);
+			}
+		}
+	}
+	if (sources->length) {
+		workspace_detect_urgent(ws);
+	}
+	for (int i = 0; i < sources->length; ++i) {
+		struct sway_workspace *other = sources->items[i];
+		workspace_detect_urgent(other);
+		workspace_consider_destroy(other);
+	}
+	list_free(sources);
+}
+
 void workspace_squash(struct sway_workspace *workspace) {
 	for (int i = 0; i < workspace->tiling->length; i++) {
 		struct sway_container *child = workspace->tiling->items[i];
@@ -1141,6 +1193,10 @@ void workspace_move_to_output(struct sway_workspace *workspace,
 		return;
 	}
 
+	// The user moved its floating containers along, so they stay with it
+	for (int i = 0; i < workspace->floating->length; ++i) {
+		container_sticky_home_clear(workspace->floating->items[i]);
+	}
 	output_add_workspace(output, workspace);
 
 	// If moving the last workspace from the old output, create a new workspace
@@ -1156,6 +1212,11 @@ void workspace_move_to_output(struct sway_workspace *workspace,
 	workspace_consider_destroy(new_output_old_ws);
 
 	output_sort_workspaces(output);
+	// If the workspace is shown on the output now, so are the output's sticky
+	// containers
+	if (workspace_is_visible(workspace)) {
+		workspace_gather_sticky(workspace);
+	}
 	workspace_output_raise_priority(workspace, old_output, output);
 	ipc_event_workspace(NULL, workspace, "move");
 }
