@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_buffer.h>
 #include "sway/config.h"
 #include "sway/scene_descriptor.h"
@@ -980,6 +981,10 @@ static void _transaction_commit_dirty(bool server_request) {
 }
 
 void transaction_commit_dirty(void) {
+#if WLR_HAS_XWAYLAND
+	// Workspaces, focus or window placement may have changed
+	xwayland_schedule_desktops_update();
+#endif
 	_transaction_commit_dirty(true);
 }
 

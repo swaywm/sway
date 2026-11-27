@@ -1,6 +1,7 @@
 #include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -8,6 +9,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/xwayland.h>
 #include <xcb/xcb_icccm.h>
+#include "list.h"
 #include "log.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
@@ -17,6 +19,7 @@
 #include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/root.h"
 #include "sway/server.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -33,7 +36,17 @@ static const char *atom_map[ATOM_LAST] = {
 	[NET_WM_WINDOW_TYPE_TOOLTIP] = "_NET_WM_WINDOW_TYPE_TOOLTIP",
 	[NET_WM_WINDOW_TYPE_NOTIFICATION] = "_NET_WM_WINDOW_TYPE_NOTIFICATION",
 	[NET_WM_STATE_MODAL] = "_NET_WM_STATE_MODAL",
+	[NET_SUPPORTED] = "_NET_SUPPORTED",
+	[NET_NUMBER_OF_DESKTOPS] = "_NET_NUMBER_OF_DESKTOPS",
+	[NET_DESKTOP_NAMES] = "_NET_DESKTOP_NAMES",
+	[NET_CURRENT_DESKTOP] = "_NET_CURRENT_DESKTOP",
+	[NET_DESKTOP_VIEWPORT] = "_NET_DESKTOP_VIEWPORT",
+	[NET_WM_DESKTOP] = "_NET_WM_DESKTOP",
+	[UTF8_STRING] = "UTF8_STRING",
 };
+
+// _NET_WM_DESKTOP value for windows shown on all desktops
+#define NET_WM_DESKTOP_ALL 0xFFFFFFFF
 
 static void unmanaged_handle_request_configure(struct wl_listener *listener,
 		void *data) {
@@ -505,6 +518,19 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 		xwayland_view->surface_tree = NULL;
 	}
 
+	// A withdrawn window has no desktop
+	struct sway_xwayland *xwayland = &server.xwayland;
+	xcb_connection_t *xcb_conn =
+		wlr_xwayland_get_xwm_connection(xwayland->wlr_xwayland);
+	if (xwayland_view->desktop_published && xcb_conn) {
+		xcb_void_cookie_t cookie = xcb_delete_property_checked(xcb_conn,
+			view->wlr_xwayland_surface->window_id,
+			xwayland->atoms[NET_WM_DESKTOP]);
+		xcb_discard_reply(xcb_conn, cookie.sequence);
+		xcb_flush(xcb_conn);
+	}
+	xwayland_view->desktop_published = false;
+
 	view_unmap(view);
 }
 
@@ -890,6 +916,223 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	create_xwayland_view(xsurface);
 }
 
+static int output_position_cmp(const void *a, const void *b) {
+	const struct sway_output *output_a = *(struct sway_output *const *)a;
+	const struct sway_output *output_b = *(struct sway_output *const *)b;
+	if (output_a->lx != output_b->lx) {
+		return output_a->lx < output_b->lx ? -1 : 1;
+	}
+	if (output_a->ly != output_b->ly) {
+		return output_a->ly < output_b->ly ? -1 : 1;
+	}
+	return 0;
+}
+
+/**
+ * The EWMH desktops: every workspace, ordered by the layout position of its
+ * output (left to right, then top to bottom), and within an output in the
+ * output's own (IPC) order.
+ */
+static list_t *desktops_create(void) {
+	list_t *outputs = create_list();
+	list_cat(outputs, root->outputs);
+	list_stable_sort(outputs, output_position_cmp);
+
+	list_t *desktops = create_list();
+	for (int i = 0; i < outputs->length; ++i) {
+		struct sway_output *output = outputs->items[i];
+		list_cat(desktops, output->workspaces);
+	}
+	list_free(outputs);
+	return desktops;
+}
+
+static void publish_root_desktops(struct sway_xwayland *xwayland,
+		xcb_connection_t *xcb_conn, list_t *desktops) {
+	uint32_t count = desktops->length;
+	size_t names_len = 0;
+	for (int i = 0; i < desktops->length; ++i) {
+		struct sway_workspace *ws = desktops->items[i];
+		names_len += strlen(ws->name) + 1;
+	}
+	char *names = malloc(names_len + 1);
+	uint32_t *viewport = malloc(sizeof(uint32_t) * (2 * count + 1));
+	if (!names || !viewport) {
+		sway_log(SWAY_ERROR, "Unable to allocate EWMH desktop properties");
+		free(names);
+		free(viewport);
+		return;
+	}
+	char *name = names;
+	for (int i = 0; i < desktops->length; ++i) {
+		struct sway_workspace *ws = desktops->items[i];
+		size_t len = strlen(ws->name) + 1;
+		memcpy(name, ws->name, len);
+		name += len;
+		struct sway_output *output = ws->output;
+		viewport[2 * i] = output->lx;
+		viewport[2 * i + 1] = output->ly;
+	}
+
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_workspace *focus = seat_get_focused_workspace(seat);
+	int current = focus ? list_find(desktops, focus) : -1;
+
+	bool published = xwayland->desktops.published;
+	if (!published || xwayland->desktops.count != count) {
+		xcb_change_property(xcb_conn, XCB_PROP_MODE_REPLACE, xwayland->root,
+			xwayland->atoms[NET_NUMBER_OF_DESKTOPS], XCB_ATOM_CARDINAL, 32,
+			1, &count);
+	}
+	if (!published || xwayland->desktops.names_len != names_len ||
+			memcmp(xwayland->desktops.names, names, names_len) != 0) {
+		xcb_change_property(xcb_conn, XCB_PROP_MODE_REPLACE, xwayland->root,
+			xwayland->atoms[NET_DESKTOP_NAMES], xwayland->atoms[UTF8_STRING],
+			8, names_len, names);
+	}
+	if (!published || xwayland->desktops.count != count ||
+			memcmp(xwayland->desktops.viewport, viewport,
+				sizeof(uint32_t) * 2 * count) != 0) {
+		xcb_change_property(xcb_conn, XCB_PROP_MODE_REPLACE, xwayland->root,
+			xwayland->atoms[NET_DESKTOP_VIEWPORT], XCB_ATOM_CARDINAL, 32,
+			2 * count, viewport);
+	}
+	if (current >= 0 && (!published ||
+			xwayland->desktops.current != (uint32_t)current)) {
+		uint32_t value = current;
+		xcb_change_property(xcb_conn, XCB_PROP_MODE_REPLACE, xwayland->root,
+			xwayland->atoms[NET_CURRENT_DESKTOP], XCB_ATOM_CARDINAL, 32,
+			1, &value);
+		xwayland->desktops.current = value;
+	}
+
+	free(xwayland->desktops.names);
+	free(xwayland->desktops.viewport);
+	xwayland->desktops.published = true;
+	xwayland->desktops.count = count;
+	xwayland->desktops.names = names;
+	xwayland->desktops.names_len = names_len;
+	xwayland->desktops.viewport = viewport;
+}
+
+struct window_desktops_data {
+	struct sway_xwayland *xwayland;
+	xcb_connection_t *xcb_conn;
+	list_t *desktops;
+};
+
+static void publish_window_desktop(struct sway_container *con, void *data) {
+	struct window_desktops_data *update = data;
+	if (!con->view || con->view->type != SWAY_VIEW_XWAYLAND) {
+		return;
+	}
+	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(con->view);
+
+	uint32_t desktop;
+	if (container_is_scratchpad_hidden_or_child(con) ||
+			container_is_sticky_or_child(con)) {
+		desktop = NET_WM_DESKTOP_ALL;
+	} else {
+		int index = list_find(update->desktops, con->pending.workspace);
+		if (index < 0) {
+			// Saved workspace, without an output
+			return;
+		}
+		desktop = index;
+	}
+	if (xwayland_view->desktop_published && xwayland_view->desktop == desktop) {
+		return;
+	}
+
+	// The client may have destroyed its window already; ignore the error
+	xcb_void_cookie_t cookie = xcb_change_property_checked(update->xcb_conn,
+		XCB_PROP_MODE_REPLACE, con->view->wlr_xwayland_surface->window_id,
+		update->xwayland->atoms[NET_WM_DESKTOP], XCB_ATOM_CARDINAL, 32,
+		1, &desktop);
+	xcb_discard_reply(update->xcb_conn, cookie.sequence);
+	xwayland_view->desktop_published = true;
+	xwayland_view->desktop = desktop;
+}
+
+static void update_desktops(void *data) {
+	struct sway_xwayland *xwayland = data;
+	xwayland->desktops_idle = NULL;
+
+	xcb_connection_t *xcb_conn =
+		wlr_xwayland_get_xwm_connection(xwayland->wlr_xwayland);
+	if (!xcb_conn || xwayland->root == XCB_WINDOW_NONE) {
+		return;
+	}
+
+	list_t *desktops = desktops_create();
+	publish_root_desktops(xwayland, xcb_conn, desktops);
+	struct window_desktops_data update = {
+		.xwayland = xwayland,
+		.xcb_conn = xcb_conn,
+		.desktops = desktops,
+	};
+	root_for_each_container(publish_window_desktop, &update);
+	list_free(desktops);
+
+	xcb_flush(xcb_conn);
+}
+
+void xwayland_schedule_desktops_update(void) {
+	struct sway_xwayland *xwayland = &server.xwayland;
+	if (!xwayland->wlr_xwayland || xwayland->root == XCB_WINDOW_NONE ||
+			xwayland->desktops_idle) {
+		return;
+	}
+	xwayland->desktops_idle = wl_event_loop_add_idle(server.wl_event_loop,
+		update_desktops, xwayland);
+}
+
+void xwayland_desktops_finish(struct sway_xwayland *xwayland) {
+	if (xwayland->desktops_idle) {
+		wl_event_source_remove(xwayland->desktops_idle);
+		xwayland->desktops_idle = NULL;
+	}
+	free(xwayland->desktops.names);
+	free(xwayland->desktops.viewport);
+	xwayland->desktops.names = NULL;
+	xwayland->desktops.viewport = NULL;
+	xwayland->desktops.published = false;
+	xwayland->root = XCB_WINDOW_NONE;
+}
+
+static void desktops_init(struct sway_xwayland *xwayland) {
+	xwayland_desktops_finish(xwayland);
+
+	xcb_connection_t *xcb_conn =
+		wlr_xwayland_get_xwm_connection(xwayland->wlr_xwayland);
+	if (!xcb_conn) {
+		return;
+	}
+	for (size_t i = NET_SUPPORTED; i < ATOM_LAST; i++) {
+		if (xwayland->atoms[i] == XCB_ATOM_NONE) {
+			return;
+		}
+	}
+
+	xcb_screen_iterator_t screens = xcb_setup_roots_iterator(xcb_get_setup(xcb_conn));
+	xwayland->root = screens.data->root;
+
+	// Advertise the desktop hints next to those of the X window manager
+	xcb_atom_t supported[] = {
+		xwayland->atoms[NET_NUMBER_OF_DESKTOPS],
+		xwayland->atoms[NET_DESKTOP_NAMES],
+		xwayland->atoms[NET_CURRENT_DESKTOP],
+		xwayland->atoms[NET_DESKTOP_VIEWPORT],
+		xwayland->atoms[NET_WM_DESKTOP],
+	};
+	xcb_change_property(xcb_conn, XCB_PROP_MODE_APPEND, xwayland->root,
+		xwayland->atoms[NET_SUPPORTED], XCB_ATOM_ATOM, 32,
+		sizeof(supported) / sizeof(supported[0]), supported);
+	xcb_flush(xcb_conn);
+
+	xwayland_schedule_desktops_update();
+}
+
 void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 	struct sway_server *server =
 		wl_container_of(listener, server, xwayland_ready);
@@ -925,4 +1168,6 @@ void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 	}
 
 	xcb_disconnect(xcb_conn);
+
+	desktops_init(xwayland);
 }

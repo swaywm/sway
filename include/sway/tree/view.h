@@ -177,6 +177,10 @@ struct sway_xwayland_view {
 	struct wl_listener override_redirect;
 
 	struct wl_listener surface_tree_destroy;
+
+	// _NET_WM_DESKTOP as last published on the X window
+	bool desktop_published;
+	uint32_t desktop;
 };
 
 struct sway_xwayland_unmanaged {
