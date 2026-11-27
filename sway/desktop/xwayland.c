@@ -497,6 +497,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->associate.link);
 	wl_list_remove(&xwayland_view->dissociate.link);
 	wl_list_remove(&xwayland_view->override_redirect.link);
+	wl_list_remove(&xwayland_view->map_request.link);
 	view_begin_destroy(&xwayland_view->view);
 }
 
@@ -532,6 +533,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 		xcb_flush(xcb_conn);
 	}
 	xwayland_view->desktop_published = false;
+	xwayland_view->initial_desktop_set = false;
 
 	view_unmap(view);
 }
@@ -819,6 +821,35 @@ static void handle_dissociate(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->unmap.link);
 }
 
+static void handle_map_request(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, map_request);
+	xwayland_view->initial_desktop_set = false;
+
+	// The client may have named its desktop before asking to be mapped. This
+	// signal is emitted from the X window manager's event loop: events that
+	// arrive while waiting for the reply are queued by XCB and handled by
+	// that loop once this returns.
+	struct sway_xwayland *xwayland = &server.xwayland;
+	xcb_connection_t *xcb_conn =
+		wlr_xwayland_get_xwm_connection(xwayland->wlr_xwayland);
+	if (!xcb_conn || xwayland->root == XCB_WINDOW_NONE) {
+		return;
+	}
+	xcb_get_property_cookie_t cookie = xcb_get_property(xcb_conn, 0,
+		xwayland_view->view.wlr_xwayland_surface->window_id,
+		xwayland->atoms[NET_WM_DESKTOP], XCB_ATOM_CARDINAL, 0, 1);
+	xcb_get_property_reply_t *reply =
+		xcb_get_property_reply(xcb_conn, cookie, NULL);
+	if (reply && reply->type == XCB_ATOM_CARDINAL && reply->format == 32 &&
+			xcb_get_property_value_length(reply) >= (int)sizeof(uint32_t)) {
+		xwayland_view->initial_desktop =
+			*(uint32_t *)xcb_get_property_value(reply);
+		xwayland_view->initial_desktop_set = true;
+	}
+	free(reply);
+}
+
 struct sway_view *view_from_wlr_xwayland_surface(
 		struct wlr_xwayland_surface *xsurface) {
 	return xsurface->data;
@@ -901,6 +932,9 @@ struct sway_xwayland_view *create_xwayland_view(struct wlr_xwayland_surface *xsu
 			&xwayland_view->override_redirect);
 	xwayland_view->override_redirect.notify = handle_override_redirect;
 
+	wl_signal_add(&xsurface->events.map_request, &xwayland_view->map_request);
+	xwayland_view->map_request.notify = handle_map_request;
+
 	xsurface->data = xwayland_view;
 
 	return xwayland_view;
@@ -947,6 +981,30 @@ static list_t *desktops_create(void) {
 	}
 	list_free(outputs);
 	return desktops;
+}
+
+struct sway_workspace *xwayland_view_initial_workspace(struct sway_view *view,
+		bool *all_desktops) {
+	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	if (!xwayland_view || !xwayland_view->initial_desktop_set) {
+		return NULL;
+	}
+	uint32_t index = xwayland_view->initial_desktop;
+	if (index == NET_WM_DESKTOP_ALL) {
+		*all_desktops = true;
+		return NULL;
+	}
+
+	list_t *desktops = desktops_create();
+	struct sway_workspace *ws = NULL;
+	if (index < (uint32_t)desktops->length) {
+		ws = desktops->items[index];
+	} else {
+		sway_log(SWAY_DEBUG, "Ignoring unknown initial desktop %u of X11 "
+			"window 0x%x", index, view->wlr_xwayland_surface->window_id);
+	}
+	list_free(desktops);
+	return ws;
 }
 
 static void publish_root_desktops(struct sway_xwayland *xwayland,

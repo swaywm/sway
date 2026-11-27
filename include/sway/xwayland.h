@@ -4,6 +4,9 @@
 #include <wlr/xwayland.h>
 #include <xcb/xproto.h>
 
+struct sway_view;
+struct sway_workspace;
+
 enum atom_name {
 	NET_WM_WINDOW_TYPE_NORMAL,
 	NET_WM_WINDOW_TYPE_DIALOG,
@@ -59,5 +62,13 @@ bool handle_xwayland_event(struct wlr_xwayland *wlr_xwayland,
 void xwayland_schedule_desktops_update(void);
 
 void xwayland_desktops_finish(struct sway_xwayland *xwayland);
+
+/**
+ * The workspace of the desktop an X11 window named in its _NET_WM_DESKTOP
+ * property before it mapped, or NULL if it named no existing desktop.
+ * all_desktops is set if it asked to be shown on all desktops.
+ */
+struct sway_workspace *xwayland_view_initial_workspace(struct sway_view *view,
+	bool *all_desktops);
 
 #endif
