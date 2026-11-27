@@ -346,6 +346,19 @@ bool container_is_sticky(struct sway_container *con);
 bool container_is_sticky_or_child(struct sway_container *con);
 
 /**
+ * Enables or disables stickiness on the container. A sticky floating
+ * container is moved to its output's visible workspace.
+ */
+void container_set_sticky(struct sway_container *con, bool sticky);
+
+/**
+ * Tells the views of the container and its descendants whether they count as
+ * sticky. Call it after anything that may change it: a sticky flag, the
+ * floating mode of the container or of an ancestor, or a parent.
+ */
+void container_update_sticky(struct sway_container *con);
+
+/**
  * This will destroy pairs of redundant H/V splits
  * e.g. H[V[H[app app]] app] -> H[app app app]
  * The middle "V[H[" are eliminated by a call to container_squash

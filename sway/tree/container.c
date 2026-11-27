@@ -980,6 +980,9 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		}
 		container_floating_set_default_size(container);
 		container_floating_resize_and_center(container);
+		if (container->view && container->view->initial_placement) {
+			view_place_initial_floating(container->view);
+		}
 		if (old_parent) {
 			if (set_focus) {
 				seat_set_raw_focus(seat, &old_parent->node);
@@ -1709,6 +1712,43 @@ bool container_is_sticky(struct sway_container *con) {
 
 bool container_is_sticky_or_child(struct sway_container *con) {
 	return container_is_sticky(container_toplevel_ancestor(con));
+}
+
+static void update_view_sticky(struct sway_container *con, void *data) {
+	if (con->view) {
+		view_update_sticky(con->view);
+	}
+}
+
+void container_update_sticky(struct sway_container *con) {
+	update_view_sticky(con, NULL);
+	container_for_each_child(con, update_view_sticky, NULL);
+}
+
+void container_set_sticky(struct sway_container *con, bool sticky) {
+	con->is_sticky = sticky;
+	container_update_sticky(con);
+
+	if (!container_is_sticky_or_child(con) ||
+			container_is_scratchpad_hidden(con)) {
+		return;
+	}
+
+	// move container to active workspace
+	struct sway_workspace *active_workspace =
+		output_get_active_workspace(con->pending.workspace->output);
+	if (!sway_assert(active_workspace,
+				"Expected output to have a workspace")) {
+		return;
+	}
+	if (con->pending.workspace != active_workspace) {
+		struct sway_workspace *old_workspace = con->pending.workspace;
+		container_detach(con);
+		workspace_add_floating(active_workspace, con);
+		container_handle_fullscreen_reparent(con);
+		arrange_workspace(active_workspace);
+		workspace_consider_destroy(old_workspace);
+	}
 }
 
 static bool is_parallel(enum sway_container_layout first,

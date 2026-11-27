@@ -16,6 +16,13 @@ enum atom_name {
 	NET_WM_WINDOW_TYPE_TOOLTIP,
 	NET_WM_WINDOW_TYPE_NOTIFICATION,
 	NET_WM_STATE_MODAL,
+	NET_SUPPORTED,
+	NET_MOVERESIZE_WINDOW,
+	NET_FRAME_EXTENTS,
+	NET_REQUEST_FRAME_EXTENTS,
+	NET_WM_STATE,
+	NET_WM_STATE_STICKY,
+	WM_CLIENT_LEADER,
 	ATOM_LAST,
 };
 
@@ -27,5 +34,13 @@ struct sway_xwayland {
 };
 
 void handle_xwayland_ready(struct wl_listener *listener, void *data);
+
+/**
+ * Handles the X11 events of the XWM's connection that need sway's view of the
+ * tree, such as client messages to the root window. Returns true if the XWM
+ * must not handle the event as well.
+ */
+bool handle_xwayland_event(struct wlr_xwayland *wlr_xwayland,
+	xcb_generic_event_t *event);
 
 #endif
