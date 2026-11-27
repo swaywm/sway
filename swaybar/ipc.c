@@ -506,7 +506,11 @@ static bool handle_barconfig_update(struct swaybar *bar, const char *payload,
 			destroy_layer_surface(output);
 			wl_list_remove(&output->link);
 			wl_list_insert(&bar->unused_outputs, &output->link);
-		} else if (!pango_font_description_equal(oldcfg->font_description, newcfg->font_description)) {
+		} else if (!newcfg->height && !pango_font_description_equal(
+				oldcfg->font_description, newcfg->font_description)) {
+			// Only an automatic height depends on the font. Forcing an
+			// update of an explicit height would request the unchanged
+			// size, which the compositor doesn't answer with a configure.
 			output->height = 0;  // force update height
 		}
 	}
