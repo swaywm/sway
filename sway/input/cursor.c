@@ -106,6 +106,11 @@ struct sway_node *node_at_coords(
 			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_UNMANAGED)) {
 				return NULL;
 			}
+
+			if (scene_descriptor_try_get(current, SWAY_SCENE_DESC_XWAYLAND_DOCK)) {
+				// Docks never take focus; input goes to the surface only
+				return NULL;
+			}
 #endif
 
 			if (!current->parent) {

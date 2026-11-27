@@ -779,6 +779,7 @@ void server_fini(struct sway_server *server) {
 
 bool server_start(struct sway_server *server) {
 #if WLR_HAS_XWAYLAND
+	wl_list_init(&server->xwayland.docks);
 	if (config->xwayland != XWAYLAND_MODE_DISABLED) {
 		sway_log(SWAY_DEBUG, "Initializing Xwayland (lazy=%d)",
 				config->xwayland == XWAYLAND_MODE_LAZY);
