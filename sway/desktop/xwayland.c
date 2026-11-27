@@ -11,10 +11,12 @@
 #include <xcb/xcb_icccm.h>
 #include "list.h"
 #include "log.h"
+#include "sway/commands.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
@@ -1131,6 +1133,171 @@ static void desktops_init(struct sway_xwayland *xwayland) {
 	xcb_flush(xcb_conn);
 
 	xwayland_schedule_desktops_update();
+}
+
+static void handle_request_current_desktop(uint32_t index) {
+	list_t *desktops = desktops_create();
+	if (index < (uint32_t)desktops->length) {
+		struct sway_workspace *ws = desktops->items[index];
+		sway_log(SWAY_DEBUG, "X11 client switches to desktop %u (workspace %s)",
+			index, ws->name);
+		workspace_switch(ws);
+		seat_consider_warp_to_focus(input_manager_current_seat());
+		transaction_commit_dirty();
+	} else {
+		sway_log(SWAY_DEBUG, "Ignoring X11 request for unknown desktop %u",
+			index);
+	}
+	list_free(desktops);
+}
+
+static bool container_has_x11_window(struct sway_container *con, void *data) {
+	xcb_window_t *window = data;
+	return con->view && con->view->type == SWAY_VIEW_XWAYLAND &&
+		con->view->wlr_xwayland_surface->window_id == *window;
+}
+
+/**
+ * Make a container that isn't floating floating and sticky, as `floating
+ * enable` and `sticky enable` do. Only the container's own floating state
+ * counts: a tiled container inside a floating one leaves it and floats on its
+ * own, while the rest of the floating container stays as it was.
+ */
+static void container_make_sticky(struct sway_container *con) {
+	struct sway_workspace *ws = con->pending.workspace;
+	container_set_floating(con, true);
+	con->is_sticky = true;
+	arrange_workspace(ws);
+
+	// Sticky containers show on the workspace their output displays
+	struct sway_workspace *active = output_get_active_workspace(ws->output);
+	if (active && active != ws) {
+		container_detach(con);
+		workspace_add_floating(active, con);
+		container_handle_fullscreen_reparent(con);
+		arrange_workspace(active);
+		workspace_consider_destroy(ws);
+	}
+}
+
+/**
+ * Move a sticky (floating) container to the workspace showing on an output,
+ * as `move container to output` does, without changing focus. Nothing
+ * happens if the container is on that output already.
+ */
+static void move_sticky_container(struct sway_container *con,
+		struct sway_output *output) {
+	struct sway_workspace *old_ws = con->pending.workspace;
+	struct sway_workspace *ws =
+		output ? output_get_active_workspace(output) : NULL;
+	if (!old_ws || !ws || old_ws->output == output) {
+		sway_log(SWAY_DEBUG, "Sticky container stays on its output");
+		return;
+	}
+	sway_log(SWAY_DEBUG, "Moving sticky container to workspace %s on "
+		"output %s", ws->name, output->wlr_output->name);
+
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_container *focus = seat_get_focused_container(seat);
+	bool had_focus = focus &&
+		(focus == con || container_has_ancestor(focus, con));
+
+	container_detach(con);
+	workspace_add_floating(ws, con);
+	container_handle_fullscreen_reparent(con);
+	if (!con->pending.fullscreen_mode) {
+		struct wlr_box box, old_box;
+		workspace_get_box(ws, &box);
+		workspace_get_box(old_ws, &old_box);
+		floating_fix_coordinates(con, &old_box, &box);
+	}
+	if (con->view) {
+		ipc_event_window(con, "move");
+	}
+	workspace_detect_urgent(old_ws);
+	workspace_detect_urgent(ws);
+
+	// Focus stays on the workspace it was on
+	if (had_focus) {
+		seat_set_focus(seat, seat_get_focus_inactive(seat, &old_ws->node));
+	}
+	arrange_workspace(old_ws);
+	arrange_workspace(ws);
+	workspace_consider_destroy(old_ws);
+}
+
+static void handle_request_wm_desktop(xcb_window_t window, uint32_t index) {
+	struct sway_container *con =
+		root_find_container(container_has_x11_window, &window);
+	if (!con) {
+		return;
+	}
+
+	if (index == NET_WM_DESKTOP_ALL) {
+		// As in i3, only a window that isn't floating yet is turned into a
+		// floating, sticky one. A window that already floats (a hidden
+		// scratchpad window too) keeps its state: the request is dropped.
+		if (container_is_floating(con) ||
+				container_is_scratchpad_hidden_or_child(con) ||
+				root->outputs->length == 0) {
+			sway_log(SWAY_DEBUG, "Ignoring X11 request making window 0x%x "
+				"sticky", window);
+			return;
+		}
+		sway_log(SWAY_DEBUG, "X11 client makes window 0x%x sticky", window);
+		container_make_sticky(con);
+		transaction_commit_dirty();
+		return;
+	}
+
+	list_t *desktops = desktops_create();
+	struct sway_workspace *ws = index < (uint32_t)desktops->length ?
+		desktops->items[index] : NULL;
+	list_free(desktops);
+	if (!ws) {
+		sway_log(SWAY_DEBUG, "Ignoring X11 request moving window 0x%x to "
+			"unknown desktop %u", window, index);
+		return;
+	}
+
+	if (container_is_sticky_or_child(con)) {
+		// Already on all desktops of its output. As in i3, it stays put
+		// unless the desktop is on another output, where it shows on the
+		// workspace showing there, still sticky.
+		move_sticky_container(container_toplevel_ancestor(con), ws->output);
+	} else {
+		sway_log(SWAY_DEBUG, "X11 client moves window 0x%x to desktop %u "
+			"(workspace %s)", window, index, ws->name);
+		struct cmd_results *res = move_container_to_workspace(
+			input_manager_current_seat(), con, ws);
+		if (res->status != CMD_SUCCESS) {
+			sway_log(SWAY_INFO, "Unable to move X11 window 0x%x: %s",
+				window, res->error);
+		}
+		free_cmd_results(res);
+	}
+	transaction_commit_dirty();
+}
+
+bool handle_xwayland_event(struct wlr_xwayland *wlr_xwayland,
+		xcb_generic_event_t *event) {
+	struct sway_xwayland *xwayland = &server.xwayland;
+	if ((event->response_type & ~0x80) != XCB_CLIENT_MESSAGE ||
+			xwayland->root == XCB_WINDOW_NONE) {
+		return false;
+	}
+	xcb_client_message_event_t *ev = (xcb_client_message_event_t *)event;
+	if (ev->format != 32) {
+		return false;
+	}
+	if (ev->type == xwayland->atoms[NET_CURRENT_DESKTOP]) {
+		handle_request_current_desktop(ev->data.data32[0]);
+		return true;
+	} else if (ev->type == xwayland->atoms[NET_WM_DESKTOP]) {
+		handle_request_wm_desktop(ev->window, ev->data.data32[0]);
+		return true;
+	}
+	return false;
 }
 
 void handle_xwayland_ready(struct wl_listener *listener, void *data) {

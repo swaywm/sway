@@ -796,6 +796,8 @@ bool server_start(struct sway_server *server) {
 			wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
 				&server->xwayland_ready);
 			server->xwayland_ready.notify = handle_xwayland_ready;
+			server->xwayland.wlr_xwayland->user_event_handler =
+				handle_xwayland_event;
 
 			setenv("DISPLAY", server->xwayland.wlr_xwayland->display_name, true);
 

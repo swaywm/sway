@@ -48,6 +48,9 @@ struct sway_xwayland {
 
 void handle_xwayland_ready(struct wl_listener *listener, void *data);
 
+bool handle_xwayland_event(struct wlr_xwayland *wlr_xwayland,
+	xcb_generic_event_t *event);
+
 /**
  * Schedule an update of the EWMH desktop properties (_NET_NUMBER_OF_DESKTOPS,
  * _NET_DESKTOP_NAMES, _NET_CURRENT_DESKTOP, _NET_DESKTOP_VIEWPORT and each
