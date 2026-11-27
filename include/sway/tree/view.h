@@ -53,6 +53,10 @@ struct sway_view_impl {
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
+	void (*set_sticky)(struct sway_view *view, bool sticky);
+	void (*set_frame_extents)(struct sway_view *view,
+			int left, int right, int top, int bottom);
+	void (*place_initial_floating)(struct sway_view *view);
 	void (*set_resizing)(struct sway_view *view, bool resizing);
 	bool (*wants_floating)(struct sway_view *view);
 	bool (*is_transient_for)(struct sway_view *child,
@@ -86,6 +90,10 @@ struct sway_view {
 	// The size the view would want to be if it weren't tiled.
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
+
+	// Set while the view is being mapped, including its criteria. A
+	// container made floating meanwhile takes the client's own geometry.
+	bool initial_placement;
 
 	bool using_csd;
 
@@ -162,6 +170,8 @@ struct sway_xwayland_view {
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
 	struct wl_listener request_activate;
+	struct wl_listener request_close;
+	struct wl_listener request_sticky;
 	struct wl_listener set_title;
 	struct wl_listener set_class;
 	struct wl_listener set_role;
@@ -171,12 +181,20 @@ struct sway_xwayland_view {
 	struct wl_listener set_decorations;
 	struct wl_listener associate;
 	struct wl_listener dissociate;
+	struct wl_listener map_request;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener override_redirect;
 
 	struct wl_listener surface_tree_destroy;
+
+	// The _NET_FRAME_EXTENTS last published on the X11 window
+	uint32_t frame_extents[4];
+	bool frame_extents_published;
+
+	// The window named by WM_CLIENT_LEADER when the window asked to be mapped
+	xcb_window_t client_leader;
 };
 
 struct sway_xwayland_unmanaged {
@@ -291,6 +309,31 @@ void view_set_csd_from_server(struct sway_view *view, bool enabled);
 void view_update_csd_from_client(struct sway_view *view, bool enabled);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
+
+/**
+ * Whether the view counts as sticky: either its own container's sticky flag
+ * is set, even while it's tiled, or it lives inside a sticky floating
+ * container.
+ */
+bool view_is_sticky(struct sway_view *view);
+
+/**
+ * Tells the client whether the view counts as sticky.
+ */
+void view_update_sticky(struct sway_view *view);
+
+/**
+ * Tells the client how much decoration the view's own frame draws around it,
+ * excluding the tab or stack titles drawn by a parent container.
+ */
+void view_set_frame_extents(struct sway_view *view,
+		int left, int right, int top, int bottom);
+
+/**
+ * Places a view that has just become floating while being mapped where its
+ * client asked to appear, if the view type supports that.
+ */
+void view_place_initial_floating(struct sway_view *view);
 
 void view_close(struct sway_view *view);
 

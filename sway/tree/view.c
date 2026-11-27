@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <wayland-server-core.h>
@@ -360,12 +361,14 @@ void view_autoconfigure(struct sway_view *view) {
 		con->pending.content_y = output->ly;
 		con->pending.content_width = output->width;
 		con->pending.content_height = output->height;
+		view_set_frame_extents(view, 0, 0, 0, 0);
 		return;
 	} else if (con->pending.fullscreen_mode == FULLSCREEN_GLOBAL) {
 		con->pending.content_x = root->x;
 		con->pending.content_y = root->y;
 		con->pending.content_width = root->width;
 		con->pending.content_height = root->height;
+		view_set_frame_extents(view, 0, 0, 0, 0);
 		return;
 	}
 
@@ -461,6 +464,20 @@ void view_autoconfigure(struct sway_view *view) {
 	con->pending.content_y = y;
 	con->pending.content_width = fmax(width, 1);
 	con->pending.content_height = fmax(height, 1);
+
+	// The titles drawn by a tabbed or stacked parent, including the title bar
+	// of a lone tab, aren't part of the view's own frame.
+	double top = y - con->pending.y - y_offset;
+	if (con->pending.border == B_NORMAL && !container_is_floating(con)) {
+		enum sway_container_layout layout = container_parent_layout(con);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			top = 0;
+		}
+	}
+	view_set_frame_extents(view, round(x - con->pending.x),
+		round(con->pending.x + con->pending.width - x - width),
+		round(top),
+		round(con->pending.y + con->pending.height - y - height));
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -540,6 +557,30 @@ void view_update_csd_from_client(struct sway_view *view, bool enabled) {
 void view_set_tiled(struct sway_view *view, bool tiled) {
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
+	}
+}
+
+bool view_is_sticky(struct sway_view *view) {
+	struct sway_container *con = view->container;
+	return con && (con->is_sticky || container_is_sticky_or_child(con));
+}
+
+void view_update_sticky(struct sway_view *view) {
+	if (view->impl->set_sticky) {
+		view->impl->set_sticky(view, view_is_sticky(view));
+	}
+}
+
+void view_set_frame_extents(struct sway_view *view,
+		int left, int right, int top, int bottom) {
+	if (view->impl->set_frame_extents) {
+		view->impl->set_frame_extents(view, left, right, top, bottom);
+	}
+}
+
+void view_place_initial_floating(struct sway_view *view) {
+	if (view->impl->place_initial_floating) {
+		view->impl->place_initial_floating(view);
 	}
 }
 
@@ -905,6 +946,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 		view_update_csd_from_client(view, decoration);
 	}
 
+	// Covers both the view's own wish to float and floating criteria
+	view->initial_placement = true;
+
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		view->container->pending.border = config->floating_border;
 		view->container->pending.border_thickness = config->floating_border_thickness;
@@ -940,6 +984,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 
 	view_execute_criteria(view);
+
+	view->initial_placement = false;
 
 	bool set_focus = should_focus(view);
 

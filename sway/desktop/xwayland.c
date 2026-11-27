@@ -1,6 +1,8 @@
 #include <float.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
@@ -13,11 +15,13 @@
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/server.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 
@@ -33,6 +37,13 @@ static const char *atom_map[ATOM_LAST] = {
 	[NET_WM_WINDOW_TYPE_TOOLTIP] = "_NET_WM_WINDOW_TYPE_TOOLTIP",
 	[NET_WM_WINDOW_TYPE_NOTIFICATION] = "_NET_WM_WINDOW_TYPE_NOTIFICATION",
 	[NET_WM_STATE_MODAL] = "_NET_WM_STATE_MODAL",
+	[NET_SUPPORTED] = "_NET_SUPPORTED",
+	[NET_MOVERESIZE_WINDOW] = "_NET_MOVERESIZE_WINDOW",
+	[NET_FRAME_EXTENTS] = "_NET_FRAME_EXTENTS",
+	[NET_REQUEST_FRAME_EXTENTS] = "_NET_REQUEST_FRAME_EXTENTS",
+	[NET_WM_STATE] = "_NET_WM_STATE",
+	[NET_WM_STATE_STICKY] = "_NET_WM_STATE_STICKY",
+	[WM_CLIENT_LEADER] = "WM_CLIENT_LEADER",
 };
 
 static void unmanaged_handle_request_configure(struct wl_listener *listener,
@@ -307,6 +318,53 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	wlr_xwayland_surface_set_fullscreen(surface, fullscreen);
 }
 
+static void set_sticky(struct sway_view *view, bool sticky) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	// The XWM keeps _NET_WM_STATE in line with this flag
+	if (surface->sticky != sticky) {
+		wlr_xwayland_surface_set_sticky(surface, sticky);
+	}
+}
+
+static xcb_connection_t *xwm_connection(void) {
+	struct wlr_xwayland *wlr_xwayland = server.xwayland.wlr_xwayland;
+	return wlr_xwayland ? wlr_xwayland_get_xwm_connection(wlr_xwayland) : NULL;
+}
+
+static void publish_frame_extents(xcb_window_t window,
+		const uint32_t extents[static 4]) {
+	xcb_connection_t *xcb_conn = xwm_connection();
+	if (xcb_conn == NULL) {
+		return;
+	}
+	xcb_change_property(xcb_conn, XCB_PROP_MODE_REPLACE, window,
+		server.xwayland.atoms[NET_FRAME_EXTENTS], XCB_ATOM_CARDINAL, 32,
+		4, extents);
+	xcb_flush(xcb_conn);
+}
+
+static void set_frame_extents(struct sway_view *view,
+		int left, int right, int top, int bottom) {
+	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	if (xwayland_view == NULL || view->wlr_xwayland_surface == NULL ||
+			xwm_connection() == NULL) {
+		return;
+	}
+	uint32_t extents[4] = { left, right, top, bottom };
+	if (xwayland_view->frame_extents_published &&
+			memcmp(extents, xwayland_view->frame_extents, sizeof(extents)) == 0) {
+		return;
+	}
+	memcpy(xwayland_view->frame_extents, extents, sizeof(extents));
+	xwayland_view->frame_extents_published = true;
+	publish_frame_extents(view->wlr_xwayland_surface->window_id, extents);
+}
+
+static void place_initial_floating(struct sway_view *view);
+
 static bool wants_floating(struct sway_view *view) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return false;
@@ -406,6 +464,9 @@ static const struct sway_view_impl view_impl = {
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
+	.set_sticky = set_sticky,
+	.set_frame_extents = set_frame_extents,
+	.place_initial_floating = place_initial_floating,
 	.wants_floating = wants_floating,
 	.is_transient_for = is_transient_for,
 	.close = _close,
@@ -472,6 +533,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->request_move.link);
 	wl_list_remove(&xwayland_view->request_resize.link);
 	wl_list_remove(&xwayland_view->request_activate.link);
+	wl_list_remove(&xwayland_view->request_close.link);
+	wl_list_remove(&xwayland_view->request_sticky.link);
+	wl_list_remove(&xwayland_view->map_request.link);
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_role.link);
@@ -514,6 +578,36 @@ static void handle_surface_tree_destroy(struct wl_listener *listener, void *data
 	xwayland_view->surface_tree = NULL;
 }
 
+static void handle_map_request(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, map_request);
+	struct wlr_xwayland_surface *xsurface = xwayland_view->view.wlr_xwayland_surface;
+	struct sway_xwayland *xwayland = &server.xwayland;
+	xwayland_view->client_leader = XCB_WINDOW_NONE;
+	xcb_connection_t *xcb_conn = xwm_connection();
+	if (xcb_conn == NULL) {
+		return;
+	}
+
+	// The XWM doesn't track WM_CLIENT_LEADER. Like it does for the other
+	// properties, read it while handling the MapRequest: events queued
+	// meanwhile are handled after this one.
+	xcb_get_property_cookie_t cookie = xcb_get_property(xcb_conn, 0,
+		xsurface->window_id, xwayland->atoms[WM_CLIENT_LEADER],
+		XCB_ATOM_WINDOW, 0, 1);
+	xcb_get_property_reply_t *reply =
+		xcb_get_property_reply(xcb_conn, cookie, NULL);
+	if (reply == NULL) {
+		return;
+	}
+	if (reply->type == XCB_ATOM_WINDOW && reply->format == 32 &&
+			xcb_get_property_value_length(reply) >= (int)sizeof(xcb_window_t)) {
+		xwayland_view->client_leader =
+			*(xcb_window_t *)xcb_get_property_value(reply);
+	}
+	free(reply);
+}
+
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, map);
@@ -528,8 +622,16 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->surface->events.commit, &xwayland_view->commit);
 	xwayland_view->commit.notify = handle_commit;
 
+	// The window may carry extents estimated before it was mapped, or left
+	// over from a previous mapping
+	xwayland_view->frame_extents_published = false;
+
 	// Put it back into the tree
 	view_map(view, xsurface->surface, xsurface->fullscreen, NULL, false);
+
+	// The client's initial _NET_WM_STATE_STICKY isn't honoured; reflect
+	// the container's actual state
+	view_update_sticky(view);
 
 	xwayland_view->surface_tree = wlr_scene_subsurface_tree_create(
 		xwayland_view->view.content_tree, xsurface->surface);
@@ -575,6 +677,133 @@ static void handle_override_redirect(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void send_current_geometry(struct sway_view *view) {
+	struct sway_container *con = view->container;
+	configure(view, con->current.content_x, con->current.content_y,
+		con->current.content_width, con->current.content_height);
+}
+
+/**
+ * Whether another window is fullscreen on the container's workspace. A window
+ * hidden in the scratchpad has no workspace.
+ */
+static bool fullscreen_sibling(struct sway_container *con) {
+	struct sway_workspace *workspace = con->pending.workspace;
+	if (workspace == NULL) {
+		return false;
+	}
+	if (workspace->fullscreen && workspace->fullscreen != con) {
+		return true;
+	}
+	struct sway_container *global = root->fullscreen_global;
+	return global && global != con && global->pending.workspace == workspace;
+}
+
+/**
+ * Handles a client's request to move or resize its window. The mask selects
+ * the requested fields as XCB_CONFIG_WINDOW_{X,Y,WIDTH,HEIGHT} flags; x and y
+ * are the requested position of the client window itself.
+ */
+static void request_geometry(struct sway_view *view, uint16_t mask,
+		int x, int y, uint32_t width, uint32_t height) {
+	struct sway_container *con = view->container;
+	if (!container_is_floating(con) ||
+			con->pending.fullscreen_mode != FULLSCREEN_NONE ||
+			fullscreen_sibling(con)) {
+		// Tiled and fullscreen windows keep their geometry, and so does a
+		// floating window while another one is fullscreen on its workspace
+		send_current_geometry(view);
+		return;
+	}
+
+	// A window hidden in the scratchpad stays hidden: it takes the
+	// requested size, but any requested position is discarded
+	if (container_is_scratchpad_hidden(con)) {
+		mask &= ~(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y);
+	}
+	if (!(mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+			XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT))) {
+		send_current_geometry(view);
+		return;
+	}
+
+	double content_x = mask & XCB_CONFIG_WINDOW_X ? x : con->pending.content_x;
+	double content_y = mask & XCB_CONFIG_WINDOW_Y ? y : con->pending.content_y;
+
+	// Only a requested position can move the window to another workspace:
+	// the visible one of the output it lies on, if that's another output. A
+	// requested position that lies on no output voids the whole request.
+	struct sway_workspace *workspace = con->pending.workspace;
+	struct sway_output *output = workspace ? workspace->output : NULL;
+	if (mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y)) {
+		struct wlr_output *wlr_output = wlr_output_layout_output_at(
+				root->output_layout, content_x, content_y);
+		struct sway_output *target = wlr_output ? wlr_output->data : NULL;
+		if (target == NULL) {
+			send_current_geometry(view);
+			return;
+		}
+		if (target != output) {
+			workspace = output_get_active_workspace(target);
+			output = target;
+			if (workspace == NULL) {
+				send_current_geometry(view);
+				return;
+			}
+		}
+	}
+
+	// Respect minimum and maximum sizes
+	int min_width, max_width, min_height, max_height;
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
+	if (mask & XCB_CONFIG_WINDOW_WIDTH) {
+		con->pending.content_width =
+			fmax(min_width, fmin((double)width, max_width));
+		view->natural_width = con->pending.content_width;
+	}
+	if (mask & XCB_CONFIG_WINDOW_HEIGHT) {
+		con->pending.content_height =
+			fmax(min_height, fmin((double)height, max_height));
+		view->natural_height = con->pending.content_height;
+	}
+	con->pending.content_x = content_x;
+	con->pending.content_y = content_y;
+	container_set_geometry_from_content(con);
+
+	struct sway_workspace *old_workspace = con->pending.workspace;
+	if (old_workspace != NULL && workspace != old_workspace) {
+		container_detach(con);
+		workspace_add_floating(workspace, con);
+		arrange_workspace(old_workspace);
+		arrange_workspace(workspace);
+		// If the moved container was a visible scratchpad container, then
+		// update its transform.
+		if (con->scratchpad) {
+			struct wlr_box output_box;
+			output_get_box(output, &output_box);
+			con->transform = output_box;
+		}
+		workspace_detect_urgent(old_workspace);
+		workspace_detect_urgent(workspace);
+		ipc_event_window(con, "move");
+		workspace_consider_destroy(old_workspace);
+		seat_set_focus_container(input_manager_current_seat(), con);
+	} else {
+		arrange_container(con);
+	}
+
+	// The X server only notifies the client of actual changes
+	if ((int)con->pending.content_x == (int)con->current.content_x &&
+			(int)con->pending.content_y == (int)con->current.content_y &&
+			(int)con->pending.content_width == (int)con->current.content_width &&
+			(int)con->pending.content_height == (int)con->current.content_height) {
+		send_current_geometry(view);
+	}
+
+	transaction_commit_dirty();
+}
+
 static void handle_request_configure(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, request_configure);
@@ -586,23 +815,7 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 			ev->width, ev->height);
 		return;
 	}
-	if (container_is_floating(view->container)) {
-		// Respect minimum and maximum sizes
-		view->natural_width = ev->width;
-		view->natural_height = ev->height;
-		container_floating_resize_and_center(view->container);
-
-		configure(view, view->container->pending.content_x,
-				view->container->pending.content_y,
-				view->container->pending.content_width,
-				view->container->pending.content_height);
-		node_set_dirty(&view->container->node);
-	} else {
-		configure(view, view->container->current.content_x,
-				view->container->current.content_y,
-				view->container->current.content_width,
-				view->container->current.content_height);
-	}
+	request_geometry(view, ev->mask, ev->x, ev->y, ev->width, ev->height);
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
@@ -677,6 +890,31 @@ static void handle_request_activate(struct wl_listener *listener, void *data) {
 	view_request_activate(view, NULL);
 
 	transaction_commit_dirty();
+}
+
+static void handle_request_close(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_close);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (xsurface->surface == NULL || !xsurface->surface->mapped) {
+		return;
+	}
+	view_close(view);
+}
+
+static void handle_request_sticky(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_sticky);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (xsurface->surface == NULL || !xsurface->surface->mapped) {
+		return;
+	}
+	// handle_xwayland_event() has already applied the request to the
+	// container before the XWM applied it to its own sticky flag, which
+	// mirrors whether the view counts as sticky. Only restore that flag.
+	view_update_sticky(view);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {
@@ -831,6 +1069,17 @@ struct sway_xwayland_view *create_xwayland_view(struct wlr_xwayland_surface *xsu
 		&xwayland_view->request_activate);
 	xwayland_view->request_activate.notify = handle_request_activate;
 
+	wl_signal_add(&xsurface->events.request_close,
+		&xwayland_view->request_close);
+	xwayland_view->request_close.notify = handle_request_close;
+
+	wl_signal_add(&xsurface->events.request_sticky,
+		&xwayland_view->request_sticky);
+	xwayland_view->request_sticky.notify = handle_request_sticky;
+
+	wl_signal_add(&xsurface->events.map_request, &xwayland_view->map_request);
+	xwayland_view->map_request.notify = handle_map_request;
+
 	wl_signal_add(&xsurface->events.request_move,
 		&xwayland_view->request_move);
 	xwayland_view->request_move.notify = handle_request_move;
@@ -890,6 +1139,224 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	create_xwayland_view(xsurface);
 }
 
+static bool find_by_x11_window(struct sway_container *con, void *data) {
+	xcb_window_t *window = data;
+	return con->view && con->view->type == SWAY_VIEW_XWAYLAND &&
+		con->view->surface && con->view->wlr_xwayland_surface &&
+		con->view->wlr_xwayland_surface->window_id == *window;
+}
+
+static struct sway_view *view_from_x11_window(xcb_window_t window) {
+	struct sway_container *con = root_find_container(find_by_x11_window, &window);
+	return con ? con->view : NULL;
+}
+
+/**
+ * Returns the managed view of the window that the view's WM_CLIENT_LEADER
+ * property named when it asked to be mapped, unless that's its own window.
+ */
+static struct sway_view *client_leader_view(struct sway_view *view) {
+	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	xcb_window_t leader = xwayland_view->client_leader;
+	if (leader == XCB_WINDOW_NONE ||
+			leader == view->wlr_xwayland_surface->window_id) {
+		return NULL;
+	}
+	return view_from_x11_window(leader);
+}
+
+/**
+ * Moves the floating container so that its frame, title bar included, is
+ * centred in the box, like container_floating_move_to_center() does on the
+ * workspace.
+ */
+static void center_in_box(struct sway_container *con, const struct wlr_box *box) {
+	double lx = box->x + (box->width - con->pending.width) / 2;
+	double ly = box->y + (box->height - con->pending.height) / 2;
+	container_floating_translate(con, lx - con->pending.x, ly - con->pending.y);
+}
+
+/**
+ * Like i3, a window that is floating when it's managed appears with its own
+ * geometry, or the position and size of its WM_NORMAL_HINTS, rather than
+ * centred on the workspace. It stays on the workspace it maps on.
+ */
+static void place_initial_floating(struct sway_view *view) {
+	struct sway_container *con = view->container;
+	struct sway_workspace *workspace = con->pending.workspace;
+	if (xwayland_view_from_view(view) == NULL || workspace == NULL ||
+			workspace->output == NULL ||
+			con->pending.fullscreen_mode != FULLSCREEN_NONE) {
+		return;
+	}
+	struct wlr_output *workspace_output = workspace->output->wlr_output;
+	struct wlr_box output_box;
+	wlr_output_layout_get_box(root->output_layout, workspace_output, &output_box);
+	if (wlr_box_empty(&output_box)) {
+		return;
+	}
+
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	int x = xsurface->x, y = xsurface->y;
+	int width = xsurface->width, height = xsurface->height;
+	xcb_size_hints_t *hints = xsurface->size_hints;
+	if (hints != NULL && (hints->flags & (XCB_ICCCM_SIZE_HINT_US_POSITION |
+				XCB_ICCCM_SIZE_HINT_P_POSITION)) &&
+			(hints->flags & (XCB_ICCCM_SIZE_HINT_US_SIZE |
+				XCB_ICCCM_SIZE_HINT_P_SIZE))) {
+		x = hints->x;
+		y = hints->y;
+		width = hints->width;
+		height = hints->height;
+	}
+
+	// Respect minimum and maximum sizes
+	int min_width, max_width, min_height, max_height;
+	floating_calculate_constraints(&min_width, &max_width,
+			&min_height, &max_height);
+	con->pending.content_width = fmax(min_width, fmin(width, max_width));
+	con->pending.content_height = fmax(min_height, fmin(height, max_height));
+	view->natural_width = con->pending.content_width;
+	view->natural_height = con->pending.content_height;
+	con->pending.content_x = x;
+	con->pending.content_y = y;
+	container_set_geometry_from_content(con);
+
+	if (x == 0 && y == 0) {
+		// The window hasn't picked a position: centre it over its leader
+		// window, or else on the workspace
+		struct sway_view *leader = client_leader_view(view);
+		if (leader != NULL && leader->container != NULL) {
+			struct wlr_box box;
+			container_get_box(leader->container, &box);
+			center_in_box(con, &box);
+		} else {
+			container_floating_move_to_center(con);
+		}
+		return;
+	}
+
+	// A position on another output is carried over to the workspace's
+	// output, keeping the relative position of the container's midpoint, as
+	// when a floating container moves to another output. A position on no
+	// output is replaced by the centre of the workspace.
+	struct wlr_output *wlr_output =
+		wlr_output_layout_output_at(root->output_layout, x, y);
+	if (wlr_output == NULL) {
+		container_floating_move_to_center(con);
+	} else if (wlr_output != workspace_output) {
+		struct wlr_box box;
+		wlr_output_layout_get_box(root->output_layout, wlr_output, &box);
+		double old_x = con->pending.x, old_y = con->pending.y;
+		floating_fix_coordinates(con, &box, &output_box);
+		con->pending.content_x += con->pending.x - old_x;
+		con->pending.content_y += con->pending.y - old_y;
+	}
+}
+
+static void handle_net_moveresize_window(xcb_client_message_event_t *ev) {
+	struct sway_view *view = view_from_x11_window(ev->window);
+	if (view == NULL) {
+		return;
+	}
+	// Bits 8 to 11 select x, y, width and height, in the same order as the
+	// XCB_CONFIG_WINDOW_* flags. The gravity and source indication bits don't
+	// change the outcome.
+	uint32_t flags = ev->data.data32[0];
+	uint16_t mask = (flags >> 8) & 0xf;
+	request_geometry(view, mask, (int32_t)ev->data.data32[1],
+		(int32_t)ev->data.data32[2], ev->data.data32[3], ev->data.data32[4]);
+}
+
+static void handle_net_request_frame_extents(xcb_client_message_event_t *ev) {
+	struct sway_view *view = view_from_x11_window(ev->window);
+	if (view != NULL) {
+		struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+		if (xwayland_view->frame_extents_published) {
+			publish_frame_extents(ev->window, xwayland_view->frame_extents);
+		}
+		return;
+	}
+
+	// The window isn't mapped yet. Like i3, estimate the extents from the
+	// default border of a tiled window.
+	uint32_t border = config->border == B_NONE ? 0 : config->border_thickness;
+	uint32_t extents[4] = {
+		border, border, container_titlebar_height(), border,
+	};
+	publish_frame_extents(ev->window, extents);
+}
+
+#define _NET_WM_STATE_REMOVE 0
+#define _NET_WM_STATE_ADD 1
+#define _NET_WM_STATE_TOGGLE 2
+
+/**
+ * Applies _NET_WM_STATE_STICKY requests to the container's own sticky flag,
+ * like the sticky command.
+ */
+static void handle_net_wm_state(struct sway_xwayland *xwayland,
+		xcb_client_message_event_t *ev) {
+	struct sway_view *view = view_from_x11_window(ev->window);
+	if (view == NULL) {
+		return;
+	}
+	struct sway_container *con = view->container;
+	uint32_t action = ev->data.data32[0];
+	bool requested = false;
+	bool sticky = con->is_sticky;
+	// data32[1] and data32[2] name the properties to change
+	for (size_t i = 1; i <= 2; ++i) {
+		if (ev->data.data32[i] != xwayland->atoms[NET_WM_STATE_STICKY]) {
+			continue;
+		}
+		switch (action) {
+		case _NET_WM_STATE_REMOVE:
+			sticky = false;
+			break;
+		case _NET_WM_STATE_ADD:
+			sticky = true;
+			break;
+		case _NET_WM_STATE_TOGGLE:
+			sticky = !sticky;
+			break;
+		default:
+			continue;
+		}
+		requested = true;
+	}
+	if (!requested) {
+		return;
+	}
+
+	container_set_sticky(con, sticky);
+
+	transaction_commit_dirty();
+}
+
+bool handle_xwayland_event(struct wlr_xwayland *wlr_xwayland,
+		xcb_generic_event_t *event) {
+	struct sway_xwayland *xwayland = &server.xwayland;
+	if ((event->response_type & ~0x80) != XCB_CLIENT_MESSAGE) {
+		return false;
+	}
+	xcb_client_message_event_t *ev = (xcb_client_message_event_t *)event;
+	if (ev->format != 32) {
+		return false;
+	}
+	if (ev->type == xwayland->atoms[NET_MOVERESIZE_WINDOW]) {
+		handle_net_moveresize_window(ev);
+		return true;
+	} else if (ev->type == xwayland->atoms[NET_REQUEST_FRAME_EXTENTS]) {
+		handle_net_request_frame_extents(ev);
+		return true;
+	} else if (ev->type == xwayland->atoms[NET_WM_STATE]) {
+		// The XWM still handles the other states of the message
+		handle_net_wm_state(xwayland, ev);
+	}
+	return false;
+}
+
 void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 	struct sway_server *server =
 		wl_container_of(listener, server, xwayland_ready);
@@ -925,4 +1392,17 @@ void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 	}
 
 	xcb_disconnect(xcb_conn);
+
+	// Extend the XWM's _NET_SUPPORTED list. Going through its connection
+	// orders this after the XWM's own list.
+	xcb_connection_t *xwm_conn =
+		wlr_xwayland_get_xwm_connection(xwayland->wlr_xwayland);
+	if (xwm_conn != NULL) {
+		xcb_screen_t *screen =
+			xcb_setup_roots_iterator(xcb_get_setup(xwm_conn)).data;
+		xcb_change_property(xwm_conn, XCB_PROP_MODE_APPEND, screen->root,
+			xwayland->atoms[NET_SUPPORTED], XCB_ATOM_ATOM, 32, 1,
+			&xwayland->atoms[NET_MOVERESIZE_WINDOW]);
+		xcb_flush(xwm_conn);
+	}
 }

@@ -971,6 +971,11 @@ static void _transaction_commit_dirty(bool server_request) {
 
 	for (int i = 0; i < server.dirty_nodes->length; ++i) {
 		struct sway_node *node = server.dirty_nodes->items[i];
+		// Floating mode changes and reparenting, which can change whether
+		// the views inside count as sticky, always dirty the moved container
+		if (node->type == N_CONTAINER && !node->destroying) {
+			container_update_sticky(node->sway_container);
+		}
 		transaction_add_node(server.pending_transaction, node, server_request);
 		node->dirty = false;
 	}
