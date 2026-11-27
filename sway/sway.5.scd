@@ -450,6 +450,14 @@ runtime.
 	AltGr). In addition, you can use the aliases  _Ctrl_ (for Control), _Alt_
 	(for Alt), and _Super_ (for the Logo key).
 
+	Bindings follow the Num Lock state. A key matches a keysym binding through
+	the keysym it produces in the current Num Lock state: with Num Lock on,
+	the keypad's 1 key produces _KP\_1_ rather than _KP\_End_. A binding
+	that includes _Mod2_ is only run while Num Lock is on; a binding without
+	it is run in either state. A *bindcode* binding without _Mod2_ is only run
+	while Num Lock is on if Num Lock does not change the keysym of the key.
+	Caps Lock does not affect which bindings are run.
+
 	Unless the flag _--locked_ is set, the command will not be run when a
 	screen locking program is active. If there is a matching binding with
 	and without _--locked_, the one with will be preferred when locked and the

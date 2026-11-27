@@ -49,6 +49,13 @@ void input_manager_configure_xcursor(void);
 
 void input_manager_apply_input_config(struct input_config *input_config);
 
+/**
+ * Turns Num Lock and Caps Lock on or off (INT_MIN: unchanged) now for the
+ * keyboards matching an input identifier.
+ */
+void input_manager_apply_keyboard_locks(const char *identifier, int numlock,
+		int capslock);
+
 void input_manager_configure_all_input_mappings(void);
 
 void input_manager_reset_input(struct sway_input_device *input_device);

@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
@@ -35,19 +36,15 @@ static const struct cmd_handler input_handlers[] = {
 	{ "tap_button_map", input_cmd_tap_button_map },
 	{ "three_finger_drag", input_cmd_three_finger_drag },
 	{ "tool_mode", input_cmd_tool_mode },
+	{ "xkb_capslock", input_cmd_xkb_capslock },
 	{ "xkb_file", input_cmd_xkb_file },
 	{ "xkb_layout", input_cmd_xkb_layout },
 	{ "xkb_model", input_cmd_xkb_model },
+	{ "xkb_numlock", input_cmd_xkb_numlock },
 	{ "xkb_options", input_cmd_xkb_options },
 	{ "xkb_rules", input_cmd_xkb_rules },
 	{ "xkb_switch_layout", input_cmd_xkb_switch_layout },
 	{ "xkb_variant", input_cmd_xkb_variant },
-};
-
-// must be in order for the bsearch
-static const struct cmd_handler input_config_handlers[] = {
-	{ "xkb_capslock", input_cmd_xkb_capslock },
-	{ "xkb_numlock", input_cmd_xkb_numlock },
 };
 
 struct cmd_results *cmd_input(int argc, char **argv) {
@@ -63,24 +60,16 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "Couldn't allocate config");
 	}
 
-	struct cmd_results *res;
-
-	if (find_handler(argv[1], input_config_handlers,
-			sizeof(input_config_handlers))) {
-		if (config->reading) {
-			res = config_subcommand(argv + 1, argc - 1,
-				input_config_handlers, sizeof(input_config_handlers));
-		} else {
-			res = cmd_results_new(CMD_FAILURE,
-				"Can only be used in config file.");
-		}
-	} else {
-		res = config_subcommand(argv + 1, argc - 1,
-			input_handlers, sizeof(input_handlers));
-	}
+	struct cmd_results *res = config_subcommand(argv + 1, argc - 1,
+		input_handlers, sizeof(input_handlers));
 
 	if ((!res || res->status == CMD_SUCCESS) &&
 			strcmp(argv[1], "xkb_switch_layout") != 0) {
+		// Lock settings given at run time take effect once, now; the stored
+		// settings apply when a keymap is created or the config is reloaded
+		int numlock = config->handler_context.input_config->xkb_numlock;
+		int capslock = config->handler_context.input_config->xkb_capslock;
+
 		char *error = NULL;
 		struct input_config *ic =
 			store_input_config(config->handler_context.input_config, &error);
@@ -97,6 +86,10 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 
 		if (!config->reading) {
 			input_manager_apply_input_config(ic);
+			if (numlock != INT_MIN || capslock != INT_MIN) {
+				input_manager_apply_keyboard_locks(ic->identifier,
+					numlock, capslock);
+			}
 		}
 	} else {
 		free_input_config(config->handler_context.input_config);

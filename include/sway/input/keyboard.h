@@ -69,6 +69,14 @@ struct sway_keyboard {
 
 	struct wl_event_source *key_repeat_source;
 	struct sway_binding *repeat_binding;
+
+	// State with only Num Lock locked, for the keymap of wlr
+	struct xkb_state *numlock_state;
+
+	// Lock modifiers (WLR_MODIFIER_CAPS, WLR_MODIFIER_MOD2) last reported
+	// over IPC for this keyboard
+	uint32_t reported_locks;
+	bool locks_reported;
 };
 
 struct sway_keyboard_group {
@@ -92,4 +100,20 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard);
 void sway_keyboard_destroy(struct sway_keyboard *keyboard);
 
 void sway_keyboard_disarm_key_repeat(struct sway_keyboard *keyboard);
+
+/**
+ * Returns the lock modifiers (WLR_MODIFIER_CAPS and WLR_MODIFIER_MOD2) that
+ * are locked for a keyboard device. For a keyboard in a keyboard group, this
+ * is the state of the group, which is the state clients receive.
+ */
+uint32_t sway_keyboard_get_locks(struct wlr_keyboard *wlr_keyboard);
+
+/**
+ * Turns Num Lock and Caps Lock on (> 0) or off (0) for a keyboard, or leaves
+ * them as they are (INT_MIN). A keyboard in a keyboard group has the state
+ * of its group changed. Keyboards whose keymap is not managed by sway
+ * (virtual keyboards) are left alone.
+ */
+void sway_keyboard_set_locks(struct sway_keyboard *keyboard, int numlock,
+		int capslock);
 #endif
