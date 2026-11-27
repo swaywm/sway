@@ -1161,6 +1161,14 @@ following properties:
 |- xkb_active_layout_index
 :  integer
 :  (Only keyboards) The index of the active keyboard layout
+|- xkb_num_lock
+:  boolean
+:  (Only keyboards) Whether Num Lock is on. For a keyboard in a keyboard
+   group, this is the state of the group
+|- xkb_caps_lock
+:  boolean
+:  (Only keyboards) Whether Caps Lock is on. For a keyboard in a keyboard
+   group, this is the state of the group
 |- scroll_factor
 :  floating
 :  (Only pointers) Multiplier applied on scroll event values.
@@ -1883,6 +1891,9 @@ The following change types are currently available:
 :  (Keyboards only) The keymap for the keyboard has changed
 |- xkb_layout
 :  (Keyboards only) The effective layout in the keymap has changed
+|- xkb_locks
+:  (Keyboards only) The _xkb\_num\_lock_ or _xkb\_caps\_lock_ state of the
+   keyboard has changed
 |- libinput_config
 :  (libinput device only) A libinput config option for the device changed
 

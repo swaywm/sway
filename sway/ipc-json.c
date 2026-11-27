@@ -19,6 +19,7 @@
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/cursor.h"
+#include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "sway/desktop/idle_inhibit_v1.h"
@@ -1182,6 +1183,12 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 			json_object_new_int(keyboard->repeat_info.delay));
 		json_object_object_add(object, "repeat_rate",
 			json_object_new_int(keyboard->repeat_info.rate));
+
+		uint32_t locks = sway_keyboard_get_locks(keyboard);
+		json_object_object_add(object, "xkb_num_lock",
+			json_object_new_boolean((locks & WLR_MODIFIER_MOD2) != 0));
+		json_object_object_add(object, "xkb_caps_lock",
+			json_object_new_boolean((locks & WLR_MODIFIER_CAPS) != 0));
 
 		json_object *layouts_arr = json_object_new_array();
 		json_object_object_add(object, "xkb_layout_names", layouts_arr);

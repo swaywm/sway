@@ -346,6 +346,13 @@ static uint32_t keyboard_locked_mods(struct wlr_keyboard *wlr) {
 	return locks;
 }
 
+uint32_t sway_keyboard_get_locks(struct wlr_keyboard *wlr_keyboard) {
+	if (wlr_keyboard->group) {
+		return keyboard_locked_mods(&wlr_keyboard->group->keyboard);
+	}
+	return keyboard_locked_mods(wlr_keyboard);
+}
+
 /**
  * Get the modifiers used to match bindings: the pressed and latched
  * modifiers, plus Mod2 while Num Lock is on.
@@ -810,6 +817,36 @@ static void determine_bar_visibility(uint32_t modifiers) {
 	}
 }
 
+/**
+ * Sends an xkb_locks input event when the lock state reported for a keyboard
+ * device (not a keyboard group) has changed since it was last reported.
+ */
+static void keyboard_update_reported_locks(struct sway_keyboard *keyboard) {
+	uint32_t locks = sway_keyboard_get_locks(keyboard->wlr);
+	if (keyboard->locks_reported && locks == keyboard->reported_locks) {
+		return;
+	}
+	bool send = keyboard->locks_reported;
+	keyboard->reported_locks = locks;
+	keyboard->locks_reported = true;
+	if (send) {
+		ipc_event_input("xkb_locks", keyboard->seat_device->input_device);
+	}
+}
+
+static void group_update_reported_locks(struct sway_keyboard *group_keyboard) {
+	struct wlr_keyboard_group *wlr_group =
+		wlr_keyboard_group_from_wlr_keyboard(group_keyboard->wlr);
+	struct sway_seat_device *seat_device;
+	wl_list_for_each(seat_device,
+			&group_keyboard->seat_device->sway_seat->devices, link) {
+		struct sway_keyboard *keyboard = seat_device->keyboard;
+		if (keyboard && keyboard->wlr->group == wlr_group) {
+			keyboard_update_reported_locks(keyboard);
+		}
+	}
+}
+
 static void handle_modifier_event(struct sway_keyboard *keyboard) {
 	if (!keyboard->wlr->group) {
 		struct wlr_input_method_keyboard_grab_v2 *kb_grab = keyboard_get_im_grab(keyboard);
@@ -835,6 +872,14 @@ static void handle_modifier_event(struct sway_keyboard *keyboard) {
 		if (!wlr_keyboard_group_from_wlr_keyboard(keyboard->wlr)) {
 			ipc_event_input("xkb_layout", keyboard->seat_device->input_device);
 		}
+	}
+
+	// Report lock changes once clients have the new state. A device that
+	// has not been configured yet gets its first state recorded there.
+	if (wlr_keyboard_group_from_wlr_keyboard(keyboard->wlr)) {
+		group_update_reported_locks(keyboard);
+	} else if (keyboard->locks_reported) {
+		keyboard_update_reported_locks(keyboard);
 	}
 }
 
@@ -1244,6 +1289,8 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
 
+	// Joining or leaving a keyboard group can change the reported locks
+	keyboard_update_reported_locks(keyboard);
 }
 
 static struct wlr_keyboard *seat_find_other_keyboard(struct sway_seat *seat,
