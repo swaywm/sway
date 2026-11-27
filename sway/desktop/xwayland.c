@@ -13,6 +13,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/scene_descriptor.h"
 #include "sway/tree/arrange.h"
@@ -213,6 +214,398 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	surface->request_activate.notify = unmanaged_handle_request_activate;
 
 	return surface;
+}
+
+static bool xsurface_is_dock(struct wlr_xwayland_surface *xsurface) {
+	return !xsurface->override_redirect &&
+		wlr_xwayland_surface_has_window_type(xsurface,
+			WLR_XWAYLAND_NET_WM_WINDOW_TYPE_DOCK);
+}
+
+static void dock_arrange(struct sway_xwayland_dock *dock) {
+	if (dock->output) {
+		arrange_layers(dock->output);
+		transaction_commit_dirty();
+	}
+}
+
+static bool dock_is_at_top(struct sway_xwayland_dock *dock, int output_height) {
+	xcb_ewmh_wm_strut_partial_t *strut =
+		dock->wlr_xwayland_surface->strut_partial;
+	if (strut && strut->top > 0 && strut->bottom == 0) {
+		return true;
+	}
+	if (strut && strut->bottom > 0 && strut->top == 0) {
+		return false;
+	}
+
+	// Without a strut, or with one reserving both edges at once, the
+	// requested position decides: above the middle of the output means the
+	// top edge
+	return 2 * (dock->requested_y - dock->output->ly) < output_height;
+}
+
+static void dock_set_output(struct sway_xwayland_dock *dock,
+		struct sway_output *output) {
+	dock->output = output;
+	dock->geometry = (struct wlr_box){0};
+	// Docks are drawn with the layer surfaces in the top layer, so that
+	// fullscreen views cover them
+	wlr_scene_node_reparent(&dock->surface_scene->buffer->node,
+		output ? output->layers.shell_top : root->staging);
+}
+
+void arrange_xwayland_docks(struct sway_output *output,
+		const struct wlr_box *full_area, struct wlr_box *usable_area) {
+	struct sway_xwayland_dock *dock;
+	if (output->enabled) {
+		// Docks left without an output, because every output was disabled,
+		// come back on the first output that is arranged again
+		wl_list_for_each(dock, &server.xwayland.docks, link) {
+			if (!dock->output) {
+				dock_set_output(dock, output);
+			}
+		}
+	}
+
+	// Docks stay within the output, even where layer surfaces with negative
+	// margins have grown the usable area past its edges
+	struct wlr_box area;
+	wlr_box_intersection(&area, usable_area, full_area);
+	bool docked = false;
+	wl_list_for_each(dock, &server.xwayland.docks, link) {
+		if (dock->output != output) {
+			continue;
+		}
+		docked = true;
+
+		// Each dock gets the height still free on the output, up to the
+		// height it asked for
+		int height = dock->height;
+		if (height > area.height) {
+			height = area.height;
+		}
+		wlr_scene_node_set_enabled(&dock->surface_scene->buffer->node,
+			height > 0);
+		if (height <= 0) {
+			// No room left: the dock is not shown and reserves nothing
+			dock->geometry = (struct wlr_box){0};
+			continue;
+		}
+
+		struct wlr_box box = {
+			.x = full_area->x,
+			.width = full_area->width,
+			.height = height,
+		};
+		if (dock_is_at_top(dock, full_area->height)) {
+			box.y = area.y;
+			area.y += height;
+		} else {
+			box.y = area.y + area.height - height;
+		}
+		area.height -= height;
+
+		wlr_scene_node_set_position(&dock->surface_scene->buffer->node,
+			box.x, box.y);
+
+		box.x += output->lx;
+		box.y += output->ly;
+		if (!wlr_box_equal(&box, &dock->geometry)) {
+			dock->geometry = box;
+			wlr_xwayland_surface_configure(dock->wlr_xwayland_surface,
+				box.x, box.y, box.width, box.height);
+		}
+	}
+	if (docked) {
+		*usable_area = area;
+	}
+}
+
+static struct sway_output *dock_pick_output(struct sway_xwayland_dock *dock) {
+	// The output containing the requested position, else the focused one
+	struct wlr_output *wlr_output = wlr_output_layout_output_at(
+		root->output_layout, dock->requested_x, dock->requested_y);
+	struct sway_output *output =
+		wlr_output ? output_from_wlr_output(wlr_output) : NULL;
+	if (output && output->enabled) {
+		return output;
+	}
+
+	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_workspace *ws = seat_get_focused_workspace(seat);
+	if (ws && ws->output && ws->output->enabled) {
+		return ws->output;
+	}
+
+	return root->outputs->length ? root->outputs->items[0] : NULL;
+}
+
+void evacuate_xwayland_docks(struct sway_output *output) {
+	// Move to the first remaining output, in the order sway lists them. The
+	// docks stay there when the disabled output comes back.
+	struct sway_output *fallback =
+		root->outputs->length ? root->outputs->items[0] : NULL;
+	bool moved = false;
+	struct sway_xwayland_dock *dock;
+	wl_list_for_each(dock, &server.xwayland.docks, link) {
+		if (dock->output == output) {
+			dock_set_output(dock, fallback);
+			moved = true;
+		}
+	}
+	if (moved && fallback) {
+		arrange_layers(fallback);
+	}
+}
+
+static void dock_handle_request_configure(struct wl_listener *listener,
+		void *data) {
+	struct sway_xwayland_dock *dock =
+		wl_container_of(listener, dock, request_configure);
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+	struct wlr_xwayland_surface_configure_event *ev = data;
+	bool mapped = xsurface->surface != NULL && xsurface->surface->mapped;
+
+	// Remember what the client asks for, using only the fields it sets: the
+	// other fields of the event hold the current values. While mapped only
+	// the height is up to the client; the position counts for the next time
+	// the dock maps.
+	if (!mapped && (ev->mask & XCB_CONFIG_WINDOW_X)) {
+		dock->requested_x = ev->x;
+	}
+	if (!mapped && (ev->mask & XCB_CONFIG_WINDOW_Y)) {
+		dock->requested_y = ev->y;
+	}
+	if (ev->mask & XCB_CONFIG_WINDOW_HEIGHT) {
+		dock->height = ev->height;
+	}
+
+	if (!mapped || !dock->output) {
+		wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
+			ev->width, ev->height);
+		return;
+	}
+
+	struct wlr_box previous = dock->geometry;
+	dock_arrange(dock);
+	if (wlr_box_equal(&previous, &dock->geometry)) {
+		// Tell the client its request was not honoured
+		struct wlr_box box = dock->geometry;
+		if (wlr_box_empty(&box)) {
+			// Not shown for lack of room: keep the window as it is
+			box = (struct wlr_box){ xsurface->x, xsurface->y,
+				xsurface->width, xsurface->height };
+		}
+		wlr_xwayland_surface_configure(xsurface, box.x, box.y,
+			box.width, box.height);
+	}
+}
+
+static void dock_handle_set_strut_partial(struct wl_listener *listener,
+		void *data) {
+	struct sway_xwayland_dock *dock =
+		wl_container_of(listener, dock, set_strut_partial);
+	dock_arrange(dock);
+}
+
+static void dock_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_dock *dock = wl_container_of(listener, dock, unmap);
+	if (!dock->surface_scene) {
+		// Never shown
+		return;
+	}
+
+	struct sway_output *output = dock->output;
+	dock_set_output(dock, NULL);
+	wlr_scene_node_destroy(&dock->surface_scene->buffer->node);
+	dock->surface_scene = NULL;
+	wl_list_remove(&dock->link);
+	wl_list_init(&dock->link);
+
+	if (output) {
+		// Give the reserved space back
+		arrange_layers(output);
+		transaction_commit_dirty();
+	}
+	cursor_rebase_all();
+}
+
+static void dock_handle_dissociate(struct wl_listener *listener, void *data);
+static void dock_handle_destroy(struct wl_listener *listener, void *data);
+
+/**
+ * Turns a dock back into a view, for a window whose type no longer includes
+ * _NET_WM_WINDOW_TYPE_DOCK.
+ */
+static void dock_become_view(struct sway_xwayland_dock *dock) {
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+	bool associated = xsurface->surface != NULL;
+	bool mapped = associated && xsurface->surface->mapped;
+	if (mapped) {
+		dock_handle_unmap(&dock->unmap, NULL);
+	}
+	if (associated) {
+		dock_handle_dissociate(&dock->dissociate, NULL);
+	}
+	dock_handle_destroy(&dock->destroy, NULL);
+
+	struct sway_xwayland_view *xwayland_view = create_xwayland_view(xsurface);
+	if (!xwayland_view) {
+		return;
+	}
+	if (associated) {
+		handle_associate(&xwayland_view->associate, NULL);
+	}
+	if (mapped) {
+		handle_map(&xwayland_view->map, xsurface);
+	}
+}
+
+/**
+ * Shows a dock that asked for the given position and height, anchored to
+ * an edge of the output that position falls on.
+ */
+static void dock_map(struct sway_xwayland_dock *dock, int x, int y,
+		int height) {
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+	dock->requested_x = x;
+	dock->requested_y = y;
+	dock->height = height;
+	dock->has_requested = true;
+
+	dock->surface_scene = wlr_scene_surface_create(root->staging,
+		xsurface->surface);
+	if (!dock->surface_scene) {
+		sway_log(SWAY_ERROR, "Failed to create the scene node of a dock");
+		return;
+	}
+	scene_descriptor_assign(&dock->surface_scene->buffer->node,
+		SWAY_SCENE_DESC_XWAYLAND_DOCK, dock);
+
+	wl_list_insert(server.xwayland.docks.prev, &dock->link);
+	dock_set_output(dock, dock_pick_output(dock));
+	dock_arrange(dock);
+	cursor_rebase_all();
+}
+
+static void dock_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_dock *dock = wl_container_of(listener, dock, map);
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+	if (!xsurface_is_dock(xsurface)) {
+		// The window type changed while it was unmapped
+		dock_become_view(dock);
+		return;
+	}
+	if (dock->has_requested) {
+		// Mapped again: the window's X geometry is what the dock was last
+		// configured to; use what the client asked for
+		dock_map(dock, dock->requested_x, dock->requested_y, dock->height);
+	} else {
+		dock_map(dock, xsurface->x, xsurface->y, xsurface->height);
+	}
+}
+
+static void dock_handle_set_window_type(struct wl_listener *listener,
+		void *data) {
+	struct sway_xwayland_dock *dock =
+		wl_container_of(listener, dock, set_window_type);
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+	if (xsurface->surface == NULL || !xsurface->surface->mapped ||
+			xsurface_is_dock(xsurface)) {
+		return;
+	}
+	// No longer a dock: it becomes an ordinary window and its space is
+	// given back
+	dock_become_view(dock);
+}
+
+static void dock_handle_associate(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_dock *dock =
+		wl_container_of(listener, dock, associate);
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+	wl_signal_add(&xsurface->surface->events.map, &dock->map);
+	dock->map.notify = dock_handle_map;
+	wl_signal_add(&xsurface->surface->events.unmap, &dock->unmap);
+	dock->unmap.notify = dock_handle_unmap;
+}
+
+static void dock_handle_dissociate(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_dock *dock =
+		wl_container_of(listener, dock, dissociate);
+	wl_list_remove(&dock->map.link);
+	wl_list_remove(&dock->unmap.link);
+}
+
+static void dock_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_dock *dock = wl_container_of(listener, dock, destroy);
+	wl_list_remove(&dock->link);
+	wl_list_remove(&dock->request_configure.link);
+	wl_list_remove(&dock->set_strut_partial.link);
+	wl_list_remove(&dock->set_window_type.link);
+	wl_list_remove(&dock->associate.link);
+	wl_list_remove(&dock->dissociate.link);
+	wl_list_remove(&dock->destroy.link);
+	wl_list_remove(&dock->override_redirect.link);
+	free(dock);
+}
+
+static void dock_handle_override_redirect(struct wl_listener *listener,
+		void *data) {
+	struct sway_xwayland_dock *dock =
+		wl_container_of(listener, dock, override_redirect);
+	struct wlr_xwayland_surface *xsurface = dock->wlr_xwayland_surface;
+
+	bool associated = xsurface->surface != NULL;
+	bool mapped = associated && xsurface->surface->mapped;
+	if (mapped) {
+		dock_handle_unmap(&dock->unmap, NULL);
+	}
+	if (associated) {
+		dock_handle_dissociate(&dock->dissociate, NULL);
+	}
+
+	dock_handle_destroy(&dock->destroy, NULL);
+
+	struct sway_xwayland_unmanaged *unmanaged = create_unmanaged(xsurface);
+	if (associated) {
+		unmanaged_handle_associate(&unmanaged->associate, NULL);
+	}
+	if (mapped) {
+		unmanaged_handle_map(&unmanaged->map, xsurface);
+	}
+}
+
+static struct sway_xwayland_dock *create_dock(
+		struct wlr_xwayland_surface *xsurface) {
+	struct sway_xwayland_dock *dock = calloc(1, sizeof(*dock));
+	if (dock == NULL) {
+		sway_log(SWAY_ERROR, "Allocation failed");
+		return NULL;
+	}
+
+	dock->wlr_xwayland_surface = xsurface;
+	wl_list_init(&dock->link);
+
+	wl_signal_add(&xsurface->events.request_configure,
+		&dock->request_configure);
+	dock->request_configure.notify = dock_handle_request_configure;
+	wl_signal_add(&xsurface->events.set_strut_partial,
+		&dock->set_strut_partial);
+	dock->set_strut_partial.notify = dock_handle_set_strut_partial;
+	wl_signal_add(&xsurface->events.set_window_type, &dock->set_window_type);
+	dock->set_window_type.notify = dock_handle_set_window_type;
+	wl_signal_add(&xsurface->events.associate, &dock->associate);
+	dock->associate.notify = dock_handle_associate;
+	wl_signal_add(&xsurface->events.dissociate, &dock->dissociate);
+	dock->dissociate.notify = dock_handle_dissociate;
+	wl_signal_add(&xsurface->events.destroy, &dock->destroy);
+	dock->destroy.notify = dock_handle_destroy;
+	wl_signal_add(&xsurface->events.set_override_redirect,
+		&dock->override_redirect);
+	dock->override_redirect.notify = dock_handle_override_redirect;
+
+	return dock;
 }
 
 static struct sway_xwayland_view *xwayland_view_from_view(
@@ -514,12 +907,30 @@ static void handle_surface_tree_destroy(struct wl_listener *listener, void *data
 	xwayland_view->surface_tree = NULL;
 }
 
+static void handle_dissociate(struct wl_listener *listener, void *data);
+
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, map);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
+	if (xsurface_is_dock(xsurface)) {
+		// Docks are not views: hand the surface over before it joins the tree
+		handle_dissociate(&xwayland_view->dissociate, NULL);
+		handle_destroy(&xwayland_view->destroy, view);
+		xsurface->data = NULL;
+
+		struct sway_xwayland_dock *dock = create_dock(xsurface);
+		if (dock) {
+			dock_handle_associate(&dock->associate, NULL);
+			dock_handle_map(&dock->map, xsurface);
+		}
+		return;
+	}
+
+	xwayland_view->requested = (struct wlr_box){ xsurface->x, xsurface->y,
+		xsurface->width, xsurface->height };
 	view->natural_width = xsurface->width;
 	view->natural_height = xsurface->height;
 
@@ -545,8 +956,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	transaction_commit_dirty();
 }
-
-static void handle_dissociate(struct wl_listener *listener, void *data);
 
 static void handle_override_redirect(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
@@ -585,6 +994,18 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
 			ev->width, ev->height);
 		return;
+	}
+	if (ev->mask & XCB_CONFIG_WINDOW_X) {
+		xwayland_view->requested.x = ev->x;
+	}
+	if (ev->mask & XCB_CONFIG_WINDOW_Y) {
+		xwayland_view->requested.y = ev->y;
+	}
+	if (ev->mask & XCB_CONFIG_WINDOW_WIDTH) {
+		xwayland_view->requested.width = ev->width;
+	}
+	if (ev->mask & XCB_CONFIG_WINDOW_HEIGHT) {
+		xwayland_view->requested.height = ev->height;
 	}
 	if (container_is_floating(view->container)) {
 		// Respect minimum and maximum sizes
@@ -749,6 +1170,24 @@ static void handle_set_window_type(struct wl_listener *listener, void *data) {
 	if (xsurface->surface == NULL || !xsurface->surface->mapped) {
 		return;
 	}
+
+	if (xsurface_is_dock(xsurface)) {
+		// The window became a dock while mapped: it leaves the tree and
+		// is anchored with the geometry it asked for, not its tiled size
+		struct wlr_box requested = xwayland_view->requested;
+		handle_unmap(&xwayland_view->unmap, NULL);
+		handle_dissociate(&xwayland_view->dissociate, NULL);
+		handle_destroy(&xwayland_view->destroy, view);
+		xsurface->data = NULL;
+
+		struct sway_xwayland_dock *dock = create_dock(xsurface);
+		if (dock) {
+			dock_handle_associate(&dock->associate, NULL);
+			dock_map(dock, requested.x, requested.y, requested.height);
+		}
+		return;
+	}
+
 	view_execute_criteria(view);
 	transaction_commit_dirty();
 }

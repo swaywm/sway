@@ -87,6 +87,10 @@ void arrange_layers(struct sway_output *output) {
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, true);
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_background, true);
 
+#if WLR_HAS_XWAYLAND
+	arrange_xwayland_docks(output, &full_area, &usable_area);
+#endif
+
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_overlay, false);
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_top, false);
 	arrange_surface(output, &full_area, &usable_area, output->layers.shell_bottom, false);

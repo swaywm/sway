@@ -154,6 +154,9 @@ struct sway_xwayland_view {
 
 	struct wlr_scene_surface *image_capture_scene_surface;
 
+	// Geometry the client last asked for, used if the window becomes a dock
+	struct wlr_box requested;
+
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
@@ -188,6 +191,41 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
 	struct wl_listener set_geometry;
+	struct wl_listener associate;
+	struct wl_listener dissociate;
+	struct wl_listener map;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
+	struct wl_listener override_redirect;
+};
+
+/**
+ * An X11 dock window (_NET_WM_WINDOW_TYPE_DOCK), such as a panel. Docks are
+ * not views: they never join a workspace and never receive keyboard focus.
+ * Each one spans the width of an output, against its top or bottom edge, and
+ * the output's usable area shrinks by its height.
+ */
+struct sway_xwayland_dock {
+	struct wlr_xwayland_surface *wlr_xwayland_surface;
+
+	struct wlr_scene_surface *surface_scene;
+
+	struct sway_output *output;
+	struct wl_list link; // sway_xwayland::docks, mapped docks only
+
+	// What the client asked for: the top-left corner of the window, which
+	// picks the output and, without a strut, the edge, and its height.
+	// Kept while unmapped, for the next time the dock maps.
+	int requested_x, requested_y;
+	int height;
+	bool has_requested;
+	// Geometry last sent to the client, in layout coordinates; empty while
+	// the dock is not shown because its output has no height left for it
+	struct wlr_box geometry;
+
+	struct wl_listener request_configure;
+	struct wl_listener set_strut_partial;
+	struct wl_listener set_window_type;
 	struct wl_listener associate;
 	struct wl_listener dissociate;
 	struct wl_listener map;

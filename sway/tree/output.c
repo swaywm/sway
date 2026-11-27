@@ -294,6 +294,9 @@ void output_disable(struct sway_output *output) {
 	output->enabled = false;
 
 	destroy_layers(output);
+#if WLR_HAS_XWAYLAND
+	evacuate_xwayland_docks(output);
+#endif
 	output_evacuate(output);
 	sway_ext_workspace_output_disable(output);
 }
