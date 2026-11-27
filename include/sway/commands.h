@@ -99,6 +99,13 @@ struct sway_container *container_find_resize_parent(struct sway_container *con,
 		uint32_t edge);
 
 /**
+ * Move a container to a workspace the way `move container to workspace`
+ * does, without auto back-and-forth.
+ */
+struct cmd_results *move_container_to_workspace(struct sway_seat *seat,
+		struct sway_container *container, struct sway_workspace *workspace);
+
+/**
  * Handlers shared by exec and exec_always.
  */
 sway_cmd cmd_exec_validate;
