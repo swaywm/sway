@@ -118,6 +118,8 @@ void root_scratchpad_add_container(struct sway_container *con, struct sway_works
 		container_floating_move_to_center(con);
 	}
 
+	// The user sent it away, so it no longer goes back to an output
+	container_sticky_home_clear(con);
 	container_detach(con);
 	con->scratchpad = true;
 	list_add(root->scratchpad, con);
@@ -225,6 +227,8 @@ void root_scratchpad_hide(struct sway_container *con) {
 
 	disable_fullscreen(con, NULL);
 	container_for_each_child(con, disable_fullscreen, NULL);
+	// The user hid it, so it no longer goes back to an output
+	container_sticky_home_clear(con);
 	container_detach(con);
 	arrange_workspace(ws);
 	if (restore_focus) {

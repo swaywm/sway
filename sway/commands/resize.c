@@ -216,6 +216,8 @@ static struct cmd_results *resize_adjust_floating(uint32_t axis,
 	if (grow_width == 0 && grow_height == 0) {
 		return cmd_results_new(CMD_INVALID, "Cannot resize any further");
 	}
+	// The user resized it, so it stays where it is now
+	container_sticky_home_clear(con);
 	con->pending.x += grow_x;
 	con->pending.y += grow_y;
 	con->pending.width += grow_width;
@@ -392,6 +394,8 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 		}
 	}
 
+	// The user resized it, so it stays where it is now
+	container_sticky_home_clear(con);
 	con->pending.content_x -= grow_width / 2;
 	con->pending.content_y -= grow_height / 2;
 	con->pending.content_width += grow_width;

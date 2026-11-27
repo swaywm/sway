@@ -24,6 +24,10 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 	};
 
 	container->is_sticky = parse_boolean(argv[0], container->is_sticky);
+	if (!container->is_sticky) {
+		// Only sticky containers go back to the output they left
+		container_sticky_home_clear(container);
+	}
 
 	if (container_is_sticky_or_child(container) &&
 			!container_is_scratchpad_hidden(container)) {

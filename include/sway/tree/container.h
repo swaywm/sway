@@ -133,6 +133,19 @@ struct sway_container {
 	// Hidden scratchpad containers have a NULL parent.
 	bool scratchpad;
 
+	// Where a sticky floating container was before the output it was on went
+	// away, so that it can go back there when the output returns. Kept if the
+	// output it moved to goes away too, dropped once the user moves it. Unused
+	// while output_name is NULL.
+	struct {
+		char *output_name;
+		struct wlr_box area; // the output's usable area, layout coordinates
+		double x, y;
+		// Back on its output, but placed relative to `area` until the output's
+		// usable area matches it again
+		bool returning;
+	} sticky_home;
+
 	// Stores last output size and position for adjusting coordinates of
 	// scratchpad windows.
 	// Unused for non-scratchpad windows.
@@ -246,6 +259,32 @@ void container_floating_move_to(struct sway_container *con,
  * Move a floating container to the center of the workspace.
  */
 void container_floating_move_to_center(struct sway_container *con);
+
+/**
+ * Forget where a sticky floating container came from.
+ */
+void container_sticky_home_clear(struct sway_container *con);
+
+/**
+ * Whether the sticky floating container left an output when it went away and
+ * the user hasn't moved it since.
+ */
+bool container_has_sticky_home(struct sway_container *con);
+
+/**
+ * Whether the sticky floating container left the given output when it went
+ * away and the user hasn't moved it since.
+ */
+bool container_sticky_home_is(struct sway_container *con,
+		struct sway_output *output);
+
+/**
+ * If the container is returning to its output, place it relative to the
+ * output's usable area (in layout coordinates) where it was before, and return
+ * true.
+ */
+bool container_sticky_home_place(struct sway_container *con,
+		struct wlr_box *area);
 
 bool container_has_urgent_child(struct sway_container *container);
 
