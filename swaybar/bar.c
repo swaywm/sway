@@ -467,8 +467,16 @@ static void display_in(int fd, short mask, void *data) {
 		bar->running = false;
 		return;
 	}
-	if (wl_display_dispatch(bar->display) == -1) {
-		sway_log(SWAY_ERROR, "wl_display_dispatch failed");
+
+	if (wl_display_prepare_read(bar->display) == 0) {
+		if (wl_display_read_events(bar->display) == -1) {
+			sway_log(SWAY_ERROR, "wl_display_read_events failed");
+			bar->running = false;
+			return;
+		}
+	}
+	if (wl_display_dispatch_pending(bar->display) == -1) {
+		sway_log(SWAY_ERROR, "wl_display_dispatch_pending failed");
 		bar->running = false;
 	}
 }
